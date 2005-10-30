@@ -24,3 +24,11 @@ class Handler(object):
 			if lines[i] == "Main content\n":
 				lines[i] = content
 		return "".join(lines)
+
+	def return_redirect(self, url):
+		content = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+		<html>
+		<head>
+		<meta http-equiv="REFRESH" content="0;url="""+url+""""></HEAD>
+		</HTML>"""
+		return content

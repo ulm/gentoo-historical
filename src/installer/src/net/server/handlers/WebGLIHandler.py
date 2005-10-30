@@ -863,7 +863,11 @@ Please be patient while the screens load. It may take awhile.
 		data += """
 		<script>
 		function change_editiface() {
-		  location.replace('/webgli/Networking?editiface=' + document.Networking.EditIface.value);
+		  for(i=0;i<document.Networking.elements.length;i++) {
+			if(document.Networking.elements[i].name == "EditIface" && document.Networking.elements[i].checked) {
+			  location.replace('/webgli/Networking?editiface='+ document.Networking.elements[i].value);
+            }
+          }
 		}
 		</script>
 		 <p>Devices:</p>
@@ -940,10 +944,24 @@ Please be patient while the screens load. It may take awhile.
 			data += 'Enter your IP address: <input name="ip" type="text" length="50" maxlength="15" value="192.168."><br>'
 			data += 'Enter your Broadcast address: <input name="broadcast" type="text" length="50" maxlength="15" value=".255"><br>'
 			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="255.255.255.0"><br></td></tr></table>'
-			data += '<input type="submit" value="Add Network Device" name="AddIfaceSubmit">'
+			data += '<input type="submit" value="Add Network Device" name="AddIfaceSubmit"><hr>'
 		
-		data += 'Enter your default gateway: <input name="gateway" type="text" length="50" maxlength="15" value=".1"><br>'
-		data += 'Enter a DNS server: <input name="dnsserver" type="text" length="50" maxlength="15" value="128.118.25.3">'
+		data += 'Enter your default gateway: <table>'
+		default_gateway = self.shared_info.install_profile.get_default_gateway()
+		if default_gateway:
+			gway_ip = default_gateway[1]
+			gway_iface = default_gateway[0]
+		else:
+			gway_iface = None
+			gway_ip = ""
+		for iface in interfaces:
+			data += '<tr><td><input type="radio" name="GatewayIface" value="'+iface+'" '
+			if iface == gway_iface:
+				data += "checked"
+			data += ' >'+iface+"</td></tr>\n"
+		data += '<tr><td>Address:<input name="gateway" type="text" length="50" maxlength="15" value="'+gway_ip+'"><br>'
+		dnsservers = " ".join(self.shared_info.install_profile.get_dns_servers())
+		data += 'Enter your DNS servers (space-separated): <input name="dnsserver" type="text" length="70" value="'+dnsservers+'">'
 		data += """   <p>Wireless stuff here. ESSID: Key:  </p>
 		   <p>Hostname:
 			 <input name="hostname" type="text" id="hostname">
@@ -954,10 +972,6 @@ Please be patient while the screens load. It may take awhile.
 		   <p>NIS Domainname: 
 			 <input name="nisdomainname" type="text" id="nisdomainname"> 
 		   </p>
-		   <p>more</p>
-		   <p>DNS Servers (separate by space): 
-			 <input name="dnsservers" type="text" id="dnsservers">
-		</p>
 		   <p>
 			 <input name="savenetwork" type="submit" id="savenetwork" value="Save Network Information">
 		</p>
@@ -1018,11 +1032,14 @@ Please be patient while the screens load. It may take awhile.
 					del interfaces[iface]
 					self.shared_info.install_profile.set_network_interfaces(interfaces)
 					data += "Network Interfaces saved.<br>\n"
+					return self.return_redirect("/webgli/Networking")
 				except:
 					data += "ERROR: Could not delete the interface.<BR>\n"	
 			else:
 				data += "ERROR: No device selected to delete!<br>\n"
 			
+		#elif self.post_params['EditIfaceSubmit']:
+		
 		if 'dnsserver' in self.post_params:
 			data += "Found an DNS server: you submitted " + self.post_params['dnsserver'] + "<BR>\n"
 			try:
@@ -1044,10 +1061,126 @@ Please be patient while the screens load. It may take awhile.
 		data = ""
 		return self.wrap_in_webgli_template(data)
 	def users(self):
-		data = ""
+		data = """
+		<script>
+		function change_edituser() {
+		  for(i=0;i<document.Users.elements.length;i++) {
+			if(document.Users.elements[i].name == "edituser" && document.Users.elements[i].checked) {
+			  location.replace('/webgli/Users?edituser='+ document.Users.elements[i].value);
+            }
+          }
+		}
+		</script>"""
+		users = {}
+		for user in self.shared_info.install_profile.get_users():
+			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
+		data += "<p>User Settings:</p>\n"
+		data += '<form name="Users" method="post" action="/webgli/saveusers" enctype="multipart/form-data">'
+		data += """<p>Users:</p>
+		  <table width="100%"  border="1">
+			<tr>
+			  <th scope="col">Username</th>
+			  <th scope="col">Groups</th>
+			  <th scope="col">Shell</th>
+			  <th scope="col">Home Directory </th>
+			  <th scope="col">UserID</th>
+			  <th scope="col">Comment</th>
+			</tr>"""
+		for user in users:
+			data += '<tr><td><input name="edituser" type="radio" value="'+users[user][0]+'">'
+			data += users[user][0]+"</td><td>"
+			for group in users[user][2]:
+				data += group + ", "
+			data += "</td><td>"+users[user][3]+"</td><td>"+users[user][4]+"</td><td>"+users[user][5]+"</td><td>"+users[user][6]+"</td></tr>\n"
+		
+		data += """</table><br>
+			  <input name="usereditsubmit" type="button" id="usereditsubmit" value="EDIT" onclick="change_editiface()">
+			  <input name="useredelsubmit" type="submit" id="userdelsubmit" value="DELETE">"""
+		root_pass = self.shared_info.install_profile.get_root_pass_hash()
+		if not root_pass:
+			data += """<p>Root Password is not yet set! Please set it:<br>
+			  <input name="rootpass1" type="text" id="rootpass1">
+		  and retype to verify: 
+		  <input name="rootpass2" type="text" id="rootpass2">
+		  <input name="verifyrootpass" type="button" id="verifyrootpass" value="Verify!" onclick="verify_pass()"></p>"""
+		else:
+			data += """<p>Root Password is set. 
+			  <input name="setrootpass" type="submit" id="setrootpass" value="Edit Root Password"></p>"""
+		data += """
+			<p>Add a new user:</p>
+			<table width="100%"  border="1">
+			  <tr>
+				<td scope="col"><p>Username:
+					<input name="newusername" type="text" id="newusername">
+				</p>
+				<p>Password:
+					<input name="newuserpass" type="password" id="newuserpass">
+				</p>
+				<p>Shell (optional): 
+				  <input name="newusershell" type="text" id="newusershell">
+				</p>
+				<p>Home Directory (optional): 
+				  <input name="newuserhomedir" type="text" id="newuserhomedir">
+				</p>
+				<p>UserID Number (optional): 
+				  <input name="newuserid" type="text" id="newuserid">
+				</p>
+				<p>Comment (optional): 
+				  <input name="newusercomment" type="text" id="newusercomment">
+				</p></td>
+				<td scope="col"><p>Groups:</p>
+				  <p><input name="newusergroups" type="checkbox" id="newusergroups" value="users"> users<br>
+				  <input name="newusergroups" type="checkbox" id="newusergroups" value="wheel"> wheel<br>
+				  <input name="newusergroups" type="checkbox" id="newusergroups" value="audio"> audio<br>
+				  Manually specify (comma-separate)<input name="newusergroupsmanual" type="text" id="newusergroupsmanual">
+				  </p>
+				  <input name="addnewuser" type="submit" id="addnewuser" value="Add New User">
+				</td>
+			  </tr>
+			</table>
+			<p>&nbsp;</p>
+		</form>"""
 		return self.wrap_in_webgli_template(data)
 	def saveusers(self):
 		data = ""
+		users = {}
+		for user in self.shared_info.install_profile.get_users():
+			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
+		if self.post_params['addnewuser']:
+			if self.post_params['newusername'] and self.post_params['newuserpass']:
+				newuser = self.post_params['newusername']
+				newuserpass = self.post_params['newuserpass']
+				groups = ()
+				if self.post_params['newusergroupsmanual']:
+					for group in self.post_params['newusergroupsmanual'].split():
+						groups.append(group)
+				elif self.post_params['newusergroups']:
+					groups = self.post_params['newusergroups']
+				if self.post_params['newusercomment']:
+					newusercomment = self.post_params['newusercomment']
+				else:
+					newusercomment = ""
+				if self.post_params['newuserid']:
+					newuserid = self.post_params['newuserid']
+				else:
+					newuserid = ""
+				if self.post_params['newuserhomedir']:
+					newuserhomedir = self.post_params['newuserhomedir']
+				else:
+					newuserhomedir = "/home/"+newuser
+				if self.post_params['newusershell']:
+					newusershell = self.post_params['newusershell']
+				else:
+					newusershell = "/bin/bash"
+				try:
+					new_user = [newuser, GLIUtility.hash_password(newuserpass), groups, newusershell, newuserhomedir, newuserid, newusercomment]
+					users[newuser] = new_user
+					self.shared_info.install_profile.set_users(users)	
+				except:
+					data += "ERROR: could not set the users.<br>\n"				
+			else:
+				data += "ERROR: NO USERNAME SPECIFIED<br>\n"
+			
 		return self.wrap_in_webgli_template(data)
 	def review(self):
 		data = ""
