@@ -237,6 +237,9 @@ def build(rebuild = False):
             fields['prevarch'] = result[6]
             fields['arch'] = [4]
             update_ebuild_record(db, fields)
+        elif rebuild:
+            # A new ebuild that we want to ignore on rebuild
+            pass
         elif result[4].split(',') != fields['archs'].split(','):
             # keywords change, update db
             fields['prevarch'] = result[4]
