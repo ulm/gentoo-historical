@@ -270,22 +270,11 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.common_handler(head_only)
 
 	def common_handler(self, head_only):
-#		paths = {
-#		          '/': self.welcome,
-#		          '/welcome': self.welcome,
-#		          '/showargs': self.showargs,
-#		          '/status': self.status,
-#		          '/lastvisitor': self.lastvisitor,
-#		          '/showclients': self.showclients,
-#		          '/loadprofile': self.loadprofile,
-#		          '/loadprofile2': self.loadprofile2,
-#		          '/saveprofile': self.saveprofile,
-#		          '/saveprofile2': self.saveprofile2
-#		        }
 		paths = {
-		          'ProfileHandler': [ '/loadprofile', '/loadprofile2', '/saveprofile', '/saveprofile2' ],
-				  'WebGLIHandler': ['/webgli', '/webgli/', '/webgli/ClientConfig', '/webgli/saveclientconfig',
-				  		'/webgli/NetworkMounts', '/webgli/savenetmounts',
+				  'ProfileHandler': [ '/loadprofile', '/loadprofile2', '/saveprofile', '/saveprofile2' ],
+				  'WebGLIHandler': ['/webgli', '/webgli/', 
+						'/webgli/ClientConfig', '/webgli/saveclientconfig',
+						'/webgli/NetworkMounts', '/webgli/savenetmounts',
 						'/webgli/Partitioning', '/webgli/savepartitions',
 						'/webgli/StageSelection', '/webgli/savestage',
 						'/webgli/PortageTree', '/webgli/saveportage',
@@ -298,8 +287,12 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						'/webgli/Networking', '/webgli/savenetworking',
 						'/webgli/Daemons', '/webgli/savedaemons',
 						'/webgli/ExtraPackages', '/webgli/savepackages',
+						'/webgli/Services', '/webgli/saveservices',
 						'/webgli/Users', '/webgli/saveusers',
-						'/webgli/Review', '/webgli/savereview', '/webgli/URIBrowser' ],
+						'/webgli/Review', '/webgli/savereview', 
+						'/webgli/URIBrowser',
+						'/webgli/loadprofile', '/webgli/loadprofile2',
+						'/webgli/saveprofile', '/webgli/saveprofile2'		],
 		          'Welcome': [ '/welcome' , '/showargs'],
 		          'Clients': [ '/showclients' ]
 		        }

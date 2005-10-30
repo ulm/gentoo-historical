@@ -3,9 +3,12 @@ import GLIInstallProfile
 import GLIClientConfiguration
 import GLIUtility
 import handler
+import traceback
 import sys
 import copy
 import string
+import gettext
+_ = gettext.gettext
 sys.path.append("../..")
 class WebGLIHandler(handler.Handler):
 
@@ -206,66 +209,118 @@ class WebGLIHandler(handler.Handler):
 			except:
 				data += "ERROR: Could not save the profile!<BR>\n"
 		return self.wrap_in_webgli_template(data)
+		
+	def loadprofile(self):
+		content = """
+		<h2>Load Client Profile</h2>
+		<br>
+		<form action="/webgli/loadprofile2" method="POST" enctype="multipart/form-data">
+		Use local (to server) file: <input type="text" name="clientfile"><br>
+		or<br>
+		Upload file: <input type="file" name="uploadclientfile"><br>
+		<input type="submit" value="Load">
+		</form><hr>
+		<h2>Load Install Profile</h2>
+		<br>
+		<form action="/webgli/loadprofile2" method="POST" enctype="multipart/form-data">
+		Use local (to server) file: <input type="text" name="installfile"><br>
+		or<br>
+		Upload file: <input type="file" name="uploadipfile"><br>
+		<input type="submit" value="Load">
+		</form>
+		"""
+		return self.wrap_in_template(content)
 	def loadprofile2(self):
 		content = "<h2>Load Profile</h2>"
 		xmlfile = ""
-		if 'localfile' in self.post_params and self.post_params['localfile']:
-			xmlfile = self.post_params['localfile']
-		elif 'uploadfile' in self.post_params and self.post_params['uploadfile']:
+		if self.post_params['clientfile']:
+			xmlfile = self.post_params['clientfile']
+		elif self.post_params['uploadclientfile']:
 			try:
-				tmpfile = open("/tmp/serverprofile.xml", "w")
-				tmpfile.write(self.post_params['uploadfile'])
+				tmpfile = open("/tmp/clientprofile.xml", "w")
+				tmpfile.write(self.post_params['uploadclientfile'])
 				tmpfile.close()
-				xmlfile = "/tmp/serverprofile.xml"
+				xmlfile = "/tmp/clientprofile.xml"
 			except:
 				content += "There was a problem writing the temp file for the file you uploaded" + self.get_exception()
 				return self.wrap_in_template(content)
-		else:
-			content += "You did not specify a file to load"
-			return self.wrap_in_template(content)
-		cp = GLIServerProfile.ServerProfile()
-		try:
-			cp.parse(xmlfile)
-		except:
-			content += "There was an error parsing the XML file" + self.get_exception()
-			return self.wrap_in_template(content)
-		self.shared_info.clients = cp.get_clients()
-		self.shared_info.profiles = cp.get_profiles()
-		content += "Profile loaded successfully"
+		if self.post_params['clientfile'] or self.post_params['uploadclientfile']:
+			try:
+				self.shared_info.client_profile = GLIClientConfiguration.ClientConfiguration()
+				self.shared_info.client_profile.parse(xmlfile)
+				content += "Profile loaded successfully"
+			except:
+				content += "There was an error parsing the XML file" + self.get_exception()
+				
+		#INSTALL PROFILE LOADING
+		if self.post_params['installfile']:
+			xmlfile = self.post_params['installfile']
+		elif self.post_params['uploadipfile']:
+			try:
+				tmpfile = open("/tmp/installprofile.xml", "w")
+				tmpfile.write(self.post_params['uploadipfile'])
+				tmpfile.close()
+				xmlfile = "/tmp/installprofile.xml"
+			except:
+				content += "There was a problem writing the temp file for the file you uploaded" + self.get_exception()
+				return self.wrap_in_template(content)
+		if self.post_params['installfile'] or self.post_params['uploadipfile']:
+			try:
+				self.shared_info.install_profile = GLIInstallProfile.InstallProfile()
+				self.shared_info.install_profile.parse(xmlfile)
+				content += "Profile loaded successfully"
+			except:
+				content += "There was an error parsing the XML file" + self.get_exception()
+		
 		return self.wrap_in_webgli_template(content)
 
 	def saveprofile(self):
 		content = """
-		<h2>Save Profile</h2>
+		<h2>Save Client Profile</h2>
 		<br>
-		<form action="/saveprofile2" method="POST" enctype="multipart/form-data">
-		Save to local (to server) file: <input type="text" name="localfile"> <input type="submit" value="Save"><br>
+		<form action="/webgli/saveprofile2" method="POST" enctype="multipart/form-data">
+		Save to local (to server) file: <input type="text" name="clientfile"> <input type="submit" value="Save"><br>
 		or<br>
-		Download the file: <input type="submit" name="download" value="Download">
+		Download the file: <input type="submit" name="downloadclient" value="Download">
+		</form><hr>
+		<h2>Save Install Profile</h2>
+		<br>
+		<form action="/webgli/saveprofile2" method="POST" enctype="multipart/form-data">
+		Save to local (to server) file: <input type="text" name="ipfile"> <input type="submit" value="Save"><br>
+		or<br>
+		Download the file: <input type="submit" name="downloadip" value="Download">
 		</form>
 		"""
-		return self.wrap_in_template(content)
+		return self.wrap_in_webgli_template(content)
 
 	def saveprofile2(self):
 		content = "<h2>Save Profile</h2>"
-		cp = GLIServerProfile.ServerProfile()
-		cp.set_clients(None, self.shared_info.clients, None)
-		cp.set_profiles(None, self.shared_info.profiles, None)
-		if not 'download' in self.post_params and self.post_params['localfile']:
+		if not 'downloadclient' in self.post_params and self.post_params['clientfile']:
 			try:
-				tmpfile = open(self.post_params['localfile'], "w")
-				tmpfile.write(cp.serialize())
+				tmpfile = open(self.post_params['clientfile'], "w")
+				tmpfile.write(self.shared_info.client_profile.serialize())
 				tmpfile.close()
 			except:
 				content += "There was a problem writing the file" + self.get_exception()
-				return self.wrap_in_template(content)
-			return self.wrap_in_template(content + "Profile saved successfully")
-		elif 'download' in self.post_params:
+				return self.wrap_in_webgli_template(content)
+			return self.wrap_in_webgli_template(content + "Client Profile saved successfully")
+		elif 'downloadclient' in self.post_params:
 			self.headers_out.append(("Content-type", "text/xml"))
-			self.headers_out.append(('Content-disposition', "attatchment;filename=serverprofile.xml"))
-			return cp.serialize()
-		else:
-			return self.wrap_in_template(content + "You didn't specify a filename to save to")
+			self.headers_out.append(('Content-disposition', "attatchment;filename=clientprofile.xml"))
+			return self.shared_info.client_profile.serialize()
+		if not 'downloadip' in self.post_params and self.post_params['ipfile']:
+			try:
+				tmpfile = open(self.post_params['ipfile'], "w")
+				tmpfile.write(self.shared_info.install_profile.serialize())
+				tmpfile.close()
+			except:
+				content += "There was a problem writing the file" + self.get_exception()
+				return self.wrap_in_webgli_template(content)
+			return self.wrap_in_webgli_template(content + "Client Profile saved successfully")
+		elif 'downloadip' in self.post_params:
+			self.headers_out.append(("Content-type", "text/xml"))
+			self.headers_out.append(('Content-disposition', "attatchment;filename=installprofile.xml"))
+			return self.shared_info.install_profile.serialize()
 	def showwelcome(self):
 		data = "Welcoming string here.<BR>LOCAL INSTALL ASSUMED FOR THIS FRONT END<br>\n"
 		return self.wrap_in_webgli_template(data)
@@ -1055,6 +1110,12 @@ Please be patient while the screens load. It may take awhile.
 	def savedaemons(self):
 		data = ""
 		return self.wrap_in_webgli_template(data)
+	def services(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
+	def saveservices(self):
+		data = ""
+		return self.wrap_in_webgli_template(data)
 	def extrapackages(self):
 		data = ""
 		return self.wrap_in_webgli_template(data)
@@ -1245,8 +1306,159 @@ Please be patient while the screens load. It may take awhile.
 			
 		return self.wrap_in_webgli_template(data)
 	def review(self):
-		data = ""
-		return self.wrap_in_webgli_template(data)
+		settings = "<pre>Look carefully at the following settings to check for mistakes.\nThese are the installation settings you have chosen:\n\n"
+		#Partitioning
+		settings += "Partitioning:  \n  Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.\n"
+		devices = self.shared_info.install_profile.get_partition_tables()
+		drives = devices.keys()
+		drives.sort()
+		for drive in drives:
+			settings += "  Drive: " + drive + devices[drive].get_model() + "\n"
+			partlist = devices[drive].get_ordered_partition_list()
+			tmpparts = devices[drive].get_partitions()
+			for part in partlist:
+				tmppart = tmpparts[part]
+				entry = "    "
+				if tmppart.get_type() == "free":
+					#partschoice = "New"
+					entry += _(u" - Unallocated space (")
+					if tmppart.is_logical():
+						entry += _(u"logical, ")
+					entry += str(tmppart.get_mb()) + "MB)"
+				elif tmppart.get_type() == "extended":
+					entry += str(int(tmppart.get_minor()))
+					entry += _(u" - Extended Partition (") + str(tmppart.get_mb()) + "MB)"
+				else:
+					entry += str(int(tmppart.get_minor())) + " - "
+					if tmppart.is_logical():
+						entry += _(u"Logical (")
+					else:
+						entry += _(u"Primary (")
+					entry += tmppart.get_type() + ", "
+					entry += (tmppart.get_mkfsopts() or "none") + ", "
+					entry += (tmppart.get_mountpoint() or "none") + ", "
+					entry += (tmppart.get_mountopts() or "none") + ", "
+					entry += str(tmppart.get_mb()) + "MB)"
+				settings += entry + "\n"
+			
+		#Network Mounts:
+		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
+		settings += "\nNetwork Mounts: \n"
+		for mount in network_mounts:
+			settings += "  "+mount['host']+":"+mount['export']+"\n"
+			
+		#Install Stage:
+		settings += "\nInstall Stage: " + str(self.shared_info.install_profile.get_install_stage()) + "\n"
+		if self.shared_info.install_profile.get_dynamic_stage3():
+			settings += "  Tarball will be generated on the fly from the CD.\n"
+		else:
+			settings += "  Tarball URI: " + self.shared_info.install_profile.get_stage_tarball_uri() + "\n"
+			
+		#Portage Tree Sync Type:
+		settings += "\nPortage Tree Sync Type: " + self.shared_info.install_profile.get_portage_tree_sync_type() + "\n"
+		if self.shared_info.install_profile.get_portage_tree_sync_type() == "snapshot":
+			settings += "  Portage snapshot URI: " + self.shared_info.install_profile.get_portage_tree_snapshot_uri() + "\n"
+			
+		#Kernel Settings:
+		settings += "\nKernel Settings:\n"
+		settings += "  Kernel Sources: " + self.shared_info.install_profile.get_kernel_source_pkg() + "\n"
+		if self.shared_info.install_profile.get_kernel_source_pkg() != "livecd-kernel":
+			settings += "  Kernel Build Method: " + self.shared_info.install_profile.get_kernel_build_method() + "\n"
+			if self.shared_info.install_profile.get_kernel_build_method() == "genkernel":
+				settings += "  Kernel Bootsplash Option: " + str(self.shared_info.install_profile.get_kernel_bootsplash()) + "\n"
+		if self.shared_info.install_profile.get_kernel_config_uri():
+			settings += "  Kernel Configuration URI: " + self.shared_info.install_profile.get_kernel_config_uri() + "\n"
+				
+		#Bootloader Settings:
+		settings += "\nBootloader Settings:\n"
+		settings += "  Bootloader package: " + self.shared_info.install_profile.get_boot_loader_pkg() + "\n"
+		if self.shared_info.install_profile.get_boot_loader_pkg() != "none":
+			settings += "  Install bootloader to MBR: " + str(self.shared_info.install_profile.get_boot_loader_mbr()) + "\n"
+			settings += "  Bootloader kernel arguments: " +self.shared_info.install_profile.get_bootloader_kernel_args() + "\n"
+			
+		#Timezone:
+		settings += "\nTimezone: " + self.shared_info.install_profile.get_time_zone() + "\n"
+		
+		#Networking Settings:
+		settings += "\nNetworking Settings: \n"
+		interfaces = self.shared_info.install_profile.get_network_interfaces()
+		for iface in interfaces:
+			if interfaces[iface][0] == 'dhcp':
+				settings += "  " + iface + _(u":  Settings: DHCP. Options: ") + interfaces[iface][1] + "\n"
+			else:
+				settings += "  " + iface + _(u"IP: ") + interfaces[iface][0] + _(u" Broadcast: ") + interfaces[iface][1] + _(u" Netmask: ") + interfaces[iface][2] + "\n"
+		default_gateway = self.shared_info.install_profile.get_default_gateway()
+		if default_gateway:
+			settings += "  Default Gateway: " + default_gateway[0] + "/" + default_gateway[1] + "\n"
+		settings += "  Hostname: " + self.shared_info.install_profile.get_hostname() + "\n"
+		if self.shared_info.install_profile.get_domainname():
+			settings += "  Domainname: " +self.shared_info.install_profile.get_domainname() + "\n"
+		if self.shared_info.install_profile.get_nisdomainname():
+			settings += "  NIS Domainname: " +self.shared_info.install_profile.get_nisdomainname() + "\n"
+		if self.shared_info.install_profile.get_dns_servers():
+			for dns_server in self.shared_info.install_profile.get_dns_servers():
+				settings += "  DNS Server: " +dns_server + "\n"
+		if self.shared_info.install_profile.get_http_proxy():
+			settings += "  HTTP Proxy: " +self.shared_info.install_profile.get_http_proxy() + "\n"
+		if self.shared_info.install_profile.get_ftp_proxy():
+			settings += "  FTP Proxy: " +self.shared_info.install_profile.get_ftp_proxy() + "\n"
+		if self.shared_info.install_profile.get_rsync_proxy():
+			settings += "  RSYNC Proxy: " +self.shared_info.install_profile.get_rsync_proxy() + "\n"
+			
+		#Cron Daemon:
+		settings += "\nCron Daemon: " + self.shared_info.install_profile.get_cron_daemon_pkg() + "\n"
+		
+		#Logger:
+		settings += "\nLogging Daemon: " + self.shared_info.install_profile.get_logging_daemon_pkg() + "\n"
+		
+		#Extra packages:
+		if self.shared_info.install_profile.get_install_packages():
+			install_packages = self.shared_info.install_profile.get_install_packages()
+		else:
+			install_packages = []
+		settings += "\nExtra Packages: "
+		for package in install_packages:
+			settings += package + " "
+		settings += "\n"
+		#Services:
+		if self.shared_info.install_profile.get_services():
+			services = self.shared_info.install_profile.get_services()
+		else:
+			services = []
+		settings += "\nAdditional Services: "
+		for service in services:
+			settings += service + " "
+		settings += "\n"
+		
+		#Other Configuration Settings (rc.conf):
+		#Make.conf Settings:
+		settings += "\nConfiguration Files Settings:\n"
+		etc_files = self.shared_info.install_profile.get_etc_files()
+		for etc_file in etc_files:
+			settings += "  File:" + etc_file + "\n"
+			if isinstance(etc_files[etc_file], dict):
+				for name in etc_files[etc_file]:
+					settings += "    Variable: " + name + "   Value: " + etc_files[etc_file][name] + "\n"
+			else:
+				for entry in etc_files[etc_file]:
+					settings += "    Value: "+ entry + "\n"
+		
+		#Additional Users:
+		settings += "\nAdditional Users:\n"
+		users = {}
+		for user in self.shared_info.install_profile.get_users():
+			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
+		for user in users:
+			settings += "  Username: " + user
+			settings += "\n    Group Membership: " + string.join(users[user][2], ",")
+			settings += "\n    Shell: " + users[user][3]
+			settings += "\n    Home Directory: " + users[user][4]
+			if users[user][5]:
+				settings += "\n    User Id: " + users[user][5]
+			if users[user][6]:
+				settings += "\n    User Comment: " + users[user][6]
+		settings += "</pre>"
+		return self.wrap_in_webgli_template(settings)
 	def savereview(self):
 		data = ""
 		return self.wrap_in_webgli_template(data)
@@ -1422,15 +1634,27 @@ Please be patient while the screens load. It may take awhile.
 				  '/webgli/savedaemons': self.savedaemons,
 				  '/webgli/ExtraPackages': self.extrapackages,
 				  '/webgli/savepackages': self.savepackages,
+				  '/webgli/Services': self.services,
+				  '/webgli/saveservices': self.saveservices,
 				  '/webgli/Users': self.users,
 				  '/webgli/saveusers': self.saveusers,
 				  '/webgli/Review': self.review,
 				  '/webgli/savereview': self.savereview,
 				  '/webgli/URIBrowser': self.uribrowser,
 				  
-		          '/loadprofile2': self.loadprofile2,
-		          '/saveprofile': self.saveprofile,
-		          '/saveprofile2': self.saveprofile2
+				  '/webgli/loadprofile': self.loadprofile,
+				  '/webgli/loadprofile2': self.loadprofile2,
+		          '/webgli/saveprofile': self.saveprofile,
+		          '/webgli/saveprofile2': self.saveprofile2
 		        }
 		return_content = paths[path]()
 		return self.headers_out, return_content
+
+	def get_exception(self):
+		etype, value, tb = sys.exc_info()
+		s = traceback.format_exception(etype, value, tb)
+		content = "<pre>"
+		for line in s:
+			content += line
+		content += "</pre>"
+		return content
