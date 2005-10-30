@@ -1,10 +1,18 @@
-from OpenSSL import SSL
-
 """
+# Copyright 1999-2005 Gentoo Foundation
+# This source code is distributed under the terms of version 2 of the GNU
+# General Public License as published by the Free Software Foundation, a copy
+# of which can be found in the main directory of this project.
+Gentoo Linux Installer
+
+$Id: SecureSocketConnection.py,v 1.2 2005/10/30 00:00:36 samyron Exp $
+
 This class is necessary because SSL.Connection
 does not have a shutdown() method that accepts
 one argument.
 """
+
+from OpenSSL import SSL
 
 class SecureSocketConnection:
 	"""
