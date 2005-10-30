@@ -67,7 +67,6 @@ class WebGLIHandler(handler.Handler):
 				data += '</option>\n'
 			data += '</select>'
 			
-			data += "<br>DEVICE SELECTION OR DETECTION HERE!! <br>"
 			data += '<select name="Network_Type" size="3">'
 			data += '<option value="dhcp">DHCP</option>'
 			data += '<option value="static">Manual Config</option>'
@@ -466,7 +465,7 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
     <input name="snapshoturi" type="text" id="snapshoturi" size="90" """
 		if snapshoturi:
 			data += ' value="'+snapshoturi+'">'
-		data += 'or <input name="browsesnap" type="submit" id="browsesnap" value="Browse for it again."></p><p><input type="submit" name="saveportage" value="Save Portage Settings"></form>'
+		data += """or </p><input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=portage&baseuri=' + document.portage.tarballuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')"><p><input type="submit" name="saveportage" value="Save Portage Settings"></form>"""
 		return self.wrap_in_webgli_template(data)
 	def saveportage(self):
 		data = ""
@@ -844,9 +843,193 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def networking(self):
 		data = ""
+		#interfaces = self.shared_info.interfaces
+		#if not interfaces:
+		interfaces = self.shared_info.install_profile.get_network_interfaces()
+		CC_iface = self.shared_info.client_profile.get_network_interface()
+		if CC_iface and (CC_iface not in interfaces):
+			#The CC has a network config that's not already there.  Preload it.
+			CC_net_type = self.shared_info.client_profile.get_network_type()
+			if CC_net_type == 'dhcp':
+				try:
+					interfaces[CC_iface] = ('dhcp', self.shared_info.client_profile.get_network_dhcp_options(), None)
+				except:
+					pass
+			else:
+				try:
+					interfaces[CC_iface] = (self.shared_info.client_profile.get_network_ip(), self.shared_info.client_profile.get_network_broadcast(), self.shared_info.client_profile.get_network_netmask())
+				except:
+					pass
+		data += """
+		<script>
+		function change_editiface() {
+		  location.replace('/webgli/Networking?editiface=' + document.Networking.EditIface.value);
+		}
+		</script>
+		 <p>Devices:</p>
+		 <form name="Networking" method="post" action="/webgli/savenetworking" enctype="multipart/form-data">
+		   <table width="100%"  border="1">
+			 <tr>
+			   <th scope="col">Device</th>
+			   <th scope="col">IP Address </th>
+			   <th scope="col">Broadcast</th>
+			   <th scope="col">Netmask</th>
+			   <th scope="col">Gateway</th>
+			   <th scope="col">DHCP Options </th>
+			 </tr>"""
+			 
+		for iface in interfaces:
+			data += '<tr><td><input type="radio" name="EditIface" value="'+str(iface)+'">'+iface+"</td>\n"
+			if interfaces[iface][0] == 'dhcp':
+				data += '<td>DHCP</td><td>x</td><td>x</td><td>x</td><td>'+interfaces[iface][1]+"</td></tr>\n"
+			else:
+				data += '<td>'+interfaces[iface][0]+'</td><td>'+interfaces[iface][1]+'</td><td>'+interfaces[iface][2]+"</td><td></td></tr>\n"
+		data += "</table>\n"
+		data += """
+			<input name="EditIfaceSubmit" type="button" id="EditIfaceSubmit" value="EDIT" onclick="change_editiface()">
+			<input name="DelIfaceSubmit" type="submit" id="DelIfaceSubmit" value="DELETE">"""
+		if self.get_params['editiface']:
+			iface = self.get_params['editiface']
+			data += '<input type="hidden" name="ifacemanual" value="'+iface+'">'
+			data += "<h3>Edit Interface "+iface+"</h3>\n"
+			data += "<table><tr><td>\n"
+			data += '<select name="Network_Type" size="3">'
+			data += '<option value="dhcp" '
+			if interfaces[iface][0] == "dhcp":
+				data += "selected" 
+			data += ' >DHCP</option>'
+			data += '<option value="static" '
+			if interfaces[iface][0] != "dhcp":
+				data += "selected"
+			data += ' >Manual Config</option>'
+			data += '</select>'
+			data += '</td><td>'
+			data += 'Networking Info for Manual Configurations:<br>'
+			data += 'Enter your IP address: <input name="ip" type="text" length="50" maxlength="15" value="'
+			if interfaces[iface][0] != "dhcp":
+				data += interfaces[iface][0]
+			data += '"><br>'
+			data += 'Enter your Broadcast address: <input name="broadcast" type="text" length="50" maxlength="15" value="'
+			if interfaces[iface][0] != "dhcp":
+				data += interfaces[iface][1]
+			data += '"><br>'
+			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="'
+			if interfaces[iface][0] != "dhcp":
+				data += interfaces[iface][2]
+			data += '"><br></td></tr></table>'
+			data += '<input type="submit" value="Edit Network Device" name="AddIfaceSubmit">'
+		else:
+			data += """
+		   <h3>Add a new Interface:</h3>
+		   <p>
+			 <select name="ifacelist" id="ifacelist">"""
+			device_list = GLIUtility.get_eth_devices()
+			for device in device_list:
+				if device not in interfaces:
+					data += '<option value="'+device+'">'+device+': '+GLIUtility.get_interface_realname(device)+"</option>\n"
+			data += """</select> 
+				 or type your own: 
+				 <input name="ifacemanual" type="text" id="ifacemanual" size="10">
+			</p><hr><table><tr><td>"""
+			data += '<select name="Network_Type" size="3">'
+			data += '<option value="dhcp">DHCP</option>'
+			data += '<option value="static">Manual Config</option>'
+			data += '</select>'
+			data += '</td><td>'
+			data += 'Networking Info for Manual Configurations:<br>'
+			data += 'Enter your IP address: <input name="ip" type="text" length="50" maxlength="15" value="192.168."><br>'
+			data += 'Enter your Broadcast address: <input name="broadcast" type="text" length="50" maxlength="15" value=".255"><br>'
+			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="255.255.255.0"><br></td></tr></table>'
+			data += '<input type="submit" value="Add Network Device" name="AddIfaceSubmit">'
+		
+		data += 'Enter your default gateway: <input name="gateway" type="text" length="50" maxlength="15" value=".1"><br>'
+		data += 'Enter a DNS server: <input name="dnsserver" type="text" length="50" maxlength="15" value="128.118.25.3">'
+		data += """   <p>Wireless stuff here. ESSID: Key:  </p>
+		   <p>Hostname:
+			 <input name="hostname" type="text" id="hostname">
+		   </p>
+		   <p>Domainname:
+			 <input name="domainname" type="text" id="domainname">
+		   </p>
+		   <p>NIS Domainname: 
+			 <input name="nisdomainname" type="text" id="nisdomainname"> 
+		   </p>
+		   <p>more</p>
+		   <p>DNS Servers (separate by space): 
+			 <input name="dnsservers" type="text" id="dnsservers">
+		</p>
+		   <p>
+			 <input name="savenetwork" type="submit" id="savenetwork" value="Save Network Information">
+		</p>
+		 </form>"""
 		return self.wrap_in_webgli_template(data)
 	def savenetworking(self):
 		data = ""
+		#interfaces = self.shared_info.interfaces
+		interfaces = self.shared_info.install_profile.get_network_interfaces()
+		if self.post_params['savenetwork']:
+			try:
+				self.shared_info.install_profile.set_network_interfaces(interfaces)
+				data += "Network Interfaces saved.<br>\n"
+			except:
+				data += "ERROR: Could not set the network interfaces!<br>\n"
+		elif self.post_params['AddIfaceSubmit']:
+			#network interface
+			if self.post_params['ifacemanual']:
+				newnic = self.post_params['ifacemanual']
+			elif self.post_params['ifacelist']:
+				newnic = self.post_params['ifacelist']
+			else:
+				data += "ERROR: No Network device selected<br>\n"
+			#network type
+			if self.post_params['Network_Type'] == "dhcp":
+				#if self.post_params[' FIXME DHCP OPTIONS
+				try:
+					interfaces[newnic] = ('dhcp', "",None)
+					self.shared_info.install_profile.set_network_interfaces(interfaces)
+					data += "Network Interfaces saved.<br>\n"
+				except:
+					data += "ERROR: Could not set interface DHCP<br>\n"
+			elif self.post_params['Network_Type'] == "static":
+				if 'ip' in self.post_params:
+					data += "Found an IP: you submitted " + self.post_params['ip'] + "<BR>\n"
+					newip = self.post_params['ip']
+				if 'broadcast' in self.post_params:
+					data += "Found an broadcast IP: you submitted " + self.post_params['broadcast'] + "<BR>\n"
+					newbroadcast = self.post_params['broadcast']
+				if 'netmask' in self.post_params:
+					data += "Found an netmask IP: you submitted " + self.post_params['netmask'] + "<BR>\n"
+					newnetmask = self.post_params['netmask']
+				if 'gateway' in self.post_params:
+					data += "Found an gateway IP: you submitted " + self.post_params['gateway'] + "<BR>\n"
+					newgateway = self.post_params['gateway']
+				try:
+					interfaces[newnic] = (newip, newbroadcast, newnetmask)
+					self.shared_info.install_profile.set_network_interfaces(interfaces)
+					data += "Network Interfaces saved.<br>\n"
+				except:
+					data += "ERROR: Could not add the new interface.<BR>\n"
+		
+		elif self.post_params['DelIfaceSubmit']:
+			data += "Deleting Interface"
+			if self.post_params['EditIface']:
+				try:
+					iface = self.post_params['EditIface']
+					del interfaces[iface]
+					self.shared_info.install_profile.set_network_interfaces(interfaces)
+					data += "Network Interfaces saved.<br>\n"
+				except:
+					data += "ERROR: Could not delete the interface.<BR>\n"	
+			else:
+				data += "ERROR: No device selected to delete!<br>\n"
+			
+		if 'dnsserver' in self.post_params:
+			data += "Found an DNS server: you submitted " + self.post_params['dnsserver'] + "<BR>\n"
+			try:
+				self.shared_info.client_profile.set_dns_servers(None, self.post_params['dnsserver'], None)
+			except:
+				data += "ERROR: Could not set the DNS Server<BR>\n"
+				
 		return self.wrap_in_webgli_template(data)
 	def daemons(self):
 		data = ""
