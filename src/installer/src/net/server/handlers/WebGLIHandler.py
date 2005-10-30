@@ -5,6 +5,7 @@ import GLIUtility
 import handler
 import sys
 import copy
+import string
 sys.path.append("../..")
 class WebGLIHandler(handler.Handler):
 
@@ -1070,9 +1071,18 @@ Please be patient while the screens load. It may take awhile.
             }
           }
 		}
+		function verify_pass() {
+			if(document.Users.rootpass1.value != document.Users.rootpass2.value) {
+				alert("Passwords DO NOT match!");
+			}
+			else {
+				alert("Passwords match.");
+			}
+		}
 		</script>"""
 		users = {}
 		for user in self.shared_info.install_profile.get_users():
+			print str(user[0]) + "   " + str(user[1]) + "   " + str(user[2]) + "   " + str(user[3])
 			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
 		data += "<p>User Settings:</p>\n"
 		data += '<form name="Users" method="post" action="/webgli/saveusers" enctype="multipart/form-data">'
@@ -1094,52 +1104,76 @@ Please be patient while the screens load. It may take awhile.
 			data += "</td><td>"+users[user][3]+"</td><td>"+users[user][4]+"</td><td>"+users[user][5]+"</td><td>"+users[user][6]+"</td></tr>\n"
 		
 		data += """</table><br>
-			  <input name="usereditsubmit" type="button" id="usereditsubmit" value="EDIT" onclick="change_editiface()">
-			  <input name="useredelsubmit" type="submit" id="userdelsubmit" value="DELETE">"""
+			  <input name="usereditsubmit" type="button" value="EDIT" onclick="change_edituser()">
+			  <input name="userdelsubmit" type="submit" value="DELETE">"""
 		root_pass = self.shared_info.install_profile.get_root_pass_hash()
 		if not root_pass:
 			data += """<p>Root Password is not yet set! Please set it:<br>
-			  <input name="rootpass1" type="text" id="rootpass1">
+			  <input name="rootpass1" type="password" id="rootpass1">
 		  and retype to verify: 
-		  <input name="rootpass2" type="text" id="rootpass2">
-		  <input name="verifyrootpass" type="button" id="verifyrootpass" value="Verify!" onclick="verify_pass()"></p>"""
+		  <input name="rootpass2" type="password" id="rootpass2">
+		  <input name="verifyrootpass" type="button" id="verifyrootpass" value="Verify!" onclick="verify_pass()">
+		  <input name="setrootpassword" type="submit" value="Set"></p>"""
 		else:
 			data += """<p>Root Password is set. 
-			  <input name="setrootpass" type="submit" id="setrootpass" value="Edit Root Password"></p>"""
-		data += """
-			<p>Add a new user:</p>
-			<table width="100%"  border="1">
-			  <tr>
-				<td scope="col"><p>Username:
-					<input name="newusername" type="text" id="newusername">
-				</p>
-				<p>Password:
-					<input name="newuserpass" type="password" id="newuserpass">
-				</p>
-				<p>Shell (optional): 
-				  <input name="newusershell" type="text" id="newusershell">
-				</p>
-				<p>Home Directory (optional): 
-				  <input name="newuserhomedir" type="text" id="newuserhomedir">
-				</p>
-				<p>UserID Number (optional): 
-				  <input name="newuserid" type="text" id="newuserid">
-				</p>
-				<p>Comment (optional): 
-				  <input name="newusercomment" type="text" id="newusercomment">
-				</p></td>
-				<td scope="col"><p>Groups:</p>
-				  <p><input name="newusergroups" type="checkbox" id="newusergroups" value="users"> users<br>
-				  <input name="newusergroups" type="checkbox" id="newusergroups" value="wheel"> wheel<br>
-				  <input name="newusergroups" type="checkbox" id="newusergroups" value="audio"> audio<br>
-				  Manually specify (comma-separate)<input name="newusergroupsmanual" type="text" id="newusergroupsmanual">
-				  </p>
-				  <input name="addnewuser" type="submit" id="addnewuser" value="Add New User">
-				</td>
-			  </tr>
-			</table>
-			<p>&nbsp;</p>
-		</form>"""
+			  <input name="setrootpass" type="submit" id="setrootpass" value="Reset Root Password"></p>"""
+		if self.get_params['edituser']:
+			username = self.get_params['edituser']
+			data += """
+				<p>Edit user """+username+""":</p>
+				<table width="100%"  border="1">
+				  <tr>
+					<td scope="col"><p>Username:
+						<input name="newusername" type="text" id="newusername" """
+			data += 'value="'+username+'">'
+			data += '</p><p>Password (you must retype this):<input name="newuserpass" type="password"></p>'
+			data += '<p>Shell (optional): <input name="newusershell" type="text" value="'+users[username][3]+'"></p>'
+			data += '<p>Home Directory (optional): <input name="newuserhomedir" type="text" value="'+users[username][4]+'"></p>'
+			data += '<p>UserID Number (optional): <input name="newuserid" type="text" value="'+users[username][5]+'"></p>'
+			data += '<p>Comment (optional): <input name="newusercomment" type="text" value="'+users[username][6]+"\"></p></td>\n"
+			data += '<td scope="col"><p>Groups:</p>'
+			groups = string.join(users[username][2], ",")
+			data += '<p>Manually specify (comma-separate)<input name="newusergroupsmanual" type="text" value="'+groups+'">'
+			data += """
+					  </p>
+					  <input name="addnewuser" type="submit" id="addnewuser" value="Save Changes">
+					</td>
+				  </tr>
+				</table>"""
+		else:
+			data += """
+				<p>Add a new user:</p>
+				<table width="100%"  border="1">
+				  <tr>
+					<td scope="col"><p>Username:
+						<input name="newusername" type="text" id="newusername">
+					</p>
+					<p>Password:
+						<input name="newuserpass" type="password" id="newuserpass">
+					</p>
+					<p>Shell (optional): 
+					  <input name="newusershell" type="text" id="newusershell">
+					</p>
+					<p>Home Directory (optional): 
+					  <input name="newuserhomedir" type="text" id="newuserhomedir">
+					</p>
+					<p>UserID Number (optional): 
+					  <input name="newuserid" type="text" id="newuserid">
+					</p>
+					<p>Comment (optional): 
+					  <input name="newusercomment" type="text" id="newusercomment">
+					</p></td>
+					<td scope="col"><p>Groups:</p>
+					  <p><input name="newusergroups" type="checkbox" id="newusergroups" value="users"> users<br>
+					  <input name="newusergroups" type="checkbox" id="newusergroups" value="wheel"> wheel<br>
+					  <input name="newusergroups" type="checkbox" id="newusergroups" value="audio"> audio<br>
+					  Manually specify (comma-separate)<input name="newusergroupsmanual" type="text" id="newusergroupsmanual">
+					  </p>
+					  <input name="addnewuser" type="submit" id="addnewuser" value="Add New User">
+					</td>
+				  </tr>
+				</table>"""
+		data += "</form>"
 		return self.wrap_in_webgli_template(data)
 	def saveusers(self):
 		data = ""
@@ -1152,8 +1186,7 @@ Please be patient while the screens load. It may take awhile.
 				newuserpass = self.post_params['newuserpass']
 				groups = ()
 				if self.post_params['newusergroupsmanual']:
-					for group in self.post_params['newusergroupsmanual'].split():
-						groups.append(group)
+					groups = string.split(self.post_params['newusergroupsmanual'], ",")
 				elif self.post_params['newusergroups']:
 					groups = self.post_params['newusergroups']
 				if self.post_params['newusercomment']:
@@ -1175,11 +1208,40 @@ Please be patient while the screens load. It may take awhile.
 				try:
 					new_user = [newuser, GLIUtility.hash_password(newuserpass), groups, newusershell, newuserhomedir, newuserid, newusercomment]
 					users[newuser] = new_user
-					self.shared_info.install_profile.set_users(users)	
+					tmpusers = []
+					for user in users:
+						tmpusers.append(users[user])
+					self.shared_info.install_profile.set_users(tmpusers)	
 				except:
 					data += "ERROR: could not set the users.<br>\n"				
 			else:
 				data += "ERROR: NO USERNAME SPECIFIED<br>\n"
+		if self.post_params['rootpass1'] and self.post_params['rootpass2']:
+			if self.post_params['rootpass1'] == self.post_params['rootpass2']:
+				try:
+					self.shared_info.install_profile.set_root_pass_hash(None, GLIUtility.hash_password(self.post_params['rootpass1']), None)
+				except:
+					data += "ERROR: Could not set root password!<br>\n"
+			else:
+				data += "ERROR: Passwords do not match!<br>\n"
+		if self.post_params['setrootpass']:
+			try:
+				self.shared_info.install_profile.set_root_pass_hash(None, "",None)
+				return self.return_redirect("/webgli/Users")
+			except:
+				data = "ERROR: Could not reset the root password!<br>\n"
+		if self.post_params['userdelsubmit']:
+			if self.post_params['edituser']:
+				user_to_del = self.post_params['edituser']
+				try:
+					data += "Deleting user: "+user_to_del
+					del users[user_to_del]
+					tmpusers = []
+					for user in users:
+						tmpusers.append(users[user])
+					self.shared_info.install_profile.set_users(tmpusers)	
+				except:
+					data += "ERROR: could not set the users.<br>\n"		
 			
 		return self.wrap_in_webgli_template(data)
 	def review(self):
