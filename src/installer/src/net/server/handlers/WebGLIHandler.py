@@ -892,12 +892,25 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def timezone(self):
 		data = "<h2>Timezone Setup </h2>"
-		
+		if self.post_params['back']:
+			zonepath = self.post_params['tzback']
+			#if zonepath == "/usr/share/zoneinfo/":
+			#	zonepath = "/usr/share/zoneinfo/"
+			#else:
+			#	slashloc = zonepath[:-1].rfind("/")
+			#	zonepath = zonepath[:slashloc]
 		if self.get_params['zonepath']:
 			zonepath = self.get_params['zonepath']
+			print zonepath[-1] + "\n"
+			if zonepath[-1] != "/":
+				try:
+					self.shared_info.install_profile.set_time_zone(None, zonepath[20:], None)
+					return self.wrap_in_webgli_template("Timezone Set")
+				except:
+					return self.wrap_in_webgli_template("ERROR: Could not set that timezone!")	
 			print zonepath
 		else:
-			zonepath = "/usr/share/zoneinfo"
+			zonepath = "/usr/share/zoneinfo/"
 		skiplist = ["zone.tab","iso3166.tab","posixrules"]
 		tzlist = []
 		for entry in os.listdir(zonepath):
@@ -907,13 +920,18 @@ Please be patient while the screens load. It may take awhile.
 		tzlist.sort()
 		
 		data += "Timezones:<br>\n"
-		data += '<form name="Timezone" method="post" action="/webgli/savetimezone" enctype="multipart/form-data">'
+		data += '<form name="Timezone" method="post" action="/webgli/Timezone" enctype="multipart/form-data">'
+		data += '<input type="hidden" name="tzback" value="'+zonepath+'"><br>'
 		for timezone in tzlist:
-			data += '<a href="/webgli/savetimezone?zonepath='+zonepath+'/'+timezone+'">'+timezone+"</a><br>\n"
+			data += '<a href="/webgli/Timezone?zonepath='+zonepath+timezone+'">'+timezone+"</a><br>\n"
+		data += '<br><input type="submit" name="back" value="Back">'
 		data += "</form>"
 		return self.wrap_in_webgli_template(data)
 	def savetimezone(self):
 		data = ""
+		if self.get_params['zonepath']:
+			zonepath = self.get_params['zonepath']
+		
 		#zonepath = os.path.join(zonepath,tzlist[int(tznum)-1])
 		#if tzlist[int(tznum)-1][-1:] != "/": 
 		#			break
@@ -922,10 +940,7 @@ Please be patient while the screens load. It may take awhile.
 		#			return
 		#		slashloc = zonepath[:-1].rfind("/")
 		#		zonepath = zonepath[:slashloc]
-		#try:
-		#	self._install_profile.set_time_zone(None, zonepath[20:], None)
-		#except:
-		#	self._d.msgbox(_(u"ERROR: Could not set that timezone!"))
+		#
 		return self.wrap_in_webgli_template(data)
 	def networking(self):
 		data = ""
