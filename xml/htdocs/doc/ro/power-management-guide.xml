@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/power-management-guide.xml,v 1.4 2005/10/19 04:54:02 alin Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/power-management-guide.xml,v 1.5 2005/10/31 20:48:32 alin Exp $ -->
 <guide link="/doc/ro/power-management-guide.xml" lang="ro">
 <title>Ghid pentru Gestionarea Consumului de Energie</title>
 
@@ -18,11 +18,11 @@ ghid vă ajută la configurarea portabilului dvs.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.24</version>
-<date>2005-06-10</date>
+<version>1.25</version>
+<date>2005-10-02</date>
 
 <chapter>
 <title>Introducere</title>
@@ -38,7 +38,7 @@ generaţie de laptop-uri introduce mai multe dispozitive mari consumatoare de
 energie. De aceea Gestionarea Consumului de Energie este mai importantă ca
 niciodată. Creşterea duratei de folosire a acumulatorului nu înseamnă
 neapărat cumpărarea altuia. Multe pot fi obţinute prin utilizarea
-inteligentelor metode referitoare la gestionarea consumului de energie. 
+inteligentelor metode referitoare la gestionarea consumului de energie.
 </p>
 
 </body>
@@ -53,7 +53,7 @@ Luaţi aminte că acest ghid descrie Gestionarea Consumului de Energie pentru
 <e>portabile</e>. În timp ce unele secţiuni s-ar putea potrivi şi pentru
 <e>server-e</e>, altele nu, şi chiar pot provoca distrugeri sistemului dvs.
 Nu aplicaţi nimic din acest ghid pe un server, doar dacă ştiţi cu
-adevărat ce faceţi. 
+adevărat ce faceţi.
 </p>
 
 <p>
@@ -151,43 +151,57 @@ obţine maximum din acesta.
 </p>
 
 <p>
-În configurarea kernel-ului, activaţi cel puţin aceste opţiuni:
+Există diverse surse de kernel în Portage. Aş recomanda utilizarea
+<c>gentoo-sources</c> sau <c>suspend2-sources</c>. Cel din urmă conţine
+patch-uri pentru Software Suspend 2, pentru detalii consultaţi capitolul
+despre stările sleep, pentru mai multe detalii. În configurarea
+kernel-ului, activaţi cel puţin aceste opţiuni:
 </p>
 
 <pre caption="Setări minime ale kernel-ului pentru Gestionarea Consumului de Energie (Kernel 2.6)">
 Power Management Options ---&gt;
   [*] Power Management Support
   [ ] Software Suspend
-  [ ] Suspend-to-Disk Support
 
   ACPI( Advanced Configuration and Power Interface ) Support ---&gt;
     [*] ACPI Support
     [ ]   Sleep States
+    [ ]     /proc/acpi/sleep (deprecated)
     [*]   AC Adapter
     [*]   Battery
     &lt;M&gt;   Button
+    &lt;M&gt;   Video
+    [ ]   Generic Hotkey
     &lt;M&gt;   Fan
     &lt;M&gt;   Processor
     &lt;M&gt;     Thermal Zone
     &lt; &gt;   ASUS/Medion Laptop Extras
+    &lt; &gt;   IBM ThinkPad Laptop Extras
     &lt; &gt;   Toshiba Laptop Extras
+    (0)   Disable ACPI for systems before Jan 1st this year
     [ ]   Debug Statements
+    [*]   Power Management Timer Support
+    &lt; &gt;   ACPI0004,PNP0A05 and PNP0A06 Container Driver (EXPERIMENTAL)
     
   CPU Frequency Scaling ---&gt;
     [*] CPU Frequency scaling
+    [ ]   Enable CPUfreq debugging
+    &lt; &gt;   CPU frequency translation statistics
+    [ ]     CPU frequency translation statistics details
           Default CPUFreq governor (userspace)
     &lt;*&gt;   'performance' governor
     &lt;*&gt;   'powersave' governor
     &lt;*&gt;   'ondemand' cpufreq policy governor
+    &lt;*&gt;   'conservative' cpufreq governor
     &lt;*&gt;   CPU frequency table helpers
     &lt;M&gt; ACPI Processor P-States driver
     &lt;*&gt; <i>CPUFreq driver for your processor</i>
 </pre>
 
 <p>
-Decideţi dvs. dacă doriţi să activaţi Software Suspend, Suspend-to-Disk
-şi Sleep States (vedeţi mai jos). Dacă deţineţi un portabil ASUS, Medion
-sau Toshiba, activaţi în dreptul secţiunii corespunzătoare.
+Decideţi dvs. dacă doriţi să activaţi Software Suspend şi Sleep States
+(vedeţi mai jos). Dacă deţineţi un portabil ASUS, Medion sau Toshiba,
+activaţi în dreptul secţiunii corespunzătoare.
 </p>
 
 <p>
@@ -261,8 +275,27 @@ automată între cele două încă. Este vremea să schimbăm acest lucru.
 Evenimentele tipice ACPI sunt închiderea carcasei, schimbarea sursei de curent
 sau apăsarea butonului 'sleep'. Un eveniment important este schimbarea sursei
 de curent, care ar trebui să determine o schimbare a nivelului de rulare.
-Creaţi următoarele fişiere pentru a comuta între nivelul <e>default</e>
-şi <e>acumulator</e> în funcţie de sursa de putere:
+Un mic script va avea grijă de acest lucru.
+</p>
+
+<p>
+Mai întâi vă trebuie un script ce modifică nivelul de execuţie în
+<c>default</c>, respectiv <c>acumulator</c>, în funcţie de sursa de putere.
+Acest script utilizează comanda <c>on_ac_power</c> din pachetul
+<c>sys-power/powermgmt-base</c> - asiguraţi-vă că acest script este
+instalat în sistemul dvs.
+</p>
+
+<pre caption="Instalarea powermgt-base">
+<i># emerge powermgmt-base</i>
+</pre>
+
+<p>
+Acum puteţi să determinaţi sursa de putere prin execuţia <c>on_ac_power
+&amp;&amp; echo Curent alternativ || echo Ruleaza pe baterii</c> într-o
+sesiune de shell. Script-ul de mai jos este responsabil cu modificarea
+nivelelor de execuţie. Salvaţi-l ca
+<path>/etc/acpi/actions/pmg_switch_runlevel.sh</path>.
 </p>
 
 <pre caption="/etc/acpi/actions/pmg_switch_runlevel.sh">
@@ -300,29 +333,61 @@ then
 fi
 </pre>
 
+<p>
+Nu uitaţi să rulaţi <c>chmod +x
+/etc/acpi/actions/pmg_switch_runlevel.sh</c> pentru a face script-ul
+executabil. Ultimul lucru ce trebuie efectuat este să executăm script-ul
+ori de câte ori sursa de putere se modifică. Aceasta poate fi efectuată
+prin analizarea tuturor evenimentelor ACPI cu ajutorul <c>acpid</c>. Mai
+întâi trebuie să ştiţi ce evenimente sunt generate în momentul în care
+sursa de putere se modifică. Evenimentele sunt denumite <e>ac_adapter</e>
+şi <e>battery</e> pe majoritatea sistemelor laptop, dar este posibil să fie
+diferit pentru sistemul dvs.
+</p>
+
+<pre caption="Determinarea evenimentelor ACPI pentru modificarea sursei de putere">
+<i># tail -f /var/log/acpid | grep "received event"</i>
+</pre>
+
+<p>
+Rulaţi comanda de mai sus şi scoateţi cablul de putere. Ar trebui să
+observaţi ceva de genul:
+</p>
+
+<pre caption="Exemplu de jurnal pentru comutarea sursei de putere">
+[Tue Sep 20 17:39:06 2005] received event "ac_adapter AC 00000080 00000000"
+[Tue Sep 20 17:39:06 2005] received event "battery BAT0 00000080 00000001"
+</pre>
+
+<p>
+Partea interesantă este şirul de caractere între ghilimele afişat după
+<e>received event</e>. Va fi extras de liniile de evenimente din fişierele pe
+care urmează să le creaţi mai jos. Nu vă faceţi griji dacă sistemul
+dvs. generează mai multe evenimente sau aceleaşi de mai multe ori. Atât
+timp cât orice eveniment este generat, comutarea nivelelor de execuţie va
+funcţiona.
+</p>
+
 <pre caption="/etc/acpi/events/pmg_ac_adapter">
 <comment># înlocuiţi "ac_adapter" mai jos cu evenimentul generat de portabilul dvs.</comment>
-<comment># Citiţi /var/log/acpid</comment>
+<comment># Spre exemplu, ac_adapter.* va extrage ac_adapter AC 00000080 00000000</comment>
 event=ac_adapter.*
 action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
 </pre>
 
 <pre caption="/etc/acpi/events/pmg_battery">
 <comment># înlocuiţi "acumulator" mai jos cu evenimentul generat de portabilul dvs.</comment>
-<comment># Citiţi /var/log/acpid</comment>
+<comment># Spre exemplu, battery.* va extrage battery BAT0 00000080 00000001</comment>
 event=acumulator.*
 action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
 </pre>
 
 <p>
-În plus, aveţi nevoie de pachetul sys-power/powermgmt-base ce conţine
-utilitarul <c>on_ac_power</c>. Fişierul <path>pmg_switch_runlevel.sh</path>
-trebuie să fie executabil.  
+La final, aplicaţia acpid trebuie reponită pentru a recunoaşte
+modificările.
 </p>
 
 <pre caption="Terminarea comutării nivelului de rulare folosind acpid">
-<i># emerge powermgmt-base</i>
-<i># chmod +x /etc/acpi/actions/pmg_switch_runlevel.sh</i>
 <i># /etc/init.d/acpid restart</i>
 </pre>
 
@@ -335,17 +400,19 @@ reuşeşte să determine corect sursa de curent.
 
 <p>
 Datorită naturii mecanismului evenimentelor, portabilul dvs. va porni în
-nivelul de rulare <e>default</e> indiferent de situaţia AC/acumulator. Puteţi
-adăuga încă o intrare în boot-loader cu <c>softlevel=acumulator</c>, dar
-e mai bine să uitaţi folosirea acesteia. O cale mai bună este 'inventarea'
-unui fals eveniment ACPI la sfârşitul procesului de boot-are şi să
-lăsaţi script-ul <path>/etc/acpi/default.sh</path> să decidă
-oportunitatea schimbării de nivel de rulare. Deschideţi
-<path>/etc/conf.d/local.start</path> cu editorul dvs. favorit şi adăugaţi
-aceste linii:
+nivelul de rulare <e>default</e> indiferent de situaţia AC/acumulator. Acest
+lucru este unul bun dacă rulaţi cu alimetare la priză, însă am dori
+să rulăm în nivelul de iniţializare acumulator, în alte situaţii. O
+soluţie ar fi să adăugaţi o altă intrare în aplicaţia boot-loader cu
+parametrul <c>softlevel=acumulator</c>, dar e mai bine să uitaţi folosirea
+acesteia. O cale mai bună este 'inventarea' unui fals eveniment ACPI la
+sfârşitul procesului de boot-are şi să lăsaţi script-ul
+<path>pmg_switch_runlevel.sh</path> să decidă oportunitatea schimbării de
+nivel de rulare. Deschideţi <path>/etc/conf.d/local.start</path> cu editorul
+dvs. favorit şi adăugaţi aceste linii:
 </p>
 
-<pre caption="Schimbarea nivelului de rulare la pornire, prin editarea local.start">
+<pre caption="Ajustarea nivelului de rulare la pornire, prin editarea local.start">
 <comment># Eveniment fals acpi pentru schimbarea nivelului de rulare când se foloseşte acumulatorul</comment>
 /etc/acpi/actions/pmg_switch_runlevel.sh "acumulator/acumulator"
 </pre>
@@ -438,18 +505,18 @@ Iată un exemplu de rezultat:
 </p>
 
 <pre caption="Rezultat exemplu al cpufreq-info">
-cpufrequtils 0.2: cpufreq-info (C) Dominik Brodowski 2004
+cpufrequtils 0.3: cpufreq-info (C) Dominik Brodowski 2004
 Report errors and bugs to linux@brodo.de, please.
 analyzing CPU 0:
   driver: centrino
   CPUs which need to switch frequency at the same time: 0
   hardware limits: 600 MHz - 1.40 GHz
   available frequency steps: 600 MHz, 800 MHz, 1000 MHz, 1.20 GHz, 1.40 GHz
-  available cpufreq governors: ondemand, powersave, userspace, performance
+  available cpufreq governors: conservative, ondemand, powersave, userspace, performance
   current policy: frequency should be within 924 MHz and 1.40 GHz.
     The governor "performance" may decide which speed to use
     within this range.
-  current CPU frequency is 1.40 GHz (asserted by call to hardware).
+  current CPU frequency is 1.40 GHz.
 </pre>
 
 <p>
@@ -493,10 +560,28 @@ interfaţă grafică pentru uşoară configurare şi schimbări.
   <ti>N.A.</ti>
   <ti>N.A.</ti>
   <ti>
-    Optimizarea în plus a fişierelor în
+    Alege frecvenţa maximă în cazul încărcării procesorului şi
+    încetineşte câte puţin când procesorul nu are activitate. Optimizarea
+    în plus a fişierelor în
     <path>/sys/devices/system/cpu/cpu0/cpufreq/ondemand/</path>. Totuşi
     necesită utilitare (programe, script-uri) dacă se schimbă decidentul
     sau este dorit acelaşi.
+  </ti>
+</tr>
+<tr>
+  <ti>decident 'conservativ'</ti>
+  <ti>Kernel</ti>
+  <ti>Încărcare procesor</ti>
+  <ti>N.A.</ti>
+  <ti>N.A.</ti>
+  <ti>
+    Spre deosebire de decidentul ondemand, cel conservativ nu sare la
+    frecvenţa maximă când încărcarea procesorului este ridicată, ci
+    măreşte frecvenţa pas cu pas. Optimizarea în plus a fişierelor în
+    <path>/sys/devices/system/cpu/cpu0/cpufreq/ondemand/</path>. Totuşi,
+    necesită utilitare în spaţiul utilizator (programe şi script-uri) în
+    cazul în care comutarea decidentului sau unele acţiuni similare este
+    necesară.
   </ti>
 </tr>
 <tr>
@@ -513,7 +598,7 @@ interfaţă grafică pentru uşoară configurare şi schimbări.
 <tr>
   <ti><uri link="http://sourceforge.net/projects/cpufreqd/">cpufreqd</uri></ti>
   <ti>Daemon</ti>
-  <ti>Nivel acumulator, ocupare procesor, programe care rulează</ti>
+  <ti>Nivel acumulator, ocupare procesor, temperatură, programe care rulează</ti>
   <ti>Toate disponibile</ti>
   <ti>Nici unul</ti>
   <ti>
@@ -531,15 +616,30 @@ interfaţă grafică pentru uşoară configurare şi schimbări.
   <ti>Suportă SMP</ti>
 </tr>
 <tr>
+  <ti>
+    <uri link="http://fatcat.ftj.agh.edu.pl/~nelchael/index.php?cat=projs&amp;subcat=ncpufreqd&amp;language=en">ncpufreqd</uri>
+  </ti>
+  <ti>Daemon</ti>
+  <ti>Temperatură</ti>
+  <ti>Nici unul</ti>
+  <ti>Economisire energie, perfomanţă</ti>
+  <ti>
+    Comută decidentul utilizat între perfomanţă şi economisire de
+    energie, depinzând de temperatura sistemului. Foarte folositor pe sisteme
+    laptop cu probleme serioase de temperatură.
+  </ti>
+</tr>
+<tr>
   <ti><uri link="http://www.goop.org/~jeremy/speedfreq/">speedfreq</uri></ti>
   <ti>Daemon</ti>
   <ti>Încărcare procesor</ti>
   <ti>Nici unul</ti>
   <ti>Dinamic, economie energie, performanţă, viteză fixă</ti>
   <ti>
-    Mică dar totuşi o interfaţă folositoare client/server. Necesită un
-    kernel 2.6. Programul nu mai pare menţinut şi va fi scos din arborele
-    Portage în viitorul apropiat.
+    Uşor configurabil, cu o interfaţă drăguţă client/server.
+    Necesită un kernel 2.6. Programul nu mai este menţinut şi va fi scos
+    din arborele Portage în viitorul apropiat. Comutaţi la cpufreqd dacă
+    încă îl folosiţi.
   </ti>
 </tr>
 <tr>
@@ -604,6 +704,12 @@ maxfreq=100%
 policy=ondemand
 
 [Profile]
+name=conservative
+minfreq=0%
+maxfreq=100%
+policy=conservative
+
+[Profile]
 name=powersave
 minfreq=0%
 maxfreq=100%
@@ -618,7 +724,7 @@ policy=performance
 [Rule]
 name=battery
 ac=off
-profile=ondemand
+profile=conservative
 
 [Rule]
 name=battery_low
@@ -629,24 +735,12 @@ profile=powersave
 [Rule]
 name=ac
 ac=on
-profile=performance
+profile=ondemand
 </pre>
 
 <p>
-Nu puteţi folosi o valoare procentuală ca mai sus pentru min_freq şi
-max_freq dacă folosiţi un kernel 2.6 cu interfaţă sysfs (şi probabil
-folosiţi). Înlocuiţi-le cu cea mai mică şi cea mai mare frecvenţă,
-aşa cum este raportată de <c>cpufreq-info --hwlimits</c>. De exemplu, în
-cazul procesorului meu Pentium M 1.4 GHz introduc 
-</p>
-
-<pre caption="Valori exemplu pentru minfreq şi maxfreq">
-minfreq=600000
-maxfreq=1400000
-</pre>
-
-<p>
-La sfârşit, dar nu în cele din urmă, porniţi daemon-ul.
+Acum, puteţi porni şi aplicaţia daemon cpufreqd. Adăugaţi-l în
+nivelurile de rulare <e>default</e> şi <e>acumulator</e>, de asemenea.
 </p>
 
 <pre caption="Pornirea cpufreqd">
@@ -1016,6 +1110,28 @@ astfel /var/tmp/. Portage îl foloseşte pentru compilare...
 <chapter>
 <title>Gestionarea Consumului de Energie pentru alte dispozitive</title>
 <section>
+<title>Plăci grafice</title>
+<body>
+
+<p>
+În cazul în care aveţi o placă grafică ATI ce suportă PowerPlay
+(scalarea automată a tactului pentru unitatea grafică de procesare GPU),
+puteţi activa această facilitate în X.org. Deschideţi
+<path>/etc/X11/xorg.conf</path> şi adăugaţi (sau activaţi) opţiunea
+<c>DynamicClocks</c> din secţiunea Device. Vă rugăm să obsevaţi faptul
+că această facilitate va conduce la apariţia erorilor pe unele sisteme.
+</p>
+
+<pre caption="Activarea suportului ATI PowerPlay în X.org">
+Section "Device"
+[...]
+Option      "DynamicClocks" "on"
+EndSection
+</pre>
+
+</body>
+</section>
+<section>
 <title>Gestionarea Consumului de Energie pentru Dispozitivele Wireless</title>
 <body>
 
@@ -1067,15 +1183,18 @@ Prima, dispozitive ca mauşii USB, camerele digitale sau dispozitive stocare
 USB consumă energie cât timp sunt conectate. Nu puteţi evita acest lucru
 (totuşi deconectarea lor trebuie făcută dacă nu sunt necesare). A doua,
 când sunt dispozitive USB conectate, controller-ul gazdă USB accesează
-periodic magistrala, care de fapt previne procesorul să intre într-un mod
-C3/4 sleep. Sistemul de operare răspunde prin aşa numitul "USB selective
-suspend", care încă nu a fost implementat în kernel. "USB selective
-suspend" permite accesarea magistralei doar în cazul în care este folosit
-dispozitivul. Modalitatea dificilă de folosire până la implementare este
-următoare: Compilaţi suportul USB şi dispozitivele ca module şi
-descărcaţi-le printr-un script cât timp nu sunt folosite (de ex. când
-închideţi capacul).
+periodic magistrala, care de fapt previne procesorul să intre în modul
+sleep. Kernel-ul oferă o opţiune experimentală pentru a activa suspendarea
+dispozitivelor USB prin apeluri de driver sau unul din fişierele
+<path>power/state</path> din <path>/sys</path>.
 </p>
+
+<pre caption="Activarea suportului pentru suspendare USB în kernel">
+Device Drivers
+  USB support
+    [*]   Support for Host-side USB
+      [*]   USB suspend/resume (EXPERIMENTAL)
+</pre>
 
 </body>
 </section>
@@ -1105,7 +1224,7 @@ shutdown nu este dorită datorită unui timp mare de pornire.
 </body>
 </section>
 <section>
-<title>Sleep, Standby şi Hibernate</title>
+<title>Sleep (S3)</title>
 <body>
 
 <p>
@@ -1114,90 +1233,140 @@ motive îndreptăţite. Stările sleep APM par a fi mai stabile, totuşi, nu
 puteţi folosi APM şi ACPI împreună.
 </p>
 
+<pre caption="Configurarea kernel-ului pentru diferite tipuri de stări suspend">
+  Power Management Options ---&gt;
+    [*]  Power Management support
+      ACPI (Advanced Configuration and Power Interface) Support ---&gt;
+        [*]  ACPI Support
+          [*]   Sleep States
+</pre>
+
+<p>
+Odată ce kernel-ul este pregătit ca mai sus, puteţi utiliza
+<c>hibernate-script</c> pentru a activa suspendarea sau modul sleep. Să-l
+instalăm, mai întâi.
+</p>
+
+<pre caption="Instalarea hibernate-script">
+<i># emerge hibernate-script</i>
+</pre>
+
+<p>
+Trebuie efectuată configurarea în <path>/etc/hibernate</path>. Pachetul
+implicit introduce două fişiere de configurare <path>hibernate.conf</path>
+şi <path>ram.conf</path>.
+</p>
+
+<p>
+Pentru a configura starea sleep, editaţi <path>ram.conf</path> în
+<path>/etc/hibernate</path>. <c>UseSysfsPowerState mem</c> este setată deja
+corect, dar trebuie să parcurgeţi restul fişierului de configurare şi
+să-l setaţi pentru sistemul dvs. Comentariile şi numele opţiunilor vă
+vor ghida. Dacă utilizaţi directoare partajate samba în reţea,
+asiguraţi-vă că opriţi script-urile de iniţializare corespunzătoare
+pentru a evita timpi morţi.
+</p>
+
+<p>
+Gata? Acum, ultima şansă pentru a efectua backup la datele pe care doriţi
+să le păstraţi după executarea următoarei comenzi. Notaţi faptul
+că, probabil va trebui să apăsaţi o tastă specială, cum ar fi
+<e>Fn</e>, pentru e reveni din starea sleep.
+</p>
+
+<pre caption="Apelarea sleep">
+<i># hibernate-ram</i>
+</pre>
+
+<p>
+Dacă încă citiţi, înseamnă că se pare că funcţionează. Puteţi
+seta, de asemenea, starea de standby (S1) într-un mod similar prin copierea
+fişierului <path>ram.conf</path> ca <path>standby.conf</path> şi crearea
+unui link simbolic <path>/usr/sbin/hibernate-standby</path> care să indice
+către <path>/usr/sbin/hibernate</path>. S3 şi S4 sunt cele mai interesante
+stări sleep, din cauza economisirii de energie foarte mare, totuşi.
+</p>
+
+</body>
+</section>
+<section>
+<title>Hibernarea (S4)</title>
+<body>
+
+<p>
+Această secţiune introduce hibernarea, unde o versiune snapshot a sistemului
+care rulează este scrisă pe disc înainte de a opri sistemul. La revenire,
+versiunea snapshot este încărcată şi puteţi să lucraţi exact din
+punctul în care aţi apelat hibernarea, mai înainte.
+</p>
+
 <warn>
-Deşi suportul pentru starea sleep se îmbunătăţeşte mult, este încă
-experimental. Într-un sfârşit am reuşit să fac să funcţioneze
-swsusp2 şi suspend to RAM, dar vă atenţionez: Cel mai probabil nu va
-funcţiona şi va deteriora datele/sistemul dvs.
+Nu schimbaţi componente hardware non-pluggable în timpul stării de
+suspendare. Nu încercaţi să încărcaţi o versiune snapshot cu o altă
+imagine de kernel decât cea cu care a fost creat. Închideţi orice
+client/server NFS sau samba înainte de a intra în hibernare.
 </warn>
 
 <p>
 Există în acest moment trei implementări pentru S4. Cea originală este
-swsusp, apoi există swsusp2, care are cea mai frumoasă interfaţă
-(incluzând suport bootsplash), dar care necesită un patch aplicat manual
-kernel-ului. În cele din urmă dar nu ultima avem Suspend-to-Disk, o
-modificare a swsusp.
+swsusp, apoi există suspend2, care are cea mai frumoasă interfaţă
+(incluzând suport fbsplash). O <uri
+link="http://suspend2.net/features.html#compare">comparaţie de
+facilităţi</uri> este disponibilă pe <uri
+link="http://suspend2.net">pagina oficială suspend2</uri>. A fost şi
+swsusp, însă a fost integrat inapoi.
 </p>
 
 <p>
-Dacă v-am dezorientat, aruncaţi o privire asupra <uri
-link="http://softwaresuspend.berlios.de/features.html#compare">comparaţiei
-caracteristicilor</uri>. Dacă încă sunteţi dezorientaţi şi nu ştiţi
-pe care să o alegeţi, încercaţi pentru început swsusp2, pentru că
-arată cel mai promiţător. 
+Suspend2 nu este inclus în sursele principale de kernel încă, deci, fie
+trebuie să aplicaţi patch-uri surselor dvs. de kernel oferite de <uri
+link="http://suspend2.net">suspend2.net</uri> sau să utilizaţi
+<c>sys-kernel/suspend2-sources</c>.
 </p>
 
 <p>
-Partea legată de kernel pentru acesta este după cum urmează:
+Partea legată de kernel atât pentru swusp cât şi pentru suspend2 este
+după cum urmează:
 </p>
 
 <pre caption="Configurarea kernel-ului pentru diversele tipuri suspend">
 Power Management Options ---&gt;
-
-  <comment>(sleep şi standby)</comment>
-  ACPI( Advanced Configuration and Power Interface ) Support --->
-    [*] ACPI Support
-       [*]   Sleep States
-
-  <comment>(hibernate cu swsusp)</comment>
-  [*] Software Suspend (EXPERIMENTAL)
+  <comment>(hibernare cu swsusp)</comment>
+  [*] Software Suspend
+      <comment>(înlocuiţi /dev/SWAP cu partiţia dvs. swap)</comment>
+      (/dev/SWAP)      Default resume partition
   
-  <comment>(hibernate cu swsusp2)</comment>
+  <comment>(hibernare cu suspend2)</comment>
   Software Suspend 2
     --- Image Storage (you need at least one writer)
+    [*]     File Writer
     [*]    Swap Writer
-    --- Page Transformers
+    ---   General Options
     [*]    LZF image compression
-    (/dev/"swap-ul-dvs")    Default resume device name
-
-  <comment>(hibernate cu Suspend-to-Disk)</comment>
-  [*] Suspend-to-Disk Suport
-  (/dev/"swap-ul-dvs") Default resume partition
+    <comment>(înlocuiţi /dev/SWAP cu partiţia dvs. swap)</comment>
+    (swap:/dev/SWAP)   Default resume device name
+    [ ]     Allow Keep Image Mode
 </pre>
 
 <p>
-Compilaţi-vă kernel-ul cu opţiunile corespunzătoare activate şi
-urmăriţi rezultatul comenzii <c>cat /proc/acpi/sleep</c> pentru seria 2.4
-respectiv <c>cat /sys/power/state</c> pentru seria 2.6 pentru a vedea ce este
-suportat. Ultima comandă îmi arată <c>standby mem disk</c>. Pentru swsusp,
-trebuie adăugat parametrul kernel <c>resume=/dev/"swap-ul-dvs"</c>. Dacă
-pornirea sistemului nu este posibilă datorită unei imagini deteriorate,
-folosiţi <c>noresume</c> pentru swsup, <c>pmdisk=off</c> pentru
-Suspend-to-Disk şi <c>noresume2</c> pentru swsusp2.
+Configurarea pentru swsusp este destul de uşoară. Dacă nu aţi introdus
+locaţia partiţiei dvs. de swap în configurarea de kernel, puteţi, de
+asemenea, să o pasaţi ca parametru de kernel cu ajutorul directivei
+<c>resume=/dev/SWAP</c>. Dacă nu este posibilă boot-area din cauza unei
+imagini eronate, utilizaţi parametrul de kernel <c>noresume</c>. Script-ul de
+iniţializare <c>hibernate-cleanup</c> invalidează imaginile swsusp în
+timpul procesului de boot.
 </p>
+
+<pre caption="Invalidarea imaginilor swsusp în timpul procesului de boot">
+<i># rc-update add hibernate-cleanup boot</i>
+</pre>
 
 <p>
-Pentru a pune sistemul dvs. în una din stările sleep, folosiţi
+Pentru a activa hibernarea cu swsusp, utilizaţi script-ul de hibernare şi
+setaţi <c>UseSysfsPowerState disk</c> in fişierul
+<path>/etc/hibernate/hibernate.conf</path>.
 </p>
-
-<pre caption="Activarea stărilor sleep">
-<comment>(kernel seria 2.4)</comment>
-# <i>echo 1 &gt; /proc/acpi/sleep</i>          <comment>(standby)</comment>
-# <i>echo 3 &gt; /proc/acpi/sleep</i>          <comment>(sleep)</comment>
-
-<comment>(kernel seria 2.6)</comment>
-# <i>echo -n standby &gt; /sys/power/state</i> <comment>(standby)</comment>
-# <i>echo -n mem &gt; /sys/power/state</i>     <comment>(sleep)</comment>
-
-<comment>(swsusp)</comment>
-# <i>echo 4 &gt; /proc/acpi/sleep</i>          <comment>(hibernate)</comment>
-
-<comment>(Suspend-to-Disk)</comment>
-# <i>echo -n disk &gt; /sys/power/state</i>    <comment>(hibernate)</comment>
-
-<comment>(swsusp2)</comment>
-# <i>/usr/sbin/hibernate</i>                <comment>(hibernate, vedeţi mai jos)</comment>
-</pre>
 
 <warn>
 Salvaţi-vă datele înainte de a face asta. Rulaţi <c>sync</c> înainte de
@@ -1209,26 +1378,108 @@ server-ul X, dar neautentificat.
 <p>
 Dacă apar mesaje kernel panic datorită uhci sau similar, încercaţi să
 compilaţi suportul USB ca modul şi descărcaţi modulele înainte de a
-trimite laptop-ul în modul sleep.
+trimite laptop-ul în modul sleep. Există opţiuni de configurare pentru
+aceasta în fişierul <path>hibernate.conf</path>.
+</p>
+
+<pre caption="Hibernarea cu swsusp">
+<i># nano -w /etc/hibernate.conf</i>
+<comment>(Asiguraţi-vă că aveţi o copie backup pentru datele dvs.)</comment>
+<i># hibernate</i>
+</pre>
+
+<p>
+Următoarea secţiune tratează setarea suspend2, inclusiv suportul fbsplash
+pentru afişarea unei bare de progress drăguţe în timpul suspendării
+şi revenirii.
 </p>
 
 <p>
-În timp ce metoda de mai sus ar trebui să fie suficientă pentru a
-beneficia de rularea swsusp şi Suspend-to-Disk (nu am spus funcţionarea),
-swsusp2 necesită o abordare specială. Primul lucru pe care trebuie să-l
-faceţi este să aplicaţi patch-uri kernel-ului cu cele oferite la <uri
-link="http://softwaresuspend.berlios.de/">http://softwaresuspend.berlios.de/</uri>.
-În plus, trebuie să instalaţi <c>hibernate-script</c>. Odată instalat,
-configuraţi <path>/etc/hibernate/hibernate.conf</path> şi încercaţi dacă
-funcţionează:
+Prima parte a configuraţiei este similară cu cea de configurare a swsusp.
+În cazul în care nu aţi introdus locaţia partiţiei de swap în
+configurarea kernel-ului, o puteţi adăuga ca parametru de kernel cu ajutorul
+directivei <c>resume2=swap:/dev/SWAP</c>. Dacă procesul de boot nu a fost
+posibil din cauza unei imagini eronate, adăugaţi parametrul
+<c>noresume2</c>. În plus, script-ul de iniţializare
+<c>hibernate-cleanup</c> invalidează imaginile suspend2 în timpul procesului
+de boot.
 </p>
 
-<pre caption="Configurarea modului hibernation">
-<i># emerge hibernate-script</i>
-<i># $EDITOR /etc/hibernate/hibernate.conf</i>
-<comment>(Ultima şansă de a vă salva orice informaţie)</comment>
+<pre caption="Invalidarea imaginilor suspend2 în timpul procesului de boot">
+<i># rc-update add hibernate-cleanup boot</i>
+</pre>
+
+<p>
+Acum, editaţi <path>/etc/hibernate/hibernate.conf</path>, activaţi
+secţiunile <e>sysfs_power_state</e> şi <e>acpi_sleep</e>. Nu activaţi
+partea fbsplash între opţiunile globale, încă.
+</p>
+
+<pre caption="Hibernarea cu suspend2">
+<i># nano -w /etc/hibernate.conf</i>
+<comment>(Asiguraţi-vă că aveţi o copie backup pentru datele dvs.)</comment>
 <i># hibernate</i>
 </pre>
+
+<p>
+Vă rugăm să configuraţi fbsplash acum, în cazul în care nu aţi
+efectuat acest lucru, încă. Pentru a activa suportul fbsplash în timpul
+hibernării, este necesar pachetul <c>sys-apps/suspend2-userui</c>. În plus,
+trebuie să activăm indicatorul USE <e>fbsplash</e>.
+</p>
+
+<pre caption="Instalarea suspend2-userui">
+<i># mkdir -p /etc/portage</i>
+<i># echo sys-apps/suspend2-userui fbsplash >> /etc/portage/package.use</i>
+<i># emerge suspend2-userui</i>
+</pre>
+
+<p>
+Acest ebuild vă specifică să creaţi un link simbolic pentru tema pe care
+doriţi să o utilizaţi. Spre exemplu, pentru a utiliza tema
+<c>livecd-2005.1</c>, rulaţi comanda următoare:
+</p>
+
+<pre caption="Utilizarea temei livecd-2005.1 în timpul hibernării">
+<i># ln -sfn /etc/splash/livecd-2005.1 /etc/splash/suspend2</i>
+</pre>
+
+<p>
+Dacă nu doriţi un ecran gol în prima parte a procesului de resume, trebuie
+să adăugaţi utilitarul <c>suspend2ui_fbsplash</c> în imaginea dvs.
+initrd. Presupunând că aţi creat imaginea initrd cu
+<c>splash_geninitramfs</c> şi aţi salvat-o ca
+<path>/boot/fbsplash-emergence-1024x768</path>, iată cum puteţi face acest
+lucru.
+</p>
+
+<pre caption="Adăugarea suspend2ui_fbsplash într-o imagine initrd">
+<i># mount /boot</i>
+<i># mkdir ~/initrd.d</i>
+<i># cp /boot/fbsplash-emergence-1024x768 ~/initrd.d/</i>
+<i># cd ~/initrd.d</i>
+<i># gunzip -c fbsplash-emergence-1024x768 | cpio -idm --quiet -H newc</i>
+<i># rm fbsplash-emergence-1024x768</i>
+<i># cp /usr/sbin/suspend2ui_fbsplash sbin/</i>
+<i># find . | cpio --quiet --dereference -o -H newc | gzip -9 > /boot/fbsplash-suspend2-emergence-1024x768</i>
+</pre>
+
+<p>
+Apoi, ajusaţi <path>grub.conf</path> respectiv <path>lilo.conf</path> pentru
+ca kernel-ul să utilizeze
+<path>/boot/fbsplash-suspend2-emergence-1024x768</path> ca imagine initrd.
+Puteţi testa acum o rulare fără a lua efectiv nici o acţiune pentru a
+verifica dacă totul a fost setat corect.
+</p>
+
+<pre caption="Testaţi rularea pentru hibernarea cu fbsplash">
+<i># suspend2ui_fbsplash -t</i>
+</pre>
+
+<p>
+Apoi, deschideţi <path>/etc/hibernate/hibernate.conf</path> din nou şi
+activaţi opţiunile fbsplash. Executaţi <c>hibernate</c> şi savuraţi.
+</p>
 
 </body>
 </section>
@@ -1339,6 +1590,29 @@ ACPI.
 <p>
 <e>R:</e> Pare o problemă în kernel. Citiţi <uri
 link="http://bugme.osdl.org/show_bug.cgi?id=1752">aici</uri>.
+</p>
+
+<p>
+<e>Q:</e> Am activat opţiunea DynamicClocks în <path>xorg.conf</path> şi
+acum X.org returnează eroare / ecranul rămâne gol / sistemul meu laptop nu
+se închide corespunzător.
+</p>
+
+<p>
+<e>A:</e> Aceasta se întâmplă pe unele sisteme. Trebuie să dezactivaţi
+DynamicClocks.
+</p>
+
+<p>
+<e>Q:</e> Doresc să utilizez suspend2, dar mi se specifică faptul că
+partiţia de swap este prea mică. Redimensionarea nu este o soluţie.
+</p>
+
+<p>
+<e>A:</e> Dacă este destul loc pe sistemul dvs., puteţi utiliza filewriter
+în locul swapwriter. <c>hibernate-script</c> îl suportă şi pe acesta. Mai
+multe informaţii puteţi găsi în
+<path>/usr/src/linux/Documentation/power/suspend2.txt</path>.
 </p>
 
 <p>
