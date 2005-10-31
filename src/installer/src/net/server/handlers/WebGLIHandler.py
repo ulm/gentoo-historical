@@ -4,7 +4,7 @@ import GLIClientConfiguration
 import GLIUtility
 import handler
 import traceback
-import sys
+import sys, os
 import copy
 import string
 import gettext
@@ -229,7 +229,7 @@ class WebGLIHandler(handler.Handler):
 		<input type="submit" value="Load">
 		</form>
 		"""
-		return self.wrap_in_template(content)
+		return self.wrap_in_webgli_template(content)
 	def loadprofile2(self):
 		content = "<h2>Load Profile</h2>"
 		xmlfile = ""
@@ -243,7 +243,7 @@ class WebGLIHandler(handler.Handler):
 				xmlfile = "/tmp/clientprofile.xml"
 			except:
 				content += "There was a problem writing the temp file for the file you uploaded" + self.get_exception()
-				return self.wrap_in_template(content)
+				return self.wrap_in_webgli_template(content)
 		if self.post_params['clientfile'] or self.post_params['uploadclientfile']:
 			try:
 				self.shared_info.client_profile = GLIClientConfiguration.ClientConfiguration()
@@ -263,7 +263,7 @@ class WebGLIHandler(handler.Handler):
 				xmlfile = "/tmp/installprofile.xml"
 			except:
 				content += "There was a problem writing the temp file for the file you uploaded" + self.get_exception()
-				return self.wrap_in_template(content)
+				return self.wrap_in_webgli_template(content)
 		if self.post_params['installfile'] or self.post_params['uploadipfile']:
 			try:
 				self.shared_info.install_profile = GLIInstallProfile.InstallProfile()
@@ -657,7 +657,6 @@ Please be patient while the screens load. It may take awhile.
 		else:
 			make_conf = {}
 		
-
 		data += '<h3>CFLAGS Settings: </h3>(only show these if not dynamic):<table width="100%"  border="1"><tr><td scope="col"><div align="left">Processor:<select name="proc" id="proc">'
 		procs = arch_procs[self.shared_info.client_profile.get_architecture_template()]
 		for proc in procs:
@@ -892,10 +891,41 @@ Please be patient while the screens load. It may take awhile.
 					data += "ERROR: Could not set the bootloader kernel arguments!"
 		return self.wrap_in_webgli_template(data)
 	def timezone(self):
-		data = ""
+		data = "<h2>Timezone Setup </h2>"
+		
+		if self.get_params['zonepath']:
+			zonepath = self.get_params['zonepath']
+			print zonepath
+		else:
+			zonepath = "/usr/share/zoneinfo"
+		skiplist = ["zone.tab","iso3166.tab","posixrules"]
+		tzlist = []
+		for entry in os.listdir(zonepath):
+			if entry not in skiplist:
+				if os.path.isdir(zonepath + "/" + entry): entry += "/"
+				tzlist.append(entry)
+		tzlist.sort()
+		
+		data += "Timezones:<br>\n"
+		data += '<form name="Timezone" method="post" action="/webgli/savetimezone" enctype="multipart/form-data">'
+		for timezone in tzlist:
+			data += '<a href="/webgli/savetimezone?zonepath='+zonepath+'/'+timezone+'">'+timezone+"</a><br>\n"
+		data += "</form>"
 		return self.wrap_in_webgli_template(data)
 	def savetimezone(self):
 		data = ""
+		#zonepath = os.path.join(zonepath,tzlist[int(tznum)-1])
+		#if tzlist[int(tznum)-1][-1:] != "/": 
+		#			break
+		#	else:
+		#		if zonepath == "/usr/share/zoneinfo": 
+		#			return
+		#		slashloc = zonepath[:-1].rfind("/")
+		#		zonepath = zonepath[:slashloc]
+		#try:
+		#	self._install_profile.set_time_zone(None, zonepath[20:], None)
+		#except:
+		#	self._d.msgbox(_(u"ERROR: Could not set that timezone!"))
 		return self.wrap_in_webgli_template(data)
 	def networking(self):
 		data = ""
