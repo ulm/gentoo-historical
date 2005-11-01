@@ -89,7 +89,7 @@ class WebGLIHandler(handler.Handler):
 		data += 'Enable SSH?: <input name="EnableSSH" type="radio" value="True">Yes'
 		data += '<input name="EnableSSH" type="radio" value="False" checked="checked">No'
 		
-		#Set root password  THIS MAY NOT BE NECESSARY - SEE REMOTE SCRIPT
+		#Set root password	THIS MAY NOT BE NECESSARY - SEE REMOTE SCRIPT
 		data += "<hr>Root password selection string here. <br>"
 		data += 'Enter Password:<input name="RootPass1" type="password" length="80" maxlength="80" value=""><br>'
 		data += 'Re-enter Password to verify:<input name="RootPass2" type="password" length="80" maxlength="80" value=""><br>'
@@ -99,7 +99,7 @@ class WebGLIHandler(handler.Handler):
 		data += "<hr>Loaded modules list here. <br>"
 		data += 'Additional Modules to Load (space-separated list): <input name="Modules" type="text" length="80" maxlength="80" value=""><br>'
 		
-		#Save Client Configuration File.  THIS SHOULD BE A POPUP
+		#Save Client Configuration File.	THIS SHOULD BE A POPUP
 		data += "<hr><br>Save Client Configuration File string here. <br>";
 		data += 'Filename: <input name="SaveCCFile" type="text" value="clientconfig.xml">';
 		data += '<input name="SaveCC" type="submit" value="Save Client Configuration">'; #Javascript for on_click
@@ -205,7 +205,7 @@ class WebGLIHandler(handler.Handler):
 				configuration = open(self.post_params['SaveCCFile'] ,"w")
 				configuration.write(self.shared_info.client_profile.serialize())
 				configuration.close()
-				data += "Profile saved successfully.  Here it is <BR><pre>" + self.shared_info.client_profile.serialize() + "</pre><br>\n"
+				data += "Profile saved successfully.	Here it is <BR><pre>" + self.shared_info.client_profile.serialize() + "</pre><br>\n"
 			except:
 				data += "ERROR: Could not save the profile!<BR>\n"
 		return self.wrap_in_webgli_template(data)
@@ -335,18 +335,18 @@ class WebGLIHandler(handler.Handler):
 		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
 		
 		#	data += "Network Mount found: " + netmount['host'] + ":" + netmount['export'] + "<br>\n"
-		data += "If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.  Currently GLI only supports NFS mounts."
+		data += "If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.	Currently GLI only supports NFS mounts."
 		data += """
 		<form name="netmount" action="/webgli/savenetmounts" method="POST" enctype="multipart/form-data">
 		<p>If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount. Currently GLI only supports NFS mounts.</p>
-	  <table width="511" border="1">
+		<table width="511" border="1">
 		<tr>
-		  <td width="31">Edit</td>
-		  <td width="31">Type</td>
-		  <td width="79">Hostname/IP</td>
-		  <td width="79">Export</td>
-		  <td width="70">Mountpoint</td>
-		  <td width="103">Mount Options </td>
+			<td width="31">Edit</td>
+			<td width="31">Type</td>
+			<td width="79">Hostname/IP</td>
+			<td width="79">Export</td>
+			<td width="70">Mountpoint</td>
+			<td width="103">Mount Options </td>
 		</tr>"""
 		for i,netmount in enumerate(network_mounts):
 			data += '<tr><td><input name="edit_nfs" type="radio" id="edit_nfs" value="'+str(i)+"\">Edit</td>\n"
@@ -356,16 +356,16 @@ class WebGLIHandler(handler.Handler):
 			data += '<td>'+network_mounts[i]['mountpoint']+"</td>\n"
 			data += '<td>'+network_mounts[i]['mountopts']+"</td></tr>\n"
 		data += """
-	  </table>
+		</table>
 	
 	<hr>
-	  <p>&nbsp;  </p>
-	  <table width="100%"  border="1">
+		<p>&nbsp;  </p>
+		<table width="100%"  border="1">
 		<tr>
-		  <td><p>Enter the IP/hostname:
+			<td><p>Enter the IP/hostname:
 				<input name="hostname" type="text" id="hostname">
 				<input type="Submit" name="Search" value="Search">
-		  </p>
+			</p>
 			<p>Enter the export name:
 				<input name="export" type="text" id="export">
 			</p>
@@ -374,21 +374,21 @@ class WebGLIHandler(handler.Handler):
 				<select name="exports" size="1" id="exports">
 				</select>
 			</p></td>
-		  <td><p>Enter the mountpoint:
-			  <input name="mountpoint" type="text" id="mountpoint">
-		  </p>
-		  <p>Enter any special mount options: 
+			<td><p>Enter the mountpoint:
+				<input name="mountpoint" type="text" id="mountpoint">
+			</p>
+			<p>Enter any special mount options: 
 			<input name="mountopts" type="text" id="mountopts">
-		  </p></td>
+			</p></td>
 		</tr>
 		<tr>
-		  <td>&nbsp;</td>
-		  <td><input name="addnfs" type="submit" id="addnfs" value="Add New NFS Mount"></td>
+			<td>&nbsp;</td>
+			<td><input name="addnfs" type="submit" id="addnfs" value="Add New NFS Mount"></td>
 		</tr>
-	  </table>
-	  <p>&nbsp;</p>
-	  <p>&nbsp;</p>
-	  <p>&nbsp;  </p>
+		</table>
+		<p>&nbsp;</p>
+		<p>&nbsp;</p>
+		<p>&nbsp;  </p>
 	</form>
 		"""
 		
@@ -426,33 +426,33 @@ class WebGLIHandler(handler.Handler):
 		data += '<p>Which stage do you want to start at?</p><table width="100%"  border="1"><tr><td><input name="stage" type="radio" value="1"'
 		if stage == 1:
 			data += ' checked'
-		data += '>1</td><td>Stage1 is used when you want to bootstrap&amp;build from scratch.</td></tr><tr>      <td><input name="stage" type="radio" value="2"'
+		data += '>1</td><td>Stage1 is used when you want to bootstrap&amp;build from scratch.</td></tr><tr>			 <td><input name="stage" type="radio" value="2"'
 		if stage == 2:
 			data += ' checked'
-		data += '>2</td><td>Stage2 is used for building from a bootstrapped semi-compiled state.</td></tr><tr>      <td><input name="stage" type="radio" value="3"'
+		data += '>2</td><td>Stage2 is used for building from a bootstrapped semi-compiled state.</td></tr><tr>			<td><input name="stage" type="radio" value="3"'
 		if (stage == 3) and not grp_install:
 			data += ' checked'
-		data += '>3</td><td>Stage3 is a basic system that has been built for you (no compiling).</td></tr><tr>      <td><input name="stage" type="radio" value="3+GRP"'
+		data += '>3</td><td>Stage3 is a basic system that has been built for you (no compiling).</td></tr><tr>			<td><input name="stage" type="radio" value="3+GRP"'
 		if (stage == 3) and grp_install:
 			data += ' checked'
 		data += """>
-      3 + GRP </td>
-      <td>A Stage3 install but using binaries from the LiveCD when able.</td>
-    </tr>
-  </table>
-  <p>  
-    <input name="dynamic" type="checkbox" id="dynamic" value="true" """
+			3 + GRP </td>
+			<td>A Stage3 install but using binaries from the LiveCD when able.</td>
+		</tr>
+	</table>
+	<p>  
+		<input name="dynamic" type="checkbox" id="dynamic" value="true" """
 		if dynamic:
 			data += " checked"
 		data += """>
 Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for slow Internet connections, slower for fast connections and slow drives) </p>
-  <p>Stage Tarball URI : 
-    <input name="tarballuri" type="text" id="tarballuri" size="90" """
+	<p>Stage Tarball URI : 
+		<input name="tarballuri" type="text" id="tarballuri" size="90" """
 		if tarball:
 			data += 'value="'+tarball+'"> '
 		data += """
-    or 
-    <input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&baseuri=' + document.stage.tarballuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')">
+		or 
+		<input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&baseuri=' + document.stage.tarballuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')">
 (requires net connectivity)</p>
 <p> <input type="submit" name="savestage" value="Save Stage Selection">
 </form> """
@@ -498,27 +498,27 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 		
 		data += '<form name="portage" action="/webgli/saveportage" method="POST" enctype="multipart/form-data">'
 		data += """<p>Which method do you want to use to sync the portage tree for the installation? If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd.</p>
-  <table width="100%"  border="1">
-    <tr>
-      <td><input name="portagetype" type="radio" value="sync" """
-	  	if synctype == "sync":
+	<table width="100%"  border="1">
+		<tr>
+			<td><input name="portagetype" type="radio" value="sync" """
+		if synctype == "sync":
 			data += "checked"
 		data += '>Sync</td><td>Normal. Use emerge sync RECOMMENDED!</td></tr><tr><td><input name="portagetype" type="radio" value="webrsync"'
 		if synctype == "webrsync":
 			data += "checked"
-		data += '>Webrsync</td><td>HTTP daily snapshot. Use when rsync is firewalled.</td></tr><tr>     <td><input name="portagetype" type="radio" value="snapshot"'
+		data += '>Webrsync</td><td>HTTP daily snapshot. Use when rsync is firewalled.</td></tr><tr>			<td><input name="portagetype" type="radio" value="snapshot"'
 		if synctype == "snapshot":
 			data += "checked"
-		data += '>Snapshot</td><td>Use a portage snapshot, either a local file or a URL</td></tr><tr>      <td><input name="portagetype" type="radio" value="none"'
+		data += '>Snapshot</td><td>Use a portage snapshot, either a local file or a URL</td></tr><tr>			 <td><input name="portagetype" type="radio" value="none"'
 		if synctype == "none" or not synctype:
 			data += "checked"
 		data += """>
-      None</td>
-      <td>Extra cases such as if /usr/portage is an NFS mount</td>
-    </tr>
-  </table>
-  <p>Snapshot URI (if doing shapshot): 
-    <input name="snapshoturi" type="text" id="snapshoturi" size="90" """
+			None</td>
+			<td>Extra cases such as if /usr/portage is an NFS mount</td>
+		</tr>
+	</table>
+	<p>Snapshot URI (if doing shapshot): 
+		<input name="snapshoturi" type="text" id="snapshoturi" size="90" """
 		if snapshoturi:
 			data += ' value="'+snapshoturi+'">'
 		data += """or </p><input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=portage&baseuri=' + document.portage.tarballuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')"><p><input type="submit" name="saveportage" value="Save Portage Settings"></form>"""
@@ -551,7 +551,7 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 One of the unique (and best) features of Gentoo is the ability to
 define flags (called USE flags) that define what components are 
 compiled into applications.  For example, you can enable the alsa
-flag and programs that have alsa capability will use it.  
+flag and programs that have alsa capability will use it.	
 The result is a finely tuned OS with no unnecessary components to
 slow you down.
 The installer divides USE flag selection into two screens, one for
@@ -570,7 +570,7 @@ Please be patient while the screens load. It may take awhile.
 		sorted_use = use_desc.keys()
 		sorted_use.sort()
 		#present the GLOBAL checkbox list
-		data += '<h3>Global USE Flags:</h3><table width="100%"  border="1"><tr><th scope="col">Active</th><th scope="col">Flag</th><th scope="col">Description</th></tr>'+"\n"
+		data += '<h3>Global USE Flags:</h3><table width="100%"	border="1"><tr><th scope="col">Active</th><th scope="col">Flag</th><th scope="col">Description</th></tr>'+"\n"
 		for flagname in sorted_use:
 			data += '<tr><td><input name="flags" type="checkbox" id="flags" value="'+flagname+'" '
 			if flagname in system_use_flags:
@@ -600,7 +600,7 @@ Please be patient while the screens load. It may take awhile.
 One of the unique (and best) features of Gentoo is the ability to
 define flags (called USE flags) that define what components are 
 compiled into applications.  For example, you can enable the alsa
-flag and programs that have alsa capability will use it.  
+flag and programs that have alsa capability will use it.	
 The result is a finely tuned OS with no unnecessary components to
 slow you down.
 The installer divides USE flag selection into two screens, one for
@@ -662,32 +662,32 @@ Please be patient while the screens load. It may take awhile.
 		for proc in procs:
 			data += "<option value=\""+proc+"\">"+proc+"</option>\n"
 		data += """
-          </select>
-      </div></td>
-      <td scope="col">Optimizations: 
-        <select name="optim1" id="optim1">
-          <option value="-O1">-O1</option>
-          <option value="-O2" selected>-O2 (Recommended)</option>
-          <option value="-O3">-O3</option>
-          <option value="-O4">-O4</option>
-          <option value="-O5">-O5</option>
-          <option value="-O6">-O6</option>
-          <option value="-O7">-O7</option>
-          <option value="-O8">-O8</option>
-          <option value="-O9">-O9 (You crazy fool!)</option>
-            </select> </td>
-    </tr>
-    <tr>
-      <td>Common CFLAGS:<br> 
-        <input name="optim2" type="checkbox" id="optim2" value="-pipe">
+					</select>
+			</div></td>
+			<td scope="col">Optimizations: 
+				<select name="optim1" id="optim1">
+					<option value="-O1">-O1</option>
+					<option value="-O2" selected>-O2 (Recommended)</option>
+					<option value="-O3">-O3</option>
+					<option value="-O4">-O4</option>
+					<option value="-O5">-O5</option>
+					<option value="-O6">-O6</option>
+					<option value="-O7">-O7</option>
+					<option value="-O8">-O8</option>
+					<option value="-O9">-O9 (You crazy fool!)</option>
+						</select> </td>
+		</tr>
+		<tr>
+			<td>Common CFLAGS:<br> 
+				<input name="optim2" type="checkbox" id="optim2" value="-pipe">
 -pipe<br>
 <input name="optim2" type="checkbox" id="optim2" value="-fomit-frame-pointer">-fomit-frame-pointer</td>
-      <td>Additional CFLAGS:
-      <input name="optim3" type="text" id="optim3" size="60"></td>
-    </tr>
-  </table><hr>
-  <h3>CHOST Setting:</h3>
-    <select name="chost" size="4" id="chost">"""
+			<td>Additional CFLAGS:
+			<input name="optim3" type="text" id="optim3" size="60"></td>
+		</tr>
+	</table><hr>
+	<h3>CHOST Setting:</h3>
+		<select name="chost" size="4" id="chost">"""
 
 		if self.shared_info.client_profile.get_architecture_template() == "x86":
 			data += "<option value=\"i386-pc-linux-gnu\">i386-pc-linux-gnu</option>\n"
@@ -712,22 +712,22 @@ Please be patient while the screens load. It may take awhile.
 			data += "<option value=\"mips-unknown-linux-gnu\">mips-unknown-linux-gnu</option>\n"
 		data += """</select>
 <hr>
-  <table width="100%"  border="1">
-    <tr>
-      <td scope="col"><input name="unstable" type="checkbox" id="unstable" value="~arch">
-      Use unstable (~arch) </td>
-      <td scope="col"><input name="binary" type="checkbox" id="binary" value="binary">
-      Build binary packages </td>
-      <td scope="col"><input name="distcc" type="checkbox" id="distcc" value="distcc">
-      Distcc</td>
-      <td scope="col"><input name="ccache" type="checkbox" id="ccache" value="ccache">
-      ccache</td>
-      <td scope="col">MAKEOPTS:      
-      <input name="makeopts" type="text" id="makeopts" value="-j2" size="10" maxlength="5"></td>
-    </tr>
-  </table>
-  <p>
-    <input name="savemakeconf" type="submit" id="savemakeconf" value="Save Make.Conf Settings">
+	<table width="100%"  border="1">
+		<tr>
+			<td scope="col"><input name="unstable" type="checkbox" id="unstable" value="~arch">
+			Use unstable (~arch) </td>
+			<td scope="col"><input name="binary" type="checkbox" id="binary" value="binary">
+			Build binary packages </td>
+			<td scope="col"><input name="distcc" type="checkbox" id="distcc" value="distcc">
+			Distcc</td>
+			<td scope="col"><input name="ccache" type="checkbox" id="ccache" value="ccache">
+			ccache</td>
+			<td scope="col">MAKEOPTS:			 
+			<input name="makeopts" type="text" id="makeopts" value="-j2" size="10" maxlength="5"></td>
+		</tr>
+	</table>
+	<p>
+		<input name="savemakeconf" type="submit" id="savemakeconf" value="Save Make.Conf Settings">
 </p>
 </form>"""
 		return self.wrap_in_webgli_template(data)
@@ -758,7 +758,7 @@ Please be patient while the screens load. It may take awhile.
 		data += '>Vanilla (normal) </td><td>Normal. The Unaltered Linux Kernel ver 2.6+ (safest) (recommended) </td></tr>'+"\n"+'<tr><td><input name="sources" type="radio" value="gentoo-sources" '
 		if sources == "gentoo-sources":
 			data += "checked"
-		data += ">Gentoo</td><td>Gentoo's optimized 2.6+ kernel. (less safe) </td>    </tr>\n"+'<tr><td><input name="sources" type="radio" value="hardened-sources" '
+		data += ">Gentoo</td><td>Gentoo's optimized 2.6+ kernel. (less safe) </td>		</tr>\n"+'<tr><td><input name="sources" type="radio" value="hardened-sources" '
 		if sources == "hardened-sources":
 			data += "checked"
 		data += ">Hardened</td><td>Hardened sources for the 2.6 kernel tree</td></tr>\n"+'<tr><td><input name="sources" type="radio" value="grsec-sources" '
@@ -770,7 +770,7 @@ Please be patient while the screens load. It may take awhile.
 		else:
 			data += '<tr><td><input name="sources" type="radio" value="Other">Other</td><td>Specify your own here: <input name="manualsouces" type="text" id="manualsouces" value=""></td></tr></table>'+"\n"
 		data += """<hr>
-<table width="507"  border="1">
+<table width="507"	border="1">
 	<tr>
 		<td colspan="2" scope="col"><p>There are currently two ways the installer can compile a kernel for your new system. You can either provide a previously-made kernel configuration file and use the traditional kernel-compiling procedure (no initrd) or have genkernel automatically create your kernel for you (with initrd).</p>
 		<p>If you do not have a previously-made kernel configuration, YOU MUST CHOOSE Genkernel. Choose which method you want to use:</p></td>
@@ -835,19 +835,19 @@ Please be patient while the screens load. It may take awhile.
 		data = "<p>Bootloader Settings:</p>"
 		data += '<form name="Bloader" method="post" action="/webgli/savebootloader" enctype="multipart/form-data">'
 		data += """  <p>To boot successfully into your new Linux system, a bootloader will be needed. If you already have a bootloader you want to use you can select None here. The bootloader choices available are dependent on what GLI supports and what architecture your system is. Choose a bootloader:</p>
-	  <table width="100%"  border="1">"""
+		<table width="100%"  border="1">"""
 		boot_loaders = arch_loaders[arch]
-		boot_loaders.append(("none", (u"Do not install a bootloader.  (System may be unbootable!)")))
+		boot_loaders.append(("none", (u"Do not install a bootloader.	(System may be unbootable!)")))
 		for i,bloader in enumerate(boot_loaders):
 			data += '<tr><td><input name="bootloader" type="radio" value="'+boot_loaders[i][0]+'" '
 			if bootloader == boot_loaders[i][0]:
 				data += "checked"
 			data += '>'+boot_loaders[i][0]+'</td><td>'+boot_loaders[i][1]+"</td></tr>\n"
 		data += """
-	  </table>
-	  <hr>
-	  Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition. Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead. Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)
-	  <p>"""
+		</table>
+		<hr>
+		Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition. Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead. Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)
+		<p>"""
 		bootmbr = self.shared_info.install_profile.get_boot_loader_mbr()
 		data += '<input name="bootmbr" type="checkbox" id="bootmbr" value="True"'
 		if bootmbr:
@@ -860,9 +860,9 @@ Please be patient while the screens load. It may take awhile.
 			data += ' value="'+bootargs+'"'
 		data += """>
 	</p>
-	  <p>
+		<p>
 		<input name="setbootloader" type="submit" id="setbootloader" value="Save Bootloader Settings">
-	  </p>
+		</p>
 	</form>"""
 
 		return self.wrap_in_webgli_template(data)
@@ -894,21 +894,14 @@ Please be patient while the screens load. It may take awhile.
 		data = "<h2>Timezone Setup </h2>"
 		if self.post_params['back']:
 			zonepath = self.post_params['tzback']
-			#if zonepath == "/usr/share/zoneinfo/":
-			#	zonepath = "/usr/share/zoneinfo/"
-			#else:
-			#	slashloc = zonepath[:-1].rfind("/")
-			#	zonepath = zonepath[:slashloc]
 		if self.get_params['zonepath']:
 			zonepath = self.get_params['zonepath']
-			print zonepath[-1] + "\n"
 			if zonepath[-1] != "/":
 				try:
 					self.shared_info.install_profile.set_time_zone(None, zonepath[20:], None)
 					return self.wrap_in_webgli_template("Timezone Set")
 				except:
 					return self.wrap_in_webgli_template("ERROR: Could not set that timezone!")	
-			print zonepath
 		else:
 			zonepath = "/usr/share/zoneinfo/"
 		skiplist = ["zone.tab","iso3166.tab","posixrules"]
@@ -929,18 +922,6 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def savetimezone(self):
 		data = ""
-		if self.get_params['zonepath']:
-			zonepath = self.get_params['zonepath']
-		
-		#zonepath = os.path.join(zonepath,tzlist[int(tznum)-1])
-		#if tzlist[int(tznum)-1][-1:] != "/": 
-		#			break
-		#	else:
-		#		if zonepath == "/usr/share/zoneinfo": 
-		#			return
-		#		slashloc = zonepath[:-1].rfind("/")
-		#		zonepath = zonepath[:slashloc]
-		#
 		return self.wrap_in_webgli_template(data)
 	def networking(self):
 		data = ""
@@ -949,7 +930,7 @@ Please be patient while the screens load. It may take awhile.
 		interfaces = self.shared_info.install_profile.get_network_interfaces()
 		CC_iface = self.shared_info.client_profile.get_network_interface()
 		if CC_iface and (CC_iface not in interfaces):
-			#The CC has a network config that's not already there.  Preload it.
+			#The CC has a network config that's not already there.	Preload it.
 			CC_net_type = self.shared_info.client_profile.get_network_type()
 			if CC_net_type == 'dhcp':
 				try:
@@ -964,23 +945,23 @@ Please be patient while the screens load. It may take awhile.
 		data += """
 		<script>
 		function change_editiface() {
-		  for(i=0;i<document.Networking.elements.length;i++) {
+			for(i=0;i<document.Networking.elements.length;i++) {
 			if(document.Networking.elements[i].name == "EditIface" && document.Networking.elements[i].checked) {
-			  location.replace('/webgli/Networking?editiface='+ document.Networking.elements[i].value);
-            }
-          }
+				location.replace('/webgli/Networking?editiface='+ document.Networking.elements[i].value);
+						}
+					}
 		}
 		</script>
 		 <p>Devices:</p>
 		 <form name="Networking" method="post" action="/webgli/savenetworking" enctype="multipart/form-data">
-		   <table width="100%"  border="1">
+			 <table width="100%"	border="1">
 			 <tr>
-			   <th scope="col">Device</th>
-			   <th scope="col">IP Address </th>
-			   <th scope="col">Broadcast</th>
-			   <th scope="col">Netmask</th>
-			   <th scope="col">Gateway</th>
-			   <th scope="col">DHCP Options </th>
+				 <th scope="col">Device</th>
+				 <th scope="col">IP Address </th>
+				 <th scope="col">Broadcast</th>
+				 <th scope="col">Netmask</th>
+				 <th scope="col">Gateway</th>
+				 <th scope="col">DHCP Options </th>
 			 </tr>"""
 			 
 		for iface in interfaces:
@@ -1025,8 +1006,8 @@ Please be patient while the screens load. It may take awhile.
 			data += '<input type="submit" value="Edit Network Device" name="AddIfaceSubmit">'
 		else:
 			data += """
-		   <h3>Add a new Interface:</h3>
-		   <p>
+			 <h3>Add a new Interface:</h3>
+			 <p>
 			 <select name="ifacelist" id="ifacelist">"""
 			device_list = GLIUtility.get_eth_devices()
 			for device in device_list:
@@ -1063,17 +1044,17 @@ Please be patient while the screens load. It may take awhile.
 		data += '<tr><td>Address:<input name="gateway" type="text" length="50" maxlength="15" value="'+gway_ip+'"><br>'
 		dnsservers = " ".join(self.shared_info.install_profile.get_dns_servers())
 		data += 'Enter your DNS servers (space-separated): <input name="dnsserver" type="text" length="70" value="'+dnsservers+'">'
-		data += """   <p>Wireless stuff here. ESSID: Key:  </p>
-		   <p>Hostname:
+		data += """		<p>Wireless stuff here. ESSID: Key:  </p>
+			 <p>Hostname:
 			 <input name="hostname" type="text" id="hostname">
-		   </p>
-		   <p>Domainname:
+			 </p>
+			 <p>Domainname:
 			 <input name="domainname" type="text" id="domainname">
-		   </p>
-		   <p>NIS Domainname: 
+			 </p>
+			 <p>NIS Domainname: 
 			 <input name="nisdomainname" type="text" id="nisdomainname"> 
-		   </p>
-		   <p>
+			 </p>
+			 <p>
 			 <input name="savenetwork" type="submit" id="savenetwork" value="Save Network Information">
 		</p>
 		 </form>"""
@@ -1150,16 +1131,107 @@ Please be patient while the screens load. It may take awhile.
 				
 		return self.wrap_in_webgli_template(data)
 	def daemons(self):
-		data = ""
+		data = "<h2>Cron and Logging Daemons:</h2>\n";
+		cron = self.shared_info.install_profile.get_cron_daemon_pkg()
+		logger = self.shared_info.install_profile.get_logging_daemon_pkg()
+		data += '<form name="daemons" method="post" action="/webgli/savedaemons" enctype="multipart/form-data">'
+		data += """  <p>Choose which cron daemon to use for your system. While it is possible to not choose a cron daemon and still have a working system, this is NOT recommended and is considered a VERY BAD THING.<br>Choose your cron daemon:</p>
+			<table width="100%"  border="1">
+			<tr><td><input name="cron" type="radio" value="vixie-cron" """
+		if cron == "vixie-cron":
+			data += "checked"
+		data += ">Vixie-cron </td><td>Paul Vixie's cron daemon, fully featured, RECOMMENDED.</td></tr>\n"
+		data += '<tr><td><input name="cron" type="radio" value="dcron" '
+		if cron == "dcron":
+			data += "checked"
+		data += ">Dcron </td><td>A cute little cron from Matt Dillon.</td></tr>\n"
+		data += '<tr><td><input name="cron" type="radio" value="fcron" '
+		if cron == "fcron":
+			data += "checked"
+		data += ">Fcron </td><td>A scheduler with extended capabilities over cron & anacron.</td></tr>\n"
+		data += '<tr><td><input name="cron" type="radio" value="none" '
+		if cron == "none":
+			data += "checked"
+		data += ">None </td><td>Don't use a cron daemon. (NOT Recommended!).</td></tr></table>\n"
+		data += "<br><hr><p>Choose which logging daemon to use for your system.  A logger is required by the Gentoo Manual.<br>Choose your logging daemon:</p>\n  <table width=\"100%\" border=\"1\">\n"
+		data += '<tr><td><input name="logger" type="radio" value="syslog-ng" '
+		if logger == "syslog-ng":
+			data += "checked"
+		data += "> syslog-ng </td><td>An advanced system logger. (default)</td></tr>\n"
+		data += '<tr><td><input name="logger" type="radio" value="metalog" '
+		if logger == "metalog":
+			data += "checked"
+		data += "> metalog </td><td>A Highly-configurable system logger.</td></tr>\n"
+		data += '<tr><td><input name="logger" type="radio" value="syslogkd" '
+		if logger == "syslogkd":
+			data += "checked"
+		data += "> syslogkd </td><td>The traditional set of system logging daemons.</td></tr></table>\n"
+		data += '<input type="submit" name="savedaemons" value="Save Daemons"></form>'
+		
 		return self.wrap_in_webgli_template(data)
 	def savedaemons(self):
 		data = ""
+		if self.post_params['savedaemons']:
+			if self.post_params['logger']:
+				try:
+					self.shared_info.install_profile.set_logging_daemon_pkg(None, self.post_params['logger'], None)
+				except:
+					data += "ERROR: Could not set logger!<br>\n"
+			if self.post_params['cron']:
+				try:
+					self.shared_info.install_profile.set_cron_daemon_pkg(None, self.post_params['cron'], None)
+				except:
+					data += "ERROR: Could not set cron daemon!<br>\n"
 		return self.wrap_in_webgli_template(data)
 	def services(self):
 		data = ""
+		if self.shared_info.install_profile.get_services():
+			services = self.shared_info.install_profile.get_services()
+			if isinstance(services, str):
+				services = services.split(',')
+		else:
+			services = []
+		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),int("alsasound" in services)),
+			("apache", _(u"Common web server (version 1.x)"),int("apache" in services)),
+			("apache2", _(u"Common web server (version 2.x)"),int("apache2" in services)),
+			("distccd", _(u"Distributed Compiling System"),int("distccd" in services)),
+			("esound", _(u"ESD Sound Daemon"),int("esound" in services)),
+			("hdparm", _(u"Hard Drive Tweaking Utility"),int("hdparm" in services)),
+			("local", _(u"Run scripts found in /etc/conf.d/local.start"),int("local" in services)),
+			("portmap", _(u"Port Mapping Service"),int("portmap" in services)),
+			("proftpd", _(u"Common FTP server"),int("proftpd" in services)),
+			("sshd", _(u"SSH Daemon (allows remote logins)"),int("sshd" in services)),
+			("xfs", _(u"X Font Server"),int("xfs" in services)),
+			("xdm", _(u"X Daemon"),int("xdm" in services))]
+		services_string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
+		data += services_string
+		data += '<form name="services" method="post" action="/webgli/saveservices" enctype="multipart/form-data">'
+		data += "<table border=\"1\"><tr><td>Activate</td><td>Service</td><td>Description</td></tr>"
+		for i,choice in enumerate(choice_list):
+			data += '<tr><td><input type="checkbox" name="services" value="'+choice_list[i][0]+'" '
+			if choice_list[i][2]:
+				data += "checked"
+			data += "></td><td>"+choice_list[i][0]+"</td><td>"+choice_list[i][1]+"</td></tr>\n"
+		data += "</table>\n"
+		data += "<hr>You can also opt to enter your services in a comma-separated list (NOTE Manual list overwrites checked selections!): "
+		data += '<input type="text" name="servicesmanual" value="'+string.join(services, ',')+'">'
+		data += '<br><input type="submit" name="saveservices" value="Save Services"></form>'
 		return self.wrap_in_webgli_template(data)
 	def saveservices(self):
 		data = ""
+		if self.post_params['saveservices']:
+			if self.post_params['servicesmanual']:
+				services = self.post_params['servicesmanual']				
+			elif self.post_params['services']:
+				services = self.post_params['services']
+				services = string.join(services, ',')
+			try:
+				
+				print services + "\n"
+				if services:
+					self.shared_info.install_profile.set_services(None, services, None)
+			except:
+				data += "ERROR! Could not set the services list.<br>\n"
 		return self.wrap_in_webgli_template(data)
 	def extrapackages(self):
 		data = ""
@@ -1171,11 +1243,11 @@ Please be patient while the screens load. It may take awhile.
 		data = """
 		<script>
 		function change_edituser() {
-		  for(i=0;i<document.Users.elements.length;i++) {
+			for(i=0;i<document.Users.elements.length;i++) {
 			if(document.Users.elements[i].name == "edituser" && document.Users.elements[i].checked) {
-			  location.replace('/webgli/Users?edituser='+ document.Users.elements[i].value);
-            }
-          }
+				location.replace('/webgli/Users?edituser='+ document.Users.elements[i].value);
+						}
+					}
 		}
 		function verify_pass() {
 			if(document.Users.rootpass1.value != document.Users.rootpass2.value) {
@@ -1188,19 +1260,19 @@ Please be patient while the screens load. It may take awhile.
 		</script>"""
 		users = {}
 		for user in self.shared_info.install_profile.get_users():
-			print str(user[0]) + "   " + str(user[1]) + "   " + str(user[2]) + "   " + str(user[3])
+			print str(user[0]) + "	 " + str(user[1]) + "		" + str(user[2]) + "	 " + str(user[3])
 			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
 		data += "<p>User Settings:</p>\n"
 		data += '<form name="Users" method="post" action="/webgli/saveusers" enctype="multipart/form-data">'
 		data += """<p>Users:</p>
-		  <table width="100%"  border="1">
+			<table width="100%"  border="1">
 			<tr>
-			  <th scope="col">Username</th>
-			  <th scope="col">Groups</th>
-			  <th scope="col">Shell</th>
-			  <th scope="col">Home Directory </th>
-			  <th scope="col">UserID</th>
-			  <th scope="col">Comment</th>
+				<th scope="col">Username</th>
+				<th scope="col">Groups</th>
+				<th scope="col">Shell</th>
+				<th scope="col">Home Directory </th>
+				<th scope="col">UserID</th>
+				<th scope="col">Comment</th>
 			</tr>"""
 		for user in users:
 			data += '<tr><td><input name="edituser" type="radio" value="'+users[user][0]+'">'
@@ -1210,25 +1282,25 @@ Please be patient while the screens load. It may take awhile.
 			data += "</td><td>"+users[user][3]+"</td><td>"+users[user][4]+"</td><td>"+users[user][5]+"</td><td>"+users[user][6]+"</td></tr>\n"
 		
 		data += """</table><br>
-			  <input name="usereditsubmit" type="button" value="EDIT" onclick="change_edituser()">
-			  <input name="userdelsubmit" type="submit" value="DELETE">"""
+				<input name="usereditsubmit" type="button" value="EDIT" onclick="change_edituser()">
+				<input name="userdelsubmit" type="submit" value="DELETE">"""
 		root_pass = self.shared_info.install_profile.get_root_pass_hash()
 		if not root_pass:
 			data += """<p>Root Password is not yet set! Please set it:<br>
-			  <input name="rootpass1" type="password" id="rootpass1">
-		  and retype to verify: 
-		  <input name="rootpass2" type="password" id="rootpass2">
-		  <input name="verifyrootpass" type="button" id="verifyrootpass" value="Verify!" onclick="verify_pass()">
-		  <input name="setrootpassword" type="submit" value="Set"></p>"""
+				<input name="rootpass1" type="password" id="rootpass1">
+			and retype to verify: 
+			<input name="rootpass2" type="password" id="rootpass2">
+			<input name="verifyrootpass" type="button" id="verifyrootpass" value="Verify!" onclick="verify_pass()">
+			<input name="setrootpassword" type="submit" value="Set"></p>"""
 		else:
 			data += """<p>Root Password is set. 
-			  <input name="setrootpass" type="submit" id="setrootpass" value="Reset Root Password"></p>"""
+				<input name="setrootpass" type="submit" id="setrootpass" value="Reset Root Password"></p>"""
 		if self.get_params['edituser']:
 			username = self.get_params['edituser']
 			data += """
 				<p>Edit user """+username+""":</p>
 				<table width="100%"  border="1">
-				  <tr>
+					<tr>
 					<td scope="col"><p>Username:
 						<input name="newusername" type="text" id="newusername" """
 			data += 'value="'+username+'">'
@@ -1241,16 +1313,16 @@ Please be patient while the screens load. It may take awhile.
 			groups = string.join(users[username][2], ",")
 			data += '<p>Manually specify (comma-separate)<input name="newusergroupsmanual" type="text" value="'+groups+'">'
 			data += """
-					  </p>
-					  <input name="addnewuser" type="submit" id="addnewuser" value="Save Changes">
+						</p>
+						<input name="addnewuser" type="submit" id="addnewuser" value="Save Changes">
 					</td>
-				  </tr>
+					</tr>
 				</table>"""
 		else:
 			data += """
 				<p>Add a new user:</p>
 				<table width="100%"  border="1">
-				  <tr>
+					<tr>
 					<td scope="col"><p>Username:
 						<input name="newusername" type="text" id="newusername">
 					</p>
@@ -1258,26 +1330,26 @@ Please be patient while the screens load. It may take awhile.
 						<input name="newuserpass" type="password" id="newuserpass">
 					</p>
 					<p>Shell (optional): 
-					  <input name="newusershell" type="text" id="newusershell">
+						<input name="newusershell" type="text" id="newusershell">
 					</p>
 					<p>Home Directory (optional): 
-					  <input name="newuserhomedir" type="text" id="newuserhomedir">
+						<input name="newuserhomedir" type="text" id="newuserhomedir">
 					</p>
 					<p>UserID Number (optional): 
-					  <input name="newuserid" type="text" id="newuserid">
+						<input name="newuserid" type="text" id="newuserid">
 					</p>
 					<p>Comment (optional): 
-					  <input name="newusercomment" type="text" id="newusercomment">
+						<input name="newusercomment" type="text" id="newusercomment">
 					</p></td>
 					<td scope="col"><p>Groups:</p>
-					  <p><input name="newusergroups" type="checkbox" id="newusergroups" value="users"> users<br>
-					  <input name="newusergroups" type="checkbox" id="newusergroups" value="wheel"> wheel<br>
-					  <input name="newusergroups" type="checkbox" id="newusergroups" value="audio"> audio<br>
-					  Manually specify (comma-separate)<input name="newusergroupsmanual" type="text" id="newusergroupsmanual">
-					  </p>
-					  <input name="addnewuser" type="submit" id="addnewuser" value="Add New User">
+						<p><input name="newusergroups" type="checkbox" id="newusergroups" value="users"> users<br>
+						<input name="newusergroups" type="checkbox" id="newusergroups" value="wheel"> wheel<br>
+						<input name="newusergroups" type="checkbox" id="newusergroups" value="audio"> audio<br>
+						Manually specify (comma-separate)<input name="newusergroupsmanual" type="text" id="newusergroupsmanual">
+						</p>
+						<input name="addnewuser" type="submit" id="addnewuser" value="Add New User">
 					</td>
-				  </tr>
+					</tr>
 				</table>"""
 		data += "</form>"
 		return self.wrap_in_webgli_template(data)
@@ -1353,7 +1425,7 @@ Please be patient while the screens load. It may take awhile.
 	def review(self):
 		settings = "<pre>Look carefully at the following settings to check for mistakes.\nThese are the installation settings you have chosen:\n\n"
 		#Partitioning
-		settings += "Partitioning:  \n  Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.\n"
+		settings += "Partitioning:	\n	Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.\n"
 		devices = self.shared_info.install_profile.get_partition_tables()
 		drives = devices.keys()
 		drives.sort()
@@ -1363,7 +1435,7 @@ Please be patient while the screens load. It may take awhile.
 			tmpparts = devices[drive].get_partitions()
 			for part in partlist:
 				tmppart = tmpparts[part]
-				entry = "    "
+				entry = "		 "
 				if tmppart.get_type() == "free":
 					#partschoice = "New"
 					entry += _(u" - Unallocated space (")
@@ -1429,7 +1501,7 @@ Please be patient while the screens load. It may take awhile.
 		interfaces = self.shared_info.install_profile.get_network_interfaces()
 		for iface in interfaces:
 			if interfaces[iface][0] == 'dhcp':
-				settings += "  " + iface + _(u":  Settings: DHCP. Options: ") + interfaces[iface][1] + "\n"
+				settings += "  " + iface + _(u":	Settings: DHCP. Options: ") + interfaces[iface][1] + "\n"
 			else:
 				settings += "  " + iface + _(u"IP: ") + interfaces[iface][0] + _(u" Broadcast: ") + interfaces[iface][1] + _(u" Netmask: ") + interfaces[iface][2] + "\n"
 		default_gateway = self.shared_info.install_profile.get_default_gateway()
@@ -1483,10 +1555,10 @@ Please be patient while the screens load. It may take awhile.
 			settings += "  File:" + etc_file + "\n"
 			if isinstance(etc_files[etc_file], dict):
 				for name in etc_files[etc_file]:
-					settings += "    Variable: " + name + "   Value: " + etc_files[etc_file][name] + "\n"
+					settings += "		 Variable: " + name + "		Value: " + etc_files[etc_file][name] + "\n"
 			else:
 				for entry in etc_files[etc_file]:
-					settings += "    Value: "+ entry + "\n"
+					settings += "		 Value: "+ entry + "\n"
 		
 		#Additional Users:
 		settings += "\nAdditional Users:\n"
@@ -1495,13 +1567,13 @@ Please be patient while the screens load. It may take awhile.
 			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
 		for user in users:
 			settings += "  Username: " + user
-			settings += "\n    Group Membership: " + string.join(users[user][2], ",")
-			settings += "\n    Shell: " + users[user][3]
-			settings += "\n    Home Directory: " + users[user][4]
+			settings += "\n		 Group Membership: " + string.join(users[user][2], ",")
+			settings += "\n		 Shell: " + users[user][3]
+			settings += "\n		 Home Directory: " + users[user][4]
 			if users[user][5]:
-				settings += "\n    User Id: " + users[user][5]
+				settings += "\n		 User Id: " + users[user][5]
 			if users[user][6]:
-				settings += "\n    User Comment: " + users[user][6]
+				settings += "\n		 User Comment: " + users[user][6]
 		settings += "</pre>"
 		return self.wrap_in_webgli_template(settings)
 	def savereview(self):
@@ -1509,7 +1581,7 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 
 	def uribrowser(self):
-		formfields = {  'portage': "opener.document.portage.snapshoturi", 
+		formfields = {	'portage': "opener.document.portage.snapshoturi", 
 						'stage': "opener.document.stage.tarballuri",
 						'kernel': "opener.document.kernel.configuri" }
 		try:
@@ -1559,21 +1631,21 @@ Please be patient while the screens load. It may take awhile.
 		content = """
 		<script>
 		function select_uri(uri) {
-		  %s.value = document.uri.baseuri.value + uri;
-		  window.close();
+			%s.value = document.uri.baseuri.value + uri;
+			window.close();
 		}
 
 		function browse_uri(uri) {
-		  location.replace('/webgli/URIBrowser?screen=%s&baseuri=' + uri);
+			location.replace('/webgli/URIBrowser?screen=%s&baseuri=' + uri);
 		}
 
 		function refresh_uri() {
-		  //location.replace('/webgli/URIBrowser?screen=%s&uritype=' + document.uri.uritype.value + '&host=' + document.uri.host.value + '&username=' + document.uri.username.value + '&password=' + document.uri.password.value + '&port=' + document.uri.port.value + '&path=' + document.uri.path.value + '&mirror=' + document.uri.mirror.value);
-		  document.uri.submit();
+			//location.replace('/webgli/URIBrowser?screen=%s&uritype=' + document.uri.uritype.value + '&host=' + document.uri.host.value + '&username=' + document.uri.username.value + '&password=' + document.uri.password.value + '&port=' + document.uri.port.value + '&path=' + document.uri.path.value + '&mirror=' + document.uri.mirror.value);
+			document.uri.submit();
 		}
 
 		function change_uritype() {
-		  location.replace('/webgli/URIBrowser?screen=%s&uritype=' + document.uri.uritype.value);
+			location.replace('/webgli/URIBrowser?screen=%s&uritype=' + document.uri.uritype.value);
 		}
 		</script>
 		<h3>URI Browser</h3>
@@ -1581,41 +1653,41 @@ Please be patient while the screens load. It may take awhile.
 		<input type="hidden" name="baseuri" value="%s">
 		<input type="hidden" name="screen" value="%s">
 		<table>
-		  <tr>
-		    <td width="90">URI type:</td>
-		    <td><select name="uritype" onchange="change_uritype()"><option%s>file</option><option%s>http</option><option%s>ftp</option><option%s>scp</option></select></td>
-		  </tr>
-		  <tr>
-		    <td valign="top">Host:</td>
-		    <td><input type="text" name="host" size="30" value="%s"><br>or choose a mirror:<br><select name="mirror" onchange="document.uri.submit()"><option value=""> - </option>%s</select></td>
-		  </tr>
-		  <tr>
-		    <td>Username:</td>
-		    <td><input type="text" name="username" size="15" value="%s"></td>
-		  </tr>
-		  <tr>
-		    <td>Password:</td>
-		    <td><input type="text" name="password" size="15" value="%s"></td>
-		  </tr>
-		  <tr>
-		    <td>Port:</td>
-		    <td><input type="text" name="port" size="5" value="%s"></td>
-		  </tr>
-		  <tr>
-		    <td>Path:</td>
-		    <td><input type="text" name="path" size="30" value="%s"></td>
-		  </tr>
-		  <tr>
-		    <td>&nbsp;</td>
-		    <td>&nbsp;</td>
-		  </tr>
-		  <tr>
-		    <td colspan="2"><input type="button" value="Cancel" onclick="window.close();"> &nbsp; <input type="button" value="Refresh" onclick="refresh_uri()"></td>
-		  </tr>
-		  <tr>
-		    <td>&nbsp;</td>
-		    <td>&nbsp;</td>
-		  </tr>
+			<tr>
+				<td width="90">URI type:</td>
+				<td><select name="uritype" onchange="change_uritype()"><option%s>file</option><option%s>http</option><option%s>ftp</option><option%s>scp</option></select></td>
+			</tr>
+			<tr>
+				<td valign="top">Host:</td>
+				<td><input type="text" name="host" size="30" value="%s"><br>or choose a mirror:<br><select name="mirror" onchange="document.uri.submit()"><option value=""> - </option>%s</select></td>
+			</tr>
+			<tr>
+				<td>Username:</td>
+				<td><input type="text" name="username" size="15" value="%s"></td>
+			</tr>
+			<tr>
+				<td>Password:</td>
+				<td><input type="text" name="password" size="15" value="%s"></td>
+			</tr>
+			<tr>
+				<td>Port:</td>
+				<td><input type="text" name="port" size="5" value="%s"></td>
+			</tr>
+			<tr>
+				<td>Path:</td>
+				<td><input type="text" name="path" size="30" value="%s"></td>
+			</tr>
+			<tr>
+				<td>&nbsp;</td>
+				<td>&nbsp;</td>
+			</tr>
+			<tr>
+				<td colspan="2"><input type="button" value="Cancel" onclick="window.close();"> &nbsp; <input type="button" value="Refresh" onclick="refresh_uri()"></td>
+			</tr>
+			<tr>
+				<td>&nbsp;</td>
+				<td>&nbsp;</td>
+			</tr>
 		</table>
 		<table>""" % (formfield, self.get_params['screen'], self.get_params['screen'], self.get_params['screen'], uri, self.get_params['screen'], uritypes['file'], uritypes['http'], uritypes['ftp'], uritypes['scp'], uriparts[3], mirrorlist, uriparts[1], uriparts[2], uriparts[4], uriparts[5])
 		if not uri.endswith("/"):
@@ -1625,12 +1697,12 @@ Please be patient while the screens load. It may take awhile.
 		except:
 			filelist = ["There was an error loading the directory list"]
 		for listing in filelist:
-			content += "  <tr>\n    <td>"
+			content += "	<tr>\n		<td>"
 			if listing.endswith('/'):
 				content += '<img src="../folder.gif">'
 			else:
 				content += '&nbsp;'
-			content += '</td>\n    <td><a href="#" onclick="'
+			content += '</td>\n		 <td><a href="#" onclick="'
 			if listing.endswith('/'):
 				listing = listing[:-1]
 				if listing == "..":
@@ -1640,7 +1712,7 @@ Please be patient while the screens load. It may take awhile.
 				content += "browse_uri('%s')" % tmpuri
 			else:
 				content += "select_uri('%s')" % listing
-			content += "; return false\">%s</a></td>\n  </tr>\n" % listing
+			content += "; return false\">%s</a></td>\n	</tr>\n" % listing
 
 		return content
 	
@@ -1650,48 +1722,48 @@ Please be patient while the screens load. It may take awhile.
 		if not self.shared_info.client_profile:
 			self.shared_info.client_profile = GLIClientConfiguration.ClientConfiguration()
 		paths = { '/webgli': self.showwelcome,
-				  '/webgli/': self.showwelcome,
-				  '/webgli/ClientConfig': self.clientconfig,
-				  '/webgli/saveclientconfig': self.saveclientconfig,
-				  '/webgli/NetworkMounts': self.networkmounts,
-				  '/webgli/savenetmounts': self.savenetmounts,
-				  '/webgli/StageSelection': self.stageselection,
-				  '/webgli/savestage': self.savestage,
-				  '/webgli/PortageTree': self.portagetree,
-				  '/webgli/Partitioning': self.partitioning,
-				  '/webgli/savepartitions': self.savepartitions,
-				  '/webgli/saveportage': self.saveportage,
-				  '/webgli/GlobalUSE': self.globaluse,
-				  '/webgli/saveglobaluse': self.saveglobaluse,
-				  '/webgli/LocalUSE': self.localuse,
-				  '/webgli/savelocaluse': self.savelocaluse,
-				  '/webgli/ConfigFiles': self.configfiles,
-				  '/webgli/saveconfigfiles': self.saveconfigfiles,
-				  '/webgli/Kernel': self.kernel,
-				  '/webgli/savekernel': self.savekernel,
-				  '/webgli/Bootloader': self.bootloader,
-				  '/webgli/savebootloader': self.savebootloader,
-				  '/webgli/Timezone': self.timezone,
-				  '/webgli/savetimezone': self.savetimezone,
-				  '/webgli/Networking': self.networking,
-				  '/webgli/savenetworking': self.savenetworking,
-				  '/webgli/Daemons': self.daemons,
-				  '/webgli/savedaemons': self.savedaemons,
-				  '/webgli/ExtraPackages': self.extrapackages,
-				  '/webgli/savepackages': self.savepackages,
-				  '/webgli/Services': self.services,
-				  '/webgli/saveservices': self.saveservices,
-				  '/webgli/Users': self.users,
-				  '/webgli/saveusers': self.saveusers,
-				  '/webgli/Review': self.review,
-				  '/webgli/savereview': self.savereview,
-				  '/webgli/URIBrowser': self.uribrowser,
-				  
-				  '/webgli/loadprofile': self.loadprofile,
-				  '/webgli/loadprofile2': self.loadprofile2,
-		          '/webgli/saveprofile': self.saveprofile,
-		          '/webgli/saveprofile2': self.saveprofile2
-		        }
+					'/webgli/': self.showwelcome,
+					'/webgli/ClientConfig': self.clientconfig,
+					'/webgli/saveclientconfig': self.saveclientconfig,
+					'/webgli/NetworkMounts': self.networkmounts,
+					'/webgli/savenetmounts': self.savenetmounts,
+					'/webgli/StageSelection': self.stageselection,
+					'/webgli/savestage': self.savestage,
+					'/webgli/PortageTree': self.portagetree,
+					'/webgli/Partitioning': self.partitioning,
+					'/webgli/savepartitions': self.savepartitions,
+					'/webgli/saveportage': self.saveportage,
+					'/webgli/GlobalUSE': self.globaluse,
+					'/webgli/saveglobaluse': self.saveglobaluse,
+					'/webgli/LocalUSE': self.localuse,
+					'/webgli/savelocaluse': self.savelocaluse,
+					'/webgli/ConfigFiles': self.configfiles,
+					'/webgli/saveconfigfiles': self.saveconfigfiles,
+					'/webgli/Kernel': self.kernel,
+					'/webgli/savekernel': self.savekernel,
+					'/webgli/Bootloader': self.bootloader,
+					'/webgli/savebootloader': self.savebootloader,
+					'/webgli/Timezone': self.timezone,
+					'/webgli/savetimezone': self.savetimezone,
+					'/webgli/Networking': self.networking,
+					'/webgli/savenetworking': self.savenetworking,
+					'/webgli/Daemons': self.daemons,
+					'/webgli/savedaemons': self.savedaemons,
+					'/webgli/ExtraPackages': self.extrapackages,
+					'/webgli/savepackages': self.savepackages,
+					'/webgli/Services': self.services,
+					'/webgli/saveservices': self.saveservices,
+					'/webgli/Users': self.users,
+					'/webgli/saveusers': self.saveusers,
+					'/webgli/Review': self.review,
+					'/webgli/savereview': self.savereview,
+					'/webgli/URIBrowser': self.uribrowser,
+					
+					'/webgli/loadprofile': self.loadprofile,
+					'/webgli/loadprofile2': self.loadprofile2,
+							'/webgli/saveprofile': self.saveprofile,
+							'/webgli/saveprofile2': self.saveprofile2
+						}
 		return_content = paths[path]()
 		return self.headers_out, return_content
 
