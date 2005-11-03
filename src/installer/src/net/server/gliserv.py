@@ -15,6 +15,10 @@ import SocketServer
 import mimetools
 import GLIServerProfile
 import traceback
+try:
+	from SecureXMLRPCServer import SecureSocketServer
+except:
+	pass
 
 class SharedInfo(object):
 
@@ -30,12 +34,6 @@ class Params(dict):
 			return dict.__getitem__(self, item)
 		except KeyError:
 			return ""
-
-class GLIHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
-
-	def __init__(self, server_address):
-		self.port = server_address[1]
-		SocketServer.TCPServer.__init__(self, server_address, GLIHTTPRequestHandler)
 
 class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -389,6 +387,25 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	def log_message(self, format, *args):
 		pass
 
+class GLIHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+
+	def __init__(self, server_address):
+		self.port = server_address[1]
+		SocketServer.TCPServer.__init__(self, server_address, GLIHTTPRequestHandler)
+
+class GLISecureHTTPServer(SecureSocketServer, BaseHTTPServer.HTTPServer):
+
+	def __init__(self, server_address):
+		self.port = server_address[1]
+		SecureSocketServer.__init__(self, server_address, 'server.pem', GLISecureHTTPRequestHandler)
+
+class GLISecureHTTPRequestHandler(GLIHTTPRequestHandler):
+
+	def setup(self):
+		self.connection = self.request
+		self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
+		self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
+
 class GLINetBe:
 
 	def __init__(self, loc):
@@ -473,8 +490,11 @@ def register():
 
 def start_httpd():
 	server_address = ('', 8000)
-#	httpd = BaseHTTPServer.HTTPServer(server_address, GLIHTTPRequestHandler)
-	httpd = GLIHTTPServer(server_address)
+	try:
+		httpd = GLISecureHTTPServer(server_address)
+	except:
+		print "Couldn't do HTTPS for web server, falling back to HTTP..."
+		httpd = GLIHTTPServer(server_address)
 	httpd.serve_forever()
 
 def start_xmlrpc():

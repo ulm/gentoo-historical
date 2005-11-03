@@ -3,7 +3,7 @@ from OpenSSL import SSL
 import SocketServer
 import socket
 
-class SecureSocketServer(SocketServer.TCPServer):
+class SecureSocketServer(SocketServer.TCPServer, SocketServer.ThreadingMixIn):
 	def __init__(self, addr, cert, requestHandler):
 		SocketServer.TCPServer.__init__(self, addr, requestHandler)
 		ctx = SSL.Context(SSL.SSLv23_METHOD)
