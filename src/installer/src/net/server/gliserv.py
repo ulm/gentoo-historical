@@ -480,8 +480,9 @@ def start_httpd():
 def start_xmlrpc():
 	try:
 		from SecureXMLRPCServer import SecureXMLRPCServer
-		server = SecureXMLRPCServer(('', 8002))
+		server = SecureXMLRPCServer(('', 8002), 'server.pem')
 	except:
+		print "Can't use HTTPS, falling back to HTTP..."
 		from SimpleXMLRPCServer import SimpleXMLRPCServer
 		server = SimpleXMLRPCServer(('', 8002))
 	server.register_introspection_functions()

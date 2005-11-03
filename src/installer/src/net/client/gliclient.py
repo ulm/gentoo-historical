@@ -47,6 +47,7 @@ def find_server():
 if __name__ == '__main__':
 	args = {}
 	i = 1
+	pretend = False
 	while i < len(sys.argv):
 		if sys.argv[i] == "-s" or sys.argv[i] == "--server":
 			i += 1
@@ -57,6 +58,8 @@ if __name__ == '__main__':
 				sys.exit(0)
 			args['server_ip'] = tmpserverparts[0]
 			args['server_port'] = tmpserverparts[1]
+		elif sys.argv[i] == "-p" or sys.argv[i] == "--pretend":
+			pretend = True
 		else:
 			print "Invalid option " + sys.argv[i] + ". Terminating."
 			sys.exit(0)
@@ -76,10 +79,15 @@ if __name__ == '__main__':
 	registered = False
 	try:
 		registered = server.register_client(local_mac, local_ip)
+		print "Registered with server with XMLRPC"
 	except:
 		pass
 	if not registered:
 		print "Could not register with server. Terminating."
+		sys.exit(1)
+
+	if pretend:
+		print "In pretend mode...quitting"
 		sys.exit(0)
 
 	print "Waiting for client config and install profile from server"
