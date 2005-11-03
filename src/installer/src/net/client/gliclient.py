@@ -67,7 +67,11 @@ if __name__ == '__main__':
 		server_ip, server_port = args['server_ip'], args['server_port']
 	else:
 		server_ip, server_port = find_server()
-	server = xmlrpclib.ServerProxy("http://" + server_ip + ":" + str(server_port))
+	try:
+		server = xmlrpclib.ServerProxy("https://" + server_ip + ":" + str(server_port))
+	except:
+		print "Can't connect via HTTPS, trying HTTP..."
+		server = xmlrpclib.ServerProxy("http://" + server_ip + ":" + str(server_port))
 	registered = False
 	try:
 		registered = server.register_client(local_mac, local_ip)
