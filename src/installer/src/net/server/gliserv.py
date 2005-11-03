@@ -12,7 +12,6 @@ from StringIO import StringIO
 from threading import *
 import socket
 import SocketServer
-import SimpleXMLRPCServer
 import mimetools
 import GLIServerProfile
 import traceback
@@ -438,6 +437,9 @@ class GLINetBe:
 		self.shared_info.client_state[mac]['install_status'] = status
 		return True
 
+	def is_alive(self):
+		return True
+
 def register():
 	host = ''
 	port = 8001
@@ -476,7 +478,12 @@ def start_httpd():
 	httpd.serve_forever()
 
 def start_xmlrpc():
-	server = SimpleXMLRPCServer.SimpleXMLRPCServer(('', 8002))
+	try:
+		from SecureXMLRPCServer import SecureXMLRPCServer
+		server = SecureXMLRPCServer(('', 8002))
+	except:
+		from SimpleXMLRPCServer import SimpleXMLRPCServer
+		server = SimpleXMLRPCServer(('', 8002))
 	server.register_introspection_functions()
 	server.register_instance(GLINetBe("/tmp"))
 	server.serve_forever()

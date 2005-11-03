@@ -69,6 +69,7 @@ if __name__ == '__main__':
 		server_ip, server_port = find_server()
 	try:
 		server = xmlrpclib.ServerProxy("https://" + server_ip + ":" + str(server_port))
+		server.is_alive()
 	except:
 		print "Can't connect via HTTPS, trying HTTP..."
 		server = xmlrpclib.ServerProxy("http://" + server_ip + ":" + str(server_port))
