@@ -393,18 +393,21 @@ class GLIHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 		self.port = server_address[1]
 		SocketServer.TCPServer.__init__(self, server_address, GLIHTTPRequestHandler)
 
-class GLISecureHTTPServer(SecureSocketServer, BaseHTTPServer.HTTPServer):
+try:
+	class GLISecureHTTPServer(SecureSocketServer, BaseHTTPServer.HTTPServer):
 
-	def __init__(self, server_address):
-		self.port = server_address[1]
-		SecureSocketServer.__init__(self, server_address, 'server.pem', GLISecureHTTPRequestHandler)
+		def __init__(self, server_address):
+			self.port = server_address[1]
+			SecureSocketServer.__init__(self, server_address, 'server.pem', GLISecureHTTPRequestHandler)
 
-class GLISecureHTTPRequestHandler(GLIHTTPRequestHandler):
+	class GLISecureHTTPRequestHandler(GLIHTTPRequestHandler):
 
-	def setup(self):
-		self.connection = self.request
-		self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
-		self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
+		def setup(self):
+			self.connection = self.request
+			self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
+			self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
+except:
+	pass
 
 class GLINetBe:
 
