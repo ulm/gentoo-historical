@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.222 2005/10/27 03:34:02 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.223 2005/11/05 23:42:44 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -174,30 +174,64 @@ class ArchitectureTemplate:
 			GLIUtility.spawn("echo " + res.group(1) + " >> " + self._chroot_dir + "/var/lib/portage/world")
 
 	def copy_pkg_to_chroot(self, package):
-		error = False
+		# Copy the vdb entry for the package from the LiveCD to the chroot
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying vdb entry for " + package)
 		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir -p " + self._chroot_dir + "/var/db/pkg/" + package + " && cp -a /var/db/pkg/" + package + "/* " + self._chroot_dir + "/var/db/pkg/" + package)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy vdb entry for " + package)
-		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running preinst for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("env ROOT=" + self._chroot_dir + " ebuild " + self._chroot_dir + "/var/db/pkg/" + package + "/*.ebuild preinst")):
-			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute preinst for " + package)
+
+		# Create list of files for tar to work with from CONTENTS file in vdb entry
 		entries = GLIUtility.parse_vdb_contents("/var/db/pkg/" + package + "/CONTENTS")
 		try:
 			tarfiles = open("/tmp/tarfilelist", "w")
 			for entry in entries:
 				parts = entry.split(" ")
-				if not parts[0].endswith("/"):
-					tarfiles.write(parts[0] + "\n")
+				# Hack for /etc/gconf being a symlink
+				if parts[0].startswith("/etc/gconf/"):
+					parts[0] = "/usr/livecd/gconf/" + parts[11:]
+#				if not parts[0].endswith("/"):
+#					tarfiles.write(parts[0] + "\n")
 			tarfiles.close()
 		except:
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not create filelist for " + package)
-		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + " -x'")
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + " -x")):
+
+		# Use tar to transfer files into IMAGE directory
+		tmpdir = "/var/tmp/portage"
+		image_dir = tmpdir + "/" + package.split("/")[1] + "/image"
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'mkdir " + self._chroot_dir + image_dir + " && tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + " -x'")
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir " + self._chroot_dir + image_dir + " && tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -x")):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute tar for " + package)
+
+		# Check for existance of /usr/livecd/gconf/ in image_dir and change to /etc/gconf/
+		if GLIUtility.is_file(self._chroot_dir + image_dir + "/usr/livecd/gconf/"):
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): fixing /usr/livecd/gconf/ stuff in " + image_dir + " for " + package)
+			if not GLIUtility.exitsuccess(GLIUtility.spawn("mv " + self._chroot_dir + image_dir + "/usr/livecd/gconf " + self._chroot_dir + image_dir + "/etc/gconf")):
+				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not fix /usr/livecd/gconf/ stuff for " + package)
+
+		# Run pkg_setup
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running pkg_setup for " + package)
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env ROOT=" + self._chroot_dir + " PORTAGE_TMPDIR=" + self._chroot_dir + tmpdir + "  ebuild " + self._chroot_dir + "/var/db/pkg/" + package + "/*.ebuild setup")):
+			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute pkg_setup for " + package)
+
+		# Run pkg_preinst
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running preinst for " + package)
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env ROOT=" + self._chroot_dir + " PORTAGE_TMPDIR=" + self._chroot_dir + tmpdir + " ebuild " + self._chroot_dir + "/var/db/pkg/" + package + "/*.ebuild preinst")):
+			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute preinst for " + package)
+
+		# Copy files from image_dir to chroot
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying files from " + image_dir + " to / for " + package)
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a " + self._chroot_dir + image_dir + "/* " + self._chroot_dir)):
+			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy files from " + image_dir + " to / for " + package)
+
+		# Run pkg_postinst
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running postinst for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("env ROOT=" + self._chroot_dir + " ebuild " + "/var/db/pkg/" + package + "/*.ebuild postinst")):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env ROOT=" + self._chroot_dir + " PORTAGE_TMPDIR=" + self._chroot_dir + tmpdir + " ebuild " + "/var/db/pkg/" + package + "/*.ebuild postinst")):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute postinst for " + package)
-			
+
+		# Remove image_dir
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): removing + " + image_dir + " for " + package)
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("rm -rf " + self._chroot_dir + image_dir)):
+			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not remove + " + image_dir + " for " + package)
+
 	##
 	# Private Function.  Will emerge a given package in the chroot environment.
 	# @param package package to be emerged
