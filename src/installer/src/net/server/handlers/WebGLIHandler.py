@@ -1,6 +1,7 @@
 import GLIServerProfile
 import GLIInstallProfile
 import GLIClientConfiguration
+import GLIStorageDevice
 import GLIUtility
 import handler
 import traceback
@@ -325,7 +326,39 @@ class WebGLIHandler(handler.Handler):
 		data = "Welcoming string here.<BR>LOCAL INSTALL ASSUMED FOR THIS FRONT END<br>\n"
 		return self.wrap_in_webgli_template(data)
 	def partitioning(self):
-		data = ""
+		data = '<form name="part" action="/webgli/Partitioning2" method="POST" enctype="multipart/form-data">'
+		partitions_string1 = """The first thing on the new system to setup is the partitoning.
+You will first select a drive and then edit its partitions.
+No changes will be saved until the end of the step.
+No changes to your disk will be made until the installation.
+NOTE: YOU MUST AT LEAST SELECT ONE PARTITION AS YOUR ROOT PARTITION "/"
+If your drive is pre-partitioned, just select the mountpoints and make 
+sure that the format option is set to FALSE or it will erase your data.
+The installer does not yet support resizing of partitions (its not safe).
+Please refer to the Gentoo Installation Handbook for more information
+on partitioning and the various filesystem types available in Linux."""
+		data += partitions_string1
+		devices = self.shared_info.install_profile.get_partition_tables()
+		drives = devices.keys()
+		drives.sort()
+		choice_list = []
+		if not devices:
+			tmp_drives = GLIStorageDevice.detect_devices()
+			tmp_drives.sort()
+			for drive in tmp_drives:
+				devices[drive] = GLIStorageDevice.Device(drive)
+				#if self.local_install:  #when uncommenting please indent the next line.
+				devices[drive].set_partitions_from_disk()
+				drives.append(drive)
+				choice_list.append((drive, devices[drive].get_model()))
+		else:
+			for drive in drives:
+				choice_list.append((drive, devices[drive].get_model()))
+		data += "<table>\n"
+		data += "<tr><td>EDIT</td><td>Drive</td><td>Drive Information</td></tr>\n"
+		for i,choice in enumerate(choice_list):
+			data += '<tr><td><input type="radio" name="editdrive" value="'+choice_list[i][0]+'"></td><td>'+choice_list[i][0]+'</td><td>'+choice_list[i][1]+"</td></tr>\n"
+		data += '</table><input type="submit" name="SubmitEditDrive" value="Edit Drive"></form>'
 		return self.wrap_in_webgli_template(data)
 	def savepartitions(self):
 		data = ""
@@ -1235,6 +1268,121 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def extrapackages(self):
 		data = ""
+		grp_list = GLIUtility.get_grp_pkgs_from_cd()
+		if self.post_params['packages']:
+			try:
+				packages = string.join(self.post_params['packages'], ' ')
+				if packages:
+					self.shared_info.install_profile.set_install_packages(None, packages, None)
+			except:
+				data += _(u"ERROR! Could not set the install packages! List of packages:<br>\n")
+		if self.shared_info.install_profile.get_install_packages():
+			install_packages = self.shared_info.install_profile.get_install_packages()
+			if isinstance(install_packages, str):
+				install_packages = install_packages.split()
+		else:
+			install_packages = []
+		highlevel_menu = {"Desktop": _(u"Popular Desktop Applications"),
+					"Servers": _(u"Applications often found on servers."), 
+					"X11": _(u"Window managers and X selection."), 
+					"Misc": _(u"Miscellaneous Applications you may want."), 
+					"Recommended": _(u"Applications recommended by the GLI Team.")}
+		
+		data += """
+		<script>
+		</script>
+		<form name="packages" action="/webgli/ExtraPackages" method="POST" enctype="multipart/form-data">
+		"""
+		for param in self.get_params:
+			if "show" in param:  #this means it's a param referring to a group to show.  include it as a hidden so it'll get shown next time too.
+				data += '<input type="hidden" name="'+param+'" value="'+self.get_params[param]+"\">\n"
+		for param in self.post_params:
+			if "show" in param:  #this means it's a param referring to a group to show.  include it as a hidden so it'll get shown next time too.
+				if type(self.post_params[param]) == list:
+					self.post_params[param] = self.post_params[param][-1]
+				data += '<input type="hidden" name="'+param+'" value="'+self.post_params[param]+"\">\n"
+		#Start the table
+		data += "<h2>Extra Packages</h2>Your current package list is: "+string.join(install_packages, ',')
+		data += '<table width="100%"  border="1">'
+		for group in highlevel_menu:
+			if group == _(u"Desktop"):
+				pkgs = {"gaim": _(u"GTK Instant Messenger client"),
+				"gftp": _(u"Gnome based FTP Client"),
+				"evolution": _(u"A GNOME groupware application, a Microsoft Outlook workalike"),
+				"mozilla": _(u"The Mozilla Web Browser"),
+				"mozilla-firefox": _(u"The Mozilla Firefox Web Browser"),
+				"mozilla-thunderbird": _(u"Thunderbird Mail Client"),
+				"mplayer": _(u"Media Player for Linux"),
+				"openoffice": _(u"OpenOffice.org, a full office productivity suite."),
+				"openoffice-bin": _(u"Same as OpenOffice but a binary package (no compiling!)"),
+				"realplayer": _(u"Real Media Player"),
+				"xchat": _(u"Graphical IRC Client"),
+				"xmms": _(u"X MultiMedia System")  }
+			#Applications often found on servers.
+			elif group == _(u"Servers"):
+				pkgs = {"apache":_(u"Apache Web Server"),
+				"iptables":_(u"Linux kernel (2.4+) firewall, NAT and packet mangling tools"),
+				"proftpd":_(u"ProFTP Server"),
+				"samba":_(u"SAMBA client/server programs for UNIX"),
+				"traceroute":_(u"Utility to trace the route of IP packets")  }
+			#Window managers and X selection.
+			elif group == _(u"X11"):
+				pkgs = {"xorg-x11":_(u"An X11 implementation maintained by the X.Org Foundation."),
+				"gnome":_(u"The Gnome Desktop Environment"),
+				"kde":_(u"The K Desktop Environment"),
+				"blackbox":_(u"A small, fast, full-featured window manager for X"),
+				"enlightenment":_(u"Enlightenment Window Manager"),
+				"fluxbox":_(u"Fluxbox is an X11 window manager featuring tabs and an iconbar"),
+				"xfce4":_(u"XFCE Desktop Environment")  }
+			#Miscellaneous Applications you may want.
+			elif group == _(u"Misc"):
+				pkgs = {"gkrellm":_(u"Single process stack of various system monitors"),
+				"logrotate":_(u"Rotates, compresses, and mails system logs"),
+				"slocate":_(u"Secure way to index and quickly search for files on your system"),
+				"ufed":_(u"Gentoo Linux USE flags editor")  }
+			#Recommended by the Gentoo Linux Installer Team
+			elif group == _(u"Recommended"):
+				pkgs = {"anjuta":_(u"A versatile IDE for GNOME"),
+				"chkrootkit":_(u"a tool to locally check for signs of a rootkit"),
+				"crack-attack":_(u"Addictive OpenGL-based block game"),
+				"netcat":_(u"the network swiss army knife"),
+				"nmap":_(u"A utility for network exploration or security auditing"),
+				"screen":_(u"full-screen window manager that multiplexes between several processes")  }
+			#FIXME ADD x of y SELECTED TO HEADER
+			if self.post_params['show_'+group] == "Expand":
+				data += '<tr><th scope="col"><input type="submit" name="show_'+group+'" value="Collapse"></th><td><input type="checkbox" name="all_'+group+'" value="checkbox" '
+				#CALCULATE IF ALL PACKAGES IN GROUP ARE IN INSTALL PACKAGES
+				allpkgsfound = True
+				for pkg in pkgs:
+					if not pkg in install_packages:
+						allpkgsfound = False
+				if allpkgsfound:
+					data += "checked"
+				data += '>All</td><th scope="col">'+highlevel_menu[group]+"</th></tr>\n"
+			
+			else:   #show plus sign for group and no table.
+				data += '<tr><th scope="col"><input type="submit" name="show_'+group+'" value="Expand"></th><td><input type="checkbox" name="all_'+group+'" value="checkbox" '
+				#CALCULATE IF ALL PACKAGES IN GROUP ARE IN INSTALL PACKAGES
+				allpkgsfound = True
+				for pkg in pkgs:
+					if not pkg in install_packages:
+						allpkgsfound = False
+				if allpkgsfound:
+					data += "checked"
+				data += '>All</td><th scope="col">'+highlevel_menu[group]+"</th></tr>\n"
+			#now show the packages in the group
+			if self.post_params['show_'+group] == "Expand" or self.get_params['show_'+group] == "Expand":
+				for pkg in pkgs:
+					data += '<tr><td></td>'
+					data += '<td> <input type="checkbox" name="packages" value="'+pkg+'" '
+					if pkg in install_packages:
+						data += "checked"
+					data += '>'+pkg+'</td><td>'+pkgs[pkg]+"</td></tr>\n"
+			else:
+				for pkg in pkgs:
+					if pkg in install_packages:
+						data += '<tr><td></td><td> <input type="checkbox" name="packages" value="'+pkg+'" checked>'+pkg+'</td><td>'+pkgs[pkg]+"</td></tr>\n"
+				
 		return self.wrap_in_webgli_template(data)
 	def savepackages(self):
 		data = ""

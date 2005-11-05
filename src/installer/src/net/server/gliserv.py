@@ -392,7 +392,6 @@ class GLIHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 	def __init__(self, server_address):
 		self.port = server_address[1]
 		SocketServer.TCPServer.__init__(self, server_address, GLIHTTPRequestHandler)
-
 try:
 	class GLISecureHTTPServer(SecureSocketServer, BaseHTTPServer.HTTPServer):
 
@@ -408,6 +407,7 @@ try:
 			self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
 except:
 	pass
+
 
 class GLINetBe:
 
