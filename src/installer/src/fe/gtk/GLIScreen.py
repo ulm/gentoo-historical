@@ -16,11 +16,11 @@ class GLIScreen(gtk.VBox):
 
 		gtk.VBox.__init__(self, False, 0)
 
-		if show_title:
-			right_title_label = gtk.Label()
-			right_title_label.set_markup('<span><b>'+self.title+'</b></span>')
-			right_title_label.set_use_markup(True)
-			self.pack_start(right_title_label, expand=False, fill=False, padding=10)
+#		if show_title:
+#			right_title_label = gtk.Label()
+#			right_title_label.set_markup('<span><b>'+self.title+'</b></span>')
+#			right_title_label.set_use_markup(True)
+#			self.pack_start(right_title_label, expand=False, fill=False, padding=10)
 
 	def add_content(self, content):
 		self.pack_end(content, True, True, 0)

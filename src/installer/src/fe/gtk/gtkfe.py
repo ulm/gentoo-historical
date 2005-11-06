@@ -12,27 +12,28 @@ import GLIInstallProfile
 import GLIClientConfiguration
 import GLIClientController
 import GLIUtility
+from GLIFutureBar import GLIFutureBar
 import gtk
 import crypt
 import random
 from gettext import gettext as _
 
-import Welcome
-import ClientConfig
-import Partitioning
-import Stage
-import PortageTree
-import MakeDotConf
-import Kernel
-import Bootloader
-import Timezone
-import Networking
-import Daemons
-import ExtraPackages
-import RcDotConf
-import Users
-import InstallSummary
-import NetworkMounts
+#import Welcome
+#import ClientConfig
+#import Partitioning
+#import Stage
+#import PortageTree
+#import MakeDotConf
+#import Kernel
+#import Bootloader
+#import Timezone
+#import Networking
+#import Daemons
+#import ExtraPackages
+#import RcDotConf
+#import Users
+#import InstallSummary
+#import NetworkMounts
 
 import RunInstall
 
@@ -46,22 +47,22 @@ class Installer:
 	install_profile_xml_file = ""
 	install_window = None
 
-	menuItems = [ { 'text': _('Welcome'), 'module': Welcome },
-                  { 'text': _('Client Config'), 'module': ClientConfig },
-                  { 'text': _('Partitioning'), 'module': Partitioning },
-                  { 'text': _('Network Mounts'), 'module': NetworkMounts },
-                  { 'text': _('Stage'), 'module': Stage },
-                  { 'text': _('Portage tree'), 'module': PortageTree },
-                  { 'text': _('make.conf'), 'module': MakeDotConf },
-                  { 'text': _('Kernel'), 'module': Kernel },
-                  { 'text': _('Bootloader'), 'module': Bootloader },
-                  { 'text': _('Timezone'), 'module': Timezone },
-                  { 'text': _('Networking'), 'module': Networking },
-                  { 'text': _('Daemons'), 'module': Daemons },
-                  { 'text': _('Extra Packages'), 'module': ExtraPackages },
-                  { 'text': _('rc.conf'), 'module': RcDotConf },
-                  { 'text': _('Users'), 'module': Users },
-                  { 'text': _('Review'), 'module': InstallSummary }
+	menuItems = [ { 'text': _('Welcome'), 'module': __import__("Welcome") },
+                  { 'text': _('Client Config'), 'module': __import__("ClientConfig") },
+                  { 'text': _('Partitioning'), 'module': __import__("Partitioning") },
+                  { 'text': _('Network Mounts'), 'module': __import__("NetworkMounts") },
+                  { 'text': _('Stage'), 'module': __import__("Stage") },
+                  { 'text': _('Portage tree'), 'module': __import__("PortageTree") },
+                  { 'text': _('make.conf'), 'module': __import__("MakeDotConf") },
+                  { 'text': _('Kernel'), 'module': __import__("Kernel") },
+                  { 'text': _('Bootloader'), 'module': __import__("Bootloader") },
+                  { 'text': _('Timezone'), 'module': __import__("Timezone") },
+                  { 'text': _('Networking'), 'module': __import__("Networking") },
+                  { 'text': _('Daemons'), 'module': __import__("Daemons") },
+                  { 'text': _('Extra Packages'), 'module': __import__("ExtraPackages") },
+                  { 'text': _('rc.conf'), 'module': __import__("RcDotConf") },
+                  { 'text': _('Users'), 'module': __import__("Users") },
+                  { 'text': _('Review'), 'module': __import__("InstallSummary") }
                 ]
 
 	def __init__(self):
@@ -78,15 +79,6 @@ class Installer:
 
 		self.cc = GLIClientController.GLIClientController(pretend=self._pretend)
 
-		# I'm feeling lazy
-#		self.client_profile.set_interactive(None, True, None)
-#		self.client_profile.set_architecture_template(None, "x86", None)
-#		self.client_profile.set_log_file(None, "/var/log/install.log", None)
-#		self.client_profile.set_root_mount_point(None, "/mnt/gentoo", None)
-#		self.client_profile.set_enable_ssh(None, False, None)
-#		self.cc.set_configuration(self.client_profile)
-#		self.cc.start_pre_install()
-
 		self.window = None
 		self.panel = None
 		self._cur_panel = 0
@@ -102,24 +94,37 @@ class Installer:
 		self.window.set_title(_("Gentoo Linux Installer"))
 		self.globalbox = gtk.VBox(False, 0)
 		self.window.add(self.globalbox)
+
+		# Banner image
 		self.headerbox = gtk.HBox(False, 0)
 		headerimg = gtk.Image()
 		headerimg.set_from_file(self.__full_path + '/installer-banner-800x64.png')
 		self.headerbox.add(headerimg)
-		self.topbox = gtk.HBox(False, 0)
-		self.bottombox = gtk.HBox(False, 0)
 		self.globalbox.pack_start(self.headerbox, expand=False, fill=False, padding=0)
+
+		# Future bar
+		self.futurebar = GLIFutureBar([element['text'] for element in self.menuItems])
+		self.globalbox.pack_start(self.futurebar, expand=False, fill=False, padding=5)
+		self.globalbox.pack_start(gtk.HSeparator(), expand=False, fill=False, padding=0)
+
+		# Top box
+		self.topbox = gtk.HBox(False, 0)
 		self.globalbox.pack_start(self.topbox, expand=True, fill=True, padding=5)
+
+		# Bottom box
+		self.bottombox = gtk.HBox(False, 0)
 		self.globalbox.pack_end(self.bottombox, expand=False, fill=False, padding=5)
-		self.leftframe = gtk.Frame()
-		self.rightframe = gtk.Frame()
-		self.leftframe.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
-		self.rightframe.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
-		self.topbox.pack_start(self.leftframe, expand=False, fill=False, padding=5)
+		self.globalbox.pack_end(gtk.HSeparator(), expand=False, fill=False, padding=0)
+#		self.leftframe = gtk.Frame()
+#		self.rightframe = gtk.Frame()
+#		self.leftframe.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
+#		self.rightframe.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
+		self.rightframe = gtk.VBox(False, 0)
+#		self.topbox.pack_start(self.leftframe, expand=False, fill=False, padding=5)
 		self.topbox.pack_end(self.rightframe, expand=True, fill=True, padding=5)
 		self.globalbox.show_all();
 
-		self.redraw_left_pane(firstrun=True)
+#		self.redraw_left_pane(firstrun=True)
 
 		# Right frame contents
 		self.panels = []
@@ -242,14 +247,15 @@ class Installer:
 	def set_active(self):
 		self.active=1
 
-	def loadPanel(self, panel = 0):
+	def loadPanel(self, panel=0):
 		if not self.panels[self._cur_panel].deactivate():
 			return
 		self._cur_panel = panel
 		self.right_pane_box.set_current_page(panel)
 		self.panels[panel].activate()
+		self.futurebar.setpos(panel)
 		self.redraw_buttons()
-		self.redraw_left_pane()
+#		self.redraw_left_pane()
 
 	def run(self):
 		self.loadPanel()
