@@ -326,6 +326,8 @@ class WebGLIHandler(handler.Handler):
 		data = "Welcoming string here.<BR>LOCAL INSTALL ASSUMED FOR THIS FRONT END<br>\n"
 		return self.wrap_in_webgli_template(data)
 	def partitioning(self):
+		if 'add_device' in self.post_params:
+			self.shared_info.devices[self.post_params['add_device']] = GLIStorageDevice.Device(self.post_params['add_device'], set_geometry=False, local_device=False)
 		data = '<form name="part" action="/webgli/Partitioning2" method="POST" enctype="multipart/form-data">'
 		partitions_string1 = """The first thing on the new system to setup is the partitoning.
 You will first select a drive and then edit its partitions.
@@ -360,6 +362,10 @@ Which drive would you like to partition?<br>"""
 		for i,choice in enumerate(choice_list):
 			data += '<tr><td><input type="radio" name="editdrive" value="'+choice_list[i][0]+'"></td><td>'+choice_list[i][0]+'</td><td>'+choice_list[i][1]+"</td></tr>\n"
 		data += '</table><input type="submit" name="SubmitEditDrive" value="Edit Drive"></form>'
+		data += """
+		<form name="genericdisk" action="/webgli/Partitioning" method="POST">
+		Add generic disk: <input type="text" name="add_device" size="14"> <input type="submit" value="Add">
+		</form>"""
 		return self.wrap_in_webgli_template(data)
 	def partitioning2(self):
 		data = "<h4>Select a partition or unallocated space to edit</h4>\n"
@@ -369,7 +375,7 @@ Which drive would you like to partition?<br>"""
 		#	continue
 		# now add it to the data structure
 			#self.shared_info.devices[drive_to_partition].add_partition(part_to_edit, int(new_mb), 0, 0, type)
-			
+
 		if not self.post_params['editdrive']:
 			data = "ERROR: You must select a drive to be editing!<br>\n"
 			return self.wrap_in_webgli_template(data)
@@ -383,11 +389,12 @@ Which drive would you like to partition?<br>"""
 		partitions = self.shared_info.devices[drive_to_partition].get_partitions()
 		partlist = self.shared_info.devices[drive_to_partition].get_ordered_partition_list()
 		tmpparts = self.shared_info.devices[drive_to_partition].get_partitions()
-		count = 0
-		for part in partlist:
+		for i, part in enumerate(partlist):
 			tmppart = tmpparts[part]
-			count = count + 1
-			data += '<tr><td><input type="radio" name="editpart" value="'+str(count)+'"></td>'
+			minor = tmppart.get_minor()
+			if not tmppart.get_type() == "free":
+				minor = int(minor)
+			data += '<tr><td><input type="radio" name="editpart" value="' + str(minor) + '"></td>'
 			if tmppart.get_type() == "free":
 				#partschoice = "New"
 				entry = _(u" - Unallocated space (")
@@ -410,6 +417,8 @@ Which drive would you like to partition?<br>"""
 				entry += (tmppart.get_mountopts() or "none") + ", "
 				entry += str(tmppart.get_mb()) + "MB)"
 			data += '<td>'+entry + "</td></tr>\n"
+		if self.shared_info.devices[drive_to_partition].get_model() == "Generic disk":
+			data += '<tr><td><input type="radio" name="editpart" value="-1"></td><td>Add new at end</td></tr>'
 		data += "</table>\n"
 		data += '<input type="submit" name="SubmitEditPart" value="Edit Partition"></form>'
 		return self.wrap_in_webgli_template(data)
@@ -422,9 +431,9 @@ Which drive would you like to partition?<br>"""
 		if not self.post_params['editpart']:
 			data = "ERROR: You must select a partition to edit!<br>\n"
 			return self.wrap_in_webgli_template(data)
-		editpart = int(self.post_params['editpart'])
-		part_to_edit = partlist[editpart-1]
-		tmppart = tmpparts[part_to_edit]
+		editpart = float(self.post_params['editpart'])
+#		part_to_edit = partlist[editpart]
+#		tmppart = tmpparts[part_to_edit]
 		part_types = [("ext2", _(u"Old, stable, but no journaling")),
 			("ext3", _(u"ext2 with journaling and b-tree indexing (RECOMMENDED)")),
 			("linux-swap", _(u"Swap partition for memory overhead")),
@@ -435,9 +444,14 @@ Which drive would you like to partition?<br>"""
 			("reiserfs", _(u"B*-tree based filesystem. great performance. Only V3 supported.")),
 			("extended", _(u"Create an extended partition containing other logical partitions"))]
 		mountpoints = ["","/","/boot","/etc","/home","/lib","/mnt","/mnt/windows","/opt","/root","/usr","/usr/local","/usr/portage","/var"]
-		if tmppart.get_type() == "free":
+		if not editpart == -1:
+			tmppart = tmpparts[float(editpart)]
+		if editpart == -1 or tmppart.get_type() == "free":
 			# partition size first
-			free_mb = tmppart.get_mb()
+			if editpart == -1:
+				free_mb = 0
+			else:
+				free_mb = tmppart.get_mb()
 			data += 'Enter the size of the new partition in MB (max '+str(free_mb)+' MB).  If creating an extended partition input its entire size (not just the first logical size): <input type="text" name="size" value="'+str(free_mb)+"\"><br>\n"
 			#code, new_mb = self._d.inputbox(_(u"Enter the size of the new partition in MB (max %s MB).  If creating an extended partition input its entire size (not just the first logical size):") % str(free_mb), init=str(free_mb))
 			#if code != self._DLG_OK: continue
@@ -445,14 +459,14 @@ Which drive would you like to partition?<br>"""
 			# partition type
 			data += "Choose the filesystem type for this new partition:<br>\n"
 			data += "<table><tr><td>Filesystem</td><td>Description</td></tr>\n"
-			for i,part_type in enumerate(part_types):
-				data += '<tr><td><input type="radio" name="filesystem" value="'++part_types[i][0]+'"> '+part_types[i][0]+'</td><td>'+part_types[i][1]+"</td></tr>\n"
+			for part_type in part_types:
+				data += '<tr><td><input type="radio" name="filesystem" value="' + part_type[0] + '"> ' + part_type[0] + '</td><td>' + part_type[1] + "</td></tr>\n"
 			data += "</table><br>\n" 
 			#code, type = self._d.menu(_(u"Choose the filesystem type for this new partition."), height=20, width=77, choices=part_types)
 		else:
-			tmppart = tmpparts[part_to_edit]
+#			tmppart = tmpparts[part_to_edit]
 			data += "<h2>Partition Information:</h2>\n"
-			data += "<b>Minor:</b> "+drive_to_partition + str(part_to_edit) + "<br> -\n "
+			data += "<b>Minor:</b> "+drive_to_partition + str(editpart) + "<br> -\n "
 			if tmppart.is_logical():
 				data += _(u"Logical Partition<br> - ")
 			else:
@@ -487,22 +501,22 @@ Which drive would you like to partition?<br>"""
 			dumbstring = """
 				part_action = menulist[int(part_action)-1]
 				if part_action == _(u"Delete"):
-					answer = (self._d.yesno(_(u"Are you sure you want to delete the partition ") + drive_to_partition + str(part_to_edit) + "?") == self._DLG_YES)
+					answer = (self._d.yesno(_(u"Are you sure you want to delete the partition ") + drive_to_partition + str(editpart) + "?") == self._DLG_YES)
 					if answer == True:
 						tmpdev = tmppart.get_device()
-						tmpdev.remove_partition(part_to_edit)
+						tmpdev.remove_partition(editpart)
 						break
 				elif part_action == _(u"Mount Point"):
 					mountpoint_menu = ["/","/boot","/etc","/home","/lib","/mnt","/mnt/windows","/opt","/root","/usr","/usr/local","/usr/portage","/var",_(u"Other")]
-					code, mountpt = self._d.menu(_(u"Choose a mountpoint from the list or choose Other to type your own for partition ")+str(part_to_edit)+_(u".  It is currently set to:")+tmppart.get_mountpoint(), choices=self._dmenu_list_to_choices(mountpoint_menu)) #may have to make that an integer
+					code, mountpt = self._d.menu(_(u"Choose a mountpoint from the list or choose Other to type your own for partition ")+str(editpart)+_(u".  It is currently set to:")+tmppart.get_mountpoint(), choices=self._dmenu_list_to_choices(mountpoint_menu)) #may have to make that an integer
 					if code == self._DLG_OK:
 						mountpt = mountpoint_menu[int(mountpt)-1]
 						if mountpt == _(u"Other"):
-							code, mountpt = self._d.inputbox(_(u"Enter a mountpoint for partition ") + str(part_to_edit), init=tmppart.get_mountpoint())
+							code, mountpt = self._d.inputbox(_(u"Enter a mountpoint for partition ") + str(editpart), init=tmppart.get_mountpoint())
 					try: tmppart.set_mountpoint(mountpt)
 					except: self._d.msgbox(_(u"ERROR! Could not set mountpoint!"))
 				elif part_action == _(u"Mount Options"):
-					code, answer = self._d.inputbox(_(u"Enter your mount options for partition ") + str(part_to_edit), init=(tmppart.get_mountopts() or "defaults"))
+					code, answer = self._d.inputbox(_(u"Enter your mount options for partition ") + str(editpart), init=(tmppart.get_mountopts() or "defaults"))
 					if code == self._DLG_OK: tmppart.set_mountopts(answer)
 				elif part_action == _(u"Format"):
 					#Change the Yes/No buttons back.

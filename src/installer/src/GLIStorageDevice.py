@@ -58,7 +58,9 @@ class Device:
 				self._parted_disk = parted.PedDisk.new(self._parted_dev)
 			except:
 				self._parted_disk = self._parted_dev.disk_new_fresh(parted.disk_type_get(archinfo[self._arch]['disklabel']))
-		self._disklabel = self._parted_disk.type.name
+			self._disklabel = self._parted_disk.type.name
+		else:
+			self._disklabel = archinfo[self._arch]['disklabel']
 		if set_geometry:
 			self.set_disk_geometry_from_disk()
 
@@ -329,7 +331,10 @@ class Device:
 	##
 	# Returns the drive model
 	def get_model(self):
-		return self._parted_dev.model
+		if self._local_device:
+			return self._parted_dev.model
+		else:
+			return "Generic disk"
 
 	##
 	# Sets the disklabel type
