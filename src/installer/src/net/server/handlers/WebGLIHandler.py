@@ -539,6 +539,7 @@ Which drive would you like to partition?<br>"""
 		return self.wrap_in_webgli_template(data)
 
 	def partitioning4(self):
+		data = ""
 		drive_to_partition = self.shared_info.drive_to_partition
 		partlist = self.shared_info.devices[drive_to_partition].get_ordered_partition_list()
 		tmpparts = self.shared_info.devices[drive_to_partition].get_partitions()
@@ -548,12 +549,23 @@ Which drive would you like to partition?<br>"""
 		editpart = float(self.post_params['editpart'])
 		if not editpart == -1:
 			tmppart = tmpparts[float(editpart)]
-		if editpart == -1 or tmppart.get_type() == "free":
+		if self.post_params["DelPartition"] == "DELETE PARTITION" or self.post_params["Cancel"] == "Cancel":
+			if self.post_params["DelPartition"] == "DELETE PARTITION":
+				self.shared_info.devices[drive_to_partition].remove_partition(editpart)
+			data = '<form name="redirect" action="/webgli/Partitioning2" method="POST"><input type="hidden" name="editdrive" value="' + drive_to_partition + '"></form><script>document.redirect.submit();</script>'
+		elif editpart == -1 or tmppart.get_type() == "free":
 			if not int(self.post_params['size']):
 				data = "ERROR: you must specify a size in MB"
 				return self.wrap_in_webgli_template(data)
 			new_minor = self.shared_info.devices[drive_to_partition].add_partition(editpart, int(self.post_params['size']), 0, 0, self.post_params['filesystem'])
 			data = '<form name="redirect" action="/webgli/Partitioning3" method="POST"><input type="hidden" name="editpart" value="' + str(int(new_minor)) + '"></form><script>document.redirect.submit();</script>'
+		else:
+			tmppart = tmpparts[editpart]
+			tmppart.set_format(self.post_params['format'])
+			tmppart.set_mkfsopts(self.post_params['fsopts'])
+			tmppart.set_mountopts(self.post_params['mountopts'])
+			tmppart.set_mountpoint(self.post_params['mountpoint'])
+			data = '<form name="redirect" action="/webgli/Partitioning2" method="POST"><input type="hidden" name="editdrive" value="' + drive_to_partition + '"></form><script>document.redirect.submit();</script>'
 
 		if not data:
 			data = "Work in progress<pre>" + str(self.post_params) + "</pre>"
