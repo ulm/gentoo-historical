@@ -44,18 +44,20 @@ class Device:
 	# Initialization function for GLIStorageDevice class
 	# @param device Device node (e.g. /dev/hda) of device being represented
 	# @param arch="x86" Architecture that we're partition for (defaults to 'x86' for now)
-	def __init__(self, device, arch="x86", set_geometry=True, virtual=False, size_known=False):
+	def __init__(self, device, arch="x86", set_geometry=True, virtual=False, local_device=True):
 		self._device = device
 		self._partitions = {}
 		self._geometry = {'cylinders': 0, 'heads': 0, 'sectors': 0, 'sectorsize': 512}
 		self._total_bytes = 0
 		self._cylinder_bytes = 0
 		self._arch = arch
-		self._parted_dev = parted.PedDevice.get(self._device)
-		try:
-			self._parted_disk = parted.PedDisk.new(self._parted_dev)
-		except:
-			self._parted_disk = self._parted_dev.disk_new_fresh(parted.disk_type_get(archinfo[self._arch]['disklabel']))
+		self._local_device = local_device
+		if self._local_device:
+			self._parted_dev = parted.PedDevice.get(self._device)
+			try:
+				self._parted_disk = parted.PedDisk.new(self._parted_dev)
+			except:
+				self._parted_disk = self._parted_dev.disk_new_fresh(parted.disk_type_get(archinfo[self._arch]['disklabel']))
 		self._disklabel = self._parted_disk.type.name
 		if set_geometry:
 			self.set_disk_geometry_from_disk()
@@ -218,6 +220,15 @@ class Device:
 	# @param mountopts='' Partition mount options
 	# @param mkfsopts='' Additional mkfs options
 	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts='',mkfsopts=''):
+		if free_minor == -1:
+			tmpparts = self._partitions.keys()
+			tmpparts.sort()
+			tmpminor = tmpparts[-1]
+			if archinfo[self._arch]['extended'] and tmpminor >= 5:
+				free_minor = new_minor + FREE_MINOR_FRAC_LOG
+			else:
+				free_minor = new_minor + FREE_MINOR_FRAC_PRI
+			self._partitions[free_minor] = Partition(self, free_minor, mb, 0, 0, "free")
 		new_minor = int(free_minor) + 1
 		if self._partitions.has_key(new_minor):
 			parts = self._partitions.keys()
@@ -358,7 +369,13 @@ class Device:
 	##
 	# Returns the total number of MB on the device
 	def get_total_mb(self):
-		return self._total_mb
+		if self._local_device:
+			return self._total_mb
+		else:
+			total_mb = 0
+			for tmppart in self._partitions:
+				total += tmppart.get_mb()
+			return total_mb
 
 	##
 	# Returns partition info dictionary
