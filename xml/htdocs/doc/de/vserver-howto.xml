@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/vserver-howto.xml,v 1.4 2005/08/24 02:54:48 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/vserver-howto.xml,v 1.5 2005/11/06 07:02:04 grahl Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- English CVS Version: 1.2 -->
+<!-- English CVS Version: 1.3 -->
 
 <guide link="/doc/de/vserver-howto.xml" lang="de">
 <title>Gentoo Linux-VServer Howto</title>
@@ -16,6 +16,9 @@
 <author title="Übersetzer">
   <mail link="lonex@rthwlr.net">Timo Rothweiler</mail>
 </author>
+<author title="Übersetzer">
+  <mail link="grahl@gentoo.org">Jan Hendrik Grahl</mail>
+</author>
 
 <abstract>
 In diesem Howto lernen Sie, einen einfachen virtuellen Server unter
@@ -26,8 +29,8 @@ Zuhilfenahme der Linux-VServer-Technologie einzurichten
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.0</version>
-<date>2005-06-17</date>
+<version>1.1</version>
+<date>2005-10-06</date>
 
 <chapter>
 <title>Einführung</title>
@@ -89,7 +92,7 @@ realer Server.
 </chapter>
 
 <chapter>
-<title>Ein VServer-Template erstellen</title>
+<title>Konfiguration des Hosts</title>
 <section>
 <title>Einen VServer-Kernel installieren</title>
 <body>
@@ -108,13 +111,12 @@ Nach der Installation der vserver-sources, konfigurieren Sie diese mit Hilfe von
 # <i>make menuconfig</i>
 
 Linux VServer ---&gt;
-<comment>(Benötigt von den aktuellen Dienstprogrammen)</comment>
-  [*] Enable Legacy Kernel API
+  [] Enable Legacy Kernel API
 <comment>(Nicht aktivieren!)</comment>
   [ ] Disable Legacy Networking Kernel API
 <comment>(Dringend empfohlen)</comment>
   [*] Enable Proc Security
-  [ ] Enable Hard CPU Limits
+  [*] Enable Hard CPU Limits
   Persistent Inode Context Tagging (UID24/GID24)  ---&gt;
   [ ] Tag NFSD User Auth and Files
   [ ] Compile Debugging Code
@@ -131,7 +133,7 @@ startet.
 # <i>make</i>
 <comment>(Installieren)</comment>
 # <i>make modules_install</i>
-# <i>cp arch/i386/boot/bzImage /boot/kernel-&lt;KERNELVERSION&gt;-vs&lt;VSERVERVERSION&gt;</i>
+# <i>cp arch/i386/boot/bzImage /boot/kernel-&lt;KERNELVERSION&gt;-vserver-&lt;VSERVERVERSION&gt;</i>
 <comment>(Bearbeiten der Bootloader-Konfigurationsdatei wie benötigt und)</comment>
 # <i>reboot</i>
 </pre>
@@ -147,24 +149,26 @@ Um Ihre virtuellen Server zu warten benötigen Sie das util-vserver-Paket,
 welches alle nötigen Programme und viele nützliche Features beinhaltet.
 </p>
 
+<note>
+Die Hilfsprogramme und Funktionen die in diesem Leitfaden verwendet werden
+erfordern <c>&gt;=sys-apps/util-vserver-0.30.208-r3</c>. Sie müssen dies unter
+Umständen per Keyword erlauben.
+</note>
+
 <pre caption="Installieren der vserver-Dienstprogramme">
 # <i>emerge util-vserver</i>
 </pre>
 
 <p>
-Wenn Sie Proc Security verwenden, müssen Sie bestimmte Dateien in Ihrem
-<path>/proc</path>-Verzeichnis "aufdecken", um sie in virtuellen Servern
-verfügbar zu machen. In <path>/usr/lib/util-vserver</path> ist ein Skript
-namens <c>vprocunhide</c>, welches die in
-<path>/usr/lib/util-vserver/defaults/vprocunhide-files</path> angegebenen
-Dateien sichtbar macht. Das util-vserver-Ebuild hat ein Init-Skript
-installiert, das den <c>vprocunhide</c>-Befehl verwendet. Fügen Sie es Ihrem
-Runlevel hinzu:
+Sie müssen den <c>vprocunhide</c> Befehl nach jeden Neustart ausführen, damit
+die <path>/proc</path> Berechtigungen korrekt für vserver gesetzt sind. Ein
+Init-Skript wurde dafür von util-vserver installiert. Um es zu verwenden,
+sollten Sie es zu einem Runlevel hinzufügen:
 </p>
 
 <pre caption="vprocunhide Init-Skript">
-# <i>rc-update add vprocunhide default</i>
-# <i>/etc/init.d/vprocunhide start</i>
+# <i>rc-update add vservers default</i>
+# <i>/etc/init.d/vservs start</i>
 </pre>
 
 <p>
@@ -180,29 +184,19 @@ finden ist:
 
 </body>
 </section>
+</chapter>
+
+<chapter>
+<title>Eine Gast-Template erstellen</title>
 <section>
-<title>Grundlegende Skeleton-Konfiguration</title>
+<title>Einen stage3 vserver installieren</title>
 <body>
 
 <p>
-Sie müssen einige Konfigurationsdateien und -verzeichnisse anlegen, um Ihre
-virtuellen Server zum Laufen zu bringen. Wir verwenden den Skeleton-Buildmodus
-des util-vserver-Pakets, um die grundlegende Konfiguration zu erstellen.
-</p>
-
-<p>
-Das util-vserver-Paket verwendet standardmäßig <path>/vservers</path> um alle
-virtuellen Server abzulegen. Sie können Ihre Server an anderer Stelle ablegen,
-wenn Sie dem Build-Befehl weiter unten <c>--rootdir=/path/to/vserver/root</c>
-hinzufügen.
-</p>
-
-<p>
-In Portage befindet sich ein neues baselayout-vserver-Ebuild, das den normalen
-Init-Style verwendet, d.h. Sie müssen nicht mehr den Gentoo-Init-Style
-verwenden. Der normale Init-Style verwendet <c>init</c> und
-<path>/etc/inittab</path> um Runlevels und Init-Skripte zu verwalten
-(wird als zuverlässiger betrachtet und ist jetzt Standard).
+Wir werden <c>vserver-new</c> verwenden um einen ersten Gast zu erstellen.
+Sie müssen einen als stage3 preparierten vserver von 
+<uri>http://dev.gentoo.org/~hollow/vserver/stages</uri> herunterladen und
+das Skript wird Sie dann durch den Vorgang führen.
 </p>
 
 <p>
@@ -212,70 +206,19 @@ Beispiel ist eth0 auf 192.168.1.254/24 konfiguriert und die Context-ID ist
 äquivalent zu den letzten beiden Teilen der IP des virtuellen Servers).
 </p>
 
-<pre caption="Grundkonfiguration">
-# <i>vserver gentoo build -m skeleton \</i>
+<pre caption="Starten der stage3 Installation">
+# <i>vserver-new gentoo-template \</i>
   <i>--hostname gentoo \</i>
-  <i>--initstyle plain \</i>
   <i>--context 1253</i>
-  <i>--interface gentoo=eth0:192.168.1.253/24</i>
+  <i>--interface eth0:192.168.1.253/24 \</i>
+  <i>stage3 /path/to/stage3-tarball.tar.bz2</i>
 </pre>
-
-<impo>
-Standardmäßig darf der virtuelle Server den Hostnamen selbst setzen. Stellen
-Sie sicher, dass Sie später im virtuellen Server
-<path>/etc/conf.d/hostname</path> auf obigen Hostnamen abändern.
-</impo>
-
-</body>
-</section>
-<section>
-<title>Installieren der Gentoo-Installationsdateien</title>
-<body>
-
-<p>
-Wir erstellen ein Gentoo-Template, das wir später kopieren können, um einfacher
-mehrere virtuelle Server zu bekommen. Das VServer-Build-Skript hat ein paar
-grundlegende Verzeichnisse in <path>/vservers/gentoo</path> erstellt, die
-sowieso durch eine Stage installiert werden, also löschen wir sie zuerst.
-</p>
-
-<pre caption="Entfernen der Rohbau-Dateien">
-# <i>rm -rf /vservers/gentoo/*</i>
-</pre>
-
-<p>
-Sie müssen nun ein reguläres Gentoo-System installieren. Dazu können Sie bis
-auf ein paar Einschränkungen und Ergänzungen dem Gentoo-Handbuch folgen:
-</p>
-
-<ul>
-  <li>
-    Ersetzen von <path>/mnt/gentoo</path> durch <path>/vservers/gentoo</path>
-  </li>
-  <li>
-    Wählen des <path>vserver/x86</path>-Profils in <uri
-    link="http://www.gentoo.org/doc/de/handbook/handbook-x86.xml?part=1&amp;chap=6#doc_chap1_sect6">Kapitel
-    6.a</uri>
-  </li>
-  <li>
-    Benutzen Sie die <uri 
-    link="http://dev.gentoo.org/~hollow/vserver/stages/">hier</uri> verfügbaren
-    VServer-Stages.
-  </li>
-</ul>
-
-<p>
-Nun folgen Sie dem Gentoo-Handbuch von <uri
-link="/doc/de/handbook/handbook-x86.xml?part=1&amp;chap=5#doc_chap2">Kapitel
-5.b</uri> bis Kapitel 7.a und <uri
-link="/doc/de/handbook/handbook-x86.xml?part=1&amp;chap=8#doc_chap3">Kapitel
-8.c</uri> bis Kapitel 9.c
-</p>
 
 <note>
 Um Ihre Netzwerkeinstellungen widerzuspiegeln sollten Sie
 <path>/etc/conf.d/hostname</path>, <path>/etc/conf.d/domainname</path> und
-<path>/etc/hosts</path> nach Ihren Bedürfnissen anpassen. Siehe <uri
+<path>/etc/hosts</path> innerhalb des Gasts nach Ihren Bedürfnissen anpassen.
+Siehe <uri
 link="/doc/de/handbook/handbook-x86.xml?part=1&amp;chap=8#doc_chap2_sect1">Kapitel
 8.b.1</uri> und <uri
 link="/doc/de/handbook/handbook-x86.xml?part=1&amp;chap=8#doc_chap2_sect4">Kapitel
@@ -286,48 +229,42 @@ Host gemacht.
 </body>
 </section>
 <section>
-<title>Notwendige Änderungen an den Konfigurationsdateien</title>
+<title>Erstellen des Template-Tarballs</title>
 <body>
 
 <p>
-Ändern Sie den Source-Eintrag in <path>/etc/syslog-ng/syslog-ng.conf</path>,
-da wir aus Sicherheitsgründen keine Berechtigung haben, um 
-<path>/proc/kmsg</path> lesen zu können und entfernen Sie die 
-Console-Destination:
+Sie müssen nicht einen stage3-Tarball für jeden Benutzer erstellen. Das
+<c>vserver-new</c> Skript unterstützt Templates. Um diese verwenden zu können,
+müssen Sie einen Tarball von Ihrer vserver-Konfiguration erstellen.
 </p>
 
-<pre caption="Bearbeiten von /etc/syslog-ng/syslog-ng.conf">
-<comment>(Ändern von)</comment>
-source src { unix-stream("/dev/log"); internal(); pipe("/proc/kmsg"); };
-<comment>(auf)</comment>
-source src { unix-stream("/dev/log"); internal(); };
-
-<comment>(Entfernen Sie diese Zeilen)</comment>
-# By default messages are logged to tty12...
-destination console_all { file("/dev/tty12"); };
-# ...if you intend to use /dev/console for programs like xconsole
-# you can comment out the destination line above that references /dev/tty12
-# and uncomment the line below.
-#destination console_all { file("/dev/console"); };
-
-log { source(src); destination(console_all); };
+<pre caption="Erstellen des Template-Tarballs">
+# <i>cd /vservers/gentoo-template</i>
+# <i>tar cjvpf ../gentoo-template.tar.bz2 ./</i>
 </pre>
-
-</body>
-</section>
-<section>
-<title>Verlassen der Chroot-Umgebung</title>
-<body>
 
 <p>
-Ihr System sollte fertig sein. Verlassen Sie das Chroot und unmounten Sie das
-proc-Dateisystem.
+Um einen neuen Gast unter Verwendung dieses Tarballs zu erstellen, verwenden
+Sie einfach <c>vserver-new</c>:
 </p>
 
-<pre caption="Verlassen der Chroot-Umgebung">
-# <i>exit</i>
-# <i>umount /vservers/gentoo/proc/</i>
+<pre caption="Template-Tarball verwenden">
+# <i>cd /vservers</i>
+# <i>vserver-new myguest \</i>
+  <i>--hostname myguest \</i>
+  <i>--context 1252 \</i>
+  <i>--interface eth0:192.168.1.252/24 \</i>
+  <i>template ./gentoo-template.tar.bz2</i>
 </pre>
+
+<note>
+Sie sollten auch einen gemeinsamen Portagebaum für Ihren Gast verwenden um
+die Größe der Gäste in Grenzen zu halten. Editieren Sie 
+<path>/etc/vservers/myguest/fstab</path> und entkommentieren Sie die Einträge
+für <path>/usr/portage</path> und <path>/usr/portage/distfiles</path>. Gäste
+werden nur-lesen Zugriff auf <path>/usr/portage</path> und lesen-und-schreiben
+Zugriff auf <path>/usr/portage/distfiles</path>.
+</note>
 
 </body>
 </section>
@@ -343,20 +280,19 @@ da das VServer-Profil dieses Paket standardmäßig nicht beinhaltet.
 </p>
 
 <pre caption="Testen des virtuellen Servers">
-# <i>vserver gentoo start</i>
+# <i>vserver myguest start</i>
 # <i>vserver-stat</i>
 CTX   PROC    VSZ    RSS  userTIME   sysTIME    UPTIME NAME
 0       90   1.4G 153.4K  14m00s11   6m45s17   2h59m59 root server
-1253     2     3M   286    0m00s45   0m00s42   0m02s91 gentoo
-# <i>vserver gentoo enter</i>
+1252     2     3M   286    0m00s45   0m00s42   0m02s91 myguest
+# <i>vserver myguest enter</i>
 # <i>ps ax</i>
 PID   TTY      STAT   TIME COMMAND
     1 ?        S      0:00 init [3]
 22887 ?        Ss     0:00 /usr/sbin/syslog-ng
 20496 pts/0    S      0:00 /bin/bash -login
 20508 pts/0    R+     0:00 ps ax
-# <i>halt</i>
-Killed
+# <i>logout</i>
 </pre>
 
 </body>
