@@ -424,7 +424,8 @@ Which drive would you like to partition?<br>"""
 		return self.wrap_in_webgli_template(data)
 	def partitioning3(self):
 		data = ""
-		data += '<form name="part3" action="/showargs" method="POST" enctype="multipart/form-data">'
+		data += '<form name="part3" action="/webgli/Partitioning4" method="POST" enctype="multipart/form-data">'
+		data += '<input type="hidden" name="editpart" value="' + self.post_params['editpart'] + '">'
 		drive_to_partition = self.shared_info.drive_to_partition
 		partlist = self.shared_info.devices[drive_to_partition].get_ordered_partition_list()
 		tmpparts = self.shared_info.devices[drive_to_partition].get_partitions()
@@ -462,6 +463,7 @@ Which drive would you like to partition?<br>"""
 			for part_type in part_types:
 				data += '<tr><td><input type="radio" name="filesystem" value="' + part_type[0] + '"> ' + part_type[0] + '</td><td>' + part_type[1] + "</td></tr>\n"
 			data += "</table><br>\n" 
+			data += '<input type="submit" value="Create"> &nbsp; <input type="button" value="Cancel" onclick="location.go(-1)">'
 			#code, type = self._d.menu(_(u"Choose the filesystem type for this new partition."), height=20, width=77, choices=part_types)
 		else:
 #			tmppart = tmpparts[part_to_edit]
@@ -535,6 +537,28 @@ Which drive would you like to partition?<br>"""
 						code, new_mkfsopts = self._d.inputbox(_(u"Extra mkfs.* Parameters"), init=new_mkfsopts)
 						if code == self._DLG_OK: tmppart.set_mkfsopts(new_mkfsopts)"""
 		return self.wrap_in_webgli_template(data)
+
+	def partitioning4(self):
+		drive_to_partition = self.shared_info.drive_to_partition
+		partlist = self.shared_info.devices[drive_to_partition].get_ordered_partition_list()
+		tmpparts = self.shared_info.devices[drive_to_partition].get_partitions()
+		if not self.post_params['editpart']:
+			data = "ERROR: You must select a partition to edit!<br>\n"
+			return self.wrap_in_webgli_template(data)
+		editpart = float(self.post_params['editpart'])
+		if not editpart == -1:
+			tmppart = tmpparts[float(editpart)]
+		if editpart == -1 or tmppart.get_type() == "free":
+			if not int(self.post_params['size']):
+				data = "ERROR: you must specify a size in MB"
+				return self.wrap_in_webgli_template(data)
+			new_minor = self.shared_info.devices[drive_to_partition].add_partition(editpart, int(self.post_params['size']), 0, 0, self.post_params['filesystem'])
+			data = '<form name="redirect" action="/webgli/Partitioning3" method="POST"><input type="hidden" name="editpart" value="' + str(int(new_minor)) + '"></form><script>document.redirect.submit();</script>'
+
+		if not data:
+			data = "Work in progress<pre>" + str(self.post_params) + "</pre>"
+		return self.wrap_in_webgli_template(data)
+
 	def networkmounts(self):
 		data = "Network Mounts page."
 		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
@@ -2102,6 +2126,7 @@ Please be patient while the screens load. It may take awhile.
 					'/webgli/Partitioning': self.partitioning,
 					'/webgli/Partitioning2': self.partitioning2,
 					'/webgli/Partitioning3': self.partitioning3,
+					'/webgli/Partitioning4': self.partitioning4,
 					'/webgli/saveportage': self.saveportage,
 					'/webgli/GlobalUSE': self.globaluse,
 					'/webgli/saveglobaluse': self.saveglobaluse,

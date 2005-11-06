@@ -225,11 +225,13 @@ class Device:
 		if free_minor == -1:
 			tmpparts = self._partitions.keys()
 			tmpparts.sort()
-			tmpminor = tmpparts[-1]
+			tmpminor = 0
+			if len(tmpparts):
+				tmpminor = tmpparts[-1]
 			if archinfo[self._arch]['extended'] and tmpminor >= 5:
-				free_minor = new_minor + FREE_MINOR_FRAC_LOG
+				free_minor = tmpminor + FREE_MINOR_FRAC_LOG
 			else:
-				free_minor = new_minor + FREE_MINOR_FRAC_PRI
+				free_minor = tmpminor + FREE_MINOR_FRAC_PRI
 			self._partitions[free_minor] = Partition(self, free_minor, mb, 0, 0, "free")
 		new_minor = int(free_minor) + 1
 		if self._partitions.has_key(new_minor):
@@ -264,6 +266,7 @@ class Device:
 		if type == "extended":
 			self._partitions[4 + FREE_MINOR_FRAC_LOG] = Partition(self, (4 + FREE_MINOR_FRAC_LOG), mb, 0, 0, "free")
 		self.tidy_partitions()
+		return new_minor
 
 	##
 	# Removes partition from partition info

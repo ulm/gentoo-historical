@@ -272,7 +272,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				  'WebGLIHandler': ['/webgli', '/webgli/', 
 						'/webgli/ClientConfig', '/webgli/saveclientconfig',
 						'/webgli/NetworkMounts', '/webgli/savenetmounts',
-						'/webgli/Partitioning', '/webgli/Partitioning2', '/webgli/Partitioning3',
+						'/webgli/Partitioning', '/webgli/Partitioning2', '/webgli/Partitioning3', '/webgli/Partitioning4',
 						'/webgli/StageSelection', '/webgli/savestage',
 						'/webgli/PortageTree', '/webgli/saveportage',
 						'/webgli/GlobalUSE', '/webgli/saveglobaluse',
