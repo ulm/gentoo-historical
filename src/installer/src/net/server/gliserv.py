@@ -22,7 +22,7 @@ except:
 
 class SharedInfo(object):
 
-	__shared_state = { 'client_state': {}, 'last_visitor': "", 'clients': [], 'profiles': [], 'install_profile': None, 'client_profile':None, 'temp_use': "" }
+	__shared_state = { 'client_state': {}, 'last_visitor': "", 'clients': [], 'profiles': [], 'install_profile': None, 'client_profile':None, 'temp_use': "", 'devices':None, 'drive_to_partition':"" }
 
 	def __init__(self):
 		self.__dict__ = self.__shared_state
@@ -272,7 +272,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				  'WebGLIHandler': ['/webgli', '/webgli/', 
 						'/webgli/ClientConfig', '/webgli/saveclientconfig',
 						'/webgli/NetworkMounts', '/webgli/savenetmounts',
-						'/webgli/Partitioning', '/webgli/savepartitions',
+						'/webgli/Partitioning', '/webgli/Partitioning2', '/webgli/Partitioning3',
 						'/webgli/StageSelection', '/webgli/savestage',
 						'/webgli/PortageTree', '/webgli/saveportage',
 						'/webgli/GlobalUSE', '/webgli/saveglobaluse',
