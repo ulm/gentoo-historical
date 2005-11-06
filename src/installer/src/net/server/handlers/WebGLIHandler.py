@@ -465,6 +465,7 @@ Which drive would you like to partition?<br>"""
 			#code, type = self._d.menu(_(u"Choose the filesystem type for this new partition."), height=20, width=77, choices=part_types)
 		else:
 #			tmppart = tmpparts[part_to_edit]
+			editpart = int(editpart)
 			data += "<h2>Partition Information:</h2>\n"
 			data += "<b>Minor:</b> "+drive_to_partition + str(editpart) + "<br> -\n "
 			if tmppart.is_logical():
