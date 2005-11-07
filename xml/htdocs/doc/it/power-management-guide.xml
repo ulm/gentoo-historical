@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/power-management-guide.xml,v 1.6 2005/07/19 21:34:29 so Exp $ -->
-<guide link="/doc/it/power-management-guide.xml" lang="it">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/power-management-guide.xml,v 1.7 2005/11/07 21:02:55 mascherpa Exp $ -->
+<guide link="/doc/it/power-management-guide.xml">
 <title>Guida alla Gestione Energetica</title>
 
 <author title="Autore">
@@ -20,8 +20,8 @@ sui sistemi mobile come i notebook. Questa guida ne illustra la sua configurazio
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.24</version>
-<date>2005-06-10</date>
+<version>1.25</version>
+<date>2005-10-02</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -141,42 +141,56 @@ più recente.
 </p>
 
 <p>
-Nella configurazione del kernel si devono attivare le seguenti opzioni:
+In Portage ci sono differenti versioni del kernel. Quelle consigliate
+sono <c>gentoo-sources</c> e <c>suspend2-sources</c>. La seconda, in particolare,
+contiene le ultime patch per il supporto Software Suspend 2; si veda la sezione
+sugli stati di sleep per maggiori dettagli. Nelle opzioni di configurazione del 
+kernel vanno, in ogni caso, attivate le opzioni seguenti:
 </p>
 
 <pre caption="Settaggi minimi del kernel per il Power Management (Kernel 2.6)">
 Power Management Options ---&gt;
   [*] Power Management Support
   [ ] Software Suspend
-  [ ] Suspend-to-Disk Support
 
   ACPI( Advanced Configuration and Power Interface ) Support ---&gt;
     [*] ACPI Support
     [ ]   Sleep States
+    [ ]     /proc/acpi/sleep (deprecated)
     [*]   AC Adapter
     [*]   Battery
     &lt;M&gt;   Button
+    &lt;M&gt;   Video
+    [ ]   Generic Hotkey
     &lt;M&gt;   Fan
     &lt;M&gt;   Processor
     &lt;M&gt;     Thermal Zone
     &lt; &gt;   ASUS/Medion Laptop Extras
+    &lt; &gt;   IBM ThinkPad Laptop Extras
     &lt; &gt;   Toshiba Laptop Extras
+    (0)   Disable ACPI for systems before Jan 1st this year
     [ ]   Debug Statements
+    [*]   Power Management Timer Support
+    &lt; &gt;   ACPI0004,PNP0A05 and PNP0A06 Container Driver (EXPERIMENTAL)
     
   CPU Frequency Scaling ---&gt;
     [*] CPU Frequency scaling
+    [ ]   Enable CPUfreq debugging
+    &lt; &gt;   CPU frequency translation statistics
+    [ ]     CPU frequency translation statistics details
           Default CPUFreq governor (userspace)
     &lt;*&gt;   'performance' governor
     &lt;*&gt;   'powersave' governor
     &lt;*&gt;   'ondemand' cpufreq policy governor
+    &lt;*&gt;   'conservative' cpufreq governor
     &lt;*&gt;   CPU frequency table helpers
     &lt;M&gt; ACPI Processor P-States driver
     &lt;*&gt; <i>driver CPUFreq a seconda del processore</i>
 </pre>
 
 <p>
-E' possibile anche attivare, a propria discrezione, Software Suspend, Suspend-to-Disk e Sleep States.
-I possessori di notebook ASUS, Medion o Toshiba devono attivare i relativi 
+E' possibile attivare, a propria discrezione, Software Suspend e Sleep States.
+I possessori di notebook ASUS, Medion, Thinkpad IBM o Toshiba devono attivare i relativi 
 moduli specifici. 
 </p>
 
@@ -241,9 +255,27 @@ non c'è ancora nessun cambio automatico tra i due livelli.
 <p>
 Di solito gli eventi ACPI sono la chiusura del lid, il cambio della sorgente
 energetica e il bottone di sleep. Il cambio di sorgente energetica è un evento
-importante e deve necessariamente generare un cambio di runlevel. La creazione dei file
-seguenti permetterà un cambio fra i runlevel <e>default</e> e <e>battery</e>
-a seconda del tipo di sorgente energetica utilizzata.
+importante e deve necessariamente generare un cambio di runlevel. Di questo
+si occuperà un piccolo script.
+</p>
+
+<p>
+E' necessario uno script in grado di cambiare il runlevel fra <c>default</c>
+e <c>battery</c> a seconda della sorgente energetica utilizzata. Lo
+script utilizzata il comando <c>on_ac_power</c> fornito da
+<c>sys-power/powermgmt-base</c> - ci si assicuri dell'installazione di tale
+pacchetto nel proprio sistema.
+</p>
+
+<pre caption="Installazione di powermgt-base">
+<i># emerge powermgmt-base</i>
+</pre>
+
+<p>
+Ora, tramite il comando <c>on_ac_power &amp;&amp; echo AC available || echo Running on batteries</c> eseguito in shell è possibile determinare la sorgente energetica
+in uso.
+Lo script seguente è responsabile del cambio di runlevel.
+Va salvato come <path>/etc/acpi/actions/pmg_switch_runlevel.sh</path>
 </p>
 
 <pre caption="/etc/acpi/actions/pmg_switch_runlevel.sh">
@@ -281,29 +313,56 @@ then
 fi
 </pre>
 
+<p>
+Con il comando <c>chmod +x /etc/acpi/actions/pmg_switch_runlevel.sh</c> si
+rende lo script eseguibile. Infine è necessario che lo script venga eseguito
+ad ogni cambio di sorgente energetica dal demone <c>acpid</c>. Bisogna, però,
+sapere quali eventi vengono generati al cambio di sorgente energetica. Gli
+eventi vengono chiamati <e>ac_adapter</e> e <e>battery</e> sulla maggior parte
+dei notebook, ma si potrebbero avere delle eccezioni.
+</p>
+
+<pre caption="Determinazione degli eventi ACPI al cambio di sorgente energetica">
+<i># tail -f /var/log/acpid | grep "received event"</i>
+</pre>
+
+<p>
+Si esegua il comando sopra indicato e si stacchi il cavo di alimentazione dal
+proprio notebook.
+</p>
+
+<pre caption="Esempio di output al cambio di sorgente energetica">
+[Tue Sep 20 17:39:06 2005] received event "ac_adapter AC 00000080 00000000"
+[Tue Sep 20 17:39:06 2005] received event "battery BAT0 00000080 00000001"
+</pre>
+
+<p>
+La parte interessante di questo output è quella che segue <e>received event</e>
+fra le virgolette. Sarà necessario inserire queste stringhe nello script che segue.
+In caso il proprio notebook dovesse generare più eventi o sempre lo stesso evento,
+non c'è da preoccuparsi.
+</p>
+
 <pre caption="/etc/acpi/events/pmg_ac_adapter">
 <comment># Si sostituisca "ac_adapter" indicato di seguito con l'evento generato dal proprio notebook</comment>
-<comment># Per conoscere il nome dell'evento si legga /var/log/acpid</comment>
+<comment># Ad esempio ac_adapter.* sarà sostituito da ac_adapter AC 00000080 00000000</comment>
 event=ac_adapter.*
 action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
 </pre>
 
 <pre caption="/etc/acpi/events/pmg_battery">
 <comment># Si sostituisca "battery" indicato di seguito con l'evento generato dal proprio notebook</comment>
-<comment># Per conoscere il nome dell'evento si legga /var/log/acpid</comment>
+<comment># Ad esempio battery.* sarà sostituito da battery BAT0 00000080 00000001</comment>
 event=battery.*
 action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
 </pre>
 
 <p>
-Ora è necessario il pacchetto sys-power/powermgmt-base che contiene l'utility
-<c>on_ac_power</c>. Il file <path>pmg_switch_runlevel.sh</path>
-deve essere eseguibile.
+Sarà necessario riavviare il demone acpid per rendere attivi i cambiamenti
+apportati.
 </p>
 
-<pre caption="Cambio dei runlevel con acpid">
-<i># emerge powermgmt-base</i>
-<i># chmod +x /etc/acpi/actions/pmg_switch_runlevel.sh</i>
+<pre caption="Riavvio del demone acpid">
 <i># /etc/init.d/acpid restart</i>
 </pre>
 
@@ -319,11 +378,14 @@ utilizzata, è possibile consultare la sezione Problemi.
 <p>
 A causa della natura del meccanismo degli eventi, il notebook, al boot,
 passa al runlevel default che sia o meno collegato alla rete elettrica.
-E' necessario aggiungere, per questo, una nuova entry al boot
-loader con l'opzione <c>softlevel=battery</c>; soluzione scomoda. Una soluzione
-migliore è quella di creare un evento ACPI finto alla fine del processo di boot
-e lasciare che lo script <path>/etc/acpi/default.sh</path> decida quale
-runlevel utilizzare. Si apra con il proprio editor il file <path>/etc/conf.d/local.start</path>
+Questo va bene se si è collegati direttamente a rete elettrica,
+certamente no quando si avvia da batteria.
+Una soluzione potrebbe essere l'aggiunta di un parametro del tipo
+<c>softlevel=battery</c> al proprio boot loader, ma ci si potrebbe dimenticare
+di selezionarlo. Una soluzione migliore è sicuramente quella di generare
+un finto evento ACPI alla fine del processo di boot e lasciare che lo script
+<path>pmg_switch_runlevel.sh</path> decida quale runlevel utilizzare.
+Si apra con il proprio editor il file <path>/etc/conf.d/local.start</path>
 e si aggiungano le linee:
 </p>
 
@@ -417,18 +479,18 @@ Ecco un esempio di quello che si ottiene:
 </p>
 
 <pre caption="Output di esempio di cpufreq-info">
-cpufrequtils 0.2: cpufreq-info (C) Dominik Brodowski 2004
+cpufrequtils 0.3: cpufreq-info (C) Dominik Brodowski 2004
 Report errors and bugs to linux@brodo.de, please.
 analyzing CPU 0:
  driver: centrino
  CPUs which need to switch frequency at the same time: 0
  hardware limits: 600 MHz - 1.40 GHz
  available frequency steps: 600 MHz, 800 MHz, 1000 MHz, 1.20 GHz, 1.40 GHz
- available cpufreq governors: ondemand, powersave, userspace, performance
+ available cpufreq governors: conservative, ondemand, powersave, userspace, performance
  current policy: frequency should be within 924 MHz and 1.40 GHz.
   The governor "performance" may decide which speed to use
   within this range.
- current CPU frequency is 1.40 GHz (asserted by call to hardware).
+ current CPU frequency is 1.40 GHz.
 </pre>
 
 <p>
@@ -470,11 +532,28 @@ grafica per una configurazione più semplice.
   <ti>N.A.</ti>
   <ti>N.A.</ti>
   <ti>
+	Scegle la frequenza massima in caso di carico della CPU e frequenze
+	man mano più basse in caso di CPU libera.
     Configurazione attraverso i file presenti in
     <path>/sys/devices/system/cpu/cpu0/cpufreq/ondemand/</path>.
     Richiede ancora tool in userspace (programmi, script) in caso
     di utilizzo del cambio di governor.
   </ti>
+</tr>
+<tr>
+	<ti>'conservative' governor</ti>
+	<ti>Kernel</ti>
+	<ti>Carico della CPU</ti>
+	<ti>N.A.</ti>
+	<ti>N.A.</ti>
+	<ti>
+	A differenza dell'ondemand governor, il conservative non salta alla massima
+	frequenza quando il carico della CPU cresce, ma aumenta poco alla volta
+	la frequenza. Configurazione attraverso i file presenti in
+	<path>/sys/devices/system/cpu/cpu0/cpufreq/ondemand/</path>. Richiede ancora
+	tool in userspace (programmi, script) in caso di utilizzo del cambio di
+	governor.
+	</ti>
 </tr>
 <tr>
   <ti><uri link="http://mnm.uib.es/~gallir/cpudyn/">cpudyn</uri></ti>
@@ -490,7 +569,8 @@ grafica per una configurazione più semplice.
 <tr>
   <ti><uri link="http://sourceforge.net/projects/cpufreqd/">cpufreqd</uri></ti>
   <ti>Demone</ti>
-  <ti>Stato della batteria, Carico della CPU, Programmi in esecuzione</ti>
+  <ti>Stato della batteria, Carico della CPU, Temperatura, Programmi in
+  esecuzione</ti>
   <ti>Tutti disponibili</ti>
   <ti>Nessuno</ti>
   <ti>
@@ -510,15 +590,29 @@ grafica per una configurazione più semplice.
   </ti>
 </tr>
 <tr>
+  <ti>
+    <uri link="http://fatcat.ftj.agh.edu.pl/~nelchael/index.php?cat=projs&amp;subcat=ncpufreqd&amp;language=en">ncpufreqd</uri>
+  </ti>
+	<ti>Demone</ti>
+	<ti>Temperatura</ti>
+	<ti>Nessuno</ti>
+	<ti>Powersave, performance</ti>
+	<ti>
+	Passa da modalità performance a powersave a seconda della temperatura del sistema.
+	Molto utile su notebook con noti problemi di surriscaldamento.
+	</ti>
+</tr>
+  	 <tr>	
+	
   <ti><uri link="http://www.goop.org/~jeremy/speedfreq/">speedfreq</uri></ti>
   <ti>Demone</ti>
   <ti>Carico della CPU</ti>
   <ti>Nessuno</ti>
   <ti>Dynamic, powersave, performance, fixed speed</ti>
   <ti>
-    Piccola ma efficace con una utile interfaccia client/server. Richiede un 
-    kernel della serie 2.6. Il suo sviluppo sembra non continuare e a breve
-    dovrebbe essere rimossa dal Portage.
+    Semplice da configurare con una interfaccia client/server. Richiede un 
+    kernel della serie 2.6. Il suo sviluppo è stato interrotto, non è più funzionante
+	e per questo motivo è stato rimosso da Portage.
   </ti>
 </tr>
 <tr>
@@ -580,6 +674,12 @@ maxfreq=100%
 policy=ondemand
 
 [Profile]
+name=conservative
+minfreq=0%
+maxfreq=100%
+policy=conservative
+
+[Profile]
 name=powersave
 minfreq=0%
 maxfreq=100%
@@ -594,7 +694,7 @@ policy=performance
 [Rule]
 name=battery
 ac=off
-profile=ondemand
+profile=conservative
 
 [Rule]
 name=battery_low
@@ -605,23 +705,12 @@ profile=powersave
 [Rule]
 name=ac
 ac=on
-profile=performance
+profile=ondemand
 </pre>
 
 <p>
-Se si sta utilizzando un kernel 2.6 con interfaccia sysfs (e per la maggior parte dei casi è così), 
-non è possibile utilizzare valori in percentuale come riportato appena sopra. Le percentuali devono
-essere sostituite con i valori minimi e massimi di frequenza come riportato da <c>cpufreq-info
---hwlimits</c>. Ad esempio, per un Pentium M 1.4 GHz si ottengono i valori:
-</p>
-
-<pre caption="Esempi di valori di minfreq e maxfreq">
-minfreq=600000
-maxfreq=1400000
-</pre>
-
-<p>
-Infine bisogna avviare il demone.
+	Ora si può avviare il demone cpufreqd. Lo si aggiunga ai runlevel <e>default</e> e
+	<e>battery</e> come mostrato di seguito.
 </p>
 
 <pre caption="Avvio di cpufreqd">
@@ -690,10 +779,10 @@ La prima cosa da controllare sono i settaggi di standby/suspend/off del display.
 Questi sono tutti valori che dipendono dal windowmanager. L'oscuramento del
 terminale può essere effettuato con <c>setterm -blank &lt;numero-di-minutiM&gt;</c>,
 <c>setterm -powersave on</c> e <c>setterm -powerdown &lt;numero-di-minutiM&gt;</c>.
-Per Xorg, si può editare <path>/etc/X11/xorg.conf</path> come di seguito riportato:
+Per X.org, si può editare <path>/etc/X11/xorg.conf</path> come di seguito riportato:
 </p>
 
-<pre caption="Settaggi dell'LCD suspend in Xorg e in XFree86">
+<pre caption="Settaggi dell'LCD suspend in X.org e in XFree86">
 Section "ServerLayout"
   Identifier  [...]
   [...]
@@ -969,7 +1058,29 @@ di log al disco prima di effettuare l'unmounting. Sono essenziali. Montare anche
 </chapter>
 
 <chapter>
-<title>Power Management delle altre periferiche</title>
+<title>Power Management per altre periferiche</title>
+<section>
+<title>Schede grafiche</title>
+<body>
+	
+<p>
+Se si è in possesso di una scheda grafica ATI con supporto PowerPlay (dynamic
+clock scaling per le GPU, graphic processing unit), in X.org è possibile
+abilitare questa caratteristica. Bisogna aprire il file 
+<path>/etc/X11/xorg.conf</path> e aggiungere (oppure attivare) l'opzione
+<c>DynamicClocks</c> nella sezione Device. Questa opzione attivita su alcuni
+sistemi può provocare blocchi o crash.
+</p>
+	
+<pre caption="Attivazione del supporto PowerPlay per le schede grafiche ATI in X.org">
+Section "Device"
+[...]
+Option      "DynamicClocks" "on"
+EndSection
+</pre>
+	
+</body>
+</section>
 <section>
 <title>Power Management del Wireless</title>
 <body>
@@ -1023,14 +1134,18 @@ primo, periferiche come i mouse USB, le fotocamere digitali o le USB stick consu
 energia appena inserite. Non si può ovviare in nessun modo a questo problema 
 (a meno che non vengano rimosse se non necessarie). Secondo, quando ci sono
 periferiche USB collegate, l'USB host controller accede periodicamente al bus
-non permettendo alla CPU di passare nelle modalità sleep C3/4. Il Sistema 
-Operativo risolve questo problema attraverso l' "USB selective
-suspend", non ancora implementato nel kernel. L'USB selective suspend permette
-l'accesso al bus solo quando la periferica è in uso. L'unico modo, al momento,
-per aggirare questo problema (fino alla sua implementazione nel kernel) è
-compilare il supporto USB e le sue periferiche come moduli e rimuoverli attraverso
-uno script quando non utilizzati (ad esempio alla chiusura del lid).
+non permettendo alla CPU di passare nella modalità sleep.
+Il kernel presenta una opzione sperimentale per attivare la sospensione delle 
+periferiche USB tramite le chiamate al driver oppure tramite uno dei file
+<path>power/state</path> in <path>/sys</path>.
 </p>
+
+<pre caption="Attivazione del supporto USB suspend nel kernel">
+Device Drivers
+ USB support
+  [*]   Support for Host-side USB
+    [*]   USB suspend/resume (EXPERIMENTAL)
+</pre>
 
 </body>
 </section>
@@ -1060,94 +1175,145 @@ effettuare lo shutdown a causa del lungo tempo di boot.
 </body>
 </section>
 <section>
-<title>Sleep, Standby &amp; Hibernate</title>
+<title>Sleep (S3)</title>
+<body>
+<p>
+Il supporto ACPI per questi stati di spleep è considerato sperimentale per
+delle buone ragioni. Gli stati di sleep APM sembrano essere più stabili, purtroppo
+non è possibile utilizzare contemporaneamente APM e ACPI.
+</p>
+		
+<pre caption="Configurazione del kernel per il supporto agli stati di sleep">
+ Power Management Options ---&gt;
+  [*]  Power Management support
+     ACPI (Advanced Configuration and Power Interface) Support ---&gt;
+      [*]  ACPI Support
+        [*]   Sleep States
+</pre>
+		
+<p>
+Compilato il kernel con le opzioni sopra considerate, è possibile utilizzare
+l'<c>hibernate-script</c> per attivare la sospensione o una modalità di sleep.
+</p>
+		
+<pre caption="Installazione dell'hibernate-script">
+<i># emerge hibernate-script</i>
+</pre>
+		
+<p>
+Sono ora necessarie alcune configurazioni in <path>/etc/hibernate</path>.
+Di default, il pacchetto appena installato contiene due file di configurazione:
+<path>hibernate.conf</path> e <path>ram.conf</path>.
+</p>
+		
+<p>
+Per configurare lo sleep, bisogna modificare <path>ram.conf</path> in 
+<path>/etc/hibernate</path>. 
+<c>UseSysfsPowerState mem</c> è settato correttamente, ma sarà necessario scorrere
+il resto del file di configurazione e modificarlo secondo il proprio sistema.
+I commenti e i nomi delle opzioni saranno di aiuto. In caso di condivisioni
+samba o nfs in una rete, bisognerà assicurarsi di bloccare gli script init per
+evitare errori di timeout.
+</p>
+		
+<p>
+Giunti a questo punto, questa sarà l'ultima occasione per effettuare un backup dei
+propri dati prima dell'esecuzione del prossimo comando. Probabilmente per tornare
+indietro dallo stato di sleep, occorrerà premere un tasto speciale come <e>Fn</e>.
+</p>
+		
+<pre caption="Chiamata di sleep">
+<i># hibernate-ram</i>
+</pre>
+	
+<p>
+Se si sta ancora leggendo questa guida, sarà segno di un corretto funzionamento.
+Sarà possibile anche configurare lo standby (S1) in maniera simile copiando
+<path>ram.conf</path> in <path>standby.conf</path> e creando un link simbolico 
+a <path>/usr/sbin/hibernate</path> chiamato <path>/usr/sbin/hibernate-standby</path>.
+S3 e S4 sono gli stati di sleep più importanti poichè permetteno un grande
+risparmio di energia.
+</p>
+		
+</body>
+</section>
+<section>
+<title>Hibernate (S4)</title>
 <body>
 
 <p>
-Il supporto ACPI per questi stati di sleep è instabile per alcune buone ragioni. 
-Gli stati di sleep APM sembrano più stabili, ma non è possibile utilizzare 
-contemporaneamente l'APM e l'ACPI.
+Questa sezione tratta dell'ibernazione; un'immagine del sistema in esecuzione
+viene scritta sul disco prima dello spegnimento. Alla riaccensione (resume), 
+l'immagine viene caricata ed è possibile riprendere il proprio lavoro dal 
+punto esatto in cui lo si è interrotto prima dell'ibernazione.
 </p>
 
 <warn>
-Nonostante il supporto agli stati di sleep vada continuamente migliorando, resta
-tuttora in una fase sperimentale. Swsusp2 e Suspend to Ram sembrano funzionare bene ma
-è necessario prestare attenzione: si potrebbe facilmente andare incontro a perdita dati.
+Nessuna periferica hot-plug va cambiata o scambiata in stato di sospensione.
+Non si carichi un'immagine con un kernel differente rispetto a quello con cui
+la si è creata.
+Ogni client/server samba o nfs va bloccato prima dell'ibernazione.
 </warn>
 
 <p>
-Attualmente ci sono tre implementazioni per S4. Quella originale è swsusp,
-a seguire swsusp2 che ha l'interfaccia più carina (include il supporto del
-bootsplash), ma richiede l'applicazione manuale di una patch al kernel. Ed
-infine Suspend-to-Disk, un fork di swsusp.
+Attualmente ci sono due implementazioni per S4. Quella originale è swsusp,
+poi c'è la più nuova suspend2 con un'interfaccia carina (supporto fbsplash
+incluso). E' possibile trovare
+<uri link="http://suspend2.net/features.html#compare">un'analisi comparativa</uri>
+alla <uri link="http://suspend2.net">homepage di suspend2</uri>.
+Suspend-to-Disk (pmdisk), un fork di swsusp, è stato riunito al progetto
+originale.
 </p>
 
 <p>
-Per un'analisi comparativa delle caratteristiche si veda <uri
-link="http://softwaresuspend.berlios.de/features.html#compare"> qui</uri>.
-Se non si dovesse ancora sapere quale scegliere, swsusp2
-sembra al momento la soluzione più promettente.
+Suspend2 non è ancora incluso nel kernel ufficiale, per questo motivo sarà
+necessario applicare una patch, disponibile all'indirizzo 
+<uri link="http://suspend2.net">suspend2.net</uri>, ai sorgenti del kernel oppure
+utilizzare <c>sys-kernel/suspend2-sources</c>.
 </p>
 
 <p>
-La sezione del kernel a riguardo è la seguente:
+La sezione del kernel necessaria sia a swsusp che a suspen2 è la seguente:
 </p>
 
 <pre caption="Configurazione del kernel per i vari stati di sospensione">
 Power Management Options ---&gt;
-
-  <comment>(sleep e standby)</comment>
-  ACPI( Advanced Configuration and Power Interface ) Support --->
-    [*] ACPI Support
-       [*]   Sleep States
-
   <comment>(hibernate con swsusp)</comment>
-  [*] Software Suspend (EXPERIMENTAL)
-  
-  <comment>(hibernate con swsusp2)</comment>
+  [*] Software Suspend
+      <comment>(sostituire /dev/SWAP con la propria partizione di swap)</comment>
+      (/dev/SWAP)      Default resume partition
+ 
+  <comment>(hibernate con suspend2)</comment>
   Software Suspend 2
     --- Image Storage (you need at least one writer)
+    [*]    File Writer
     [*]    Swap Writer
-    --- Page Transformers
+    ---   General Options
     [*]    LZF image compression
-    (/dev/"your-swap-here")    Default resume device name
-
-  <comment>(hibernate con Suspend-to-Disk)</comment>
-  [*] Suspend-to-Disk Suport
-  (/dev/"your-swap-here") Default resume partition
+    <comment>(sostituire /dev/SWAP con la propria partizione di swap)</comment>
+    (swap:/dev/SWAP)   Default resume device name
+    [ ]    Allow Keep Image Mode
+	
+	
 </pre>
 
 <p>
-Si compili il kernel con le appropriate opzioni abilitate e si controlli, tramite 
-<c>cat /proc/acpi/sleep</c> per il 2.4 e <c>cat /sys/power/state</c> per il 2.6,
-ciò che si ha di supportato. Per swsusp è necessario passare al kernel il parametro
-<c>resume=/dev/"propria-partizione-di-swap"</c>. Se questo non fosse possibile,
-si usi <c>noresume</c> per swsusp, <c>pmdisk=off</c> per Suspend-to-Disk e
-<c>noresume2</c> per swsusp2.
+La configurazione di swsusp è piuttosto semplice. Se non si è indicata la giusta 
+locazione della partizione di swap nella configurazione del kernel, è possibile
+passarla come parametro con la direttiva <c>resume=/dev/SWAP</c>. Se non è possibile
+effettuare l'avvio a causa di un'immagine rovinata, si può utilizzare il 
+parametro del kernel <c>noresume</c>. Lo script di avvio <c>hibernate-cleanup</c>
+invaliderà l'immagine rovinata durante il processo di boot.
 </p>
 
-<p>
-Per portare il proprio sistema in uno degli stati di sleep:
-</p>
-
-<pre caption="Attivazione degli stati di sleep">
-<comment>(per i kernel 2.4)</comment>
-# <i>echo 1 &gt; /proc/acpi/sleep</i>          <comment>(standby)</comment>
-# <i>echo 3 &gt; /proc/acpi/sleep</i>          <comment>(sleep)</comment>
-
-<comment>(per i kernel 2.6)</comment>
-# <i>echo -n standby &gt; /sys/power/state</i> <comment>(standby)</comment>
-# <i>echo -n mem &gt; /sys/power/state</i>     <comment>(sleep)</comment>
-
-<comment>(swsusp)</comment>
-# <i>echo 4 &gt; /proc/acpi/sleep</i>          <comment>(hibernate)</comment>
-
-<comment>(Suspend-to-Disk)</comment>
-# <i>echo -n disk &gt; /sys/power/state</i>    <comment>(hibernate)</comment>
-
-<comment>(swsusp2)</comment>
-# <i>/usr/sbin/hibernate</i>                   <comment>(hibernate, si legga di seguito)</comment>
+<pre caption="Invalidamento dell'immagine swsusp durante il processo di avvio">
+<i># rc-update add hibernate-cleanup boot</i>
 </pre>
+	 
+<p>
+Per attivare l'ibernazione con swsusp, si utilizza lo script hibernate dopo aver
+settato <c>UseSysfsPowerState disk</c> in <path>/etc/hibernate/hibernate.conf</path>.
+</p>
 
 <warn>
 E' consigliabile effettuare un backup dei propri dati. Eseguendo <c>sync</c> prima
@@ -1159,25 +1325,106 @@ esecuzione senza essere loggati al suo interno.
 <p>
 Se dovesse capitare un kernel panic a causa di uhci o simili, è utile provare
 a compilare il supporto USB come modulo per poterlo eventualmente "scaricare" 
-prima che il laptop vada nello stato di sleep.
+prima che il laptop vada nello stato di sleep. Ci sono opzioni di configurazione
+a proposito in <path>hibernate.conf</path>.
+</p>
+
+<pre caption="Ibernazione con swsusp">
+<i># nano -w /etc/hibernate.conf</i>
+<comment>(Assicurarsi di avere un backup dei propri dati)</comment>
+<i># hibernate</i>
+</pre>
+
+<p>
+La sezione seguente tratta della configurazione di suspend2 con il supporto
+fbsplash per avere una "progress bar" (barra di avanzamento) grafica durante
+la sospensione e il ripristino.
 </p>
 
 <p>
-Mentre tutto ciò che si è visto fino ad ora è sufficiente per eseguire
-swsusp e Suspend-to-Disk (non si è detto funzionare!), swsusp2 richiede
-maggiori attenzioni. La prima cosa da fare è applicare la patch fornita da
-<uri link="http://softwaresuspend.berlios.de/">http://softwaresuspend.berlios.de/</uri>
-al kernel. In seguito sarà necessario installare l'<c>hibernate-script</c>.
-Una volta installato, si passerà alla sua configurazione tramite il file
-<path>/etc/hibernate/hibernate.conf</path> e a provare a vedere se funziona:
+La prima parte della configurazione è simile alla configurazione di swsusp.
+Se non si è indicata la giusta locazione della partizione di swap nella 
+configurazione del kernel, è possibile passarla come parametro con la 
+direttiva <c>resume2=swap:/dev/SWAP</c>. Se non è possibile
+effettuare l'avvio, si può utilizzare il parametro <c>noresume2</c>.
+Inoltre, lo script di avvio <c>hibernate-cleanup</c>
+invaliderà l'immagine di suspend2 rovinata durante il processo di boot.
 </p>
 
-<pre caption="Configurazione dello script hibernate">
-<i># emerge hibernate-script</i>
-<i># $EDITOR /etc/hibernate/hibernate.conf</i>
-<comment>(Ultima occasione per effettuare un backup dei propri dati)</comment>
+<pre caption="Invalidamento dell'immagine suspend2 durante il processo di avvio">
+<i># rc-update add hibernate-cleanup boot</i>
+</pre>
+	
+<p>
+Ora è necessario modificare il file <path>/etc/hibernate/hibernate.conf</path>,
+attivando la sezione <e>suspend2</e> e commentando tutte le linee nelle sezioni
+<e>sysfs_power_state</e> e <e>acpi_sleep</e>. Per il momento la parte fbsplash
+non va attivata nelle opzioni globali.
+</p>
+
+<pre caption="Ibernazione con suspend2">
+<i># nano -w /etc/hibernate.conf</i>
+<comment>(Assicurarsi di avere un backup dei propri dati)</comment>
 <i># hibernate</i>
 </pre>
+
+<p>
+Ora è il momento di configurare fbsplash. Per attivare il supporto fbsplash
+durante l'ibernazione, è necessario il pacchetto <c>sys-apps/suspend2-userui</c>
+con la USE flag <e>fbsplash</e> attivata.
+</p>
+
+<pre caption="Installazione di suspend2-userui">
+<i># mkdir -p /etc/portage</i>
+<i># echo sys-apps/suspend2-userui fbsplash >> /etc/portage/package.use</i>
+<i># emerge suspend2-userui</i>
+</pre>
+
+<p>
+L'ebuild richiede la creazione di un link simbolico al tema da utilizzare.
+Ad esempio, per utilizzare il tema <c>livecd-2005.1</c>, sarà necessario il comando:
+</p>
+
+<pre caption="Utilizzo del tema livecd-2005.1 durante l'ibernazione">
+<i># ln -sfn /etc/splash/livecd-2005.1 /etc/splash/suspend2</i>
+</pre>
+
+<p>
+Se non si vuole uno schermo nero nella prima parte del processo di ripristino,
+bisognerà aggiungere <c>suspend2ui_fbsplash</c> alla propria immagine initrd.
+Se si è creata la propria immagine initrd con <c>splash_geninitramfs</c> e la 
+si è salvata come <path>/boot/fbsplash-emergence-1024x768</path>, i passi
+da seguire sono i seguenti:
+</p>
+
+<pre caption="Aggiunta di suspend2ui_fbsplash alla immagine initrd">
+<i># mount /boot</i>
+<i># mkdir ~/initrd.d</i>
+<i># cp /boot/fbsplash-emergence-1024x768 ~/initrd.d/</i>
+<i># cd ~/initrd.d</i>
+<i># gunzip -c fbsplash-emergence-1024x768 | cpio -idm --quiet -H newc</i>
+<i># rm fbsplash-emergence-1024x768</i>
+<i># cp /usr/sbin/suspend2ui_fbsplash sbin/</i>
+<i># find . | cpio --quiet --dereference -o -H newc | gzip -9 > /boot/fbsplash-suspend2-emergence-1024x768</i>
+</pre>
+
+<p>
+In seguito vanno modificati <path>grub.conf</path> oppure <path>lilo.conf</path>
+a seconda del boot manager utilizzato per fare in modo che il proprio kernel suspend2
+utilizzi <path>/boot/fbsplash-suspend2-emergence-1024x768</path> come immagine
+initrd. Ora è possibile effettuare un test per verificare il corretto funzionamento.
+</p>
+
+<pre caption="Test di ibernazione con fbsplash">
+<i># suspend2ui_fbsplash -t</i>
+</pre>
+
+<p>
+Ora, si apra ancora una volta il file <path>/etc/hibernate/hibernate.conf</path>
+e si attivino le opzioni fbsplash. Si esegua <c>hibernate</c>, tutto dovrebbe
+funzionare in maniera corretta.
+</p>
+
 
 </body>
 </section>
@@ -1286,6 +1533,29 @@ link="http://bugme.osdl.org/show_bug.cgi?id=1752">qui</uri>.
 </p>
 
 <p>
+<e>D:</e> Ho attivato l'opzione DynamicClocks in <path>xorg.conf</path>
+e ora ottengo crash / lo schermo rimane nero / il mio notebook non 
+effettua correttamente lo shutdown (spegnimento).
+</p>
+
+<p>
+<e>R:</e> Questo accade purtroppo su alcuni sistemi. L'unica soluzione 
+è la disattivazione dell'opzione DynamicClocks.
+</p>
+
+<p>
+<e>D:</e> Voglio utilizzare suspend2, ma la mia partizione di swap viene
+indicata come troppo piccola. Non posso effettuare un suo ridimensionamento.
+</p>
+
+<p>
+<e>R:</e> Se non c'è abbastanza spazio libero sul tuo sistema, è possibile
+utilizzare il filewriter al posto dello swapwriter. <c>hibernate-script</c>
+lo supporta bene. Maggiori informazioni nel file
+<path>/usr/src/linux/Documentation/power/suspend2.txt</path>.
+</p>
+
+<p>	
 <e>D:</e> Ho appena comprato una nuova batteria, ma dura solo per pochi minuti! Cosa faccio 
 di sbagliato?
 </p>
