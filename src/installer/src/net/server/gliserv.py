@@ -20,6 +20,8 @@ try:
 except:
 	pass
 
+debug = False
+
 class SharedInfo(object):
 
 	__shared_state = { 'client_state': {}, 'last_visitor': "", 'clients': [], 'profiles': [], 'install_profile': None, 'client_profile':None, 'temp_use': "", 'devices':None, 'drive_to_partition':"" }
@@ -294,6 +296,9 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		          'Clients': [ '/showclients' ]
 		        }
 		return_content = ""
+		if debug:
+			print "get_params: " + str(self.get_params)
+			print "post_params: " + str(self.post_params)
 		for path in paths:
 			if self.path in paths[path]:
 				module = path
@@ -505,7 +510,7 @@ def start_xmlrpc():
 		from SecureXMLRPCServer import SecureXMLRPCServer
 		server = SecureXMLRPCServer(('', 8002), 'server.pem')
 	except:
-		print "Can't use HTTPS, falling back to HTTP..."
+		print "Couldn't do HTTPS for XMLRPC, falling back to HTTP..."
 		from SimpleXMLRPCServer import SimpleXMLRPCServer
 		server = SimpleXMLRPCServer(('', 8002))
 	server.register_introspection_functions()
@@ -513,6 +518,9 @@ def start_xmlrpc():
 	server.serve_forever()
 
 if __name__ == '__main__':
+	if len(sys.argv) > 1:
+		if sys.argv[1] == "-d" or sys.argv[1] == "--debug":
+			debug = True
 	httpd_thread = Thread(target=start_httpd)
 	httpd_thread.setDaemon(True)
 	httpd_thread.start()

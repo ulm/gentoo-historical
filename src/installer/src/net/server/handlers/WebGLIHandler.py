@@ -368,6 +368,8 @@ Which drive would you like to partition?<br>"""
 		</form>"""
 		return self.wrap_in_webgli_template(data)
 	def partitioning2(self):
+		if self.get_params['editdrive']:
+			self.post_params['editdrive'] = self.get_params['editdrive']
 		colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat16': '#3d07f9', 'fat32': '#3d07f9', 'reiserfs': '#f0ff00', 'linux-swap': '#12ff09', 'xfs': '#006600', 'jfs': '#ffb400' }
 		data = "<h4>Select a partition or unallocated space to edit</h4>\n"
 		#MOVE THIS TO PART2
@@ -389,14 +391,14 @@ Which drive would you like to partition?<br>"""
 
 		data += '<form name="part2" action="/webgli/Partitioning3" method="POST" enctype="multipart/form-data">'
 		data += '<input type="hidden" name="editdrive" value="'+drive_to_partition+"\">\n"
-		data += '<input type="hidden" name="editpart" value="">' + "\n"
+		data += '<input type="hidden" name="editpart2" value="">' + "\n"
 
 		total_mb = self.shared_info.devices[drive_to_partition].get_total_mb()
 		extended_total_mb = 0
 		last_percent = 0
 		last_log_percent = 0
 		if len(partlist):
-			data += "<script>\nfunction partition_selected(minor) {\n  document.part2.editpart.value = minor;\n  document.part2.submit();\n}\n</script>\n"
+			data += "<script>\nfunction partition_selected(minor) {\n  document.part2.editpart2.value = minor;\n  document.part2.submit();\n}\n</script>\n"
 			data += '<table width="100%" cellspacing="0" cellpadding="0" border="1">' + "\n  <tr>\n"
 		for part in partlist:
 			tmppart = tmpparts[part]
@@ -449,14 +451,14 @@ Which drive would you like to partition?<br>"""
 		if len(partlist):
 			data += "  </tr>\n</table>\n<br>\n"
 
-		data += "<table><tr><td>EDIT</td><td>INFO: Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.</td></tr>"
+		data += "<table style=\"display: none;\"><tr><td>EDIT</td><td>INFO: Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.</td></tr>"
 		
 		for i, part in enumerate(partlist):
 			tmppart = tmpparts[part]
 			minor = tmppart.get_minor()
 			if not tmppart.get_type() == "free":
 				minor = int(minor)
-			data += '<tr><td><input type="radio" name="editpart2" value="' + str(minor) + '"></td>'
+			data += '<tr><td><input type="radio" name="editpart" value="' + str(minor) + '"></td>'
 			if tmppart.get_type() == "free":
 				#partschoice = "New"
 				entry = _(u" - Unallocated space (")
@@ -485,6 +487,10 @@ Which drive would you like to partition?<br>"""
 		data += '<input type="submit" name="SubmitEditPart" value="Edit Partition"></form>'
 		return self.wrap_in_webgli_template(data)
 	def partitioning3(self):
+		if self.post_params['editpart2']:
+			self.post_params['editpart'] = self.post_params['editpart2']
+		if self.get_params['editpart']:
+			self.post_params['editpart'] = self.get_params['editpart']
 		data = ""
 		data += '<form name="part3" action="/webgli/Partitioning4" method="POST" enctype="multipart/form-data">'
 		data += '<input type="hidden" name="editpart" value="' + self.post_params['editpart'] + '">'
@@ -614,20 +620,23 @@ Which drive would you like to partition?<br>"""
 		if self.post_params["DelPartition"] == "DELETE PARTITION" or self.post_params["Cancel"] == "Cancel":
 			if self.post_params["DelPartition"] == "DELETE PARTITION":
 				self.shared_info.devices[drive_to_partition].remove_partition(editpart)
-			data = '<form name="redirect" action="/webgli/Partitioning2" method="POST"><input type="hidden" name="editdrive" value="' + drive_to_partition + '"></form><script>document.redirect.submit();</script>'
+			return self.return_redirect("/webgli/Partitioning2?editdrive=" + drive_to_partition)
+#			data = '<form name="redirect" action="/webgli/Partitioning2" method="POST"><input type="hidden" name="editdrive" value="' + drive_to_partition + '"></form><script>document.redirect.submit();</script>'
 		elif editpart == -1 or tmppart.get_type() == "free":
 			if not int(self.post_params['size']):
 				data = "ERROR: you must specify a size in MB"
 				return self.wrap_in_webgli_template(data)
 			new_minor = self.shared_info.devices[drive_to_partition].add_partition(editpart, int(self.post_params['size']), 0, 0, self.post_params['filesystem'])
-			data = '<form name="redirect" action="/webgli/Partitioning3" method="POST"><input type="hidden" name="editpart" value="' + str(int(new_minor)) + '"></form><script>document.redirect.submit();</script>'
+			return self.return_redirect("/webgli/Partitioning3?editpart=" + str(int(new_minor)))
+#			data = '<form name="redirect" action="/webgli/Partitioning3" method="POST"><input type="hidden" name="editpart" value="' + str(int(new_minor)) + '"></form><script>document.redirect.submit();</script>'
 		else:
 			tmppart = tmpparts[editpart]
 			tmppart.set_format(self.post_params['format'])
 			tmppart.set_mkfsopts(self.post_params['fsopts'])
 			tmppart.set_mountopts(self.post_params['mountopts'])
 			tmppart.set_mountpoint(self.post_params['mountpoint'])
-			data = '<form name="redirect" action="/webgli/Partitioning2" method="POST"><input type="hidden" name="editdrive" value="' + drive_to_partition + '"></form><script>document.redirect.submit();</script>'
+			return self.return_redirect("/webgli/Partitioning2?editdrive=" + drive_to_partition)
+#			data = '<form name="redirect" action="/webgli/Partitioning2" method="POST"><input type="hidden" name="editdrive" value="' + drive_to_partition + '"></form><script>document.redirect.submit();</script>'
 
 		if not data:
 			data = "Work in progress<pre>" + str(self.post_params) + "</pre>"
