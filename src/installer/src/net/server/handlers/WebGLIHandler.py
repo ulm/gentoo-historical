@@ -389,13 +389,14 @@ Which drive would you like to partition?<br>"""
 
 		data += '<form name="part2" action="/webgli/Partitioning3" method="POST" enctype="multipart/form-data">'
 		data += '<input type="hidden" name="editdrive" value="'+drive_to_partition+"\">\n"
+		data += '<input type="hidden" name="editpart" value="">' + "\n"
 
 		total_mb = self.shared_info.devices[drive_to_partition].get_total_mb()
 		extended_total_mb = 0
 		last_percent = 0
 		last_log_percent = 0
 		if len(partlist):
-			data += "<script>\nfunction partition_selected(minor) {\n  alert('Selected partition ' + minor + '!');\n}\n</script>\n"
+			data += "<script>\nfunction partition_selected(minor) {\n  document.part2.editpart.value = minor;\n  document.part2.submit();\n}\n</script>\n"
 			data += '<table width="100%" cellspacing="0" cellpadding="0" border="1">' + "\n  <tr>\n"
 		for part in partlist:
 			tmppart = tmpparts[part]
@@ -405,17 +406,13 @@ Which drive would you like to partition?<br>"""
 				if percent < 1: percent = 1
 				percent = int(percent)
 				if tmppart.is_logical():
-#					tmpbutton = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
-#					tmpbutton.connect("clicked", self.unalloc_selected, self.active_device, False, partsize, part)
-#					extended_table.attach(tmpbutton, last_log_percent, (last_log_percent + percent), 0, 1)
+					ext_percent = (float(partsize) / float(extended_total_mb)) * 100
+					if ext_percent < 1: ext_percent = 1
+					ext_percent = int(ext_percent)
+					data += '    <td height="40" width="' + str(ext_percent) + '%" align="center" style="background-color: ' + colors['unalloc'] + ';" onclick="partition_selected(' + str(part) + ');">' + "&nbsp;</td>\n"
 					last_log_percent = last_log_percent + percent
 				else:
-#					self.part_buttons['free_' + str(part)] = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
-#					if self.devices[self.active_device].get_partitions().has_key(1) and self.devices[self.active_device].get_partitions().has_key(2) and self.devices[self.active_device].get_partitions().has_key(3) and self.devices[self.active_device].get_partitions().has_key(4):
-#						self.part_buttons['free_' + str(part)].connect("clicked", self.show_no_more_primary_message)
-#					else:
-#						self.part_buttons['free_' + str(part)].connect("clicked", self.unalloc_selected, self.active_device, False, partsize, part)
-#					self.part_table.attach(self.part_buttons['free_' + str(part)], last_percent, (last_percent + percent), 0, 1)
+					data += '    <td height="40" width="' + str(percent) + '%" align="center" style="background-color: ' + colors['unalloc'] + ';" onclick="partition_selected(' + str(part) + ');">' + "&nbsp;</td>\n"
 					last_percent = last_percent + percent
 			else:
 				partsize = tmppart.get_mb()
@@ -425,7 +422,7 @@ Which drive would you like to partition?<br>"""
 				tmpminor = int(tmppart.get_minor())
 				tmpdevice = drive_to_partition
 				if tmppart.is_extended():
-					data += '    <td height="40" width="' + str(percent) + '%" align="center">' + "\n" + '      <table width="100%" cellspacing="0" cellpadding="0" border="1" style="border-padding: 2px;">' + "\n        <tr>\n"
+					data += '    <td height="40" width="' + str(percent) + '%" align="center" style="background-color: #ffffff;">' + "\n" + '      <table width="100%" cellspacing="0" cellpadding="0" border="1" style="margin: 2px;">' + "\n        <tr>\n"
 					extended_total_mb = tmppart.get_mb()
 					last_percent = last_percent + percent
 				elif tmppart.is_logical():
@@ -459,7 +456,7 @@ Which drive would you like to partition?<br>"""
 			minor = tmppart.get_minor()
 			if not tmppart.get_type() == "free":
 				minor = int(minor)
-			data += '<tr><td><input type="radio" name="editpart" value="' + str(minor) + '"></td>'
+			data += '<tr><td><input type="radio" name="editpart2" value="' + str(minor) + '"></td>'
 			if tmppart.get_type() == "free":
 				#partschoice = "New"
 				entry = _(u" - Unallocated space (")
