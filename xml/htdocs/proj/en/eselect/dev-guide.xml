@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/eselect/dev-guide.xml,v 1.3 2005/09/06 15:56:27 fox2mike Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/eselect/dev-guide.xml,v 1.4 2005/11/07 07:02:55 fox2mike Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -24,8 +24,8 @@ This document is a reference for people who want to develop the eselect tool.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.9.6.189</version>
-<date>2005-09-06</date>
+<version>1.0_rc1.242</version>
+<date>2005-11-11</date>
 
 <chapter>
 <title>Introduction</title>
@@ -92,8 +92,34 @@ describe_moo() {
 	echo "Say moo"
 }
 
+describe_moo_parameters() {
+  echo "&lt;text&gt;"
+}
+
+describe_moo_options() {
+  echo "text : Text to display (optional)"
+  echo "--dead : Use a dead cow"
+  echo "--borg : Use a borged cow"
+}
+
+
 do_moo() {
-	echo "${@:-I am a cow}" | cowsay
+  local params=
+  while [[ ${1#--} != ${1} ]] ; do
+    if [[ "--dead" == ${1} ]] ; then
+      shift
+      params="${params} -d"
+    elif [[ "--borg" == "${1}" ]] ; then
+      shift
+      params="${params} -b"
+    elif [[ "--" == "${1}" ]] ; then
+      break
+    else
+      die -q "Unknown parameter ${1}"
+    fi
+  done
+
+  echo "${@:-I am a cow}" | cowsay ${params}
 }
 
 ### think action
@@ -102,8 +128,29 @@ describe_think() {
 	echo "Show a pensive cow"
 }
 
+describe_think_parameters() {
+  echo "&lt;text&gt;"
+}
+
+describe_think_options() {
+  echo "text : Text to display"
+  echo "--sheep : Use a sheep rather than a cow"
+}
+
 do_think() {
-	echo "${@:-Am I a cow?}" | cowthink
+  local params=
+  while [[ ${1#--} != ${1} ]] ; do
+    if [[ "--sheep" == ${1} ]] ; then
+      shift
+      params="${params} -f sheep"
+    elif [[ "--" == "${1}" ]] ; then
+      break
+    else
+      die -q "Unknown parameter ${1}"
+    fi
+  done
+
+  echo "${@:-Am I a cow?}" | cowthink ${params}
 }
 </pre>
 
@@ -128,7 +175,8 @@ Unlike ebuilds, the function names are not fixed. Any function whose name
 starts with <c>do_</c> is considered to be an action implementation. It is 
 conventional to have a <c>describe_</c> function for every <c>do_</c> function 
 that gives a short description of the function -- this is used for 
-<c>eselect modulename help</c>, for example.
+<c>eselect modulename help</c>, for example. The <c>describe_actions_options</c>
+and <c>describe_action_parameters</c> functions are optional.
 </p>
 
 <note>
@@ -287,6 +335,14 @@ format. It is similar to <c>eerror</c>.
 </p>
 
 <p>
+<b>The write_warning_msg Function</b>
+</p>
+
+<p>The <c>write_warning_msg</c> function displays a warning message in the
+standard format. It is similar to <c>ewarn</c>.
+</p>
+
+<p>
 <b>The write_list_ Function</b>
 </p>
 
@@ -311,7 +367,8 @@ be used. The first parameter is the key, the second the value.
 The <c>write_numbered_list</c> function is a wrapper around 
 <c>write_numbered_list_entry</c> that handles the numbering automatically. Each
 parameter passed is displayed as a numbered list item, the first with index 1,
-the second with index 2 and so on.
+the second with index 2 and so on. If -p is passed as the first argument to
+these functions, <e>plain</e> highlighting is used.
 </p>
 
 <p>
@@ -364,8 +421,8 @@ These are implemented in <path>libs/tests.bash</path>.
 </p>
 
 <p>
-The <c>has</c> utility function is like portage's <c>hasq</c>. It returns true if and
-only if the first parameter is equal to any of the remaining parameters.
+The <c>has</c> utility function is like portage's <c>hasq</c>. It returns true
+if and only if the first parameter is equal to any of the remaining parameters.
 </p>
 
 <p>
@@ -373,9 +430,9 @@ only if the first parameter is equal to any of the remaining parameters.
 </p>
 
 <p>
-The <c>is_function</c> utility function returns true if and only if its parameter
-exists and is a function. This is mostly used internally, but may have some use
-for modules.
+The <c>is_function</c> utility function returns true if and only if its
+parameter exists and is a function. This is mostly used internally, but may have
+some use for modules.
 </p>
 
 <p>
@@ -401,8 +458,8 @@ These are implemented in <path>libs/path-manipulation</path>.
 </p>
 
 <p>
-The <c>basename</c> function is a transparent bash-only replacement for the external
-<c>basename</c> application.
+The <c>basename</c> function is a transparent bash-only replacement for the
+external <c>basename</c> application.
 </p>
 
 <p>
@@ -410,8 +467,8 @@ The <c>basename</c> function is a transparent bash-only replacement for the exte
 </p>
 
 <p>
-The <c>dirname</c> function is a transparent bash-only replacement for the external
-<c>dirname</c> application.
+The <c>dirname</c> function is a transparent bash-only replacement for the
+external <c>dirname</c> application.
 </p>
 
 </body>
@@ -430,12 +487,12 @@ These are implemented in <path>libs/manip.bash</path>.
 
 <p>
 The <c>svn_date_to_version</c> function can be used instead of manually keeping
-track of VERSION. It is safe to use in global scope. The canonical usage is
-as shown below.
+track of VERSION. It is safe to use in global scope. The canonical usage is as
+shown below.
 </p>
 
 <pre caption="svn_date_to_version usage">
-SVN_DATE='$Date: 2005/09/06 15:56:27 $'
+SVN_DATE='$Date: 2005/11/07 07:02:55 $'
 VERSION=$(svn_date_to_version "${SVN_DATE}" )
 <comment>(Now turn on the SVN keyword expansion for the module)</comment>
 svn propset svn:keywords "Date" modules/foo.eselect
@@ -527,8 +584,8 @@ system. If Portage cannot provide this information, <c>arch</c> falls back to a
 </p>
 
 <p>
-The <c>portageq</c> function transparently wraps the corresponding Portage script
-whilst redirecting stderr to <path>/dev/null</path>.
+The <c>portageq</c> function transparently wraps the corresponding Portage
+script whilst redirecting stderr to <path>/dev/null</path>.
 </p>
 
 </body>
