@@ -7,14 +7,11 @@
 <author title="Autor">
   <mail link="fragfred@gmx.de">Dennis Nienhüser</mail>
 </author>
-<author title="Editor Es">
+<author title="Traductor">
   <mail link="bass@gentoo.org">José Alberto Suárez López</mail>
 </author>
-<author title="Editor Es">
+<author title="Traductor">
   <mail link="chiguire@gentoo.org">John Christian Stoddart</mail>
-</author>
-<author title="Editor Es">
-  <mail link="yoswink@gentoo.org">José Luis Rivero</mail>
 </author>
 <author title="Traductor">
   <mail link="anpereir@gentoo.org">Andrés Pereira</mail>
@@ -26,12 +23,12 @@ de duración de la batería en sistemas móviles como los portátiles.
 Ésta guía le ayuda a configurarla en su portátil.
 </abstract>
 
-<!-- El contenido de este documento está liberado bajo la licencia CC-BY-SA -->
-<!-- Vea http://creativecommons.org/licenses/by-sa/2.0 -->
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.24</version>
-<date>2005-06-10</date>
+<version>1.25</version>
+<date>2005-10-02</date>
 
 <chapter>
 <title>Introducción</title>
@@ -103,7 +100,7 @@ Casi toda componente puede operar en estados diferentes - apagada, durmiendo,
 inactiva, activa por nombrar unos pocos - consumiendo una cantidad distinta de
 energía. La mayor parte de la energía es consumida por la pantalla LCD, la CPU,
 el chipset y los discos duros. Frecuentemente se puede activar la Administración
-de Energía independientedel SO en la BIOS, pero una configuración inteligente
+de Energía independiente del SO en la BIOS, pero una configuración inteligente
 en los sistemas operativos que se adapta a situaciones diferentes puede lograr
 mucho más.
 </p>
@@ -152,46 +149,62 @@ el resto de las cosas.
 <body>
 
 <p>
-El soporte de ACPI (siglas en inglés de Configuración Avanzada e Interfaz de Energía) en el núcleo
-aún está en progreso. Al usar un núcleo reciente se asegurará de tener el soporte más actualizado.
+El soporte de ACPI (siglas en inglés de Configuración Avanzada e Interfaz 
+de Energía) en el núcleo aún está en progreso. Al usar un núcleo reciente se
+asegurará de tener el soporte más actualizado.
 </p>
 
 <p>
-En la configuración del kernel, active al menos estas opciones:
+Existen diferentes fuentes del núcleo en Portage. Le recomendamos usar
+<c>gentoo-sources</c> o <c>suspend2-sources</c>. La última contiene parches
+para Software Suspend 2, vea el capítulo sobre los estados de sueño para más
+detalles. Cuando configure el núcleo, active al menos estas opciones:
 </p>
 
 <pre caption="Configuración mínima del núcleo para la Administración de Energía (Núcleo 2.6)">
 Power Management Options ---&gt;
   [*] Power Management Support
   [ ] Software Suspend
-  [ ] Suspend-to-Disk Support
 
   ACPI( Advanced Configuration and Power Interface ) Support ---&gt;
     [*] ACPI Support
     [ ]   Sleep States
+    [ ]     /proc/acpi/sleep (deprecated)
     [*]   AC Adapter
     [*]   Battery
     &lt;M&gt;   Button
+    &lt;M&gt;   Video
+    [ ]   Generic Hotkey
     &lt;M&gt;   Fan
     &lt;M&gt;   Processor
     &lt;M&gt;     Thermal Zone
     &lt; &gt;   ASUS/Medion Laptop Extras
+    &lt; &gt;   IBM ThinkPad Laptop Extras
     &lt; &gt;   Toshiba Laptop Extras
+    (0)   Disable ACPI for systems before Jan 1st this year
     [ ]   Debug Statements
-
+    [*]   Power Management Timer Support
+    &lt; &gt;   ACPI0004,PNP0A05 and PNP0A06 Container Driver (EXPERIMENTAL)
+    
   CPU Frequency Scaling ---&gt;
     [*] CPU Frequency scaling
+    [ ]   Enable CPUfreq debugging
+    &lt; &gt;   CPU frequency translation statistics
+    [ ]     CPU frequency translation statistics details
           Default CPUFreq governor (userspace)
     &lt;*&gt;   'performance' governor
     &lt;*&gt;   'powersave' governor
     &lt;*&gt;   'ondemand' cpufreq policy governor
+    &lt;*&gt;   'conservative' cpufreq governor
     &lt;*&gt;   CPU frequency table helpers
     &lt;M&gt; ACPI Processor P-States driver
     &lt;*&gt; <i>CPUFreq driver for your processor</i>
 </pre>
 
 <p>
-Decida si quiere activar "Software Suspend" (Suspensión del Software), "Suspend-to-Disk" (Suspenda a Disco) y "Sleep States" (Estados de Sueño) (ver más abajo). Si posee un portátil ASUS, Medion o Toshiba,
+Decida si quiere activar "Software Suspend" (Suspensión del Software), 
+"Suspend-to-Disk" (Suspender a Disco) y "Sleep States" (Estados de Sueño) 
+(ver más abajo). Si posee un portátil ASUS, Medion o Toshiba,
 active la sección apropiada. 
 </p>
 
@@ -199,8 +212,8 @@ active la sección apropiada.
 El núcleo debe saber cómo activar la calibración de la frecuencia de la CPU
 en su procesador. Debido a que cada tipo de CPU tiene una interfaz distinta,
 tiene que elegir el manejador apropiado para su procesador. Tenga cuidado aquí, 
-por ejemplo, al activar la <e>modulación del reloj de un Pentium 4</e> en un sistema Pentium
-M llevará a resultados extraños. Consulte la documentación del
+por ejemplo, al activar la <e>modulación del reloj de un Pentium 4</e> en un
+sistema Pentium M llevará a resultados extraños. Consulte la documentación del
 núcleo si no está seguro cuál elegir.
 </p>
 
@@ -263,9 +276,27 @@ de cambiar eso.
 Entre los típicos eventos de ACPI están el cerrar la tapa del portátil, cambiar
 la fuente de energía o presionar el botón para dormir. Un evento importante es
 el cambiar la fuente de energía, que debería gatillar un cambio del nivel de
-ejecución. Cree los siguientes archivos para cambiarse entre los niveles de
-ejecución <e>default</e> y <e>battery</e> dependiendo de la fuente de energía
-que haya:</p>
+ejecución. Un pequeño script se encargará de esto.
+</p>
+
+<p>
+Primero necesita un script que cambie el nivel de ejecución a <c>default</c>
+y respectivamente a <c>battery</c> dependiendo de la fuente de energía. El
+script usa el comando <c>on_ac_power</c> de <c>sys-power/powermgmt-base</c> -
+asegúrese de que el paquete está instalado en su sistema.
+</p>
+
+<pre caption="Instalando powermgt-base"> 
+<i># emerge powermgmt-base</i>
+</pre>
+
+<p>
+Ahora puede determinar la fuente de energía ejecutando
+<c>on_ac_power &amp;&amp; echo AC available || echo Running on batteries</c>
+en una shell. El script de abajo es el responsable de cambiar los niveles
+de ejecución. Guárdelo como
+<path>/etc/acpi/actions/pmg_switch_runlevel.sh</path>.
+</p>
 
 <pre caption="/etc/acpi/actions/pmg_switch_runlevel.sh">
 #!/bin/bash
@@ -300,29 +331,57 @@ then
 fi
 </pre>
 
+<p>
+No olvide correr <c>chmod +x /etc/acpi/actions/pmg_switch_runlevel.sh</c>
+para que el script sea ejecutable. La última cosa que debe ser hecha es
+llamar al script siempre y cuando la fuente de energía cambie. Esto se hace
+capturando los eventos ACPI con la ayuda de <c>acpid</c>. Primero necesita
+saber qué eventos son generados cuando cambia la fuente de energía. Los eventos
+se denominan <e>ac_adapter</e> y <e>battery</e> en la mayoría de los
+portátiles, pero puede ser diferente en el suyo.
+</p>
+
+<pre caption="Determinando los eventos ACPI para cambiar la fuente de energía">
+<i># tail -f /var/log/acpid | grep "received event"</i>
+</pre>
+
+<p>
+Ejecute el comando de arriba y saque el cable de energía del portátil. Debería
+ver algo como esto:
+</p>
+
+<pre caption="Salida de muestra para cambios de fuente de energía">
+[Tue Sep 20 17:39:06 2005] received event "ac_adapter AC 00000080 00000000"
+[Tue Sep 20 17:39:06 2005] received event "battery BAT0 00000080 00000001"
+</pre>
+
+<p>
+La parte interesante es la cadena entre comillas después de <e>received 
+event</e>. Esta será contrastada por la línea de evento en los archivos que
+va a crear más abajo. No se preocupe si su sistema genera múltiples eventos o
+siempre el mismo. Siempre que se genere algún evento, el cambio de nivel de
+ejecución funcionará.
+</p>
+
 <pre caption="/etc/acpi/events/pmg_ac_adapter">
 <comment># Reemplace "ac_adapter" que aparece abajo con el evento generado en su portátil</comment>
-<comment># See /var/log/acpid</comment>
+<comment># Por ejemplo, ac_adapter.* empareja o tiene un calce con ac_adapter AC 00000080 00000000</comment>
 event=ac_adapter.*
 action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
 </pre>
 
 <pre caption="/etc/acpi/events/pmg_battery">
 <comment># Reemplace "battery" que aparece abajo con el evento generado en su portátil</comment>
-<comment># Vea /var/log/acpid</comment>
+<comment># Por ejemplo, battery.* empareja o tiene un calce con battery BAT0 00000080 00000001</comment>
 event=battery.*
 action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
 </pre>
 
 <p>
-Adicionalmente va a necesitar del paquete sys-power/powermgmt-base que
-contiene el utilitario <c>on_ac_power</c>. El archivo <path>pmg_switch_runlevel.sh</path>
-debe ser ejecutable.
+Finalmente acpid tiene que ser reiniciado para reconocer los cambios.
 </p>
 
 <pre caption="Finalizando el cambio de nivel de ejecución con acpid">
-<i># emerge powermgmt-base</i>
-<i># chmod +x /etc/acpi/actions/pmg_switch_runlevel.sh</i>
 <i># /etc/init.d/acpid restart</i>
 </pre>
 
@@ -336,7 +395,9 @@ energía de forma apropiada.
 <p>
 Debido a la naturaleza del mecanismo de eventos, su portátil arrancará en el
 nivel de ejecución <e>default</e> sin importar el estado de la Corriente Alterna
-o la batería. Puede agregar un parámetro adicional al gestor de arranque con
+o la batería. Esto es adecuado cuando usa Corriente Alterna pero nos gustaría
+arrancar en el nivel de ejecución battery en otros casos. Una solución sería
+agregar un parámetro adicional al gestor de arranque con
 <c>softlevel=battery</c>, pero es fácil que dicha elección se olvide. Una mejor
 manera es falsear un evento ACPI al término del proceso de arranque y dejar que
 el guión <path>/etc/acpi/default.sh</path> decida si es necesario un cambio del
@@ -344,10 +405,11 @@ nivel de ejecución. Abra  <path>/etc/conf.d/local.start</path> en su editor
 favorito y agregue estas líneas:
 </p>
 
-<pre caption="Cambio del nivel de ejecución al momento del arranque mediante la
+<pre caption="Ajuste del nivel de ejecución al momento del arranque mediante la
 edición de local.start">
 <comment># Falsear un evento acpi para cambiarse el nivel de ejecución si se
-están usando baterías</comment>
+están usando baterías
+</comment>
 /etc/acpi/actions/pmg_switch_runlevel.sh "battery/battery"
 </pre>
 
@@ -383,7 +445,8 @@ máxima frecuencia. Por ejemplo, el <e>gobernador powersave</e> siempre elige la
 mínima frecuencia disponible, el <e>gobernador de performance</e> elige la
 más alta. El <e>gobernador userspace</e> no hace decisión alguna pero elige
 aquello que el usuario (o el programa en el área del usuario) quiera - lo que
-significa que lee la frecuencia desde <path>/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed</path>.
+significa que lee la frecuencia desde 
+<path>/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed</path>.
 </p>
 
 <p>
@@ -413,14 +476,14 @@ ahorro de energía.
 </p>
 
 <note>
-No todo portátil ofrece la capacidad de calibración de la frecuencia. Si no está
-seguro, déle una mirada a la lista de procesadores soportados en la sección
-<e>Solución de Problemas</e> para verificar si el suyo lo está.
+No todo portátil ofrece la capacidad de calibración de la frecuencia. Si no i
+está seguro, déle una mirada a la lista de procesadores soportados en la 
+sección <e>Solución de Problemas</e> para verificar si el suyo lo está.
 </note>
 
 <p>
-Es hora de probar si funciona el cambio de frecuencia de la CPU. Instalemos otra 
-herramienta que es muy útil para propósitos de depuración:
+Es hora de probar si funciona el cambio de frecuencia de la CPU. Instalemos 
+otra herramienta que es muy útil para propósitos de depuración:
 <c>sys-power/cpufrequtils</c>
 </p>
 
@@ -434,26 +497,26 @@ Aquí hay un ejemplo de la salida del comando:
 </p>
 
 <pre caption="Salida de ejemplo de cpufreq-info">
-cpufrequtils 0.2: cpufreq-info (C) Dominik Brodowski 2004
+cpufrequtils 0.3: cpufreq-info (C) Dominik Brodowski 2004
 Report errors and bugs to linux@brodo.de, please.
 analyzing CPU 0:
   driver: centrino
   CPUs which need to switch frequency at the same time: 0
   hardware limits: 600 MHz - 1.40 GHz
   available frequency steps: 600 MHz, 800 MHz, 1000 MHz, 1.20 GHz, 1.40 GHz
-  available cpufreq governors: ondemand, powersave, userspace, performance
+  available cpufreq governors: conservative, ondemand, powersave, userspace, performance
   current policy: frequency should be within 924 MHz and 1.40 GHz.
     The governor "performance" may decide which speed to use
     within this range.
-  current CPU frequency is 1.40 GHz (asserted by call to hardware).
+  current CPU frequency is 1.40 GHz.
 </pre>
 
 <p>
-Pruebe <c>cpufreq-set</c> para estar seguro que funciona el cambio de frecuencia.
-Ejecute, por ejemplo, <c>cpufreq-set -g ondemand</c> para activar el gobernador
-ondemand y verifique el cambio con <c>cpufreq-info</c>. Si no funciona como
-es esperado, puede encontrar ayuda en la sección Solución de Problemas al
-final de esta guía.
+Pruebe <c>cpufreq-set</c> para estar seguro que funciona el cambio de
+frecuencia. Ejecute, por ejemplo, <c>cpufreq-set -g ondemand</c> para activar
+el gobernador ondemand y verifique el cambio con <c>cpufreq-info</c>. Si no
+funciona como es esperado, puede encontrar ayuda en la sección Solución de
+Problemas al final de esta guía.
 </p>
 
 </body>
@@ -467,11 +530,11 @@ final de esta guía.
 Lo de arriba es agradable, pero no para realizarlo a diario. Es mejor dejar que
 su sistema ajuste automáticamente la frecuencia apropiada. Hay muchos
 enfoques diferentes para hacer ésto. La siguiente tabla le da una visión
-general para ayudarle a decidirse en una de ellos. Está separada en tres categorías:
-<e>núcleo</e> para los enfoques que sólo necesitan apoyo en el kernel,
-<e>demonio</e> para los programas que corren en segundo plano y <e>gráfica</e>
-para los programas que provean de una interfaz para realizar una fácil
-configuración y cambios.
+general para ayudarle a decidirse en una de ellos. Está separada en tres 
+categorías: <e>núcleo</e> para los enfoques que sólo necesitan apoyo en el 
+núcleo, <e>demonio</e> para los programas que corren en segundo plano y 
+<e>gráfica</e> para los programas que provean de una interfaz para realizar una
+fácil configuración y cambios.
 </p>
 
 <table>
@@ -490,10 +553,24 @@ configuración y cambios.
   <ti>N/D</ti>
   <ti>N/D</ti>
   <ti>
-    Afinamientos adicionales a través de los archivos en
+    Elige la frecuencia máxima donde la CPU esté con carga y la disminuye
+    cuando la CPU está con poca actividad. Se pueden hacer afinamientos 
+    adicionales a través de los archivos en
     <path>/sys/devices/system/cpu/cpu0/cpufreq/ondemand/</path>. Aún requiere
     de herramientas del área del usuario (programas y guiones) si se desea
     cambiar de gobernador (o similar).
+  </ti>
+</tr>
+<tr>
+  <ti>Gobernador 'conservador'</ti>
+  <ti>Núcleo</ti>
+  <ti>Carga de la CPU</ti>
+  <ti>N/D</ti>
+  <ti>N/D</ti>
+  <ti>
+    A diferencia del gobernador 'en demanda', el 'conservador' no salta a la
+    frecuencia máxima cuando la carga de la CPU es alta, sino que incrementa la
+    frecuencia paso a paso. 
   </ti>
 </tr>
 <tr>
@@ -501,16 +578,20 @@ configuración y cambios.
   <ti>Demonio</ti>
   <ti>Carga de la CPU</ti>
   <ti>Performance, powersave</ti>
-  <ti>"dynamic"</ti>
+  <ti>"Dynamic"</ti>
   <ti>
     También permite disk standby - No obstante, note que el <e>laptop mode</e>
     hará un mejor trabajo en la mayoría de los casos.
+    Se pueden hacer afinamientos adicionales a través de los archivos en
+    <path>/sys/devices/system/cpu/cpu0/cpufreq/conservative/</path>. Aún 
+    requiere de herramientas del área del usuario (programas y guiones) si se 
+    desea cambiar de gobernador (o similar).
   </ti>
 </tr>
 <tr>
   <ti><uri link="http://sourceforge.net/projects/cpufreqd/">cpufreqd</uri></ti>
   <ti>Demonio</ti>
-  <ti>Estado de la batería, carga de la CPU, programas en ejecución</ti>
+  <ti>Estado de la batería, carga de la CPU, temperatura, programas en ejecución</ti>
   <ti>Todos disponibles</ti>
   <ti>Ninguno</ti>
   <ti>
@@ -524,9 +605,23 @@ configuración y cambios.
   <ti>Demonio</ti>
   <ti>Carga de la CPU</ti>
   <ti>Ninguno</ti>
-  <ti>"passive", "sine", "aggressive"</ti>
+  <ti>"Passive", "sine", "aggressive"</ti>
   <ti>
-    Acepta SMP.
+    Acepta SMP. 
+  </ti>
+</tr>
+<tr>
+  <ti>
+    <uri link="http://fatcat.ftj.agh.edu.pl/~nelchael/index.php?cat=projs&amp;subcat=ncpufreqd&amp;language=en">ncpufreqd</uri>
+  </ti>
+  <ti>Demonio</ti>
+  <ti>Temperatura</ti>
+  <ti>Ninguno</ti>
+  <ti>"Powersave", "Performance"</ti>
+  <ti>
+    Activa el gobernador a usar entre "performance" y "powersave" dependiendo
+    de la temperatura del sistema. Muy útil en portátiles con notorios
+    problemas de calentamiento.
   </ti>
 </tr>
 <tr>
@@ -534,11 +629,11 @@ configuración y cambios.
   <ti>Demonio</ti>
   <ti>Carga de la CPU</ti>
   <ti>Ninguno</ti>
-  <ti>"dynamic", "powersave", "performance", "fixed speed"</ti>
+  <ti>"Dynamic", "powersave", "performance", "fixed speed"</ti>
   <ti>
-    Pequeño pero poderoso con una útil interfaz cliente/servidor. Requiere de un
-    núcleo 2.6. No parece seguir siendo mantenido y será sacado de Portage en el
-    futuro próximo.
+    Fácil de configurar con una útil interfaz cliente/servidor. Requiere de un
+    núcleo 2.6. No parece seguir siendo mantenido y fue borrado de Portage. Por
+    favor, cámbiese a cpufreqd si todavía lo está usando.
   </ti>
 </tr>
 <tr>
@@ -548,7 +643,7 @@ configuración y cambios.
   <ti>Ninguno</ti>
   <ti>Ninguno</ti>
   <ti>
-    Herramientra gráfica de Gnome para ajustar manualmente la frecuencia de la
+    Herramienta gráfica de Gnome para ajustar manualmente la frecuencia de la
     CPU. No ofrece automatización alguna.
   </ti>
 </tr>
@@ -601,6 +696,12 @@ maxfreq=100%
 policy=ondemand
 
 [Profile]
+name=conservative
+minfreq=0%
+maxfreq=100%
+policy=conservative
+
+[Profile]
 name=powersave
 minfreq=0%
 maxfreq=100%
@@ -615,7 +716,7 @@ policy=performance
 [Rule]
 name=battery
 ac=off
-profile=ondemand
+profile=conservative
 
 [Rule]
 name=battery_low
@@ -626,24 +727,12 @@ profile=powersave
 [Rule]
 name=ac
 ac=on
-profile=performance
+profile=ondemand
 </pre>
 
 <p>
-Si está usando un núcleo 2.6 con la interfaz sysfs (probablemente sí)
-no puede usar un porcentaje como los descritos arriba en min_freq y max_freq.
-Reempláacelo con la frecuencia más baja y alta que despliega <c>cpufreq-info
---hwlimits</c>. Por ejemplo, en un portátil Pentium M 1.4 GHz se configuraron
-los siguiente valores:
-</p>
-
-<pre caption="Valores de muestra para minfreq y maxfreq">
-minfreq=600000
-maxfreq=1400000
-</pre>
-
-<p>
-Último pero no menos importante, inicie el demonio.
+Ahora puede iniciar el demonio cpufreqd. Agréguelo a los niveles de ejecución
+<e>default</e> y <e>battery</e> también.
 </p>
 
 <pre caption="Iniciando cpufreqd">
@@ -666,7 +755,7 @@ Puede causar confusión como intercambios sucesivos entre dos frecuencias.
 
 <p>
 La última cosa por chequear es que sus nuevas políticas hagan bien el trabajo.
-Una forma fácil de comprobarlo es monitoreando la velocidad de la CPU mientras
+Una forma fácil de comprobarlo es monitorizando la velocidad de la CPU mientras
 esté trabajando con su portátil:
 </p>
 
@@ -685,7 +774,7 @@ Problemas), monitoree la frecuencia de la CPU con:
 
 <p>
 Dependiendo de su configuración, la velocidad de la CPU debería aumentar en
-situaciones de alta carga, disminuir cuando no hay actividad o permenecer en el
+situaciones de alta carga, disminuir cuando no hay actividad o permanecer en el
 mismo nivel. Cuando se usa cpufreqd y el nivel de verbosidad está ajustado en
 5 o más en <path>cpufreqd.conf</path>, obtendrá información adicional de
 lo que está pasando y será reportada a syslog.
@@ -704,19 +793,19 @@ Como puede ver en la <uri link="#doc_chap1_fig1">figura 1.1</uri>, la pantalla
 LCD consume la mayor parte de la energía (puede que no sea el caso para CPUs no
 móviles). Por tanto, es bien importante no sólo apagar la pantalla cuando ésta
 no se necesite, sino también reducir su contraluz si es posible. La mayoría de
-los portátiles ofrece la posibilidad para controlar la disminición de aquello.
+los portátiles ofrece la posibilidad para controlar la disminución de aquello.
 </p>
 
 <p>
 La primera cosa a revisar son los tiempos de standby/suspensión/apagado de la
-pantalla. Como esto depende fuertemente de su gestor de ventanas, le dejaremos esa
-tarea. Hay dos lugares en común: Se puede blanquear el terminal con  <c>setterm
--blank &lt;número de minutos&gt;</c>, <c>setterm -powersave on</c> y <c>setterm
--powerdown &lt;número de minutosM&gt;</c>.
-Para Xorg, modifique  <path>/etc/X11/xorg.conf</path> en forma similar a ésto:
+pantalla. Como esto depende fuertemente de su gestor de ventanas, le dejaremos 
+esa tarea. Hay dos lugares en común: Se puede blanquear el terminal con  
+<c>setterm -blank &lt;número de minutos&gt;</c>, <c>setterm -powersave on</c> y
+<c>setterm -powerdown &lt;número de minutosM&gt;</c>.
+Para X.org, modifique  <path>/etc/X11/xorg.conf</path> en forma similar a ésto:
 </p>
 
-<pre caption="Ajustes para suspender el LCD en Xorg y XFree86">
+<pre caption="Ajustes para suspender el LCD en X.org y XFree86">
 Section "ServerLayout"
   Identifier  [...]
   [...]
@@ -742,7 +831,7 @@ Esto es lo mismo para XFree86 y <path>/etc/X11/XF86Config</path>.
 
 <p>
 Probablemente es más importante la disminución de contraluz. Si tiene acceso a
-los ajustes de disminución via alguna herramienta, escriba un pequeño guión que
+los ajustes de disminución vía alguna herramienta, escriba un pequeño guión que
 disminuya el contraluz en el modo battery y ubíquelo en su nivel de ejecución
 <e>battery</e>. El siguiente script debería funcionar en la mayoría de los
 portátiles IBM Thinkpad. Necesita el paquete <c>app-laptop/ibm-acpi</c> o
@@ -917,9 +1006,9 @@ garantía.
 <p>
 Los núcleos recientes (2.6.6 y superiores, versiones actuales de la serie 2.4 y
 otros con parches) incluyen el denominado <e>laptop-mode</e>. Cuando está
-activado, los contenidos de las memorias de tránsito en estado sucio se escriben a disco
-cuando hay llamadas de lectura o después de 10 minutos (en vez de 30 segundos).
-Esto minimiza el tiempo de rotación del disco.
+activado, los contenidos de las memorias de tránsito en estado sucio se escriben
+a disco cuando hay llamadas de lectura o después de 10 minutos (en vez de 30 
+segundos).  Esto minimiza el tiempo de rotación del disco.
 </p>
 
 <pre caption="Inicio automatizado de laptop-mode">
@@ -929,7 +1018,7 @@ Esto minimiza el tiempo de rotación del disco.
 <p>
 <c>laptop-mode-tools</c> tiene su archivo de configuración en
 <path>/etc/laptop-mode/laptop-mode.conf</path>. Ajústelo de la forma que le
-guste, está bien comentado. Ejecute <c>rc-update add laptop_mode battery</c> 
+guste, está bien comentado. Ejecute <c>rc-update add laptop_mode battery</c>
 para iniciarlo automáticamente.
 </p>
 </body>
@@ -954,7 +1043,7 @@ que considere apagarlo y actívelo manualmente sólo cuando lo necesite.
 </pre>
 
 <p>
-Otra posibilidad es desactivar el archivo de intercambio ("swap".) en el modo
+Otra posibilidad es desactivar el archivo de intercambio ("swap") en el modo
 batería. Antes de escribir el guión para realizar el swapon/swapoff, asegúrese
 que haya suficiente memoria RAM y que el archivo de intercambio no se use
 intensivamente, de otro modo estará en problemas.
@@ -967,7 +1056,7 @@ escritura no son almacenados en el disco sino que permanecen en memoria
 principal y se pierden al desmontar. A menudo es útil montar el directorio
 <path>/tmp</path> de esta forma - pues no se le presta mayor atención
 ya que se limpia en cada arranque sin importar si fue montado en disco
-o en RAM. Sólo asegúrese tener suficiente RAM y que no haya algún programaa
+o en RAM. Sólo asegúrese tener suficiente RAM y que no haya algún programa
 (tal como un cliente de descargas o herramienta de compresión) que necesite
 mucho espacio en <path>/tmp</path>. Para activar ésto, active la opción de
 tmpfs en su núcleo y agregue a una línea como la siguiente al
@@ -981,17 +1070,41 @@ none  /tmp  tmpfs  size=32m  0 0
 <warn>
 Preste atención al parámetro "size" y modifíquelo para su sistema. Si no está
 seguro, no intente probar esto, puede convertirse fácilmente en un cuello
-de botella del rendimiento. En caso de que quiera montar el <path>/var/log</path>
-de esta manera, asegúrese de escribir los archivos de bitácora a disco antes
-de desmontar el directorio. Son archivos esenciales. No intente montar el
-directorio /var/tmp de esta forma. Portaga lo usa para compilar ...
+de botella del rendimiento. En caso de que quiera montar el 
+<path>/var/log</path> de esta manera, asegúrese de escribir los archivos de 
+bitácora a disco antes de desmontar el directorio. Son archivos esenciales. 
+No intente montar el directorio /var/tmp de esta forma. Portage lo usa para 
+compilar ...
 </warn>
+
 </body>
 </section>
 </chapter>
 
 <chapter>
 <title>Administración de Energía para otros dispositivos</title>
+<section>
+<title>Tarjetas gráficas</title>
+<body>
+
+<p>
+En caso de que posea una tarjeta gráfica ATI que soporte PowerPlay (escalado
+dinámico del reloj para la unidad gráfica de procesamiento GPU), puede activar
+esta característica en X.org. Abra el archivo <path>/etc/X11/xorg.conf</path>
+y agregue (o active) la opción <c>DynamicClocks</c> en la sección Device. Por
+favor note que esta característica puede resultar en caídas o cuelgues en 
+algunos sistemas.
+</p>
+
+<pre caption="Activando el soporte PowerPlay de ATI en X.org">
+Section "Device"
+[...]
+Option      "DynamicClocks" "on"
+EndSection
+</pre>
+
+</body>
+</section>
 <section>
 <title>Administración de Energía para tarjetas inalámbricas</title>
 <body>
@@ -1017,13 +1130,14 @@ stop () {
 </pre>
 
 <p>
-Al iniciar este guión se configurará wlan0 en el modo de Administración de Energía
-y se cambiará al modo "sleep" luego de haber pasado tres segundos en ausencia de tráfico.
-Guárdelo como  <path>/etc/init.d/pm.wlan0</path> y agreguélo al nivel de ejecución
-battery tal como se hizo con el guión para el disco de más arriba. Vea <c>man iwconfig</c>
-para más detalles y opciones. Si su manejador y punto de acceso están habilitados para
-cambiar el tiempo de reconocimiento de la señal ("beacon time"), ésto es un buen punto
-de partida para ahorrar aún más energía:
+Al iniciar este guión se configurará wlan0 en el modo de Administración de
+Energía y se cambiará al modo "sleep" luego de haber pasado tres segundos en
+ausencia de tráfico. Guárdelo como  <path>/etc/init.d/pm.wlan0</path> y
+agréguelo al nivel de ejecución battery tal como se hizo con el guión para el
+disco de más arriba. Vea <c>man iwconfig</c> para más detalles y opciones. Si
+su manejador y punto de acceso están habilitados para cambiar el tiempo de 
+reconocimiento de la señal ("beacon time"), ésto es un buen punto de partida 
+para ahorrar aún más energía:
 </p>
 
 <pre caption="Administración de Energía de WLAN">
@@ -1044,14 +1158,19 @@ energía: Primero, los dispositivos como el mouse USB, cámaras digitales
 o llaveros USB consumen energía mientras están enchufados. No puede evitar
 ésto (no obstante desenchúfelos es caso de que no se necesiten). Segundo, cuando
 hay dispositivos USB enchufados, la controladora USB accede periódicamente
-al bus lo que previene que la CPU entre en el modo « sleep  C3/4. La respuesta por
-parte del SO a este problema es la llamada "suspensión selectiva USB", la cual no
-ha sido implementada todavía en el núcleo. La suspensión selectiva USB sólo
-permite acceso al bus en caso de que el dispositivo esté en uso. La solución
-temporal mientras se implementa es la siguiente: Compile el soporte para USB
-y los dispositivos como módulos y remúevalos mediante un guión a medida que
-no se usen (Por ejemplo, cuando se cierra la tapa del portátil).
+al bus lo que previene que la CPU entre en el modo "sleep". El núcleo ofrece
+una opción experimental para activar la suspensión de dispositivos USB a través
+de llamadas del driver o uno de los archivos <path>power/state</path> en
+<path>/sys</path>.
 </p>
+
+<pre caption="Activando el soporte USB suspend en el núcleo">
+Device Drivers
+  USB support
+    [*]   Support for Host-side USB
+      [*]   USB suspend/resume (EXPERIMENTAL)
+</pre>
+
 </body>
 </section>
 </chapter>
@@ -1070,7 +1189,6 @@ ACPI define tres estados de sueño. Los más importantes son:
   <li>S1 alias En espera ("standby")</li>
   <li>S3 alias Suspensión a RAM o Suspensión</li>
   <li>S4 alias Suspensión a Disco o Hibernación</li>
-
 </ul>
 
 <p>
@@ -1079,130 +1197,257 @@ esté en uso de forma de evitar apagar el sistema debido al largo tiempo
 de arranque.
 </p>
 </body>
-</section>
-
+</section> 
 <section>
-<title>Suspensión, En espera e Hibernación</title>
+<title>Suspensión (S3)</title>
+<body> 
+
+<p>
+El soporte de ACPI para estos estados de suspensión es considerado experimental 
+por una buen motivo. Los estados de sueño de APM parecen ser más estables, sin 
+embargo, no puede usar APM y ACPI juntos.
+</p>
+
+<pre caption="Configuración del núcleo para los varios tipos de suspensión">
+  Power Management Options ---&gt;
+    [*]  Power Management support
+      ACPI (Advanced Configuration and Power Interface) Support ---&gt;
+        [*]  ACPI Support
+          [*]   Sleep States
+</pre>
+
+<p>
+Una vez que su núcleo esté configurado como se muestra arriba, puede usar el
+script <c>hibernate-script</c> para activar el modo de suspensión o sueño.
+Instalaremos esto primero.
+</p>
+
+<pre caption="Instalando el hibernate-script">
+<i># emerge hibernate-script</i>
+</pre>
+
+<p>
+Deben configurarse algunas cosas en <path>/etc/hibernate</path>. El paquete
+por defecto incorpora dos archivos de configuración: <path>hibernate.conf</path>
+y <path>ram.conf</path>.
+</p>
+
+<p>
+Para configurar la suspensión, edite <path>ram.conf</path> en 
+<path>/etc/hibernate</path>. <c>UseSysfsPowerState mem</c> está
+ya configurado correctamente, pero tiene seguir con el resto del archivo de
+configuración y ajustarlo a su sistema. Los comentarios y nombres de opciones
+le servirán de guía. Si usa NFS o recursos compartidos en red vía Samba,
+asegúrese de apagar los scripts de inicio apropiados para evitar timeouts.
+</p>
+
+<p>
+¿Listo? Ahora es la última oportunidad de respaldar aquellos datos que desea
+preservar luego de ejecutar el siguiente comando. Note que probablemente tendrá
+que presionar una tecla especial como <e>Fn</e> para volver desde el estado
+de suspensión.
+</p>
+
+<pre caption="Llamando al estado de suspensión">
+<i># hibernate-ram</i>
+</pre>
+
+<p>
+Si todavía está leyendo es porque funciona. Puede también configurar standby
+(S1) en forma similar copiado el archivo <path>ram.conf</path> a 
+<path>standby.conf</path> y creando un enlace simbólico 
+<path>/usr/sbin/hibernate-standby</path> apuntando a 
+<path>/usr/sbin/hibernate</path>. S3 y S4 son los estados de sueño más
+interesantes debido a los mayores ahorros de energía involucrados.
+</p>
+
+</body>
+</section>
+<section>
+<title>Hibernar (S4)</title>
 <body>
 
 <p>
-El soporte de ACPI para esos estados es considerado experimental por una buen
-motivo. Los estados de sueño de APM parecen ser más estables, sin embargo, no
-puede usar APM y ACPI juntos.
+Esta sección lo introduce al concepto de hibernación, donde una "foto" del
+sistema en ejecución se lleva a disco antes de apagarlo. Al regreso, la
+"foto" se carga y puede seguir trabajando exactamente en el punto donde
+ejecutó antes la hibernación.
 </p>
 
 <warn>
-Aunque está mejorando con creces el soporte de los estados de sueño, aún se
-considera algo experimental. Al menos, se pudo hacer funcionar swsusp2 y suspensión
-a RAM, pero le advertimos: Ésto es muy probable que no le funcione con el riesgo
-de dañar sus datos/sistema.
+No intercambie hardware no hot-pluggable cuando está en el modo suspensión. No
+intente cargar una "foto" con una imagen del núcleo diferente de la que se creó.
+Apague cualquier servidor/cliente NFS o Samba antes de hibernar.
 </warn>
 
 <p>
-Actualmente hay tres implementaciones para S4. El original denominado
-swsusp, luego está swsusp2 que tiene la interfaz más agradable de todas
-(incluyendo soporte para bootsplash), pero requiere de parchar manualmente
-el núcleo. La última no menos importante es Suspend-to-Disk, un clon de
-swsup.
+Existen dos implementaciones distintas para S4. El original denominado
+swsusp, luego está la más nueva, swsusp2, que tiene una interfaz agradable 
+(incluyendo soporte para fbsplash). Una <uri 
+link="http://suspend2.net/features.html#compare">comparación de características
+</uri> está disponible en la <uri link="http://suspend2.net">página Web de 
+suspend2</uri>. Solía existir Suspend-to-Disk (pmdisk), un proyecto clon
+de swsusp, pero fue mezclado con el anterior.
 </p>
 
 <p>
-Si esto lo confundió, déle una mirada a la <uri
-link="http://softwaresuspend.berlios.de/features.html#compare">comparación de
-características</uri>. Si aún sigue confundido y no sabe cuál elegir, primero
-intente con swsusp2, se ve como la más prometedora.
+Suspend2 todavía no está incluido en el núcleo principal, por tanto, tendrá
+que parchar sus fuentes del núcleo con los parches ofrecidos por
+<uri link="http://suspend2.net">suspend2.net</uri> o usar
+<c>sys-kernel/suspend2-sources</c>.
 </p>
 
 <p>
-La parte relacionada al núcleo para ésto es como sigue:
+La parte relacionada al núcleo para swsup y suspend2 es como sigue:
 </p>
 
 <pre caption="Configuración del núcleo para los diversos tipos de suspensión">
 Power Management Options ---&gt;
-
-  <comment>(suspensión y en espera)</comment>
-  ACPI( Advanced Configuration and Power Interface ) Support --->
-    [*] ACPI Support
-       [*]   Sleep States
-
   <comment>(hibernación con swsusp)</comment>
-  [*] Software Suspend (EXPERIMENTAL)
+  [*] Software Suspend
+      <comment>(reemplace /dev/SWAP con su partición de intercambio</comment>
+      (/dev/SWAP)      Default resume partition 
 
   <comment>(hibernación con swsusp2)</comment>
   Software Suspend 2
     --- Image Storage (you need at least one writer)
+    [*]     File Writer
     [*]    Swap Writer
-    --- Page Transformers
+    ---   General Options
     [*]    LZF image compression
-    (/dev/"su-swap-aquí")    Default resume device name
-
-  <comment>(hibernación con Suspend-to-Disk)</comment>
-  [*] Suspend-to-Disk Suport
-  (/dev/"su-swap-aquí") Default resume partition
+    <comment>(reemplace /dev/SWAP con su partición de intercambio</comment>
+    (swap:/dev/SWAP)   Default resume device name
+    [ ]     Allow Keep Image Mode
 </pre>
 
 <p>
-Compile su núcleo con las opciones apropiadas activadas y ejecute  <c>cat
-/proc/acpi/sleep</c> para la serie 2.4 y <c>cat /sys/power/state</c> para
-la 2.6 y así averiguar qué es lo que está soportado. Para swsup, debe
-agregar el parámetro del núcleo <c>resume=/dev/"su-swap-aquí"</c>. Si no
-puede realizar el arranque debido a una imagen dañada, use <c>noresume</c>
-para swsup, <c>pmdisk=off</c> para Suspend-to-Disk y <c>noresume2</c> for
-swsusp2.
+La configuración para swsup es fácil. Si no guardó la ubicación de su partición
+de intercambio en la configuración del núcleo, puede pasarla también como
+parámetro con la directiva <c>resume=/dev/SWAP</c> (Reemplazando SWAP por su
+partición de intercambio). Si no puede arrancar posiblemente debido a una
+imagen dañada, use el parámetro <c>noresume</c> del núcleo. El script de
+inicio <c>hibernate-cleanup</c> invalida las imagenes swsusp durante el proceso
+de arranque.
 </p>
+
+<pre caption="Invalidando las imagenes swsup durante el proceso de arranque">
+<i># rc-update add hibernate-cleanup boot</i>
+</pre>
 
 <p>
-Para colocar su sistema en uno de los estados de sueño, use
+Para activar la hibernación con swsup use el script hibernate y ajuste
+<c>UseSysfsPowerState disk</c> en <path>/etc/hibernate/hibernate.conf</path>.
 </p>
-
-<pre caption="Activando los estados de sueño">
-<comment>(serie 2.4 del núcleo)</comment>
-# <i>echo 1 &gt; /proc/acpi/sleep</i>          <comment>En espera ("standby")</comment>
-# <i>echo 3 &gt; /proc/acpi/sleep</i>          <comment>(Suspensión)</comment>
-
-<comment>(serie 2.6 del núcleo)</comment>
-# <i>echo -n standby &gt; /sys/power/state</i> <comment>En espera ("standby")</comment>
-# <i>echo -n mem &gt; /sys/power/state</i>     <comment>(Suspensión)</comment>
-
-<comment>(swsusp)</comment>
-# <i>echo 4 &gt; /proc/acpi/sleep</i>          <comment>(Hibernar)</comment>
-
-<comment>(Suspend-to-Disk)</comment>
-# <i>echo -n disk &gt; /sys/power/state</i>    <comment>(Hibernar)</comment>
-
-<comment>(swsusp2)</comment>
-# <i>/usr/sbin/hibernate</i>                   <comment>(Hiberar, vea más abajo)</comment>
-</pre>
 
 <warn>
-Respalde sus datos antes de realizar ésto. Ejecute <c>sync</c> antes de correr
-uno de los comandos para que los datos en caché se escriban al disco. Primero,
-inténtelo fuera de X, luego con X corriendo pero sin haber ingresado.
+Respalde sus datos antes de hacer esto. Corra <c>sync</c> antes de ejecutar
+uno de los comando para llevar los datos en caché a disco. Primero inténtelo
+fuera del servidor X, luego con X corriendo pero sin haber ingresado.
 </warn>
 
 <p>
-Si experimenta un error del tipo "kernel panic" debido a uhci o similar, intente
-compilar el soporte USB como módulo y remueva los módulos antes de enviar
-a su portátil a un modo de suspensión.
+Si experimenta errores del tipo "kernel panic" debido a uhci o similar, intente
+compilar el soporte USB como módulo y descargue los módulos antes de enviar su
+portátil al modo de suspensión. Hay opciones de configuración para esto en
+el archivo <path>hibernate.conf</path>.
+</p>
+
+<pre caption="Hibernando con swsusp">
+<i># nano -w /etc/hibernate.conf</i>
+<comment>(Asegúrese de haber respaldado sus datos)</comment>
+<i># hibernate</i>
+</pre>
+
+<p>
+La siguiente sección discute la configuración de suspend2 incluyendo el soporte
+de fbsplash para obtener una agradable barra de progreso durante la suspensión
+y reactivación (resume).
 </p>
 
 <p>
-Aunque lo anterior debería ser suficiente para que corra swsup
-y Suspend-to-Disk (no necesariamente que funcionen), swsusp2 necesita
-de especial atención.
-La primera cosa por hacer es aplicar un parche al núcleo con los que
-se proveen en <uri link="http://softwaresuspend.berlios.de/">
-http://softwaresuspend.berlios.de/</uri>. Adicionalmente tiene  que
-instalar <c>hibernate-script</c>. Una vez instalado, configure <path>/etc/hibernate/hibernate.conf</path>
-y pruebe si funciona:
+La primera parte de la configuración es similar a la hecha para swsup.Si no 
+guardó la ubicación de su partición de intercambio en la configuración del 
+núcleo, tiene que pasarla como parámetro del núcleo con la directiva 
+<c>resume2=swap:/dev/SWAP</c> (Reemplazando SWAP por su
+partición de intercambio). Si no puede arrancar posiblemente debido a una
+imagen dañada, use el parámetro <c>noresume2</c> del núcleo. Adicionalmente,
+el script de inicio <c>hibernate-cleanup</c> invalida las imagenes suspend2
+durante el proceso de arranque.
 </p>
 
-<pre caption="Configurar hibernation">
-<i># emerge hibernate-script</i>
-<i># $EDITOR /etc/hibernate/hibernate.conf</i>
-<comment>(Última oportunidad para respaldar datos)</comment>
+<pre caption="Invalidando las imagenes suspend2 durante el proceso de arranque">
+<i># rc-update add hibernate-cleanup boot</i>
+</pre>
+
+<p>
+Ahora edite <path>/etc/hibernate/hibernate.conf</path>, active la sección
+<e>suspend2</e> y comente todo en las secciones <e>sysfs_power_state</e> y
+<e>acpi_sleep</e>. No active todavía la parte fbsplash en las opciones globales.
+</p>
+
+<pre caption="Hibernando con suspend2">
+<i># nano -w /etc/hibernate.conf</i>
+<comment>(Asegúrese de tener un respaldo de sus datos)</comment>
 <i># hibernate</i>
 </pre>
+
+<p>
+Por favor configure ahora fbsplash si no lo ha hecho hasta ahora. Para activar
+el soporte de fbsplash durante la hibernación, se necesita el paquete
+<c>sys-apps/suspend2-userui</c>. Adicionalmente, debe activar la bandera USE
+<e>fbsplash</e>.
+</p>
+
+<pre caption="Instalando suspend2-userui">
+<i># mkdir -p /etc/portage</i>
+<i># echo sys-apps/suspend2-userui fbsplash >> /etc/portage/package.use</i>
+<i># emerge suspend2-userui</i>
+</pre>
+
+<p>
+El ebuild le dice que haga un enlace simbólico al tema que desea usar. Por
+ejemplo, para usar el tema <c>livecd-2005.1</c>, ejecute el siguiente comando:
+</p>
+
+<pre caption="Usando el tema livecd-2005.1 durante la hibernación">
+<i># ln -sfn /etc/splash/livecd-2005.1 /etc/splash/suspend2</i>
+</pre>
+
+<p>
+Si no quiere que aparezca una pantalla negra en la primera parte del proceso
+de vuelta, tiene que agregar la herramienta <c>suspend2ui_fbsplash</c> a su
+imagen initrd. Asumiendo que creó la imagen initrd con
+<c>splash_geninitramfs</c> y la guardó como 
+<path>/boot/fbsplash-emergence-1024x768</path>, aquí es como se hace esto.
+</p>
+
+<pre caption="Agregando suspend2ui_fbsplash a la imagen initrd">
+<i># mount /boot</i>
+<i># mkdir ~/initrd.d</i>
+<i># cp /boot/fbsplash-emergence-1024x768 ~/initrd.d/</i>
+<i># cd ~/initrd.d</i>
+<i># gunzip -c fbsplash-emergence-1024x768 | cpio -idm --quiet -H newc</i>
+<i># rm fbsplash-emergence-1024x768</i>
+<i># cp /usr/sbin/suspend2ui_fbsplash sbin/</i>
+<i># find . | cpio --quiet --dereference -o -H newc | gzip -9 > /boot/fbsplash-suspend2-emergence-1024x768</i>
+</pre>
+
+<p>
+A continuación, ajuste <path>grub.conf</path> y respectivamente 
+<path>lilo.conf</path> de manera que su núcleo suspend2 use 
+<path>/boot/fbsplash-suspend2-emergence-1024x768</path> como imagen initrd.
+Ahora puede si todo fue configurado correctamente.
+</p>
+
+<pre caption="Prueba para la hibernación fbsplash">
+<i># suspend2ui_fbsplash -t</i>
+</pre>
+
+<p>
+Después abra <path>/etc/hibernate/hibernate.conf</path> nuevamente y active
+las opciones fbsplash. Ejecute <c>hibernate</c> y disfrute.
+</p>
+
 </body>
 </section>
 </chapter>
@@ -1229,8 +1474,8 @@ Intel mobile PIII e Intel mobile PIII-M en algunos chipsets, Intel Pentium 4,
 Intel Xeon, Intel Pentium M (Centrino), National Semiconductors Geode GX,
 Transmeta Crusoe, VIA Cyrix 3 / C3, UltraSPARC-III, SuperH SH-3, SH-4, varios
 "PowerBook" e "iBook2" y algunos procesadores en sistemas ACPI 2.0-compatible
-(sólo si está disponible la opción "ACPI Processor Performance States" en la interfaz
-ACPI/BIOS).
+(sólo si está disponible la opción "ACPI Processor Performance States" en la 
+interfaz ACPI/BIOS).
 </p>
 
 <p>
@@ -1251,15 +1496,16 @@ de acuerdo a <path>/proc/cpuinfo</path> la velocidad nunca cambia.
 </p>
 
 <p>
-<e>R:</e> Es probable que haya activado en su núcleo el soporte para multiprocesamiento
-simétrico (CONFIG_SMP). Desactívelo y debería funcionar. Algunos
-núcleos antiguos tienen un error que causa ésto. En ese caso, ejecute <c>emerge x86info</c>,
-actualice su núcleo tal como se pide y chequee la frecuencia actual con <c>x86info -mhz</c>.
+<e>R:</e> Es probable que haya activado en su núcleo el soporte para 
+multiprocesamiento simétrico (CONFIG_SMP). Desactívelo y debería funcionar. 
+Algunos núcleos antiguos tienen un error que causa ésto. En ese caso, ejecute
+<c>emerge x86info</c>, actualice su núcleo tal como se pide y chequee la 
+frecuencia actual con <c>x86info -mhz</c>.
 </p>
 
 <p>
-<e>P:</e> Puedo cambiar la frecuencia de la CPU, no obstante el rango no es tan amplio
-como lo es en otro SO.
+<e>P:</e> Puedo cambiar la frecuencia de la CPU, no obstante el rango no 
+es tan amplio como lo es en otro SO.
 </p>
 
 <p>
@@ -1275,8 +1521,9 @@ en <path>/proc/acpi/processor/CPU/throttling</path>.
 </p>
 
 <p>
-<e>P:</e> Al configurar el núcleo aparecen los gobernadores powersave, performance y
-userspace, pero falta el relacionado a ondemand. ¿Dónde lo obtengo?
+<e>P:</e> Al configurar el núcleo aparecen los gobernadores powersave,
+performance y userspace, pero falta el relacionado a ondemand. ¿Dónde lo 
+obtengo?
 </p>
 
 <p>
@@ -1289,17 +1536,18 @@ núcleo. Intente actualizarlas.
 </p>
 
 <p>
-<e>R:</e> Revise la configuración de su BIOS. Quizás olvidó reactivar algunos ajustes.
+<e>R:</e> Revise la configuración de su BIOS. Quizás olvidó reactivar algunos 
+ajustes.
 </p>
 
 <p>
-<e>P:</e> Mi batería está cargada, pero KDE reporta que el nivel actual es 0% restante y
-se apaga de inmediato.
+<e>P:</e> Mi batería está cargada, pero KDE reporta que el nivel actual es 0% 
+restante y se apaga de inmediato.
 </p>
 
 <p>
-<e>R:</e> Revise que esté compilado el soporte de batería en su núcleo. Si puede usarlo como
-módulo, asegúrese que esté cargado.
+<e>R:</e> Revise que esté compilado el soporte de batería en su núcleo. Si
+puede usarlo como módulo, asegúrese que esté cargado.
 </p>
 
 <p>
@@ -1312,13 +1560,35 @@ link="http://bugme.osdl.org/show_bug.cgi?id=1752">reporte</uri>.
 </p>
 
 <p>
-<e>P:</e> Me acabo de comprar una batería nueva, ¡pero dura sólo unos pocos minutos!
-¿Qué estoy haciendo mal?
+<e>P:</e> Activé la opción DynamicClocks en <path>xorg.conf</path> y ahora
+X.org se cae / la pantalla queda en negro / mi portátil no se apaga
+adecuadamente.
 </p>
 
 <p>
-<e>R:</e> Primero siga los consejos de su fabricante acerca de cómo cargar adecuadamente
-la batería.
+<e>R:</e> Esto pasa en algunos sistemas. Deberá desactivar DynamicClocks.
+</p>
+
+<p>
+<e>P:</e> Quiero usar suspend2 pero me dice que mi partición de intercambio
+es muy pequeña. Redimensionarla no es una opción.
+</p>
+
+<p>
+<e>R:</e> Si hay suficiente espacio libre en su sistema, puede usar el escritor
+a archivo en vez del escritor de swap. El script <c>hibernate-script</c> lo 
+reconoce también. Puede encontrar más información en el archivo
+<path>/usr/src/linux/Documentation/power/suspend2.txt</path>.
+</p>
+
+<p>
+<e>P:</e> Me acabo de comprar una batería nueva, ¡pero dura sólo unos pocos
+minutos!  ¿Qué estoy haciendo mal?
+</p>
+
+<p>
+<e>R:</e> Primero siga los consejos de su fabricante acerca de cómo cargar 
+adecuadamente la batería.
 </p>
 
 <p>
@@ -1326,8 +1596,8 @@ la batería.
 </p>
 
 <p>
-<e>R:</e> Algunas baterías vendidas como "nuevas" en realidad son viejas. Intente lo
-siguiente:
+<e>R:</e> Algunas baterías vendidas como "nuevas" en realidad son viejas. 
+Intente lo siguiente:
 </p>
 
 <pre caption="Consultando el estado de la batería">
@@ -1337,9 +1607,9 @@ last full capacity:  41830 mWh
 </pre>
 
 <p>
-Si el ítem "última capacidad llena" ("last full capacity") difiere significativamente
-de la capacidad diseñada, su batería está probablemente dañada. Intente reclamar
-su garantía.
+Si el ítem "última capacidad llena" ("last full capacity") difiere 
+significativamente de la capacidad diseñada, su batería está probablemente 
+dañada. Intente reclamar su garantía.
 </p>
 
 <p>
@@ -1347,8 +1617,8 @@ su garantía.
 </p>
 
 <p>
-<e>R:</e> No dude en contactar directamente a <mail link="fragfred@gmx.de">Dennis
-Nienhüser</mail>.
+<e>R:</e> No dude en contactar directamente a <mail 
+link="fragfred@gmx.de">Dennis Nienhüser</mail>.
 </p>
 </body>
 </section>
