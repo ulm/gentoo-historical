@@ -368,6 +368,7 @@ Which drive would you like to partition?<br>"""
 		</form>"""
 		return self.wrap_in_webgli_template(data)
 	def partitioning2(self):
+		colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat16': '#3d07f9', 'fat32': '#3d07f9', 'reiserfs': '#f0ff00', 'linux-swap': '#12ff09', 'xfs': '#006600', 'jfs': '#ffb400' }
 		data = "<h4>Select a partition or unallocated space to edit</h4>\n"
 		#MOVE THIS TO PART2
 		#if int(new_mb) > free_mb:
@@ -382,13 +383,77 @@ Which drive would you like to partition?<br>"""
 		
 		drive_to_partition = self.post_params['editdrive']
 		self.shared_info.drive_to_partition = drive_to_partition
-		data += '<form name="part2" action="/webgli/Partitioning3" method="POST" enctype="multipart/form-data">'
-		data += '<input type="hidden" name="editdrive" value="'+drive_to_partition+"\">\n"
-		data += "<table><tr><td>EDIT</td><td>INFO: Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.</td></tr>"
-		
 		partitions = self.shared_info.devices[drive_to_partition].get_partitions()
 		partlist = self.shared_info.devices[drive_to_partition].get_ordered_partition_list()
 		tmpparts = self.shared_info.devices[drive_to_partition].get_partitions()
+
+		data += '<form name="part2" action="/webgli/Partitioning3" method="POST" enctype="multipart/form-data">'
+		data += '<input type="hidden" name="editdrive" value="'+drive_to_partition+"\">\n"
+
+		total_mb = self.shared_info.devices[drive_to_partition].get_total_mb()
+		extended_total_mb = 0
+		last_percent = 0
+		last_log_percent = 0
+		if len(partlist):
+			data += "<script>\nfunction partition_selected(minor) {\n  alert('Selected partition ' + minor + '!');\n}\n</script>\n"
+			data += '<table width="100%" cellspacing="0" cellpadding="0" border="1">' + "\n  <tr>\n"
+		for part in partlist:
+			tmppart = tmpparts[part]
+			if tmppart.get_type() == "free":
+				partsize = tmppart.get_mb()
+				percent = (float(partsize) / float(total_mb)) * 100
+				if percent < 1: percent = 1
+				percent = int(percent)
+				if tmppart.is_logical():
+#					tmpbutton = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
+#					tmpbutton.connect("clicked", self.unalloc_selected, self.active_device, False, partsize, part)
+#					extended_table.attach(tmpbutton, last_log_percent, (last_log_percent + percent), 0, 1)
+					last_log_percent = last_log_percent + percent
+				else:
+#					self.part_buttons['free_' + str(part)] = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
+#					if self.devices[self.active_device].get_partitions().has_key(1) and self.devices[self.active_device].get_partitions().has_key(2) and self.devices[self.active_device].get_partitions().has_key(3) and self.devices[self.active_device].get_partitions().has_key(4):
+#						self.part_buttons['free_' + str(part)].connect("clicked", self.show_no_more_primary_message)
+#					else:
+#						self.part_buttons['free_' + str(part)].connect("clicked", self.unalloc_selected, self.active_device, False, partsize, part)
+#					self.part_table.attach(self.part_buttons['free_' + str(part)], last_percent, (last_percent + percent), 0, 1)
+					last_percent = last_percent + percent
+			else:
+				partsize = tmppart.get_mb()
+				percent = (float(partsize) / float(total_mb)) * 100
+				if percent < 1: percent = 1
+				percent = int(percent)
+				tmpminor = int(tmppart.get_minor())
+				tmpdevice = drive_to_partition
+				if tmppart.is_extended():
+					data += '    <td height="40" width="' + str(percent) + '%" align="center">' + "\n" + '      <table width="100%" cellspacing="0" cellpadding="0" border="1" style="border-padding: 2px;">' + "\n        <tr>\n"
+					extended_total_mb = tmppart.get_mb()
+					last_percent = last_percent + percent
+				elif tmppart.is_logical():
+					ext_percent = (float(partsize) / float(extended_total_mb)) * 100
+					if ext_percent < 1: ext_percent = 1
+					ext_percent = int(ext_percent)
+					data += '    <td height="40" width="' + str(ext_percent) + '%" align="center" style="background-color: ' + colors[tmppart.get_type()] + ';" onclick="partition_selected(' + str(tmpminor) + ');">'
+					if percent >= 15:
+						data += tmpdevice + str(tmpminor)
+					data += "</td>\n"
+					last_log_percent = last_log_percent + percent
+				else:
+					if extended_total_mb:
+						data += "        </tr>\n      </table>\n    </td>\n"
+						extended_total_mb = 0
+					data += '    <td height="40" width="' + str(percent) + '%" align="center" style="background-color: ' + colors[tmppart.get_type()] + ';" onclick="partition_selected(' + str(tmpminor) + ');">'
+					if percent >= 15:
+						data += tmpdevice + str(tmpminor)
+					data += "</td>\n"
+					last_percent = last_percent + percent
+		if extended_total_mb:
+			data += "        </tr>\n      </table>\n    </td>\n"
+			extended_total_mb = 0
+		if len(partlist):
+			data += "  </tr>\n</table>\n<br>\n"
+
+		data += "<table><tr><td>EDIT</td><td>INFO: Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.</td></tr>"
+		
 		for i, part in enumerate(partlist):
 			tmppart = tmpparts[part]
 			minor = tmppart.get_minor()
