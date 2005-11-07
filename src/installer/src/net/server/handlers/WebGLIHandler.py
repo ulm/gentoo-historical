@@ -483,8 +483,8 @@ Which drive would you like to partition?<br>"""
 			data += '<td>'+entry + "</td></tr>\n"
 		if self.shared_info.devices[drive_to_partition].get_model() == "Generic disk":
 			data += '<tr><td><input type="radio" name="editpart" value="-1"></td><td>Add new at end</td></tr>'
-		data += "</table>\n"
-		data += '<input type="submit" name="SubmitEditPart" value="Edit Partition"></form>'
+		data += '<tr><td colspan="2"><br><input type="submit" name="SubmitEditPart" value="Edit Partition"></td></tr>'
+		data += "</table>\n</form>\n"
 		return self.wrap_in_webgli_template(data)
 	def partitioning3(self):
 		if self.post_params['editpart2']:
