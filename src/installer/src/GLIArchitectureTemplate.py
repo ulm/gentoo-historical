@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.225 2005/11/08 04:04:06 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.226 2005/11/08 04:09:26 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -197,8 +197,8 @@ class ArchitectureTemplate:
 		# Use tar to transfer files into IMAGE directory
 		tmpdir = "/var/tmp/portage"
 		image_dir = tmpdir + "/" + package.split("/")[1] + "/image"
-		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'mkdir " + self._chroot_dir + image_dir + " && tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + " -x'")
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir " + self._chroot_dir + image_dir + " && tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -x")):
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'mkdir -p " + self._chroot_dir + image_dir + " && tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -x'")
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir -p " + self._chroot_dir + image_dir + " && tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -x")):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute tar for " + package)
 
 		# Check for existance of /usr/livecd/gconf/ in image_dir and change to /etc/gconf/
