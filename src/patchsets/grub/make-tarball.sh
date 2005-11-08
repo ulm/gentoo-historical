@@ -16,7 +16,7 @@ rm -rf tmp
 rm -f grub-${gver}-*.tar.bz2
 
 mkdir -p tmp/patch
-cp -r ../README* ${gver}/README ${gver}/*.patch tmp/patch/ || exit 1
+cp -r ../README* ${gver}/*.patch tmp/patch/ || exit 1
 
 #find tmp -type f -a ! -name 'README*' | xargs bzip2
 
