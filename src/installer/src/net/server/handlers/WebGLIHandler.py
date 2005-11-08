@@ -3,7 +3,7 @@ import GLIInstallProfile
 import GLIClientConfiguration
 import GLIStorageDevice
 import GLIUtility
-import GLIException
+from GLIException import GLIException
 import handler
 import traceback
 import sys, os
