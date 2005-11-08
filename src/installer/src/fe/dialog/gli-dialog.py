@@ -232,6 +232,9 @@ Do you have a previously generated XML file for the ClientConfiguration?
 		cc.start_install()
 		d.gauge_start(_(u"Installation Started!"), title=_(u"Installation progress"))
 		num_steps_completed = 1
+		next_step = 0
+		num_steps = 0
+		i = 0
 		while 1:
 			notification = cc.getNotification()
 			if notification == None:
@@ -242,6 +245,10 @@ Do you have a previously generated XML file for the ClientConfiguration?
 			if type_r == "exception":
 				print "Exception received:"
 				print data
+			elif type_r == "progress":
+				#SECONDARY UPDATIN' GOIN ON IN HERE
+				diff = (data[0])/num_steps
+				d.gauge_update(i+diff, "On step %d of %d. Current step: %s\n%s" % (num_steps_completed, num_steps, next_step, data[1]), update_text=1)
 			elif type_r == "int":
 				if data == GLIClientController.NEXT_STEP_READY:
 					next_step_waiting = False
