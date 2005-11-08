@@ -382,7 +382,7 @@ class Device:
 		else:
 			total_mb = 0
 			for tmppart in self._partitions:
-				total += tmppart.get_mb()
+				total_mb += self._partitions[tmppart].get_mb()
 			return total_mb
 
 	##

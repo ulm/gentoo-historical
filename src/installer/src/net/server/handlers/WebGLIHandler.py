@@ -3,6 +3,7 @@ import GLIInstallProfile
 import GLIClientConfiguration
 import GLIStorageDevice
 import GLIUtility
+import GLIException
 import handler
 import traceback
 import sys, os
@@ -367,6 +368,7 @@ Which drive would you like to partition?<br>"""
 		Add generic disk: <input type="text" name="add_device" size="14"> <input type="submit" value="Add">
 		</form>"""
 		return self.wrap_in_webgli_template(data)
+
 	def partitioning2(self):
 		if self.get_params['editdrive']:
 			self.post_params['editdrive'] = self.get_params['editdrive']
@@ -392,13 +394,17 @@ Which drive would you like to partition?<br>"""
 		data += '<form name="part2" action="/webgli/Partitioning3" method="POST" enctype="multipart/form-data">'
 		data += '<input type="hidden" name="editdrive" value="'+drive_to_partition+"\">\n"
 		data += '<input type="hidden" name="editpart2" value="">' + "\n"
+		data += "<script>\nfunction partition_selected(minor) {\n  document.part2.editpart2.value = minor;\n  document.part2.submit();\n}\n</script>\n"
+
+		if self.shared_info.do_recommended_error:
+			data += '<span style="color: red;">' + self.shared_info.do_recommended_error + '</span><br><br>'
+			self.shared_info.do_recommended_error = ""
 
 		total_mb = self.shared_info.devices[drive_to_partition].get_total_mb()
 		extended_total_mb = 0
 		last_percent = 0
 		last_log_percent = 0
 		if len(partlist):
-			data += "<script>\nfunction partition_selected(minor) {\n  document.part2.editpart2.value = minor;\n  document.part2.submit();\n}\n</script>\n"
 			data += '<table width="100%" cellspacing="0" cellpadding="0" border="1">' + "\n  <tr>\n"
 		for part in partlist:
 			tmppart = tmpparts[part]
@@ -450,6 +456,11 @@ Which drive would you like to partition?<br>"""
 			extended_total_mb = 0
 		if len(partlist):
 			data += "  </tr>\n</table>\n<br>\n"
+		if self.shared_info.devices[drive_to_partition].get_model() == "Generic disk":
+			data += '<input type="button" value="Add new at end" onclick="partition_selected(-1);"> &nbsp; '
+		else:
+			data += '<input type="submit" name="recommended" value="Recommended layout"> &nbsp; '
+		data += '<input type="submit" name="cleardrive" value="Clear drive"><br>'
 
 		data += "<table style=\"display: none;\"><tr><td>EDIT</td><td>INFO: Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.</td></tr>"
 		
@@ -486,7 +497,18 @@ Which drive would you like to partition?<br>"""
 		data += '<tr><td colspan="2"><br><input type="submit" name="SubmitEditPart" value="Edit Partition"></td></tr>'
 		data += "</table>\n</form>\n"
 		return self.wrap_in_webgli_template(data)
+
 	def partitioning3(self):
+		if 'recommended' in self.post_params:
+			try:
+				self.shared_info.devices[self.shared_info.drive_to_partition].do_recommended()
+			except GLIException, error:
+				self.shared_info.do_recommended_error = error.get_error_msg()
+			return self.return_redirect("/webgli/Partitioning2?editdrive=" + self.shared_info.drive_to_partition)
+		if 'cleardrive' in self.post_params:
+			self.shared_info.devices[self.shared_info.drive_to_partition].clear_partitions()
+			self.shared_info.do_recommended_error = "Partition table cleared successfully"
+			return self.return_redirect("/webgli/Partitioning2?editdrive=" + self.shared_info.drive_to_partition)
 		if self.post_params['editpart2']:
 			self.post_params['editpart'] = self.post_params['editpart2']
 		if self.get_params['editpart']:
