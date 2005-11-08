@@ -396,9 +396,9 @@ Which drive would you like to partition?<br>"""
 		data += '<input type="hidden" name="editpart2" value="">' + "\n"
 		data += "<script>\nfunction partition_selected(minor) {\n  document.part2.editpart2.value = minor;\n  document.part2.submit();\n}\n</script>\n"
 
-		if self.shared_info.do_recommended_error:
-			data += '<span style="color: red;">' + self.shared_info.do_recommended_error + '</span><br><br>'
-			self.shared_info.do_recommended_error = ""
+		if self.shared_info.error_message:
+			data += '<span style="color: red;">' + self.shared_info.error_message + '</span><br><br>'
+			self.shared_info.error_message = ""
 
 		total_mb = self.shared_info.devices[drive_to_partition].get_total_mb()
 		extended_total_mb = 0
@@ -503,11 +503,11 @@ Which drive would you like to partition?<br>"""
 			try:
 				self.shared_info.devices[self.shared_info.drive_to_partition].do_recommended()
 			except GLIException, error:
-				self.shared_info.do_recommended_error = error.get_error_msg()
+				self.shared_info.error_message = error.get_error_msg()
 			return self.return_redirect("/webgli/Partitioning2?editdrive=" + self.shared_info.drive_to_partition)
 		if 'cleardrive' in self.post_params:
 			self.shared_info.devices[self.shared_info.drive_to_partition].clear_partitions()
-			self.shared_info.do_recommended_error = "Partition table cleared successfully"
+			self.shared_info.error_message = "Partition table cleared successfully"
 			return self.return_redirect("/webgli/Partitioning2?editdrive=" + self.shared_info.drive_to_partition)
 		if self.post_params['editpart2']:
 			self.post_params['editpart'] = self.post_params['editpart2']
