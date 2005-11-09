@@ -416,7 +416,7 @@
     <xsl:if test="exslt:node-set($pmetadoc)/metadoc">
       <th><xsl:value-of select="func:gettext('original', $lang)"/></th>
     </xsl:if>
-    <th><xsl:value-of select="func:gettext('editing', $lang)"/></th>
+    <!--<th><xsl:value-of select="func:gettext('editing', $lang)"/></th>-->
   </tr>
   <xsl:for-each select="exslt:node-set($metadoc)/metadoc/files/file">
   <xsl:sort select="document(text())/metadoc/@lang" order="descending"/>
@@ -447,7 +447,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.26 2005/09/23 12:52:19 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.27 2005/11/09 19:32:44 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -469,7 +469,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.26 2005/09/23 12:52:19 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.27 2005/11/09 19:32:44 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:otherwise>
@@ -493,7 +493,7 @@
         </xsl:choose>
       </ti>
     </xsl:if>
-    <ti></ti>
+    <!--<ti></ti>-->
   </tr>
   </xsl:for-each>
   </table>
