@@ -247,7 +247,7 @@ Do you have a previously generated XML file for the ClientConfiguration?
 				print data
 			elif type_r == "progress":
 				#SECONDARY UPDATIN' GOIN ON IN HERE
-				diff = (data[0])/num_steps
+				diff = (data[0]*100)/num_steps
 				d.gauge_update(i+diff, "On step %d of %d. Current step: %s\n%s" % (num_steps_completed, num_steps, next_step, data[1]), update_text=1)
 			elif type_r == "int":
 				if data == GLIClientController.NEXT_STEP_READY:
