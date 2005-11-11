@@ -14,6 +14,7 @@ import socket
 import SocketServer
 import mimetools
 import GLIServerProfile
+import time
 import traceback
 try:
 	from SecureXMLRPCServer import SecureSocketServer
@@ -337,7 +338,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				for header in self.headers_out:
 					self.send_header(header[0], header[1])
 				self.end_headers()
-				self.wfile.write(return_content)
+				if not head_only:
+					self.wfile.write(return_content)
 				return
 		# No code handler...look for actual file
 		path = self.translate_path(self.path)
@@ -349,11 +351,16 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		except IOError:
 			self.send_error(404, "File not found")
 			return None
+		filestat = os.stat(path)
+		filesize = filestat[6]
+		filemtime = filestat[8]
 		self.send_response(200)
 		self.send_header("Content-type", ctype)
-		self.send_header("Content-Length", str(os.fstat(f.fileno())[6]))
+		self.send_header("Content-Length", str(filesize))
+		self.send_header("Last-Modified", time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(filemtime)))
 		self.end_headers()
-		shutil.copyfileobj(f, self.wfile)
+		if not head_only:
+			shutil.copyfileobj(f, self.wfile)
 		f.close()
 
 	def translate_path(self, path):
