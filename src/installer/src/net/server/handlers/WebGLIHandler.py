@@ -329,8 +329,8 @@ class WebGLIHandler(handler.Handler):
 	def partitioning(self):
 		if 'add_device' in self.post_params:
 			self.shared_info.devices[self.post_params['add_device']] = GLIStorageDevice.Device(self.post_params['add_device'], set_geometry=False, local_device=False)
-		data = '<form name="part" action="/webgli/Partitioning2" method="POST" enctype="multipart/form-data">'
-		partitions_string1 = """The first thing on the new system to setup is the partitoning.
+#		data = '<form name="part" action="/webgli/Partitioning2" method="POST" enctype="multipart/form-data">'
+		data = """The first thing on the new system to setup is the partitoning.
 You will first select a drive and then edit its partitions.
 No changes will be saved until the end of the step.
 No changes to your disk will be made until the installation.
@@ -341,7 +341,7 @@ The installer does not yet support resizing of partitions (its not safe).
 Please refer to the Gentoo Installation Handbook for more information
 on partitioning and the various filesystem types available in Linux.<br><br>
 Which drive would you like to partition?<br>"""
-		data += partitions_string1
+#		data += partitions_string1
 		self.shared_info.devices = self.shared_info.install_profile.get_partition_tables()
 		drives = self.shared_info.devices.keys()
 		drives.sort()
@@ -359,11 +359,12 @@ Which drive would you like to partition?<br>"""
 			for drive in drives:
 				choice_list.append((drive, self.shared_info.devices[drive].get_model()))
 		data += "<table>\n"
-		data += "<tr><td>EDIT</td><td>Drive</td><td>Drive Information</td></tr>\n"
-		for i,choice in enumerate(choice_list):
-			data += '<tr><td><input type="radio" name="editdrive" value="'+choice_list[i][0]+'"></td><td>'+choice_list[i][0]+'</td><td>'+choice_list[i][1]+"</td></tr>\n"
-		data += '</table><input type="submit" name="SubmitEditDrive" value="Edit Drive"></form>'
+#		data += "<tr><td>&nbsp;</td><td>EDIT</td><td>Drive</td><td>Drive Information</td></tr>\n"
+		for i, choice in enumerate(choice_list):
+			data += '<tr><td><a href="/webgli/Partitioning2?editdrive=' + choice[0] + '"><img src="/images/icon-harddisk-noia_48x48.png" border="0" alt="' + choice[0] + '"></a></td><td valign="bottom">' + choice[1] + ' (' + choice[0] + ")</td></tr>\n"
+		data += '</table>'
 		data += """
+		<br>
 		<form name="genericdisk" action="/webgli/Partitioning" method="POST">
 		Add generic disk: <input type="text" name="add_device" size="14"> <input type="submit" value="Add">
 		</form>"""

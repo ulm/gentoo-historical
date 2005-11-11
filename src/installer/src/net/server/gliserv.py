@@ -21,6 +21,7 @@ except:
 	pass
 
 debug = False
+module_mtimes = {}
 
 class SharedInfo(object):
 
@@ -305,7 +306,13 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				# Horrible hack until I figure out a better way to skip to sending the content
 				while 1:
 					try:
+						mtime = os.stat("handlers/" + module + ".py")[8]
 						content_module = __import__("handlers/" + module)
+						if module in module_mtimes:
+							if mtime != module_mtimes[module]:
+								reload(content_module)
+								content_module = __import__("handlers/" + module)
+						module_mtimes[module] = mtime
 						module_obj = getattr(content_module, module)(self.get_params, self.post_params, self.headers_out, self.shared_info)
 					except AttributeError:
 						return_content = "Caught %s (%s) in module. Traceback:\n%s" % (sys.exc_info()[0], sys.exc_info()[1], self.get_exception())
