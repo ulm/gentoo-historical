@@ -190,7 +190,7 @@
   <xsl:param name="Y" />
   <xsl:param name="M" />
   <xsl:param name="D" />
-  <func:result select="concat($D, ' ', substring($mensis//months[@lang='en']/month[position()=$M],1,3), ' ', $Y, ' 00:00:00 UTC')" />
+  <func:result select="concat($D, ' ', substring($mensis//months[@lang='en']/month[position()=$M],1,3), ' ', $Y, ' 00:00:00 GMT')" />
 </func:function>
 
 <!-- Format date in  ENGLISH -->
