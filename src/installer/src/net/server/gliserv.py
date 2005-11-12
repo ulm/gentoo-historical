@@ -15,6 +15,7 @@ import SocketServer
 import mimetools
 import GLIServerProfile
 import time
+import base64
 import traceback
 try:
 	from SecureXMLRPCServer import SecureSocketServer
@@ -297,6 +298,17 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		          'Welcome': [ '/welcome' , '/showargs'],
 		          'Clients': [ '/showclients' ]
 		        }
+		authed = False
+		if self.headers.getheader('authorization'):
+			username, password = base64.decodestring(self.headers.getheader('authorization').split(" ")[-1]).split(":")
+			if username == "gli" and password == "gli":
+				authed = True
+		if not authed:
+			self.send_response(401)
+			self.send_header("WWW-Authenticate", 'Basic realm="GLI"')
+			self.end_headers()
+			self.wfile.write("<h1>401 Not Authorized</h1>Fuck off asshole")
+			return
 		return_content = ""
 		if debug:
 			print "get_params: " + str(self.get_params)
