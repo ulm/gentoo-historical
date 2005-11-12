@@ -24,6 +24,10 @@ except:
 
 debug = False
 module_mtimes = {}
+needauth = False
+webuser = "gli"
+webpass = "gli"
+progname = None
 
 class SharedInfo(object):
 
@@ -298,17 +302,18 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		          'Welcome': [ '/welcome' , '/showargs'],
 		          'Clients': [ '/showclients' ]
 		        }
-		authed = False
-		if self.headers.getheader('authorization'):
-			username, password = base64.decodestring(self.headers.getheader('authorization').split(" ")[-1]).split(":")
-			if username == "gli" and password == "gli":
-				authed = True
-		if not authed:
-			self.send_response(401)
-			self.send_header("WWW-Authenticate", 'Basic realm="GLI"')
-			self.end_headers()
-			self.wfile.write("<h1>401 Not Authorized</h1>Fuck off asshole")
-			return
+		if needauth:
+			authed = False
+			if self.headers.getheader('authorization'):
+				username, password = base64.decodestring(self.headers.getheader('authorization').split(" ")[-1]).split(":")
+				if username == webuser and password == webpass:
+					authed = True
+			if not authed:
+				self.send_response(401)
+				self.send_header("WWW-Authenticate", 'Basic realm="GLI"')
+				self.end_headers()
+				self.wfile.write("<h1>401 Not Authorized</h1>You must supply the correct username and password to access this resource")
+				return
 		return_content = ""
 		if debug:
 			print "get_params: " + str(self.get_params)
@@ -543,10 +548,42 @@ def start_xmlrpc():
 	server.register_instance(GLINetBe("/tmp"))
 	server.serve_forever()
 
+def usage():
+	print
+	print "Usage:"
+	print "  " + progname + " [[-d|--debug]] [[-a|--auth] <user>:<password>]"
+	print
+	print "Options:"
+	print "  -d|--debug    Enable debug mode. This currently prints get_params and"
+	print "                post_params for each request"
+	print
+	print "  -a|--auth     Require basic HTTP auth to access the web interface. The"
+	print "                arguments <user> and <password> are required."
+	sys.exit(1)
+
 if __name__ == '__main__':
-	if len(sys.argv) > 1:
-		if sys.argv[1] == "-d" or sys.argv[1] == "--debug":
+	progname = sys.argv.pop(0)
+	while len(sys.argv) >= 1:
+		arg = sys.argv.pop(0)
+		if arg == "-d" or arg == "--debug":
 			debug = True
+		elif arg == "-a" or arg == "--auth":
+			if len(sys.argv) >= 1:
+				auth = sys.argv.pop(0)
+				auth = auth.split(":")
+				if not len(auth) == 2:
+					print "The authentication credentials must be specified at <user>:<password>"
+					usage()
+				webuser, webpass = auth
+				needauth = True
+			else:
+				print "The --auth option required an additional argument"
+				usage()
+		elif arg == "-h" or arg == "--help":
+			usage()
+		else:
+			print "You have supplied an invalid argument"
+			usage()
 	httpd_thread = Thread(target=start_httpd)
 	httpd_thread.setDaemon(True)
 	httpd_thread.start()
