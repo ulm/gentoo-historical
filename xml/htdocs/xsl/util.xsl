@@ -39,4 +39,24 @@
   </xsl:if>
 </xsl:template>
 
+
+
+<!-- Extract file name from a link -->
+<xsl:template name="filename">
+<xsl:param name="path"/>
+  <xsl:choose>
+    <!-- $path is a directory, assume file name is index.xml -->
+    <xsl:when test="'/'=substring($path,string-length($path))">index.xml</xsl:when>
+    <xsl:when test="contains($path, '/')">
+      <xsl:call-template name="filename">
+        <xsl:with-param name="path" select="substring-after($path, '/')"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$path"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
 </xsl:stylesheet>
