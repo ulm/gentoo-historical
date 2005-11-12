@@ -93,6 +93,11 @@
 
         <!-- For complex and/or repeated cases, better use a dedicated function -->
 
+        <!-- RFC-822 -->
+        <xsl:when test="$lingua='RFC822'">
+          <func:result select="func:format-date-rfc822($mensis, $Y, $M, $D)"/>
+        </xsl:when>
+
         <!-- English -->
         <xsl:when test="$lingua='en'">
           <func:result select="func:format-date-en($mensis, $Y, $M, $D)"/>
@@ -108,7 +113,7 @@
           <func:result select="concat($D, ' de ', $mensis//months[@lang=$lingua]/month[position()=$M], ', ', $Y)"/>
         </xsl:when>
         
-        <!-- Brazilain Portuguese -->
+        <!-- Brazilian Portuguese -->
         <xsl:when test="$lingua='pt_br'">
           <func:result select="concat($D, ' de ', $mensis//months[@lang=$lingua]/month[position()=$M], ' de ', $Y)"/>
         </xsl:when>
@@ -174,6 +179,18 @@
       </xsl:if>
     </xsl:if>
   </func:result>
+</func:function>
+
+<!-- Format date according to RFC822, time is set to 00:00:00 UTC,
+     Day of the week is optional, we do not output it
+     RFC says YY but YYYY is widely accepted
+  -->
+<func:function name="func:format-date-rfc822">
+  <xsl:param name="mensis" />
+  <xsl:param name="Y" />
+  <xsl:param name="M" />
+  <xsl:param name="D" />
+  <func:result select="concat($D, ' ', substring($mensis//months[@lang='en']/month[position()=$M],1,3), ' ', $Y, ' 00:00:00 UTC')" />
 </func:function>
 
 <!-- Format date in  ENGLISH -->
