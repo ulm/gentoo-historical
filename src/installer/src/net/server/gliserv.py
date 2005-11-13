@@ -316,7 +316,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				return
 		return_content = ""
 		if debug:
-			print time.ctime() + " - " + self.path
+			print time.ctime() + " - " + self.address_string() + " - " + self.path
 			print "get_params: " + str(self.get_params)
 			print "post_params: " + str(self.post_params)
 			print "----------------------------------------------------"
