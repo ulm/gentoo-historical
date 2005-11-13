@@ -316,8 +316,10 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				return
 		return_content = ""
 		if debug:
+			print time.ctime() + " - " + self.path
 			print "get_params: " + str(self.get_params)
 			print "post_params: " + str(self.post_params)
+			print "----------------------------------------------------"
 		for path in paths:
 			if self.path in paths[path]:
 				module = path
