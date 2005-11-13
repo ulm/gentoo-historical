@@ -551,9 +551,11 @@ def start_xmlrpc():
 def usage():
 	print
 	print "Usage:"
-	print "  " + progname + " [[-d|--debug]] [[-a|--auth] <user>:<password>]"
+	print "  " + progname + " [-h|--help] [[-d|--debug]] [[-a|--auth] <user>:<password>]"
 	print
 	print "Options:"
+	print "  -h|--help     That should be quite obvious"
+	print
 	print "  -d|--debug    Enable debug mode. This currently prints get_params and"
 	print "                post_params for each request"
 	print
