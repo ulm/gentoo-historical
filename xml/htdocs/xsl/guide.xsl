@@ -1159,7 +1159,7 @@
               <xsl:variable name="chap" select="position()"/>
               <xsl:variable name="ov" select="document($original/book/part[$part]/chapter[$chap]/include/@href)/sections/version"/>
               <xsl:variable name="tv" select="document($translation/book/part[$part]/chapter[$chap]/include/@href)/sections/version"/>
-              <xsl:if test="$ov != $tv">X</xsl:if>
+              <xsl:if test="$ov != $tv or not($tv)">X</xsl:if>
             </xsl:for-each>
           </xsl:for-each>
         </xsl:when>
@@ -1171,7 +1171,7 @@
         <!-- Compare chapters at same position (/$part/$chap/) in English handbook and in translated one -->
           <xsl:variable name="ov" select="document($original/book/part[position()=$part]/chapter[position()=$chap]/include/@href)/sections/version"/>
           <xsl:variable name="tv" select="document($translation/book/part[position()=$part]/chapter[position()=$chap]/include/@href)/sections/version"/>
-          <xsl:if test="$ov != $tv">X</xsl:if>
+          <xsl:if test="$ov != $tv or not($tv)">X</xsl:if>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
