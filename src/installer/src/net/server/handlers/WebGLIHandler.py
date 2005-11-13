@@ -982,9 +982,9 @@ Please be patient while the screens load. It may take awhile.
 		etc_files['make.conf'] = make_conf
 		self.shared_info.install_profile.set_etc_files(etc_files)
 		return self.wrap_in_webgli_template(data)
-	def configfiles(self):
+	def makedotconf(self):
 		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"
-		data += '<form action="/webgli/saveconfigfiles" method="POST" enctype="multipart/form-data">'
+		data += '<form action="/webgli/savemakedotconf" method="POST" enctype="multipart/form-data">'
 		arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
 		etc_files = self.shared_info.install_profile.get_etc_files()
 		if etc_files.has_key("make.conf"):
@@ -1066,7 +1066,7 @@ Please be patient while the screens load. It may take awhile.
 </p>
 </form>"""
 		return self.wrap_in_webgli_template(data)
-	def saveconfigfiles(self):
+	def savemakedotconf(self):
 		data = ""
 		temp_use = "-* "
 		#for flag in use_flags:
@@ -1075,10 +1075,12 @@ Please be patient while the screens load. It may take awhile.
 		#	temp_use += flag + " "
 		#make_conf["USE"] = temp_use
 		return self.wrap_in_webgli_template(data)
-	def configfiles2(self):
+	def configfiles(self):
 		data = ""
+		etc_files = self.shared_info.install_profile.get_etc_files()
 		data += """
-		<table cellspacing="0" cellpadding="0" width="650" height="500" border="1">
+		<form action="/webgli/saveconfigfiles" method="POST" enctype="multipart/form-data">
+		<table cellspacing="0" cellpadding="0" width="790" height="600" border="1">
   <tr height="33%">
     <td>
       <table width="100%" height="100%" border="1">
@@ -1087,15 +1089,44 @@ Please be patient while the screens load. It may take awhile.
             <table width="100%" height="100%" border="1">
               <tr>
 
-                <td>clock - UTC/local</td>
+                <td>"""
+		data += '<b>Clock:</b><br>Should CLOCK be set to UTC or local?  Unless you set your timezone to UTC you will want to choose local.<br><input type="radio" name="clock" value="UTC" '
+		if ("conf.d/clock" in etc_files) and (etc_files['conf.d/clock']['CLOCK'] == "UTC"):
+			data += "checked"
+		data += '>UTC<br><input type="radio" name="clock" value="local" '
+		if ("conf.d/clock" in etc_files) and (etc_files['conf.d/clock']['CLOCK'] == "local"):
+			data += "checked"
+		data += ">Local\n"
+		data += """</td>
               </tr>
               <tr>
-                <td>default editor</td>
+                <td><b>Default Editor:</b><br>Choose your default editor:<br>"""
+		data += '<input type="radio" name="editor" value="/bin/nano" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['EDITOR'] == "/bin/nano"):
+			data += "checked"
+		data += '>/bin/nano (Default editor)<br><input type="radio" name="editor" value="/usr/bin/vim" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['EDITOR'] == "/usr/bin/vim"):
+			data += "checked"
+		data += '>/usr/bin/vim (vi improved editor)<br><input type="radio" name="editor" value="/usr/bin/emacs" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['EDITOR'] == "/usr/bin/emacs"):
+			data += "checked"
+		data += ">/usr/bin/emacs (The emacs editor)\n"
+		data += """</td>
               </tr>
             </table>
           </td>
-          <td width="50%">display manager</td>
-
+          <td width="50%"><b>Display Manager:</b><br>Choose your display manager for Xorg-x11 (note you must make sure that package also gets installed for it to work):<br>"""
+		data += '<input type="radio" name="disp_manager" value="xdm" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['DISPLAYMANAGER'] == "xdm"):
+			data += "checked"
+		data += '>xdm (X Display Manager (NOT recommended))<br><input type="radio" name="disp_manager" value="gdm" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['DISPLAYMANAGER'] == "gdm"):
+			data += "checked"
+		data += '>gdm (Gnome Display Manager)<br><input type="radio" name="disp_manager" value="kdm" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['DISPLAYMANAGER'] == "kdm"):
+			data += "checked"
+		data += ">kdm (KDE Display Manager)\n"
+		data += """</td>
         </tr>
       </table>
     </td>
@@ -1104,25 +1135,70 @@ Please be patient while the screens load. It may take awhile.
     <td>
       <table width="100%" height="100%" border="1">
         <tr>
-          <td width="33%">Keymap<br><br>Windowkeys<br><br>Extended</td>
+          <td width="50%"><b>Keymap</b><br>Choose your desired keymap:<br>
+		  <select name="keymap">
+		  <option value=""> </option>
+		  """
+		keymap_list = GLIUtility.generate_keymap_list()
+		for keymap in keymap_list:
+			if ("conf.d/keymaps" in etc_files) and (etc_files['conf.d/keymaps']['KEYMAP'] == keymap):
+				data += '<option value="'+keymap+'" selected>'+keymap+"</option>\n"
+			else:
+				data += '<option value="'+keymap+'">'+keymap+"</option>\n"
+		data += "</select>\n<br>"
+		data += "<br><b>Windowkeys</b><br>Should we first load the 'windowkeys' console keymap?"
+		data += '<input type="radio" name="windowkeys" value="yes" '
+		if ("conf.d/keymaps" in etc_files) and (etc_files['conf.d/keymaps']['SET_WINDOWSKEYS'] == "yes"):
+			data += "checked"
+		data += '> Yes  <input type="radio" name="windowkeys" value="no" '
+		if ("conf.d/keymaps" in etc_files) and (etc_files['conf.d/keymaps']['SET_WINDOWSKEYS'] == "no"):
+			data += "checked"
+		data += "> No <br>\n"
+		data += '<br><b>Extended Keymaps</b><br>This sets the maps to load for extended keyboards.  Most users will leave this as is.<br>'
+		data += '<input type="text" name="ext_keymap" '
+		if ("conf.d/keymaps" in etc_files) and (etc_files['conf.d/keymaps']['EXTENDED_KEYMAPS']):
+		  	data += 'value="'+etc_files['conf.d/keymaps']['EXTENDED_KEYMAPS']+"\"><br>\n"
+		data += """
+		  </td>
 
-          <td width="33%">
+          <td width="50%">
             <table width="100%" height="100%" border="1">
               <tr>
-                <td>console font</td>
+                <td><b>Console Font</b><br>Choose your desired console font:<br>
+				<select name="font">
+				<option value=""> </option>"""
+		font_list = GLIUtility.generate_consolefont_list()
+		for font in font_list:
+			if ("conf.d/consolefone" in etc_files) and (etc_files['conf.d/consolefont']['CONSOLEFONT'] == font):
+				data += '<option value="'+font+'" selected>'+font+"</option>\n"
+			else:
+				data += '<option value="'+font+'">'+font+"</option>\n"
+		data += "</select>\n"
+		data += """</td>
               </tr>
               <tr>
-                <td>xsession</td>
+                <td><b>Xsession</b><br>Choose what window manager you want to start default with X if run with xdm, startx, or xinit. (common options are Gnome or Xsession: <input type="text" name="xsession" """
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['XSESSION']):
+			data += 'value="'+etc_files['rc.conf']['XSESSION']+"\">\n"
+		data += """</td>
               </tr>
 
             </table>
-          </td>
-          <td width="33%">protocols</td>
+        </td>
         </tr>
       </table>
     </td>
   </tr>
 </table>"""
+		return self.wrap_in_webgli_template(data)
+	def saveconfigfiles(self):
+		data = ""
+		temp_use = "-* "
+		#for flag in use_flags:
+		#	temp_use += flag + " "
+		#for flag in use_local_flags:
+		#	temp_use += flag + " "
+		#make_conf["USE"] = temp_use
 		return self.wrap_in_webgli_template(data)
 	def kernel(self):
 		data = "<p>Kernel Settings:</p>\n";
