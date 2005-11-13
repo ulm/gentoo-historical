@@ -85,7 +85,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 	def lastvisitor(self):
 		blah = "The last visitor was " + self.shared_info.last_visitor
-		self.shared_info.last_visitor = self.address_string()
+		self.shared_info.last_visitor = self.client_address[0]
 		return self.wrap_in_template(blah)
 
 	def showclients(self):
@@ -316,7 +316,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				return
 		return_content = ""
 		if debug:
-			print time.ctime() + " - " + self.address_string() + " - " + self.path
+			print time.ctime() + " - " + self.client_address[0] + " - " + self.path
 			print "get_params: " + str(self.get_params)
 			print "post_params: " + str(self.post_params)
 			print "----------------------------------------------------"
