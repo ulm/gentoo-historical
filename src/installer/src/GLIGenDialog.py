@@ -1407,7 +1407,6 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		trans = ""
 		clock = ""
 		editor = ""
-		prots = ""
 		disp_manager = ""
 		xsession = ""
 		rc_string1 = _(u"Additional configuration settings for Advanced users (rc.conf)\nHere are some other variables you can set in various configuration files on the new system.  If you don't know what a variable does, don't change it!")
@@ -1418,7 +1417,6 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		("CONSOLETRANSLATION", _(u"The charset map file to use.")),
 		("CLOCK", _(u"Set the clock to either UTC or local")),
 		("EDITOR", _(u"Set EDITOR to your preferred editor.")),
-		("PROTOCOLS", _(u"Gentoo Linux will only enable module auto-loading for these protocols")),
 		("DISPLAYMANAGER", _(u"What display manager do you use ?  [ xdm | gdm | kdm | entrance ]")),
 		("XSESSION", _(u"a new variable to control what window manager to start default with X"))]
 		while 1:
@@ -1465,23 +1463,6 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			elif variable == "EDITOR":
 				choice_list = [("/bin/nano", _(u"Default editor.")), ("/usr/bin/vim", _(u"vi improved editor.")), ("/usr/bin/emacs", _(u"The emacs editor."))]
 				code, editor = self._d.menu(_(u"Choose your default editor: "), choices=choice_list)
-
-			elif variable == "PROTOCOLS":
-				choice_list = [("1", "Unix",1),
-				("2","IPv4",1), 
-				("3","Amateur Radio AX.25",0), 
-				("4","IPX",0), 
-				("5","DDP / appletalk",0), 
-				("6","Amateur Radio NET/ROM",0), 
-				("9","X.25",0), ("10","IPv6",0), 
-				("11","ROSE / Amateur Radio X.25 PLP",0), 
-				("19","Acorn Econet",0)]
-				code, protocols = self._d.checklist(_(u"Choose the protocols that you plan to use.  Gentoo Linux will only enable module auto-loading for these protocols, eliminating annoying module not found errors."), choices=choice_list, height=19, width=60)
-				if code != self._DLG_OK:
-					continue
-				prots = ""
-				for prot in protocols:
-					prots += prot + " "
 			elif variable == "DISPLAYMANAGER":
 				choice_list = [("xdm", _(u"X Display Manager")), 
 				("gdm", _(u"Gnome Display Manager")), 
@@ -1517,8 +1498,6 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			etc_files['conf.d/clock']['CLOCK'] = clock
 		if editor:
 			etc_files['rc.conf']['EDITOR'] = editor
-		if prots:
-			etc_files['rc.conf']['PROTOCOLS'] = prots
 		if disp_manager:
 			etc_files['rc.conf']['DISPLAYMANAGER'] = disp_manager
 		if xsession:

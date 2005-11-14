@@ -286,6 +286,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						'/webgli/PortageTree', '/webgli/saveportage',
 						'/webgli/GlobalUSE', '/webgli/saveglobaluse',
 						'/webgli/LocalUSE', '/webgli/savelocaluse',
+						'/webgli/MakeDotConf', '/webgli/savemakedotconf',
 						'/webgli/ConfigFiles', '/webgli/saveconfigfiles',
 						'/webgli/Kernel', '/webgli/savekernel',
 						'/webgli/Bootloader', '/webgli/savebootloader',

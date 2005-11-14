@@ -983,7 +983,8 @@ Please be patient while the screens load. It may take awhile.
 		self.shared_info.install_profile.set_etc_files(etc_files)
 		return self.wrap_in_webgli_template(data)
 	def makedotconf(self):
-		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"
+		data = "<b>Make.conf Settings:</b><br>\n"
+		data += "<b>NOTE: Your old values are NOT loaded here.  Do not save these settings without making sure all values are what you want.  To keep your old values just skip this step.</b>\b"
 		data += '<form action="/webgli/savemakedotconf" method="POST" enctype="multipart/form-data">'
 		arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
 		etc_files = self.shared_info.install_profile.get_etc_files()
@@ -998,6 +999,11 @@ Please be patient while the screens load. It may take awhile.
 			data += "<option value=\""+proc+"\">"+proc+"</option>\n"
 		data += """
 					</select>
+					<br>
+					<input type="radio" name"m_thing" value="-march">-march 
+					<input type="radio" name"m_thing" value="-mcpu">-mcpu 
+					<input type="radio" name"m_thing" value="-mtune">-mtune 
+
 			</div></td>
 			<td scope="col">Optimizations: 
 				<select name="optim1" id="optim1">
@@ -1049,14 +1055,22 @@ Please be patient while the screens load. It may take awhile.
 <hr>
 	<table width="100%"  border="1">
 		<tr>
-			<td scope="col"><input name="unstable" type="checkbox" id="unstable" value="~arch">
+			<td scope="col"><input name="unstable" type="checkbox" id="unstable" value="unstable">
 			Use unstable (~arch) </td>
-			<td scope="col"><input name="binary" type="checkbox" id="binary" value="binary">
-			Build binary packages </td>
-			<td scope="col"><input name="distcc" type="checkbox" id="distcc" value="distcc">
+			<td scope="col"><input name="features" type="checkbox" id="binary" value="buildpkg">
+			Build binary packages (buildpkg)</td>
+			<td scope="col"><input name="features" type="checkbox" id="distcc" value="distcc">
 			Distcc</td>
-			<td scope="col"><input name="ccache" type="checkbox" id="ccache" value="ccache">
+			<td scope="col"><input name="features" type="checkbox" id="ccache" value="ccache">
 			ccache</td>
+			<td scope="col"><input name="features" type="checkbox" id="sandbox" value="sandbox">
+			sandbox</td></tr><tr>
+			<td scope="col"><input name="features" type="checkbox" id="distlocks" value="distlocks">
+			distlocks</td>
+			<td scope="col"><input name="features" type="checkbox" id="prelink" value="prelink">
+			prelink</td>
+			<td scope="col">More Features:
+			<input name="manfeatures" type="text" id="manfeatures" size="10"></td>
 			<td scope="col">MAKEOPTS:			 
 			<input name="makeopts" type="text" id="makeopts" value="-j2" size="10" maxlength="5"></td>
 		</tr>
@@ -1068,12 +1082,44 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def savemakedotconf(self):
 		data = ""
-		temp_use = "-* "
-		#for flag in use_flags:
-		#	temp_use += flag + " "
-		#for flag in use_local_flags:
-		#	temp_use += flag + " "
-		#make_conf["USE"] = temp_use
+		cflags = ""
+		features = ""
+		etc_files = self.shared_info.install_profile.get_etc_files()
+		if etc_files.has_key("make.conf"):
+			make_conf = etc_files['make.conf']
+			if "CFLAGS" in make_conf:
+				cflags = make_conf['CFLAGS']
+			if "FEATURES" in make_conf:
+				features = make_conf['FEATURES']
+		else:
+			make_conf = {}
+		if self.post_params['proc'] and self.post_params['m_thing']:
+			cflags += " "+self.post_params['m_thing']+"="+self.post_params['proc']
+		if self.post_params['optim1']:
+			cflags += " "+self.post_params['optim1']
+		if self.post_params['optim2']:
+			for param in self.post_params['optim2']:
+				cflags += " "+param
+		if self.post_params['optim3']:
+			cflags += " "+self.post_params['optim3']
+		make_conf['CFLAGS'] = cflags
+		if self.post_params['chost']:
+			make_conf['CHOST'] = self.post_params['chost']
+		if self.post_params['unstable']:
+			make_conf['ACCEPT_KEYWORDS'] = "~" + self.shared_info.client_profile.get_architecture_template()
+		if self.post_params['features']:
+			features = string.join(self.post_params['features'], ' ')
+		if self.post_params['manfeatures']:
+			features += " "+self.post_params['manfeatures']
+		make_conf['FEATURES'] = features
+		if self.post_params['makeopts']:
+			make_conf['MAKEOPTS'] = self.post_params['makeopts']
+		try:
+			if make_conf:
+				etc_files['make.conf'] = make_conf
+				self.shared_info.install_profile.set_etc_files(etc_files)
+		except:
+			data = _(u"ERROR! Could not set the make_conf correctly!")
 		return self.wrap_in_webgli_template(data)
 	def configfiles(self):
 		data = ""
@@ -1169,7 +1215,7 @@ Please be patient while the screens load. It may take awhile.
 				<option value=""> </option>"""
 		font_list = GLIUtility.generate_consolefont_list()
 		for font in font_list:
-			if ("conf.d/consolefone" in etc_files) and (etc_files['conf.d/consolefont']['CONSOLEFONT'] == font):
+			if ("conf.d/consolefont" in etc_files) and (etc_files['conf.d/consolefont']['CONSOLEFONT'] == font):
 				data += '<option value="'+font+'" selected>'+font+"</option>\n"
 			else:
 				data += '<option value="'+font+'">'+font+"</option>\n"
@@ -1189,16 +1235,65 @@ Please be patient while the screens load. It may take awhile.
       </table>
     </td>
   </tr>
-</table>"""
+</table><input type="submit" name="SaveConfigFiles" value="Save Values"></form>"""
 		return self.wrap_in_webgli_template(data)
 	def saveconfigfiles(self):
 		data = ""
-		temp_use = "-* "
-		#for flag in use_flags:
-		#	temp_use += flag + " "
-		#for flag in use_local_flags:
-		#	temp_use += flag + " "
-		#make_conf["USE"] = temp_use
+		keymap = ""
+		windowkeys = ""
+		ext_keymap = ""
+		font = ""
+		clock = ""
+		editor = ""
+		disp_manager = ""
+		xsession = ""
+		if self.post_params['clock']:
+			clock = self.post_params['clock']
+		if self.post_params['editor']:
+			editor = self.post_params['editor']
+		if self.post_params['disp_manager']:
+			disp_manager = self.post_params['disp_manager']
+		if self.post_params['keymap']:
+			keymap = self.post_params['keymap']
+		if self.post_params['windowkeys']:
+			windowkeys = self.post_params['windowkeys']
+		if self.post_params['ext_keymap']:
+			ext_keymap = self.post_params['ext_keymap']
+		if self.post_params['font']:
+			font = self.post_params['font']
+		if self.post_params['xsession']:
+			xsession = self.post_params['xsession']
+
+		etc_files = self.shared_info.install_profile.get_etc_files()
+		if not "conf.d/keymaps" in etc_files: 
+			if keymap or windowkeys or ext_keymap:
+				etc_files['conf.d/keymaps'] = {}
+		if not "conf.d/consolefont" in etc_files: 
+			if font or trans:
+				etc_files['conf.d/consolefont'] = {}
+		if not "conf.d/clock" in etc_files: 
+			if clock:
+				etc_files['conf.d/clock'] = {}
+		if not "rc.conf" in etc_files: 
+			if editor or prots or disp_manager or xsession:
+				etc_files['rc.conf'] = {}
+		if keymap:
+			etc_files['conf.d/keymaps']['KEYMAP'] = keymap
+		if windowkeys:
+			etc_files['conf.d/keymaps']['SET_WINDOWSKEYS'] = windowkeys
+		if ext_keymap:
+			etc_files['conf.d/keymaps']['EXTENDED_KEYMAPS'] = ext_keymap
+		if font:	
+			etc_files['conf.d/consolefont']['CONSOLEFONT'] = font
+		if clock:
+			etc_files['conf.d/clock']['CLOCK'] = clock
+		if editor:
+			etc_files['rc.conf']['EDITOR'] = editor
+		if disp_manager:
+			etc_files['rc.conf']['DISPLAYMANAGER'] = disp_manager
+		if xsession:
+			etc_files['rc.conf']['XSESSION'] = xsession
+		self.shared_info.install_profile.set_etc_files(etc_files)
 		return self.wrap_in_webgli_template(data)
 	def kernel(self):
 		data = "<p>Kernel Settings:</p>\n";
@@ -2314,6 +2409,8 @@ Please be patient while the screens load. It may take awhile.
 					'/webgli/saveglobaluse': self.saveglobaluse,
 					'/webgli/LocalUSE': self.localuse,
 					'/webgli/savelocaluse': self.savelocaluse,
+					'/webgli/MakeDotConf': self.makedotconf,
+					'/webgli/savemakedotconf': self.savemakedotconf,
 					'/webgli/ConfigFiles': self.configfiles,
 					'/webgli/saveconfigfiles': self.saveconfigfiles,
 					'/webgli/Kernel': self.kernel,
