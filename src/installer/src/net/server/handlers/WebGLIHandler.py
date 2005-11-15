@@ -804,6 +804,11 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 						self.shared_info.install_profile.set_grp_install(None, True,None)
 					except:
 						data += "ERROR COULD NOT SET GRP INSTALL"
+				else:
+					try:
+						self.shared_info.install_profile.set_grp_install(None, False,None)
+					except:
+						data += "ERROR COULD NOT SET GRP INSTALL"
 				try:
 					self.shared_info.install_profile.set_install_stage(None, self.post_params['stage'], None)
 					data += "Stage set<br>"
@@ -818,6 +823,11 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 			if 'dynamic' in self.post_params:
 				try:
 					self.shared_info.install_profile.set_dynamic_stage3(None, True, None)
+				except:
+					data += "ERROR: Could not set dynamic stage 3.<br>\n"
+			else:
+				try:
+					self.shared_info.install_profile.set_dynamic_stage3(None, False, None)
 				except:
 					data += "ERROR: Could not set dynamic stage 3.<br>\n"
 		elif 'browseuri' in self.post_params:
@@ -919,9 +929,12 @@ Please be patient while the screens load. It may take awhile.
 		data = ""
 		temp_use = "-* "
 		if self.post_params['flags']:
-			use_flags = self.post_params['flags'];
-			for flag in use_flags:
-				temp_use += flag + " "
+			if isinstance(self.post_params['flags'], list):
+				use_flags = self.post_params['flags'];
+				for flag in use_flags:
+					temp_use += flag + " "
+			else:
+				temp_use += self.post_params['flags'] + " "
 			self.shared_info.temp_use = temp_use
 		return self.wrap_in_webgli_template(data)
 	def localuse(self):
@@ -969,9 +982,12 @@ Please be patient while the screens load. It may take awhile.
 		data = ""
 		temp_use = " "
 		if self.post_params['flags']:
-			use_local_flags = self.post_params['flags']
-			for flag in use_local_flags:
-				temp_use += flag + " "
+			if isinstance(self.post_params['flags'], list):
+				use_local_flags = self.post_params['flags']
+				for flag in use_local_flags:
+					temp_use += flag + " "
+			else:
+				tempuse += self.post_params['flags'] + " "
 		#get the make.conf
 		etc_files = self.shared_info.install_profile.get_etc_files()
 		if etc_files.has_key("make.conf"):
@@ -1098,8 +1114,11 @@ Please be patient while the screens load. It may take awhile.
 		if self.post_params['optim1']:
 			cflags += " "+self.post_params['optim1']
 		if self.post_params['optim2']:
-			for param in self.post_params['optim2']:
-				cflags += " "+param
+			if isinstance(self.post_params['optim2'], list):
+				for param in self.post_params['optim2']:
+					cflags += " "+param
+			else:
+				cflags += " "+self.post_params['optim2']
 		if self.post_params['optim3']:
 			cflags += " "+self.post_params['optim3']
 		make_conf['CFLAGS'] = cflags
@@ -1269,13 +1288,13 @@ Please be patient while the screens load. It may take awhile.
 			if keymap or windowkeys or ext_keymap:
 				etc_files['conf.d/keymaps'] = {}
 		if not "conf.d/consolefont" in etc_files: 
-			if font or trans:
+			if font:
 				etc_files['conf.d/consolefont'] = {}
 		if not "conf.d/clock" in etc_files: 
 			if clock:
 				etc_files['conf.d/clock'] = {}
 		if not "rc.conf" in etc_files: 
-			if editor or prots or disp_manager or xsession:
+			if editor or disp_manager or xsession:
 				etc_files['rc.conf'] = {}
 		if keymap:
 			etc_files['conf.d/keymaps']['KEYMAP'] = keymap
