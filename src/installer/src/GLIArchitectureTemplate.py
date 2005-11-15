@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.228 2005/11/08 05:11:22 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.229 2005/11/15 15:44:25 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -553,6 +553,7 @@ class ArchitectureTemplate:
 					if mountopts:
 						mountopts = "-o " + mountopts + " "
 					if partition_type:
+						if partition_type == "fat32" or partition_type == "fat16": partition_type = "vfat"
 						partition_type = "-t " + partition_type + " "
 					parts_to_mount[mountpoint]= (mountopts, partition_type, device + minor)
 					
