@@ -1033,9 +1033,19 @@
 </tr>
 </xsl:template>
 
+<xsl:template match="tcolumn">
+<col width="{@width}"/>
+</xsl:template>
+
 <!-- Table Item -->
 <xsl:template match="ti">
 <td class="tableinfo">
+  <xsl:if test="@colspan">
+    <xsl:attribute name="colspan"><xsl:value-of select="@colspan"/></xsl:attribute>
+  </xsl:if>
+  <xsl:if test="@rowspan">
+    <xsl:attribute name="rowspan"><xsl:value-of select="@rowspan"/></xsl:attribute>
+  </xsl:if>
   <xsl:apply-templates/>
 </td>
 </xsl:template>
