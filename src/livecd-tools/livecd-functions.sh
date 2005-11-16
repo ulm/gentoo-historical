@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.14 2005/11/13 21:57:28 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.15 2005/11/16 15:26:32 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -10,6 +10,8 @@
 #    LIVECD_CONSOLE_BAUD	-- console baudrate specified
 #    LIVECD_CONSOLE_PARITY	-- console parity specified
 #    LIVECD_CONSOLE_DATABITS	-- console databits specified
+
+source /sbin/functions.sh
 
 livecd_parse_opt() {
 	case "$1" in
@@ -34,17 +36,21 @@ livecd_get_cmdline() {
 }
 
 no_gl() {
-	echo "No OpenGL-capable card found."
+	ewarn "No OpenGL-capable card found."
+	echo
+	einfo "If you have a card that you know is supported by either the ATI or"
+	einfo "NVIDIA binary drivers, please file a bug with the output of lspci"
+	einfo "on http://bugs.gentoo.org so we can resolve this."
 	GLTYPE=xorg-x11
 }
 
 ati_gl() {
-	echo "ATI card detected."
+	einfo "ATI card detected."
 	GLTYPE=ati
 }
 
 nv_gl() {
-	echo "NVIDIA card detected."
+	einfo "NVIDIA card detected."
 	GLTYPE=nvidia
 }
 
