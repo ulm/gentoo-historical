@@ -450,8 +450,10 @@ on partitioning and the various filesystem types available in Linux.""")
 						("3",_(u"Stage3 is a basic system that has been built for you (no compiling).")), 
 						("3+GRP", _(u"A Stage3 install but using binaries from the LiveCD when able.")))
 		code, install_stage = self._d.menu(_(u"Which stage do you want to start at?"), choices=install_stages, cancel=_(u"Back"), width=78)
+		stage3warning = ""
 		if code == self._DLG_OK:
 			if install_stage == "3+GRP":
+				stage3warning = "\nWARNING: Since you are doing a GRP install it is HIGHLY recommended you choose Create from CD to avoid a potentially broken installation."
 				try:
 					self._install_profile.set_grp_install(None, True, None)
 				except:
@@ -465,7 +467,7 @@ on partitioning and the various filesystem types available in Linux.""")
 			#Change the Yes/No buttons to new labels for this question.
 			self._d.add_persistent_args(["--yes-label", _(u"Create from CD")])
 			self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
-			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?"), width=55) == self._DLG_YES:
+			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?"+stage3warning), width=55) == self._DLG_YES:
 				#Generate on the FLY				
 				try:
 					self._install_profile.set_dynamic_stage3(None, True, None)
