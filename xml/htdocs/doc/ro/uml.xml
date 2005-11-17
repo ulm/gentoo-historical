@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/uml.xml,v 1.3 2005/10/08 14:12:40 alin Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/uml.xml,v 1.4 2005/11/17 20:00:32 alin Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -32,8 +32,8 @@ deteriorarea sistemului.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.11</version>
-<date>2005-02-05</date>
+<version>0.12</version>
+<date>2005-11-17</date>
 
 <chapter>
 <title>Obţinerea User-Mode Linux</title>
@@ -56,17 +56,29 @@ principal.
 </p>
 
 <p>
-Instalarea user-mode linux este aproape identică cu o instalare normală
-unor surse de kernel. Prima dată instalaţi sursele kernelului (cu patch-uri
-necesare pentru user-mode linux), iar apoi configuraţi kernel-ul user-mode
-linux în mod normal. Începând cu versiunea de kernel 2.6.9, UML a fost integrat
-în sursele vanilla.
+Majoritatea versiunilor de kernel 2.6 au suport pentru UML. Deşi puteţi
+utiliza sursele dvs. curente de kernel, ar fi mai înţelept să vă
+păstraţi ramurile de kernel UML într-o locaţie separată. La urma urmei,
+veţi compila un kernel cu o configuraţie diferită şi veţi vrea să
+aveţi sisteme eterogene în sistemul dvs. principal de Linux (mai multe
+kerne-uri UML diferite).
 </p>
 
-<pre caption="Instalarea surselor kernelului UML">
-<comment>(Vom instala versiunea de kernel 2.6, dar puteţi utiliza, de asemenea, şi usermode-sources)</comment>
-# <i>emerge sys-kernel/development-sources</i>
-# <i>cd /usr/src/linux</i>
+<p>
+Deci, descărcaţi o serie de surse de kernel (ca cea vanilla de la <uri
+link="http://www.kernel.org">kernel.org</uri>) şi extrageţi-o într-o
+locaţie utilizată pentru dezvoltare.
+</p>
+
+<p>
+Urmează configurarea acestui kernel UML aşa cum aţi face-o pentru orice
+alt sistem, dar adăugaţi <e>ARCH=um</e> pentru ca aplicaţia de compilare a
+kernel-ului să interpreteze faptul că acest kernel trebuie să ruleze ca
+un proces de sine stătător în sistemul părinte.
+</p>
+
+<pre caption="Compilarea kernel-ului UML">
+# <i>cd /srv/aegis/src/uml-linux</i>
 # <i>make menuconfig <comment>ARCH=um</comment></i>
 # <i>make linux <comment>ARCH=um</comment></i>
 # <i>cp linux /usr/local/bin/linux</i>
@@ -175,8 +187,8 @@ Urmaţi doar instrucţiunile de instalare :)
 Adăugaţi orice alt pachet de care aveţi nevoie. Puteţi chiar să-i daţi
 un nume sistemului dumneavoastră vitual Gentoo. În  <path>/etc/fstab</path>
 cel mai probabil va trebui ca <path>/dev/ROOT</path> sa fie
-<path>/dev/ubd/0</path>, cu un tip fs ext2, ext3, sau reiserfs. Modificaţi ca
-<path>/dev/SWAP</path> să fie <path>/dev/ubd/1</path>, şi comentaţi
+<path>/dev/ubda</path>, cu un tip fs ext2, ext3, sau reiserfs. Modificaţi ca
+<path>/dev/SWAP</path> să fie <path>/dev/ubdb</path>, şi comentaţi
 <path>/dev/BOOT</path>.
 </p>
 
@@ -268,6 +280,7 @@ virtuală şi maşina gazda.
 <chapter>
 <title>Reţeaua</title>
 <section>
+<title>Utilizarea unei Reţele deja Existentă</title>
 <body>
 
 <p>
@@ -350,6 +363,53 @@ un mesaj echo (ping) către www.gentoo.org  pentru a ne asigura că
 rezolvarea numelor funcţionează (şi în general accesul la internet) în
 sistemul nostru user-mode. Acum sistemul user-mode poate folosi <c>emerge</c>
 după bunul plac!
+</p>
+
+</body>
+</section>
+<section>
+<title>Utilizarea unei Reţele Virtuale</title>
+<body>
+
+<p>
+Înainte de a deveni prea încântat, aceasta nu este o reţea virtuală
+privată. Este o reţea care este accesibilă doar din instanţele UML.
+Pachetul <c>usermode-utilities</c> oferă un utilitar denumit
+<c>uml_switch</c> ce defineşte punctele terminale ale comutării.
+</p>
+
+<pre caption="Activarea punctelor terminale ale unei comutări UML">
+<comment>(Dacă informaţia comutării trebuie să stea în prim plan:)</comment>
+$ <i>uml_switch -unix ~/tmp/switch.sock</i>
+
+<comment>(Dacă trebuie să fie în fundal:)</comment>
+$ <i>uml_switch -unix ~/tmp/switch.sock &amp;&gt; ~/tmp/switch.log &amp;</i>
+</pre>
+
+<p>
+Pentru a porni instanţele UML pe acest comutator, rulaţi următoarea
+comandă. Interfaţa dvs. (virtuală) de reţea va fi conectată la procesul
+<c>uml_switch</c> şi va utiliza adresa MAC specificată.
+</p>
+
+<pre caption="Rularea primei instanţe UML">
+$ <i>linux ubd0=first_rootfs ubd1=first_swapfs eth0=daemon,10:00:01:02:00:00,,~/tmp/switch.sock</i>
+</pre>
+
+<p>
+Încă vă mai puteţi conecta sistemul la reţeaua existentă, sau să
+aveţi un al doilea proces ataşat atât la interfaţa virtuală cât şi la
+cea existentă:
+</p>
+
+<pre caption="Rularea celei de-a doua instanţe UML">
+$ <i>linux ubd0=second_rootfs ubd1=second_swapfs eth0=daemon,10:00:01:02:00:01,,~/tmp/switch.sock \
+  eth1=tuntap,,,192.168.1.43</i>
+</pre>
+
+<p>
+Mai multe informaţii despre setarea tuntap pot fi regăsite în secţiunea
+anterioară.
 </p>
 
 </body>
