@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.74 2005/10/27 02:29:29 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.75 2005/11/18 02:55:59 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -423,13 +423,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #		if not GLIUtility.exitsuccess(exitstatus1):
 		if not GLIUtility.is_file(file_name2):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error making the new device map.")
-		exitstatus2 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
+		exitstatus2 = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/kernel-* > " + file_name3)
 		if not GLIUtility.exitsuccess(exitstatus2):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error listing the kernels in /boot")
 		if build_mode == "genkernel" or self._install_profile.get_kernel_source_pkg() == "livecd-kernel":
-			exitstatus3 = GLIUtility.spawn("ls "+root+"/boot/init* > "+file_name4)
+			exitstatus3 = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/init* > " + file_name4)
 		else:
-			exitstatus3 = GLIUtility.spawn("touch "+file_name4)
+			exitstatus3 = GLIUtility.spawn("touch " + file_name4)
 		if not GLIUtility.exitsuccess(exitstatus3):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error either listing the initrds or touching "+file_name4)
 		self._logger.log("Bootloader: the three information gathering commands have been run")
