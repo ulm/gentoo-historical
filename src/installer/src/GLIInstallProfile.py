@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.78 2005/10/23 02:49:54 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.79 2005/11/19 20:40:29 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -547,6 +547,54 @@ class InstallProfile:
 	# Returns the boolean _install_distcc
 	def get_install_distcc(self):
 		return self._install_distcc
+
+	############################################################################
+	#### Install Package List
+	##
+	# Returns the list of packages to include in the Extra Packages screens.
+	def get_install_package_list(self):
+		install_package_list = { 
+			'Desktop': ("Popular Desktop Applications",
+				{"gaim": "GTK Instant Messenger client",
+				"gftp": "Gnome based FTP Client",
+				"evolution": "A GNOME groupware application, a Microsoft Outlook workalike",
+				"mozilla": "The Mozilla Web Browser",
+				"mozilla-firefox": "The Mozilla Firefox Web Browser",
+				"mozilla-thunderbird": "Thunderbird Mail Client",
+				"mplayer": "Media Player for Linux",
+				"openoffice": "OpenOffice.org, a full office productivity suite.",
+				"openoffice-bin": "Same as OpenOffice but a binary package (no compiling!)",
+				"realplayer": "Real Media Player",
+				"xchat": "Graphical IRC Client",
+				"xmms": "X MultiMedia System"  }),
+			'Servers': ("Applications often found on servers.",
+				{"apache": "Apache Web Server",
+				"iptables": "Linux kernel (2.4+) firewall, NAT and packet mangling tools",
+				"proftpd": "ProFTP Server",
+				"samba": "SAMBA client/server programs for UNIX",
+				"traceroute": "Utility to trace the route of IP packets"  }),
+			'X11': ("Window managers and X selection.", 
+				{"xorg-x11": "An X11 implementation maintained by the X.Org Foundation.",
+				"gnome": "The Gnome Desktop Environment",
+				"kde": "The K Desktop Environment",
+				"blackbox": "A small, fast, full-featured window manager for X",
+				"enlightenment": "Enlightenment Window Manager",
+				"fluxbox": "Fluxbox is an X11 window manager featuring tabs and an iconbar",
+				"xfce4": "XFCE Desktop Environment"  }),
+			'Misc': ("Miscellaneous Applications you may want.",
+				{"gkrellm": "Single process stack of various system monitors",
+				"logrotate": "Rotates, compresses, and mails system logs",
+				"slocate": "Secure way to index and quickly search for files on your system",
+				"ufed": "Gentoo Linux USE flags editor"  }),
+			'Recommended': ("Applications recommended by the GLI Team.",
+				{"anjuta": "A versatile IDE for GNOME",
+				"chkrootkit": "a tool to locally check for signs of a rootkit",
+				"crack-attack": "Addictive OpenGL-based block game",
+				"netcat": "the network swiss army knife",
+				"nmap": "A utility for network exploration or security auditing",
+				"screen": "full-screen window manager that multiplexes between several processes"  })
+		}
+		return install_package_list
 
 	############################################################################
 	#### Install Packages
