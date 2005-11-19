@@ -17,57 +17,6 @@ class Panel(GLIScreen.GLIScreen):
 	# Attributes:
 	title="Do you need any extra packages?"
 	
-	desktop = { "gaim":"GTK Instant Messaging client",
-		    "gftp":"Gnome based FTP Client",
-		    "evolution":"A GNOME groupware application, a Microsoft Outlook workalike",
-		    "mozilla":"The Mozilla Web Browser",
-		    "mozilla-firefox":"The Mozilla Firefox Web Browser",
-		    "mozilla-thunderbird":"Thunderbird Mail Client",
-		    "mplayer":"Media Player for Linux",
-		    "openoffice":"OpenOffice.org, a full office productivity suite.",
-		    "openoffice-bin":"Same as OpenOffice but a binary package (no compiling!)",
-		    "realplayer":"Real Media Player",
-		    "xchat":"Graphical IRC Client",
-		    "xmms":"X MultiMedia System"
-		    }
-	
-	servers = { "apache":"Apache Web Server",
-		    "iptables":"Linux kernel (2.4+) firewall, NAT and packet mangling tools",
-		    "proftpd":"ProFTP Server",
-		    "samba":"SAMBA client/server programs for UNIX",
-		    "traceroute":"Utility to trace the route of IP packets"
-		    }
-	
-	x11 = { "xorg-x11":"An X11 implementation maintained by the X.Org Foundation.",
-		"gnome":"The Gnome Desktop Environment",
-		"kde":"The K Desktop Environment",
-		"blackbox":"A small, fast, full-featured window manager for X",
-		"enlightenment":"Enlightenment Window Manager",
-		"fluxbox":"Fluxbox is an X11 window manager featuring tabs and an iconbar",
-		"xfce4":"XFCE Desktop Environment"
-		}
-	
-	misc = { "gkrellm":"Single process stack of various system monitors",
-		 "logrotate":"Rotates, compresses, and mails system logs",
-		 "slocate":"Secure way to index and quickly search for files on your system",
-		 "ufed":"Gentoo Linux USE flags editor"
-		 }
-	
-	recc = { "chkrootkit":"a tool to locally check for signs of a rootkit",
-		 "crack-attack":"Addictive OpenGL-based block game",
-		 "netcat":"the network swiss army knife",
-		 "nmap":"A utility for network exploration or security auditing",
-		 "screen":"full-screen window manager that multiplexes between several processes"
-		 }
-	
-	categories = {"Desktop":desktop,
-		      "Servers":servers,
-		      "X11":x11,
-		      "Misc":misc,
-		      "Recommended":recc,
-		      }
-	# slocate, esearch, and dhcpcd, host, are other possible ones.
-	
 	# list of packages to emerge from the checked off items.
 	checked_items = []
 	
@@ -92,6 +41,8 @@ This is where you emerge extra packages that your system may need."""
 		self.category_objects = {}
 		self.package_objects = {}
 		
+		self.categories = self.controller.install_profile.get_install_package_list()
+		
 		# first load the category
 		for category in self.categories:
 			categ = self.Category(category)
@@ -100,7 +51,7 @@ This is where you emerge extra packages that your system may need."""
 			vert2.pack_start(hbox,expand=False,fill=False,padding=0)
 			
 			# then load the packages in that category
-			packages = self.categories[category]
+			packages = self.categories[category][1]
 			for package in packages:
 				pack = self.Package(self, package, packages[package])
 				self.package_objects[package] = pack
@@ -137,7 +88,7 @@ This is where you emerge extra packages that your system may need."""
 		# generate a full list of packages offered by the fe
 		package_list = []
 		for item in self.categories:
-			for pack in self.categories[item]:
+			for pack in self.categories[item][1]:
 				#package_list.update()
 				package_list.append(pack)
 				
