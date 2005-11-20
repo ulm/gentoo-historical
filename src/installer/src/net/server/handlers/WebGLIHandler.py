@@ -1823,12 +1823,12 @@ Please be patient while the screens load. It may take awhile.
 				install_packages = install_packages.split()
 		else:
 			install_packages = []
-		highlevel_menu = {"Desktop": _(u"Popular Desktop Applications"),
-					"Servers": _(u"Applications often found on servers."), 
-					"X11": _(u"Window managers and X selection."), 
-					"Misc": _(u"Miscellaneous Applications you may want."), 
-					"Recommended": _(u"Applications recommended by the GLI Team.")}
 		
+		package_list = self.shared_info.install_profile.get_install_package_list()
+		highlevel_menu = []
+		for group in package_list:
+			highlevel_menu.append( (group, package_list[group][0]) )
+				
 		data += """
 		<script>
 		</script>
@@ -1845,50 +1845,9 @@ Please be patient while the screens load. It may take awhile.
 		#Start the table
 		data += "<h2>Extra Packages</h2>Your current package list is: "+string.join(install_packages, ',')
 		data += '<table width="100%"  border="1">'
-		for group in highlevel_menu:
-			if group == _(u"Desktop"):
-				pkgs = {"gaim": _(u"GTK Instant Messenger client"),
-				"gftp": _(u"Gnome based FTP Client"),
-				"evolution": _(u"A GNOME groupware application, a Microsoft Outlook workalike"),
-				"mozilla": _(u"The Mozilla Web Browser"),
-				"mozilla-firefox": _(u"The Mozilla Firefox Web Browser"),
-				"mozilla-thunderbird": _(u"Thunderbird Mail Client"),
-				"mplayer": _(u"Media Player for Linux"),
-				"openoffice": _(u"OpenOffice.org, a full office productivity suite."),
-				"openoffice-bin": _(u"Same as OpenOffice but a binary package (no compiling!)"),
-				"realplayer": _(u"Real Media Player"),
-				"xchat": _(u"Graphical IRC Client"),
-				"xmms": _(u"X MultiMedia System")  }
-			#Applications often found on servers.
-			elif group == _(u"Servers"):
-				pkgs = {"apache":_(u"Apache Web Server"),
-				"iptables":_(u"Linux kernel (2.4+) firewall, NAT and packet mangling tools"),
-				"proftpd":_(u"ProFTP Server"),
-				"samba":_(u"SAMBA client/server programs for UNIX"),
-				"traceroute":_(u"Utility to trace the route of IP packets")  }
-			#Window managers and X selection.
-			elif group == _(u"X11"):
-				pkgs = {"xorg-x11":_(u"An X11 implementation maintained by the X.Org Foundation."),
-				"gnome":_(u"The Gnome Desktop Environment"),
-				"kde":_(u"The K Desktop Environment"),
-				"blackbox":_(u"A small, fast, full-featured window manager for X"),
-				"enlightenment":_(u"Enlightenment Window Manager"),
-				"fluxbox":_(u"Fluxbox is an X11 window manager featuring tabs and an iconbar"),
-				"xfce4":_(u"XFCE Desktop Environment")  }
-			#Miscellaneous Applications you may want.
-			elif group == _(u"Misc"):
-				pkgs = {"gkrellm":_(u"Single process stack of various system monitors"),
-				"logrotate":_(u"Rotates, compresses, and mails system logs"),
-				"slocate":_(u"Secure way to index and quickly search for files on your system"),
-				"ufed":_(u"Gentoo Linux USE flags editor")  }
-			#Recommended by the Gentoo Linux Installer Team
-			elif group == _(u"Recommended"):
-				pkgs = {"anjuta":_(u"A versatile IDE for GNOME"),
-				"chkrootkit":_(u"a tool to locally check for signs of a rootkit"),
-				"crack-attack":_(u"Addictive OpenGL-based block game"),
-				"netcat":_(u"the network swiss army knife"),
-				"nmap":_(u"A utility for network exploration or security auditing"),
-				"screen":_(u"full-screen window manager that multiplexes between several processes")  }
+		for group_pair in highlevel_menu:
+			group = group_pair[0]
+			pkgs = package_list[group][1]
 			#FIXME ADD x of y SELECTED TO HEADER
 			if self.post_params['show_'+group] == "Expand":
 				data += '<tr><th scope="col"><input type="submit" name="show_'+group+'" value="Collapse"></th><td><input type="checkbox" name="all_'+group+'" value="checkbox" '
@@ -1899,7 +1858,7 @@ Please be patient while the screens load. It may take awhile.
 						allpkgsfound = False
 				if allpkgsfound:
 					data += "checked"
-				data += '>All</td><th scope="col">'+highlevel_menu[group]+"</th></tr>\n"
+				data += '>All</td><th scope="col">'+group+": "+group_pair[1]+"</th></tr>\n"
 			
 			else:   #show plus sign for group and no table.
 				data += '<tr><th scope="col"><input type="submit" name="show_'+group+'" value="Expand"></th><td><input type="checkbox" name="all_'+group+'" value="checkbox" '
@@ -1910,7 +1869,7 @@ Please be patient while the screens load. It may take awhile.
 						allpkgsfound = False
 				if allpkgsfound:
 					data += "checked"
-				data += '>All</td><th scope="col">'+highlevel_menu[group]+"</th></tr>\n"
+				data += '>All</td><th scope="col">'+group+": "+group_pair[1]+"</th></tr>\n"
 			#now show the packages in the group
 			if self.post_params['show_'+group] == "Expand" or self.get_params['show_'+group] == "Expand":
 				for pkg in pkgs:
@@ -1923,7 +1882,7 @@ Please be patient while the screens load. It may take awhile.
 				for pkg in pkgs:
 					if pkg in install_packages:
 						data += '<tr><td></td><td> <input type="checkbox" name="packages" value="'+pkg+'" checked>'+pkg+'</td><td>'+pkgs[pkg]+"</td></tr>\n"
-				
+			
 		return self.wrap_in_webgli_template(data)
 	def savepackages(self):
 		data = ""

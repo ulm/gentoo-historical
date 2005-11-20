@@ -1229,19 +1229,15 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			install_packages = self._install_profile.get_install_packages()
 			if isinstance(install_packages, str):
 				install_packages = install_packages.split()
+		else:
+			install_packages = []
 		package_list = self._install_profile.get_install_package_list()
 		highlevel_menu = []
 		for group in package_list:
 			highlevel_menu.append( (group, package_list[group][0]) )
-		else:
-			install_packages = []
+		highlevel_menu.append( ("Manual", "Type your own space-separated list of packages.") )
+
 		while 1:
-#			highlevel_menu = [(_(u"Desktop"), _(u"Popular Desktop Applications")),
-#			(_(u"Servers"), _(u"Applications often found on servers.")), 
-#			(_(u"X11"), _(u"Window managers and X selection.")), 
-#			(_(u"Misc"), _(u"Miscellaneous Applications you may want.")), 
-#			(_(u"Recommended"), _(u"Applications recommended by the GLI Team.")), 
-#			(_(u"Manual"), _(u"Type your own space-separated list of packages."))]
 			extra_string1 = _(u"There are thousands of applications available to Gentoo users through Portage, Gentoo's package management system.  Select some of the more common ones below or add your own additional package list by choosing 'Manual'.")
 			code, submenu = self._d.menu(extra_string1+ _(u"\nYour current package list is: ")+string.join(install_packages, ','), choices=highlevel_menu, cancel=_(u"Save and Continue"), width=70, height=23)
 			if code != self._DLG_OK:  #Save and move on.
@@ -1257,7 +1253,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			#pkgs = {}
 			
 			#Special case first.
-			if submenu == _(u"Manual"):
+			if submenu == "Manual":
 				code, tmp_install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=string.join(install_packages, ' '), width=70) 
 				if code == self._DLG_OK:
 					install_packages = tmp_install_packages.split()
