@@ -1229,15 +1229,19 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			install_packages = self._install_profile.get_install_packages()
 			if isinstance(install_packages, str):
 				install_packages = install_packages.split()
+		package_list = self._install_profile.get_install_package_list()
+		highlevel_menu = []
+		for group in package_list:
+			highlevel_menu.append( (group, package_list[group][0]) )
 		else:
 			install_packages = []
 		while 1:
-			highlevel_menu = [(_(u"Desktop"), _(u"Popular Desktop Applications")),
-			(_(u"Servers"), _(u"Applications often found on servers.")), 
-			(_(u"X11"), _(u"Window managers and X selection.")), 
-			(_(u"Misc"), _(u"Miscellaneous Applications you may want.")), 
-			(_(u"Recommended"), _(u"Applications recommended by the GLI Team.")), 
-			(_(u"Manual"), _(u"Type your own space-separated list of packages."))]
+#			highlevel_menu = [(_(u"Desktop"), _(u"Popular Desktop Applications")),
+#			(_(u"Servers"), _(u"Applications often found on servers.")), 
+#			(_(u"X11"), _(u"Window managers and X selection.")), 
+#			(_(u"Misc"), _(u"Miscellaneous Applications you may want.")), 
+#			(_(u"Recommended"), _(u"Applications recommended by the GLI Team.")), 
+#			(_(u"Manual"), _(u"Type your own space-separated list of packages."))]
 			extra_string1 = _(u"There are thousands of applications available to Gentoo users through Portage, Gentoo's package management system.  Select some of the more common ones below or add your own additional package list by choosing 'Manual'.")
 			code, submenu = self._d.menu(extra_string1+ _(u"\nYour current package list is: ")+string.join(install_packages, ','), choices=highlevel_menu, cancel=_(u"Save and Continue"), width=70, height=23)
 			if code != self._DLG_OK:  #Save and move on.
@@ -1250,55 +1254,17 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				return
 			#Popular Desktop Applications
 			choices_list = []
-			pkgs = {}
-			if submenu == _(u"Desktop"):
-				pkgs = {"gaim": _(u"GTK Instant Messenger client"),
-				"gftp": _(u"Gnome based FTP Client"),
-				"evolution": _(u"A GNOME groupware application, a Microsoft Outlook workalike"),
-				"mozilla": _(u"The Mozilla Web Browser"),
-				"mozilla-firefox": _(u"The Mozilla Firefox Web Browser"),
-				"mozilla-thunderbird": _(u"Thunderbird Mail Client"),
-				"mplayer": _(u"Media Player for Linux"),
-				"openoffice": _(u"OpenOffice.org, a full office productivity suite."),
-				"openoffice-bin": _(u"Same as OpenOffice but a binary package (no compiling!)"),
-				"realplayer": _(u"Real Media Player"),
-				"xchat": _(u"Graphical IRC Client"),
-				"xmms": _(u"X MultiMedia System")  }
-			#Applications often found on servers.
-			elif submenu == _(u"Servers"):
-				pkgs = {"apache":_(u"Apache Web Server"),
-				"iptables":_(u"Linux kernel (2.4+) firewall, NAT and packet mangling tools"),
-				"proftpd":_(u"ProFTP Server"),
-				"samba":_(u"SAMBA client/server programs for UNIX"),
-				"traceroute":_(u"Utility to trace the route of IP packets")  }
-			#Window managers and X selection.
-			elif submenu == _(u"X11"):
-				pkgs = {"xorg-x11":_(u"An X11 implementation maintained by the X.Org Foundation."),
-				"gnome":_(u"The Gnome Desktop Environment"),
-				"kde":_(u"The K Desktop Environment"),
-				"blackbox":_(u"A small, fast, full-featured window manager for X"),
-				"enlightenment":_(u"Enlightenment Window Manager"),
-				"fluxbox":_(u"Fluxbox is an X11 window manager featuring tabs and an iconbar"),
-				"xfce4":_(u"XFCE Desktop Environment")  }
-			#Miscellaneous Applications you may want.
-			elif submenu == _(u"Misc"):
-				pkgs = {"gkrellm":_(u"Single process stack of various system monitors"),
-				"logrotate":_(u"Rotates, compresses, and mails system logs"),
-				"slocate":_(u"Secure way to index and quickly search for files on your system"),
-				"ufed":_(u"Gentoo Linux USE flags editor")  }
-			#Recommended by the Gentoo Linux Installer Team
-			elif submenu == _(u"Recommended"):
-				pkgs = {"anjuta":_(u"A versatile IDE for GNOME"),
-				"chkrootkit":_(u"a tool to locally check for signs of a rootkit"),
-				"crack-attack":_(u"Addictive OpenGL-based block game"),
-				"netcat":_(u"the network swiss army knife"),
-				"nmap":_(u"A utility for network exploration or security auditing"),
-				"screen":_(u"full-screen window manager that multiplexes between several processes")  }
-			elif submenu == _(u"Manual"):
+			#pkgs = {}
+			
+			#Special case first.
+			if submenu == _(u"Manual"):
 				code, tmp_install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=string.join(install_packages, ' '), width=70) 
 				if code == self._DLG_OK:
 					install_packages = tmp_install_packages.split()
 				continue
+				
+			#All other cases load pkgs and GRP
+			pkgs = package_list[submenu][1]
 			grp_list = GLIUtility.get_grp_pkgs_from_cd()
 			for pkg in pkgs:
 				if pkg in grp_list:
