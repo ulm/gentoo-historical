@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/video/xine.xml,v 1.5 2005/10/14 17:33:14 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/video/xine.xml,v 1.6 2005/11/21 00:27:39 flameeyes Exp $ -->
 
 <guide link="/proj/en/desktop/video/xine.xml" lang="en">
 <title>xine-lib and related</title>
@@ -18,8 +18,8 @@ Maintainer notes about xine-lib package and its relatives.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.1</version>
-<date>2005-10-14</date>
+<version>1.2</version>
+<date>2005-11-21</date>
 
 <chapter> <!-- xine-lib -->
 <title>xine-lib</title>
@@ -69,6 +69,12 @@ merged upstream, so they can be dropped when new versions are released that have
 them applied.
 </p>
 
+<note>
+As of 2005-11-21, only three patches are used in <c>xine-lib</c>'s ebuild, as
+the rest of them got applied upstream. It might still needed for future releases
+review and fix the <e>automagic</e> dependencies if new are added.
+</note>
+
 <p>
 If a patch that is not Gentoo-specific is being added to the ebuild, is usually
 suggested to send it to <path>xine-devel</path> mailing list on
@@ -90,24 +96,19 @@ some of them are included inside the same source tarball as the library.
 </p>
 
 <p>
-Usually upstream suggest to use internal libraries, but for maintaining reasons
-is usually preferred to use the Portage-provided libraries. This might require
-patching of sources to use external libraries, or to pass
-<c>--with-external-<e>library</e></c> to the <c>configure</c> script. When
-patching the source, is preferred to add the parameter to configure, so that the
-patch can actually be applied upstream.
+The patches used in the past to use external libraries intead of internals are
+now (as of 1.1.1 version of <c>xine-lib</c>) included in the original sources.
+The use of external libraries is enabled passing
+<c>--with-external-<e>library</e></c> to the <c>configure</c> script. It's
+preferred to use the external libraries (Portage-provided) so that if they need
+to be fixed, xine will make use of the fixes. This was for example the case of
+<path>libmad</path> decoding library on 64-bit systems.
 </p>
 
 <note>
 As also <path>libmad</path> is used external or not used at all, <c>xine-lib</c>
 might not be able to decode mp3 audio without it.
 </note>
-
-<impo>
-There is currently a problem with the patch that uses external libraries, for
-some reason flac decoding seems to be broken using external dts, a52dec or mad.
-The reason of this breakage doesn't seem to be clear.
-</impo>
 
 <p>
 An exception to the above rules applies to <c>libdvdnav</c>. For unknown reasons
@@ -121,10 +122,18 @@ A different treatment is used for <c>ffmpeg</c>. The included version is highly
 suggested by upstream, and sometimes it's just the only practicable way, as the
 snapshot on portage might be too updated or too outdated to be used. For this
 reason, the default behavior should be to use the internal copy, and then the
-<path>ffmpeg</path> useflag is used to choose the external copy of it. The
+<b>ffmpeg</b> useflag is used to choose the external copy of it. The
 external copy is usually faster and supports extra formats or variations of some
 specific video or audio format.
 </p>
+
+<note>
+As <c>xine-lib</c> does not detect which formats are supported by ffmpeg at
+runtime, when it's released it usually requires a newer snapshot of that package
+of the same date or later from when xine devels synced last time. In this case,
+-r0 ebuilds might not have <b>ffmpeg</b> useflag and use the internal copy
+until an external version is available to be used.
+</note>
 
 </body>
 
@@ -159,6 +168,17 @@ This way you avoid changing the flags for people that might use them on better
 architectures, where, for example <c>-fomit-frame-pointer</c> can be avoided.
 </impo>
 
+<p>
+As of release 1.1.1 <c>xine-lib</c> uses a configure option
+<c>--disable-optimizations</c> to avoid adding more flags to the default flags
+used by xine-lib itself. For this reason some flags needs to be added to the
+ebuild as they are needed to build in certain conditions on x86 architecture.
+Never enable optimizations insidea an ebuild as they add a lot of extra flags
+that are known to have bad behavior on some GCCs and might introduce bugs that
+are difficult or impossible to reproduce on a stable basis and then difficult to
+debug. Remember that on x86 architecture <c>xine-lib</c> cannot be debugged.
+</p>
+
 </body>
 </section>
 
@@ -177,10 +197,12 @@ notes.
 <p>
 The first note is about <b>win32codecs</b> useflag. This is used to enable
 the support for the binary win32 codecs that are emulated using a subset of
-Wine functions. When disable, though, it also disable asf demuxing support. This
-because the asf container (Microsoft's container used usually on MMS streams) is
-unstable and lead to crashes when it's used with reverse engineered codecs like
-ffmpeg's ones for WMV and WMA.
+Wine functions. Before version 1.1.1, without this flag xine lost also ASF
+demuxing support, because the code was unstablea and lead to crashes when not
+using win32codecs but, for example, ffmpeg to decoce WMA files. Since version
+1.1.1, this problem seems gone, so the <b>asf</b> useflag got introduced to
+control if enable or not the ASF demuxer (as it can be patented and not legal
+on some countries).
 </p>
 
 <p>
