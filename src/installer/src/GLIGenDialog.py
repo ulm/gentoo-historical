@@ -899,7 +899,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		arch = self._client_profile.get_architecture_template()
 
 		#Bootloader code yanked from the x86ArchTemplate
-		if self._install_profile.get_boot_device()
+		if self._install_profile.get_boot_device():
 			boot_device = self._install_profile.get_boot_device()
 		else:
 			boot_device = ""
@@ -907,7 +907,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
-		for partition in tmp_partitions:
+			for partition in tmp_partitions:
 				mountpoint = tmp_partitions[partition]['mountpoint']
 				if (mountpoint == "/boot"):
 					foundboot = True
