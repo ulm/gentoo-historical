@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.79 2005/11/19 20:40:29 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.80 2005/11/22 03:19:47 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -49,6 +49,7 @@ class InstallProfile:
 		# the XML will correctly serialize.
 		self._cron_daemon_pkg = "vixie-cron"
 		self._logging_daemon_pkg = "syslog-ng"
+		self._boot_device = ""
 		self._boot_loader_mbr = True
 		self._boot_loader_pkg = ""
 		self._kernel_modules = []
@@ -206,6 +207,26 @@ class InstallProfile:
 		return dom.toprettyxml()
 	
 	############################################################################
+	############################################################################
+	#### Boot Device Selection
+	
+	##
+	# boot_device is a string to decide which device to install the bootloader to
+	# @param xml_path Used internally by the XML parser. Should be None when calling directly
+	# @param boot_loader_pkg   boot device with full /dev
+	# @param xml_attr 		not used here
+	
+	def set_boot_device(self, xml_path, boot_device, xml_attr):
+		#check data type
+		if type(boot_device) != str:
+			raise GLIException("BootDevice", 'fatal', 'set_boot_device',  "Input must be type 'string'!")
+		self._boot_device = boot_device
+	
+	##
+	# returns boot_device
+	def get_boot_device(self):
+		return self._boot_device
+	
 	############################################################################
 	#### Bootloader Package Selection
 

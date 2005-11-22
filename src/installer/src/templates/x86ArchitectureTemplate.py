@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.75 2005/11/18 02:55:59 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.76 2005/11/22 03:19:47 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -25,7 +25,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		ArchitectureTemplate.__init__(self, configuration, install_profile, client_controller)
 		self._architecture_name = 'x86'
 		self._kernel_bzimage = "arch/i386/boot/bzImage"
-
+		self._debug = self.configuration.get_verbose()
 	def install_bootloader(self):
 		"Installs and configures bootloader"
 		#
@@ -385,7 +385,11 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 	def _configure_grub(self):
 		build_mode = self._install_profile.get_kernel_build_method()
-		boot_device = ""
+		if self._install_profile.get_boot_device()
+			boot_device = self._install_profile.get_boot_device()
+			if _debug: self.logger.log("Found a boot device: " + boot_device)
+		else:
+			boot_device = ""
 		boot_minor = ""
 		root_device = ""
 		root_minor = ""
@@ -396,9 +400,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		minornum = 0
 		#Assign root to the root mount point to make lines more readable
 		root = self._chroot_dir
-		file_name2 = root + "/boot/grub/device.map"
-		file_name3 = root + "/boot/grub/kernel_name"
-		file_name4 = root + "/boot/grub/initrd_name"
+
+
 		foundboot = False
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
@@ -410,75 +413,53 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
 					boot_minor = str(int(tmp_partitions[partition]['minor']))
 					grub_boot_minor = str(int(tmp_partitions[partition]['minor']) - 1)
-					boot_device = device
+					if not boot_device:
+						boot_device = device
 				if mountpoint == "/":
 					root_minor = str(int(tmp_partitions[partition]['minor']))
 					grub_root_minor = str(int(tmp_partitions[partition]['minor']) - 1)
 					root_device = device
-		if GLIUtility.is_file(file_name2):
-			exitstatus = GLIUtility.spawn("rm "+file_name2)
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Could not delete the old device map for grub.")
-		exitstatus1 = GLIUtility.spawn("echo quit | "+ root+"/sbin/grub --device-map="+file_name2)
-#		if not GLIUtility.exitsuccess(exitstatus1):
-		if not GLIUtility.is_file(file_name2):
-			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error making the new device map.")
-		exitstatus2 = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/kernel-* > " + file_name3)
+		
+		exitstatus2, kernel_names = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/kernel-*", return_output=True)
+		if _debug: self._logger.log("Output of Kernel Names:\n"+kernel_names)
 		if not GLIUtility.exitsuccess(exitstatus2):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error listing the kernels in /boot")
 		if build_mode == "genkernel" or self._install_profile.get_kernel_source_pkg() == "livecd-kernel":
-			exitstatus3 = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/init* > " + file_name4)
-		else:
-			exitstatus3 = GLIUtility.spawn("touch " + file_name4)
+			exitstatus3, initrd_names = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/init*", return_output=True)
+			if _debug: self._logger.log("Output of Initrd Names:\n"+initrd_names)
 		if not GLIUtility.exitsuccess(exitstatus3):
-			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error either listing the initrds or touching "+file_name4)
+			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error listing the initrds")
 		self._logger.log("Bootloader: the three information gathering commands have been run")
-		"""
-		read the device map.  sample looks like this:
-		(fd0)   /dev/floppy/0
-		(hd0)   /dev/ide/host2/bus0/target0/lun0/disc
-		(hd1)   /dev/ide/host0/bus0/target0/lun0/disc
-		(hd2)   /dev/ide/host0/bus0/target1/lun0/disc
-		"""
 		
-		# Search for the key
-		f = open(file_name2)  #open the device map
-		file = f.readlines()
-		f.close()
-		for i in range(len(file)):
-			if file[i][6:-1] == boot_device:
-				#eurika we found the drivenum
-				grub_boot_drive = file[i][1:4]
-			if file[i][6:-1] == root_device:
-				grub_root_drive = file[i][1:4]
+		grub_boot_drive = self._map_device_to_grub_device(boot_device)
+		grub_root_drive = self._map_device_to_grub_device(root_device)
+		
 		if (not grub_root_drive) or (not grub_boot_drive):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub',"Couldn't find the drive num in the list from the device.map")
 
-		g = open(file_name3)
-		h = open(file_name4)
-		initrd_name = h.readlines()
-		kernel_name = g.readlines()
-		g.close()
-		h.close()
-		if not kernel_name[0]:
+		if not kernel_names[0]:
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub',"Error: We have no kernel in /boot to put in the grub.conf file!")
-		kernel_name = map(string.strip, kernel_name)
-		initrd_name = map(string.strip, initrd_name)
-		for i in range(len(kernel_name)):
-			grub_kernel_name = kernel_name[i].split(root)[1]
-		for i in range(len(initrd_name)):
-			grub_initrd_name = initrd_name[i].split(root)[1]
+			
 		#-------------------------------------------------------------
 		#OK, now that we have all the info, let's build that grub.conf
 		newgrubconf = ""
 		newgrubconf += "default 0\ntimeout 30\n"
-		if self._install_profile.get_bootloader_kernel_args(): bootloader_kernel_args = self._install_profile.get_bootloader_kernel_args()
-		else: bootloader_kernel_args = ""
 		if foundboot:  #we have a /boot
 			newgrubconf += "splashimage=(" + grub_boot_drive + "," + grub_boot_minor + ")/grub/splash.xpm.gz\n"
 		else: #we have / and /boot needs to be included
 			newgrubconf += "splashimage=(" + grub_boot_drive + "," + grub_boot_minor + ")/boot/grub/splash.xpm.gz\n"
-			
+		if self._install_profile.get_bootloader_kernel_args(): 
+			bootloader_kernel_args = self._install_profile.get_bootloader_kernel_args()
+		else: bootloader_kernel_args = ""
+
+		kernel_names = map(string.strip, kernel_names)
+		initrd_names = map(string.strip, initrd_names)
+		for i in range(len(kernel_names)):
+			grub_kernel_name = kernel_name[i].split(root)[1]
+		for i in range(len(initrd_names)):  #this should be okay if blank.
+			grub_initrd_name = initrd_name[i].split(root)[1]
+		#i think this means take the last one it finds.. i.e. the newest.
+		
 		newgrubconf += "title=Gentoo Linux\n"
 		newgrubconf += "root (" + grub_boot_drive + "," + grub_boot_minor + ")\n"
 		if build_mode != "genkernel" and self._install_profile.get_kernel_source_pkg() != "livecd-kernel":  #using CUSTOM kernel
@@ -614,3 +595,27 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					newliloconf += "other="+device+str(int(tmp_partitions[partition]['minor']))+"\n"
 					newliloconf += "label=Windows_P"+str(int(tmp_partitions[partition]['minor']))+"\n\n"
 		return newliloconf
+		
+	def _map_device_to_grub_device(self, device):
+		file_name = self._chroot_dir + "/boot/grub/glidevice.map"
+		#If we can't find it, make it.  If we STILL can't find it. die.
+		if not GLIUtility.is_file(file_name):
+			exitstatus1 = GLIUtility.spawn("echo quit | "+ self._chroot_dir+"/sbin/grub --no-floppy --device-map="+file_name)
+		if not GLIUtility.is_file(file_name):
+			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error making the new device map.")
+		"""
+		read the device map.  sample looks like this:
+		(fd0)   /dev/floppy/0
+		(hd0)   /dev/sda
+		(hd1)   /dev/hda
+		(hd2)   /dev/hdb
+		"""
+		
+		# Search for the key
+		f = open(file_name2)  #open the device map
+		file = f.readlines()
+		f.close()	
+		for i in range(len(file)):
+			if file[i][6:-1] == device:
+				return file[i][1:4]
+		raise GLIException("BootloaderError", 'fatal', '_map_device_to_grub_device', "ERROR, could not map"+device+" to anything in the device map")
