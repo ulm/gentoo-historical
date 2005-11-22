@@ -271,7 +271,7 @@ class Installer:
 			self.loadPanel(self._cur_panel + 1)
 
 	def help(self, widget, data=None):
-		print "Help was clicked"
+		GLIUtility.spawn("firefox http://www.gentoo.org/doc/en/handbook/index.xml &>/dev/null &")
 
 	def exit_button(self, widget, data=None):
 		msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="Are you sure you want to exit?")
