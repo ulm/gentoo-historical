@@ -21,6 +21,11 @@ Welcome to the GTK+ frontend for the Gentoo Linux Installer. This is a TESTING
 release. If your system dies a horrible, horrible death, don't come crying to us.
 No, really, don't. We'll all just point and laugh and tell you that we told you so.
 
+It is highly recommended that you have gone through the manual install process a time
+or two, or at least read through the install guide. The purpose of this installer is
+not to make the install easier but to make it quicker. Don't ask questions that are
+covered by the install guide, or we shall taunt you a second time.
+
 In this part of the installer, you will make all of your decisions for how you want
 your system setup. No changes will be made to your system until you click the
 "Install" button. At any point before you click "Install", you can click "Save" to
