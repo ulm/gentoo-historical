@@ -950,6 +950,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				boot_drive_choices = []
 				for device in parts:
 					boot_drive_choices.append(device)
+				if not boot_drive_choices:
+					self._d.msgbox("ERROR: No drives set up.  Please complete the Partitioning screen first!")
+					return
 				code, boot_drive_choice = self._d.menu(boot_string3, choices=self._dmenu_list_to_choices(boot_drive_choices), height=12, width=70)
 				if code != self._DLG_OK:
 					return

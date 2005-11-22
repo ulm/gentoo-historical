@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.76 2005/11/22 03:19:47 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.77 2005/11/22 16:09:34 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -385,7 +385,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 	def _configure_grub(self):
 		build_mode = self._install_profile.get_kernel_build_method()
-		if self._install_profile.get_boot_device()
+		if self._install_profile.get_boot_device():
 			boot_device = self._install_profile.get_boot_device()
 			if _debug: self.logger.log("Found a boot device: " + boot_device)
 		else:

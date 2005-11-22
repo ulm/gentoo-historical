@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.80 2005/11/22 03:19:47 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.81 2005/11/22 16:09:34 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -97,6 +97,7 @@ class InstallProfile:
 		# Parser handler calls.  For each XML attribute and children of that attribute, a handler is needed.
 		self._parser = SimpleXMLParser.SimpleXMLParser()
 		self._parser.addHandler('gli-profile/bootloader', self.set_boot_loader_pkg)
+		self._parser.addHandler('gli-profile/boot-device', self.set_boot_device)
 		self._parser.addHandler('gli-profile/bootloader-kernel-args', self.set_bootloader_kernel_args)
 		self._parser.addHandler('gli-profile/bootloader-mbr', self.set_boot_loader_mbr)
 		self._parser.addHandler('gli-profile/cron-daemon', self.set_cron_daemon_pkg)
@@ -150,7 +151,8 @@ class InstallProfile:
 	# This method serializes the configuration data and output a nice XML document.
 	# NOTE: this method currently does not serialize: _partition_tables or _kernel_modules
 	def serialize(self):
-		xmltab = {	'bootloader':				self.get_boot_loader_pkg,
+		xmltab = { 'boot-device': self.get_boot_device,	
+		      'bootloader':				self.get_boot_loader_pkg,
 					'bootloader-mbr':			self.get_boot_loader_mbr,
 					'bootloader-kernel-args':	self.get_bootloader_kernel_args,
 					'cron-daemon':				self.get_cron_daemon_pkg,
