@@ -897,6 +897,24 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				
 	def set_boot_loader(self):
 		arch = self._client_profile.get_architecture_template()
+
+		#Bootloader code yanked from the x86ArchTemplate
+		if self._install_profile.get_boot_device()
+			boot_device = self._install_profile.get_boot_device()
+		else:
+			boot_device = ""
+		foundboot = False
+		parts = self._install_profile.get_partition_tables()
+		for device in parts:
+			tmp_partitions = parts[device].get_install_profile_structure()
+		for partition in tmp_partitions:
+				mountpoint = tmp_partitions[partition]['mountpoint']
+				if (mountpoint == "/boot"):
+					foundboot = True
+				if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
+					if not boot_device:
+						boot_device = device
+
 		arch_loaders = { 'x86': [
 			("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED")),
 			("lilo",_(u"LInux LOader, older, traditional.(detects windows partitions)"))],
@@ -921,6 +939,25 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				self._install_profile.set_boot_loader_mbr(None, True, None)
 			else:
 				self._install_profile.set_boot_loader_mbr(None, False, None)
+		if self._install_profile.get_boot_loader_mbr():  #If we're installing to MBR gotta check the device.
+			if self.advanced_mode or (boot_device[-1] != 'a'):
+				#show the menu.
+				boot_string3_std = _(u"Your boot device may not be correct.  It is currently set to %s, but this device may not be the first to boot.  Usually boot devices end in 'a' such as hda or sda."), boot_device
+				boot_string3 = _(u"  Please confirm your boot device by choosing it from the menu.")
+				if not self.advanced_mode:
+					boot_string3 = boot_string3_std + boot_string3
+				#grab choies from the partiton list.
+				boot_drive_choices = []
+				for device in parts:
+					boot_drive_choices.append(device)
+				code, boot_drive_choice = self._d.menu(boot_string3, choices=self._dmenu_list_to_choices(boot_drive_choices), height=12, width=70)
+				if code != self._DLG_OK:
+					return
+				boot_drive_choice = boot_drive_choices[int(boot_drive_choice)-1]
+				try:
+					self._install_profile.set_boot_device(None,boot_drive_choice,None)
+				except:
+					self._d.msgbox(_(u"ERROR! Could not set the boot device!")+boot_drive_choice)
 		if self.advanced_mode:
 			code, bootloader_kernel_args = self._d.inputbox(_(u"If you have any additional optional arguments you want to pass to the kernel at boot, type them here or just press Enter to continue:"), height=12, width=55)
 			if code == self._DLG_OK:
