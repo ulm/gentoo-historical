@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.78 2005/11/23 03:47:00 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.79 2005/11/23 03:48:48 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -387,7 +387,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		build_mode = self._install_profile.get_kernel_build_method()
 		if self._install_profile.get_boot_device():
 			boot_device = self._install_profile.get_boot_device()
-			if _debug: self.logger.log("Found a boot device: " + boot_device)
+			if self._debug: self.logger.log("Found a boot device: " + boot_device)
 		else:
 			boot_device = ""
 		boot_minor = ""
@@ -421,12 +421,12 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					root_device = device
 		
 		exitstatus2, kernel_names = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/kernel-*", return_output=True)
-		if _debug: self._logger.log("Output of Kernel Names:\n"+kernel_names)
+		if self._debug: self._logger.log("Output of Kernel Names:\n"+kernel_names)
 		if not GLIUtility.exitsuccess(exitstatus2):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error listing the kernels in /boot")
 		if build_mode == "genkernel" or self._install_profile.get_kernel_source_pkg() == "livecd-kernel":
 			exitstatus3, initrd_names = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/init*", return_output=True)
-			if _debug: self._logger.log("Output of Initrd Names:\n"+initrd_names)
+			if self._debug: self._logger.log("Output of Initrd Names:\n"+initrd_names)
 		if not GLIUtility.exitsuccess(exitstatus3):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error listing the initrds")
 		self._logger.log("Bootloader: the three information gathering commands have been run")
