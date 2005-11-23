@@ -275,13 +275,27 @@
         <xsl:value-of select="name"/>
       </ti>
       <ti>
-	<xsl:for-each select="maintainer/email">
-	  <xsl:sort/>
-	  <xsl:value-of select='substring-before(text(),"@gentoo.org")'/>
-	  <xsl:if test="not(position()=last())">
-	    <xsl:text>, </xsl:text>
-	  </xsl:if>
-	</xsl:for-each>
+        <!-- We can have maintainer/email OR maintainingproject, but not both -->
+        <xsl:choose>
+         <xsl:when test="maintainer/email">
+          <xsl:for-each select="maintainer/email">
+            <xsl:sort/>
+            <xsl:value-of select='substring-before(text(),"@gentoo.org")'/>
+            <xsl:if test="not(position()=last())">
+              <xsl:text>, </xsl:text>
+            </xsl:if>
+          </xsl:for-each>
+         </xsl:when>
+         <xsl:when test="maintainingproject">
+          <xsl:for-each select="document(maintainingproject/text())/project/dev">
+            <xsl:sort select="text()"/>
+              <xsl:value-of select="text()"/>
+              <xsl:if test="not(position()=last())">
+                <xsl:text>, </xsl:text>
+              </xsl:if>
+          </xsl:for-each>
+         </xsl:when>
+        </xsl:choose>
       </ti>
       <ti>
 	<xsl:value-of select="description"/>
