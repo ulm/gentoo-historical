@@ -897,22 +897,20 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				
 	def set_boot_loader(self):
 		arch = self._client_profile.get_architecture_template()
-
+		parts = self._install_profile.get_partition_tables()
 		#Bootloader code yanked from the x86ArchTemplate
 		if self._install_profile.get_boot_device():
 			boot_device = self._install_profile.get_boot_device()
 		else:
 			boot_device = ""
-		foundboot = False
-		parts = self._install_profile.get_partition_tables()
-		for device in parts:
-			tmp_partitions = parts[device].get_install_profile_structure()
-			for partition in tmp_partitions:
-				mountpoint = tmp_partitions[partition]['mountpoint']
-				if (mountpoint == "/boot"):
-					foundboot = True
-				if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
-					if not boot_device:
+			foundboot = False
+			for device in parts:
+				tmp_partitions = parts[device].get_install_profile_structure()
+				for partition in tmp_partitions:
+					mountpoint = tmp_partitions[partition]['mountpoint']
+					if (mountpoint == "/boot"):
+						foundboot = True
+					if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
 						boot_device = device
 
 		arch_loaders = { 'x86': [
