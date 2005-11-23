@@ -2,16 +2,16 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-hppa-kernel.xml,v 1.9 2005/07/17 01:33:13 ccpz Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-hppa-kernel.xml,v 1.10 2005/11/23 16:09:17 ccpz Exp $ -->
 
-<!-- rev 1.24 by ccpz -->
+<!-- rev 1.27 by ccpz -->
 
 <sections>
 
-<version>1.17</version>
-<date>2005-07-04</date>
+<version>1.20</version>
+<date>2005-08-21</date>
 
 <section>
 <title>時區</title>
@@ -20,7 +20,9 @@
 <p>
 為了讓您的系統知道它的位置在那裡，您將需要設定您的系統時區。到
 <path>/usr/share/zoneinfo</path> 尋找您的時區，然後使用 <c>ln</c> 建立一個連接到
-<path>/etc/localtime</path> 的符號連結。
+<path>/etc/localtime</path>  的符號連結。請避免使用
+<path>/usr/share/zoneinfo/Etc/GMT*</path> 下的檔案，因為他們並不代表你預期的時
+區。例如說 <path>GMT-8</path> 實際上是 GMT+8。
 </p>
 
 <pre caption="設定時區資訊">
@@ -44,7 +46,9 @@ link="/doc/tw/gentoo-kernel.xml">Gentoo 核心 指南</uri> 查看我們所提�
 </p>
 
 <p>
-HPPA 不再支援 2.4 系列的核心，你應該用 <c>hppa-sources</c>。
+HPPA 上我們使用 <c>hppa-sources</c>。這核心預設是以 2.6 核心為基礎。如果你想要
+2.4 板的核心，你需要透網路安裝 Gentoo，因為我們不再有在光碟提供他的原始碼。接著
+繼續安裝核心原始碼：
 </p>
 
 <pre caption="安裝核心原始碼">
@@ -58,7 +62,7 @@ HPPA 不再支援 2.4 系列的核心，你應該用 <c>hppa-sources</c>。
 
 <pre caption="觀看核心原始碼目錄連接">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.10_p1
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.12.2-pa2
 </pre>
 
 <p>
@@ -69,12 +73,12 @@ lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; lin
 <pre caption="更改核心連接目錄">
 # <i>rm /usr/src/linux</i>
 # <i>cd /usr/src</i>
-# <i>ln -s linux-2.6.10_p1 linux</i>
+# <i>ln -s linux-2.6.12.2-pa2 linux</i>
 </pre>
 
 <p>
 現在我們該設定以及編譯您的核心了。所有架構的使用者都可以使用 <c>genkernel</c> 完
-成此項步驟，並且將會以和 LiveCD 一樣的通用的方式進行編譯。我們將先解釋如何手動編
+成此項步驟，並且將會以和安裝光碟一樣的通用的方式進行編譯。我們將先解釋如何手動編
 譯因為這是自訂您的環境的最佳方法。
 </p>
 
@@ -191,14 +195,32 @@ Device Drivers ---&gt;
 如果您有一個 HIl 滑鼠或是鍵盤，不要忘了編入核心的支援。
 </p>
 
-<pre caption="啟動 HIL 鍵盤支援">
-Input device support ---&gt;
-  [*] Keyboards
-  [*]   HP HIL keyboard support
+<pre caption="啟動 HIL 支援">
+Input core support ---&gt;
+  [*] Keyboard support
+  [*] Mouse support
+  [*] Event interface support
 </pre>
-<pre caption="啟動 HIL 滑鼠支援">
-  [*] Mice
-  [*]   HIL pointers (mice etc).
+
+ <p>
+如果在 HIL 阜上沒有滑鼠，你只需要基本的支援：
+</p>
+  	 
+<pre caption="HIL 基本支援">
+HIL support ---&gt;
+  [*] HIL Keyboard (basic) support
+</pre>
+  	 
+<p>
+如果你仍然想要 <e>完整</e> HIL 支援，你需要選下列選項：
+</p>
+  	 
+<pre caption="晚整 HIL 支援">
+HIL support ---&gt;
+  [*] HP System Device Controller i8042 Support
+  [*] HIL MLC Support
+  [*] HIL Keyboard (full) support
+  [*] HIL Mouse &amp; Pointer support
 </pre>
 
 <p>
@@ -211,12 +233,7 @@ Graphics support ---&gt;
       [*] HP STI frame buffer device support
   Console display driver support ---&gt;
       [*] STI text console
-	  [*] Framebuffer Console support
 </pre>
-
-<p>
-如果您的 HIL port 沒有滑鼠，只需要開啟基礎的支援：
-</p>
 
 <p>
 當您完成核心設定時，請從 <uri link="#compiling">編譯和安裝</uri> 繼續。
@@ -239,12 +256,12 @@ Graphics support ---&gt;
 
 <p>
 當核心完成編譯時，將核心映像檔複製到 <path>/boot</path>。以下的範例，我們將假設
-您使用 <c>hppa-sources-2.6.10_p1</c> 編譯然後安裝（當然跟您的不一樣！）：
+您使用 <c>hppa-sources-2.6.12.2-pa2</c> 編譯然後安裝：
 </p>
 
 <pre caption="安裝核心">
-# <i>cp vmlinux /boot/vmlinux</i>
-# <i>cp System.map /boot/System.map-2.6.10</i>
+# <i>cp vmlinux /boot/kernel-2.6.12.2-pa2</i>
+# <i>cp System.map /boot/System.map-2.6.12.2-pa2</i>
 </pre>
 
 <p>
@@ -252,7 +269,7 @@ Graphics support ---&gt;
 </p>
 
 <pre caption="備份您的核心設定檔">
-# <i>cp .config /boot/config-2.6.10</i>
+# <i>cp .config /boot/config-2.6.12.2-pa2</i>
 </pre>
 
 <p>
@@ -277,9 +294,9 @@ Gnetoo/SPARC 不支援 genkernel。
 
 <p>
 現在您的核心原始碼已經安裝了，我們該使用 <c>genkernel</c> 程序來自動幫您編譯
-核心。<c>genkernel</c> 是利用類似 LiveCD 的核心設定來進行工作的。這代表著當您
+核心。<c>genkernel</c> 是利用類似安裝光碟的核心設定來進行工作的。這代表著當您
 使用 <c>genkernel</c> 編譯您的核心，您的系統大致上會在開機時偵測所有的硬體，
-就和我們的 LiveCD 一樣。因為 genkernel 不需要手動核心設定，所以適合不會編譯
+就和我們的安裝光碟一樣。因為 genkernel 不需要手動核心設定，所以適合不會編譯
 核心的使用者。
 </p>
 
@@ -305,11 +322,6 @@ Gnetoo/SPARC 不支援 genkernel。
 
 <pre caption="執行 genkernel">
 # <i>genkernel all</i>
-GenKernel v3.0.1_beta10
-* ARCH: HPPA 
-* KERNEL VER: 2.4.24
-* kernel: configuring source
-* kernel: running mrproper
 <comment>(Output removed to increase readability)</comment>
 * Kernel compiled successfully!
 * Required Kernel Params:
@@ -331,15 +343,15 @@ GenKernel v3.0.1_beta10
 當 <c>genkernel</c> 完成的時候，一個核心映像檔，一套模組和一個 <e>initial root
 disk</e> （initrd）將會被建立。我們將在稍後設定開機程式時使用核心映像檔和
 initrd。寫下核心和 initrd 的檔名方便您稍後設定開機程式。initrd 將會在開起到"真正
-的"系統之前馬上偵測硬體支援（就和 LiveCD 一樣）。
+的"系統之前馬上偵測硬體支援（就和安裝光碟一樣）。
 </p>
 
 <pre caption="查看已建立的核心映像檔名和 initrd">
-# <i>ls /boot/kernel* /boot/initrd*</i>
+# <i>ls /boot/kernel* /boot/initramfs*</i>
 </pre>
 
 <p>
-現在，為了要讓我們的系統更像 LiveCD，我們需要安裝 <c>coldplug</c>。當 initrd 自動
+現在，為了要讓我們的系統更像安裝光碟，我們需要安裝 <c>coldplug</c>。當 initrd 自動
 偵測硬體時，<c>coldplug</c>將會自動偵測其他的硬體。要安裝然後開啟 <c>coldplug</c>
 ，請按照以下輸入：
 </p>
@@ -347,7 +359,6 @@ initrd。寫下核心和 initrd 的檔名方便您稍後設定開機程式。ini
 <pre caption="安裝和開啟 coldplug">
 # <i>emerge coldplug</i>
 # <i>rc-update add coldplug default</i>
-# <i>rc-update add coldplug boot</i>
 </pre>
 
 </body>
