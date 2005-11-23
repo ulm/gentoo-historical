@@ -940,7 +940,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		if self._install_profile.get_boot_loader_mbr():  #If we're installing to MBR gotta check the device.
 			if self.advanced_mode or (boot_device[-1] != 'a'):
 				#show the menu.
-				boot_string3_std = _(u"Your boot device may not be correct.  It is currently set to %s, but this device may not be the first to boot.  Usually boot devices end in 'a' such as hda or sda."), boot_device
+				boot_string3_std = _(u"Your boot device may not be correct.  It is currently set to %s, but this device may not be the first to boot.  Usually boot devices end in 'a' such as hda or sda.") % boot_device
 				boot_string3 = _(u"  Please confirm your boot device by choosing it from the menu.")
 				if not self.advanced_mode:
 					boot_string3 = boot_string3_std + boot_string3
@@ -949,9 +949,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				for device in parts:
 					boot_drive_choices.append(device)
 				if not boot_drive_choices:
-					self._d.msgbox("ERROR: No drives set up.  Please complete the Partitioning screen first!")
+					self._d.msgbox(_(u"ERROR: No drives set up.  Please complete the Partitioning screen first!"))
 					return
-				code, boot_drive_choice = self._d.menu(boot_string3, choices=self._dmenu_list_to_choices(boot_drive_choices), height=12, width=70)
+				code, boot_drive_choice = self._d.menu(boot_string3, choices=self._dmenu_list_to_choices(boot_drive_choices), height=16, width=70)
 				if code != self._DLG_OK:
 					return
 				boot_drive_choice = boot_drive_choices[int(boot_drive_choice)-1]

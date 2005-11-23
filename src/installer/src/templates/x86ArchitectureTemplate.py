@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.79 2005/11/23 03:48:48 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.80 2005/11/23 18:14:30 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -612,7 +612,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		"""
 		
 		# Search for the key
-		f = open(file_name2)  #open the device map
+		f = open(file_name)  #open the device map
 		file = f.readlines()
 		f.close()	
 		for i in range(len(file)):
