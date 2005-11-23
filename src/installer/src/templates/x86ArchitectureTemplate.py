@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.77 2005/11/22 16:09:34 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.78 2005/11/23 03:47:00 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -25,7 +25,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		ArchitectureTemplate.__init__(self, configuration, install_profile, client_controller)
 		self._architecture_name = 'x86'
 		self._kernel_bzimage = "arch/i386/boot/bzImage"
-		self._debug = self.configuration.get_verbose()
+
 	def install_bootloader(self):
 		"Installs and configures bootloader"
 		#
