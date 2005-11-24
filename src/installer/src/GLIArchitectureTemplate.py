@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.229 2005/11/15 15:44:25 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.230 2005/11/24 18:48:19 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -185,7 +185,7 @@ class ArchitectureTemplate:
 
 		# Create list of files for tar to work with from CONTENTS file in vdb entry
 		entries = GLIUtility.parse_vdb_contents("/var/db/pkg/" + package + "/CONTENTS")
-		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot: files for " + package + ": " + entries)
+		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot: files for " + package + ": " + str(entries))
 		try:
 			tarfiles = open("/tmp/tarfilelist", "w")
 			for entry in entries:
