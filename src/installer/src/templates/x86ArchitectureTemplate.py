@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.80 2005/11/23 18:14:30 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.81 2005/11/24 04:42:55 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -421,12 +421,12 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					root_device = device
 		
 		exitstatus2, kernel_names = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/kernel-*", return_output=True)
-		if self._debug: self._logger.log("Output of Kernel Names:\n"+kernel_names)
+		self._logger.log("Output of Kernel Names:\n"+kernel_names)
 		if not GLIUtility.exitsuccess(exitstatus2):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error listing the kernels in /boot")
 		if build_mode == "genkernel" or self._install_profile.get_kernel_source_pkg() == "livecd-kernel":
 			exitstatus3, initrd_names = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/init*", return_output=True)
-			if self._debug: self._logger.log("Output of Initrd Names:\n"+initrd_names)
+			self._logger.log("Output of Initrd Names:\n"+initrd_names)
 		if not GLIUtility.exitsuccess(exitstatus3):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error listing the initrds")
 		self._logger.log("Bootloader: the three information gathering commands have been run")
@@ -455,9 +455,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		kernel_names = map(string.strip, kernel_names)
 		initrd_names = map(string.strip, initrd_names)
 		for i in range(len(kernel_names)):
-			grub_kernel_name = kernel_name[i].split(root)[1]
+			grub_kernel_name = kernel_names[i].split(root)[-1]
 		for i in range(len(initrd_names)):  #this should be okay if blank.
-			grub_initrd_name = initrd_name[i].split(root)[1]
+			grub_initrd_name = initrd_names[i].split(root)[-1]
 		#i think this means take the last one it finds.. i.e. the newest.
 		
 		newgrubconf += "title=Gentoo Linux\n"
