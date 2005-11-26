@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.230 2005/11/24 18:48:19 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.231 2005/11/26 17:05:57 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -340,7 +340,7 @@ class ArchitectureTemplate:
 			self._logger.mark()
 			self._logger.log("Starting bootstrap.")
 			pkgs = self._get_packages_to_emerge("/usr/portage/scripts/bootstrap.sh --pretend")
-			if self._debug: self._logger.log("DEBUG: Packages to emerge: "+pkgs+". Now running bootstrap.sh")
+			if self._debug: self._logger.log("DEBUG: Packages to emerge: "+str(pkgs)+". Now running bootstrap.sh")
 			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage1Error", 'fatal','stage1', "Bootstrapping failed!")
