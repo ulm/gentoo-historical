@@ -439,6 +439,7 @@ class Partition:
 		self._mb = mb
 		self._orig_minor = origminor
 		self._mkfsopts = mkfsopts
+		self._resizeable = False
 		if type != "free":
 			if existing and not origminor:
 				self._orig_minor = self._minor

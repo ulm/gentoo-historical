@@ -293,7 +293,7 @@ class PartProperties(gtk.Window):
 			part_size_mb = round(long(self.resize_info_part_size.get_text()))
 			if part_size_mb > self.max_size:
 				part_size_mb = self.max_size
-				self.resize_info_part_size_set_text(str(part_size_mb))
+				self.resize_info_part_size.set_text(str(part_size_mb))
 			part_unalloc_mb = int(self.max_size - part_size_mb)
 			self.resize_info_unalloc_size.set_text(str(part_unalloc_mb))
 			if part_size_mb >= self.min_size and part_size_mb <= self.max_size:
