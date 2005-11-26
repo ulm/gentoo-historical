@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.82 2005/11/26 16:29:19 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.83 2005/11/26 17:54:18 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -420,7 +420,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		#RESET the boot device if one is stored already
 		if self._install_profile.get_boot_device():
 			mbr_device = self._install_profile.get_boot_device()
-			self.logger.log("Found a mbr device: " + mbr_device)
+			self._logger.log("Found a mbr device: " + mbr_device)
 		
 		exitstatus2, kernel_names = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/kernel-*", return_output=True)
 		self._logger.log("Output of Kernel Names:\n"+kernel_names)
@@ -505,7 +505,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		f = open(file_name, 'w')
 		f.writelines(newgrubconf)
 		f.close()
-		self._logger.log("Grub installed and configured.")
+		self._logger.log("Grub installed and configured. Contents of grub.conf:\n"+newgrubconf)
 
 	def _configure_lilo(self):
 		build_mode = self._install_profile.get_kernel_build_method()
