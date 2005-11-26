@@ -164,7 +164,7 @@ class Device:
 		parts = self._partitions.keys()
 		parts.sort()
 		for part in parts:
-			if archinfo[self._arch]['extended'] and part > 4: break
+			if archinfo[self._arch]['extended'] and part > (4 + FREE_MINOR_FRAC_PRI): break
 			tmppart = self._partitions[part]
 			if tmppart.get_type() == "extended":
 				for part_log in parts:
