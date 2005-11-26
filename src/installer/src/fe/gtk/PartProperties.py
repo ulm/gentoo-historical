@@ -226,7 +226,7 @@ class PartProperties(gtk.Window):
 		self.hide_all()
 
 	def ok_clicked(self, button):
-		if not self.resize_hpaned.get_position():
+		if not int(self.resize_info_part_size.get_text()):
 			msgdlg = gtk.MessageDialog(parent=self.controller.controller.window, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="You cannot define a 0MB partition.")
 			resp = msgdlg.run()
 			msgdlg.destroy()
@@ -242,7 +242,8 @@ class PartProperties(gtk.Window):
 			hpaned_width = self.resize_hpaned.get_allocation().width - self.resize_hpaned.style_get_property("handle-size")
 			hpaned_pos = self.resize_hpaned.get_position()
 			part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
-			part_size = round(self.max_size * part_space)
+#			part_size = round(self.max_size * part_space)
+			part_size = int(self.resize_info_part_size.get_text())
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
 				self.controller.devices[self.device].add_partition(self.minor, self.max_size, 0, 0, "extended")
 				self.minor = 4 + FREE_MINOR_FRAC_LOG
@@ -286,20 +287,21 @@ class PartProperties(gtk.Window):
 			editable.stop_emission("insert-text")
 
 	def update_slider_and_entries(self, widget, event, which_one):
-#		print "Entry " + which_one + " has been updated"
 		hpaned_width = self.resize_hpaned.get_allocation().width - self.resize_hpaned.style_get_property("handle-size")
 		hpaned_pos = self.resize_hpaned.get_position()
 		if which_one == "part-size":
-			part_size_mb = round(long(self.resize_info_part_size.get_text()))
+			part_size_mb = int(round(long(self.resize_info_part_size.get_text())))
 			if part_size_mb > self.max_size:
 				part_size_mb = self.max_size
-				self.resize_info_part_size.set_text(str(part_size_mb))
+			elif part_size_mb < self.min_size:
+				part_size_mb = self.min_size
+			self.resize_info_part_size.set_text(str(part_size_mb))
 			part_unalloc_mb = int(self.max_size - part_size_mb)
 			self.resize_info_unalloc_size.set_text(str(part_unalloc_mb))
 			if part_size_mb >= self.min_size and part_size_mb <= self.max_size:
 				hpaned_pos = round((float(part_size_mb) / self.max_size) * hpaned_width)
 		else:
-			part_unalloc_mb = round(long(self.resize_info_unalloc_size.get_text()))
+			part_unalloc_mb = int(round(long(self.resize_info_unalloc_size.get_text())))
 			if part_unalloc_mb > (self.max_size - self.min_size):
 				part_unalloc_mb = self.max_size = self.min_size
 				self.resize_info_unalloc_size.set_text(str(part_unalloc_mb))
