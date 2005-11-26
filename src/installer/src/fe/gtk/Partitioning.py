@@ -54,6 +54,9 @@ class Panel(GLIScreen.GLIScreen):
 		self.part_button_clear = gtk.Button(_(" Clear partitions "))
 		self.part_button_clear.connect("clicked", self.part_button_clear_clicked)
 		container.pack_end(self.part_button_clear, expand=False, fill=False, padding=10)
+		self.part_button_dump_info = gtk.Button(_(" Dump to console (debug) "))
+		self.part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
+		container.pack_end(self.part_button_dump_info, expand=False, fill=False, padding=0)
 
 		vert.pack_start(container, expand=False, fill=False, padding=10)
 
@@ -114,9 +117,6 @@ class Panel(GLIScreen.GLIScreen):
 		self.part_button_properties = gtk.Button(_(" Properties "))
 		self.part_button_properties.connect("clicked", self.part_button_properties_clicked)
 		self.part_button_box.pack_start(self.part_button_properties, expand=False, fill=False, padding=10)
-		part_button_dump_info = gtk.Button(_(" Dump to console (debug) "))
-		part_button_dump_info.connect("clicked", self.dump_part_info_to_console)
-		self.part_button_box.pack_start(part_button_dump_info, expand=False, fill=False, padding=0)
 		vert.pack_start(self.part_button_box, expand=False, fill=False, padding=10)
 
 		# This builds the color key at the bottom
@@ -153,8 +153,10 @@ class Panel(GLIScreen.GLIScreen):
 			pixmap, mask = gtk.gdk.pixmap_create_from_xpm_d(self.controller.window.window, None, temp_xpm)
 			tmp_image = gtk.Image()
 			tmp_image.set_from_pixmap(pixmap, mask)
-			color_codes_box.pack_start(tmp_image, expand=False, fill=False, padding=3)
-			color_codes_box.pack_start(gtk.Label(color['label']), expand=False, fill=False, padding=3)
+			tmpbox = gtk.HBox(False, 0)
+			tmpbox.pack_start(tmp_image, expand=False, fill=False, padding=3)
+			tmpbox.pack_start(gtk.Label(color['label']), expand=False, fill=False, padding=3)
+			color_codes_box.pack_start(tmpbox, expand=False, fill=False, padding=6)
 
 		self.add_content(vert)
 #		self.detected_dev_combo.set_active(0)

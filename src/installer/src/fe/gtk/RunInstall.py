@@ -97,7 +97,7 @@ class RunInstall(gtk.Window):
 #			msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK, message_format="An error occured during the install. Consult the output display for more information.")
 #			msgdlg.run()
 #			msgdlg.destroy()
-			error_msg = "Exception received:\n" + str(ndata) + "\nPlease submit a bug report (after searching to make sure it's not a known issue and verifying you didn't do something stupid) with the contents of /var/log/install.log and /tmp/installprofile.xml\n"
+			error_msg = "Exception received:\n" + str(ndata) + "\nPlease submit a bug report (after searching to make sure it's not a known issue and verifying you didn't do something stupid) with the contents of /var/log/install.log and /tmp/installprofile.xml and the version of the installer you used\n"
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, error_msg, -1)
 			self.textview.scroll_to_iter(iter_end, 0.0)
