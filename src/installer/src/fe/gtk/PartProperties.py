@@ -291,12 +291,18 @@ class PartProperties(gtk.Window):
 		hpaned_pos = self.resize_hpaned.get_position()
 		if which_one == "part-size":
 			part_size_mb = round(long(self.resize_info_part_size.get_text()))
+			if part_size_mb > self.max_size:
+				part_size_mb = self.max_size
+				self.resize_info_part_size_set_text(str(part_size_mb))
 			part_unalloc_mb = int(self.max_size - part_size_mb)
 			self.resize_info_unalloc_size.set_text(str(part_unalloc_mb))
 			if part_size_mb >= self.min_size and part_size_mb <= self.max_size:
 				hpaned_pos = round((float(part_size_mb) / self.max_size) * hpaned_width)
 		else:
 			part_unalloc_mb = round(long(self.resize_info_unalloc_size.get_text()))
+			if part_unalloc_mb > (self.max_size - self.min_size):
+				part_unalloc_mb = self.max_size = self.min_size
+				self.resize_info_unalloc_size.set_text(str(part_unalloc_mb))
 			part_size_mb = int(round(self.max_size - part_unalloc_mb))
 			self.resize_info_part_size.set_text(str(part_size_mb))
 			if (self.max_size - part_unalloc_mb) >= self.min_size:
