@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.81 2005/11/24 04:42:55 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.82 2005/11/26 16:29:19 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -385,18 +385,16 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 	def _configure_grub(self):
 		build_mode = self._install_profile.get_kernel_build_method()
-		if self._install_profile.get_boot_device():
-			boot_device = self._install_profile.get_boot_device()
-			if self._debug: self.logger.log("Found a boot device: " + boot_device)
-		else:
-			boot_device = ""
 		boot_minor = ""
+		boot_device = ""
 		root_device = ""
 		root_minor = ""
+		mbr_device = ""
 		grub_root_minor = ""
 		grub_boot_minor = ""
 		grub_boot_drive = ""
 		grub_root_drive = ""
+		grub_mbr_drive = ""
 		minornum = 0
 		#Assign root to the root mount point to make lines more readable
 		root = self._chroot_dir
@@ -413,12 +411,16 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
 					boot_minor = str(int(tmp_partitions[partition]['minor']))
 					grub_boot_minor = str(int(tmp_partitions[partition]['minor']) - 1)
-					if not boot_device:
-						boot_device = device
+					boot_device = device
+					mbr_device = device
 				if mountpoint == "/":
 					root_minor = str(int(tmp_partitions[partition]['minor']))
 					grub_root_minor = str(int(tmp_partitions[partition]['minor']) - 1)
 					root_device = device
+		#RESET the boot device if one is stored already
+		if self._install_profile.get_boot_device():
+			mbr_device = self._install_profile.get_boot_device()
+			self.logger.log("Found a mbr device: " + mbr_device)
 		
 		exitstatus2, kernel_names = GLIUtility.spawn("ls -1 --color=no " + root + "/boot/kernel-*", return_output=True)
 		self._logger.log("Output of Kernel Names:\n"+kernel_names)
@@ -433,6 +435,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		
 		grub_boot_drive = self._map_device_to_grub_device(boot_device)
 		grub_root_drive = self._map_device_to_grub_device(root_device)
+		grub_mbr_drive = self._map_device_to_grub_device(mbr_device)
 		
 		if (not grub_root_drive) or (not grub_boot_drive):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub',"Couldn't find the drive num in the list from the device.map")
@@ -486,7 +489,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		if not self._install_profile.get_boot_loader_mbr():
 			grubinstallstring +="setup ("+grub_boot_drive + "," + grub_boot_minor + ")\n"
 		else:
-			grubinstallstring +="setup ("+grub_boot_drive+")\n"
+			grubinstallstring +="setup ("+grub_mbr_drive+")\n"
 		grubinstallstring += "quit\n' | "+root+"/sbin/grub --batch --no-floppy"
 		if self._debug: self._logger.log("DEBUG: _configure_grub(): Grub install string: " + grubinstallstring)
 		exitstatus = GLIUtility.spawn(grubinstallstring, logfile=self._compile_logfile, append_log=True)
