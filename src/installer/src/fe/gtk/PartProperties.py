@@ -30,6 +30,7 @@ class PartProperties(gtk.Window):
 		if self.min_size == -1 or self.max_size == -1:
 			self.min_size = self.cur_size
 			self.max_size = self.cur_size
+		self.sync_slider_to_text = True
 
 		self.connect("delete_event", self.delete_event)
 		self.connect("destroy", self.destroy_event)
@@ -266,6 +267,9 @@ class PartProperties(gtk.Window):
 		self.destroy()
 
 	def part_resized(self, widget, allocation):
+		if not self.sync_slider_to_text:
+			self.sync_slider_to_text = True
+			return
 		hpaned_width = self.resize_hpaned.get_allocation().width - self.resize_hpaned.style_get_property("handle-size")
 		hpaned_pos = self.resize_hpaned.get_position()
 		part_space = float(hpaned_width - (hpaned_width - hpaned_pos)) / hpaned_width
@@ -287,12 +291,17 @@ class PartProperties(gtk.Window):
 		hpaned_pos = self.resize_hpaned.get_position()
 		if which_one == "part-size":
 			part_size_mb = round(long(self.resize_info_part_size.get_text()))
+			part_unalloc_mb = int(self.max_size - part_size_mb)
+			self.resize_info_unalloc_size.set_text(str(part_unalloc_mb))
 			if part_size_mb >= self.min_size and part_size_mb <= self.max_size:
 				hpaned_pos = round((float(part_size_mb) / self.max_size) * hpaned_width)
 		else:
 			part_unalloc_mb = round(long(self.resize_info_unalloc_size.get_text()))
+			part_size_mb = int(round(part_space * self.max_size))
+			self.resize_info_part_size.set_text(str(part_size_mb))
 			if (self.max_size - part_unalloc_mb) >= self.min_size:
 				hpaned_pos = hpaned_width - round((float(part_unalloc_mb) / self.max_size) * hpaned_width)
+		self.sync_slider_to_text = False
 		if hpaned_pos <= hpaned_width:
 			self.resize_hpaned.set_position(int(hpaned_pos))
 		else:
