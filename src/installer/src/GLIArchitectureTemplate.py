@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.231 2005/11/26 17:05:57 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.232 2005/11/26 17:46:58 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -354,7 +354,7 @@ class ArchitectureTemplate:
 			self._logger.mark()
 			self._logger.log("Starting emerge system.")
 			pkgs = self._get_packages_to_emerge("emerge -p system")  #currently quite the useless
-			if self._debug: self._logger.log("DEBUG: Packages to emerge: "+pkgs+"/ Now running emerge --emptytree system")
+			if self._debug: self._logger.log("DEBUG: Packages to emerge: "+str(pkgs)+"/ Now running emerge --emptytree system")
 			exitstatus = self._emerge("--emptytree system")
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage2Error", 'fatal','stage2', "Building the system failed!")
