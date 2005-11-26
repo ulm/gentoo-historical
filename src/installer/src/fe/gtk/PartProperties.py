@@ -297,7 +297,7 @@ class PartProperties(gtk.Window):
 				hpaned_pos = round((float(part_size_mb) / self.max_size) * hpaned_width)
 		else:
 			part_unalloc_mb = round(long(self.resize_info_unalloc_size.get_text()))
-			part_size_mb = int(round(part_space * self.max_size))
+			part_size_mb = int(round(self.max_size - part_unalloc_mb))
 			self.resize_info_part_size.set_text(str(part_size_mb))
 			if (self.max_size - part_unalloc_mb) >= self.min_size:
 				hpaned_pos = hpaned_width - round((float(part_unalloc_mb) / self.max_size) * hpaned_width)
