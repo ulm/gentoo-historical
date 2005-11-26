@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.232 2005/11/26 17:46:58 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.233 2005/11/26 18:57:12 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -583,7 +583,7 @@ class ArchitectureTemplate:
 				if not GLIUtility.exitsuccess(exitstatus):
 					raise GLIException("MkdirError", 'fatal','mount_local_partitions', "Making the mount point failed!")
 				else:
-					self._logger.log("Created mountpoint" + mountpoint)
+					self._logger.log("Created mountpoint " + mountpoint)
 			ret = GLIUtility.spawn("mount " + partition_type + mountopts + partition + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
