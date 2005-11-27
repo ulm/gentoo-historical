@@ -297,7 +297,6 @@ on partitioning and the various filesystem types available in Linux.""")
 				partsmenu.append(_(u"Clear Partitions On This Drive."))
 				code, part_to_edit = self._d.menu(_(u"Select a partition or unallocated space to edit\nKey: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size."), width=70, choices=self._dmenu_list_to_choices(partsmenu), cancel=_(u"Back"))
 				if code != self._DLG_OK: break
-				part_to_edit = partlist[int(part_to_edit)-1]
 				partmenuchoice = partsmenu[int(part_to_edit)-1]
 				#Check for recommended and clear here before setting the tmppart
 				if partmenuchoice == _(u"Set Recommended Layout (needs 4GB+)"):
@@ -314,6 +313,7 @@ on partitioning and the various filesystem types available in Linux.""")
 						self._d.msgbox(_(u"ERROR: could not clear the partition table!"))
 					continue
 				#all other cases (partitions)
+				part_to_edit = partlist[int(part_to_edit)-1]
 				tmppart = tmpparts[part_to_edit]
 				if tmppart.get_type() == "free":
 					# partition size first
