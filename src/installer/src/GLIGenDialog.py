@@ -292,9 +292,27 @@ on partitioning and the various filesystem types available in Linux.""")
 						entry += (tmppart.get_mountopts() or "none") + ", "
 						entry += str(tmppart.get_mb()) + "MB)"
 					partsmenu.append(entry)
+				#Add recommended partitioning option and clear option
+				partsmenu.append(_(u"Set Recommended Layout (needs 4GB+)"))
+				partsmenu.append(_(u"Clear Partitions On This Drive."))
 				code, part_to_edit = self._d.menu(_(u"Select a partition or unallocated space to edit\nKey: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size."), width=70, choices=self._dmenu_list_to_choices(partsmenu), cancel=_(u"Back"))
 				if code != self._DLG_OK: break
 				part_to_edit = partlist[int(part_to_edit)-1]
+				#Check for recommended and clear here before setting the tmppart
+				if part_to_edit == _(u"Set Recommended Layout (needs 4GB+)"):
+					try:
+						devices[drive_to_partition].do_recommended()
+					except GLIException, error:
+						self._d.msgbox(_(u"The recommended layout could NOT be set.  The following message was received:")+error.get_error_msg())
+					continue
+				if part_to_edit == _(u"Clear Partitions On This Drive."):
+					try:
+						devices[drive_to_partition].clear_partitions()
+						self._d.msgbox(_(u"Partition table cleared successfully"))
+					except:
+						self._d.msgbox(_(u"ERROR: could not clear the partition table!"))
+					continue
+				#all other cases (partitions)
 				tmppart = tmpparts[part_to_edit]
 				if tmppart.get_type() == "free":
 					# partition size first
