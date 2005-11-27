@@ -463,7 +463,8 @@ on partitioning and the various filesystem types available in Linux.""")
 				self._install_profile.set_install_stage(None, install_stage, None)
 			except:
 				self._d.msgbox(_(u"ERROR! Could not set install stage!"))
-		if install_stage == "3":
+		has_systempkgs = GLIUtility.is_file("/usr/livecd/systempkgs.txt")
+		if install_stage == "3" and has_systempkgs:
 			#Change the Yes/No buttons to new labels for this question.
 			self._d.add_persistent_args(["--yes-label", _(u"Create from CD")])
 			self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
