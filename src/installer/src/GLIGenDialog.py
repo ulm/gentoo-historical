@@ -7,6 +7,7 @@ import GLIInstallProfile
 import GLIClientConfiguration
 import GLIStorageDevice
 import GLIUtility
+from GLIException import GLIException
 import gettext
 _ = gettext.gettext
 #This is a parent class to centralize the code between UserGenCC and UserGenIP
@@ -303,7 +304,7 @@ on partitioning and the various filesystem types available in Linux.""")
 					try:
 						devices[drive_to_partition].do_recommended()
 					except GLIException, error:
-						self._d.msgbox(_(u"The recommended layout could NOT be set.  The following message was received:")+error.get_error_msg())
+						self._d.msgbox(_(u"The recommended layout could NOT be set.  The following message was received:")+error.get_error_msg(), width=70, height=15)
 					continue
 				if partmenuchoice == _(u"Clear Partitions On This Drive."):
 					try:
