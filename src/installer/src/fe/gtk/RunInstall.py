@@ -13,6 +13,7 @@ import sys
 import time
 import os
 import select
+import re
 
 class RunInstall(gtk.Window):
 
@@ -42,7 +43,11 @@ class RunInstall(gtk.Window):
 		self.logtextbuff.set_text("")
 		self.logtextview = gtk.TextView(self.logtextbuff)
 		self.logtextview.set_editable(False)
-		self.logpage.pack_start(self.logtextview, expand=True, fill=True)
+		self.logtextview.set_wrap_mode(gtk.WRAP_CHAR)
+		self.logtextviewscroll = gtk.ScrolledWindow()
+		self.logtextviewscroll.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+		self.logtextviewscroll.add(self.logtextview)
+		self.logpage.pack_start(self.logtextviewscroll, expand=True, fill=True)
 		self.notebook.append_page(self.logpage, tab_label=gtk.Label("Log"))
 
 		self.tailpage = gtk.VBox(False, 0)
@@ -50,12 +55,19 @@ class RunInstall(gtk.Window):
 		self.textbuffer.set_text("")
 		self.textview = gtk.TextView(self.textbuffer)
 		self.textview.set_editable(False)
-		self.tailpage.pack_start(self.textview, expand=True, fill=True)
+		self.textview.set_wrap_mode(gtk.WRAP_CHAR)
+		self.textview.create_tag(tag_name="good", foreground="green")
+		self.textview.create_tag(tag_name="warn", foreground="yellow")
+		self.textview.create_tag(tag_name="bad", foreground="red")
+		self.textviewscroll = gtk.ScrolledWindow()
+		self.textviewscroll.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+		self.textviewscroll.add(self.textview)
+		self.tailpage.pack_start(self.textviewscroll, expand=True, fill=True)
 		self.notebook.append_page(self.tailpage, tab_label=gtk.Label("Output"))
 
-		self.docpage = gtk.VBox(False, 0)
+#		self.docpage = gtk.VBox(False, 0)
 		# documentation
-		self.notebook.append_page(self.docpage, tab_label=gtk.Label("Documentation"))
+#		self.notebook.append_page(self.docpage, tab_label=gtk.Label("Documentation"))
 
 		self.globalbox.add(self.notebook)
 
@@ -100,7 +112,7 @@ class RunInstall(gtk.Window):
 			error_msg = "Exception received:\n" + str(ndata) + "\nPlease submit a bug report (after searching to make sure it's not a known issue and verifying you didn't do something stupid) with the contents of /var/log/install.log and /tmp/installprofile.xml and the version of the installer you used\n"
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, error_msg, -1)
-			self.textview.scroll_to_iter(iter_end, 0.0)
+#			self.textview.scroll_to_iter(iter_end, 0.0)
 			self.progress.set_fraction(1)
 			self.progress.set_text("Performing install failure cleanup")
 			self.controller.cc.start_failure_cleanup()
@@ -155,9 +167,14 @@ class RunInstall(gtk.Window):
 					self.output_log_is_link = True
 					continue
 				break
+			vadj = self.textviewscroll.get_vadjustment()
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, line, -1)
-			self.textview.scroll_to_iter(iter_end, 0.0)
+#			self.textview.scroll_to_iter(iter_end, 0.0)
+			if vadj.value == vadj.upper:
+				vadj = self.textviewscroll.get_vadjustment()
+				vadj.value = vadj.upper
+				self.textviewscroll.set_vadjustment(vadj)
 		return True
 
 	def tail_logfile(self):
@@ -172,9 +189,14 @@ class RunInstall(gtk.Window):
 		while 1:
 			line = self.install_log.readline()
 			if not line: break
+			vadj = self.logtextviewscroll.get_vadjustment()
 			iter_end = self.logtextbuff.get_iter_at_offset(-1)
 			self.logtextbuff.insert(iter_end, line, -1)
-			self.logtextview.scroll_to_iter(iter_end, 0.0)
+#			self.logtextview.scroll_to_iter(iter_end, 0.0)
+			if vadj.value == vadj.upper:
+				vadj = self.logtextviewscroll.get_vadjustment()
+				vadj.value = vadj.upper
+				self.logtextviewscroll.set_vadjustment(vadj)
 		return True
 
 	def make_visible(self):
