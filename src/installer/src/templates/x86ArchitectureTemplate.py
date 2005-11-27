@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.84 2005/11/27 22:09:40 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.85 2005/11/27 22:44:44 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -455,8 +455,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			bootloader_kernel_args = self._install_profile.get_bootloader_kernel_args()
 		else: bootloader_kernel_args = ""
 
-		kernel_names = map(string.strip, kernel_names)
-		initrd_names = map(string.strip, initrd_names)
+		kernel_names = map(string.strip, kernel_names.split("\n"))
+		initrd_names = map(string.strip, initrd_names.split("\n"))
 		for i in range(len(kernel_names)):
 			grub_kernel_name = kernel_names[i].split(root)[-1]
 		for i in range(len(initrd_names)):  #this should be okay if blank.
