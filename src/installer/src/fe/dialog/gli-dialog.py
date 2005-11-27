@@ -243,8 +243,11 @@ Do you have a previously generated XML file for the ClientConfiguration?
 			type_r = notification.get_type()
 			data = notification.get_data()
 			if type_r == "exception":
-				print "Exception received:"
-				print data
+				#Reset the Yes/No labels.
+				d.add_persistent_args(["--yes-label", "Yes"])
+				d.add_persistent_args(["--no-label","No"])
+				if d.yesno(_(u"There was an Exception received during the install that is outside of the normal install errors.  This is a bad thing. The error was:")+ str(data) + _(u"\nPlease submit a bug report (after searching to make sure it's not a known issue and verifying you didn't do something stupid) with the contents of /var/log/install.log and /tmp/installprofile.xml and the version of the installer you used\nDo you want to cleanup your system to attempt another install?"), width=70) == DLG_YES:
+					cc.start_failure_cleanup()
 			elif type_r == "progress":
 				#SECONDARY UPDATIN' GOIN ON IN HERE
 				diff = (data[0]*100)/num_steps
