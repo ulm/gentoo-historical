@@ -197,11 +197,8 @@ class RunInstall(gtk.Window):
 			self.logtextbuff.insert(iter_end, line, -1)
 			self.logtextview.scroll_to_iter(iter_end, 0.0)
 #			if vvalue == vmax:
-#				vadj = self.logtextviewscroll.get_vadjustment()
 #				print "vadj after adding text: upper - " + str(vadj.upper) + ", lower - " + str(vadj.lower) + ", max - " + str(vadj.upper - vadj.page_size) + ", value - " + str(vadj.value)
 #				vadj.value = vadj.upper - vadj.page_size
-#				self.logtextviewscroll.set_vadjustment(vadj)
-#				vadj = self.logtextviewscroll.get_vadjustment()
 #				print "vadj after adjusting: upper - " + str(vadj.upper) + ", lower - " + str(vadj.lower) + ", max - " + str(vadj.upper - vadj.page_size) + ", value - " + str(vadj.value)
 #				print
 		return True
