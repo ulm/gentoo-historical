@@ -56,9 +56,9 @@ class RunInstall(gtk.Window):
 		self.textview = gtk.TextView(self.textbuffer)
 		self.textview.set_editable(False)
 		self.textview.set_wrap_mode(gtk.WRAP_CHAR)
-		self.textview.create_tag(tag_name="good", foreground="green")
-		self.textview.create_tag(tag_name="warn", foreground="yellow")
-		self.textview.create_tag(tag_name="bad", foreground="red")
+#		self.textbuffer.create_tag(tag_name="good", foreground="green")
+#		self.textbuffer.create_tag(tag_name="warn", foreground="yellow")
+#		self.textbuffer.create_tag(tag_name="bad", foreground="red")
 		self.textviewscroll = gtk.ScrolledWindow()
 		self.textviewscroll.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		self.textviewscroll.add(self.textview)
@@ -167,14 +167,14 @@ class RunInstall(gtk.Window):
 					self.output_log_is_link = True
 					continue
 				break
-			vadj = self.textviewscroll.get_vadjustment()
+#			vadj = self.textviewscroll.get_vadjustment()
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, line, -1)
-#			self.textview.scroll_to_iter(iter_end, 0.0)
-			if vadj.value == vadj.upper:
-				vadj = self.textviewscroll.get_vadjustment()
-				vadj.value = vadj.upper
-				self.textviewscroll.set_vadjustment(vadj)
+			self.textview.scroll_to_iter(iter_end, 0.0)
+#			if vadj.value == vadj.upper:
+#				vadj = self.textviewscroll.get_vadjustment()
+#				vadj.value = vadj.upper
+#				self.textviewscroll.set_vadjustment(vadj)
 		return True
 
 	def tail_logfile(self):
@@ -189,14 +189,21 @@ class RunInstall(gtk.Window):
 		while 1:
 			line = self.install_log.readline()
 			if not line: break
-			vadj = self.logtextviewscroll.get_vadjustment()
+#			vadj = self.logtextviewscroll.get_vadjustment()
+#			vvalue = vadj.value
+#			vmax = vadj.upper - vadj.page_size
+#			print "vadj before adding text: upper - " + str(vadj.upper) + ", lower - " + str(vadj.lower) + ", max - " + str(vadj.upper - vadj.page_size) + ", value - " + str(vadj.value)
 			iter_end = self.logtextbuff.get_iter_at_offset(-1)
 			self.logtextbuff.insert(iter_end, line, -1)
-#			self.logtextview.scroll_to_iter(iter_end, 0.0)
-			if vadj.value == vadj.upper:
-				vadj = self.logtextviewscroll.get_vadjustment()
-				vadj.value = vadj.upper
-				self.logtextviewscroll.set_vadjustment(vadj)
+			self.logtextview.scroll_to_iter(iter_end, 0.0)
+#			if vvalue == vmax:
+#				vadj = self.logtextviewscroll.get_vadjustment()
+#				print "vadj after adding text: upper - " + str(vadj.upper) + ", lower - " + str(vadj.lower) + ", max - " + str(vadj.upper - vadj.page_size) + ", value - " + str(vadj.value)
+#				vadj.value = vadj.upper - vadj.page_size
+#				self.logtextviewscroll.set_vadjustment(vadj)
+#				vadj = self.logtextviewscroll.get_vadjustment()
+#				print "vadj after adjusting: upper - " + str(vadj.upper) + ", lower - " + str(vadj.lower) + ", max - " + str(vadj.upper - vadj.page_size) + ", value - " + str(vadj.value)
+#				print
 		return True
 
 	def make_visible(self):
