@@ -207,6 +207,7 @@ class Panel(GLIScreen.GLIScreen):
 
 		# Currently loaded modules
 		loaded_mod_frame = gtk.Frame(label="Loaded modules")
+		loaded_mod_frame.set_size_request(160, -1)
 		module_list_box = gtk.VBox(False, 3)
 		module_scroll = gtk.ScrolledWindow()
 		module_scroll.add_with_viewport(module_list_box)
@@ -309,6 +310,8 @@ class Panel(GLIScreen.GLIScreen):
 			self.verbose_yes_radio.set_active(True)
 		else:
 			self.verbose_no_radio.set_active(True)
+		if GLIUtility.ping("www.gentoo.org"):
+			self.already_setup_check.set_active(True)
 
 	def deactivate(self):
 		self.controller.client_profile.set_network_interface(None, self.interface_combo.get_child().get_text(), None)

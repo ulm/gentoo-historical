@@ -466,7 +466,7 @@ def ping(host):
 	host = str(host)
 	if not (is_hostname(host) or is_ip(host)):
 		return False    #invalid IP or hostname
-	status = spawn("ping -n -c 3 " + host)
+	status = spawn("ping -n -c 2 " + host)
 	if not exitsuccess(status):
 		return False
 	return True
