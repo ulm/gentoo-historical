@@ -18,23 +18,6 @@ import crypt
 import random
 from gettext import gettext as _
 
-#import Welcome
-#import ClientConfig
-#import Partitioning
-#import Stage
-#import PortageTree
-#import MakeDotConf
-#import Kernel
-#import Bootloader
-#import Timezone
-#import Networking
-#import Daemons
-#import ExtraPackages
-#import RcDotConf
-#import Users
-#import InstallSummary
-#import NetworkMounts
-
 import RunInstall
 
 class Installer:
@@ -48,7 +31,7 @@ class Installer:
 	install_window = None
 
 	menuItems = [ { 'text': _('Welcome'), 'module': __import__("Welcome") },
-                  { 'text': _('Client Config'), 'module': __import__("ClientConfig") },
+                  { 'text': _('Pre-install Config'), 'module': __import__("ClientConfig") },
                   { 'text': _('Partitioning'), 'module': __import__("Partitioning") },
                   { 'text': _('Network Mounts'), 'module': __import__("NetworkMounts") },
                   { 'text': _('Stage'), 'module': __import__("Stage") },
@@ -115,16 +98,9 @@ class Installer:
 		self.bottombox = gtk.HBox(False, 0)
 		self.globalbox.pack_end(self.bottombox, expand=False, fill=False, padding=5)
 		self.globalbox.pack_end(gtk.HSeparator(), expand=False, fill=False, padding=0)
-#		self.leftframe = gtk.Frame()
-#		self.rightframe = gtk.Frame()
-#		self.leftframe.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
-#		self.rightframe.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
 		self.rightframe = gtk.VBox(False, 0)
-#		self.topbox.pack_start(self.leftframe, expand=False, fill=False, padding=5)
 		self.topbox.pack_end(self.rightframe, expand=True, fill=True, padding=5)
 		self.globalbox.show_all();
-
-#		self.redraw_left_pane(firstrun=True)
 
 		# Right frame contents
 		self.panels = []
@@ -196,24 +172,15 @@ class Installer:
 
 	def redraw_buttons(self):
 		self.bottombox.hide_all()
-#		self.finishbutton.set_sensitive(self.SHOW_BUTTON_FINISH)
-#		self.forwardbutton.set_sensitive(self.SHOW_BUTTON_FORWARD)
-#		self.backbutton.set_sensitive(self.SHOW_BUTTON_BACK)
-#		self.helpbutton.set_sensitive(self.SHOW_BUTTON_HELP)
-#		self.exitbutton.set_sensitive(self.SHOW_BUTTON_EXIT)
 		self.buttons['finish'].set_sensitive(self.SHOW_BUTTON_FINISH)
 		self.buttons['forward'].set_sensitive(self.SHOW_BUTTON_FORWARD)
 		self.buttons['back'].set_sensitive(self.SHOW_BUTTON_BACK)
 		self.buttons['help'].set_sensitive(self.SHOW_BUTTON_HELP)
 		self.buttons['exit'].set_sensitive(self.SHOW_BUTTON_EXIT)
 		if self.SHOW_BUTTON_FORWARD:
-#			self.forwardbutton.set_flags(gtk.CAN_DEFAULT)
-#			self.forwardbutton.grab_default()
 			self.buttons['forward'].set_flags(gtk.CAN_DEFAULT)
 			self.buttons['forward'].grab_default()
 		elif self.SHOW_BUTTON_FINISH:
-#			self.finishbutton.set_flags(gtk.CAN_DEFAULT)
-#			self.finishbutton.grab_default()
 			self.buttons['finish'].set_flags(gtk.CAN_DEFAULT)
 			self.buttons['finish'].grab_default()
 #		if self.install_profile_xml_file != "":
@@ -255,7 +222,6 @@ class Installer:
 		self.panels[panel].activate()
 		self.futurebar.setpos(panel)
 		self.redraw_buttons()
-#		self.redraw_left_pane()
 
 	def run(self):
 		self.loadPanel()

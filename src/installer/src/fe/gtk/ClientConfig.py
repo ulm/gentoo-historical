@@ -10,7 +10,7 @@ from gettext import gettext as _
 
 class Panel(GLIScreen.GLIScreen):
 
-	title = _("Client Configuration (pre-install setup)")
+	title = _("Pre-install Configuration")
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
