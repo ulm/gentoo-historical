@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.86 2005/11/28 01:34:58 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.87 2005/11/28 01:42:22 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -457,10 +457,12 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 		kernel_names = map(string.strip, kernel_names.strip().split("\n"))
 		initrd_names = map(string.strip, initrd_names.strip().split("\n"))
-		for i in range(len(kernel_names)):
-			grub_kernel_name = kernel_names[i].split(root)[-1]
-		for i in range(len(initrd_names)):  #this should be okay if blank.
-			grub_initrd_name = initrd_names[i].split(root)[-1]
+		grub_kernel_name = kernel_names[-1].split(root)[-1]
+		if initrd_names: grub_initrd_name = initrd_names[-1].split(root)[-1]
+#		for i in range(len(kernel_names)):
+#			grub_kernel_name = kernel_names[i].split(root)[-1]
+#		for i in range(len(initrd_names)):  #this should be okay if blank.
+#			grub_initrd_name = initrd_names[i].split(root)[-1]
 		#i think this means take the last one it finds.. i.e. the newest.
 		
 		newgrubconf += "title=Gentoo Linux\n"
