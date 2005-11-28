@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.87 2005/11/28 01:42:22 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.88 2005/11/28 21:10:00 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -466,7 +466,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		#i think this means take the last one it finds.. i.e. the newest.
 		
 		newgrubconf += "title=Gentoo Linux\n"
-		newgrubconf += "root (" + grub_root_drive + "," + grub_root_minor + ")\n"
+		newgrubconf += "root (" + grub_boot_drive + "," + grub_boot_minor + ")\n"
 		if build_mode != "genkernel" and self._install_profile.get_kernel_source_pkg() != "livecd-kernel":  #using CUSTOM kernel
 			if foundboot:
 				newgrubconf += "kernel " + grub_kernel_name[5:] + " root="+root_device+root_minor+"\n"
