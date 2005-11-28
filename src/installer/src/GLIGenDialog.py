@@ -870,11 +870,11 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 	def set_kernel(self):
 	# This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
-		kernel_sources = [("vanilla-sources", _(u"The Unaltered Linux Kernel ver 2.6+ (safest)")),
+		kernel_sources = [("livecd-kernel", _(u"Copy over the current running kernel (fastest)")),
+		("vanilla-sources", _(u"The Unaltered Linux Kernel ver 2.6+ (safest)")),
 		("gentoo-sources", _(u"Gentoo's optimized 2.6+ kernel. (less safe)")),
 		("hardened-sources", _(u"Hardened sources for the 2.6 kernel tree")),
 		("grsec-sources",_(u"Vanilla sources with grsecurity patches")),
-		("livecd-kernel", _(u"Copy over the current running kernel (fastest)")),
 		(_(u"Other"), _(u"Choose one of the other sources available."))]
 		code, menuitem = self._d.menu(_(u"Choose which kernel sources to use for your system.  If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration."), choices=kernel_sources, width=77, height=17)
 		if code != self._DLG_OK: 
@@ -1505,7 +1505,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			if clock:
 				etc_files['conf.d/clock'] = {}
 		if not "rc.conf" in etc_files: 
-			if editor or prots or disp_manager or xsession:
+			if editor or disp_manager or xsession:
 				etc_files['rc.conf'] = {}
 		if keymap:
 			etc_files['conf.d/keymaps']['KEYMAP'] = keymap
