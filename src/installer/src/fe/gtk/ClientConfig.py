@@ -204,6 +204,16 @@ class Panel(GLIScreen.GLIScreen):
 		tmphbox.pack_start(self.verbose_yes_radio, expand=False, fill=False, padding=15)
 		tmptable.attach(tmphbox, 1, 2, 13, 14)
 		hbox.pack_start(tmptable, expand=False, fill=False, padding=0)
+
+		# Currently loaded modules
+		loaded_mod_frame = gtk.Frame(label="Loaded modules")
+		module_list_box = gtk.VBox(False, 6)
+		loaded_mod_frame.add(module_list_box)
+		loaded_modules = GLIUtility.spawn(r"lsmod | grep -v ^Module | cut -d ' ' -f 1", return_output=True)[1].strip().split("\n")
+		for module in loaded_modules:
+			module_list_box.pack_start(gtk.Label(module), expand=False, fill=False, padding=0)
+		hbox.pack_end(loaded_mod_frame, expand=False, fill=False, padding=5)
+
 		advbox.pack_start(hbox, expand=False, fill=False, padding=0)
 		self.notebook.append_page(advbox, gtk.Label(_("Misc.")))
 
