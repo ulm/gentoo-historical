@@ -207,14 +207,22 @@ class Panel(GLIScreen.GLIScreen):
 
 		# Currently loaded modules
 		loaded_mod_frame = gtk.Frame(label="Loaded modules")
-		loaded_mod_frame.set_size_request(160, -1)
+		loaded_mod_frame.set_size_request(200, -1)
 		module_list_box = gtk.VBox(False, 3)
+		module_list_box.set_border_width(7)
 		module_scroll = gtk.ScrolledWindow()
-		module_scroll.add_with_viewport(module_list_box)
+		module_scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+		module_scroll.set_shadow_type(gtk.SHADOW_NONE)
+		module_viewport = gtk.Viewport()
+		module_viewport.set_shadow_type(gtk.SHADOW_NONE)
+		module_viewport.add(module_list_box)
+		module_scroll.add(module_viewport)
 		loaded_mod_frame.add(module_scroll)
 		loaded_modules = GLIUtility.spawn(r"lsmod | grep -v ^Module | cut -d ' ' -f 1", return_output=True)[1].strip().split("\n")
 		for module in loaded_modules:
-			module_list_box.pack_start(gtk.Label("   " + module + "   "), expand=False, fill=False, padding=0)
+			tmplabel = gtk.Label(module)
+			tmplabel.set_alignment(0.0, 0.5)
+			module_list_box.pack_start(tmplabel, expand=False, fill=False, padding=0)
 		hbox.pack_end(loaded_mod_frame, expand=False, fill=False, padding=5)
 
 		advbox.pack_start(hbox, expand=False, fill=False, padding=0)
