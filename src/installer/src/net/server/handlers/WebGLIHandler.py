@@ -62,7 +62,7 @@ class WebGLIHandler(handler.Handler):
 		data += '<input name="RootMountPoint" type="text" length="80" maxlength="80" value="/mnt/gentoo">'
 		data += " </td></tr></table>\n"
 		
-		if 1:#not GLIUtility.ping("www.gentoo.org"): # and local_install:
+		if not GLIUtility.ping("www.gentoo.org"): # and local_install:
 			data += '<hr><table><tr><td>'
 			data += "LiveCD Network Configuration string here. <br>"
 			device_list = GLIUtility.get_eth_devices()
@@ -840,7 +840,15 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 		data = "<p>Portage Tree Sync Type:</p>"
 		synctype = self.shared_info.install_profile.get_portage_tree_sync_type()
 		snapshoturi = self.shared_info.install_profile.get_portage_tree_snapshot_uri()
-		
+		if self.shared_info.install_profile.get_dynamic_stage3():  #special case
+			data += "<p><b>Since you are doing a dynamic stage3 install, it requires the use of the portage snapshot contained on the livecd.  This has been auto-set.</b></p>\n"
+			try:
+				self.shared_info.install_profile.set_portage_tree_sync_type(None,"snapshot", None)
+				cd_snapshot_uri = GLIUtility.get_cd_snapshot_uri()
+				self.shared_info.install_profile.set_portage_tree_snapshot_uri(None, cd_snapshot_uri, None)
+			except:
+				data += "ERROR! Could not set the portage cd snapshot URI!"
+			return self.wrap_in_webgli_template(data)
 		data += '<form name="portage" action="/webgli/saveportage" method="POST" enctype="multipart/form-data">'
 		data += """<p>Which method do you want to use to sync the portage tree for the installation? If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd.</p>
 	<table width="100%"  border="1">
@@ -887,6 +895,9 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 
 	def globaluse(self):
 		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"
+		if self.shared_info.install_profile.get_dynamic_stage3():
+			data += "<b>You have selected a dynamic stage3 installation.  This setting forbids you from changing your USE flags until after the installation to prevent breaking the stage3 creation process.</b>"
+			return self.wrap_in_webgli_template(data)
 		etc_files = self.shared_info.install_profile.get_etc_files()
 		if etc_files.has_key("make.conf"):
 			make_conf = etc_files['make.conf']
@@ -939,6 +950,9 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def localuse(self):
 		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"
+		if self.shared_info.install_profile.get_dynamic_stage3():
+			data += "<b>You have selected a dynamic stage3 installation.  This setting forbids you from changing your USE flags until after the installation to prevent breaking the stage3 creation process.</b>"
+			return self.wrap_in_webgli_template(data)
 		etc_files = self.shared_info.install_profile.get_etc_files()
 		if etc_files.has_key("make.conf"):
 			make_conf = etc_files['make.conf']
@@ -1000,6 +1014,9 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def makedotconf(self):
 		data = "<b>Make.conf Settings:</b><br>\n"
+		if self.shared_info.install_profile.get_dynamic_stage3():
+			data += "<b>You have selected a dynamic stage3 installation.  This setting forbids you from changing your USE flags until after the installation to prevent breaking the stage3 creation process.</b>"
+			return self.wrap_in_webgli_template(data)
 		data += "<b>NOTE: Your old values are NOT loaded here.  Do not save these settings without making sure all values are what you want.  To keep your old values just skip this step.</b>\b"
 		data += '<form action="/webgli/savemakedotconf" method="POST" enctype="multipart/form-data">'
 		arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
@@ -1400,6 +1417,22 @@ Please be patient while the screens load. It may take awhile.
 		return self.wrap_in_webgli_template(data)
 	def bootloader(self):
 		arch = self.shared_info.client_profile.get_architecture_template()
+		parts = self.shared_info.install_profile.get_partition_tables()
+		#Bootloader code yanked from the x86ArchTemplate
+		if self.shared_info.install_profile.get_boot_device():
+			boot_device = self.shared_info.install_profile.get_boot_device()
+		else:
+			boot_device = ""
+			foundboot = False
+			for device in parts:
+				tmp_partitions = parts[device].get_install_profile_structure()
+				for partition in tmp_partitions:
+					mountpoint = tmp_partitions[partition]['mountpoint']
+					if (mountpoint == "/boot"):
+						foundboot = True
+					if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
+						boot_device = device
+
 		bootloader = self.shared_info.install_profile.get_boot_loader_pkg()
 		arch_loaders = { 'x86': [
 				("grub",(u"GRand Unified Bootloader, newer, RECOMMENDED")),
@@ -1426,8 +1459,18 @@ Please be patient while the screens load. It may take awhile.
 		data += '<input name="bootmbr" type="checkbox" id="bootmbr" value="True"'
 		if bootmbr:
 			data += " checked"
-		data += """>Install to MBR</p>
-		<p>If you have any additional optional arguments you want to pass to the kernel at boot, type them here: 
+		data += ">Install to MBR</p>"
+		
+		if boot_device[-1] != 'a':
+			#show the menu.
+			data += _(u"Your boot device may not be correct.  It is currently set to %s, but this device may not be the first to boot.  Usually boot devices end in 'a' such as hda or sda.") % boot_device
+			data += _(u"  Please confirm your boot device.<br>")
+			#grab choies from the partiton list.
+			boot_drive_choices = []
+			for device in parts:
+				data += '<input type="radio" name="boot_drive_choice" value="'+device+'">'+device+"<br>\n"
+				
+		data += """<br><p>If you have any additional optional arguments you want to pass to the kernel at boot, type them here: 
 		<input name="bootargs" type="text" id="bootargs" """
 		bootargs = self.shared_info.install_profile.get_bootloader_kernel_args()
 		if bootargs:
@@ -1451,6 +1494,11 @@ Please be patient while the screens load. It may take awhile.
 			if self.post_params['bootmbr']:
 				try:
 					self.shared_info.install_profile.set_boot_loader_mbr(None,self.post_params['bootmbr'],None)
+					if self.post_params['boot_drive_choice']:
+						try:
+							self._install_profile.set_boot_device(None,boot_drive_choice,None)
+						except:
+							data += "ERROR! Could not set the boot device!"+boot_drive_choice
 				except:
 					data += "ERROR: Could not set the bootloader MBR flag!"
 			else:
@@ -1816,7 +1864,14 @@ Please be patient while the screens load. It may take awhile.
 				if packages:
 					self.shared_info.install_profile.set_install_packages(None, packages, None)
 			except:
-				data += _(u"ERROR! Could not set the install packages! List of packages:<br>\n")
+				data += _(u"ERROR! Could not set the install packages! <br>\n")
+		if self.post_params['manualpackages']:
+			try:
+				packages = self.post_params['manualpackages']
+				if packages:
+					self.shared_info.install_profile.set_install_packages(None, packages, None)
+			except:
+				data += _(u"ERROR! Could not set the manual install packages! <br>\n")
 		if self.shared_info.install_profile.get_install_packages():
 			install_packages = self.shared_info.install_profile.get_install_packages()
 			if isinstance(install_packages, str):
@@ -1882,7 +1937,9 @@ Please be patient while the screens load. It may take awhile.
 				for pkg in pkgs:
 					if pkg in install_packages:
 						data += '<tr><td></td><td> <input type="checkbox" name="packages" value="'+pkg+'" checked>'+pkg+'</td><td>'+pkgs[pkg]+"</td></tr>\n"
-			
+			data += "\n</table>"
+			data += '<br>Manually specify a list of packages (overwrites checked list):<input type="text" name="manualpackages"><br>'
+			data += '<input type="submit" name="SavePackages" value="Save Packages"></form>'
 		return self.wrap_in_webgli_template(data)
 	def savepackages(self):
 		data = ""
