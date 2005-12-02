@@ -18,6 +18,7 @@ class Setup_CConfig(GLIGenCF):
 	def __init__(self, client_profile, local_install, advanced_mode):
 		GLIGenCF.__init__(self, client_profile, local_install, advanced_mode)
 		self.set_arch_template()
+		self.set_verbose()
 		self.set_logfile()
 		self.set_root_mount_point()
 		self.set_client_networking()

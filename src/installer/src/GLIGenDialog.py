@@ -70,7 +70,17 @@ class GLIGenCF(GLIGen):
 					self._client_profile.set_architecture_template(None, menuitem, None)
 				except: 
 					self._d.msgbox(_(u"Error!  Undefined architecture template specified or found on the current machine"))
-		
+	def set_verbose(self):
+		#Don't show unless advanced.
+		if self.advanced_mode:
+			#Change the Yes/No buttons back.
+			self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+			self._d.add_persistent_args(["--no-label", _(u"No")])
+			if self._d.yesno(_(u"Do you want debugging output enabled during the install?  This is mainly meant to help the developers debug any bugs."), width=60) == self._DLG_YES:
+				self._client_profile.set_verbose(None, True, None)
+			else:
+				self._client_profile.set_verbose(None, False, None)
+
 	def set_logfile(self):
 		#If not advanced, the default will suffice.
 		if self.advanced_mode:
@@ -122,13 +132,17 @@ Enter the desired filename and path for the install log (the default is recommen
 			code, dhcp_options = self._d.inputbox(_(u"If you have any additional DHCP options to pass, type them here in a space-separated list.  If you have none, just press Enter."), height=13, width=50)
 		else:
 			network_type = 'static'
-			code, data = self._d.form(_(u'Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields are complete!'), 
+			code, data = self._d.form(_(u'Enter your networking information: (See Chapter 3 of the Handbook for more information)  Your broadcast address is probably your IP address with 255 as the last tuple.  Do not press Enter until all fields you intend to fill out are complete!'), 
 			((_(u'Enter your IP address:'), 15),
 			 (_(u'Enter your Broadcast address:'), 15),
 			 (_(u'Enter your Netmask:'),15,'255.255.255.0'),
 			 (_(u'Enter your default gateway:'),15), 
-			 (_(u'Enter a DNS server:'),15,'128.118.25.3')))
-			(ip_address, broadcast, netmask, gateway, dnsservers) = data[:-1].split('\n')
+			 (_(u'Enter a DNS server:'),15,'128.118.25.3'),
+			 (_(u'Enter a HTTP Proxy IP:'), 15,self._client_profile.get_http_proxy()),
+			 (_(u'Enter a FTP Proxy IP:'), 15, self._client_profile.get_ftp_proxy()), 
+			 (_(u'Enter a RSYNC Proxy:'),15,self._client_profile.get_rsync_proxy())
+			))
+			(ip_address, broadcast, netmask, gateway, dnsservers, http_proxy, ftp_proxy, rsync_proxy) = data[:-1].split('\n')
 			if code != self._DLG_OK: 
 				return
 		#Set the info now that it's all gathered.
@@ -144,6 +158,13 @@ Enter the desired filename and path for the install log (the default is recommen
 			else:
 				if dhcp_options:
 					self._client_profile.set_network_dhcp_options(None, dhcp_options, None)
+			if http_proxy:
+				self._client_profile.set_http_proxy(None, http_proxy, None)
+			if ftp_proxy:
+				self._client_profile.set_ftp_proxy(None, ftp_proxy, None)
+			if rsync_proxy:
+				self._client_profile.set_rsync_proxy(None, rsync_proxy, None)
+								
 		except: 
 			self._d.msgbox(_(u"ERROR! Could not set networking information!"))
 
