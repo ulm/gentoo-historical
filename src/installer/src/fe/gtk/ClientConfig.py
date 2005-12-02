@@ -55,6 +55,19 @@ class Panel(GLIScreen.GLIScreen):
 		hbox.pack_start(self.basic_dhcp_radio, expand=False, fill=False, padding=0)
 		basicbox.pack_start(hbox, expand=False, fill=False, padding=0)
 		hbox = gtk.HBox(False, 0)
+		tmptable = gtk.Table(rows=1, columns=3)
+		tmptable.set_col_spacings(6)
+		tmptable.set_row_spacings(5)
+		tmptable.attach(gtk.Label("        "), 0, 1, 0, 1)
+		tmplabel = gtk.Label(_("DHCP options:"))
+		tmplabel.set_alignment(0.0, 0.5)
+		tmptable.attach(tmplabel, 1, 2, 0, 1)
+		self.dhcp_options_entry = gtk.Entry()
+		self.dhcp_options_entry.set_width_chars(35)
+		tmptable.attach(self.dhcp_options_entry, 2, 3, 0, 1)
+		hbox.pack_start(tmptable, expand=False, fill=False, padding=0)
+		basicbox.pack_start(hbox, expand=False, fill=False, padding=3)
+		hbox = gtk.HBox(False, 0)
 		self.basic_static_radio = gtk.RadioButton(group=self.basic_dhcp_radio, label=_("Static"))
 		self.basic_static_radio.connect("toggled", self.dhcp_static_toggled, "static")
 		hbox.pack_start(self.basic_static_radio, expand=False, fill=False, padding=0)
@@ -98,29 +111,47 @@ class Panel(GLIScreen.GLIScreen):
 		hbox.pack_start(tmptable, expand=False, fill=False, padding=0)
 		basicbox.pack_start(hbox, expand=False, fill=False, padding=3)
 		hbox = gtk.HBox(False, 0)
-		tmptable = gtk.Table(rows=5, columns=2)
+		tmptable = gtk.Table(rows=1, columns=5)
 		tmptable.set_col_spacings(6)
 		tmptable.set_row_spacings(5)
-#		tmptable.attach(gtk.Label("   "), 0, 2, 0, 1)
+		tmptable.attach(gtk.Label("   "), 0, 2, 0, 1)
 		tmplabel = gtk.Label()
 		tmplabel.set_markup("<b><u>" + _("Proxies:") + "</u></b>")
 		tmplabel.set_alignment(0.0, 0.5)
-		tmptable.attach(tmplabel, 0, 2, 1, 2)
-		tmplabel = gtk.Label(_("HTTP Proxy:"))
+		tmptable.attach(tmplabel, 0, 5, 1, 2)
+
+		tmpbox = gtk.HBox(False, 5)
+		tmplabel = gtk.Label(_("HTTP:"))
 		tmplabel.set_alignment(0, 0.5)
-		tmptable.attach(tmplabel, 0, 1, 2, 3)
+#		tmptable.attach(tmplabel, 0, 1, 2, 3)
+		tmpbox.pack_start(tmplabel, expand=False, fill=False)
 		self.http_proxy_entry = gtk.Entry()
-		tmptable.attach(self.http_proxy_entry, 1, 2, 2, 3)
-		tmplabel = gtk.Label(_("FTP Proxy:"))
+		tmpbox.pack_start(self.http_proxy_entry, expand=False, fill=False)
+#		tmptable.attach(self.http_proxy_entry, 1, 2, 2, 3)
+		tmptable.attach(tmpbox, 0, 1, 2, 3)
+		tmptable.attach(gtk.Label("    "), 1, 2, 2, 3)
+
+		tmpbox = gtk.HBox(False, 5)
+		tmplabel = gtk.Label(_("FTP:"))
 		tmplabel.set_alignment(0, 0.5)
-		tmptable.attach(tmplabel, 0, 1, 3, 4)
+#		tmptable.attach(tmplabel, 0, 1, 3, 4)
+		tmpbox.pack_start(tmplabel, expand=False, fill=False)
 		self.ftp_proxy_entry = gtk.Entry()
-		tmptable.attach(self.ftp_proxy_entry, 1, 2, 3, 4)
-		tmplabel = gtk.Label(_("Rsync Proxy:"))
+		tmpbox.pack_start(self.ftp_proxy_entry, expand=False, fill=False)
+#		tmptable.attach(self.ftp_proxy_entry, 1, 2, 3, 4)
+		tmptable.attach(tmpbox, 2, 3, 2, 3)
+		tmptable.attach(gtk.Label("    "), 3, 4, 2, 3)
+
+		tmpbox = gtk.HBox(False, 5)
+		tmplabel = gtk.Label(_("Rsync:"))
 		tmplabel.set_alignment(0, 0.5)
-		tmptable.attach(tmplabel, 0, 1, 4, 5)
+#		tmptable.attach(tmplabel, 0, 1, 4, 5)
+		tmpbox.pack_start(tmplabel, expand=False, fill=False)
 		self.rsync_proxy_entry = gtk.Entry()
-		tmptable.attach(self.rsync_proxy_entry, 1, 2, 4, 5)
+		tmpbox.pack_start(self.rsync_proxy_entry, expand=False, fill=False)
+#		tmptable.attach(self.rsync_proxy_entry, 1, 2, 4, 5)
+		tmptable.attach(tmpbox, 4, 5, 2, 3)
+
 		hbox.pack_start(tmptable, expand=False, fill=False, padding=0)
 		basicbox.pack_start(hbox, expand=False, fill=False, padding=3)
 		self.notebook.append_page(basicbox, gtk.Label(_("Networking")))
@@ -254,12 +285,14 @@ class Panel(GLIScreen.GLIScreen):
 				self.broadcast_entry.set_sensitive(False)
 				self.gateway_entry.set_sensitive(False)
 				self.dns_entry.set_sensitive(False)
+				self.dhcp_options_entry.set_sensitive(True)
 			else:
 				self.ip_address_entry.set_sensitive(True)
 				self.netmask_entry.set_sensitive(True)
 				self.broadcast_entry.set_sensitive(True)
 				self.gateway_entry.set_sensitive(True)
 				self.dns_entry.set_sensitive(True)
+				self.dhcp_options_entry.set_sensitive(False)
 
 	def already_setup_toggled(self, widget):
 		if self.already_setup_check.get_active():
@@ -271,6 +304,7 @@ class Panel(GLIScreen.GLIScreen):
 			self.broadcast_entry.set_sensitive(False)
 			self.gateway_entry.set_sensitive(False)
 			self.dns_entry.set_sensitive(False)
+			self.dhcp_options_entry.set_sensitive(False)
 		else:
 			self.interface_combo.set_sensitive(True)
 			self.basic_dhcp_radio.set_sensitive(True)
@@ -281,6 +315,8 @@ class Panel(GLIScreen.GLIScreen):
 				self.broadcast_entry.set_sensitive(True)
 				self.gateway_entry.set_sensitive(True)
 				self.dns_entry.set_sensitive(True)
+			else:
+				self.dhcp_options_entry.set_sensitive(True)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = True
@@ -301,6 +337,7 @@ class Panel(GLIScreen.GLIScreen):
 		if ip == "dhcp" or not ip:
 			self.basic_dhcp_radio.set_active(True)
 			self.dhcp_static_toggled(self.basic_dhcp_radio, "dhcp")
+			self.dhcp_options_entry.set_text(self.controller.client_profile.get_network_dhcp_options())
 		else:
 			self.basic_static_radio.set_active(True)
 		self.chroot_dir_entry.set_text(self.controller.client_profile.get_root_mount_point())
@@ -326,6 +363,7 @@ class Panel(GLIScreen.GLIScreen):
 		if not self.already_setup_check.get_active():
 			if self.basic_dhcp_radio.get_active():
 				self.controller.client_profile.set_network_type(None, "dhcp", None)
+				self.controller.client_profile.set_network_dhcp_options(None, self.dhcp_options_entry.get_text(), None)
 			else:
 				self.controller.client_profile.set_network_type(None, "static", None)
 				self.controller.client_profile.set_network_ip(None, self.ip_address_entry.get_text(), None)
