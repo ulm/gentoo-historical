@@ -707,6 +707,17 @@ class Panel(GLIScreen.GLIScreen):
 		
 		# load everything
 		interfaces = self.controller.install_profile.get_network_interfaces()
+
+		# Preload networking info from CC...stolen from gli-dialog
+		CC_iface = self._client_profile.get_network_interface()
+		if CC_iface and (CC_iface not in interfaces):
+			#The CC has a network config that's not already there.  Preload it.
+			CC_net_type = self._client_profile.get_network_type()
+			if CC_net_type == 'dhcp':
+				interfaces[CC_iface] = ('dhcp', self._client_profile.get_network_dhcp_options(), None)
+			else:
+				interfaces[CC_iface] = (self._client_profile.get_network_ip(), self._client_profile.get_network_broadcast(), self._client_profile.get_network_netmask())
+
 		try:
 			dev, gatewayip = self.controller.install_profile.get_default_gateway()
 		except:
