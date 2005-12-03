@@ -60,6 +60,13 @@ class WebGLIHandler(handler.Handler):
 		#Choose the root mountpoint location
 		data += "<hr>Root mountpoint selection string here. <br>\n"
 		data += '<input name="RootMountPoint" type="text" length="80" maxlength="80" value="/mnt/gentoo">'
+		
+		#Choose debug mode.
+		data += "<hr>Debug Mode: \n"
+		data += '<input name="Verbose" type="radio" value="True">Yes'
+		data += '<input name="Verbose" type="radio" value="False" checked>No'
+
+		
 		data += " </td></tr></table>\n"
 		
 		if not GLIUtility.ping("www.gentoo.org"): # and local_install:
@@ -185,6 +192,12 @@ class WebGLIHandler(handler.Handler):
 				self.shared_info.client_profile.set_enable_ssh(None, self.post_params['EnableSSH'], None)
 			except:
 				data += "ERROR: Could not set the SSH flag<BR>\n"
+		if 'Verbose' in self.post_params:
+			data += "Found an Verbose Mode Flag: you set it to " + self.post_params['Verbose'] + "<BR>\n"
+			try:
+				self.shared_info.client_profile.set_verbose(None, self.post_params['Verbose'], None)
+			except:
+				data += "ERROR: Could not set the Verbose mode flag<BR>\n"
 		if ('RootPass1' in self.post_params) and ('RootPass2' in self.post_params):
 			data += "Found a root password1: you submitted " + self.post_params['RootPass1'] + "<BR>\n"
 			data += "Found a root password2: you submitted " + self.post_params['RootPass2'] + "<BR>\n"
@@ -823,6 +836,9 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 			if 'dynamic' in self.post_params:
 				try:
 					self.shared_info.install_profile.set_dynamic_stage3(None, True, None)
+					self.shared_info.install_profile.set_portage_tree_sync_type(None,"snapshot", None)
+					cd_snapshot_uri = GLIUtility.get_cd_snapshot_uri()
+					self.shared_info.install_profile.set_portage_tree_snapshot_uri(None, cd_snapshot_uri, None)
 				except:
 					data += "ERROR: Could not set dynamic stage 3.<br>\n"
 			else:
@@ -842,12 +858,6 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 		snapshoturi = self.shared_info.install_profile.get_portage_tree_snapshot_uri()
 		if self.shared_info.install_profile.get_dynamic_stage3():  #special case
 			data += "<p><b>Since you are doing a dynamic stage3 install, it requires the use of the portage snapshot contained on the livecd.  This has been auto-set.</b></p>\n"
-			try:
-				self.shared_info.install_profile.set_portage_tree_sync_type(None,"snapshot", None)
-				cd_snapshot_uri = GLIUtility.get_cd_snapshot_uri()
-				self.shared_info.install_profile.set_portage_tree_snapshot_uri(None, cd_snapshot_uri, None)
-			except:
-				data += "ERROR! Could not set the portage cd snapshot URI!"
 			return self.wrap_in_webgli_template(data)
 		data += '<form name="portage" action="/webgli/saveportage" method="POST" enctype="multipart/form-data">'
 		data += """<p>Which method do you want to use to sync the portage tree for the installation? If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd.</p>
@@ -874,7 +884,7 @@ Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for 
 		<input name="snapshoturi" type="text" id="snapshoturi" size="90" """
 		if snapshoturi:
 			data += ' value="'+snapshoturi+'">'
-		data += """or </p><input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=portage&baseuri=' + document.portage.tarballuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')"><p><input type="submit" name="saveportage" value="Save Portage Settings"></form>"""
+		data += """or </p><input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=portage&baseuri=' + document.portage.snapshoturi.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')"><p><input type="submit" name="saveportage" value="Save Portage Settings"></form>"""
 		return self.wrap_in_webgli_template(data)
 	def saveportage(self):
 		data = ""
@@ -1015,8 +1025,7 @@ Please be patient while the screens load. It may take awhile.
 	def makedotconf(self):
 		data = "<b>Make.conf Settings:</b><br>\n"
 		if self.shared_info.install_profile.get_dynamic_stage3():
-			data += "<b>You have selected a dynamic stage3 installation.  This setting forbids you from changing your USE flags until after the installation to prevent breaking the stage3 creation process.</b>"
-			return self.wrap_in_webgli_template(data)
+			data += "<b>You have selected a dynamic stage3 installation.  This setting forbids you from changing some make.conf settings until after the installation to prevent breaking the stage3 creation process.</b>"
 		data += "<b>NOTE: Your old values are NOT loaded here.  Do not save these settings without making sure all values are what you want.  To keep your old values just skip this step.</b>\b"
 		data += '<form action="/webgli/savemakedotconf" method="POST" enctype="multipart/form-data">'
 		arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
@@ -1061,8 +1070,11 @@ Please be patient while the screens load. It may take awhile.
 		</tr>
 	</table><hr>
 	<h3>CHOST Setting:</h3>
-		<select name="chost" size="4" id="chost">"""
-
+		<select name="chost" size="4" id="chost" """
+		if self.shared_info.install_profile.get_dynamic_stage3():
+			data += "disabled>"
+		else:
+			data += ">"
 		if self.shared_info.client_profile.get_architecture_template() == "x86":
 			data += "<option value=\"i386-pc-linux-gnu\">i386-pc-linux-gnu</option>\n"
 			data += "<option value=\"i486-pc-linux-gnu\">i486-pc-linux-gnu</option>\n"
@@ -1088,7 +1100,10 @@ Please be patient while the screens load. It may take awhile.
 <hr>
 	<table width="100%"  border="1">
 		<tr>
-			<td scope="col"><input name="unstable" type="checkbox" id="unstable" value="unstable">
+			<td scope="col"><input name="unstable" type="checkbox" id="unstable" value="unstable" """
+		if self.shared_info.install_profile.get_dynamic_stage3():
+			data += "disabled"
+		data += """>
 			Use unstable (~arch) </td>
 			<td scope="col"><input name="features" type="checkbox" id="binary" value="buildpkg">
 			Build binary packages (buildpkg)</td>
