@@ -608,7 +608,7 @@ on partitioning and the various filesystem types available in Linux.""")
 	def set_make_conf(self):
 	# This section will be for setting things like CFLAGS, ACCEPT_KEYWORDS, and USE
 		#special case for dynamic stage3
-		if self._install_profile.get_dynamic_stage3():
+		if self._install_profile.get_dynamic_stage3() and not self.advanced_mode:
 			return
 		
 		etc_files = self._install_profile.get_etc_files()
@@ -660,7 +660,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			temp_use += flag + " "
 		make_conf["USE"] = temp_use
 		
-		if self.advanced_mode:
+		if not self._install_profile.get_dynamic_stage3() and self.advanced_mode:
 			#Second, set the ACCEPT_KEYWORDS
 			#Change the Yes/No buttons to new labels for this question.
 			self._d.add_persistent_args(["--yes-label", _(u"Stable")])
@@ -679,6 +679,13 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			("GENTOO_MIRRORS", _(u"Specify mirrors to use for source retrieval.")),
 			("SYNC", _(u"Specify server used by rsync to sync the portage tree.")),
 			(_(u"Other"), _(u"Specify your own variable and value."))]
+			if self._install_profile.get_dynamic_stage3():  #SPECIAL LIST WITHOUT CHOST
+				menulist = [("CFLAGS",_(u"Edit your C Flags and Optimization level")),
+					("MAKEOPTS", _(u"Specify number of parallel makes (-j) to perform.")),
+					("FEATURES", _(u"Change portage functionality settings. (distcc/ccache)")),
+					("GENTOO_MIRRORS", _(u"Specify mirrors to use for source retrieval.")),
+					("SYNC", _(u"Specify server used by rsync to sync the portage tree.")),
+					(_(u"Other"), _(u"Specify your own variable and value."))]
 			code, menuitem = self._d.menu(_(u"For experienced users, the following /etc/make.conf variables can also be defined.  Choose a variable to edit or Done to continue."), choices=menulist, cancel=_(u"Done"), width=77)
 			if code != self._DLG_OK: 
 				break
