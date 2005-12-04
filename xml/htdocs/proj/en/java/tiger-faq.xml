@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/java/Attic/tiger-faq.xml,v 1.1 2005/12/04 06:27:18 nichoj Exp $ -->
+
+<guide link="/doc/en/guide.xml" lang="en">
+<title>Gentoo Java 1.5 FAQ</title>
+
+<author title="Author">
+  <mail link="karltk@gentoo.org">Karl Trygve Kalleberg</mail>
+</author>
+
+<author title="Author">
+  <mail link="axxo@gentoo.org">Thomas Mathijs</mail>
+</author>
+
+<author title="Author">
+  <mail link="nichoj@gentoo.org">Joshua Nichols</mail>
+</author>
+
+<abstract>
+This FAQ covers issues related to Java 1.5 support on Gentoo.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2005-11-02</date>
+
+<chapter>
+<title>Why is Java 1.5 still hard-masked?</title>
+<section>
+<body>
+
+<p>
+  Java 1.5 is still hard masked because there are a few issues which make it 
+  unsafe to use a 1.5 JDK as your system VM.
+</p>
+
+<p>
+  The first issue with the Java 1.5 is backwards compatibility. If 
+  you compile packages with the 1.5 JDK, the default behavior is that 
+  the compiled classes can only be used in a 1.5 VM.
+</p>
+
+<p>
+  The Java herd is working on a solution to this which will compile classes for the lowest possible VM, as is detailed below.
+</p>
+
+<p>
+  The other significant issue is that there are packages which are not 
+  compatible with JDK 1.5, as they currently exist in portage. For 
+  example, several abstract classes and interfaces now have new abstract 
+  methods in 1.5. This means that packages would need to be patched to 
+  override these abstract methods. Failing that, you could also try using 
+  1.4 to compile the offending package.  However, due to the backwards 
+  compatibility problem mentioned above, you wouldn't be able to use 
+  external libraries, because they were compiled only for 1.5.
+</p>
+
+</body>
+</section>
+</chapter>
+
+
+<chapter>
+<title>How can I safely use Java 1.5 without breaking my system?</title>
+<section>
+<body>
+<p>
+As discussed already, you should not use a 1.5 JDK as your system VM. However, it is safe to use as your user's VM.
+</p>
+
+<p>
+  The first step is to emerge sun-jdk-1.5 and any 1.4 JDK, if you have not already done so.
+</p>
+
+<pre caption="Emerge JDKs"><comment>You need to unmask sun-jdk-1.5 first.</comment>
+# <i>echo "=dev-java/sun-jdk-1.5*" >> /etc/portage/package.unmask</i>
+# <i>emerge =sun-jdk-1.5*</i>
+<comment>Now emerge a 1.4 JDK. We'll use blackdown in this case.</comment>
+# <i>emerge =blackdown-jdk-1.4*</i>
+</pre>
+
+<p>
+  The next step is to ensure that your system VM is set to a 1.4 JDK.
+</p>
+
+<pre caption="Set system VM"><comment>Use java-config to list installed VMs</comment>
+# <i>java-config -L</i>
+[sun-jdk-1.5.0.05] "Sun JDK 1.5.0.05" (/etc/env.d/java/20sun-jdk-1.5.0.05)
+[kaffe-1.1.6] "Kaffe 1.1.6" (/etc/env.d/java/20kaffe-1.1.6)
+[blackdown-jdk-1.4.2.02] "Blackdown JDK 1.4.2.02" (/etc/env.d/java/20blackdown-jdk-1.4.2.02)
+
+<comment>Set the system VM to use the 1.4 JDK</comment>
+# <i>java-config -S blackdown-jdk-1.4.2.02</i>
+System Virtual Machine set
+You may want to update your enviroment by running:
+        "/usr/sbin/env-update &amp;&amp; source /etc/profile"
+# <i>/usr/sbin/env-update &amp;&amp; source /etc/profile</i>
+</pre>
+
+<p>
+  Now we need to setup your user VM to sun-jdk-1.5
+</p>
+
+<pre caption="Set user VM"><comment>Use java-config to list installed VMs</comment>
+$ <i>java-config -L</i>
+[sun-jdk-1.5.0.05] "Sun JDK 1.5.0.05" (/etc/env.d/java/20sun-jdk-1.5.0.05)
+[kaffe-1.1.6] "Kaffe 1.1.6" (/etc/env.d/java/20kaffe-1.1.6)
+[blackdown-jdk-1.4.2.02] "Blackdown JDK 1.4.2.02" (/etc/env.d/java/20blackdown-jdk-1.4.2.02)
+
+<comment>Set the user VM to sun-jdk-1.5</comment>
+$ <i>java-config -s sun-jdk-1.5.0.05</i>
+Env files in /home/someuser/.gentoo updated. Source these in your shell's profile.
+
+<comment>Adjust your bash_profile to load Java settings at login</comment>
+$ <i>echo "source ~/.gentoo/java-env" >> ~/.bash_profile</i>
+<comment>Update the environment of the current terminal</comment>
+$ <i>source ~/.gentoo/java-env</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<!--
+<chapter>
+<title>How do I fix my system if I've been using a 1.5 JDK as a system VM?</title>
+</chapter>
+-->
+
+<chapter>
+<title>Is there any work being done to support 1.5 JDK as a system VM?</title>
+<section>
+<body>
+  <p>
+    The good news is that work is that support is for 1.5 is coming. 
+	Some major changes are needed to get Java 1.5 unmasked, and axxo 
+	has been working on this in his overlay.
+  </p>
+
+  <p>
+    The most significant changes include:
+  </p>
+    <ul>
+      <li>
+	    Merge-time VM switching (<uri link="http://bugs.gentoo.org/86900">#86900</uri>)
+      </li>
+      <li>
+	    Merge-time build.xml rewriting (<uri link="http://bugs.gentoo.org/86903">#86903</uri>)
+	  </li>
+      <li>
+	    axxo's branch of the java-config-ng started by compnerd
+	  </li>
+      <li>
+	    Uses symlinks instead of PATH hacks to choose between user/system VM, 
+		which is more flexible.
+	  </li>
+      <li>
+	    Removal of jikes USE flag, so you can now easily choose between 
+		javac, eclipse-ecj, or jikes
+      </li>
+    </ul>
+  <p>
+    A full list of bugs that this overlay addresses can be found
+	<uri link="https://svn.gentooexperimental.org/svn/java/axxo-overlay/README/bugs-this-fixed">here</uri>.
+    However, there is still some work that needs to be done. The most 
+	up-to-date TODO list can be found <uri link="http://gentooexperimental.org/svn/java/axxo-overlay/README/todo">here</uri>
+  </p>
+
+  <p>
+    The first thing to do is to checkout a local copy of the overlay.
+  </p>
+
+  <warn>
+    Do not use this overlay with any of the other Java overlays!
+  </warn>
+
+  <pre caption="Check out the 1.5 overlay">
+# <i>mkdir -p /usr/local/overlays/java-experimental</i>
+# <i>svn co https://gentooexperimental.org/svn/java/axxo-overlay /usr/local/overlays/axxo-overlay</i></pre>
+
+
+  <p>
+    Next, it is neccessary to make a few changes to make.conf. The first bit tells 
+	portage where the overlay lives. The second bit tells portage to use an
+	rsync exclude-from file. This is used to prevent emerge sync
+	from updating packages which are in the overlay. The overlay contains 
+	packages modified from what is currently in portage, so this is needed 
+	to prevent revisions from being installed from <path>/usr/portage</path> 
+	which are in the overlay.
+  </p>
+
+  <pre caption="Update make.conf">
+PORTDIR_OVERLAY="${PORTDIR_OVERLAY} /usr/local/overlays/axxo-overlay"
+RSYNC_EXCLUDEFROM=/usr/local/overlays/axxo-overlay/rsync-exclude</pre>
+
+
+  <p>
+    The overlay requires a very recent of portage, in addition to a new java-config.
+  </p>
+
+<pre caption="Update portage and java-config">
+# <i>emerge portage java-config</i>
+</pre>
+
+  <p>
+    The JDKs, JREs, and Java compilers in the overlay now install additional metadata, which is needed to emerge Java packages.
+  </p>
+  <pre caption="Update JRE/JDK and compilers">
+<comment>If you have blackdown-jdk-1.4 and sun-jdk-1.5 installed...</comment>
+# <i>emerge blackdown-jdk-1.4* sun-jdk-1.5*</i>
+<comment>And jikes and eclipse-ecj...</comment>
+# <i>emerge jikes eclipse-ecj</i></pre>
+
+  <p>
+    You should now be all setup to use the overlay.
+  </p>
+
+  <p>
+    The documentation has also been updated for the usage of this new overlay:
+  </p>
+    <ul>
+      <li><uri link="http://gentooexperimental.org/svn/java/axxo-overlay/README/docs/java-user.html">User Guide</uri></li>
+      <li><uri link="http://gentooexperimental.org/svn/java/axxo-overlay/README/docs/java-devel.html">Developer Guide</uri></li>
+    </ul>
+
+
+  <p>
+    <mail link="axxo@gentoo.org">axxo</mail> and 
+	<mail link="nichoj@gentoo.org">nichoj</mail> would really appreciate 
+	any comments/suggestions/fixes/patches to improve any of these
+  </p>
+
+</body>
+</section>
+</chapter>
+</guide>
