@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/home-router-howto.xml,v 1.8 2005/08/03 10:56:48 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/home-router-howto.xml,v 1.9 2005/12/04 13:29:11 neysx Exp $ -->
 
 <guide link="/doc/fr/home-router-howto.xml" lang="fr">
 
@@ -12,14 +12,20 @@
 <author title="Traducteur">
   <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
+<author title="Traducteur">
+  <mail link="n.litchinko@noos.fr">Nicolas Litchinko</mail>
+</author>
 
 <abstract>
 Ce document montre comment transformer une vieille machine Gentoo en un routeur
 destiné à connecter votre réseau personnel à Internet.
 </abstract>
 
-<version>1.8</version>
-<date>2005-07-02</date>
+<!-- The content of this document is released into the public domain -->
+<license/>
+
+<version>1.22</version>
+<date>2005-11-04</date>
 
 <chapter>
 <title>Introduction</title>
@@ -30,7 +36,7 @@ destiné à connecter votre réseau personnel à Internet.
 Mettre votre propre routeur sur pieds à partir de vieilles pièces détachées
 présente quelques avantages par rapport aux routeurs vendus dans le commerce
 tels que des Linksys ou autres.  L'avantage majeur est le contrôle que vous
-avez sur la connexion&nbsp;;les autres avantages dépendent de votre imagination
+avez sur la connexion&nbsp;; les autres avantages dépendent de votre imagination
 et de ce que vous allez décider de faire avec votre routeur.
 </p>
 
@@ -117,10 +123,11 @@ votre noyau pour ajouter les pilotes ad hoc.
 <p>
 Vous devez aussi ajouter le support de iptables et du NAT (et la gestion du
 trafic si vous le désirez). Les options du noyau requises ci-dessous utilisent
-la convention suivante&nbsp;:(*) nécessaire, (x) conseillée, (s) gestion du
-trafic. Peu importe si vous compilez les options en dur ou en module pour
-autant que les modules soient chargés au moment où la fonctionnalité est
-utilisée. Le chargement des modules est laissé à la discrétion du lecteur.
+la convention suivante&nbsp;:(*) nécessaire, (a) nécessaire uniquement pour
+l'adsl via PPPoE, (x) conseillée, (s) gestion du trafic. Peu importe si vous
+compilez les options en dur ou en module pour autant que les modules soient
+chargés au moment où la fonctionnalité est utilisée. Le chargement des modules
+est laissé à la discrétion du lecteur.
 </p>
 
 <pre caption="Options réseau du noyau">
@@ -128,7 +135,7 @@ Networking options  ---&gt;
    [*] TCP/IP networking
       [*] IP: advanced router
    [*] Network packet filtering (replaces ipchains)
-<comment>Avec un noyau 2.4.x, vous devez activer l'option suivante pour DHCP :</comment>
+<comment>(Avec un noyau 2.4.x, vous devez activer l'option suivante pour DHCP)</comment>
    [*] Socket Filtering
 
    IP: Netfilter Configuration  ---&gt;
@@ -152,6 +159,14 @@ Networking options  ---&gt;
       [s] QoS and/or fair queueing
          [s] HTB packet scheduler
          [s] Ingress Qdisc
+
+   [a] PPP (point-to-point protocol) support
+      [a] PPP filtering
+      [a] PPP support for async serial ports
+      [a] PPP support for sync tty ports
+      [a] PPP Deflate compression
+      [a] PPP BSD-Compress compression
+      [a] PPP over Ethernet
 </pre>
 
 <note>
@@ -214,7 +229,7 @@ USER=vla9h924
 # <i>nano /etc/conf.d/net</i>
 <comment>(Ajoutez une entrée config_eth1 et attribuez-lui la valeur adsl.)</comment>
 config_eth1=( "adsl" )
-# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+# <i>ln -s net.lo /etc/init.d/net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 # <i>/etc/init.d/net.eth1 start</i>
 </pre>
@@ -239,23 +254,23 @@ celles de votre passerelle et des serveurs DNS de votre FAI.
 </p>
 
 <pre caption="Configurer eth1">
-<comment>Adresse dynamique :</comment>
+<comment>(Adresse dynamique)</comment>
 # <i>emerge dhcpcd</i>
 # <i>nano /etc/conf.d/net</i>
-<comment>Ajoutez une entrée telle que :</comment>
+<comment>(Ajoutez une entrée telle que)</comment>
 config_eth1=( "dhcp" )
 
-<comment>Adresse statique :</comment>
+<comment>(Adresse statique)</comment>
 # <i>nano /etc/conf.d/net</i>
-<comment>Ajoutez une entrée telle que :</comment>
+<comment>(Ajoutez une entrée telle que)</comment>
 ifconfig_eth1=( "66.92.78.102 broadcast 66.92.78.255 netmask 255.255.255.0" )
 routes_eth1=( "default gw 66.92.78.1" )
 # <i>nano /etc/resolv.conf</i>
-<comment>Ajoutez une ligne par serveur DNS de votre FAI :</comment>
+<comment>(Ajoutez une ligne par serveur DNS de votre FAI)</comment>
 nameserver 123.123.123.123
 
-<comment>Configuration commune :</comment>
-# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+<comment>(Configuration commune)</comment>
+# <i>ln -s net.lo /etc/init.d/net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 # <i>/etc/init.d/net.eth1 start</i>
 </pre>
@@ -279,7 +294,7 @@ Cette étape est du gâteau par rapport à la précédente.
 
 <pre caption="Configurer eth0">
 # <i>nano /etc/conf.d/net</i>
-<comment>Ajoutez cette entrée :</comment>
+<comment>(Ajoutez cette entrée)</comment>
 ifconfig_eth0=( "192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0" )
 # <i>rc-update add net.eth0 default</i>
 # <i>/etc/init.d/net.eth0 start</i>
@@ -305,7 +320,7 @@ Installons un serveur DHCP pour allouer des adresses IP automatiquement.
 Un serveur DHCP, comme son nom l'indique en anglais («&nbsp;Dynamic Host
 Configuration Protocol&nbsp;»), permet de configurer les machines qui se
 connectent à votre réseau au moment où elles se connectent.  Vous devez
-installer Le programme dhcp sur le serveur et le configurer en fonction de
+installer un serveur DHCP sur votre router et le configurer en fonction de
 votre réseau (adresses IP valides, serveurs DNS, passerelle, etc.) Ensuite,
 quand une machine se connecte, elle exécute un programme client qui reçoit une
 configuration du serveur et qui l'utilise automatiquement pour définir vos
@@ -313,26 +328,26 @@ paramètres réseau. Vous trouverez un article complet à propos de DHCP sur <ur
 link="http://fr.wikipedia.org/wiki/DHCP">Wikipedia</uri>.
 </p>
 
-<pre caption="Configurer dhcpd">
-# <i>emerge dhcp</i>
-# <i>nano /etc/dhcp/dhcpd.conf</i>
-<comment>Voici un exemple type de configuration :</comment>
-authoritative;
-ddns-update-style interim;
-subnet 192.168.0.0 netmask 255.255.255.0 {
-    range 192.168.0.100 192.168.0.250;
-    default-lease-time 259200;
-    max-lease-time 518400;
-    option subnet-mask 255.255.255.0;
-    option broadcast-address 192.168.0.255;
-    option routers 192.168.0.1;
-    option domain-name-servers 192.168.0.1;
-}
-# <i>nano /etc/conf.d/dhcp</i>
-<comment>Ajoutez ou décommentez :</comment>
-IFACE="eth0"
-# <i>rc-update add dhcp default</i>
-# <i>/etc/init.d/dhcp start</i>
+<p>
+Nous allons utiliser un paquet appelé dnsmasq qui fourni à la fois les services
+DHCP et DNS. Pour l'instant, concentrons-nous sur le serveur DHCP. Si vous
+désirez toutefois utiliser un serveur DHCP différent, vous pouvez trouver un
+autre exemple dans le chapitre des options sympas.
+De plus, si vous souhaitez manipuler la configuration du serveur DHCP, lisez
+simplement les commentaires présents dans <path>/etc/dnsmasq.conf</path>. Les
+choix par défaut devraient tous parfaitement fonctionner.
+</p>
+
+<pre caption="Configurer DHCP">
+# <i>emerge dnsmasq</i>
+# <i>nano /etc/dnsmasq.conf</i>
+<comment>(Vous ne devriez devoir ajouter que la ligne suivante)</comment>
+dhcp-range=192.168.0.100,192.168.0.250,72h
+
+# <i>nano /etc/conf.d/dnsmasq</i>
+<comment>(Ajouter "-i eth0" à DNSMASQ_OPTS)</comment>
+# <i>rc-update add dnsmasq default</i>
+# <i>/etc/init.d/dnsmasq start</i>
 </pre>
 
 <p>
@@ -361,28 +376,20 @@ link="http://fr.wikipedia.org/wiki/DNS">Wikipedia</uri>.
 </p>
 
 <p>
-Vous avez sans doute remarqué que la configuration de notre serveur DHCP
-mentionne un serveur DNS à l'adresse 192.168.0.1. et que c'est justement
-l'adresse de notre routeur. Puisque nous n'avons pas encore installé de serveur
-DNS, il est temps de le faire&nbsp;!
+Comme nous utilisons dnsmasq en tant que serveur DHCP et qu'il inclut un
+serveur DNS, vous n'avez plus rien d'autre à faire ici&nbsp;! Votre router
+fournit déjà la résolution de noms à ses clients DHCP. Vous aimeriez bien que
+tout soit aussi simple, n'est-ce pas&nbsp;? ;)
 </p>
 
-<pre caption="Configurer dnsmasq">
-# <i>emerge dnsmasq</i>
-# <i>nano /etc/conf.d/dnsmasq</i>
-<comment>Ajoutez l'option "-i eth0" sur la ligne suivante :</comment>
-DNSMASQ_OPTS="-i eth0"
-# <i>rc-update add dnsmasq default</i>
-# <i>/etc/init.d/dnsmasq start</i>
-</pre>
-
 <p>
-C'était rapide, n'est-ce pas&nbsp;? Vous êtes libre de choisir un autre serveur
-DNS, mais dnsmasq fait exactement ce dont nous avons besoin. Il tient un cache
-des requêtes DNS émises depuis votre réseau local et transfère les requêtes
-pour lesquelles il n'a pas la réponse aux serveurs DNS de votre FAI. Le but
-n'est pas de fournir un serveur DNS pour notre domaine, mais simplement de
-fournir un serveur DNS à toutes vos machines.
+Vous pouvez très bien choisir d'autres serveurs DNS si vous êtes plus à
+l'aise avec ces derniers, mais la raison pour laquelle dnsmasq est génial est
+qu'il a été conçu pour faire exactement ce que nous voulons et rien d'autre.
+C'est un petit serveur de cache et de propagation de DNS pour les réseaux
+locaux. Nous ne désirons pas fournir un service DNS pour notre propre domaine,
+mais simplement offrir un simple service DNS à tous les membres de notre
+réseau local.
 </p>
 
 </body>
@@ -416,39 +423,48 @@ installé, lancez simplement <c>emerge iptables</c>.
 </note>
 
 <pre caption="Configurer iptables">
-<comment>Effacez les règles en cours :</comment>
+<comment>(Effacez les règles en cours)</comment>
 # <i>iptables -F</i>
 # <i>iptables -t nat -F</i>
 
-<comment>Rendez les services accessibles uniquement à nos machines locales :</comment>
-# <i>iptables -I INPUT 1 -i eth0 -j ACCEPT</i>
+<comment>(Configurez les règles par défaut pour s'occuper du traffic restant)</comment>
+# <i>iptables -P INPUT ACCEPT</i>
+# <i>iptables -P OUTPUT ACCEPT</i>
+# <i>iptables -P FORWARD DROP</i>
+
+<comment>(Copiez et collez ces exemples...)</comment>
+# <i>export LAN=eth0</i>
+# <i>export WAN=eth1</i>
+
+<comment>(Rendez les services accessibles uniquement à nos machines locales)</comment>
+# <i>iptables -I INPUT 1 -i ${LAN} -j ACCEPT</i>
 # <i>iptables -I INPUT 1 -i lo -j ACCEPT</i>
-# <i>iptables -A INPUT -p UDP --dport bootps -i ! eth0 -j REJECT</i>
-# <i>iptables -A INPUT -p UDP --dport domain -i ! eth0 -j REJECT</i>
+# <i>iptables -A INPUT -p UDP --dport bootps -i ! ${LAN} -j REJECT</i>
+# <i>iptables -A INPUT -p UDP --dport domain -i ! ${LAN} -j REJECT</i>
 
-<comment>(Facultatif) Autoriser l'accès au serveur ssh depuis l'extérieur :</comment>
-# <i>iptables -A INPUT -p TCP --dport ssh -i eth1 -j ACCEPT</i>
+<comment>(Facultatif : autoriser l'accès au serveur ssh depuis l'extérieur)</comment>
+# <i>iptables -A INPUT -p TCP --dport ssh -i ${WAN} -j ACCEPT</i>
 
-<comment>Éliminez les paquets destinés aux ports privilégiés :</comment>
-# <i>iptables -A INPUT -p TCP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
-# <i>iptables -A INPUT -p UDP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
+<comment>(Éliminez les paquets destinés aux ports privilégiés)</comment>
+# <i>iptables -A INPUT -p TCP -i ! ${LAN} -d 0/0 --dport 0:1023 -j DROP</i>
+# <i>iptables -A INPUT -p UDP -i ! ${LAN} -d 0/0 --dport 0:1023 -j DROP</i>
 
-<comment>Ajoutez les règles pour le NAT :</comment>
-# <i>iptables -I FORWARD -i eth0 -d 192.168.0.0/255.255.0.0 -j DROP</i>
-# <i>iptables -A FORWARD -i eth0 -s 192.168.0.0/255.255.0.0 -j ACCEPT</i>
-# <i>iptables -A FORWARD -i eth1 -d 192.168.0.0/255.255.0.0 -j ACCEPT</i>
-# <i>iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE</i>
+<comment>(Ajoutez les règles pour le NAT)</comment>
+# <i>iptables -I FORWARD -i ${LAN} -d 192.168.0.0/255.255.0.0 -j DROP</i>
+# <i>iptables -A FORWARD -i ${LAN} -s 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -A FORWARD -i ${WAN} -d 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE</i>
 
-<comment>Indiquez au noyau d'effectuer le transfert IP :</comment>
+<comment>(Indiquez au noyau d'effectuer le transfert IP)</comment>
 # <i>echo 1 > /proc/sys/net/ipv4/ip_forward</i>
 # <i>for f in /proc/sys/net/ipv4/conf/*/rp_filter ; do echo 1 > $f ; done</i>
 
-<comment>Enregistrez les règles ci-dessus pour le prochain démarrage :</comment>
+<comment>(Enregistrez les règles ci-dessus pour le prochain démarrage)</comment>
 # <i>/etc/init.d/iptables save</i>
 # <i>rc-update add iptables default</i>
 # <i>nano /etc/sysctl.conf</i>
 
-<comment>Ajouter ou décommentez les lignes ci-dessous :</comment>
+<comment>(Ajouter ou décommentez les lignes ci-dessous)</comment>
 net.ipv4.ip_forward = 1
 net.ipv4.conf.default.rp_filter = 1
 </pre>
@@ -495,38 +511,50 @@ autres serveurs.
 
 <p>
 Toutes les règles de transfert de port sont sous la forme <c>iptables -t nat -A
-PREROUTING [-p protocole] --dport [port externe sur le routeur] -i eth1 -j DNAT
---to [adresse ip et port vers lesquel rediriger]</c>.  L'outil iptables
-n'accepte pas des noms de machine dans les règles de redirection.  Si vous
+PREROUTING [-p protocole] --dport [port externe sur le routeur] -i ${WAN} -j DNAT
+--to [adresse ip et port vers lesquel rediriger]</c>.  Malheureusement, l'outil
+iptables n'accepte pas des noms de machine dans les règles de redirection.  Si vous
 redirigez vers le même port que le port d'entrée sur votre routeur, vous n'êtes
 pas obligé de la répéter dans la règle. Utilisez <c>man 8 iptables</c> pour
 plus d'informations.
 </p>
 
 <pre caption="Quelques exemples">
-<comment>Rediriger le port 2 vers ssh sur un PC interne :</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 2 -i eth1 -j DNAT --to 192.168.0.2:22</i>
+<comment>(Copiez et collez ces exemples...)</comment>
+# <i>export LAN=eth0</i>
+# <i>export WAN=eth1</i>
 
-<comment>Transfert des requêtes FTP vers un serveur FTP interne :</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 21 -i eth1 -j DNAT --to 192.168.0.56</i>
+<comment>(Rediriger le port 2 vers ssh sur un PC interne)</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 2 -i ${WAN} -j DNAT --to 192.168.0.2:22</i>
 
-<comment>Transfert des requêtes HTTP vers un serveur Web interne :</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 80 -i eth1 -j DNAT --to 192.168.0.56</i>
+<comment>(Transfert des requêtes FTP vers un serveur FTP interne)</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 21 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
-<comment>Transfert des requêtes VNC vers un serveur interne :</comment>
-# <i>iptables -t nat -I PREROUTING -p tcp --dport 5900 -i eth1 -j DNAT --to 192.168.0.2</i>
-# <i>iptables -t nat -I PREROUTING -p tcp --dport 5901 -i eth1 -j DNAT --to 192.168.0.3:5900</i>
-<comment>Pour vous connecter au VNC de 192.168.0.3, ajoutez ':1' au nom de votre routeur</comment>
+<comment>(Transfert des requêtes HTTP vers un serveur Web interne)</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 80 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
-<comment>Redirection pour bittorrent :</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i eth1 -j DNAT --to 192.168.0.2</i>
+<comment>(Transfert des requêtes VNC vers un serveur interne)</comment>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5900 -i ${WAN} -j DNAT --to 192.168.0.2</i>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5901 -i ${WAN} -j DNAT --to 192.168.0.3:5900</i>
+<comment>(Pour vous connecter au VNC de 192.168.0.3, ajoutez ':1' au nom de votre routeur</comment>
 
-<comment>Support du « Game Cube Warp Pipe » :</comment>
-# <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i eth1 -j DNAT --to 192.168.0.56</i>
+<comment>(Redirection pour bittorrent)</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i ${WAN} -j DNAT --to 192.168.0.2</i>
 
-<comment>Support de « Playstation2 Online » :</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i eth1 -j DNAT --to 192.168.0.11</i>
-# <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i eth1 -j DNAT --to 192.168.0.11</i>
+<comment>(Redirection pour eDonkey/eMule)</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 4662 -i ${WAN} -j DNAT --to 192.168.0.55</i>
+
+<comment>(Support du « Game Cube Warp Pipe »)</comment>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i ${WAN} -j DNAT --to 192.168.0.56</i>
+
+<comment>(Support de « Playstation2 Online »)</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
+
+<comment>(Support de « Xbox Live »)</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 3074 -i ${WAN} -j DNAT --to 192.168.0.69</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 3074 -i ${WAN} -j DNAT --to 192.168.0.69</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 88 -i ${WAN} -j DNAT --to 192.168.0.69</i>
 </pre>
 
 <note>
@@ -661,19 +689,19 @@ est utilisé par toutes les autres machines locales. Commencez par faire
 
 <pre caption="Configurer un serveur NTP">
 # <i>nano /etc/conf.d/ntp-client</i>
-<comment>Ajustez les paramètres si nécessaire,
-mais les valeurs par défaut devraient suffire :</comment>
+<comment>(Ajustez les paramètres si nécessaire,
+mais les valeurs par défaut devraient suffire)</comment>
 # <i>rc-update add ntp-client default</i>
 
 # <i>nano /etc/ntp.conf</i>
-<comment>Ajoutez les lignes suivantes :</comment>
+<comment>(Ajoutez les lignes suivantes)</comment>
 restrict default ignore
 restrict 192.168.0.0 mask 255.255.255.0 notrust nomodify notrap
-<comment>Ces lignes donnent accès au serveur NTP uniquement
-aux clients avec une adresse IP 192.168.0.xxx :</comment>
+<comment>(Ces lignes donnent accès au serveur NTP uniquement
+aux clients avec une adresse IP 192.168.0.xxx)</comment>
 # <i>nano /etc/conf.d/ntpd</i>
-<comment>Ajustez les paramètres si nécessaire,
-mais les valeurs par défaut devraient suffire :</comment>
+<comment>(Ajustez les paramètres si nécessaire,
+mais les valeurs par défaut devraient suffire)</comment>
 # <i>rc-update add ntpd default</i>
 
 # <i>/etc/init.d/ntp-client start</i>
@@ -693,14 +721,73 @@ n'utiliserons que la partie client, ce qui est plus simple.
 
 <pre caption="Configurer un client NTP">
 # <i>nano /etc/conf.d/ntp-client</i>
-<comment>Remplacez le nom de serveur 'pool.ntp.org' par
-'192.168.0.1' dans la variable NTPCLIENT_OPTS :</comment>
+<comment>(Remplacez le nom de serveur 'pool.ntp.org' par
+'192.168.0.1' dans la variable NTPCLIENT_OPTS)</comment>
 # <i>rc-update add ntp-client default</i>
 # <i>/etc/init.d/ntp-client start</i>
 </pre>
 
 </body>
 </section>
+
+<section>
+<title>Serveur rsync</title>
+<body>
+
+<p>
+Ceux qui ont plusieurs machines Gentoo sur le même réseau local souhaitent
+souvent éviter d'utiliser <c>emerge sync</c> avec des serveurs distants. En
+configurant un serveur rsync local, vous économisez votre bande passante et
+celle des serveurs rsync de Gentoo. C'est très simple à mettre en place.
+</p>
+
+<note>
+Pour un guide sur rsync beaucoup plus détaillé, veuillez vous référer au <uri 
+link="/doc/fr/rsync.xml#doc_chap4">guide rsync</uri> officiel.
+</note>
+
+<p>
+Du fait que chaque machine Gentoo nécessite rsync, il n'est pas nécessaire de
+l'installer. Éditez le fichier de configuration par défaut
+(<path>/etc/rsyncd.conf</path>), décommentez la section <c>[gentoo-portage]</c>
+et assurez-vous que vous avez bien ajouté une option <c>address</c>. Tous les
+autres choix par défaut devraient convenir.
+</p>
+
+<pre caption="Configuration d'un serveur rsync">
+pid file = /var/run/rsyncd.pid
+use chroot = yes
+read only = yes
+address = 192.168.0.1
+
+[gentoo-portage]
+    path = /mnt/space/portage
+    comment = Gentoo Linux Portage tree
+    exclude = /distfiles /packages
+</pre>
+
+<p>
+Après cela, vous devez démarrer le service (de nouveau, les choix par défaut
+conviennent).
+</p>
+
+<pre caption="Démarrer le serveur rsync">
+# <i>/etc/init.d/rsyncd start</i>
+# <i>rc-update add rsyncd default</i>
+</pre>
+
+<p>
+La dernière chose à faire est de dire à vos clients de se synchroniser par
+rapport au routeur.
+</p>
+
+<pre caption="Les options de synchronisation des clients dans make.conf">
+SYNC="rsync://192.168.0.1/gentoo-portage"
+</pre>
+
+</body>
+</section>
+
 <section>
 <title>Serveur de courrier</title>
 <body>
@@ -719,9 +806,9 @@ pendant leur envoi.
 
 <pre caption="Configurer un serveur SMTP">
 # <i>emerge qmail</i>
-<comment>Vérifiez que l'affichage de la commande `hostname` est correct.</comment>
+<comment>(Vérifiez que l'affichage de la commande `hostname` est correct)</comment>
 # <i>ebuild /var/db/pkg/*-*/qmail-1.03-r*/*.ebuild config</i>
-# <i>iptables -I INPUT -p tcp --dport smtp -i ! eth0 -j REJECT</i>
+# <i>iptables -I INPUT -p tcp --dport smtp -i ! ${LAN} -j REJECT</i>
 # <i>ln -s /var/qmail/supervise/qmail-send /service/qmail-send</i>
 # <i>ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd</i>
 <!--
@@ -730,7 +817,7 @@ pendant leur envoi.
 -->
 # <i>cd /etc</i>
 # <i>nano tcp.smtp</i>
-<comment>Ajoutez une entrée comme celle-ci dans la section « allow » :</comment>
+<comment>(Ajoutez une entrée comme celle-ci dans la section « allow »)</comment>
 192.168.0.:allow,RELAYCLIENT=""
 <!--
 # <i>tcprules tcp.qmail-qmtp.cdb rules.tmp &lt; tcp.qmail-smtp</i>
@@ -769,10 +856,53 @@ dans les boîtes POP.
 </body>
 </section>
 -->
+<section>
+<title>Un serveur DHCP complet</title>
+<body>
+
+<p>
+Précédemment, nous avons utilisé dnsmasq pour fournir un service DHCP à nos
+clients. Pour la majorité des utilisateurs avec un simple réseau local, c'est
+parfait. Mais vous pourriez avoir besoin de plus de fonctionnalités. C'est
+pourquoi nous nous tournons vers un serveurs DHCP complet fourni par
+<uri link="http://www.isc.org/products/DHCP">ISC</uri>.
+</p>
+
+<pre caption="Configurer DHCP">
+# <i>emerge dhcp</i>
+# <i>nano /etc/dhcp/dhcpd.conf</i>
+<comment>(Ceci est un exemple de fichier de configuration)</comment>
+authoritative;
+ddns-update-style interim;
+subnet 192.168.0.0 netmask 255.255.255.0 {
+    range 192.168.0.100 192.168.0.250;
+    default-lease-time 259200;
+    max-lease-time 518400;
+    option subnet-mask 255.255.255.0;
+    option broadcast-address 192.168.0.255;
+    option routers 192.168.0.1;
+    option domain-name-servers 192.168.0.1;
+}
+# <i>nano /etc/conf.d/dhcp</i>
+<comment>(Définissez IFACE="eth0")</comment>
+# <i>rc-update add dhcp default</i>
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+
+<p>
+Ceci est la configuration minimale requise pour remplacer les fonctions DHCP de
+dnsmasq que nous avons précédemment mises en place. À propos, vous avez pensé à
+désactiver les fonctions DHCP de dnsmasq, n'est-ce pas&nbsp;? Sinon, vous
+devriez le faire maintenant (commentez simplement l'option <c>dhcp-range</c>
+dans <path>/etc/dnsmasq.conf</path> et redémarrez le service).
+</p>
+
+</body>
+</section>
 </chapter>
 
 <chapter>
-<title>Debugging</title>
+<title>Troubleshooting</title>
 
 <section>
 <title>Outils intéressants</title>
@@ -795,7 +925,10 @@ résoudre&nbsp;:
 </tr>
 <tr>
   <ti>tcpdump</ti>
-  <ti>Outil en mode texte qui affiche le trafic et qui permet d'appliquer des filtres</ti>
+  <ti>
+    Outil en mode texte qui affiche le trafic et qui permet d'appliquer des
+    filtres
+  </ti>
 </tr>
 <tr>
   <ti>iptraf</ti>
@@ -806,6 +939,34 @@ résoudre&nbsp;:
   <ti>Outil de contrôle de trafic réseau, utilise ncurses</ti>
 </tr>
 </table>
+
+</body>
+</section>
+<section>
+<title>DHCP ne démarre pas</title>
+<body>
+
+<p>
+Lorsque vous démarrer le script init.d de dhcp pour la première fois, il est
+possible qu'il échoue mais ne vous donne aucune information utile.
+</p>
+
+<pre caption="Exemple d'échec de DHCP">
+# <i>/etc/init.d/dhcp start</i>
+ * Setting ownership on dhcp.leases ...          [ ok ]
+ * Starting dhcpd ...                            [ !! ]
+</pre>
+
+<p>
+L'astuce est de savoir où dhcp envoie ses messages. Naviguez simplement dans
+/var/log et lisez les fichiers journaux. Comme le fichier journal exact dépend
+du paquet que vous utilisez en tant que système de journalisation, essayez de
+lancer <c>grep -Rl dhcpd /var/log</c> pour réduire la liste des possibilités.
+Il y a de grandes chances pour que vous ayez laissé une coquille dans votre
+fichier de configuration. Vous pouvez également essayer de lancer <c>dhcpd -d
+-f</c> (débug en avant-plan) et chercher l'erreur en fonction des messages
+affichés.
+</p>
 
 </body>
 </section>
