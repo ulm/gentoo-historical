@@ -69,10 +69,7 @@ Extra Packages screen yourself.
 				self.services.append(service)
 		else:
 			if service in self.services:
-				for i in range(0, len(self.services)):
-					if self.services[i] == service:
-						self.services.pop(i)
-						break
+				self.services.pop(self.services.index(service))
 
 	def deactivate(self):
 		self.controller.install_profile.set_services(None, ",".join(self.services), None)
