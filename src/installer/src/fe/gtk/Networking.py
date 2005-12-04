@@ -715,7 +715,7 @@ class Panel(GLIScreen.GLIScreen):
 			CC_net_type = self.controller.client_profile.get_network_type()
 			if CC_net_type == 'dhcp':
 				interfaces[CC_iface] = ('dhcp', self.controller.client_profile.get_network_dhcp_options(), None)
-			else:
+			elif CC_net_type == 'static':
 				interfaces[CC_iface] = (self.controller.client_profile.get_network_ip(), self.controller.client_profile.get_network_broadcast(), self.controller.client_profile.get_network_netmask())
 
 		try:

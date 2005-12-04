@@ -42,8 +42,8 @@ class Installer:
                   { 'text': _('Timezone'), 'module': __import__("Timezone") },
                   { 'text': _('Networking'), 'module': __import__("Networking") },
                   { 'text': _('Daemons'), 'module': __import__("Daemons") },
-                  { 'text': _('Startup Services'), 'module': __import__("StartupServices") },
                   { 'text': _('Extra Packages'), 'module': __import__("ExtraPackages") },
+                  { 'text': _('Startup Services'), 'module': __import__("StartupServices") },
                   { 'text': _('rc.conf'), 'module': __import__("RcDotConf") },
                   { 'text': _('Users'), 'module': __import__("Users") },
                   { 'text': _('Review'), 'module': __import__("InstallSummary") }
