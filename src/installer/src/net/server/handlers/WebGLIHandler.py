@@ -69,7 +69,7 @@ class WebGLIHandler(handler.Handler):
 		
 		data += " </td></tr></table>\n"
 		
-		if not GLIUtility.ping("www.gentoo.org"): # and local_install:
+		if 1: #not GLIUtility.ping("www.gentoo.org"): # and local_install:
 			data += '<hr><table><tr><td>'
 			data += "LiveCD Network Configuration string here. <br>"
 			device_list = GLIUtility.get_eth_devices()
@@ -92,7 +92,7 @@ class WebGLIHandler(handler.Handler):
 			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="255.255.255.0"><br>'
 			data += 'Enter your default gateway: <input name="gateway" type="text" length="50" maxlength="15" value=".1"><br>'
 			data += 'Enter a DNS server: <input name="dnsserver" type="text" length="50" maxlength="15" value="128.118.25.3"></td></tr></table>'
-		
+			data += 'Proxy Information (if necessary):<br>HTTP Proxy IP: <input name="http_proxy" type="text" length="50" maxlength="15" value=""><br>FTP Proxy IP: <input name="ftp_proxy" type="text" length="50" maxlength="15" value=""><br>RSYNC Proxy IP: <input name="rsync_proxy" type="text" length="50" maxlength="15" value="">'	
 		#Enable SSH?
 		data += "<hr>Enable SSH  string here. <br>"
 		data += 'Enable SSH?: <input name="EnableSSH" type="radio" value="True">Yes'
@@ -104,9 +104,9 @@ class WebGLIHandler(handler.Handler):
 		data += 'Re-enter Password to verify:<input name="RootPass2" type="password" length="80" maxlength="80" value=""><br>'
 		
 		#Modules to load now.
-		#status, output = GLIUtility.spawn("lsmod", return_output=True)
-		data += "<hr>Loaded modules list here. <br>"
-		data += 'Additional Modules to Load (space-separated list): <input name="Modules" type="text" length="80" maxlength="80" value=""><br>'
+		status, output = GLIUtility.spawn(r"lsmod | grep -v ^Module | cut -d ' ' -f 1 ", return_output=True)
+		data += "<hr>List of loaded modules:. <br>"+string.join(output.split("\n"), "<br>")
+		data += '<br>Additional Modules to Load (space-separated list): <input name="Modules" type="text" length="80" maxlength="80" value=""><br>'
 		
 		#Save Client Configuration File.	THIS SHOULD BE A POPUP
 		data += "<hr><br>Save Client Configuration File string here. <br>";
@@ -1476,7 +1476,9 @@ Please be patient while the screens load. It may take awhile.
 			data += " checked"
 		data += ">Install to MBR</p>"
 		
-		if boot_device[-1] != 'a':
+		if not boot_device:
+			data += _(u"You need to partition before you can select the boot device.")
+		if boot_device and boot_device[-1] != 'a':
 			#show the menu.
 			data += _(u"Your boot device may not be correct.  It is currently set to %s, but this device may not be the first to boot.  Usually boot devices end in 'a' such as hda or sda.") % boot_device
 			data += _(u"  Please confirm your boot device.<br>")
@@ -1511,16 +1513,16 @@ Please be patient while the screens load. It may take awhile.
 					self.shared_info.install_profile.set_boot_loader_mbr(None,self.post_params['bootmbr'],None)
 					if self.post_params['boot_drive_choice']:
 						try:
-							self._install_profile.set_boot_device(None,boot_drive_choice,None)
+							self.shared_info.install_profile.set_boot_device(None,self.post_params['boot_drive_choice'],None)
 						except:
-							data += "ERROR! Could not set the boot device!"+boot_drive_choice
+							data += "ERROR! Could not set the boot device!"+self.post_params['boot_drive_choice']
 				except:
-					data += "ERROR: Could not set the bootloader MBR flag!"
+					data += "ERROR: Could not set the bootloader MBR flag to TRUE and set boot drive too!"
 			else:
 				try:
 					self.shared_info.install_profile.set_boot_loader_mbr(None,False,None)
 				except:
-					data += "ERROR: Could not set the bootloader MBR flag!"
+					data += "ERROR: Could not set the bootloader MBR flag to FALSE."
 			if self.post_params['bootargs']:
 				try:
 					self.shared_info.install_profile.set_bootloader_kernel_args(None,self.post_params['bootargs'],None)
