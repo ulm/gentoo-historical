@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/Attic/hb-install-amd64-bootloader.xml,v 1.11 2005/09/15 23:15:43 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/Attic/hb-install-amd64-bootloader.xml,v 1.12 2005/12/04 20:56:36 rane Exp $ -->
 
 <sections>
-<version>2.5</version>
-<date>2005-08-12</date>
+<version>2.10</version>
+<date>2005-11-25</date>
 
 <section>
 <title>Podejmowanie decyzji</title>
@@ -199,7 +199,7 @@ pomocy nano, lub dowolnego innego edytora należy utworzyć plik
 Następnie zredagujmy plik <path>grub.conf</path>. Poniżej znajdują się trzy
 przykłady pliku <path>grub.conf</path>, odpowiadające schematowi partycjonowania
 użytemu w tym przewodniku, z obrazem jądra o nazwie
-<path>kernel-2.6.11-gentoo-r3</path>. Wyczerpująco opatrzymy komentarzami tylko
+<path>kernel-2.6.12-gentoo-r10</path>. Wyczerpująco opatrzymy komentarzami tylko
 pierwszy <path>grub.conf</path>.
 </p>
 
@@ -228,12 +228,13 @@ default 0
 timeout 30
 <comment># Ładniutki, tłuściutki obrazek na zaostrzenie apetytu :)
 # Należy zakomentować jeśli nie mamy zainstalowanej karty graficznej</comment>
+	 splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 splashimage=(hd0,0)/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11
+title=Gentoo Linux 2.6.12
 <comment># Partycja na której znajduje się obraz jądra (lub system operacyjny) </comment>
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r3 root=/dev/hda3
+kernel /boot/kernel-2.6.12-gentoo-r10 root=/dev/hda3
 
 <comment># Następne cztery linie potrzebne są tylko gdy chcemy uruchamiać także
 Windows.</comment> <comment># W tym przypadku, Windows mieści się na
@@ -247,12 +248,12 @@ chainloader +1
 <pre caption = "grub.conf dla użytkowników genkernela">
 default 0
 timeout 30
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11
+title=Gentoo Linux 2.6.12
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r3 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3
-initrd /initramfs-genkernel-amd64-2.6.11-gentoo-r3
+kernel /boot/kernel-2.6.12-gentoo-r10 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
+initrd /boot/initramfs-genkernel-amd64-2.6.12-gentoo-r10	
 
 <comment># Tylko, gdy chcemy uruchamiać dwa systemy</comment>
 title=Windows XP
@@ -270,12 +271,23 @@ pierwszym miejscu.
 <note>
 Jeśli partycjonowanie wykonane zostało w inny sposób i/lub używasz innego obrazu
 jądra, należy dokonać niezbędnych poprawek. Warto pilnować, aby wszystko co
-dotyczy urządzenia z GRUB-em (np. <path>(hd0,0)</path>) było względne w stosunku
-do punktu montowania, a nie partycji root. Innymi słowy,
+dotyczy urządzenia z GRUB-em (np. <path>(hd0,0)</path>) było względne w
+stosunku do punktu montowania, a nie partycji root. Innymi słowy,
 <path>(hd0,0)/grub/splash.xpm.gz</path> w rzeczywistości znaczy
 <path>/boot/grub/splash.xpm.gz</path>, gdyż <path>(hd0,0)</path>
 to partycja <path>/boot</path>.
 </note>
+
+<p>
+Ponadto jeśli wybrano inny schemat partycjonowania, a <path>/boot</path> nie
+znajduje się na osobnej partycji, prefiks <path>/boot</path> użyty w powyższych
+przykładach jest wciąż wymagany. Jeśli natomiast wybrany schemat
+partycjonowania jest taki jak ten w Podręczniku, prefiks w niczym nie
+przeszkadza, należy tylko dodatkowo utworzyć odpowiednie dowiązanie symboliczne
+o nazwie <path>boot</path>. W skrócie: powyższe przykładowe konfiguracje będą
+działać bez względu na to czy utworzono osobną partycję <path>/boot</path>, czy
+nie.
+</p>
 
 <p>
 Jeśli chcemy przekazać do jądra przy starcie jakieś dodatkowe opcje, po prostu
@@ -298,7 +310,6 @@ krokiem będzie dopisanie GRUB-a do MBR.
 </p>
 
 <p>
-
 Twórcy GRUB-a zalecają użycie <c>grub-install</c>. Czasem jednak program ten z
 jakiegoś powodu odmówi współpracy wciąż pozostaje możliwość ręcznego
 zainstalowania GRUB-a.
@@ -317,15 +328,17 @@ Alternatywnie: Ręczne instalowanie GRUB-a</uri>.
 <body>
 
 <p>
-Żeby zainstalować GRUB-a należy wpisać komendę <c>grub-install</c>. Nie zadziała
-to jednak bez pewnych zmian, bo wciąż działamy w chrootowanym środowisku.
-Będziemy musieli uaktualnić plik <path>/etc/mtab</path> (plik z informacjami
-dotyczącymi zamontowanych napędów). Na szczęście jest na to prosta
-metoda, wystarczy nadpisać ten plik plikiem <path>/proc/mounts</path>.
+Żeby zainstalować GRUB-a należy wpisać komendę <c>grub-install</c>. Nie
+zadziała to jednak bez pewnych zmian, bo wciąż działamy w chrootowanym
+środowisku.  Należy stworzyć plik <path>/etc/mtab</path> (plik z informacjami
+dotyczącymi zamontowanych napędów). Na szczęście jest na to prosta metoda,
+wystarczy skopiować plik <path>/proc/mounts</path> do <path>/etc/mtab</path>,
+pomijając jedynie linię <c>rootfs</c> - o ile nie stworzono osobnej partycji
+rozruchowej.  W obu przypadkach zadziała następujące polecenie:
 </p>
 
 <pre caption="Aktualizacja /etc/mtab">
-# <i>cp /proc/mounts /etc/mtab</i>
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
 
 <p>
