@@ -92,7 +92,7 @@ class WebGLIHandler(handler.Handler):
 			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="255.255.255.0"><br>'
 			data += 'Enter your default gateway: <input name="gateway" type="text" length="50" maxlength="15" value=".1"><br>'
 			data += 'Enter a DNS server: <input name="dnsserver" type="text" length="50" maxlength="15" value="128.118.25.3"></td></tr></table>'
-			data += 'Proxy Information (if necessary):<br>HTTP Proxy IP: <input name="http_proxy" type="text" length="50" maxlength="15" value=""><br>FTP Proxy IP: <input name="ftp_proxy" type="text" length="50" maxlength="15" value=""><br>RSYNC Proxy IP: <input name="rsync_proxy" type="text" length="50" maxlength="15" value="">'	
+			data += 'Proxy Information (if necessary):<br>HTTP Proxy URI: <input name="http_proxy" type="text" length="70" value=""><br>FTP Proxy URI: <input name="ftp_proxy" type="text" length="70" value=""><br>RSYNC Proxy URI: <input name="rsync_proxy" type="text" length="70" value="">'	
 		#Enable SSH?
 		data += "<hr>Enable SSH  string here. <br>"
 		data += 'Enable SSH?: <input name="EnableSSH" type="radio" value="True">Yes'
@@ -1703,7 +1703,7 @@ Please be patient while the screens load. It may take awhile.
 		data += '<tr><td>Address:<input name="gateway" type="text" length="50" maxlength="15" value="'+gway_ip+'"><br>'
 		dnsservers = " ".join(self.shared_info.install_profile.get_dns_servers())
 		data += 'Enter your DNS servers (space-separated): <input name="dnsserver" type="text" length="70" value="'+dnsservers+'">'
-		data += '<hr>Proxy Information (if necessary):<br>HTTP Proxy IP: <input name="http_proxy" type="text" length="50" maxlength="15" value=""><br>FTP Proxy IP: <input name="ftp_proxy" type="text" length="50" maxlength="15" value=""><br>RSYNC Proxy IP: <input name="rsync_proxy" type="text" length="50" maxlength="15" value="">'	
+		data += '<hr>Proxy Information (if necessary):<br>HTTP Proxy URI: <input name="http_proxy" type="text" length="70" value=""><br>FTP Proxy URI: <input name="ftp_proxy" type="text" length="70"  value=""><br>RSYNC Proxy URI: <input name="rsync_proxy" type="text" length="70"  value="">'	
 		data += """		<p>Wireless stuff here. ESSID: Key:  </p>
 			 <p>Hostname:
 			 <input name="hostname" type="text" id="hostname">
