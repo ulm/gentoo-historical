@@ -180,6 +180,24 @@ class WebGLIHandler(handler.Handler):
 				self.shared_info.client_profile.set_network_gateway(None, self.post_params['gateway'], None)
 			except:
 				data += "ERROR: Could not set the gateway IP<BR>\n"
+		if 'http_proxy' in self.post_params:
+			data += "Found an HTTP Proxy IP: you submitted " + self.post_params['http_proxy'] + "<BR>\n"
+			try:
+				self.shared_info.client_profile.set_http_proxy(None, self.post_params['http_proxy'], None)
+			except:
+				data += "ERROR: Could not set the HTTP Proxy IP<BR>\n"
+		if 'ftp_proxy' in self.post_params:
+			data += "Found an FTP Proxy IP: you submitted " + self.post_params['ftp_proxy'] + "<BR>\n"
+			try:
+				self.shared_info.client_profile.set_ftp_proxy(None, self.post_params['ftp_proxy'], None)
+			except:
+				data += "ERROR: Could not set the FTP Proxy IP<BR>\n"
+		if 'rsync_proxy' in self.post_params:
+			data += "Found an RSYNC Proxy IP: you submitted " + self.post_params['rsync_proxy'] + "<BR>\n"
+			try:
+				self.shared_info.client_profile.set_rsync_proxy(None, self.post_params['rsync_proxy'], None)
+			except:
+				data += "ERROR: Could not set the RSYNC Proxy IP<BR>\n"
 		if 'dnsserver' in self.post_params:
 			data += "Found an DNS server: you submitted " + self.post_params['dnsserver'] + "<BR>\n"
 			try:
@@ -1675,6 +1693,8 @@ Please be patient while the screens load. It may take awhile.
 		else:
 			gway_iface = None
 			gway_ip = ""
+		if not interfaces:
+			data += "You must configure a device first in order to set the default Gateway!<br>"
 		for iface in interfaces:
 			data += '<tr><td><input type="radio" name="GatewayIface" value="'+iface+'" '
 			if iface == gway_iface:
@@ -1683,6 +1703,7 @@ Please be patient while the screens load. It may take awhile.
 		data += '<tr><td>Address:<input name="gateway" type="text" length="50" maxlength="15" value="'+gway_ip+'"><br>'
 		dnsservers = " ".join(self.shared_info.install_profile.get_dns_servers())
 		data += 'Enter your DNS servers (space-separated): <input name="dnsserver" type="text" length="70" value="'+dnsservers+'">'
+		data += '<hr>Proxy Information (if necessary):<br>HTTP Proxy IP: <input name="http_proxy" type="text" length="50" maxlength="15" value=""><br>FTP Proxy IP: <input name="ftp_proxy" type="text" length="50" maxlength="15" value=""><br>RSYNC Proxy IP: <input name="rsync_proxy" type="text" length="50" maxlength="15" value="">'	
 		data += """		<p>Wireless stuff here. ESSID: Key:  </p>
 			 <p>Hostname:
 			 <input name="hostname" type="text" id="hostname">
@@ -1764,10 +1785,28 @@ Please be patient while the screens load. It may take awhile.
 		if 'dnsserver' in self.post_params:
 			data += "Found an DNS server: you submitted " + self.post_params['dnsserver'] + "<BR>\n"
 			try:
-				self.shared_info.client_profile.set_dns_servers(None, self.post_params['dnsserver'], None)
+				self.shared_info.install_profile.set_dns_servers(None, self.post_params['dnsserver'], None)
 			except:
 				data += "ERROR: Could not set the DNS Server<BR>\n"
-				
+		if 'http_proxy' in self.post_params:
+			data += "Found an HTTP Proxy IP: you submitted " + self.post_params['http_proxy'] + "<BR>\n"
+			try:
+				self.shared_info.install_profile.set_http_proxy(None, self.post_params['http_proxy'], None)
+			except:
+				data += "ERROR: Could not set the HTTP Proxy IP<BR>\n"
+		if 'ftp_proxy' in self.post_params:
+			data += "Found an FTP Proxy IP: you submitted " + self.post_params['ftp_proxy'] + "<BR>\n"
+			try:
+				self.shared_info.install_profile.set_ftp_proxy(None, self.post_params['ftp_proxy'], None)
+			except:
+				data += "ERROR: Could not set the FTP Proxy IP<BR>\n"
+		if 'rsync_proxy' in self.post_params:
+			data += "Found an RSYNC Proxy IP: you submitted " + self.post_params['rsync_proxy'] + "<BR>\n"
+			try:
+				self.shared_info.install_profile.set_rsync_proxy(None, self.post_params['rsync_proxy'], None)
+			except:
+				data += "ERROR: Could not set the RSYNC Proxy IP<BR>\n"
+		
 		return self.wrap_in_webgli_template(data)
 	def daemons(self):
 		data = "<h2>Cron and Logging Daemons:</h2>\n";
