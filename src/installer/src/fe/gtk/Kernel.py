@@ -11,6 +11,11 @@ class Panel(GLIScreen.GLIScreen):
 	title = "Kernel Sources"
 	active_selection = None
 	kernel_sources = {}
+	sources = [("gentoo-sources", "These are the vanilla sources patched with the Gentoo patchset. These are generally considered stable."),
+	           ("vanilla-sources", "These are the kernel sources straight from kernel.org without patches (except where necessary)"),
+	           ("hardened-sources", "These are the vanilla sources patched with the hardened patchset. This results in a more secure system. Do not use these unless you have read the hardened guide first."),
+	           ("grsec-sources", "These are the vanilla sources patched with the grsecurity patchset. Do not use these unless you wear a tinfoil hat and think the government is out to get you."),
+	           ("livecd-kernel", "This will install the LiveCD's kernel/initrd into your new system. Use this option to get your system up and running quickly. You should not tell the installer to emerge any packages that require kernel sources as they won't be present.")]
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
@@ -23,38 +28,21 @@ a brief description beside it.
 		content_label = gtk.Label(content_str)
 		vert.pack_start(content_label, expand=False, fill=False, padding=0)
 
-		self.kernel_sources['gentoo-sources'] = gtk.RadioButton(None, "gentoo-sources")
-		self.kernel_sources['gentoo-sources'].set_name("gentoo-sources")
-		self.kernel_sources['gentoo-sources'].connect("toggled", self.kernel_selected, "gentoo-sources")
-		self.kernel_sources['gentoo-sources'].set_size_request(150, -1)
-		hbox = gtk.HBox(False, 0)
-		hbox.pack_start(self.kernel_sources['gentoo-sources'], expand=False, fill=False, padding=0)
-		tmplabel = gtk.Label("These are the vanilla sources patched with the Gentoo patchset. These are generally considered stable.")
-		tmplabel.set_line_wrap(True)
-		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=10)
-
-		self.kernel_sources['vanilla-sources'] = gtk.RadioButton(self.kernel_sources['gentoo-sources'], "vanilla-sources")
-		self.kernel_sources['vanilla-sources'].set_name("vanilla-sources")
-		self.kernel_sources['vanilla-sources'].connect("toggled", self.kernel_selected, "vanilla-sources")
-		self.kernel_sources['vanilla-sources'].set_size_request(150, -1)
-		hbox = gtk.HBox(False, 0)
-		hbox.pack_start(self.kernel_sources['vanilla-sources'], expand=False, fill=False, padding=0)
-		tmplabel = gtk.Label("These are the kernel sources straight from kernel.org without patches (except where necessary)")
-		tmplabel.set_line_wrap(True)
-		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=10)
-
-		self.kernel_sources['livecd-kernel'] = gtk.RadioButton(self.kernel_sources['gentoo-sources'], "livecd-kernel")
-		self.kernel_sources['livecd-kernel'].set_name("livecd-kernel")
-		self.kernel_sources['livecd-kernel'].connect("toggled", self.kernel_selected, "livecd-kernel")
-		self.kernel_sources['livecd-kernel'].set_size_request(150, -1)
-		hbox = gtk.HBox(False, 0)
-		hbox.pack_start(self.kernel_sources['livecd-kernel'], expand=False, fill=False, padding=0)
-		tmplabel = gtk.Label("This will install the LiveCD's kernel/initrd into your new system. Use this option to get your system up and running quickly. You should not tell the installer to emerge any packages that require kernel sources as they won't be present.")
-		tmplabel.set_line_wrap(True)
-		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=10)
+		for source in self.sources:
+			parent = None
+			name, descr = source
+			if name != self.sources[0][0]:
+				parent = self.kernel_sources[self.sources[0][0]]
+			self.kernel_sources[name] = gtk.RadioButton(parent, name)
+			self.kernel_sources[name].set_name(name)
+			self.kernel_sources[name].connect("toggled", self.kernel_selected, name)
+			self.kernel_sources[name].set_size_request(150, -1)
+			hbox = gtk.HBox(False, 0)
+			hbox.pack_start(self.kernel_sources[name], expand=False, fill=False, padding=0)
+			tmplabel = gtk.Label(descr)
+			tmplabel.set_line_wrap(True)
+			hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
+			vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
 		hbox = gtk.HBox(False, 0)
 		self.bootsplash_check = gtk.CheckButton("Enable bootsplash")
