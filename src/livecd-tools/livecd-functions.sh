@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.15 2005/11/16 15:26:32 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.16 2005/12/05 23:06:34 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -55,13 +55,14 @@ nv_gl() {
 }
 
 get_video_cards() {
-	VIDEO_CARDS="$(/sbin/lspci | grep VGA)"
+	[ -x /sbin/lspci ] && VIDEO_CARDS="$(/sbin/lspci | grep VGA)"
+	[ -x /usr/sbin/lspci ] && VIDEO_CARDS="$(/usr/sbin/lspci | grep VGA)"
 	NUM_CARDS="$(echo ${VIDEO_CARDS} | wc -l)"
 	if [ ${NUM_CARDS} -eq 1 ]; then
 		NVIDIA=$(echo ${VIDEO_CARDS} | grep "nVidia Corporation")
 		ATI=$(echo ${VIDEO_CARDS} | grep "ATI Technologies")
 		if [ -n "${NVIDIA}" ]; then
-			NVIDIA_CARD=$(echo ${NVIDIA} | awk 'BEGIN {RS=" "} /NV[0-9]+/ {print $1}' cut -d. -f1 | sed 's/ //' | sed 's:[^0-9]::g')
+			NVIDIA_CARD=$(echo ${NVIDIA} | awk 'BEGIN {RS=" "} /NV[0-9]+/ {print $1}' | cut -d. -f1 | sed 's/ //' | sed 's:[^0-9]::g')
 			if [ -n "${NVIDIA_CARD}" ]; then
 				if [ $(echo ${NVIDIA_CARD} | cut -dV -f2) -ge 4 ]; then
 					nv_gl
