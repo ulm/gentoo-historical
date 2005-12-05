@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/faq.xml,v 1.11 2005/08/02 00:57:42 ccpz Exp $ -->
-<!-- rev 1.96 by ccpz -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/faq.xml,v 1.12 2005/12/05 13:48:12 ccpz Exp $ -->
+<!-- rev 1.101 by ccpz -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/zh_tw/faq.xml">
@@ -50,11 +50,11 @@
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>3.07</version>
-<date>2005-07-26</date>
+<version>3.3</version>
+<date>2005-11-12</date>
 
 <chapter>
 <title>問題：</title>
@@ -118,6 +118,17 @@
   <li>
     <uri link="#cpus">對於我的 CPU 該用哪個 CD/stage？</uri>
   </li>
+  <li> 
+    <uri link="#dhcp">我開機後網路不通。有哪裡弄錯了？</uri> 
+  </li> 
+  <li> 
+    <uri link="#dualboot">我想要用 GRUB 或 LILO 啟動 Windows，但螢幕一片黑暗，
+	我該怎麼做？</uri> 
+  </li> 
+  <li> 
+    <uri link="#stage12">我如何用 Stage1 或 Stage2壓縮檔安裝 Gentoo？</uri> 
+  </li> 
+
 </ul>
 
 </body>
@@ -355,10 +366,15 @@ Gentoo 的開發工作是非常活躍的，整個發行版的開發週期非常�
 <body>
 
 <p>
-Gentoo 需要 devfs 核心支援或 udev 使用者區支援才能正常工作。因為 2.6 核心在大部
-份架構下都很穩定，建議你使用 udev。請參閱
+Gentoo 需要 devfs 核心支援， udev 使用者區支援，或靜態 <path>/dev</path> 才能正
+常工作。因為 2.6 核心在大部份架構下都很穩定，建議你使用 udev。請參閱
 <uri link="udev-guide.xml">udev 指南</uri>了解如何設定 udev。
 </p>
+
+<p> 
+如果你想要用靜態 <path>/dev</path>，請在 <path>/etc/conf.d/rc</path> 中設定
+<c>RC_DEVICES="static"</c>。
+</p> 
 
 </body>
 </section>
@@ -502,13 +518,120 @@ RSYNC_PROXY="rsync://username:password@yourproxybox.server:portnumber"
 </p>
 
 <p>
-如果你從 stage1 開始安裝，你有比 Gentoo 編譯的 stage 檔更多的選項可以用，閱讀
+請注意你有比 Gentoo 編譯的 stage 檔更多的選項可以用，閱讀
 <uri link="http://gcc.gnu.org/onlinedocs/gcc-3.4.4/gcc/i386-and-x86_002d64-Options.html#i386-and-x86_002d64-Options">gcc
 指南</uri> 了解 <c>-march</c> 的設定值。
 </p>
 
 </body>
 </section>
+<section id="dhcp"> 
+<title>我開機後網路不通。有哪裡弄錯了？</title> 
+<body> 
+    
+<p> 
+首先你要檢查核心有沒有正確偵測到你的網路卡。執行 <c>ifconfig&nbsp;-a</c> 察看
+eth0 或 wlan0(當你使用某些無限網路卡時)是否存在。你可能需要載入特定的核心模組
+讓核心可以正確偵測到網路卡。如果是這種情況，確定你有把這些模組放到
+<path>/etc/modules.autoload.d/kernel-2.6</path> 中(如果你用 2.4 核心的話是
+<path>kernel-2.4</path>)。
+</p> 
+    
+<p> 
+如果你忘記把網路卡支援加入核心中。你需要重新編譯核心。
+</p> 
+    
+<p> 
+如果核心有找到你的網路卡，而且你設定你的網路用 DHCP，你可能忘了
+<c>emerge&nbsp;dhcpcd</c>。你需要用安裝光碟重新開機來安裝 <c>dhcpcd</c>。
+</p> 
+    
+<p> 
+使用安裝光碟修復系統的資訊可以在<uri link="#bootrescue">這裡</uri>找到。
+</p> 
+    
+</body> 
+</section> 
+<section id="dualboot"> 
+<title> 
+我想要用 GRUB 或 LILO 啟動 Windows，但螢幕一片黑暗，我該怎麼做？
+</title> 
+<body> 
+    
+<p> 
+這是很常見的問題，如果你沒有把 Windows 裝在第一個磁碟，他會不開機。要解決這個問
+題，你在開機設定中做一些調整來 "欺騙" Windows，讓他以為他是裝在第一個磁碟。注意
+底下的範例，Gentoo 是安裝在 <path>hda</path> (第一個磁碟)，而 Windows 裝在
+<path>hdb</path> (第二個)。依你的需求調整設定。
+</p> 
+    
+<pre caption="grub.conf Windows 開機設定範例"> 
+title Windows XP 
+  map (hd1) (hd0) 
+  map (hd0) (hd1) 
+  rootnoverify (hd1,0) 
+  chainloader +1 
+</pre> 
+    
+<pre caption="lilo.conf Windows 開機設定範例"> 
+other=/dev/hdb1 
+  label=WindowsXP 
+  table=/dev/hdb 
+  map-drive = 0x80 
+  to = 0x81 
+  map-drive = 0x81 
+  to = 0x80 
+</pre> 
+    
+<p> 
+這會讓 Windows 認為他是裝在第一個磁碟並且順利的開機。根據你使用的開機管理員，可
+以在<uri
+link="http://www.gnu.org/software/grub/manual/html_node/DOS_002fWindows.html">
+GRUB 文件</uri>或 <c>man lilo.conf</c> 找到相關資訊。
+</p> 
+    
+</body> 
+</section> 
+<section id="stage12"> 
+<title>我如何用 Stage1 或 Stage2壓縮檔安裝 Gentoo？</title> 
+<body> 
+    
+<p> 
+Gentoo 手冊只說明如何用 stage3 壓縮檔安裝 Gentoo。但是 Gentoo 依舊有提供 stage1
+及 stage2 壓縮檔。這是為了開發過程而提供 (Release Engineering 團隊使用 stage1
+壓縮檔製作 stage3)，單是一般使用者不必要使用他：stage3 壓縮檔就足以建立整個系統
+。在安裝過程中你需要有網路。
+</p> 
+    
+<p> 
+Bootstrap 代表在安裝好核心系統套件後，編譯你系統的 toolchain (C 函式庫及編譯器)
+。首先先依照 stage3 安裝過程。在你開始<e>設定核心</e>這一章前，修改
+<path>bootstrap.sh</path> 以符合你的需要，然後執行他。
+</p> 
+    
+<pre caption="Bootstrap"> 
+# <i>cd /usr/portage/scripts</i> 
+# <i>vi bootstrap.sh</i> 
+
+# <i>./bootstrap.sh</i> 
+</pre> 
+    
+<p> 
+接下來，使用新編譯好的 toolchain 重新編譯所有核心系統套件。我們需要用重新編譯，
+因為 stage3 壓縮檔中已經提供了。
+</p> 
+    
+<pre caption="重新編譯核心系統套件"> 
+# <i>emerge -e system</i> 
+</pre> 
+    
+<p>
+接著你可以繼續<e>設定核心</e>。但是你不能使用 GRP 套件了。
+</p> 
+    
+</body> 
+</section> 
+
 </chapter>
 
 <chapter>
