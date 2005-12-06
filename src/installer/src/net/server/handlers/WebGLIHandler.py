@@ -161,6 +161,8 @@ class WebGLIHandler(handler.Handler):
 			data += "Found DHCP Options.  You submitted " + self.post_params['dhcp_options'] + "<BR>\n"
 			try:
 				self.shared_info.client_profile.set_network_dhcp_options(None, self.post_params['dhcp_options'], None)
+			except:
+				data += "ERROR: Could not set the dhcp options<br>\n"
 		if 'ip' in self.post_params:
 			data += "Found an IP: you submitted " + self.post_params['ip'] + "<BR>\n"
 			try:
@@ -1130,8 +1132,6 @@ Please be patient while the screens load. It may take awhile.
 			Use unstable (~arch) </td>
 			<td scope="col"><input name="features" type="checkbox" id="binary" value="buildpkg">
 			Build binary packages (buildpkg)</td>
-			<td scope="col"><input name="features" type="checkbox" id="distcc" value="distcc">
-			Distcc</td>
 			<td scope="col"><input name="features" type="checkbox" id="ccache" value="ccache">
 			ccache</td>
 			<td scope="col"><input name="features" type="checkbox" id="sandbox" value="sandbox">
@@ -1144,6 +1144,9 @@ Please be patient while the screens load. It may take awhile.
 			<input name="manfeatures" type="text" id="manfeatures" size="10"></td>
 			<td scope="col">MAKEOPTS:			 
 			<input name="makeopts" type="text" id="makeopts" value="-j2" size="10" maxlength="5"></td>
+		</tr>
+		<tr><td scope="col"><input name="features" type="checkbox" id="distcc" value="distcc">
+			Distcc</td><td>Distcc Config Line:<input name="distcc" type="text" size="80"></td>
 		</tr>
 	</table>
 	<p>
@@ -1182,9 +1185,38 @@ Please be patient while the screens load. It may take awhile.
 		if self.post_params['unstable']:
 			make_conf['ACCEPT_KEYWORDS'] = "~" + self.shared_info.client_profile.get_architecture_template()
 		if self.post_params['features']:
-			features = string.join(self.post_params['features'], ' ')
+			if isinstance(self.post_params['features'], list):
+				features = string.join(self.post_params['features'], ' ')
+			else:
+				features = self.post_params['features']
 		if self.post_params['manfeatures']:
 			features += " "+self.post_params['manfeatures']
+		if "distcc" in features:
+			#Add distcc to the services list.
+			if self.shared_info.install_profile.get_services():
+				services = self.shared_info.install_profile.get_services()
+				if isinstance(services, str):
+					services = services.split(',')
+			else:
+				services = []
+			if not "distccd" in services:
+				services.append("distccd")
+			try:
+				services = string.join(services, ',')
+				if services:
+					self.shared_info.install_profile.set_services(None, services, None)
+			except:
+				data += _(u"ERROR! Could not set the services list.")
+			#Set the distcc flag to emerge earlier than other packages.
+			try:
+				self.shared_info.install_profile.set_install_distcc(None, True, None)
+			except:
+				data += _(u"ERROR! Could not set the install distcc flag!")
+			if self.post_params['distcc']:
+				try:
+					make_conf['DISTCC_HOSTS'] = self.post_params['distcc']
+				except:
+					data += "ERROR! Could not set the distcc hosts!"
 		make_conf['FEATURES'] = features
 		if self.post_params['makeopts']:
 			make_conf['MAKEOPTS'] = self.post_params['makeopts']
@@ -1369,6 +1401,53 @@ Please be patient while the screens load. It may take awhile.
 			etc_files['rc.conf']['XSESSION'] = xsession
 		self.shared_info.install_profile.set_etc_files(etc_files)
 		return self.wrap_in_webgli_template(data)
+		
+	def etc_portage(self):
+		#get etc_files here
+		etc_files = self.shared_info.install_profile.get_etc_files()
+		if self.post_params['save']:
+			if not self.post_params['currentfile']:
+				data = "ERROR you must select a file to edit!<br>\n"
+				return self.wrap_in_webgli_template(data)
+			file = self.post_params['currentfile']
+			etc_files[file] = []
+			etc_files[file].append(self.post_params['filecontents'])
+			self.shared_info.install_profile.set_etc_files(etc_files)
+		#get portage file list here
+		menulist = [("portage/package.mask",_(u"A list of DEPEND atoms to mask.")),
+					("portage/package.unmask",_(u"A list of packages to unmask.")),
+					("portage/package.keywords",_(u"Per-package KEYWORDS (like ACCEPT_KEYWORDS).")),
+					("portage/package.use",_(u"Per-package USE flags."))]
+		 
+		data = "<p>etc/portage/* Settings:</p>\n"
+		data += '<form name="etcportage" method="post" action="/webgli/EtcPortage" enctype="multipart/form-data">'
+		data += """<p>Pick a file to edit:</p>
+		  <table width="100%"  border="1">
+			<tr>
+			  <th scope="col">Edit</th>
+			  <th scope="col">Filename</th>
+			  <th scope="col">Description</th>
+			</tr>"""
+		for file,i in enumerate(menulist):
+			data += '<tr><td><input name="editfile" type="radio" value="'+menulist[file][0]+'"></td>'
+			data += '<td>'+menulist[file][0]+'</td>'
+			data += '<td>'+menulist[file][1]+"</td></tr>\n"
+		data += "</table><br>\n"+'<input name="fileeditsubmit" type="submit" value="EDIT">'
+		
+		if self.post_params['editfile']:
+			file_to_edit = self.post_params['editfile']
+			
+			if file_to_edit in etc_files: 
+				previous_contents = string.join(etc_files[file_to_edit],"\n")
+			else:
+				previous_contents = ""
+			data += "<hr> Currently editing file: "+ file_to_edit + "<br>"
+			data += '<input type="hidden" name="currentfile" value="'+file_to_edit+'">'
+			data += '<textarea name="filecontents" rows=6 cols=80>'+previous_contents+"</textarea><br>\n"
+			data += '<input type="submit" name="save" value="Save Changes">'
+		data += "</form>"
+		return self.wrap_in_webgli_template(data)
+		
 	def kernel(self):
 		data = "<p>Kernel Settings:</p>\n";
 		sources = self.shared_info.install_profile.get_kernel_source_pkg()
@@ -2511,6 +2590,7 @@ Please be patient while the screens load. It may take awhile.
 					'/webgli/savemakedotconf': self.savemakedotconf,
 					'/webgli/ConfigFiles': self.configfiles,
 					'/webgli/saveconfigfiles': self.saveconfigfiles,
+					'/webgli/EtcPortage': self.etc_portage,
 					'/webgli/Kernel': self.kernel,
 					'/webgli/savekernel': self.savekernel,
 					'/webgli/Bootloader': self.bootloader,

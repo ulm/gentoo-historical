@@ -288,6 +288,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						'/webgli/LocalUSE', '/webgli/savelocaluse',
 						'/webgli/MakeDotConf', '/webgli/savemakedotconf',
 						'/webgli/ConfigFiles', '/webgli/saveconfigfiles',
+						'/webgli/EtcPortage',
 						'/webgli/Kernel', '/webgli/savekernel',
 						'/webgli/Bootloader', '/webgli/savebootloader',
 						'/webgli/Timezone', '/webgli/savetimezone',
