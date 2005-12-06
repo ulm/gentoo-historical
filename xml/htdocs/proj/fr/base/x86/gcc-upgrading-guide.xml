@@ -1,0 +1,252 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/fr/base/x86/gcc-upgrading-guide.xml,v 1.1 2005/12/06 14:52:40 neysx Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/fr/base/x86/gcc-upgrading-guide.xml" lang="fr">
+
+<title>Guide de mise à jour de GCC sur Linux Gentoo</title>
+
+<author title="Auteur">
+  <mail link="amne@gentoo.org">Wernfried Haas</mail>
+</author>
+<author title="Auteur">
+  <mail link="wolf31o2@gentoo.org">Chris Gianelloni</mail>
+</author>
+<author title="Traducteur">
+  <mail link="cyril.mougel@gmail.com">Cyril Mougel</mail>
+</author>
+<author title="Traducteur">
+  <mail link="fabien@zouaoui.org">Fabien Zouaoui</mail>
+</author>
+
+<abstract>
+Ce document aide les utilisateurs de Gentoo Linux à mettre GCC à jour.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.3</version>
+<date>2005-12-06</date>
+
+<chapter>
+<title>Introduction</title>
+<section>
+<body>
+
+<p>
+Ce guide évoque la mise à jour de GCC 3.3 à 3.4, mais il peux s'appliquer à
+toutes les mises à jour de GCC.
+</p>
+
+<p>
+L'installation de gcc 3.4.4 n'a pas d'influence sur le système lui-même. Vous
+devez pour cela effectuer le changement de gcc manuellement. Cette étape peut
+prendre beaucoup de temps, alors soyez sûr que vous aurez le temps nécessaire
+et préparez-vous en conséquence. Il y a deux méthodes pour effectuer la mise à
+jour. La premiére méthode est rapide, mais peux éventuellement oublier un
+paquet ou deux qui auraient eu besoin d'être mis à jour. La seconde méthode,
+quant à elle, est plus compléte mais requiert plus de compilations.
+</p>
+
+<note>
+Avant d'effectuer l'une ou l'autre méthode, désactivez distcc si vous l'avez
+activé. Si tous les nœuds distcc n'ont pas gcc-3.4, vous allez au devant de
+problèmes.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Utilisation de revdep-rebuild (méthode rapide)</title>
+<section>
+<body>
+
+<p>
+Cette méthode nécessite que vous installiez au préalable <c>gentoolkit</c>. Si
+vous ne l'avez pas encore fait, faites-le. Ce n'est qu'après que vous pourrez
+mettre à jour GCC et basculer sur votre nouveau compilateur.
+</p>
+
+<pre caption="Installation de gentoolkit et mise à jour de GCC">
+# <i>emerge -an gentoolkit</i>
+# <i>emerge -uav gcc</i>
+# <i>gcc-config i686-pc-linux-gnu-3.4.4</i>
+# <i>source /etc/profile</i>
+</pre>
+
+<note>
+Cela suppose que vous utilisez CHOST="i686-pc-linux-gnu". Si vous utilisez un
+autre CHOST, s'il vous plaît utilisez la ligne appropriée de gcc-config.
+</note>
+
+<warn>
+Ne pas définir de CFLAGS spécifique à GCC 3.4 comme -march=pentium-m durant
+cette étape. Cela peux entraîner des échecs de compilation. Vous pourrez
+définir ces paramètres après la suppression de gcc-3.3.
+</warn>
+
+<p>
+Maintenant, nous pouvons voir quels paquets revdep-rebuild voudra reconstruire.
+Esuite, nous pouvons appeler revdep-rebuild pour reconstruire les paquets. Cela
+peux prendre beaucoup de temps. Soyez patient.
+</p>
+
+<pre caption="Utilisation de revdep-rebuild">
+# <i>revdep-rebuild --library libstdc++.so.5 -- -p -v</i>
+# <i>revdep-rebuild --library libstdc++.so.5</i>
+</pre>
+
+<p>
+Il est possible que vous ayez quelques problèmes avec des paquets dont la
+version n'existe plus, car ils ont été effacés ou masqués. Si c'est le cas,
+vous devez utiliser l'option -X de revdep-rebuild. Ces paquets seront
+recompilés avec le nom de paquet que vous avez installé sans utiliser la même
+version.
+</p>
+
+<pre caption="Utilisation de revdep-rebuild avec -X">
+# <i>revdep-rebuild -X --library libstdc++.so.5 -- -p -v</i>
+# <i>revdep-rebuild -X --library libstdc++.so.5</i>
+</pre>
+
+<p>
+Pour fournir la compatibilité avec les applications binaires en C++ ou un
+paquet que revdep-rebuild aurait manqué, <c>sys-libs/libstdc++-v3</c> a besoin
+d'être installé avant de supprimer GCC 3.3 de votre système.
+</p>
+
+<pre caption="Installation de libstdc++-v3 et nettoyage">
+# <i>emerge --oneshot sys-libs/libstdc++-v3</i>
+# <i>emerge -aC '=sys-devel/gcc-3.3*'</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Utilisation de emerge -e (méthode sûre)</title>
+<section>
+<body>
+
+<p>
+Cette méthode est beaucoup plus lente, elle recompilera l'ensemble de votre
+système et garantit que tout a été reconstruit avec le nouveau compilateur.
+Premièrement, vous devez mettre GCC à jour et selectionner le nouveau
+compilateur.
+</p>
+
+<pre caption="Mise à jour de GCC">
+# <i>emerge -uav gcc</i>
+# <i>gcc-config i686-pc-linux-gnu-3.4.4</i>
+# <i>source /etc/profile</i>
+</pre>
+
+<note>
+Cela suppose que vous utilisez CHOST="i686-pc-linux-gnu". Si vous utilisez un
+autre CHOST, s'il vous plaît, changez la ligne appropriée de gcc-config.
+</note>
+
+<warn>
+Ne pas définir de CFLAGS spécifique à GCC 3.4 comme -march=pentium-m durant
+cette étape. Cela peux entraîner des échecs de compilation. Vous pourrez
+définir ces paramètres après la suppression de gcc-3.3.
+</warn>
+
+<p>
+Pour fournir la compatibilité  avec les applications binaires en C++,
+<c>sys-libs/libstdc++-v3</c> doit être installé sur votre système.
+</p>
+
+<pre caption="Installation de libstdc++-v3">
+# <i>emerge --oneshot sys-libs/libstdc++-v3</i>
+</pre>
+
+<p>
+Nous devons d'abord reconstruire le système, ensuite world. Cela peut prendre
+vraiment beaucoup de temps. Cela dépendra du nombre de paquets que vous avez
+installés, car il reconstruira entiérement votre toolchain et les fichiers
+système. Ceci est necessaire pour garantir que tous les paquets ont été
+compilés avec la nouvelle toolchain, incluant la chaîne d'outil elle-même.
+</p>
+
+<pre caption="Reconstruction de system et world">
+# <i>emerge -e system</i>
+# <i>emerge -e world</i>
+</pre>
+
+<p>
+nous pouvons maintenant enlever l'ancienne version de GCC.
+</p>
+
+<pre caption="Nettoyage">
+# <i>emerge -aC '=sys-devel/gcc-3.3*'</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Astuces et problèmes</title>
+<section>
+<body>
+
+<ul>
+  <li>
+    Une fois que les modules du noyau (par exemple&nbsp;:
+    app-emulation/quemu-softmnu) sont recompilés avec GCC 3.4, vous ne pouvez
+    plus travailler sur le vieux noyau. Recompilez le noyau pour résoudre le
+    problème.
+  </li>
+  <li>
+    Si revdep-rebuild veut reconstruire régulièrement des paquets après que
+    vous les ayez déjà reconstruits, continuez. Les paquets devraient
+    fonctionner malgré tout.
+  </li>
+  <li>
+    Si un paquet échoue durant emerge -e system/world, vous pouvez reprendre
+    l'opération avec <c>emerge --resume</c>. Si un paquet échoue de manière
+    répétée, sautez-le avec <c>emerge --resume --skipfirst</c>. Ne lancez pas
+    plusieurs instances de emerge sinon vous perdrez l'information de reprise.
+  </li>
+  <li>
+    Si vous voyez l'erreur&nbsp;: libtool: link:
+    '/usr/lib/gcc-lib/i686-pc-linux-gnu/3.3.6/libstdc++.la' is not a valid
+    libtool archive, alors relancez <c>/sbin/fix_libtool_files.sh 3.3.6</c>
+  </li>
+  <li>
+    Si <c>/sbin/fix_libtool_files.sh</c> était supprimé quand vous enlevez GCC
+    3.3, vous aurez besoin de réinstaller GCC.  Cela a tendance à se produire
+    si vous avez <c>emerge -e system</c> et que GCC 3.3 a été compilé aprés GCC
+    3.4. Si vous ne voulez pas réinstaller GCC, essayez de restaurer
+    <c>/lib/rcscripts/awk/fixlafiles.awk</c> et
+    <c>/sbin/fix_libtool_files.sh</c> depuis
+    <c>/usr/portage/sys-devel/gcc/files</c> et
+    <c>/usr/portage/sys-devel/gcc/files/awk</c>. Cela signifiera que ces
+    fichiers ne sont pas connus de Portage et votre prochaine instalation
+    pourrait échouer quand vous utiliserez FEATURES=collision-protect.
+  </li>
+  <li>
+    Si vous voyez l'erreur &nbsp;:/usr/bin/gcc-config: line 632:
+    /etc/env.d/gcc/i686-pc-linux-gnu-3.3.5: No such file or directory, alors
+    essayez de supprimer <c>/etc/env.d/gcc/config-i686-pc-linux-gnu</c> et
+    lancez encore <c>gcc-config</c>, suivi de <c>source /etc/profile</c>.
+    Faites seulement cela si vous n'utilisez pas de compilateurs croisés.
+  </li>
+</ul>
+
+<p>
+Voyez la discussion sur ce sujet dans <uri
+link="http://forums.gentoo.org/viewtopic-t-407840.html">les forums</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
