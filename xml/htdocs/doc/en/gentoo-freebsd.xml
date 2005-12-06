@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-freebsd.xml,v 1.10 2005/10/21 10:45:18 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-freebsd.xml,v 1.11 2005/12/06 12:32:46 jkt Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/gentoo-freebsd.xml">
@@ -28,8 +28,8 @@ for people interested in helping out with development.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.8</version>
-<date>2005-10-21</date>
+<version>1.9</version>
+<date>2005-12-06</date>
 
 <chapter>
 <title>Introduction to FreeBSD</title>
@@ -175,13 +175,15 @@ a stage3 tarball.
 <p>
 Before chrooting into the newly-extracted stage, you first must obtain an up-to-date
 copy of the Gentoo/FreeBSD overlay. The easiest way to achieve this is to to get our latest
-snapshot which you than extract to <path>/mnt/gentoo/usr/local/portage</path>
+snapshot which you then extract to <path>/mnt/gentoo/usr/local/portage</path>
 </p>
 
 <pre caption="Getting the Gentoo/FreeBSD Portage overlay">
 # <i>cd /mnt/gentoo/usr/local/portage</i>
 # <i>wget http://gentoo.osuosl.org/experimental/snapshots/portage-alt-overlay-latest.tar.bz2</i>
 # <i>tar -xjf portage-alt-overlay-latest.tar.bz2</i>
+<comment>(You now can safely delete the snapshot with the following command.)</comment>
+# <i>rm portage-alt-overlay-latest.tar.bz2</i>
 </pre>
 
 <p>
@@ -222,6 +224,14 @@ PORTDIR_OVERLAY="/usr/local/portage/portage-alt-overlay"
 </pre>
 
 <p>
+In order to boot correctly, you will need to create the <path>/proc</path> directory.
+</p>
+
+<pre caption="Creating the /proc directory">
+# <i>mkdir /proc</i>
+</pre>
+
+<p>
 Now, you have to obtain a copy of the main Gentoo Portage tree, which depending
 on your connection might take quite a while.
 </p>
@@ -236,20 +246,93 @@ on your connection might take quite a while.
 </pre>
 
 <p>
-Congratulations, by the time you have reached this step you should have a
-running Gentoo/FreeBSD system! If you want, you can now rebuild the system's
-core packages.
+If you want, you can now rebuild the system's core packages.
 </p>
 
-<pre caption="Rebuilding the FreeBSD core packages">
+<pre caption="Rebuilding the FreeBSD core packages (Optional)">
 # <i>emerge -e system</i>
+</pre>
+
+<p>
+When you did <c>emerge -e system</c>, the sources for the FreeBSD kernel got 
+installed to <path>/usr/src/sys</path>. If you skipped this step, you can get 
+them in the following way:
+</p>
+
+<pre caption="Geting the FreeBSD kernel sources">
+# <i>emerge freebsd-sources</i>
+</pre>
+
+<p>
+Configuring and compiling a custom kernel is really different from compiling Linux, 
+so if you are not familiar with the process we encourage you to have a look at 
+<uri link="http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/kernelconfig.html">
+chapter 8</uri> of the FreeBSD handbook.
+</p>
+
+<p>
+Please note that currently only the "Traditional" way of building the kernel is 
+supported on Gentoo/FreeBSD! Also note that <c>make install</c> will probably
+ask you for a <path>/boot/device.hints</path> file. A default version can be
+found in the <path>conf</path> subdirectory of the <c>GENERIC</c> configuration
+and is called <path>GENERIC.hints</path>
+</p>
+
+<p>
+Now is the time to do some basic system configuration and settings. First, we are 
+going to setup the filesystem mounting points in <path>/etc/fstab</path>
+</p>
+
+<pre caption="Editing the filesystem in /etc/fstab">
+# <i>ee /etc/fstab</i>
+<comment>(This is an example, replace X and Y with the correct numbers for your hard disk.)</comment>
+#Device         Mountpoint      Fstype          Options         Dump    Pass
+/dev/adXsYb     none            swap            sw              0       0
+/dev/adXsYa     /               ufs             rw              1       1
+/dev/adXsYe     /usr/home       ufs             rw              2       2
+/dev/adXsYd     /tmp            ufs             rw              2       2
+/dev/acdX       /cdrom          cd9660          ro,noauto       0       0
+</pre>
+
+<p>
+Now would also be a good time to set up your network connection before the final
+reboot.
+</p>
+
+<pre caption="Setting up your network">
+# <i>ee /etc/conf.d/net</i>
+<comment>(This is just an example which you have to adjust for your network.)</comment>
+ifconfig_rl0=("192.168.0.10 netmask 255.255.255.0 broadcast 192.168.0.255")
+routes_rl0=("-net 0.0.0.0 -host 192.168.0.1")
+</pre>
+
+<p>
+To change your hostname you have to edit <path>/etc/hostname</path>.
+</p>
+
+<pre caption="Setting up the machine's hostname">
+# <i>echo "YOUR_HOSTNAME_HERE" > /etc/hostname</i>
+</pre>
+
+<p>
+In case you need to use another keyboard layout for your language, you have to set the 
+correct value in <path>/etc/conf.d/syscons</path>. The following example uses the Spanish
+layout, so you'll have to adjust it to your need if you want to use another one.
+</p>
+
+<pre caption="Changing your keyboard layout (Optional)">
+# <i>ee /etc/conf.d/syscons</i>
+KEYMAP="spanish.iso.acc"
+<comment>(Possible layouts can be found in /usr/share/syscons/keymaps).</comment>
 </pre>
 
 <impo>
 Please make absolutely sure you add your new Gentoo/FreeBSD installation to the
 configuration of your bootloader, otherwise you won't be able to boot your newly
 installed system! If you don't have another bootloader installed, you should use 
-<c>boot0</c>, as it is currently the only one supported by FreeBSD.
+<c>boot0</c>, as it is currently the only one supported by FreeBSD. In this case
+please don't forget to use your other operating systems to <c>boot0</c>'s 
+configuration.
 </impo>
 
 <pre caption="Installing and setting up boot0">
@@ -269,21 +352,25 @@ chapter 12</uri> of the FreeBSD handbook.
 </p>
 
 <p>
-When you did <c>emerge system</c>, the sources for the FreeBSD kernel got 
-installed to <path>/usr/src/sys</path>. Configuring and compiling a custom
-kernel is really different from compiling Linux, so if you are not familiar with
-the process we encourage you to have a look at <uri
-link="http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/kernelconfig.html">
-chapter 8</uri> of the FreeBSD handbook. 
+Now would be a good time to set a password for the <c>root</c> user and to add 
+another user account for your day-to-day work.
 </p>
 
+<pre caption="Changing the root password and adding a new user">
+# <i>passwd</i>
+<comment>(If you need help in adding a user please consult the FreeBSD handbook).</comment>
+# <i>adduser</i>
+</pre>
+
 <p>
-Please note that currently only the "Traditional" way of building the kernel is 
-supported on Gentoo/FreeBSD! Also note that <c>make install</c> will probably
-ask you for a <path>/boot/device.hints</path> file. A default version can be
-found in the <path>conf</path> subdirectory of the <c>GENERIC</c> configuration
-and is called <path>GENERIC.hints</path>
+Congratulations, you have just finished your Gentoo/FreeBSD installation which you 
+can start exploring after the final reboot. Have fun!
 </p>
+
+<pre caption="Rebooting the system">
+# <i>exit</i>
+# <i>reboot</i>
+</pre>
 
 </body>
 </section>
