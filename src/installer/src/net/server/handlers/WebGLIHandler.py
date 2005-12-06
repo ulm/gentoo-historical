@@ -91,7 +91,8 @@ class WebGLIHandler(handler.Handler):
 			data += 'Enter your Broadcast address: <input name="broadcast" type="text" length="50" maxlength="15" value=".255"><br>'
 			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="255.255.255.0"><br>'
 			data += 'Enter your default gateway: <input name="gateway" type="text" length="50" maxlength="15" value=".1"><br>'
-			data += 'Enter a DNS server: <input name="dnsserver" type="text" length="50" maxlength="15" value="128.118.25.3"></td></tr></table>'
+			data += '<hr>Info for DHCP Configurations:<br>DHCP Options: <input type="text" name="dhcp_options" length="50">'
+			data += '<hr>Enter a DNS server: <input name="dnsserver" type="text" length="50" maxlength="15" value="128.118.25.3"></td></tr></table>'
 			data += 'Proxy Information (if necessary):<br>HTTP Proxy URI: <input name="http_proxy" type="text" length="70" value=""><br>FTP Proxy URI: <input name="ftp_proxy" type="text" length="70" value=""><br>RSYNC Proxy URI: <input name="rsync_proxy" type="text" length="70" value="">'	
 		#Enable SSH?
 		data += "<hr>Enable SSH  string here. <br>"
@@ -156,6 +157,10 @@ class WebGLIHandler(handler.Handler):
 				self.shared_info.client_profile.set_network_type(None, self.post_params['Network_Type'], None)
 			except:
 				data += "ERROR: Could not set the Network Type<BR>\n"
+		if 'dhcp_options' in self.post_params:
+			data += "Found DHCP Options.  You submitted " + self.post_params['dhcp_options'] + "<BR>\n"
+			try:
+				self.shared_info.client_profile.set_network_dhcp_options(None, self.post_params['dhcp_options'], None)
 		if 'ip' in self.post_params:
 			data += "Found an IP: you submitted " + self.post_params['ip'] + "<BR>\n"
 			try:
@@ -1682,7 +1687,7 @@ Please be patient while the screens load. It may take awhile.
 			data += 'Networking Info for Manual Configurations:<br>'
 			data += 'Enter your IP address: <input name="ip" type="text" length="50" maxlength="15" value="192.168."><br>'
 			data += 'Enter your Broadcast address: <input name="broadcast" type="text" length="50" maxlength="15" value=".255"><br>'
-			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="255.255.255.0"><br></td></tr></table>'
+			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="255.255.255.0"><br><hr>Info for DHCP Configurations:<br>DHCP Options: <input type="text" name="dhcp_options" length="50"></td></tr></table>'
 			data += '<input type="submit" value="Add Network Device" name="AddIfaceSubmit"><hr>'
 		
 		data += 'Enter your default gateway: <table>'
@@ -1739,9 +1744,11 @@ Please be patient while the screens load. It may take awhile.
 				data += "ERROR: No Network device selected<br>\n"
 			#network type
 			if self.post_params['Network_Type'] == "dhcp":
-				#if self.post_params[' FIXME DHCP OPTIONS
-				try:
+				if self.post_params['dhcp_options']:
+					interfaces[newnic] = ('dhcp', self.post_params['dhcp_options'], None)
+				else:
 					interfaces[newnic] = ('dhcp', "",None)
+				try:
 					self.shared_info.install_profile.set_network_interfaces(interfaces)
 					data += "Network Interfaces saved.<br>\n"
 				except:
