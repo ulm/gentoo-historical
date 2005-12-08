@@ -1,151 +1,85 @@
-	def stageselection(self):
-		data = "<h4>Stage selection:</h4>"
-		stage = self.shared_info.install_profile.get_install_stage()
-		if stage:
-			data += "FOUND A STAGE" + str(stage)
-		grp_install = self.shared_info.install_profile.get_grp_install()
-		dynamic = self.shared_info.install_profile.get_dynamic_stage3()
-		tarball = self.shared_info.install_profile.get_stage_tarball_uri()
-		
-		data += '<form name="stage" action="/webgli/savestage" method="POST" enctype="multipart/form-data">'
-		data += '<p>Which stage do you want to start at?</p><table width="100%"  border="1"><tr><td><input name="stage" type="radio" value="1"'
-		if stage == 1:
-			data += ' checked'
-		data += '>1</td><td>Stage1 is used when you want to bootstrap&amp;build from scratch.</td></tr><tr>			 <td><input name="stage" type="radio" value="2"'
-		if stage == 2:
-			data += ' checked'
-		data += '>2</td><td>Stage2 is used for building from a bootstrapped semi-compiled state.</td></tr><tr>			<td><input name="stage" type="radio" value="3"'
-		if (stage == 3) and not grp_install:
-			data += ' checked'
-		data += '>3</td><td>Stage3 is a basic system that has been built for you (no compiling).</td></tr><tr>			<td><input name="stage" type="radio" value="3+GRP"'
-		if (stage == 3) and grp_install:
-			data += ' checked'
-		data += """>
-			3 + GRP </td>
-			<td>A Stage3 install but using binaries from the LiveCD when able.</td>
-		</tr>
-	</table>
-	<p>  
-		<input name="dynamic" type="checkbox" id="dynamic" value="true" """
-		if dynamic:
-			data += " checked"
-		data += """>
-Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for slow Internet connections, slower for fast connections and slow drives) </p>
-	<p>Stage Tarball URI : 
-		<input name="tarballuri" type="text" id="tarballuri" size="90" """
-		if tarball:
-			data += 'value="'+tarball+'"> '
-		data += """
-		or 
-		<input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&baseuri=' + document.stage.tarballuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')">
-(requires net connectivity)</p>
-<p> <input type="submit" name="savestage" value="Save Stage Selection">
-</form> """
-		return self.wrap_in_webgli_template(data)
-	def savestage(self):
-		data = ""
-		if 'savestage' in self.post_params:
-			data += "YES I CLICKED SAVE<br>"
-			if 'stage' in self.post_params:
-				data += "YES THERE IS A STAGE<br>"
-				if self.post_params['stage'] == "3+GRP":
-					self.post_params['stage'] = "3"
-					try:
-						self.shared_info.install_profile.set_grp_install(None, True,None)
-					except:
-						data += "ERROR COULD NOT SET GRP INSTALL"
-				else:
-					try:
-						self.shared_info.install_profile.set_grp_install(None, False,None)
-					except:
-						data += "ERROR COULD NOT SET GRP INSTALL"
+<? include /webgli/common.pyhtml ?>
+<?
+error_msg = ""
+if self.post_params:
+	if 'savestage' in self.post_params:
+#		print "YES I CLICKED SAVE<br>"
+		if 'stage' in self.post_params:
+#			print "YES THERE IS A STAGE<br>"
+			if self.post_params['stage'] == "3+GRP":
+				self.post_params['stage'] = "3"
 				try:
-					self.shared_info.install_profile.set_install_stage(None, self.post_params['stage'], None)
-					data += "Stage set<br>"
+					self.shared_info.install_profile.set_grp_install(None, True,None)
 				except:
-					data += "ERROR: could not set the install stage<br>\n"
-			if 'tarballuri' in self.post_params and self.post_params['tarballuri']:
-				try:
-					self.shared_info.install_profile.set_stage_tarball_uri(None, self.post_params['tarballuri'], None)
-					data += "Set the tarball uri<br>"
-				except:
-					data += "ERROR: Could not set the tarball URI<br>\n"
-			if 'dynamic' in self.post_params:
-				try:
-					self.shared_info.install_profile.set_dynamic_stage3(None, True, None)
-					self.shared_info.install_profile.set_portage_tree_sync_type(None,"snapshot", None)
-					cd_snapshot_uri = GLIUtility.get_cd_snapshot_uri()
-					self.shared_info.install_profile.set_portage_tree_snapshot_uri(None, cd_snapshot_uri, None)
-				except:
-					data += "ERROR: Could not set dynamic stage 3.<br>\n"
+					error_msg = "ERROR COULD NOT SET GRP INSTALL"
 			else:
 				try:
-					self.shared_info.install_profile.set_dynamic_stage3(None, False, None)
+					self.shared_info.install_profile.set_grp_install(None, False,None)
 				except:
-					data += "ERROR: Could not set dynamic stage 3.<br>\n"
-		elif 'browseuri' in self.post_params:
-			data = "REDIRECT OR POP UP THINGI"
-			
-			
-		return self.wrap_in_webgli_template(data)
-		
-	def portagetree(self):
-		data = "<p>Portage Tree Sync Type:</p>"
-		synctype = self.shared_info.install_profile.get_portage_tree_sync_type()
-		snapshoturi = self.shared_info.install_profile.get_portage_tree_snapshot_uri()
-		if self.shared_info.install_profile.get_dynamic_stage3():  #special case
-			data += "<p><b>Since you are doing a dynamic stage3 install, it requires the use of the portage snapshot contained on the livecd.  This has been auto-set.</b></p>\n"
-			return self.wrap_in_webgli_template(data)
-		data += '<form name="portage" action="/webgli/saveportage" method="POST" enctype="multipart/form-data">'
-		data += """<p>Which method do you want to use to sync the portage tree for the installation? If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd.</p>
-	<table width="100%"  border="1">
-		<tr>
-			<td><input name="portagetype" type="radio" value="sync" """
-		if synctype == "sync":
-			data += "checked"
-		data += '>Sync</td><td>Normal. Use emerge sync RECOMMENDED!</td></tr><tr><td><input name="portagetype" type="radio" value="webrsync"'
-		if synctype == "webrsync":
-			data += "checked"
-		data += '>Webrsync</td><td>HTTP daily snapshot. Use when rsync is firewalled.</td></tr><tr>			<td><input name="portagetype" type="radio" value="snapshot"'
-		if synctype == "snapshot":
-			data += "checked"
-		data += '>Snapshot</td><td>Use a portage snapshot, either a local file or a URL</td></tr><tr>			 <td><input name="portagetype" type="radio" value="none"'
-		if synctype == "none" or not synctype:
-			data += "checked"
-		data += """>
-			None</td>
-			<td>Extra cases such as if /usr/portage is an NFS mount</td>
-		</tr>
-	</table>
-	<p>Snapshot URI (if doing shapshot): 
-		<input name="snapshoturi" type="text" id="snapshoturi" size="90" """
-		if snapshoturi:
-			data += ' value="'+snapshoturi+'">'
-		data += """or </p><input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=portage&baseuri=' + document.portage.snapshoturi.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')"><p><input type="submit" name="saveportage" value="Save Portage Settings"></form>"""
-		return self.wrap_in_webgli_template(data)
-	def saveportage(self):
-		data = ""
-		if 'saveportage' in self.post_params:
-			if 'portagetype' in self.post_params:
-				try:
-					self.shared_info.install_profile.set_portage_tree_sync_type(None,self.post_params['portagetype'],None)
-				except:
-					data += "ERROR: Could not set the portage tree sync type<br>\n"
-			if 'snapshoturi' in self.post_params and self.post_params['snapshoturi']:
-				try:
-					self.shared_info.install_profile.set_portage_tree_snapshot_uri(None,self.post_params['snapshoturi'],None)
-				except:
-					data += "ERROR: Could not set the portage snapshot URI"
-		elif 'browsesnap' in self.post_params:
-			data += "REDIRECT OR POP UP THINGI"		
-		return self.wrap_in_webgli_template(data)
-
-	def globaluse(self):
-		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"
-		if self.shared_info.install_profile.get_dynamic_stage3():
-			data += "<b>You have selected a dynamic stage3 installation.  This setting forbids you from changing your USE flags until after the installation to prevent breaking the stage3 creation process.</b>"
-			return self.wrap_in_webgli_template(data)
-		etc_files = self.shared_info.install_profile.get_etc_files()
-		if etc_files.has_key("make.conf"):
-			make_conf = etc_files['make.conf']
+					error_msg = "ERROR COULD NOT SET GRP INSTALL"
+			try:
+				self.shared_info.install_profile.set_install_stage(None, self.post_params['stage'], None)
+#				data += "Stage set<br>"
+			except:
+				error_msg = "ERROR: could not set the install stage"
+		if 'tarballuri' in self.post_params and self.post_params['tarballuri']:
+			try:
+				self.shared_info.install_profile.set_stage_tarball_uri(None, self.post_params['tarballuri'], None)
+#				data += "Set the tarball uri<br>"
+			except:
+				error_msg = "ERROR: Could not set the tarball URI"
+		if 'dynamic' in self.post_params:
+			try:
+				self.shared_info.install_profile.set_dynamic_stage3(None, True, None)
+				self.shared_info.install_profile.set_portage_tree_sync_type(None,"snapshot", None)
+				cd_snapshot_uri = GLIUtility.get_cd_snapshot_uri()
+				self.shared_info.install_profile.set_portage_tree_snapshot_uri(None, cd_snapshot_uri, None)
+			except:
+				error_msg = "ERROR: Could not set dynamic stage 3."
 		else:
+			try:
+				self.shared_info.install_profile.set_dynamic_stage3(None, False, None)
+			except:
+				error_msg = "ERROR: Could not set dynamic stage 3.<br>\n"
+
+stage = self.shared_info.install_profile.get_install_stage()
+grp_install = self.shared_info.install_profile.get_grp_install()
+dynamic = self.shared_info.install_profile.get_dynamic_stage3()
+tarball = self.shared_info.install_profile.get_stage_tarball_uri()
+?>
+<h4>Stage selection:</h4>
+<: if error_msg:
+<br><br><% error_msg %><br><br>
+:>
+<: if stage:
+FOUND A STAGE<% str(stage) %>
+:>
+<form name="stage" action="/webgli/stageselection.pyhtml" method="POST" enctype="multipart/form-data">
+<p>Which stage do you want to start at?</p>
+<table width="100%"  border="1">
+  <tr>
+    <td><input name="stage" type="radio" value="1" <? if stage == 1: print 'checked' ?>>1</td>
+    <td>Stage1 is used when you want to bootstrap&amp;build from scratch.</td>
+  </tr>
+  <tr>
+    <td><input name="stage" type="radio" value="2" <? if stage == 2: print 'checked' ?>>2</td>
+    <td>Stage2 is used for building from a bootstrapped semi-compiled state.</td>
+  </tr>
+  <tr>
+    <td><input name="stage" type="radio" value="3" <? if (stage == 3) and not grp_install: print 'checked' ?>>3</td>
+    <td>Stage3 is a basic system that has been built for you (no compiling).</td>
+  </tr>
+  <tr>
+    <td><input name="stage" type="radio" value="3+GRP" <?if (stage == 3) and grp_install: print 'checked' ?>>3 + GRP </td>
+    <td>A Stage3 install but using binaries from the LiveCD when able.</td>
+  </tr>
+</table>
+<p>  
+<input name="dynamic" type="checkbox" id="dynamic" value="true" <? if dynamic: print "checked" ?>>
+Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for slow Internet connections, slower for fast connections and slow drives) </p>
+<p>Stage Tarball URI: <input name="tarballuri" type="text" id="tarballuri" size="90" value="<% tarball %>"> or 
+<input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&baseuri=' + document.stage.tarballuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')">
+(requires net connectivity)</p>
+<p><input type="submit" name="savestage" value="Save Stage Selection">
+</form>
+<? return_content = self.wrap_in_webgli_template(return_content) ?>

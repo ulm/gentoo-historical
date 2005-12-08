@@ -1,151 +1,69 @@
-	def networkmounts(self):
-		data = "Network Mounts page."
-		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
-		
-		#	data += "Network Mount found: " + netmount['host'] + ":" + netmount['export'] + "<br>\n"
-		data += "If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.	Currently GLI only supports NFS mounts."
-		data += """
-		<form name="netmount" action="/webgli/savenetmounts" method="POST" enctype="multipart/form-data">
-		<p>If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount. Currently GLI only supports NFS mounts.</p>
-		<table width="511" border="1">
-		<tr>
-			<td width="31">Edit</td>
-			<td width="31">Type</td>
-			<td width="79">Hostname/IP</td>
-			<td width="79">Export</td>
-			<td width="70">Mountpoint</td>
-			<td width="103">Mount Options </td>
-		</tr>"""
-		for i,netmount in enumerate(network_mounts):
-			data += '<tr><td><input name="edit_nfs" type="radio" id="edit_nfs" value="'+str(i)+"\">Edit</td>\n"
-			data += '<td>'+network_mounts[i]['type']+"</td>\n"
-			data += '<td>'+network_mounts[i]['host']+"</td>\n"
-			data += '<td>'+network_mounts[i]['export']+"</td>\n"
-			data += '<td>'+network_mounts[i]['mountpoint']+"</td>\n"
-			data += '<td>'+network_mounts[i]['mountopts']+"</td></tr>\n"
-		data += """
-		</table>
-	
-	<hr>
-		<p>&nbsp;  </p>
-		<table width="100%"  border="1">
-		<tr>
-			<td><p>Enter the IP/hostname:
-				<input name="hostname" type="text" id="hostname">
-				<input type="Submit" name="Search" value="Search">
-			</p>
-			<p>Enter the export name:
-				<input name="export" type="text" id="export">
-			</p>
-			<p>OR</p>
-			<p>Choose the export from the list of found exports:
-				<select name="exports" size="1" id="exports">
-				</select>
-			</p></td>
-			<td><p>Enter the mountpoint:
-				<input name="mountpoint" type="text" id="mountpoint">
-			</p>
-			<p>Enter any special mount options: 
-			<input name="mountopts" type="text" id="mountopts">
-			</p></td>
-		</tr>
-		<tr>
-			<td>&nbsp;</td>
-			<td><input name="addnfs" type="submit" id="addnfs" value="Add New NFS Mount"></td>
-		</tr>
-		</table>
-		<p>&nbsp;</p>
-		<p>&nbsp;</p>
-		<p>&nbsp;  </p>
-	</form>
-		"""
-		
-		return self.wrap_in_webgli_template(data)
-		
-	def savenetmounts(self):
-		data = ""
-		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
-		if 'addnfs' in self.post_params:
-			if not 'hostname' in self.post_params or not self.post_params['hostname']:
-				data += "ERROR: Hostname not found.<br>\n"
-			elif not 'export' in self.post_params or not self.post_params['export']:
-				data += "ERROR: Export not found.<br>\n"
-			elif not 'mountpoint' in self.post_params or not self.post_params['mountpoint']:
-				data += "ERROR: Mountpoint not found.<br>\n"
-			else:	
-				network_mounts.append({'export': self.post_params['export'], 'host': self.post_params['hostname'], 'mountopts': self.post_params['mountopts'], 'mountpoint': self.post_params['mountpoint'], 'type': 'nfs'})
-				try:
-					self.shared_info.install_profile.set_network_mounts(network_mounts)
-					data += "Network mount added successfully.<br>\n"
-				except:
-					data += "ERROR: Could not add network mount.<br>\n"
-		return self.wrap_in_webgli_template(data)
-		
-	def stageselection(self):
-		data = "<h4>Stage selection:</h4>"
-		stage = self.shared_info.install_profile.get_install_stage()
-		if stage:
-			data += "FOUND A STAGE" + str(stage)
-		grp_install = self.shared_info.install_profile.get_grp_install()
-		dynamic = self.shared_info.install_profile.get_dynamic_stage3()
-		tarball = self.shared_info.install_profile.get_stage_tarball_uri()
-		
-		data += '<form name="stage" action="/webgli/savestage" method="POST" enctype="multipart/form-data">'
-		data += '<p>Which stage do you want to start at?</p><table width="100%"  border="1"><tr><td><input name="stage" type="radio" value="1"'
-		if stage == 1:
-			data += ' checked'
-		data += '>1</td><td>Stage1 is used when you want to bootstrap&amp;build from scratch.</td></tr><tr>			 <td><input name="stage" type="radio" value="2"'
-		if stage == 2:
-			data += ' checked'
-		data += '>2</td><td>Stage2 is used for building from a bootstrapped semi-compiled state.</td></tr><tr>			<td><input name="stage" type="radio" value="3"'
-		if (stage == 3) and not grp_install:
-			data += ' checked'
-		data += '>3</td><td>Stage3 is a basic system that has been built for you (no compiling).</td></tr><tr>			<td><input name="stage" type="radio" value="3+GRP"'
-		if (stage == 3) and grp_install:
-			data += ' checked'
-		data += """>
-			3 + GRP </td>
-			<td>A Stage3 install but using binaries from the LiveCD when able.</td>
-		</tr>
-	</table>
-	<p>  
-		<input name="dynamic" type="checkbox" id="dynamic" value="true" """
-		if dynamic:
-			data += " checked"
-		data += """>
-Generate a dynamic stage3 on the fly using the files on the LiveCD? (faster for slow Internet connections, slower for fast connections and slow drives) </p>
-	<p>Stage Tarball URI : 
-		<input name="tarballuri" type="text" id="tarballuri" size="90" """
-		if tarball:
-			data += 'value="'+tarball+'"> '
-		data += """
-		or 
-		<input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=stage&baseuri=' + document.stage.tarballuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')">
-(requires net connectivity)</p>
-<p> <input type="submit" name="savestage" value="Save Stage Selection">
-</form> """
-		return self.wrap_in_webgli_template(data)
-	def savestage(self):
-		data = ""
-		if 'savestage' in self.post_params:
-			data += "YES I CLICKED SAVE<br>"
-			if 'stage' in self.post_params:
-				data += "YES THERE IS A STAGE<br>"
-				if self.post_params['stage'] == "3+GRP":
-					self.post_params['stage'] = "3"
-					try:
-						self.shared_info.install_profile.set_grp_install(None, True,None)
-					except:
-						data += "ERROR COULD NOT SET GRP INSTALL"
-				else:
-					try:
-						self.shared_info.install_profile.set_grp_install(None, False,None)
-					except:
-						data += "ERROR COULD NOT SET GRP INSTALL"
-				try:
-					self.shared_info.install_profile.set_install_stage(None, self.post_params['stage'], None)
-					data += "Stage set<br>"
-				except:
-					data += "ERROR: could not set the install stage<br>\n"
-			if 'tarballuri' in self.post_params and self.post_params['tarballuri']:
-				try:
+<? include /webgli/common.pyhtml ?>
+<?
+network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
+error_msg = ""
+if self.post_params:
+	if 'addnfs' in self.post_params:
+		if not 'hostname' in self.post_params or not self.post_params['hostname']:
+			error_msg = "ERROR: Hostname not found."
+		elif not 'export' in self.post_params or not self.post_params['export']:
+			error_msg = "ERROR: Export not found."
+		elif not 'mountpoint' in self.post_params or not self.post_params['mountpoint']:
+			error_msg = "ERROR: Mountpoint not found."
+		else:	
+			network_mounts.append({'export': self.post_params['export'], 'host': self.post_params['hostname'], 'mountopts': self.post_params['mountopts'], 'mountpoint': self.post_params['mountpoint'], 'type': 'nfs'})
+			try:
+				self.shared_info.install_profile.set_network_mounts(network_mounts)
+			except:
+				error_msg = "ERROR: Could not add network mount."
+?>
+Network Mounts page.<br>
+<: if error_msg:
+<br><% error_msg %><br><br>
+:>
+If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.	Currently GLI only supports NFS mounts.
+<form name="netmount" action="/webgli/networkmounts.pyhtml" method="POST" enctype="multipart/form-data">
+<p>If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount. Currently GLI only supports NFS mounts.</p>
+<table width="511" border="1">
+  <tr>
+    <td width="31">Edit</td>
+    <td width="31">Type</td>
+    <td width="79">Hostname/IP</td>
+    <td width="79">Export</td>
+    <td width="70">Mountpoint</td>
+    <td width="103">Mount Options </td>
+  </tr>
+<: for i,netmount in __builtins__.enumerate(network_mounts):
+  <tr>
+    <td><input name="edit_nfs" type="radio" id="edit_nfs" value="<% str(i) %>">Edit</td>
+    <td><% network_mounts[i]['type'] %></td>
+    <td><% network_mounts[i]['host'] %></td>
+    <td><% network_mounts[i]['export'] %></td>
+    <td><% network_mounts[i]['mountpoint'] %></td>
+    <td><% network_mounts[i]['mountopts'] %></td>
+  </tr>
+:>
+</table>
+<hr>
+<p>&nbsp;  </p>
+<table width="100%"  border="1">
+  <tr>
+    <td><p>Enter the IP/hostname: <input name="hostname" type="text" id="hostname"> <input type="Submit" name="Search" value="Search"></p>
+        <p>Enter the export name: <input name="export" type="text" id="export"></p>
+        <p>OR</p>
+        <p>Choose the export from the list of found exports: <select name="exports" size="1" id="exports"></select></p>
+    </td>
+    <td><p>Enter the mountpoint: <input name="mountpoint" type="text" id="mountpoint"></p>
+        <p>Enter any special mount options: <input name="mountopts" type="text" id="mountopts"></p>
+    </td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td><input name="addnfs" type="submit" id="addnfs" value="Add New NFS Mount"></td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+</form>
+<? return_content = self.wrap_in_webgli_template(return_content) ?>

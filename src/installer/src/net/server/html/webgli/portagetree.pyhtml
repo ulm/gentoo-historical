@@ -1,151 +1,52 @@
-	def portagetree(self):
-		data = "<p>Portage Tree Sync Type:</p>"
-		synctype = self.shared_info.install_profile.get_portage_tree_sync_type()
-		snapshoturi = self.shared_info.install_profile.get_portage_tree_snapshot_uri()
-		if self.shared_info.install_profile.get_dynamic_stage3():  #special case
-			data += "<p><b>Since you are doing a dynamic stage3 install, it requires the use of the portage snapshot contained on the livecd.  This has been auto-set.</b></p>\n"
-			return self.wrap_in_webgli_template(data)
-		data += '<form name="portage" action="/webgli/saveportage" method="POST" enctype="multipart/form-data">'
-		data += """<p>Which method do you want to use to sync the portage tree for the installation? If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd.</p>
-	<table width="100%"  border="1">
-		<tr>
-			<td><input name="portagetype" type="radio" value="sync" """
-		if synctype == "sync":
-			data += "checked"
-		data += '>Sync</td><td>Normal. Use emerge sync RECOMMENDED!</td></tr><tr><td><input name="portagetype" type="radio" value="webrsync"'
-		if synctype == "webrsync":
-			data += "checked"
-		data += '>Webrsync</td><td>HTTP daily snapshot. Use when rsync is firewalled.</td></tr><tr>			<td><input name="portagetype" type="radio" value="snapshot"'
-		if synctype == "snapshot":
-			data += "checked"
-		data += '>Snapshot</td><td>Use a portage snapshot, either a local file or a URL</td></tr><tr>			 <td><input name="portagetype" type="radio" value="none"'
-		if synctype == "none" or not synctype:
-			data += "checked"
-		data += """>
-			None</td>
-			<td>Extra cases such as if /usr/portage is an NFS mount</td>
-		</tr>
-	</table>
-	<p>Snapshot URI (if doing shapshot): 
-		<input name="snapshoturi" type="text" id="snapshoturi" size="90" """
-		if snapshoturi:
-			data += ' value="'+snapshoturi+'">'
-		data += """or </p><input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=portage&baseuri=' + document.portage.snapshoturi.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')"><p><input type="submit" name="saveportage" value="Save Portage Settings"></form>"""
-		return self.wrap_in_webgli_template(data)
-	def saveportage(self):
-		data = ""
-		if 'saveportage' in self.post_params:
-			if 'portagetype' in self.post_params:
-				try:
-					self.shared_info.install_profile.set_portage_tree_sync_type(None,self.post_params['portagetype'],None)
-				except:
-					data += "ERROR: Could not set the portage tree sync type<br>\n"
-			if 'snapshoturi' in self.post_params and self.post_params['snapshoturi']:
-				try:
-					self.shared_info.install_profile.set_portage_tree_snapshot_uri(None,self.post_params['snapshoturi'],None)
-				except:
-					data += "ERROR: Could not set the portage snapshot URI"
-		elif 'browsesnap' in self.post_params:
-			data += "REDIRECT OR POP UP THINGI"		
-		return self.wrap_in_webgli_template(data)
+<? include /webgli/common.pyhtml ?>
+<?
+error_msg = ""
+if self.post_params:
+	if 'saveportage' in self.post_params:
+		if 'portagetype' in self.post_params:
+			try:
+				self.shared_info.install_profile.set_portage_tree_sync_type(None,self.post_params['portagetype'],None)
+			except:
+				error_msg = "ERROR: Could not set the portage tree sync type"
+		if 'snapshoturi' in self.post_params and self.post_params['snapshoturi']:
+			try:
+				self.shared_info.install_profile.set_portage_tree_snapshot_uri(None,self.post_params['snapshoturi'],None)
+			except:
+				error_msg = "ERROR: Could not set the portage snapshot URI"
 
-	def globaluse(self):
-		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"
-		if self.shared_info.install_profile.get_dynamic_stage3():
-			data += "<b>You have selected a dynamic stage3 installation.  This setting forbids you from changing your USE flags until after the installation to prevent breaking the stage3 creation process.</b>"
-			return self.wrap_in_webgli_template(data)
-		etc_files = self.shared_info.install_profile.get_etc_files()
-		if etc_files.has_key("make.conf"):
-			make_conf = etc_files['make.conf']
-		else:
-			make_conf = {}
-		data += """The installer will now gather information regarding the contents of /etc/make.conf
-One of the unique (and best) features of Gentoo is the ability to
-define flags (called USE flags) that define what components are 
-compiled into applications.  For example, you can enable the alsa
-flag and programs that have alsa capability will use it.	
-The result is a finely tuned OS with no unnecessary components to
-slow you down.
-The installer divides USE flag selection into two screens, one for
-global USE flags and one for local flags specific to each program.
-Please be patient while the screens load. It may take awhile.
-<form action="/webgli/saveglobaluse" method="POST" enctype="multipart/form-data">
-"""
-#First set the USE flags, this is a biggie.
-		if make_conf.has_key("USE"): 
-			system_use_flags = make_conf["USE"]
-		else:  #not a preloaded config.  this is the NORMAL case.
-			system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
-		use_flags = []
-		use_desc = GLIUtility.get_global_use_flags()
-		#populate the choices list
-		sorted_use = use_desc.keys()
-		sorted_use.sort()
-		#present the GLOBAL checkbox list
-		data += '<h3>Global USE Flags:</h3><table width="100%"	border="1"><tr><th scope="col">Active</th><th scope="col">Flag</th><th scope="col">Description</th></tr>'+"\n"
-		for flagname in sorted_use:
-			data += '<tr><td><input name="flags" type="checkbox" id="flags" value="'+flagname+'" '
-			if flagname in system_use_flags:
-				data += "checked"
-			data += "></td><td>"+flagname+"</td><td>"+use_desc[flagname]+"</td></tr>\n"
-		data += "</table><br>"
-		data += '<input name="saveglobaluse" type="submit" id="saveglobaluse" value="Save Global USE Settings">'
-		data += "</form>\n"
-		return self.wrap_in_webgli_template(data)
-	def saveglobaluse(self):
-		data = ""
-		temp_use = "-* "
-		if self.post_params['flags']:
-			if isinstance(self.post_params['flags'], list):
-				use_flags = self.post_params['flags'];
-				for flag in use_flags:
-					temp_use += flag + " "
-			else:
-				temp_use += self.post_params['flags'] + " "
-			self.shared_info.temp_use = temp_use
-		return self.wrap_in_webgli_template(data)
-	def localuse(self):
-		data = "<h2>Configuration Files Settings</h2><p>Make.conf Settings:</p>"
-		if self.shared_info.install_profile.get_dynamic_stage3():
-			data += "<b>You have selected a dynamic stage3 installation.  This setting forbids you from changing your USE flags until after the installation to prevent breaking the stage3 creation process.</b>"
-			return self.wrap_in_webgli_template(data)
-		etc_files = self.shared_info.install_profile.get_etc_files()
-		if etc_files.has_key("make.conf"):
-			make_conf = etc_files['make.conf']
-		else:
-			make_conf = {}
-		data += """The installer will now gather information regarding the contents of /etc/make.conf
-One of the unique (and best) features of Gentoo is the ability to
-define flags (called USE flags) that define what components are 
-compiled into applications.  For example, you can enable the alsa
-flag and programs that have alsa capability will use it.	
-The result is a finely tuned OS with no unnecessary components to
-slow you down.
-The installer divides USE flag selection into two screens, one for
-global USE flags and one for local flags specific to each program.
-Please be patient while the screens load. It may take awhile.
-<form action="/webgli/savelocaluse" method="POST" enctype="multipart/form-data">
-"""
-#First set the USE flags, this is a biggie.
-
-		if make_conf.has_key("USE"): 
-			system_use_flags = make_conf["USE"]
-		else:  #not a preloaded config.  this is the NORMAL case.
-			system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
-		use_local_flags = []
-		use_local_desc = GLIUtility.get_local_use_flags()
-		#re-populate the chocies list
-		sorted_use = use_local_desc.keys()
-		sorted_use.sort()
-		#present the LOCALcheckbox list
-		data += '<h3>Local USE Flags:</h3><table width="100%"  border="1"><tr><th scope="col">Active</th><th scope="col">Flag</th><th scope="col">Description</th></tr>'+"\n"
-		for flagname in sorted_use:
-			data += '<tr><td><input name="flags" type="checkbox" id="flags" value="'+flagname+'" '
-			if flagname in system_use_flags:
-				data += "checked"
-			data += "></td><td>"+flagname+"</td><td>"+use_local_desc[flagname]+"</td></tr>\n"
-		data += "</table><br>"
-		data += '<input name="savelocaluse" type="submit" id="savelocaluse" value="Save Local USE Settings">'
-		data += "</form>\n"
-		return self.wrap_in_webgli_template(data)
-	def savelocaluse(self):
+synctype = self.shared_info.install_profile.get_portage_tree_sync_type()
+snapshoturi = self.shared_info.install_profile.get_portage_tree_snapshot_uri()
+?>
+<p>Portage Tree Sync Type:</p>
+<: if error_msg:
+<br><% error_msg %><br><br>
+:>
+<: if self.shared_info.install_profile.get_dynamic_stage3():  #special case
+<p><b>Since you are doing a dynamic stage3 install, it requires the use of the portage snapshot contained on the livecd.  This has been auto-set.</b></p>
+<: else:
+<form name="portage" action="/webgli/portagetree.pyhtml" method="POST" enctype="multipart/form-data">
+<p>Which method do you want to use to sync the portage tree for the installation? If choosing a snapshot you will need to provide the URI for the snapshot if it is not on the livecd.</p>
+<table width="100%"  border="1">
+  <tr>
+    <td><input name="portagetype" type="radio" value="sync" <? if synctype == "sync": print "checked" ?>>Sync</td>
+    <td>Normal. Use emerge sync RECOMMENDED!</td>
+  </tr>
+  <tr>
+    <td><input name="portagetype" type="radio" value="webrsync" <? if synctype == "webrsync": print "checked" ?>>Webrsync</td>
+    <td>HTTP daily snapshot. Use when rsync is firewalled.</td>
+  </tr>
+  <tr>
+    <td><input name="portagetype" type="radio" value="snapshot" <? if synctype == "snapshot": print "checked" ?>>Snapshot</td>
+    <td>Use a portage snapshot, either a local file or a URL</td>
+  </tr>
+  <tr>
+    <td><input name="portagetype" type="radio" value="none" <? if synctype == "none" or not synctype: print "checked" ?>>None</td>
+    <td>Extra cases such as if /usr/portage is an NFS mount</td>
+  </tr>
+</table>
+<p>Snapshot URI (if doing shapshot): <input name="snapshoturi" type="text" id="snapshoturi" size="90" value="<% snapshoturi %>"> or </p>
+<input type="button" value="Browse the mirrors for the URL" onClick="window.open('/webgli/URIBrowser?screen=portage&baseuri=' + document.portage.snapshoturi.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')">
+<p><input type="submit" name="saveportage" value="Save Portage Settings">
+</form>
+:>
+<? return_content = self.wrap_in_webgli_template(return_content) ?>
