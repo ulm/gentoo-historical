@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $OldHeader: /var/www/www.gentoo.org/raw_cvs/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.59 2005/07/26 17:28:11 vanquirius Exp $ -->
+<!-- $OldHeader: /var/www/www.gentoo.org/raw_cvs/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.63 2005/07/26 17:28:11 vanquirius Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -21,8 +21,8 @@ Tài liệu này giúp cài đặt ALSA trên Gentoo Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.7</version>
-<date>2005-07-26</date>
+<version>2.10</version>
+<date>2005-09-10</date>
 
 <chapter>
 <title>Giới thiệu</title>
@@ -232,7 +232,7 @@ Giờ hãy cấu hình kernel để bật ALSA.
 </p>
 
 <impo>
-Người dùng <c>genkernel</c> nên chạy <c>genkernel --menuconfig</c> và
+Người dùng <c>genkernel</c> nên chạy <c>genkernel --menuconfig all</c> và
 làm theo chỉ dẫn trong <uri link="#doc_chap2_pre3">Tùy chọn kernel cho ALSA</uri>.
 </impo>
 
@@ -309,7 +309,8 @@ USB Devices   ---&gt;
 
 <p>
 Giờ bạn đã đặt tùy chọn xong, bạn có thể biên dịch (lại) kernel với hỗ
-trợ ALSA cho card của bạn và nó sẽ hoạt động sau khi khởi động.
+trợ ALSA cho card của bạn và nó sẽ hoạt động sau khi khởi động. Đừng
+quên cập nhật cấu hình GRUB để dùng kernel mới.
 Bạn cần cài đặt <uri link="#alsa-utilities">Tiện ích ALSA</uri> và xem
 xem mọi thứ có ổn không.
 </p>
@@ -735,6 +736,76 @@ Mixers:
 0: SigmaTel STAC9721/23
 </pre>
 
+<p>
+Một vấn đề người dùng thường gặp là lỗi "Unknown symbol in module".
+Bên dưới là một ví dụ.
+</p>
+
+<pre caption="Lỗi Unknown Symbol in module">
+# <i>/etc/init.d/alsasound start</i>
+ * Loading ALSA modules ...
+ *   Loading: snd-card-0 ...                                              [ ok ]
+ *   Loading: snd-pcm-oss ...
+WARNING: Error inserting snd_mixer_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-mixer-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg) FATAL: Error inserting
+snd_pcm_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-pcm-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg)
+                                                                          [ !! ]
+ *   Loading: snd-mixer-oss ...
+FATAL: Error inserting snd_mixer_oss
+(/lib/modules/2.6.12-gentoo-r6/kernel/sound/core/oss/snd-mixer-oss.ko): Unknown
+symbol in module, or unknown parameter (see dmesg)
+                                                                          [ !! ]
+ *   Loading: snd-seq ...                                                 [ ok ]
+ *   Loading: snd-emu10k1-synth ...                                       [ ok ]
+ *   Loading: snd-seq-midi ...                                            [ ok ]
+ * Restoring Mixer Levels ...                                             [ ok ]
+</pre>
+
+<p>
+Khi xem <c>dmesg</c> như đề nghị, bạn sẽ thấy giống như sau:
+</p>
+
+<pre caption="Kết xuất dmesg">
+<comment>(Chỉ những phần liên quan được hiển thị)</comment>
+# <i>dmesg | less</i>
+ACPI: PCI Interrupt 0000:02:06.0[A] -> Link [APC3] -> GSI 18 (level, low) -> IRQ 209
+snd_mixer_oss: Unknown symbol snd_unregister_oss_device
+snd_mixer_oss: Unknown symbol snd_register_oss_device
+snd_mixer_oss: Unknown symbol snd_mixer_oss_notify_callback
+snd_mixer_oss: Unknown symbol snd_oss_info_register
+snd_pcm_oss: Unknown symbol snd_unregister_oss_device
+snd_pcm_oss: Unknown symbol snd_register_oss_device
+snd_pcm_oss: Unknown symbol snd_mixer_oss_ioctl_card
+snd_pcm_oss: Unknown symbol snd_oss_info_register
+snd_mixer_oss: Unknown symbol snd_unregister_oss_device
+snd_mixer_oss: Unknown symbol snd_register_oss_device
+snd_mixer_oss: Unknown symbol snd_mixer_oss_notify_callback
+snd_mixer_oss: Unknown symbol snd_oss_info_register
+</pre>
+
+<p>
+Vấn đề trên là do bạn chuyển từ <c>alsa-driver</c> sang
+ALSA-trong-kernel vì khi bạn unmerge <c>alsa-driver</c> những tập tin
+module được bảo vệ (như cách các tập tin cấu hình được bảo vệ) và vẫn
+còn lại. Vì thế khi bạn chuyển sang driver mới, chạy <c>modprobe</c>
+sẽ cho bạn một mớ hỗn hợp giữa <c>alsa-driver</c> và các driver trong
+kernel, dẫn đến lỗi.
+</p>
+
+<p>
+Giải pháp khá đơn giản. Chỉ cần bỏ bằng tay thư mục gây ra vấn đề sau
+kh chạy <c>alsa-driver</c>. Nhớ loại bỏ đúng phiên bản kernel, không
+phải phiên bản đang dùng!
+</p>
+
+<pre caption="Loại bỏ các module của alsa-driver">
+<comment>(Thay KERNELVER bằng phiên bản kernel của bạn)</comment>
+# <i>rm -rf /lib/modules/KERNELVER/alsa-driver</i>
+</pre>
+
 </body>
 </section>
 </chapter>
@@ -781,6 +852,8 @@ cho phù hợp.
 <pre caption="Nạp Soundfonts">
 <comment>(Trước hết, chép Soundfont)</comment>
 # <i>cp /mnt/win2k/Program\ Files/CreativeSBLive2k/SFBank/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i>
+<comment>(Hoặc lấy từ SoundBlaster CD của bạn)</comment>
+# <i>cp /mnt/cdrom/AUDIO/ENGLISH/SFBANK/8MBGMSFX.SF2 /usr/share/sounds/sf2/</i>
 <comment>(Nạp một Soundfont)</comment>
 # <i>asfxload /usr/share/sounds/sf2/8MBGMSFX.SF2</i>
 </pre>
