@@ -144,7 +144,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 					elif line.startswith(openprint):
 						tmpline = line.split(openprint, 1)[1].split(closeprint, 1)[0].strip()
 						line = line.split(closeprint, 1)[1]
-						tmpline = 'return_content += %s' % tmpline
+						tmpline = 'return_content += cgi.escape(%s)' % tmpline
 						if not line:
 							tmpline += ' + "\\n"'
 						output.append('\t' * indentlevel + tmpline)
@@ -431,13 +431,23 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		if path.endswith(".pyhtml"):
 			while 1:
 				try:
-					mtime = os.stat(path)[8]
+					try:
+						mtime = os.stat(path)[8]
+					except OSError:
+						pass
 					if path in pyhtml_mtimes and mtime == pyhtml_mtimes[path]:
 						tmpcode = pyhtml_cache[path]
 					else:
 						try:
 							tmpcode = self.process_html(path)
+						except IOError:
+							self.send_response(404)
+							self.end_headers()
+							self.wfile.write("<h2>404 Not Found</h2>The resource you were looking for does not exist")
+							return
 						except:
+							if debug:
+								print "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception())
 							return_content = "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception())
 							break
 					exec tmpcode
@@ -449,6 +459,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						self.end_headers()
 						return
 				except:
+					if debug:
+						print "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception())
 					return_content = "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre><br>Generated code:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception(), cgi.escape(tmpcode))
 				break
 			self.send_response(200)

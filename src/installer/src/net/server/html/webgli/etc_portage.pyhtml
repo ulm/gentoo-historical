@@ -1,151 +1,56 @@
-	def etc_portage(self):
-		#get etc_files here
-		etc_files = self.shared_info.install_profile.get_etc_files()
-		if self.post_params['save']:
-			if not self.post_params['currentfile']:
-				data = "ERROR you must select a file to edit!<br>\n"
-				return self.wrap_in_webgli_template(data)
-			file = self.post_params['currentfile']
-			etc_files[file] = []
-			etc_files[file].append(self.post_params['filecontents'])
-			self.shared_info.install_profile.set_etc_files(etc_files)
-		#get portage file list here
-		menulist = [("portage/package.mask",_(u"A list of DEPEND atoms to mask.")),
-					("portage/package.unmask",_(u"A list of packages to unmask.")),
-					("portage/package.keywords",_(u"Per-package KEYWORDS (like ACCEPT_KEYWORDS).")),
-					("portage/package.use",_(u"Per-package USE flags."))]
-		 
-		data = "<p>etc/portage/* Settings:</p>\n"
-		data += '<form name="etcportage" method="post" action="/webgli/EtcPortage" enctype="multipart/form-data">'
-		data += """<p>Pick a file to edit:</p>
-		  <table width="100%"  border="1">
-			<tr>
-			  <th scope="col">Edit</th>
-			  <th scope="col">Filename</th>
-			  <th scope="col">Description</th>
-			</tr>"""
-		for file,i in enumerate(menulist):
-			data += '<tr><td><input name="editfile" type="radio" value="'+menulist[file][0]+'"></td>'
-			data += '<td>'+menulist[file][0]+'</td>'
-			data += '<td>'+menulist[file][1]+"</td></tr>\n"
-		data += "</table><br>\n"+'<input name="fileeditsubmit" type="submit" value="EDIT">'
-		
-		if self.post_params['editfile']:
-			file_to_edit = self.post_params['editfile']
-			
-			if file_to_edit in etc_files: 
-				previous_contents = string.join(etc_files[file_to_edit],"\n")
-			else:
-				previous_contents = ""
-			data += "<hr> Currently editing file: "+ file_to_edit + "<br>"
-			data += '<input type="hidden" name="currentfile" value="'+file_to_edit+'">'
-			data += '<textarea name="filecontents" rows=6 cols=80>'+previous_contents+"</textarea><br>\n"
-			data += '<input type="submit" name="save" value="Save Changes">'
-		data += "</form>"
-		return self.wrap_in_webgli_template(data)
-		
-	def kernel(self):
-		data = "<p>Kernel Settings:</p>\n";
-		sources = self.shared_info.install_profile.get_kernel_source_pkg()
-		build_method = self.shared_info.install_profile.get_kernel_build_method()
-		bootsplash = self.shared_info.install_profile.get_kernel_bootsplash()
-		configuri= self.shared_info.install_profile.get_kernel_config_uri()
-		data += '<form name="kernel" method="post" action="/webgli/savekernel" enctype="multipart/form-data">'
-		data += """  <p>Choose which kernel sources to use for your system. If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration.</p>
+<? include /webgli/common.pyhtml ?>
+<?
+etc_files = self.shared_info.install_profile.get_etc_files()
+error_msg = ""
+if self.post_params:
+	if self.post_params['save']:
+		if not self.post_params['currentfile']:
+			error_msg = "ERROR you must select a file to edit!<br>\n"
+		file = self.post_params['currentfile']
+		etc_files[file] = []
+		etc_files[file].append(self.post_params['filecontents'])
+		self.shared_info.install_profile.set_etc_files(etc_files)
+	if not error_msg:
+		error_msg = "Values saved successfully"
+#get portage file list here
+menulist = [("portage/package.mask",_(u"A list of DEPEND atoms to mask.")),
+			("portage/package.unmask",_(u"A list of packages to unmask.")),
+			("portage/package.keywords",_(u"Per-package KEYWORDS (like ACCEPT_KEYWORDS).")),
+			("portage/package.use",_(u"Per-package USE flags."))]
+?>
+<p>etc/portage/* Settings:</p>
+<: if error_msg:
+<br><% error_msg %><br><br>
+:>
+<form name="etcportage" method="post" action="/webgli/etc_portage.pyhtml" enctype="multipart/form-data">
+<p>Pick a file to edit:</p>
 <table width="100%"  border="1">
-<tr><td><input name="sources" type="radio" value="livecd-kernel" """
-		if sources == "livecd-kernel":
-			data += "checked"
-		data += '>Livecd Kernel </td><td>Use the running kernel (fastest)</td></tr><tr><td>'+"\n"+'<input name="sources" type="radio" value="vanilla-sources" '
-		if sources == "vanilla-sources":
-			data += "checked"
-		data += '>Vanilla (normal) </td><td>Normal. The Unaltered Linux Kernel ver 2.6+ (safest) (recommended) </td></tr>'+"\n"+'<tr><td><input name="sources" type="radio" value="gentoo-sources" '
-		if sources == "gentoo-sources":
-			data += "checked"
-		data += ">Gentoo</td><td>Gentoo's optimized 2.6+ kernel. (less safe) </td>		</tr>\n"+'<tr><td><input name="sources" type="radio" value="hardened-sources" '
-		if sources == "hardened-sources":
-			data += "checked"
-		data += ">Hardened</td><td>Hardened sources for the 2.6 kernel tree</td></tr>\n"+'<tr><td><input name="sources" type="radio" value="grsec-sources" '
-		if sources == "grsec-sources":
-			data += "checked"
-		data += ">grsec</td><td>Vanilla sources with grsecurity patches </td></tr>\n"
-		if sources not in ["livecd-kernel", "vanilla-sources", "gentoo-sources", "hardened-sources", "grsec-sources"]:
-			data += '<tr><td><input name="sources" type="radio" value="Other" checked>Other</td><td>Specify your own here: <input name="manualsouces" type="text" id="manualsouces" value="'+sources+'"></td></tr></table>'+"\n"
-		else:
-			data += '<tr><td><input name="sources" type="radio" value="Other">Other</td><td>Specify your own here: <input name="manualsouces" type="text" id="manualsouces" value=""></td></tr></table>'+"\n"
-		data += """<hr>
-<table width="507"	border="1">
-	<tr>
-		<td colspan="2" scope="col"><p>There are currently two ways the installer can compile a kernel for your new system. You can either provide a previously-made kernel configuration file and use the traditional kernel-compiling procedure (no initrd) or have genkernel automatically create your kernel for you (with initrd).</p>
-		<p>If you do not have a previously-made kernel configuration, YOU MUST CHOOSE Genkernel. Choose which method you want to use:</p></td>
-	</tr>
-	<tr>
-		<td width="143" scope="col"><input name="build_method" type="radio" value="genkernel" """
-		if build_method == "genkernel":
-			data += "checked"
-		data += '>Genkernel</td><td width="348" scope="col"><input name="build_method" type="radio" value="custom" '
-		if build_method == "custom":
-			data += "checked"
-		data += ">Traditional (requires a config!)</td></tr></table>\n"
-		data += '<p><input name="bootsplash" type="checkbox" id="bootsplash" value="True" '
-		if bootsplash:
-			data += "checked"
-		data += ">Display the bootsplash screen on startup </p><p>If you have a custom kernel configuration, enter its location (otherwise just leave blank):\n"
-		data += '<input name="configuri" type="text" id="configuri" '
-		if configuri:
-			data += 'value="'+configuri+'">'
-		data += """<input name="browseuri" type="button" id="browseuri" value="Browse" onClick="window.open('/webgli/URIBrowser?screen=kernel&baseuri=' + document.kernel.configuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')"> 
-		</p><p><input name="setkernel" type="submit" id="setkernel" value="Save Kernel Settings"></p></form>"""
-		
-		return self.wrap_in_webgli_template(data)
-	def savekernel(self):
-		data = ""
-		if self.post_params['setkernel']:
-			if self.post_params['manualsouces']:
-				try:
-					self.shared_info.install_profile.set_kernel_source_pkg(None,self.post_params['manualsouces'],None)
-				except:
-					data += "ERROR: Could not set the kernel sources!" + self.post_params['manualsouces']
-			elif self.post_params['sources']:
-				try:
-					self.shared_info.install_profile.set_kernel_source_pkg(None,self.post_params['sources'],None)
-				except:
-					data += "ERROR: Could not set the kernel sources!" + self.post_params['sources']
-			if self.post_params['build_method']:
-				try:
-					self.shared_info.install_profile.set_kernel_build_method(None,self.post_params['build_method'],None)
-				except:
-					data += "ERROR: Could not set the kernel build method!"
-				if self.post_params['configuri']:
-					try:
-						self.shared_info.install_profile.set_kernel_config_uri(None,self.post_params['configuri'],None)
-					except:
-						data += "ERROR: Could not set the kernel config URI!"
-			if self.post_params['bootsplash']:
-				try:
-					self.shared_info.install_profile.set_kernel_bootsplash(None,self.post_params['bootsplash'],None)
-				except:
-					data += "ERROR: Could not set the kernel bootsplash!" + self.post_params['bootsplash']
-		
-		return self.wrap_in_webgli_template(data)
-	def bootloader(self):
-		arch = self.shared_info.client_profile.get_architecture_template()
-		parts = self.shared_info.install_profile.get_partition_tables()
-		#Bootloader code yanked from the x86ArchTemplate
-		if self.shared_info.install_profile.get_boot_device():
-			boot_device = self.shared_info.install_profile.get_boot_device()
-		else:
-			boot_device = ""
-			foundboot = False
-			for device in parts:
-				tmp_partitions = parts[device].get_install_profile_structure()
-				for partition in tmp_partitions:
-					mountpoint = tmp_partitions[partition]['mountpoint']
-					if (mountpoint == "/boot"):
-						foundboot = True
-					if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
-						boot_device = device
-
-		bootloader = self.shared_info.install_profile.get_boot_loader_pkg()
-		arch_loaders = { 'x86': [
-				("grub",(u"GRand Unified Bootloader, newer, RECOMMENDED")),
+  <tr>
+    <th scope="col">Edit</th>
+    <th scope="col">Filename</th>
+    <th scope="col">Description</th>
+  </tr>
+<: for file,i in __builtins__.enumerate(menulist):
+  <tr>
+    <td><input name="editfile" type="radio" value="<% menulist[file][0] %>"></td>
+    <td><% menulist[file][0] %></td>
+    <td><% menulist[file][1] %></td>
+  </tr>
+:>
+</table><br>
+<input name="fileeditsubmit" type="submit" value="EDIT">
+<: if self.post_params['editfile']:
+<?
+file_to_edit = self.post_params['editfile']
+if file_to_edit in etc_files: 
+	previous_contents = "\n".join(etc_files[file_to_edit])
+else:
+	previous_contents = ""
+?>
+<hr> Currently editing file: <% file_to_edit %><br>
+<input type="hidden" name="currentfile" value="<% file_to_edit %>">
+<textarea name="filecontents" rows=6 cols=80><% previous_contents %></textarea><br>
+<input type="submit" name="save" value="Save Changes">
+:>
+</form>
+<? return_content = self.wrap_in_webgli_template(return_content) ?>
