@@ -1,0 +1,151 @@
+	def savedaemons(self):
+		data = ""
+		if self.post_params['savedaemons']:
+			if self.post_params['logger']:
+				try:
+					self.shared_info.install_profile.set_logging_daemon_pkg(None, self.post_params['logger'], None)
+				except:
+					data += "ERROR: Could not set logger!<br>\n"
+			if self.post_params['cron']:
+				try:
+					self.shared_info.install_profile.set_cron_daemon_pkg(None, self.post_params['cron'], None)
+				except:
+					data += "ERROR: Could not set cron daemon!<br>\n"
+		return self.wrap_in_webgli_template(data)
+	def services(self):
+		data = ""
+		if self.shared_info.install_profile.get_services():
+			services = self.shared_info.install_profile.get_services()
+			if isinstance(services, str):
+				services = services.split(',')
+		else:
+			services = []
+		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),int("alsasound" in services)),
+			("apache", _(u"Common web server (version 1.x)"),int("apache" in services)),
+			("apache2", _(u"Common web server (version 2.x)"),int("apache2" in services)),
+			("distccd", _(u"Distributed Compiling System"),int("distccd" in services)),
+			("esound", _(u"ESD Sound Daemon"),int("esound" in services)),
+			("hdparm", _(u"Hard Drive Tweaking Utility"),int("hdparm" in services)),
+			("local", _(u"Run scripts found in /etc/conf.d/local.start"),int("local" in services)),
+			("portmap", _(u"Port Mapping Service"),int("portmap" in services)),
+			("proftpd", _(u"Common FTP server"),int("proftpd" in services)),
+			("sshd", _(u"SSH Daemon (allows remote logins)"),int("sshd" in services)),
+			("xfs", _(u"X Font Server"),int("xfs" in services)),
+			("xdm", _(u"X Daemon"),int("xdm" in services))]
+		services_string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
+		data += services_string
+		data += '<form name="services" method="post" action="/webgli/saveservices" enctype="multipart/form-data">'
+		data += "<table border=\"1\"><tr><td>Activate</td><td>Service</td><td>Description</td></tr>"
+		for i,choice in enumerate(choice_list):
+			data += '<tr><td><input type="checkbox" name="services" value="'+choice_list[i][0]+'" '
+			if choice_list[i][2]:
+				data += "checked"
+			data += "></td><td>"+choice_list[i][0]+"</td><td>"+choice_list[i][1]+"</td></tr>\n"
+		data += "</table>\n"
+		data += "<hr>You can also opt to enter your services in a comma-separated list (NOTE Manual list overwrites checked selections!): "
+		data += '<input type="text" name="servicesmanual" value="'+string.join(services, ',')+'">'
+		data += '<br><input type="submit" name="saveservices" value="Save Services"></form>'
+		return self.wrap_in_webgli_template(data)
+	def saveservices(self):
+		data = ""
+		if self.post_params['saveservices']:
+			if self.post_params['servicesmanual']:
+				services = self.post_params['servicesmanual']				
+			elif self.post_params['services']:
+				services = self.post_params['services']
+				services = string.join(services, ',')
+			try:
+				
+				print services + "\n"
+				if services:
+					self.shared_info.install_profile.set_services(None, services, None)
+			except:
+				data += "ERROR! Could not set the services list.<br>\n"
+		return self.wrap_in_webgli_template(data)
+	def extrapackages(self):
+		data = ""
+		grp_list = GLIUtility.get_grp_pkgs_from_cd()
+		if self.post_params['packages']:
+			try:
+				packages = string.join(self.post_params['packages'], ' ')
+				if packages:
+					self.shared_info.install_profile.set_install_packages(None, packages, None)
+			except:
+				data += _(u"ERROR! Could not set the install packages! <br>\n")
+		if self.post_params['manualpackages']:
+			try:
+				packages = self.post_params['manualpackages']
+				if packages:
+					self.shared_info.install_profile.set_install_packages(None, packages, None)
+			except:
+				data += _(u"ERROR! Could not set the manual install packages! <br>\n")
+		if self.shared_info.install_profile.get_install_packages():
+			install_packages = self.shared_info.install_profile.get_install_packages()
+			if isinstance(install_packages, str):
+				install_packages = install_packages.split()
+		else:
+			install_packages = []
+		
+		package_list = self.shared_info.install_profile.get_install_package_list()
+		highlevel_menu = []
+		for group in package_list:
+			highlevel_menu.append( (group, package_list[group][0]) )
+				
+		data += """
+		<script>
+		</script>
+		<form name="packages" action="/webgli/ExtraPackages" method="POST" enctype="multipart/form-data">
+		"""
+		for param in self.get_params:
+			if "show" in param:  #this means it's a param referring to a group to show.  include it as a hidden so it'll get shown next time too.
+				data += '<input type="hidden" name="'+param+'" value="'+self.get_params[param]+"\">\n"
+		for param in self.post_params:
+			if "show" in param:  #this means it's a param referring to a group to show.  include it as a hidden so it'll get shown next time too.
+				if type(self.post_params[param]) == list:
+					self.post_params[param] = self.post_params[param][-1]
+				data += '<input type="hidden" name="'+param+'" value="'+self.post_params[param]+"\">\n"
+		#Start the table
+		data += "<h2>Extra Packages</h2>Your current package list is: "+string.join(install_packages, ',')
+		data += '<table width="100%"  border="1">'
+		for group_pair in highlevel_menu:
+			group = group_pair[0]
+			pkgs = package_list[group][1]
+			#FIXME ADD x of y SELECTED TO HEADER
+			if self.post_params['show_'+group] == "Expand":
+				data += '<tr><th scope="col"><input type="submit" name="show_'+group+'" value="Collapse"></th><td><input type="checkbox" name="all_'+group+'" value="checkbox" '
+				#CALCULATE IF ALL PACKAGES IN GROUP ARE IN INSTALL PACKAGES
+				allpkgsfound = True
+				for pkg in pkgs:
+					if not pkg in install_packages:
+						allpkgsfound = False
+				if allpkgsfound:
+					data += "checked"
+				data += '>All</td><th scope="col">'+group+": "+group_pair[1]+"</th></tr>\n"
+			
+			else:   #show plus sign for group and no table.
+				data += '<tr><th scope="col"><input type="submit" name="show_'+group+'" value="Expand"></th><td><input type="checkbox" name="all_'+group+'" value="checkbox" '
+				#CALCULATE IF ALL PACKAGES IN GROUP ARE IN INSTALL PACKAGES
+				allpkgsfound = True
+				for pkg in pkgs:
+					if not pkg in install_packages:
+						allpkgsfound = False
+				if allpkgsfound:
+					data += "checked"
+				data += '>All</td><th scope="col">'+group+": "+group_pair[1]+"</th></tr>\n"
+			#now show the packages in the group
+			if self.post_params['show_'+group] == "Expand" or self.get_params['show_'+group] == "Expand":
+				for pkg in pkgs:
+					data += '<tr><td></td>'
+					data += '<td> <input type="checkbox" name="packages" value="'+pkg+'" '
+					if pkg in install_packages:
+						data += "checked"
+					data += '>'+pkg+'</td><td>'+pkgs[pkg]+"</td></tr>\n"
+			else:
+				for pkg in pkgs:
+					if pkg in install_packages:
+						data += '<tr><td></td><td> <input type="checkbox" name="packages" value="'+pkg+'" checked>'+pkg+'</td><td>'+pkgs[pkg]+"</td></tr>\n"
+			data += "\n</table>"
+			data += '<br>Manually specify a list of packages (overwrites checked list):<input type="text" name="manualpackages"><br>'
+			data += '<input type="submit" name="SavePackages" value="Save Packages"></form>'
+		return self.wrap_in_webgli_template(data)
+	def savepackages(self):

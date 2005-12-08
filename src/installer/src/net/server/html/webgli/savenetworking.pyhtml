@@ -1,0 +1,151 @@
+	def savenetworking(self):
+		data = ""
+		#interfaces = self.shared_info.interfaces
+		interfaces = self.shared_info.install_profile.get_network_interfaces()
+		if self.post_params['savenetwork']:
+			try:
+				self.shared_info.install_profile.set_network_interfaces(interfaces)
+				data += "Network Interfaces saved.<br>\n"
+			except:
+				data += "ERROR: Could not set the network interfaces!<br>\n"
+		elif self.post_params['AddIfaceSubmit']:
+			#network interface
+			if self.post_params['ifacemanual']:
+				newnic = self.post_params['ifacemanual']
+			elif self.post_params['ifacelist']:
+				newnic = self.post_params['ifacelist']
+			else:
+				data += "ERROR: No Network device selected<br>\n"
+			#network type
+			if self.post_params['Network_Type'] == "dhcp":
+				if self.post_params['dhcp_options']:
+					interfaces[newnic] = ('dhcp', self.post_params['dhcp_options'], None)
+				else:
+					interfaces[newnic] = ('dhcp', "",None)
+				try:
+					self.shared_info.install_profile.set_network_interfaces(interfaces)
+					data += "Network Interfaces saved.<br>\n"
+				except:
+					data += "ERROR: Could not set interface DHCP<br>\n"
+			elif self.post_params['Network_Type'] == "static":
+				if 'ip' in self.post_params:
+					data += "Found an IP: you submitted " + self.post_params['ip'] + "<BR>\n"
+					newip = self.post_params['ip']
+				if 'broadcast' in self.post_params:
+					data += "Found an broadcast IP: you submitted " + self.post_params['broadcast'] + "<BR>\n"
+					newbroadcast = self.post_params['broadcast']
+				if 'netmask' in self.post_params:
+					data += "Found an netmask IP: you submitted " + self.post_params['netmask'] + "<BR>\n"
+					newnetmask = self.post_params['netmask']
+				if 'gateway' in self.post_params:
+					data += "Found an gateway IP: you submitted " + self.post_params['gateway'] + "<BR>\n"
+					newgateway = self.post_params['gateway']
+				try:
+					interfaces[newnic] = (newip, newbroadcast, newnetmask)
+					self.shared_info.install_profile.set_network_interfaces(interfaces)
+					data += "Network Interfaces saved.<br>\n"
+				except:
+					data += "ERROR: Could not add the new interface.<BR>\n"
+		
+		elif self.post_params['DelIfaceSubmit']:
+			data += "Deleting Interface"
+			if self.post_params['EditIface']:
+				try:
+					iface = self.post_params['EditIface']
+					del interfaces[iface]
+					self.shared_info.install_profile.set_network_interfaces(interfaces)
+					data += "Network Interfaces saved.<br>\n"
+					return self.return_redirect("/webgli/Networking")
+				except:
+					data += "ERROR: Could not delete the interface.<BR>\n"	
+			else:
+				data += "ERROR: No device selected to delete!<br>\n"
+			
+		#elif self.post_params['EditIfaceSubmit']:
+		
+		if 'dnsserver' in self.post_params:
+			data += "Found an DNS server: you submitted " + self.post_params['dnsserver'] + "<BR>\n"
+			try:
+				self.shared_info.install_profile.set_dns_servers(None, self.post_params['dnsserver'], None)
+			except:
+				data += "ERROR: Could not set the DNS Server<BR>\n"
+		if 'http_proxy' in self.post_params:
+			data += "Found an HTTP Proxy IP: you submitted " + self.post_params['http_proxy'] + "<BR>\n"
+			try:
+				self.shared_info.install_profile.set_http_proxy(None, self.post_params['http_proxy'], None)
+			except:
+				data += "ERROR: Could not set the HTTP Proxy IP<BR>\n"
+		if 'ftp_proxy' in self.post_params:
+			data += "Found an FTP Proxy IP: you submitted " + self.post_params['ftp_proxy'] + "<BR>\n"
+			try:
+				self.shared_info.install_profile.set_ftp_proxy(None, self.post_params['ftp_proxy'], None)
+			except:
+				data += "ERROR: Could not set the FTP Proxy IP<BR>\n"
+		if 'rsync_proxy' in self.post_params:
+			data += "Found an RSYNC Proxy IP: you submitted " + self.post_params['rsync_proxy'] + "<BR>\n"
+			try:
+				self.shared_info.install_profile.set_rsync_proxy(None, self.post_params['rsync_proxy'], None)
+			except:
+				data += "ERROR: Could not set the RSYNC Proxy IP<BR>\n"
+		
+		return self.wrap_in_webgli_template(data)
+	def daemons(self):
+		data = "<h2>Cron and Logging Daemons:</h2>\n";
+		cron = self.shared_info.install_profile.get_cron_daemon_pkg()
+		logger = self.shared_info.install_profile.get_logging_daemon_pkg()
+		data += '<form name="daemons" method="post" action="/webgli/savedaemons" enctype="multipart/form-data">'
+		data += """  <p>Choose which cron daemon to use for your system. While it is possible to not choose a cron daemon and still have a working system, this is NOT recommended and is considered a VERY BAD THING.<br>Choose your cron daemon:</p>
+			<table width="100%"  border="1">
+			<tr><td><input name="cron" type="radio" value="vixie-cron" """
+		if cron == "vixie-cron":
+			data += "checked"
+		data += ">Vixie-cron </td><td>Paul Vixie's cron daemon, fully featured, RECOMMENDED.</td></tr>\n"
+		data += '<tr><td><input name="cron" type="radio" value="dcron" '
+		if cron == "dcron":
+			data += "checked"
+		data += ">Dcron </td><td>A cute little cron from Matt Dillon.</td></tr>\n"
+		data += '<tr><td><input name="cron" type="radio" value="fcron" '
+		if cron == "fcron":
+			data += "checked"
+		data += ">Fcron </td><td>A scheduler with extended capabilities over cron & anacron.</td></tr>\n"
+		data += '<tr><td><input name="cron" type="radio" value="none" '
+		if cron == "none":
+			data += "checked"
+		data += ">None </td><td>Don't use a cron daemon. (NOT Recommended!).</td></tr></table>\n"
+		data += "<br><hr><p>Choose which logging daemon to use for your system.  A logger is required by the Gentoo Manual.<br>Choose your logging daemon:</p>\n  <table width=\"100%\" border=\"1\">\n"
+		data += '<tr><td><input name="logger" type="radio" value="syslog-ng" '
+		if logger == "syslog-ng":
+			data += "checked"
+		data += "> syslog-ng </td><td>An advanced system logger. (default)</td></tr>\n"
+		data += '<tr><td><input name="logger" type="radio" value="metalog" '
+		if logger == "metalog":
+			data += "checked"
+		data += "> metalog </td><td>A Highly-configurable system logger.</td></tr>\n"
+		data += '<tr><td><input name="logger" type="radio" value="syslogkd" '
+		if logger == "syslogkd":
+			data += "checked"
+		data += "> syslogkd </td><td>The traditional set of system logging daemons.</td></tr></table>\n"
+		data += '<input type="submit" name="savedaemons" value="Save Daemons"></form>'
+		
+		return self.wrap_in_webgli_template(data)
+	def savedaemons(self):
+		data = ""
+		if self.post_params['savedaemons']:
+			if self.post_params['logger']:
+				try:
+					self.shared_info.install_profile.set_logging_daemon_pkg(None, self.post_params['logger'], None)
+				except:
+					data += "ERROR: Could not set logger!<br>\n"
+			if self.post_params['cron']:
+				try:
+					self.shared_info.install_profile.set_cron_daemon_pkg(None, self.post_params['cron'], None)
+				except:
+					data += "ERROR: Could not set cron daemon!<br>\n"
+		return self.wrap_in_webgli_template(data)
+	def services(self):
+		data = ""
+		if self.shared_info.install_profile.get_services():
+			services = self.shared_info.install_profile.get_services()
+			if isinstance(services, str):
+				services = services.split(',')
+		else:

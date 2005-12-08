@@ -1,0 +1,151 @@
+	def daemons(self):
+		data = "<h2>Cron and Logging Daemons:</h2>\n";
+		cron = self.shared_info.install_profile.get_cron_daemon_pkg()
+		logger = self.shared_info.install_profile.get_logging_daemon_pkg()
+		data += '<form name="daemons" method="post" action="/webgli/savedaemons" enctype="multipart/form-data">'
+		data += """  <p>Choose which cron daemon to use for your system. While it is possible to not choose a cron daemon and still have a working system, this is NOT recommended and is considered a VERY BAD THING.<br>Choose your cron daemon:</p>
+			<table width="100%"  border="1">
+			<tr><td><input name="cron" type="radio" value="vixie-cron" """
+		if cron == "vixie-cron":
+			data += "checked"
+		data += ">Vixie-cron </td><td>Paul Vixie's cron daemon, fully featured, RECOMMENDED.</td></tr>\n"
+		data += '<tr><td><input name="cron" type="radio" value="dcron" '
+		if cron == "dcron":
+			data += "checked"
+		data += ">Dcron </td><td>A cute little cron from Matt Dillon.</td></tr>\n"
+		data += '<tr><td><input name="cron" type="radio" value="fcron" '
+		if cron == "fcron":
+			data += "checked"
+		data += ">Fcron </td><td>A scheduler with extended capabilities over cron & anacron.</td></tr>\n"
+		data += '<tr><td><input name="cron" type="radio" value="none" '
+		if cron == "none":
+			data += "checked"
+		data += ">None </td><td>Don't use a cron daemon. (NOT Recommended!).</td></tr></table>\n"
+		data += "<br><hr><p>Choose which logging daemon to use for your system.  A logger is required by the Gentoo Manual.<br>Choose your logging daemon:</p>\n  <table width=\"100%\" border=\"1\">\n"
+		data += '<tr><td><input name="logger" type="radio" value="syslog-ng" '
+		if logger == "syslog-ng":
+			data += "checked"
+		data += "> syslog-ng </td><td>An advanced system logger. (default)</td></tr>\n"
+		data += '<tr><td><input name="logger" type="radio" value="metalog" '
+		if logger == "metalog":
+			data += "checked"
+		data += "> metalog </td><td>A Highly-configurable system logger.</td></tr>\n"
+		data += '<tr><td><input name="logger" type="radio" value="syslogkd" '
+		if logger == "syslogkd":
+			data += "checked"
+		data += "> syslogkd </td><td>The traditional set of system logging daemons.</td></tr></table>\n"
+		data += '<input type="submit" name="savedaemons" value="Save Daemons"></form>'
+		
+		return self.wrap_in_webgli_template(data)
+	def savedaemons(self):
+		data = ""
+		if self.post_params['savedaemons']:
+			if self.post_params['logger']:
+				try:
+					self.shared_info.install_profile.set_logging_daemon_pkg(None, self.post_params['logger'], None)
+				except:
+					data += "ERROR: Could not set logger!<br>\n"
+			if self.post_params['cron']:
+				try:
+					self.shared_info.install_profile.set_cron_daemon_pkg(None, self.post_params['cron'], None)
+				except:
+					data += "ERROR: Could not set cron daemon!<br>\n"
+		return self.wrap_in_webgli_template(data)
+	def services(self):
+		data = ""
+		if self.shared_info.install_profile.get_services():
+			services = self.shared_info.install_profile.get_services()
+			if isinstance(services, str):
+				services = services.split(',')
+		else:
+			services = []
+		choice_list = [("alsasound", _(u"ALSA Sound Daemon"),int("alsasound" in services)),
+			("apache", _(u"Common web server (version 1.x)"),int("apache" in services)),
+			("apache2", _(u"Common web server (version 2.x)"),int("apache2" in services)),
+			("distccd", _(u"Distributed Compiling System"),int("distccd" in services)),
+			("esound", _(u"ESD Sound Daemon"),int("esound" in services)),
+			("hdparm", _(u"Hard Drive Tweaking Utility"),int("hdparm" in services)),
+			("local", _(u"Run scripts found in /etc/conf.d/local.start"),int("local" in services)),
+			("portmap", _(u"Port Mapping Service"),int("portmap" in services)),
+			("proftpd", _(u"Common FTP server"),int("proftpd" in services)),
+			("sshd", _(u"SSH Daemon (allows remote logins)"),int("sshd" in services)),
+			("xfs", _(u"X Font Server"),int("xfs" in services)),
+			("xdm", _(u"X Daemon"),int("xdm" in services))]
+		services_string = _(u"Choose the services you want started on bootup.  Note that depending on what packages are selected, some services listed will not exist.")
+		data += services_string
+		data += '<form name="services" method="post" action="/webgli/saveservices" enctype="multipart/form-data">'
+		data += "<table border=\"1\"><tr><td>Activate</td><td>Service</td><td>Description</td></tr>"
+		for i,choice in enumerate(choice_list):
+			data += '<tr><td><input type="checkbox" name="services" value="'+choice_list[i][0]+'" '
+			if choice_list[i][2]:
+				data += "checked"
+			data += "></td><td>"+choice_list[i][0]+"</td><td>"+choice_list[i][1]+"</td></tr>\n"
+		data += "</table>\n"
+		data += "<hr>You can also opt to enter your services in a comma-separated list (NOTE Manual list overwrites checked selections!): "
+		data += '<input type="text" name="servicesmanual" value="'+string.join(services, ',')+'">'
+		data += '<br><input type="submit" name="saveservices" value="Save Services"></form>'
+		return self.wrap_in_webgli_template(data)
+	def saveservices(self):
+		data = ""
+		if self.post_params['saveservices']:
+			if self.post_params['servicesmanual']:
+				services = self.post_params['servicesmanual']				
+			elif self.post_params['services']:
+				services = self.post_params['services']
+				services = string.join(services, ',')
+			try:
+				
+				print services + "\n"
+				if services:
+					self.shared_info.install_profile.set_services(None, services, None)
+			except:
+				data += "ERROR! Could not set the services list.<br>\n"
+		return self.wrap_in_webgli_template(data)
+	def extrapackages(self):
+		data = ""
+		grp_list = GLIUtility.get_grp_pkgs_from_cd()
+		if self.post_params['packages']:
+			try:
+				packages = string.join(self.post_params['packages'], ' ')
+				if packages:
+					self.shared_info.install_profile.set_install_packages(None, packages, None)
+			except:
+				data += _(u"ERROR! Could not set the install packages! <br>\n")
+		if self.post_params['manualpackages']:
+			try:
+				packages = self.post_params['manualpackages']
+				if packages:
+					self.shared_info.install_profile.set_install_packages(None, packages, None)
+			except:
+				data += _(u"ERROR! Could not set the manual install packages! <br>\n")
+		if self.shared_info.install_profile.get_install_packages():
+			install_packages = self.shared_info.install_profile.get_install_packages()
+			if isinstance(install_packages, str):
+				install_packages = install_packages.split()
+		else:
+			install_packages = []
+		
+		package_list = self.shared_info.install_profile.get_install_package_list()
+		highlevel_menu = []
+		for group in package_list:
+			highlevel_menu.append( (group, package_list[group][0]) )
+				
+		data += """
+		<script>
+		</script>
+		<form name="packages" action="/webgli/ExtraPackages" method="POST" enctype="multipart/form-data">
+		"""
+		for param in self.get_params:
+			if "show" in param:  #this means it's a param referring to a group to show.  include it as a hidden so it'll get shown next time too.
+				data += '<input type="hidden" name="'+param+'" value="'+self.get_params[param]+"\">\n"
+		for param in self.post_params:
+			if "show" in param:  #this means it's a param referring to a group to show.  include it as a hidden so it'll get shown next time too.
+				if type(self.post_params[param]) == list:
+					self.post_params[param] = self.post_params[param][-1]
+				data += '<input type="hidden" name="'+param+'" value="'+self.post_params[param]+"\">\n"
+		#Start the table
+		data += "<h2>Extra Packages</h2>Your current package list is: "+string.join(install_packages, ',')
+		data += '<table width="100%"  border="1">'
+		for group_pair in highlevel_menu:
+			group = group_pair[0]
+			pkgs = package_list[group][1]

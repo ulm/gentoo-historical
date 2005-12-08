@@ -1,0 +1,151 @@
+	def savemakedotconf(self):
+		data = ""
+		cflags = ""
+		features = ""
+		etc_files = self.shared_info.install_profile.get_etc_files()
+		if etc_files.has_key("make.conf"):
+			make_conf = etc_files['make.conf']
+			if "CFLAGS" in make_conf:
+				cflags = make_conf['CFLAGS']
+			if "FEATURES" in make_conf:
+				features = make_conf['FEATURES']
+		else:
+			make_conf = {}
+		if self.post_params['proc'] and self.post_params['m_thing']:
+			cflags += " "+self.post_params['m_thing']+"="+self.post_params['proc']
+		if self.post_params['optim1']:
+			cflags += " "+self.post_params['optim1']
+		if self.post_params['optim2']:
+			if isinstance(self.post_params['optim2'], list):
+				for param in self.post_params['optim2']:
+					cflags += " "+param
+			else:
+				cflags += " "+self.post_params['optim2']
+		if self.post_params['optim3']:
+			cflags += " "+self.post_params['optim3']
+		make_conf['CFLAGS'] = cflags
+		if self.post_params['chost']:
+			make_conf['CHOST'] = self.post_params['chost']
+		if self.post_params['unstable']:
+			make_conf['ACCEPT_KEYWORDS'] = "~" + self.shared_info.client_profile.get_architecture_template()
+		if self.post_params['features']:
+			if isinstance(self.post_params['features'], list):
+				features = string.join(self.post_params['features'], ' ')
+			else:
+				features = self.post_params['features']
+		if self.post_params['manfeatures']:
+			features += " "+self.post_params['manfeatures']
+		if "distcc" in features:
+			#Add distcc to the services list.
+			if self.shared_info.install_profile.get_services():
+				services = self.shared_info.install_profile.get_services()
+				if isinstance(services, str):
+					services = services.split(',')
+			else:
+				services = []
+			if not "distccd" in services:
+				services.append("distccd")
+			try:
+				services = string.join(services, ',')
+				if services:
+					self.shared_info.install_profile.set_services(None, services, None)
+			except:
+				data += _(u"ERROR! Could not set the services list.")
+			#Set the distcc flag to emerge earlier than other packages.
+			try:
+				self.shared_info.install_profile.set_install_distcc(None, True, None)
+			except:
+				data += _(u"ERROR! Could not set the install distcc flag!")
+			if self.post_params['distcc']:
+				try:
+					make_conf['DISTCC_HOSTS'] = self.post_params['distcc']
+				except:
+					data += "ERROR! Could not set the distcc hosts!"
+		make_conf['FEATURES'] = features
+		if self.post_params['makeopts']:
+			make_conf['MAKEOPTS'] = self.post_params['makeopts']
+		try:
+			if make_conf:
+				etc_files['make.conf'] = make_conf
+				self.shared_info.install_profile.set_etc_files(etc_files)
+		except:
+			data = _(u"ERROR! Could not set the make_conf correctly!")
+		return self.wrap_in_webgli_template(data)
+	def configfiles(self):
+		data = ""
+		etc_files = self.shared_info.install_profile.get_etc_files()
+		data += """
+		<form action="/webgli/saveconfigfiles" method="POST" enctype="multipart/form-data">
+		<table cellspacing="0" cellpadding="0" width="790" height="600" border="1">
+  <tr height="33%">
+    <td>
+      <table width="100%" height="100%" border="1">
+        <tr>
+          <td width="50%">
+            <table width="100%" height="100%" border="1">
+              <tr>
+
+                <td>"""
+		data += '<b>Clock:</b><br>Should CLOCK be set to UTC or local?  Unless you set your timezone to UTC you will want to choose local.<br><input type="radio" name="clock" value="UTC" '
+		if ("conf.d/clock" in etc_files) and (etc_files['conf.d/clock']['CLOCK'] == "UTC"):
+			data += "checked"
+		data += '>UTC<br><input type="radio" name="clock" value="local" '
+		if ("conf.d/clock" in etc_files) and (etc_files['conf.d/clock']['CLOCK'] == "local"):
+			data += "checked"
+		data += ">Local\n"
+		data += """</td>
+              </tr>
+              <tr>
+                <td><b>Default Editor:</b><br>Choose your default editor:<br>"""
+		data += '<input type="radio" name="editor" value="/bin/nano" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['EDITOR'] == "/bin/nano"):
+			data += "checked"
+		data += '>/bin/nano (Default editor)<br><input type="radio" name="editor" value="/usr/bin/vim" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['EDITOR'] == "/usr/bin/vim"):
+			data += "checked"
+		data += '>/usr/bin/vim (vi improved editor)<br><input type="radio" name="editor" value="/usr/bin/emacs" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['EDITOR'] == "/usr/bin/emacs"):
+			data += "checked"
+		data += ">/usr/bin/emacs (The emacs editor)\n"
+		data += """</td>
+              </tr>
+            </table>
+          </td>
+          <td width="50%"><b>Display Manager:</b><br>Choose your display manager for Xorg-x11 (note you must make sure that package also gets installed for it to work):<br>"""
+		data += '<input type="radio" name="disp_manager" value="xdm" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['DISPLAYMANAGER'] == "xdm"):
+			data += "checked"
+		data += '>xdm (X Display Manager (NOT recommended))<br><input type="radio" name="disp_manager" value="gdm" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['DISPLAYMANAGER'] == "gdm"):
+			data += "checked"
+		data += '>gdm (Gnome Display Manager)<br><input type="radio" name="disp_manager" value="kdm" '
+		if ("rc.conf" in etc_files) and (etc_files['rc.conf']['DISPLAYMANAGER'] == "kdm"):
+			data += "checked"
+		data += ">kdm (KDE Display Manager)\n"
+		data += """</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr height="66%">
+    <td>
+      <table width="100%" height="100%" border="1">
+        <tr>
+          <td width="50%"><b>Keymap</b><br>Choose your desired keymap:<br>
+		  <select name="keymap">
+		  <option value=""> </option>
+		  """
+		keymap_list = GLIUtility.generate_keymap_list()
+		for keymap in keymap_list:
+			if ("conf.d/keymaps" in etc_files) and (etc_files['conf.d/keymaps']['KEYMAP'] == keymap):
+				data += '<option value="'+keymap+'" selected>'+keymap+"</option>\n"
+			else:
+				data += '<option value="'+keymap+'">'+keymap+"</option>\n"
+		data += "</select>\n<br>"
+		data += "<br><b>Windowkeys</b><br>Should we first load the 'windowkeys' console keymap?"
+		data += '<input type="radio" name="windowkeys" value="yes" '
+		if ("conf.d/keymaps" in etc_files) and (etc_files['conf.d/keymaps']['SET_WINDOWSKEYS'] == "yes"):
+			data += "checked"
+		data += '> Yes  <input type="radio" name="windowkeys" value="no" '
+		if ("conf.d/keymaps" in etc_files) and (etc_files['conf.d/keymaps']['SET_WINDOWSKEYS'] == "no"):
+			data += "checked"

@@ -1,0 +1,151 @@
+	def review(self):
+		settings = "<pre>Look carefully at the following settings to check for mistakes.\nThese are the installation settings you have chosen:\n\n"
+		#Partitioning
+		settings += "Partitioning:	\n	Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.\n"
+		devices = self.shared_info.install_profile.get_partition_tables()
+		drives = devices.keys()
+		drives.sort()
+		for drive in drives:
+			settings += "  Drive: " + drive + devices[drive].get_model() + "\n"
+			partlist = devices[drive].get_ordered_partition_list()
+			tmpparts = devices[drive].get_partitions()
+			for part in partlist:
+				tmppart = tmpparts[part]
+				entry = "		 "
+				if tmppart.get_type() == "free":
+					#partschoice = "New"
+					entry += _(u" - Unallocated space (")
+					if tmppart.is_logical():
+						entry += _(u"logical, ")
+					entry += str(tmppart.get_mb()) + "MB)"
+				elif tmppart.get_type() == "extended":
+					entry += str(int(tmppart.get_minor()))
+					entry += _(u" - Extended Partition (") + str(tmppart.get_mb()) + "MB)"
+				else:
+					entry += str(int(tmppart.get_minor())) + " - "
+					if tmppart.is_logical():
+						entry += _(u"Logical (")
+					else:
+						entry += _(u"Primary (")
+					entry += tmppart.get_type() + ", "
+					entry += (tmppart.get_mkfsopts() or "none") + ", "
+					entry += (tmppart.get_mountpoint() or "none") + ", "
+					entry += (tmppart.get_mountopts() or "none") + ", "
+					entry += str(tmppart.get_mb()) + "MB)"
+				settings += entry + "\n"
+			
+		#Network Mounts:
+		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
+		settings += "\nNetwork Mounts: \n"
+		for mount in network_mounts:
+			settings += "  "+mount['host']+":"+mount['export']+"\n"
+			
+		#Install Stage:
+		settings += "\nInstall Stage: " + str(self.shared_info.install_profile.get_install_stage()) + "\n"
+		if self.shared_info.install_profile.get_dynamic_stage3():
+			settings += "  Tarball will be generated on the fly from the CD.\n"
+		else:
+			settings += "  Tarball URI: " + self.shared_info.install_profile.get_stage_tarball_uri() + "\n"
+			
+		#Portage Tree Sync Type:
+		settings += "\nPortage Tree Sync Type: " + self.shared_info.install_profile.get_portage_tree_sync_type() + "\n"
+		if self.shared_info.install_profile.get_portage_tree_sync_type() == "snapshot":
+			settings += "  Portage snapshot URI: " + self.shared_info.install_profile.get_portage_tree_snapshot_uri() + "\n"
+			
+		#Kernel Settings:
+		settings += "\nKernel Settings:\n"
+		settings += "  Kernel Sources: " + self.shared_info.install_profile.get_kernel_source_pkg() + "\n"
+		if self.shared_info.install_profile.get_kernel_source_pkg() != "livecd-kernel":
+			settings += "  Kernel Build Method: " + self.shared_info.install_profile.get_kernel_build_method() + "\n"
+			if self.shared_info.install_profile.get_kernel_build_method() == "genkernel":
+				settings += "  Kernel Bootsplash Option: " + str(self.shared_info.install_profile.get_kernel_bootsplash()) + "\n"
+		if self.shared_info.install_profile.get_kernel_config_uri():
+			settings += "  Kernel Configuration URI: " + self.shared_info.install_profile.get_kernel_config_uri() + "\n"
+				
+		#Bootloader Settings:
+		settings += "\nBootloader Settings:\n"
+		settings += "  Bootloader package: " + self.shared_info.install_profile.get_boot_loader_pkg() + "\n"
+		if self.shared_info.install_profile.get_boot_loader_pkg() != "none":
+			settings += "  Install bootloader to MBR: " + str(self.shared_info.install_profile.get_boot_loader_mbr()) + "\n"
+			settings += "  Bootloader kernel arguments: " +self.shared_info.install_profile.get_bootloader_kernel_args() + "\n"
+			
+		#Timezone:
+		settings += "\nTimezone: " + self.shared_info.install_profile.get_time_zone() + "\n"
+		
+		#Networking Settings:
+		settings += "\nNetworking Settings: \n"
+		interfaces = self.shared_info.install_profile.get_network_interfaces()
+		for iface in interfaces:
+			if interfaces[iface][0] == 'dhcp':
+				settings += "  " + iface + _(u":	Settings: DHCP. Options: ") + interfaces[iface][1] + "\n"
+			else:
+				settings += "  " + iface + _(u"IP: ") + interfaces[iface][0] + _(u" Broadcast: ") + interfaces[iface][1] + _(u" Netmask: ") + interfaces[iface][2] + "\n"
+		default_gateway = self.shared_info.install_profile.get_default_gateway()
+		if default_gateway:
+			settings += "  Default Gateway: " + default_gateway[0] + "/" + default_gateway[1] + "\n"
+		settings += "  Hostname: " + self.shared_info.install_profile.get_hostname() + "\n"
+		if self.shared_info.install_profile.get_domainname():
+			settings += "  Domainname: " +self.shared_info.install_profile.get_domainname() + "\n"
+		if self.shared_info.install_profile.get_nisdomainname():
+			settings += "  NIS Domainname: " +self.shared_info.install_profile.get_nisdomainname() + "\n"
+		if self.shared_info.install_profile.get_dns_servers():
+			for dns_server in self.shared_info.install_profile.get_dns_servers():
+				settings += "  DNS Server: " +dns_server + "\n"
+		if self.shared_info.install_profile.get_http_proxy():
+			settings += "  HTTP Proxy: " +self.shared_info.install_profile.get_http_proxy() + "\n"
+		if self.shared_info.install_profile.get_ftp_proxy():
+			settings += "  FTP Proxy: " +self.shared_info.install_profile.get_ftp_proxy() + "\n"
+		if self.shared_info.install_profile.get_rsync_proxy():
+			settings += "  RSYNC Proxy: " +self.shared_info.install_profile.get_rsync_proxy() + "\n"
+			
+		#Cron Daemon:
+		settings += "\nCron Daemon: " + self.shared_info.install_profile.get_cron_daemon_pkg() + "\n"
+		
+		#Logger:
+		settings += "\nLogging Daemon: " + self.shared_info.install_profile.get_logging_daemon_pkg() + "\n"
+		
+		#Extra packages:
+		if self.shared_info.install_profile.get_install_packages():
+			install_packages = self.shared_info.install_profile.get_install_packages()
+		else:
+			install_packages = []
+		settings += "\nExtra Packages: "
+		for package in install_packages:
+			settings += package + " "
+		settings += "\n"
+		#Services:
+		if self.shared_info.install_profile.get_services():
+			services = self.shared_info.install_profile.get_services()
+		else:
+			services = []
+		settings += "\nAdditional Services: "
+		for service in services:
+			settings += service + " "
+		settings += "\n"
+		
+		#Other Configuration Settings (rc.conf):
+		#Make.conf Settings:
+		settings += "\nConfiguration Files Settings:\n"
+		etc_files = self.shared_info.install_profile.get_etc_files()
+		for etc_file in etc_files:
+			settings += "  File:" + etc_file + "\n"
+			if isinstance(etc_files[etc_file], dict):
+				for name in etc_files[etc_file]:
+					settings += "		 Variable: " + name + "		Value: " + etc_files[etc_file][name] + "\n"
+			else:
+				for entry in etc_files[etc_file]:
+					settings += "		 Value: "+ entry + "\n"
+		
+		#Additional Users:
+		settings += "\nAdditional Users:\n"
+		users = {}
+		for user in self.shared_info.install_profile.get_users():
+			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
+		for user in users:
+			settings += "  Username: " + user
+			settings += "\n		 Group Membership: " + string.join(users[user][2], ",")
+			settings += "\n		 Shell: " + users[user][3]
+			settings += "\n		 Home Directory: " + users[user][4]
+			if users[user][5]:
+				settings += "\n		 User Id: " + users[user][5]
+			if users[user][6]:

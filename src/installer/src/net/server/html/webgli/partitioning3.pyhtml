@@ -1,0 +1,151 @@
+	def partitioning3(self):
+		if 'recommended' in self.post_params:
+			try:
+				self.shared_info.devices[self.shared_info.drive_to_partition].do_recommended()
+			except GLIException, error:
+				self.shared_info.error_message = error.get_error_msg()
+			return self.return_redirect("/webgli/Partitioning2?editdrive=" + self.shared_info.drive_to_partition)
+		if 'cleardrive' in self.post_params:
+			self.shared_info.devices[self.shared_info.drive_to_partition].clear_partitions()
+			self.shared_info.error_message = "Partition table cleared successfully"
+			return self.return_redirect("/webgli/Partitioning2?editdrive=" + self.shared_info.drive_to_partition)
+		if self.post_params['editpart2']:
+			self.post_params['editpart'] = self.post_params['editpart2']
+		if self.get_params['editpart']:
+			self.post_params['editpart'] = self.get_params['editpart']
+		data = ""
+		data += '<form name="part3" action="/webgli/Partitioning4" method="POST" enctype="multipart/form-data">'
+		data += '<input type="hidden" name="editpart" value="' + self.post_params['editpart'] + '">'
+		drive_to_partition = self.shared_info.drive_to_partition
+		partlist = self.shared_info.devices[drive_to_partition].get_ordered_partition_list()
+		tmpparts = self.shared_info.devices[drive_to_partition].get_partitions()
+		if not self.post_params['editpart']:
+			data = "ERROR: You must select a partition to edit!<br>\n"
+			return self.wrap_in_webgli_template(data)
+		editpart = float(self.post_params['editpart'])
+#		part_to_edit = partlist[editpart]
+#		tmppart = tmpparts[part_to_edit]
+		part_types = [("ext2", _(u"Old, stable, but no journaling")),
+			("ext3", _(u"ext2 with journaling and b-tree indexing (RECOMMENDED)")),
+			("linux-swap", _(u"Swap partition for memory overhead")),
+			("fat32", _(u"Windows filesystem format used in Win9X and XP")),
+			("ntfs", _(u"Windows filesystem format used in Win2K and NT")),
+			("jfs", _(u"IBM's journaling filesystem.  stability unknown.")),
+			("xfs", _(u"Don't use this unless you know you need it.")),
+			("reiserfs", _(u"B*-tree based filesystem. great performance. Only V3 supported.")),
+			("extended", _(u"Create an extended partition containing other logical partitions"))]
+		mountpoints = ["","/","/boot","/etc","/home","/lib","/mnt","/mnt/windows","/opt","/root","/usr","/usr/local","/usr/portage","/var"]
+		if not editpart == -1:
+			tmppart = tmpparts[float(editpart)]
+		if editpart == -1 or tmppart.get_type() == "free":
+			# partition size first
+			if editpart == -1:
+				free_mb = 0
+			else:
+				free_mb = tmppart.get_mb()
+			data += 'Enter the size of the new partition in MB (max '+str(free_mb)+' MB).  If creating an extended partition input its entire size (not just the first logical size): <input type="text" name="size" value="'+str(free_mb)+"\"><br>\n"
+			#code, new_mb = self._d.inputbox(_(u"Enter the size of the new partition in MB (max %s MB).  If creating an extended partition input its entire size (not just the first logical size):") % str(free_mb), init=str(free_mb))
+			#if code != self._DLG_OK: continue
+
+			# partition type
+			data += "Choose the filesystem type for this new partition:<br>\n"
+			data += "<table><tr><td>Filesystem</td><td>Description</td></tr>\n"
+			for part_type in part_types:
+				data += '<tr><td><input type="radio" name="filesystem" value="' + part_type[0] + '"> ' + part_type[0] + '</td><td>' + part_type[1] + "</td></tr>\n"
+			data += "</table><br>\n" 
+			data += '<input type="submit" value="Create"> &nbsp; <input type="button" value="Cancel" onclick="location.go(-1)">'
+			#code, type = self._d.menu(_(u"Choose the filesystem type for this new partition."), height=20, width=77, choices=part_types)
+		else:
+#			tmppart = tmpparts[part_to_edit]
+			editpart = int(editpart)
+			data += "<h2>Partition Information:</h2>\n"
+			data += "<b>Minor:</b> "+drive_to_partition + str(editpart) + "<br> -\n "
+			if tmppart.is_logical():
+				data += _(u"Logical Partition<br> - ")
+			else:
+				data += _(u"Primary Partition<br> - ")
+			data += "<b>Filesystem type:</b><select name=\"filesystem\" size=\"1\">\n "
+			for i,part_type in enumerate(part_types):
+				data += '<option value="'+part_types[i][0]+'" '
+				if part_types[i][0] == tmppart.get_type():
+					data += "selected"
+				data += '>'+part_types[i][0]+" - "+ part_types[i][1]+"</option>\n"
+			data += "</select><br> - \n"
+			data += "<b>Options:</b> <input type=\"text\" name=\"fsopts\" value=\""+ (tmppart.get_mkfsopts() or "") + "\"><br> - \n"
+			data += "<b>MountPoint:</b> <select name=\"mountpoint\" size=\"1\">\n "
+			for mtpnt in mountpoints:
+				data += '<option value="'+mtpnt+'" '
+				if mtpnt == tmppart.get_mountpoint():
+					data += "selected"
+				data += '>'+mtpnt+"</option>\n"
+			data += "</select><br> - \n"
+			data += "<b>Mount Options:</b> <input type=\"text\" name=\"mountopts\" value=\""+ (tmppart.get_mountopts() or "") + "\"><br> - \n"
+			data += "<b>Size (MB)</b> "+ str(tmppart.get_mb()) + "MB <br>"
+			data += 'Format this partition? <br><input type="radio" name="format" value="True" '
+			if tmppart.get_format():
+				data += "checked"
+			data += '>True<br><input type="radio" name="format" value="False" '
+			if not tmppart.get_format():
+				data += "checked"
+			data += ">False<br>\n"
+			data += '<hr><table border="0"><tr><td><input type="submit" name="DelPartition" value="DELETE PARTITION"></td><td><input type="submit" name="SavePartition" value="Save Changes"></td><td><input type="submit" name="Cancel" value="Cancel"></td></tr></table></form>'
+			#menulist = [_(u"Delete"), _(u"Mount Point"), _(u"Mount Options"), _(u"Format"), _(u"Extra mkfs.* Parameters")]
+			#	code, part_action = self._d.menu(tmptitle, choices=self._dmenu_list_to_choices(menulist), cancel=_(u"Back"))
+			dumbstring = """
+				part_action = menulist[int(part_action)-1]
+				if part_action == _(u"Delete"):
+					answer = (self._d.yesno(_(u"Are you sure you want to delete the partition ") + drive_to_partition + str(editpart) + "?") == self._DLG_YES)
+					if answer == True:
+						tmpdev = tmppart.get_device()
+						tmpdev.remove_partition(editpart)
+						break
+				elif part_action == _(u"Mount Point"):
+					mountpoint_menu = ["/","/boot","/etc","/home","/lib","/mnt","/mnt/windows","/opt","/root","/usr","/usr/local","/usr/portage","/var",_(u"Other")]
+					code, mountpt = self._d.menu(_(u"Choose a mountpoint from the list or choose Other to type your own for partition ")+str(editpart)+_(u".  It is currently set to:")+tmppart.get_mountpoint(), choices=self._dmenu_list_to_choices(mountpoint_menu)) #may have to make that an integer
+					if code == self._DLG_OK:
+						mountpt = mountpoint_menu[int(mountpt)-1]
+						if mountpt == _(u"Other"):
+							code, mountpt = self._d.inputbox(_(u"Enter a mountpoint for partition ") + str(editpart), init=tmppart.get_mountpoint())
+					try: tmppart.set_mountpoint(mountpt)
+					except: self._d.msgbox(_(u"ERROR! Could not set mountpoint!"))
+				elif part_action == _(u"Mount Options"):
+					code, answer = self._d.inputbox(_(u"Enter your mount options for partition ") + str(editpart), init=(tmppart.get_mountopts() or "defaults"))
+					if code == self._DLG_OK: tmppart.set_mountopts(answer)
+				elif part_action == _(u"Format"):
+					#Change the Yes/No buttons back.
+					self._d.add_persistent_args(["--yes-label", _(u"Yes")])
+					self._d.add_persistent_args(["--no-label", _(u"No")])
+					code = self._d.yesno(_(u"Do you want to format this partition?"))
+					if code == self._DLG_YES: 
+						tmppart.set_format(True)
+					else:
+						tmppart.set_format(False)
+				elif part_action == _(u"Extra mkfs.* Parameters"):
+					new_mkfsopts = tmppart.get_mkfsopts()
+					# extra mkfs options
+					if tmppart.get_type() != "extended":
+						code, new_mkfsopts = self._d.inputbox(_(u"Extra mkfs.* Parameters"), init=new_mkfsopts)
+						if code == self._DLG_OK: tmppart.set_mkfsopts(new_mkfsopts)"""
+		return self.wrap_in_webgli_template(data)
+
+	def partitioning4(self):
+		data = ""
+		drive_to_partition = self.shared_info.drive_to_partition
+		partlist = self.shared_info.devices[drive_to_partition].get_ordered_partition_list()
+		tmpparts = self.shared_info.devices[drive_to_partition].get_partitions()
+		if not self.post_params['editpart']:
+			data = "ERROR: You must select a partition to edit!<br>\n"
+			return self.wrap_in_webgli_template(data)
+		editpart = float(self.post_params['editpart'])
+		if not editpart == -1:
+			tmppart = tmpparts[float(editpart)]
+		if self.post_params["DelPartition"] == "DELETE PARTITION" or self.post_params["Cancel"] == "Cancel":
+			if self.post_params["DelPartition"] == "DELETE PARTITION":
+				self.shared_info.devices[drive_to_partition].remove_partition(editpart)
+			return self.return_redirect("/webgli/Partitioning2?editdrive=" + drive_to_partition)
+#			data = '<form name="redirect" action="/webgli/Partitioning2" method="POST"><input type="hidden" name="editdrive" value="' + drive_to_partition + '"></form><script>document.redirect.submit();</script>'
+		elif editpart == -1 or tmppart.get_type() == "free":
+			if not int(self.post_params['size']):
+				data = "ERROR: you must specify a size in MB"
+				return self.wrap_in_webgli_template(data)
+			new_minor = self.shared_info.devices[drive_to_partition].add_partition(editpart, int(self.post_params['size']), 0, 0, self.post_params['filesystem'])

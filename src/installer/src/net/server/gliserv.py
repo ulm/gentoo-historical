@@ -17,13 +17,16 @@ import GLIServerProfile
 import time
 import base64
 import traceback
+import cgi
+import re
 try:
 	from SecureXMLRPCServer import SecureSocketServer
 except:
 	pass
 
 debug = False
-module_mtimes = {}
+pyhtml_mtimes = {}
+pyhtml_cache = {}
 needauth = False
 webuser = "gli"
 webpass = "gli"
@@ -56,10 +59,9 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	def get_exception(self):
 		etype, value, tb = sys.exc_info()
 		s = traceback.format_exception(etype, value, tb)
-		content = "<pre>"
+		content = ""
 		for line in s:
 			content += line
-		content += "</pre>"
 		return content
 
 	def wrap_in_template(self, content):
@@ -79,6 +81,93 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			if lines[i] == "Main content\n":
 				lines[i] = content
 		return "".join(lines)
+
+	def first_substring(self, somestring, *substrings):
+		result = (None, len(somestring))
+		for substring in substrings:
+			index = somestring.find(substring)
+			if index > -1 and index < result[1]:
+				result = (substring, index)
+		return result[0]
+
+	def process_html(self, htmlfile):
+		openrun, closerun = '<?', '?>'
+		openprint, closeprint = '<%', '%>'
+		openblock, closeblock = '<:', ':>'
+		output = []
+		indentlevel = 0
+		incodeblock = False
+		printre = re.compile(r"^(.+: |\s+)?print ")
+		f = open(htmlfile, "r")
+		html = f.readlines()
+		f.close()
+#		for i, line in enumerate(html):
+		while len(html):
+			line = html.pop(0)
+#			line = line.strip()
+			if line.endswith("\n"):
+				line = line[:-1]
+			while line:
+				if incodeblock:
+					if line.startswith(closerun):
+						incodeblock = False
+						line = line.split(closerun, 1)[1]
+						continue
+#					if line.endswith("\n"):
+#						line = line[:-1]
+					line = printre.sub(r'\1return_content += ', line)
+					output.append('\t' * indentlevel + line)
+					break
+				else:
+#					line = line.strip()
+					if line.startswith(openrun):
+						if line.find(closerun) == -1:
+							incodeblock = True
+							break
+						else:
+							tmpline = line.split(openrun, 1)[1].split(closerun, 1)[0].strip()
+							line = line.split(closerun, 1)[1]
+							if tmpline.startswith("include "):
+								path = self.translate_path(tmpline[8:])
+								f = open(path, 'r')
+								morehtml = f.readlines()
+								f.close()
+								html = morehtml + html
+								line = ""
+								break
+							tmpline = printre.sub(r'\1return_content += ', tmpline)
+							output.append('\t' * indentlevel + tmpline)
+					elif line.startswith(openprint):
+						tmpline = line.split(openprint, 1)[1].split(closeprint, 1)[0].strip()
+						line = line.split(closeprint, 1)[1]
+						tmpline = 'return_content += %s' % tmpline
+						if not line:
+							tmpline += ' + "\\n"'
+						output.append('\t' * indentlevel + tmpline)
+					elif line.startswith(openblock):
+						line = line.split(openblock, 1)[1].strip()
+						if line == "else:":
+							indentlevel -= 1
+						output.append('\t' * indentlevel + line)
+						indentlevel += 1
+						break
+					elif line.startswith(closeblock):
+						indentlevel -= 1
+						line = line.split(closeblock, 1)[1]
+					else:
+						substring = self.first_substring(line, openrun, openprint, openblock)
+						if not substring:
+							tmpline = line
+							line = ""
+						else:
+							tmpline = line.split(substring, 1)[0]
+							line = substring + line.split(substring, 1)[1]
+#						tmpline = 'return_content += r"""%s"""' % tmpline
+						tmpline = 'return_content += %r' % tmpline
+						if not line:
+							tmpline += ' + "\\n"'
+						output.append('\t' * indentlevel + tmpline)
+		return "\n".join(output)
 
 	def status(self):
 		return self.wrap_in_template("This is just a prototype, fool. There isn't anything to report")
@@ -326,82 +415,59 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			if self.path in paths[path]:
 				module = path
 				# Horrible hack until I figure out a better way to skip to sending the content
-				while 1:
-					try:
-						mtime = os.stat("handlers/" + module + ".py")[8]
-						content_module = __import__("handlers/" + module)
-						if module in module_mtimes:
-							if mtime != module_mtimes[module]:
-								reload(content_module)
-								content_module = __import__("handlers/" + module)
-						module_mtimes[module] = mtime
-						module_obj = getattr(content_module, module)(self.get_params, self.post_params, self.headers_out, self.shared_info)
-					except AttributeError:
-						return_content = "Caught %s (%s) in module. Traceback:\n%s" % (sys.exc_info()[0], sys.exc_info()[1], self.get_exception())
-#						return_content = "Unable to load module '%s'" % module
-						break
-					try:
-						function_obj = getattr(module_obj, 'handle')
-					except AttributeError:
-						return_content = "Cannot find function handle() in module '%s'" % module
-						break
-					try:
-						self.headers_out, return_content = function_obj(self.path)
-					except:
-						return_content = "Caught %s (%s) in module. Traceback:\n%s" % (sys.exc_info()[0], sys.exc_info()[1], self.get_exception())
-						break
-					break
-#				return_content = self.wrap_in_template(return_content)
-				self.send_response(200)
-				if not self.headers_out:
-					self.headers_out.append(("Content-type", "text/html"))
-				self.headers_out.append(("Content-Length", len(return_content)))
-				for header in self.headers_out:
-					self.send_header(header[0], header[1])
-				self.end_headers()
-				if not head_only:
-					self.wfile.write(return_content)
-				return
 		# No code handler...look for actual file
 		path = self.translate_path(self.path)
-		if path.endswith("/"):
-			path += "index.html"
-		ctype = self.guess_type(path)
-		try:
-			f = open(path, 'rb')
-		except IOError:
-			self.send_error(404, "File not found")
-			return None
-		filestat = os.stat(path)
-		filesize = filestat[6]
-		filemtime = filestat[8]
-		self.send_response(200)
-		self.send_header("Content-type", ctype)
-		self.send_header("Content-Length", str(filesize))
-		self.send_header("Last-Modified", time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(filemtime)))
-		self.end_headers()
-		if not head_only:
-			shutil.copyfileobj(f, self.wfile)
-		f.close()
+		if os.path.exists(path):
+			if path.endswith("/"):
+				for index_file in ["index.pyhtml", "index.html"]:
+					if os.path.exists(path + index_file):
+						path += index_file
+		if path.endswith(".pyhtml"):
+			while 1:
+				try:
+					mtime = os.stat(path)[8]
+					if path in pyhtml_mtimes and mtime == pyhtml_mtimes[path]:
+						tmpcode = pyhtml_cache[path]
+					else:
+						try:
+							tmpcode = self.process_html(path)
+						except:
+							return_content = "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception())
+							break
+					exec tmpcode
+				except:
+					return_content = "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre><br>Generated code:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception(), cgi.escape(tmpcode))
+				break
+			self.send_response(200)
+			if not self.headers_out:
+				self.headers_out.append(("Content-type", "text/html"))
+			self.headers_out.append(("Content-Length", len(return_content)))
+			for header in self.headers_out:
+				self.send_header(header[0], header[1])
+			self.end_headers()
+			if not head_only:
+				self.wfile.write(return_content)
+		else:
+			ctype = self.guess_type(path)
+			try:
+				f = open(path, 'rb')
+			except IOError:
+				self.send_error(404, "File not found")
+				return None
+			filestat = os.stat(path)
+			filesize = filestat[6]
+			filemtime = filestat[8]
+			self.send_response(200)
+			self.send_header("Content-type", ctype)
+			self.send_header("Content-Length", str(filesize))
+			self.send_header("Last-Modified", time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(filemtime)))
+			self.end_headers()
+			if not head_only:
+				shutil.copyfileobj(f, self.wfile)
+			f.close()
 
 	def translate_path(self, path):
-		"""Translate a /-separated PATH to the local filename syntax.
-
-		Components that mean special things to the local file system
-		(e.g. drive or directory names) are ignored.  (XXX They should
-		probably be diagnosed.)
-
-		"""
-		path = posixpath.normpath(urllib.unquote(path))
-		words = path.split('/')
-		words = filter(None, words)
-		path = os.getcwd() + "/html/"
-		for word in words:
-			drive, word = os.path.splitdrive(word)
-			head, word = os.path.split(word)
-			if word in (os.curdir, os.pardir): continue
-			path = os.path.join(path, word)
-		return path
+		return os.getcwd() + "/html/" + urllib.unquote(path)
 
 	def copyfile(self, source, outputfile):
 		shutil.copyfileobj(source, outputfile)

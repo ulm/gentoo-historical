@@ -1,0 +1,74 @@
+<? include /webgli/common.pyhtml ?>
+<?
+arch = self.shared_info.client_profile.get_architecture_template()
+parts = self.shared_info.install_profile.get_partition_tables()
+#Bootloader code yanked from the x86ArchTemplate
+if self.shared_info.install_profile.get_boot_device():
+	boot_device = self.shared_info.install_profile.get_boot_device()
+else:
+	boot_device = ""
+	foundboot = False
+	for device in parts:
+		tmp_partitions = parts[device].get_install_profile_structure()
+		for partition in tmp_partitions:
+			mountpoint = tmp_partitions[partition]['mountpoint']
+			if (mountpoint == "/boot"):
+				foundboot = True
+			if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
+				boot_device = device
+
+bootloader = self.shared_info.install_profile.get_boot_loader_pkg()
+arch_loaders = { 'x86': [
+		("grub",(u"GRand Unified Bootloader, newer, RECOMMENDED")),
+		("lilo",(u"LInux LOader, older, traditional.(detects windows partitions)"))],
+	'amd64': [
+		("grub",(u"GRand Unified Bootloader, newer, RECOMMENDED"))]} #FIXME ADD OTHER ARCHS
+?>
+<p>Bootloader Settings:</p>
+<form name="Bloader" method="post" action="/webgli/savebootloader" enctype="multipart/form-data">
+<p>To boot successfully into your new Linux system, a bootloader will be needed. If you already have a bootloader you want to use you can select None here. The bootloader choices available are dependent on what GLI supports and what architecture your system is. Choose a bootloader:</p>
+<table width="100%"  border="1">
+<?
+boot_loaders = arch_loaders[arch]
+boot_loaders.append(("none", (u"Do not install a bootloader.	(System may be unbootable!)")))
+for i,bloader in __builtins__.enumerate(boot_loaders):
+	print '<tr><td><input name="bootloader" type="radio" value="'+boot_loaders[i][0]+'" '
+	if bootloader == boot_loaders[i][0]:
+		print "checked"
+	print '>'+boot_loaders[i][0]+'</td><td>'+boot_loaders[i][1]+"</td></tr>\n"
+?>
+</table>
+<hr>
+Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition. Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead. Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)
+<p>
+<?
+bootmbr = self.shared_info.install_profile.get_boot_loader_mbr()
+print '<input name="bootmbr" type="checkbox" id="bootmbr" value="True"'
+if bootmbr:
+	print " checked"
+print ">Install to MBR</p>"
+		
+if not boot_device:
+	print _(u"You need to partition before you can select the boot device.")
+if boot_device and boot_device[-1] != 'a':
+	#show the menu.
+	print _(u"Your boot device may not be correct.  It is currently set to %s, but this device may not be the first to boot.  Usually boot devices end in 'a' such as hda or sda.") % boot_device
+	print _(u"  Please confirm your boot device.<br>")
+	#grab choies from the partiton list.
+	boot_drive_choices = []
+	for device in parts:
+		print '<input type="radio" name="boot_drive_choice" value="'+device+'">'+device+"<br>\n"
+?>
+<br><p>If you have any additional optional arguments you want to pass to the kernel at boot, type them here: 
+<input name="bootargs" type="text" id="bootargs" <?
+bootargs = self.shared_info.install_profile.get_bootloader_kernel_args()
+if bootargs:
+	print ' value="'+bootargs+'"'
+print '>'
+?>
+</p>
+<p>
+<input name="setbootloader" type="submit" id="setbootloader" value="Save Bootloader Settings">
+</p>
+</form>
+<? return_content = self.wrap_in_webgli_template(return_content) ?>
