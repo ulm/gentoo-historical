@@ -101,7 +101,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		output = []
 		indentlevel = 0
 		incodeblock = False
-		printre = re.compile(r"^(.+: |\s+)?print ")
+		printre = re.compile(r"(^.+: |^\s+|^)print ")
 		f = open(htmlfile, "r")
 		html = f.readlines()
 		f.close()

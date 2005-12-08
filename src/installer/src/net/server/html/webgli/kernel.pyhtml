@@ -1,151 +1,87 @@
-	def kernel(self):
-		data = "<p>Kernel Settings:</p>\n";
-		sources = self.shared_info.install_profile.get_kernel_source_pkg()
-		build_method = self.shared_info.install_profile.get_kernel_build_method()
-		bootsplash = self.shared_info.install_profile.get_kernel_bootsplash()
-		configuri= self.shared_info.install_profile.get_kernel_config_uri()
-		data += '<form name="kernel" method="post" action="/webgli/savekernel" enctype="multipart/form-data">'
-		data += """  <p>Choose which kernel sources to use for your system. If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration.</p>
-<table width="100%"  border="1">
-<tr><td><input name="sources" type="radio" value="livecd-kernel" """
-		if sources == "livecd-kernel":
-			data += "checked"
-		data += '>Livecd Kernel </td><td>Use the running kernel (fastest)</td></tr><tr><td>'+"\n"+'<input name="sources" type="radio" value="vanilla-sources" '
-		if sources == "vanilla-sources":
-			data += "checked"
-		data += '>Vanilla (normal) </td><td>Normal. The Unaltered Linux Kernel ver 2.6+ (safest) (recommended) </td></tr>'+"\n"+'<tr><td><input name="sources" type="radio" value="gentoo-sources" '
-		if sources == "gentoo-sources":
-			data += "checked"
-		data += ">Gentoo</td><td>Gentoo's optimized 2.6+ kernel. (less safe) </td>		</tr>\n"+'<tr><td><input name="sources" type="radio" value="hardened-sources" '
-		if sources == "hardened-sources":
-			data += "checked"
-		data += ">Hardened</td><td>Hardened sources for the 2.6 kernel tree</td></tr>\n"+'<tr><td><input name="sources" type="radio" value="grsec-sources" '
-		if sources == "grsec-sources":
-			data += "checked"
-		data += ">grsec</td><td>Vanilla sources with grsecurity patches </td></tr>\n"
-		if sources not in ["livecd-kernel", "vanilla-sources", "gentoo-sources", "hardened-sources", "grsec-sources"]:
-			data += '<tr><td><input name="sources" type="radio" value="Other" checked>Other</td><td>Specify your own here: <input name="manualsouces" type="text" id="manualsouces" value="'+sources+'"></td></tr></table>'+"\n"
-		else:
-			data += '<tr><td><input name="sources" type="radio" value="Other">Other</td><td>Specify your own here: <input name="manualsouces" type="text" id="manualsouces" value=""></td></tr></table>'+"\n"
-		data += """<hr>
-<table width="507"	border="1">
-	<tr>
-		<td colspan="2" scope="col"><p>There are currently two ways the installer can compile a kernel for your new system. You can either provide a previously-made kernel configuration file and use the traditional kernel-compiling procedure (no initrd) or have genkernel automatically create your kernel for you (with initrd).</p>
-		<p>If you do not have a previously-made kernel configuration, YOU MUST CHOOSE Genkernel. Choose which method you want to use:</p></td>
-	</tr>
-	<tr>
-		<td width="143" scope="col"><input name="build_method" type="radio" value="genkernel" """
-		if build_method == "genkernel":
-			data += "checked"
-		data += '>Genkernel</td><td width="348" scope="col"><input name="build_method" type="radio" value="custom" '
-		if build_method == "custom":
-			data += "checked"
-		data += ">Traditional (requires a config!)</td></tr></table>\n"
-		data += '<p><input name="bootsplash" type="checkbox" id="bootsplash" value="True" '
-		if bootsplash:
-			data += "checked"
-		data += ">Display the bootsplash screen on startup </p><p>If you have a custom kernel configuration, enter its location (otherwise just leave blank):\n"
-		data += '<input name="configuri" type="text" id="configuri" '
-		if configuri:
-			data += 'value="'+configuri+'">'
-		data += """<input name="browseuri" type="button" id="browseuri" value="Browse" onClick="window.open('/webgli/URIBrowser?screen=kernel&baseuri=' + document.kernel.configuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')"> 
-		</p><p><input name="setkernel" type="submit" id="setkernel" value="Save Kernel Settings"></p></form>"""
-		
-		return self.wrap_in_webgli_template(data)
-	def savekernel(self):
-		data = ""
-		if self.post_params['setkernel']:
-			if self.post_params['manualsouces']:
+<? include /webgli/common.pyhtml ?>
+<?
+error_msg = ""
+if self.post_params:
+	if self.post_params['setkernel']:
+		if self.post_params['manualsouces']:
+			try:
+				self.shared_info.install_profile.set_kernel_source_pkg(None,self.post_params['manualsouces'],None)
+			except:
+				data += "ERROR: Could not set the kernel sources!" + self.post_params['manualsouces']
+		elif self.post_params['sources']:
+			try:
+				self.shared_info.install_profile.set_kernel_source_pkg(None,self.post_params['sources'],None)
+			except:
+				data += "ERROR: Could not set the kernel sources!" + self.post_params['sources']
+		if self.post_params['build_method']:
+			try:
+				self.shared_info.install_profile.set_kernel_build_method(None,self.post_params['build_method'],None)
+			except:
+				data += "ERROR: Could not set the kernel build method!"
+			if self.post_params['configuri']:
 				try:
-					self.shared_info.install_profile.set_kernel_source_pkg(None,self.post_params['manualsouces'],None)
+					self.shared_info.install_profile.set_kernel_config_uri(None,self.post_params['configuri'],None)
 				except:
-					data += "ERROR: Could not set the kernel sources!" + self.post_params['manualsouces']
-			elif self.post_params['sources']:
-				try:
-					self.shared_info.install_profile.set_kernel_source_pkg(None,self.post_params['sources'],None)
-				except:
-					data += "ERROR: Could not set the kernel sources!" + self.post_params['sources']
-			if self.post_params['build_method']:
-				try:
-					self.shared_info.install_profile.set_kernel_build_method(None,self.post_params['build_method'],None)
-				except:
-					data += "ERROR: Could not set the kernel build method!"
-				if self.post_params['configuri']:
-					try:
-						self.shared_info.install_profile.set_kernel_config_uri(None,self.post_params['configuri'],None)
-					except:
-						data += "ERROR: Could not set the kernel config URI!"
-			if self.post_params['bootsplash']:
-				try:
-					self.shared_info.install_profile.set_kernel_bootsplash(None,self.post_params['bootsplash'],None)
-				except:
-					data += "ERROR: Could not set the kernel bootsplash!" + self.post_params['bootsplash']
-		
-		return self.wrap_in_webgli_template(data)
-	def bootloader(self):
-		arch = self.shared_info.client_profile.get_architecture_template()
-		parts = self.shared_info.install_profile.get_partition_tables()
-		#Bootloader code yanked from the x86ArchTemplate
-		if self.shared_info.install_profile.get_boot_device():
-			boot_device = self.shared_info.install_profile.get_boot_device()
-		else:
-			boot_device = ""
-			foundboot = False
-			for device in parts:
-				tmp_partitions = parts[device].get_install_profile_structure()
-				for partition in tmp_partitions:
-					mountpoint = tmp_partitions[partition]['mountpoint']
-					if (mountpoint == "/boot"):
-						foundboot = True
-					if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
-						boot_device = device
+					data += "ERROR: Could not set the kernel config URI!"
+		if self.post_params['bootsplash']:
+			try:
+				self.shared_info.install_profile.set_kernel_bootsplash(None,self.post_params['bootsplash'],None)
+			except:
+				data += "ERROR: Could not set the kernel bootsplash!" + self.post_params['bootsplash']
+	if not error_msg:
+		error_msg = "Values saved successfully"
 
-		bootloader = self.shared_info.install_profile.get_boot_loader_pkg()
-		arch_loaders = { 'x86': [
-				("grub",(u"GRand Unified Bootloader, newer, RECOMMENDED")),
-				("lilo",(u"LInux LOader, older, traditional.(detects windows partitions)"))],
-			'amd64': [
-				("grub",(u"GRand Unified Bootloader, newer, RECOMMENDED"))]} #FIXME ADD OTHER ARCHS
-		data = "<p>Bootloader Settings:</p>"
-		data += '<form name="Bloader" method="post" action="/webgli/savebootloader" enctype="multipart/form-data">'
-		data += """  <p>To boot successfully into your new Linux system, a bootloader will be needed. If you already have a bootloader you want to use you can select None here. The bootloader choices available are dependent on what GLI supports and what architecture your system is. Choose a bootloader:</p>
-		<table width="100%"  border="1">"""
-		boot_loaders = arch_loaders[arch]
-		boot_loaders.append(("none", (u"Do not install a bootloader.	(System may be unbootable!)")))
-		for i,bloader in enumerate(boot_loaders):
-			data += '<tr><td><input name="bootloader" type="radio" value="'+boot_loaders[i][0]+'" '
-			if bootloader == boot_loaders[i][0]:
-				data += "checked"
-			data += '>'+boot_loaders[i][0]+'</td><td>'+boot_loaders[i][1]+"</td></tr>\n"
-		data += """
-		</table>
-		<hr>
-		Most bootloaders have the ability to install to either the Master Boot Record (MBR) or some other partition. Most people will want their bootloader installed on the MBR for successful boots, but if you have special circumstances, you can have the bootloader installed to the /boot partition instead. Do you want the boot loader installed in the MBR? (YES is RECOMMENDED)
-		<p>"""
-		bootmbr = self.shared_info.install_profile.get_boot_loader_mbr()
-		data += '<input name="bootmbr" type="checkbox" id="bootmbr" value="True"'
-		if bootmbr:
-			data += " checked"
-		data += ">Install to MBR</p>"
-		
-		if not boot_device:
-			data += _(u"You need to partition before you can select the boot device.")
-		if boot_device and boot_device[-1] != 'a':
-			#show the menu.
-			data += _(u"Your boot device may not be correct.  It is currently set to %s, but this device may not be the first to boot.  Usually boot devices end in 'a' such as hda or sda.") % boot_device
-			data += _(u"  Please confirm your boot device.<br>")
-			#grab choies from the partiton list.
-			boot_drive_choices = []
-			for device in parts:
-				data += '<input type="radio" name="boot_drive_choice" value="'+device+'">'+device+"<br>\n"
-				
-		data += """<br><p>If you have any additional optional arguments you want to pass to the kernel at boot, type them here: 
-		<input name="bootargs" type="text" id="bootargs" """
-		bootargs = self.shared_info.install_profile.get_bootloader_kernel_args()
-		if bootargs:
-			data += ' value="'+bootargs+'"'
-		data += """>
-	</p>
-		<p>
-		<input name="setbootloader" type="submit" id="setbootloader" value="Save Bootloader Settings">
-		</p>
+sources = self.shared_info.install_profile.get_kernel_source_pkg()
+build_method = self.shared_info.install_profile.get_kernel_build_method()
+bootsplash = self.shared_info.install_profile.get_kernel_bootsplash()
+configuri= self.shared_info.install_profile.get_kernel_config_uri()
+?>
+<p>Kernel Settings:</p>
+<: if error_msg:
+<br><% error_msg %><br><br>
+:>
+<form name="kernel" method="post" action="/webgli/kernel.pyhtml" enctype="multipart/form-data">
+<p>Choose which kernel sources to use for your system. If using a previously-made kernel configuration, make sure the sources match the kernel used to create the configuration.</p>
+<table width="100%"  border="1">
+  <tr>
+    <td><input name="sources" type="radio" value="livecd-kernel" <? if sources == "livecd-kernel": print "checked" ?>>Livecd Kernel </td>
+    <td>Use the running kernel (fastest)</td>
+  </tr>
+  <tr>
+    <td><input name="sources" type="radio" value="vanilla-sources" <? if sources == "vanilla-sources": print "checked" ?>>Vanilla (normal) </td>
+    <td>Normal. The Unaltered Linux Kernel ver 2.6+ (safest) (recommended) </td>
+  </tr>
+  <tr>
+    <td><input name="sources" type="radio" value="gentoo-sources" <? if sources == "gentoo-sources": print "checked" ?>>Gentoo</td>
+    <td>Gentoo's optimized 2.6+ kernel. (less safe) </td>
+  </tr>
+  <tr>
+    <td><input name="sources" type="radio" value="hardened-sources" <? if sources == "hardened-sources": print "checked" ?>>Hardened</td>
+    <td>Hardened sources for the 2.6 kernel tree</td>
+  </tr>
+  <tr>
+    <td><input name="sources" type="radio" value="grsec-sources" <? if sources == "grsec-sources": print "checked" ?>>grsec</td>
+    <td>Vanilla sources with grsecurity patches </td>
+  </tr>
+  <tr>
+    <td><input name="sources" type="radio" value="Other" <? if sources not in ["livecd-kernel", "vanilla-sources", "gentoo-sources", "hardened-sources", "grsec-sources"]: print "checked" ?>>Other</td>
+    <td>Specify your own here: <input name="manualsouces" type="text" id="manualsouces" value="<? if sources not in ["livecd-kernel", "vanilla-sources", "gentoo-sources", "hardened-sources", "grsec-sources"]: print sources ?>"></td>
+  </tr>
+</table>
+<hr>
+<table width="507"	border="1">
+  <tr>
+    <td colspan="2" scope="col"><p>There are currently two ways the installer can compile a kernel for your new system. You can either provide a previously-made kernel configuration file and use the traditional kernel-compiling procedure (no initrd) or have genkernel automatically create your kernel for you (with initrd).</p>
+      <p>If you do not have a previously-made kernel configuration, YOU MUST CHOOSE Genkernel. Choose which method you want to use:</p></td>
+  </tr>
+  <tr>
+    <td width="143" scope="col"><input name="build_method" type="radio" value="genkernel" <? if build_method == "genkernel": print "checked" ?>>Genkernel</td>
+    <td width="348" scope="col"><input name="build_method" type="radio" value="custom" <? if build_method == "custom": print "checked" ?>>Traditional (requires a config!)</td>
+  </tr>
+</table>
+<p><input name="bootsplash" type="checkbox" id="bootsplash" value="True" <? if bootsplash: print "checked" ?>>Display the bootsplash screen on startup </p><p>If you have a custom kernel configuration, enter its location (otherwise just leave blank):
+<input name="configuri" type="text" id="configuri" value="<% configuri %>">
+<input name="browseuri" type="button" id="browseuri" value="Browse" onClick="window.open('/webgli/URIBrowser?screen=kernel&baseuri=' + document.kernel.configuri.value, 'uribrowser', 'width=500,height=500,toolbars=no,statusbar=no,menubar=no,scrollbars=yes')">
+</p><p><input name="setkernel" type="submit" id="setkernel" value="Save Kernel Settings"></p>
+</form>
+<? return_content = self.wrap_in_webgli_template(return_content) ?>

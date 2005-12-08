@@ -1,5 +1,36 @@
 <? include /webgli/common.pyhtml ?>
 <?
+error_msg = ""
+if self.post_params:
+	if self.post_params['setbootloader']:
+		if self.post_params['bootloader']:
+			try:
+				self.shared_info.install_profile.set_boot_loader_pkg(None,self.post_params['bootloader'],None)
+			except:
+				error_msg = "ERROR: Could not set the bootloader pkg!"
+		if self.post_params['bootmbr']:
+			try:
+				self.shared_info.install_profile.set_boot_loader_mbr(None,self.post_params['bootmbr'],None)
+				if self.post_params['boot_drive_choice']:
+					try:
+						self.shared_info.install_profile.set_boot_device(None,self.post_params['boot_drive_choice'],None)
+					except:
+						error_msg = "ERROR! Could not set the boot device!"+self.post_params['boot_drive_choice']
+			except:
+				error_msg = "ERROR: Could not set the bootloader MBR flag to TRUE and set boot drive too!"
+		else:
+			try:
+				self.shared_info.install_profile.set_boot_loader_mbr(None,False,None)
+			except:
+				error_msg = "ERROR: Could not set the bootloader MBR flag to FALSE."
+		if self.post_params['bootargs']:
+			try:
+				self.shared_info.install_profile.set_bootloader_kernel_args(None,self.post_params['bootargs'],None)
+			except:
+				error_msg = "ERROR: Could not set the bootloader kernel arguments!"
+	if not error_msg:
+		error_msg = "Values saved successfully"
+
 arch = self.shared_info.client_profile.get_architecture_template()
 parts = self.shared_info.install_profile.get_partition_tables()
 #Bootloader code yanked from the x86ArchTemplate
@@ -25,7 +56,10 @@ arch_loaders = { 'x86': [
 		("grub",(u"GRand Unified Bootloader, newer, RECOMMENDED"))]} #FIXME ADD OTHER ARCHS
 ?>
 <p>Bootloader Settings:</p>
-<form name="Bloader" method="post" action="/webgli/savebootloader" enctype="multipart/form-data">
+<: if error_msg:
+<br><% error_msg %><br><br>
+:>
+<form name="Bloader" method="post" action="/webgli/bootloader.pyhtml" enctype="multipart/form-data">
 <p>To boot successfully into your new Linux system, a bootloader will be needed. If you already have a bootloader you want to use you can select None here. The bootloader choices available are dependent on what GLI supports and what architecture your system is. Choose a bootloader:</p>
 <table width="100%"  border="1">
 <?
