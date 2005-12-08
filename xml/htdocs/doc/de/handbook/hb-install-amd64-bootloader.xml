@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- English CVS Version: 1.35 -->
+<!-- English CVS Version: 1.38 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/Attic/hb-install-amd64-bootloader.xml,v 1.18 2005/10/29 22:43:39 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/Attic/hb-install-amd64-bootloader.xml,v 1.19 2005/12/08 07:16:00 grahl Exp $ -->
 
 <sections>
 
-<version>2.7</version>
-<date>2005-10-22</date>
+<version>2.10</version>
+<date>2005-11-25</date>
 
 <section>
 <title>Eine Wahl treffen</title>
@@ -217,7 +217,7 @@ einem anderen Editor):
 Nun wollen wir eine <path>grub.conf</path> schreiben. Folgend finden Sie zwei
 mögliche <path>grub.conf</path> für das Partitionierungsbeispiel, das wir in
 diesem Leitfaden verwendet haben mit dem Kernel-Image
-<path>kernel-2.6.12-gentoo-r6</path>. Wir werden nur die erste
+<path>kernel-2.6.12-gentoo-r10</path>. Wir werden nur die erste
 <path>grub.conf</path> ausführlich erläutern.
 </p>
 
@@ -245,12 +245,12 @@ default 0
 timeout 30
 <comment># Eine nettes, fettes Hintergrundbild um die ganze Sache ein wenig zu würzen :)
 # Auskommentieren, wenn Sie keine Grafikkarte installiert haben.</comment>
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
 title=Gentoo Linux 2.6.12
 <comment># Partition in der das Kernel-Image (oder das Betriebssystem) vorhanden ist</comment>
 root (hd0,0)
-kernel (hd0,0)/kernel-2.6.12-gentoo-r6  root=/dev/hda3
+kernel (hd0,0)/kernel-2.6.12-gentoo-r10  root=/dev/hda3
 
 <comment># Die nächsten drei Zeilen werden nur benötigt wenn Sie einen Dualboot mit einem Windows System einrichten wollen.</comment>
 <comment># Hier in diesem Fall liegt Windows auf /dev/hda6.</comment>
@@ -263,12 +263,12 @@ chainloader +1
 <pre caption = "grub.conf genkernel Benutzer">
 default 0
 timeout 30
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
 title=Gentoo Linux 2.6.12
 root (hd0,0)
-kernel (hd0,0)/kernel-2.6.12-gentoo-r6 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
-initrd /initramfs-genkernel-amd64-2.6.12-gentoo-r6
+kernel (hd0,0)/kernel-2.6.12-gentoo-r10 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
+initrd /initramfs-genkernel-amd64-2.6.12-gentoo-r10
 
 <comment># Nur wenn Sie einen Dual-Boot einrichten möchten</comment>
 title=Windows XP
@@ -283,15 +283,26 @@ genkernel Versionen zu umgehen, <e>wenn</e> Sie udev benutzen (was standardmäß
 der Fall ist).
 </note>
 
-<note>
-Wenn Sie ein anderes Partitionierungschema verwenden und/oder Kernel-Image,
-passen Sie Ihre Konfiguration entsprechend an. Stellen Sie jedoch sicher, dass
-alles was einem GRUB-Device folgt (wie z.B. <path>(hd0,0)</path>) relativ zum
-Mountpoint ist, nicht dem Root. Mit anderen Worten,
+<p>
+Wenn Sie ein anderes Partitionierungschema und/oder Kernel-Image verwendet
+haben, passen Sie Ihre bitte Konfiguration entsprechend an. Stellen Sie aber
+sicher, dass alles was einem GRUB-Device folgt (wie z.B. <path>(hd0,0)</path>)
+relativ zum Mountpoint ist, nicht dem Root. Mit anderen Worten,
 <path>(hd0,0)/grub/splash.xpm.gz</path> ist in Wirklichkeit
 <path>/boot/grub/splash.xpm.gz</path> denn <path>(hd0,0)</path> ist
 <path>/boot</path>.
-</note>
+</p>
+
+<p>
+Es ist auch so, dass wenn Sie ein anderes Partitionierungsschema wählten und
+<path>/boot</path> nicht auf eine separate Partition legten, das 
+<path>/boot</path> Präfix aus dem obigen Codebeispiel wirklich <e>notwendig</e>
+ist. Wenn Sie unserem vorgeschlagenen Partitionsplan gefolgt sind, wird ist das
+<path>/boot</path> Präfix nicht notwending, aber ein <path>/boot</path> Symlink
+sorgt dafür, dass es funktioniert. Kurzum, das obige Beispiel sollte
+funktionieren; ob Sie nun eine separate <path>/boot</path> Partition definiert
+haben oder nicht.
+</p>
 
 <p>
 Wenn Sie noch zusätzliche Optionen an den Kernel übergeben müssen, fügen Sie
@@ -331,16 +342,18 @@ GRUB händisch installieren</uri> fort.
 <body>
 
 <p>
-Um GRUB zu installieren müssen Sie das <c>grub-install</c> Kommando ausführen.
+Um GRUB zu installieren müssen Sie den <c>grub-install</c> Befehl ausführen.
 Allerdings wird <c>grub-install</c> nicht sofort funktionieren, da wir uns
-innerhalb einer chroot-Umgebung befinden. Wir zunächst müssen <path>/etc/mtab</path>
-aktualisieren (die Datei welche Informationen über alle gemounteten Dateisysteme
-enthält). Glücklicherweise gibt es einen einfachen Weg um dies zu erreichen -
-Kopieren Sie einfach <path>/proc/mounts</path> nach <path>/etc/mtab</path>:
+innerhalb einer chroot-Umgebung befinden. Wir müssen zunächst
+<path>/etc/mtab</path>, welches alle gemounteten Dateisysteme auflistet,
+erstellen. Glücklicherweise gibt es einen einfachen Weg um dies zu erreichen -
+kopieren Sie einfach <path>/proc/mounts</path> nach <path>/etc/mtab</path>,
+ausgenommen der <c>rootfs</c> Zeile, wenn Sie keine separate Bootpartition
+erstellt haben. Der folgende Befehl wird in jedem Fall funktionieren.
 </p>
 
-<pre caption="/etc/mtab aktualisieren">
-# <i>cp /proc/mounts /etc/mtab</i>
+<pre caption="/etc/mtab erstellen">
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
 
 <p>
