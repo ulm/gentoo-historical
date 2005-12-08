@@ -19,6 +19,7 @@ import base64
 import traceback
 import cgi
 import re
+from GLIException import GLIException
 try:
 	from SecureXMLRPCServer import SecureSocketServer
 except:
@@ -81,6 +82,9 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			if lines[i] == "Main content\n":
 				lines[i] = content
 		return "".join(lines)
+
+	def redirect(self, url):
+		raise GLIException("GLIHTTPRedirect", 'notice', "redirect", url)
 
 	def first_substring(self, somestring, *substrings):
 		result = (None, len(somestring))
@@ -147,6 +151,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 					elif line.startswith(openblock):
 						line = line.split(openblock, 1)[1].strip()
 						if line == "else:":
+							indentlevel -= 1
+						if line.startswith("elif "):
 							indentlevel -= 1
 						output.append('\t' * indentlevel + line)
 						indentlevel += 1
@@ -435,11 +441,20 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 							return_content = "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception())
 							break
 					exec tmpcode
+				except GLIException, e:
+					if e.get_function_name() == "redirect":
+#						self.headers_out.append(("Location", e.get_error_msg()))
+						self.send_response(302)
+						self.send_header("Location", e.get_error_msg())
+						self.end_headers()
+						return
 				except:
 					return_content = "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre><br>Generated code:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception(), cgi.escape(tmpcode))
 				break
 			self.send_response(200)
-			if not self.headers_out:
+			for header in self.headers_out:
+				if header[0] == "Content-type": break
+			else:
 				self.headers_out.append(("Content-type", "text/html"))
 			self.headers_out.append(("Content-Length", len(return_content)))
 			for header in self.headers_out:

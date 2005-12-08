@@ -1,151 +1,36 @@
-	def partitioning4(self):
-		data = ""
-		drive_to_partition = self.shared_info.drive_to_partition
-		partlist = self.shared_info.devices[drive_to_partition].get_ordered_partition_list()
-		tmpparts = self.shared_info.devices[drive_to_partition].get_partitions()
-		if not self.post_params['editpart']:
-			data = "ERROR: You must select a partition to edit!<br>\n"
-			return self.wrap_in_webgli_template(data)
-		editpart = float(self.post_params['editpart'])
-		if not editpart == -1:
-			tmppart = tmpparts[float(editpart)]
-		if self.post_params["DelPartition"] == "DELETE PARTITION" or self.post_params["Cancel"] == "Cancel":
-			if self.post_params["DelPartition"] == "DELETE PARTITION":
-				self.shared_info.devices[drive_to_partition].remove_partition(editpart)
-			return self.return_redirect("/webgli/Partitioning2?editdrive=" + drive_to_partition)
-#			data = '<form name="redirect" action="/webgli/Partitioning2" method="POST"><input type="hidden" name="editdrive" value="' + drive_to_partition + '"></form><script>document.redirect.submit();</script>'
-		elif editpart == -1 or tmppart.get_type() == "free":
-			if not int(self.post_params['size']):
-				data = "ERROR: you must specify a size in MB"
-				return self.wrap_in_webgli_template(data)
-			new_minor = self.shared_info.devices[drive_to_partition].add_partition(editpart, int(self.post_params['size']), 0, 0, self.post_params['filesystem'])
-			return self.return_redirect("/webgli/Partitioning3?editpart=" + str(int(new_minor)))
-#			data = '<form name="redirect" action="/webgli/Partitioning3" method="POST"><input type="hidden" name="editpart" value="' + str(int(new_minor)) + '"></form><script>document.redirect.submit();</script>'
-		else:
-			tmppart = tmpparts[editpart]
-			tmppart.set_format(self.post_params['format'])
-			tmppart.set_mkfsopts(self.post_params['fsopts'])
-			tmppart.set_mountopts(self.post_params['mountopts'])
-			tmppart.set_mountpoint(self.post_params['mountpoint'])
-			return self.return_redirect("/webgli/Partitioning2?editdrive=" + drive_to_partition)
-#			data = '<form name="redirect" action="/webgli/Partitioning2" method="POST"><input type="hidden" name="editdrive" value="' + drive_to_partition + '"></form><script>document.redirect.submit();</script>'
+<? include /webgli/common.pyhtml ?>
+<?
+drive_to_partition = self.shared_info.drive_to_partition
+partlist = self.shared_info.devices[drive_to_partition].get_ordered_partition_list()
+tmpparts = self.shared_info.devices[drive_to_partition].get_partitions()
+?>
+<: if not self.post_params['editpart']:
+ERROR: You must select a partition to edit!<br>
+<!-- return self.wrap_in_webgli_template(data) -->
+<: else:
+<?
+editpart = float(self.post_params['editpart'])
+if not editpart == -1:
+	tmppart = tmpparts[float(editpart)]
+if self.post_params["DelPartition"] == "DELETE PARTITION" or self.post_params["Cancel"] == "Cancel":
+	if self.post_params["DelPartition"] == "DELETE PARTITION":
+		self.shared_info.devices[drive_to_partition].remove_partition(editpart)
+	self.redirect("/webgli/partitioning2.pyhtml?editdrive=" + drive_to_partition)
+elif editpart == -1 or tmppart.get_type() == "free":
+	if not int(self.post_params['size']):
+		print "ERROR: you must specify a size in MB"
+#		return self.wrap_in_webgli_template(data)
+	else:
+		new_minor = self.shared_info.devices[drive_to_partition].add_partition(editpart, int(self.post_params['size']), 0, 0, self.post_params['filesystem'])
+		self.redirect("/webgli/partitioning3.pyhtml?editpart=" + str(int(new_minor)))
+else:
+	tmppart = tmpparts[editpart]
+	tmppart.set_format(self.post_params['format'])
+	tmppart.set_mkfsopts(self.post_params['fsopts'])
+	tmppart.set_mountopts(self.post_params['mountopts'])
+	tmppart.set_mountpoint(self.post_params['mountpoint'])
+	self.redirect("/webgli/partitioning2.pyhtml?editdrive=" + drive_to_partition)
 
-		if not data:
-			data = "Work in progress<pre>" + str(self.post_params) + "</pre>"
-		return self.wrap_in_webgli_template(data)
-
-	def networkmounts(self):
-		data = "Network Mounts page."
-		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
-		
-		#	data += "Network Mount found: " + netmount['host'] + ":" + netmount['export'] + "<br>\n"
-		data += "If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount.	Currently GLI only supports NFS mounts."
-		data += """
-		<form name="netmount" action="/webgli/savenetmounts" method="POST" enctype="multipart/form-data">
-		<p>If you have any network shares you would like to mount during the install and for your new system, define them here. Select a network mount to edit or add a new mount. Currently GLI only supports NFS mounts.</p>
-		<table width="511" border="1">
-		<tr>
-			<td width="31">Edit</td>
-			<td width="31">Type</td>
-			<td width="79">Hostname/IP</td>
-			<td width="79">Export</td>
-			<td width="70">Mountpoint</td>
-			<td width="103">Mount Options </td>
-		</tr>"""
-		for i,netmount in enumerate(network_mounts):
-			data += '<tr><td><input name="edit_nfs" type="radio" id="edit_nfs" value="'+str(i)+"\">Edit</td>\n"
-			data += '<td>'+network_mounts[i]['type']+"</td>\n"
-			data += '<td>'+network_mounts[i]['host']+"</td>\n"
-			data += '<td>'+network_mounts[i]['export']+"</td>\n"
-			data += '<td>'+network_mounts[i]['mountpoint']+"</td>\n"
-			data += '<td>'+network_mounts[i]['mountopts']+"</td></tr>\n"
-		data += """
-		</table>
-	
-	<hr>
-		<p>&nbsp;  </p>
-		<table width="100%"  border="1">
-		<tr>
-			<td><p>Enter the IP/hostname:
-				<input name="hostname" type="text" id="hostname">
-				<input type="Submit" name="Search" value="Search">
-			</p>
-			<p>Enter the export name:
-				<input name="export" type="text" id="export">
-			</p>
-			<p>OR</p>
-			<p>Choose the export from the list of found exports:
-				<select name="exports" size="1" id="exports">
-				</select>
-			</p></td>
-			<td><p>Enter the mountpoint:
-				<input name="mountpoint" type="text" id="mountpoint">
-			</p>
-			<p>Enter any special mount options: 
-			<input name="mountopts" type="text" id="mountopts">
-			</p></td>
-		</tr>
-		<tr>
-			<td>&nbsp;</td>
-			<td><input name="addnfs" type="submit" id="addnfs" value="Add New NFS Mount"></td>
-		</tr>
-		</table>
-		<p>&nbsp;</p>
-		<p>&nbsp;</p>
-		<p>&nbsp;  </p>
-	</form>
-		"""
-		
-		return self.wrap_in_webgli_template(data)
-		
-	def savenetmounts(self):
-		data = ""
-		network_mounts = copy.deepcopy(self.shared_info.install_profile.get_network_mounts())
-		if 'addnfs' in self.post_params:
-			if not 'hostname' in self.post_params or not self.post_params['hostname']:
-				data += "ERROR: Hostname not found.<br>\n"
-			elif not 'export' in self.post_params or not self.post_params['export']:
-				data += "ERROR: Export not found.<br>\n"
-			elif not 'mountpoint' in self.post_params or not self.post_params['mountpoint']:
-				data += "ERROR: Mountpoint not found.<br>\n"
-			else:	
-				network_mounts.append({'export': self.post_params['export'], 'host': self.post_params['hostname'], 'mountopts': self.post_params['mountopts'], 'mountpoint': self.post_params['mountpoint'], 'type': 'nfs'})
-				try:
-					self.shared_info.install_profile.set_network_mounts(network_mounts)
-					data += "Network mount added successfully.<br>\n"
-				except:
-					data += "ERROR: Could not add network mount.<br>\n"
-		return self.wrap_in_webgli_template(data)
-		
-	def stageselection(self):
-		data = "<h4>Stage selection:</h4>"
-		stage = self.shared_info.install_profile.get_install_stage()
-		if stage:
-			data += "FOUND A STAGE" + str(stage)
-		grp_install = self.shared_info.install_profile.get_grp_install()
-		dynamic = self.shared_info.install_profile.get_dynamic_stage3()
-		tarball = self.shared_info.install_profile.get_stage_tarball_uri()
-		
-		data += '<form name="stage" action="/webgli/savestage" method="POST" enctype="multipart/form-data">'
-		data += '<p>Which stage do you want to start at?</p><table width="100%"  border="1"><tr><td><input name="stage" type="radio" value="1"'
-		if stage == 1:
-			data += ' checked'
-		data += '>1</td><td>Stage1 is used when you want to bootstrap&amp;build from scratch.</td></tr><tr>			 <td><input name="stage" type="radio" value="2"'
-		if stage == 2:
-			data += ' checked'
-		data += '>2</td><td>Stage2 is used for building from a bootstrapped semi-compiled state.</td></tr><tr>			<td><input name="stage" type="radio" value="3"'
-		if (stage == 3) and not grp_install:
-			data += ' checked'
-		data += '>3</td><td>Stage3 is a basic system that has been built for you (no compiling).</td></tr><tr>			<td><input name="stage" type="radio" value="3+GRP"'
-		if (stage == 3) and grp_install:
-			data += ' checked'
-		data += """>
-			3 + GRP </td>
-			<td>A Stage3 install but using binaries from the LiveCD when able.</td>
-		</tr>
-	</table>
-	<p>  
-		<input name="dynamic" type="checkbox" id="dynamic" value="true" """
-		if dynamic:
-			data += " checked"
-		data += """>
+return_content = self.wrap_in_webgli_template(return_content)
+?>
+:>
