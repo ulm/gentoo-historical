@@ -55,7 +55,7 @@
     <xsl:when test="catid">
       <!-- No ID selected, but we're still checking for catid -->
       <chapter>
-      <title><xsl:value-of select="func:gettext('GLinuxDoc', $lang)"/></title>
+      <title><xsl:value-of select="func:gettext('GLinuxDocCat', $lang)"/></title>
       <section>
       <body>
 
@@ -447,7 +447,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.27 2005/11/09 19:32:44 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.28 2005/12/09 12:36:06 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -469,7 +469,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.27 2005/11/09 19:32:44 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.28 2005/12/09 12:36:06 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:otherwise>

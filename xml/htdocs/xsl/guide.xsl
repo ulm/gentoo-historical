@@ -322,7 +322,9 @@
                    <br/><br/>
                     Documentation:
                     <br/>
-                    <a class="altlink" href="/doc/en/">Main Index</a>
+                    <a class="altlink" href="/doc/en/">Home</a>
+                    <br/>
+                    <a class="altlink" href="/doc/en/list.xml">Listing</a>
                     <br/>
                     <a class="altlink" href="/main/en/about.xml">About Gentoo</a>
                     <br/>
