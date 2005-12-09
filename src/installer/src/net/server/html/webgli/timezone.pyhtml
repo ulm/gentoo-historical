@@ -1,151 +1,36 @@
-	def timezone(self):
-		data = "<h2>Timezone Setup </h2>"
-		if self.post_params['back']:
-			zonepath = self.post_params['tzback']
-		if self.get_params['zonepath']:
-			zonepath = self.get_params['zonepath']
-			if zonepath[-1] != "/":
-				try:
-					self.shared_info.install_profile.set_time_zone(None, zonepath[20:], None)
-					return self.wrap_in_webgli_template("Timezone Set")
-				except:
-					return self.wrap_in_webgli_template("ERROR: Could not set that timezone!")	
-		else:
-			zonepath = "/usr/share/zoneinfo/"
-		skiplist = ["zone.tab","iso3166.tab","posixrules"]
-		tzlist = []
-		for entry in os.listdir(zonepath):
-			if entry not in skiplist:
-				if os.path.isdir(zonepath + "/" + entry): entry += "/"
-				tzlist.append(entry)
-		tzlist.sort()
-		
-		data += "Timezones:<br>\n"
-		data += '<form name="Timezone" method="post" action="/webgli/Timezone" enctype="multipart/form-data">'
-		data += '<input type="hidden" name="tzback" value="'+zonepath+'"><br>'
-		for timezone in tzlist:
-			data += '<a href="/webgli/Timezone?zonepath='+zonepath+timezone+'">'+timezone+"</a><br>\n"
-		data += '<br><input type="submit" name="back" value="Back">'
-		data += "</form>"
-		return self.wrap_in_webgli_template(data)
-	def savetimezone(self):
-		data = ""
-		return self.wrap_in_webgli_template(data)
-	def networking(self):
-		data = ""
-		#interfaces = self.shared_info.interfaces
-		#if not interfaces:
-		interfaces = self.shared_info.install_profile.get_network_interfaces()
-		CC_iface = self.shared_info.client_profile.get_network_interface()
-		if CC_iface and (CC_iface not in interfaces):
-			#The CC has a network config that's not already there.	Preload it.
-			CC_net_type = self.shared_info.client_profile.get_network_type()
-			if CC_net_type == 'dhcp':
-				try:
-					interfaces[CC_iface] = ('dhcp', self.shared_info.client_profile.get_network_dhcp_options(), None)
-				except:
-					pass
-			else:
-				try:
-					interfaces[CC_iface] = (self.shared_info.client_profile.get_network_ip(), self.shared_info.client_profile.get_network_broadcast(), self.shared_info.client_profile.get_network_netmask())
-				except:
-					pass
-		data += """
-		<script>
-		function change_editiface() {
-			for(i=0;i<document.Networking.elements.length;i++) {
-			if(document.Networking.elements[i].name == "EditIface" && document.Networking.elements[i].checked) {
-				location.replace('/webgli/Networking?editiface='+ document.Networking.elements[i].value);
-						}
-					}
-		}
-		</script>
-		 <p>Devices:</p>
-		 <form name="Networking" method="post" action="/webgli/savenetworking" enctype="multipart/form-data">
-			 <table width="100%"	border="1">
-			 <tr>
-				 <th scope="col">Device</th>
-				 <th scope="col">IP Address </th>
-				 <th scope="col">Broadcast</th>
-				 <th scope="col">Netmask</th>
-				 <th scope="col">Gateway</th>
-				 <th scope="col">DHCP Options </th>
-			 </tr>"""
-			 
-		for iface in interfaces:
-			data += '<tr><td><input type="radio" name="EditIface" value="'+str(iface)+'">'+iface+"</td>\n"
-			if interfaces[iface][0] == 'dhcp':
-				data += '<td>DHCP</td><td>x</td><td>x</td><td>x</td><td>'+interfaces[iface][1]+"</td></tr>\n"
-			else:
-				data += '<td>'+interfaces[iface][0]+'</td><td>'+interfaces[iface][1]+'</td><td>'+interfaces[iface][2]+"</td><td></td></tr>\n"
-		data += "</table>\n"
-		data += """
-			<input name="EditIfaceSubmit" type="button" id="EditIfaceSubmit" value="EDIT" onclick="change_editiface()">
-			<input name="DelIfaceSubmit" type="submit" id="DelIfaceSubmit" value="DELETE">"""
-		if self.get_params['editiface']:
-			iface = self.get_params['editiface']
-			data += '<input type="hidden" name="ifacemanual" value="'+iface+'">'
-			data += "<h3>Edit Interface "+iface+"</h3>\n"
-			data += "<table><tr><td>\n"
-			data += '<select name="Network_Type" size="3">'
-			data += '<option value="dhcp" '
-			if interfaces[iface][0] == "dhcp":
-				data += "selected" 
-			data += ' >DHCP</option>'
-			data += '<option value="static" '
-			if interfaces[iface][0] != "dhcp":
-				data += "selected"
-			data += ' >Manual Config</option>'
-			data += '</select>'
-			data += '</td><td>'
-			data += 'Networking Info for Manual Configurations:<br>'
-			data += 'Enter your IP address: <input name="ip" type="text" length="50" maxlength="15" value="'
-			if interfaces[iface][0] != "dhcp":
-				data += interfaces[iface][0]
-			data += '"><br>'
-			data += 'Enter your Broadcast address: <input name="broadcast" type="text" length="50" maxlength="15" value="'
-			if interfaces[iface][0] != "dhcp":
-				data += interfaces[iface][1]
-			data += '"><br>'
-			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="'
-			if interfaces[iface][0] != "dhcp":
-				data += interfaces[iface][2]
-			data += '"><br></td></tr></table>'
-			data += '<input type="submit" value="Edit Network Device" name="AddIfaceSubmit">'
-		else:
-			data += """
-			 <h3>Add a new Interface:</h3>
-			 <p>
-			 <select name="ifacelist" id="ifacelist">"""
-			device_list = GLIUtility.get_eth_devices()
-			for device in device_list:
-				if device not in interfaces:
-					data += '<option value="'+device+'">'+device+': '+GLIUtility.get_interface_realname(device)+"</option>\n"
-			data += """</select> 
-				 or type your own: 
-				 <input name="ifacemanual" type="text" id="ifacemanual" size="10">
-			</p><hr><table><tr><td>"""
-			data += '<select name="Network_Type" size="3">'
-			data += '<option value="dhcp">DHCP</option>'
-			data += '<option value="static">Manual Config</option>'
-			data += '</select>'
-			data += '</td><td>'
-			data += 'Networking Info for Manual Configurations:<br>'
-			data += 'Enter your IP address: <input name="ip" type="text" length="50" maxlength="15" value="192.168."><br>'
-			data += 'Enter your Broadcast address: <input name="broadcast" type="text" length="50" maxlength="15" value=".255"><br>'
-			data += 'Enter your Netmask: <input name="netmask" type="text" length="50" maxlength="15" value="255.255.255.0"><br><hr>Info for DHCP Configurations:<br>DHCP Options: <input type="text" name="dhcp_options" length="50"></td></tr></table>'
-			data += '<input type="submit" value="Add Network Device" name="AddIfaceSubmit"><hr>'
-		
-		data += 'Enter your default gateway: <table>'
-		default_gateway = self.shared_info.install_profile.get_default_gateway()
-		if default_gateway:
-			gway_ip = default_gateway[1]
-			gway_iface = default_gateway[0]
-		else:
-			gway_iface = None
-			gway_ip = ""
-		if not interfaces:
-			data += "You must configure a device first in order to set the default Gateway!<br>"
-		for iface in interfaces:
-			data += '<tr><td><input type="radio" name="GatewayIface" value="'+iface+'" '
-			if iface == gway_iface:
+<? include /webgli/common.pyhtml ?>
+<?
+error_msg = ""
+if self.post_params['back']:
+	zonepath = self.post_params['tzback']
+if self.get_params['zonepath']:
+	zonepath = self.get_params['zonepath']
+	if zonepath[-1] != "/":
+		try:
+			self.shared_info.install_profile.set_time_zone(None, zonepath[20:], None)
+			error_msg = "Timezone Set"
+		except:
+			error_msg = "ERROR: Could not set that timezone!"
+else:
+	zonepath = "/usr/share/zoneinfo/"
+skiplist = ["zone.tab","iso3166.tab","posixrules"]
+tzlist = []
+for entry in os.listdir(zonepath):
+	if entry not in skiplist:
+		if os.path.isdir(zonepath + "/" + entry): entry += "/"
+		tzlist.append(entry)
+tzlist.sort()
+?>
+<h2>Timezone Setup </h2>
+<: if error_msg:
+<br><% error_msg %><br><br>
+:>
+Timezones:<br>
+<form name="Timezone" method="post" action="/webgli/Timezone" enctype="multipart/form-data">
+<input type="hidden" name="tzback" value="<% zonepath %>"><br>
+<: for timezone in tzlist:
+<a href="/webgli/timezone.pyhtml?zonepath=<% zonepath+timezone %>"><% timezone %></a><br>
+:>
+<br><input type="submit" name="back" value="Back">
+</form>
+<? return_content = self.wrap_in_webgli_template(return_content) ?>

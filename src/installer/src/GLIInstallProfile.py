@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.81 2005/11/22 16:09:34 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.82 2005/12/09 14:47:09 agaffney Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -480,7 +480,7 @@ class InstallProfile:
 	# @param xml_attr  not used here
 	def set_ftp_proxy(self, xml_path, ftp_proxy, xml_attr):
 		# Check type
-		if not GLIUtility.is_uri(ftp_proxy):
+		if ftp_proxy and not GLIUtility.is_uri(ftp_proxy):
 			raise GLIException("FTPProxyError", 'fatal', 'set_ftp_proxy',  "Must be a uri!")
 		self._ftp_proxy = ftp_proxy
 
@@ -540,7 +540,7 @@ class InstallProfile:
 	# @param xml_attr  not used here
 	def set_http_proxy(self, xml_path, http_proxy, xml_attr):
 		# Check type
-		if not GLIUtility.is_uri(http_proxy):
+		if http_proxy and not GLIUtility.is_uri(http_proxy):
 			raise GLIException("HTTPProxyError", 'fatal', 'set_http_proxy',  "Must be a uri!")
 		self._http_proxy = http_proxy
 
@@ -1437,7 +1437,7 @@ class InstallProfile:
 	# @param xml_attr not used here
 	def set_rsync_proxy(self, xml_path, rsync_proxy, xml_attr):
 		# Check type
-		if not GLIUtility.is_uri(rsync_proxy):
+		if rsync_proxy and not GLIUtility.is_uri(rsync_proxy):
 			raise GLIException("RSYNCProxyError", 'fatal', 'set_rsync_proxy',  "Must be a uri!")
 		self._rsync_proxy = rsync_proxy
 
