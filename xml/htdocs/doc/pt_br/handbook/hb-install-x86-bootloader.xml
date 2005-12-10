@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/hb-install-x86-bootloader.xml,v 1.11 2005/11/25 23:45:48 enderson Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/hb-install-x86-bootloader.xml,v 1.12 2005/12/10 19:14:45 vanquirius Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>2.5</version>
-<date>2005-07-30</date>
+<version>2.9</version>
+<date>2005-11-25</date>
 
 <section>
 <title>Fazendo sua escolha</title>
@@ -203,7 +203,7 @@ Tendo entendido a situação, está na hora de instalar o GRUB.
 Para instalar o GRUB, vamos primeiro fazer emerge dele.
 </p>
 
-<pre caption = "Instalando o GRUB">
+<pre caption="Instalando o GRUB">
 # <i>emerge grub</i>
 </pre>
 
@@ -215,7 +215,7 @@ de configuração para ele e instalar o GRUB no registro mestre de inicializaç�
 editor):
 </p>
 
-<pre caption = "Criando o /boot/grub/grub.conf">
+<pre caption="Criando o /boot/grub/grub.conf">
 # <i>nano -w /boot/grub/grub.conf</i>
 </pre>
 
@@ -244,19 +244,19 @@ Se seu sistema de arquivos raiz (root) for JFS, você <e>deve</e> adicionar " ro
 a montagem de leitura-escrita.
 </note>
 
-<pre caption = "grub.conf para quem não usou genkernel">
+<pre caption="grub.conf para quem não usou genkernel">
 <comment># Que item para carregar como padrão; 0 é o primeiro, 1 é o segundo, etc...</comment>
 default 0
 <comment># Quantos segundos para esperar antes do ítem padrão ser carregado.</comment>
 timeout 30
 <comment># Uma bela imagem de splash para deixar as coisas mais interessantes :)
 # Comente a linha se você não tem uma placa gráfica instalada</comment>
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-r3
+title=Gentoo Linux 2.6.12-r10
 <comment># Partição onde a imagem de kernel (ou sistema operacional) está localizada</comment>
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r3 root=/dev/hda3
+kernel /boot/kernel-2.6.12-gentoo-r10 root=/dev/hda3
 
 <comment># As próximas quatro linhas só são para quem tem Windows instalado paralelamente.</comment>
 <comment># Neste caso, o Windows está em /dev/hda6.</comment>
@@ -266,15 +266,15 @@ makeactive
 chainloader +1
 </pre>
 
-<pre caption = "grub.conf para usuários do genkernel">
+<pre caption="grub.conf para usuários do genkernel">
 default 0
 timeout 30
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-r3
+title=Gentoo Linux 2.6.12-r10
 root (hd0,0)
-kernel /kernel-genkernel-x86-2.6.11-gentoo-r3 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
-initrd /initramfs-genkernel-x86-2.6.11-gentoo-r3
+kernel /boot/kernel-genkernel-x86-2.6.12-gentoo-r10 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
+initrd /boot/initramfs-genkernel-x86-2.6.12-gentoo-r10
 
 <comment># Só se você tiver Windows em paralelo</comment>
 title=Windows XP
@@ -289,15 +289,25 @@ um bug em algumas versões do genkernel <e>se</e> você usar udev para começar
 (que é o comportamento padrão).
 </note>
 
-<note>
-Se você usar um esquema de particionamento diferente e/ou imagem de kernel,
+<p>
+Se você usou um esquema de particionamento diferente e/ou imagem de kernel,
 ajuste de acordo. No entanto, certifique-se de que qualquer coisa depois de um
 dispositivo do GRUB  (como <path>(hd0,0)</path>) é relativo ao ponto de
 montagem, não a raiz. Em outras palavras,
 <path>(hd0,0)/grub/splash.xpm.gz</path> é na realidade
 <path>/boot/grub/splash.xpm.gz</path>, uma vez que <path>(hd0,0)</path> é 
 <path>/boot</path>.
-</note>
+</p>
+
+<p>
+Além disso, se você escolheu  usar um esquema de particionamento diferente e não
+colocou <path>/boot</path> em uma partição separada, o prefixo
+<path>/boot</path> usado nas amostras de código acima é realmente
+<e>necessário</e>. Se você seguiu nosso plano de particionamento sugerido, o
+prefixo <path>/boot</path> não é necessário, mas um link simbólico
+<path>boot</path> faz funcionar. Em resumo, os exemplos acima devem funcionar
+tanto com uma partição de <path>/boot</path> separada ou não.
+</p>
 
 <p>
 Se você precisa passar opções adicionais para o kernel, simplesmente adicione-as 
@@ -346,14 +356,16 @@ o GRUB manualmente</uri>.
 <p>
 Para instalar o GRUB você irá precisar rodar o comando <c>grub-install</c>. No
 entanto, o <c>grub-install</c> não irá funcionar sem ajustes porque estamos
-dentro de um ambiente de chroot. Precisamos atualizar o <path>/etc/mtab</path>
-(o arquivo com informações sobre todos sistemas de arquivos montados) primeiro:
-para nossa sorte existe um jeito fácil de fazê-lo - simplesmente copie
-<path>/proc/mounts</path> para <path>/etc/mtab</path>:
+dentro de um ambiente de chroot. Precisamos criar o <path>/etc/mtab</path>, que
+lista todos sistemas de arquivos montados. Felizmente, existe um jeito fácil de
+fazê-lo - simplesmente copiar <path>/proc/mounts</path> para
+<path>/etc/mtab</path>, excluindo a linha <c>rootfs</c> se você não criou uma
+partição de inicialização (boot) separada. O seguinte comando irá funcionar em
+ambos casos:
 </p>
 
-<pre caption="Atualizando o /etc/mtab">
-# <i>cp /proc/mounts /etc/mtab</i>
+<pre caption="Criando o /etc/mtab">
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
 
 <p>
@@ -386,7 +398,7 @@ comando do grub, <path>grub&gt;</path>. Agora, você tem que digitar os comandos
 corretos para instalar os arquivos de inicialização do GRUB em seu disco rígido.
 </p>
 
-<pre caption ="Iniciando o shell do GRUB">
+<pre caption="Iniciando o shell do GRUB">
 # <i>grub</i>
 </pre>
 
@@ -418,7 +430,7 @@ Usando a completação de tab, configurar o GRUB não é tão difícil. Vamos
 configurar o GRUB agora? :-)
 </p>
 
-<pre caption ="Instalando o GRUB no MBR">
+<pre caption="Instalando o GRUB no MBR">
 grub&gt; <i>root (hd0,0)</i>          <comment>(Coloque onde sua partição /boot reside)</comment>
 grub&gt; <i>setup (hd0)</i>           <comment>(Instale o GRUB no MBR)</comment>
 grub&gt; <i>quit</i>                  <comment>(Saia do shell do GRUB)</comment>
@@ -470,8 +482,8 @@ aparentemente você escolheu usar o LILO.</p>
 Instalar o LILO é moleza; apenas use <c>emerge</c>.
 </p>
 
-<pre caption = "Instalando o LILO">
-# <i>emerge --usepkg lilo</i>
+<pre caption="Instalando o LILO">
+# <i>emerge lilo</i>
 </pre>
 
 </body>
@@ -523,18 +535,18 @@ timeout=50                <comment># Esperar 5 (cinco) segundos antes de carrega
 default=gentoo            <comment># Quando o timeout acabar, carregar a seção "gentoo"</comment>
 
 <comment># Para quem não usou genkernel</comment>
-image=/boot/kernel-2.6.11-gentoo-r3
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo            <comment># Nome que damos à seção</comment>
   read-only               <comment># Começar com uma raiz só de leitura. Não mude!</comment>
   root=/dev/hda3          <comment># Local do sistema de arquivos raiz (root)</comment>
 
 <comment># Para quem usou genkernel</comment>
-image=/boot/kernel-genkernel-x86-2.6.11-gentoo-r3
+image=/boot/kernel-genkernel-x86-2.6.12-gentoo-r10
   label=gentoo
   read-only
   root=/dev/ram0
   append="init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev"
-  initrd=/boot/initramfs-genkernel-2.6.11-gentoo-r3
+  initrd=/boot/initramfs-genkernel-2.6.12-gentoo-r10
 
 <comment># As próximas duas linhas são só para quem tem Windows instalado em paralelo.</comment>
 <comment># Neste caso, o Windows está armazenado em /dev/hda6.</comment>
@@ -560,7 +572,7 @@ ativar o framebuffer:
 </p>
 
 <pre caption = "Usando o append para adicionar opções de kernel">
-image=/boot/kernel-2.6.11-gentoo-r3
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo
   read-only
   root=/dev/hda3
