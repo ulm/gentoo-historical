@@ -5,13 +5,15 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: amd64ArchitectureTemplate.py,v 1.6 2005/10/15 17:24:46 agaffney Exp $
+$Id: amd64ArchitectureTemplate.py,v 1.7 2005/12/11 19:04:29 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
 This fills in amd64 specific functions.
 """
 
+import sys
+sys.path.append(".")
 import GLIUtility, string
 #from GLIArchitectureTemplate import ArchitectureTemplate
 from x86ArchitectureTemplate import x86ArchitectureTemplate
