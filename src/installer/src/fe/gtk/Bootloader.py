@@ -90,6 +90,7 @@ a brief description beside it.
 		vert.pack_start(hbox, expand=False, fill=False, padding=15)
 
 		self.add_content(vert)
+		self.boot_devices = None
 
 	def loader_selected(self, widget, data=None):
 		self.active_selection = data
@@ -109,11 +110,11 @@ a brief description beside it.
 		self.active_selection = self.controller.install_profile.get_boot_loader_pkg() or "grub"
 		self.boot_loaders[self.active_selection].set_active(True)
 		self.check_install_in_mbr.set_active(self.install_in_mbr)
-		devices = self.controller.install_profile.get_partition_tables().keys()
-		devices.sort()
+		self.boot_devices = self.controller.install_profile.get_partition_tables().keys()
+		self.boot_devices.sort()
 		self.boot_device_combo.get_model().clear()
 		boot_device = self.controller.install_profile.get_boot_device()
-		for i, device in enumerate(devices):
+		for i, device in enumerate(self.boot_devices):
 			self.boot_device_combo.get_model().append([device])
 			if boot_device == device:
 				self.boot_device_combo.set_active(i)
@@ -124,6 +125,6 @@ a brief description beside it.
 		self.controller.install_profile.set_boot_loader_pkg(None, self.active_selection, None)
 		self.controller.install_profile.set_boot_loader_mbr(None, self.check_install_in_mbr.get_active(), None)
 		if self.check_install_in_mbr.get_active():
-			self.controller.install_profile.set_boot_device(None, self.boot_device_combo.get_active_text(), None)
+			self.controller.install_profile.set_boot_device(None, self.boot_devices[self.boot_device_combo.get_active()], None)
 		self.controller.install_profile.set_bootloader_kernel_args(None, self.kernel_params_entry.get_text(), None)
 		return True

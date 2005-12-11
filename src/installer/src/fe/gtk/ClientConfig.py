@@ -381,6 +381,9 @@ class Panel(GLIScreen.GLIScreen):
 			self.controller.client_profile.set_root_passwd(None, GLIUtility.hash_password(self.root_password_entry.get_text()), None)
 		self.controller.client_profile.set_kernel_modules(None, self.modules_entry.get_text(), None)
 		self.controller.client_profile.set_verbose(None, self.verbose_yes_radio.get_active(), None)
+		arch = GLIUtility.spawn(r"uname -m | sed -e 's:i[3-6]86:x86:' -e 's:x86_64:amd64:' -e 's:parisc:hppa:'", return_output=True)[1].strip()
+		self.controller.client_profile.set_architecture_template(None, arch, None)
+
 		self.controller.cc.set_configuration(self.controller.client_profile)
 		self.controller.cc.start_pre_install()
 				
