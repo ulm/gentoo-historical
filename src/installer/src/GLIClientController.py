@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.72 2005/12/11 18:22:56 agaffney Exp $
+$Id: GLIClientController.py,v 1.73 2005/12/11 21:13:09 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -140,6 +140,8 @@ class GLIClientController(Thread):
 			self.addNotification("exception", GLIException("UnsupportedArchitectureError", 'fatal', 'run', 'This architecture template was not defined properly!'))
 
 		self._install_steps = self._arch_template.get_install_steps()
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: install_steps: " + str(self._install_steps))
+
 		self.addNotification("int", NEXT_STEP_READY)
 #		self._install_event.wait()
 
