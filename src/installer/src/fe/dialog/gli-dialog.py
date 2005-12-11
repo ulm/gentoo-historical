@@ -31,39 +31,40 @@ class Setup_CConfig(GLIGenCF):
 				self.client_config_xml_file = self.save_client_profile()
 
 class Setup_InstallProfile(GLIGenIP):
-	def __init__(self, client_profile, install_profile, local_install, advanced_mode):
+	def __init__(self, client_profile, install_profile, local_install, advanced_mode, skip_wizard_question):
 		GLIGenIP.__init__(self, client_profile, install_profile, local_install, advanced_mode)
 		show_review_menu = True
-		#Change the Yes/No buttons to new labels for this question.
-		d.add_persistent_args(["--yes-label", _(u"Wizard Mode")])
-		d.add_persistent_args(["--no-label", _(u"Skip to Menu")])
-		if d.yesno(_(u"The Gentoo Linux Installer can either take you step by step through the installation settings (recommended), or you can instead go straight to the Revisions menu to set your settings before the installation begins."), width=66) == DLG_YES:
-			self.set_partitions()
-			self.set_network_mounts()
-			self.set_install_stage()
-			self.set_portage_tree()
-			self.set_make_conf()
-			if advanced_mode:
-				self.set_distcc()
-			self.set_kernel()
-			self.set_boot_loader()
-			self.set_timezone()
-			self.set_networking()
-			if advanced_mode:
-				self.set_cron_daemon()
-				self.set_logger()
-			self.set_extra_packages()
-			if advanced_mode:
-				self.set_services()
-			self.set_rc_conf()
-			self.set_root_password()
-			self.set_additional_users()
-			self.show_settings()
-			#Reset the Yes/No labels.
-			d.add_persistent_args(["--yes-label", "Yes"])
-			d.add_persistent_args(["--no-label","No"])
-			if d.yesno(_(u"Do you want to change any of your settings before starting the actual installation?")) == DLG_NO:
-				show_review_menu = False
+		if not skip_wizard_question:
+			#Change the Yes/No buttons to new labels for this question.
+			d.add_persistent_args(["--yes-label", _(u"Wizard Mode")])
+			d.add_persistent_args(["--no-label", _(u"Skip to Menu")])
+			if d.yesno(_(u"The Gentoo Linux Installer can either take you step by step through the installation settings (recommended), or you can instead go straight to the Revisions menu to set your settings before the installation begins."), width=66) == DLG_YES:
+				self.set_partitions()
+				self.set_network_mounts()
+				self.set_install_stage()
+				self.set_portage_tree()
+				self.set_make_conf()
+				if advanced_mode:
+					self.set_distcc()
+				self.set_kernel()
+				self.set_boot_loader()
+				self.set_timezone()
+				self.set_networking()
+				if advanced_mode:
+					self.set_cron_daemon()
+					self.set_logger()
+				self.set_extra_packages()
+				if advanced_mode:
+					self.set_services()
+				self.set_rc_conf()
+				self.set_root_password()
+				self.set_additional_users()
+				self.show_settings()
+				#Reset the Yes/No labels.
+				d.add_persistent_args(["--yes-label", "Yes"])
+				d.add_persistent_args(["--no-label","No"])
+				if d.yesno(_(u"Do you want to change any of your settings before starting the actual installation?")) == DLG_NO:
+					show_review_menu = False
 		if show_review_menu:
 			self._fn = (
 				{ 'text': "Partitioning", 'fn': self.set_partitions },
@@ -218,12 +219,15 @@ Do you have a previously generated XML file for the ClientConfiguration?
 			install_profile_xml_file = None
 		else:
 			break
-	
+	skip_wizard_question = False
 	if install_profile_xml_file != None:
 		install_profile.parse(install_profile_xml_file)
-	else:
-		gen_install_profile = Setup_InstallProfile(client_profile, install_profile, local_install, advanced_mode)
-		install_profile = gen_install_profile.install_profile()
+		skip_wizard_question = True
+	
+	#These are always done
+	
+	gen_install_profile = Setup_InstallProfile(client_profile, install_profile, local_install, advanced_mode, skip_wizard_question)
+	install_profile = gen_install_profile.install_profile()
 	
 
 # INSTALLATION TIME
