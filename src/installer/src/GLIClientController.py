@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.71 2005/10/25 19:16:20 agaffney Exp $
+$Id: GLIClientController.py,v 1.72 2005/12/11 18:22:56 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -129,15 +129,15 @@ class GLIClientController(Thread):
 			}
 				
 		if self._configuration.get_architecture_template() not in templates.keys():
-			self.addNotification("exception", UnsupportedArchitectureError('fatal', 'run', self._configuration.get_architecture_template() + ' is not supported by the Gentoo Linux Installer!'))
+			self.addNotification("exception", GLIException("UnsupportedArchitectureError", "fatal", "run", self._configuration.get_architecture_template() + ' is not supported by the Gentoo Linux Installer!'))
 
 		try:
 			template = __import__(TEMPLATE_DIR + '/' + templates[self._configuration.get_architecture_template()])
 			self._arch_template = getattr(template, templates[self._configuration.get_architecture_template()])(self._configuration, self._install_profile, self)
 		except ImportError:
-			self.addNotification("exception", UnsupportedArchitectureError('fatal', 'run', 'The Gentoo Linux Installer could not import the install template for this architecture!'))
+			self.addNotification("exception", GLIException("UnsupportedArchitectureError", 'fatal', 'run', 'The Gentoo Linux Installer could not import the install template for this architecture!'))
 		except AttributeError:
-			self.addNotification("exception", UnsupportedArchitectureError('fatal', 'run', 'This architecture template was not defined properly!'))
+			self.addNotification("exception", GLIException("UnsupportedArchitectureError", 'fatal', 'run', 'This architecture template was not defined properly!'))
 
 		self._install_steps = self._arch_template.get_install_steps()
 		self.addNotification("int", NEXT_STEP_READY)
