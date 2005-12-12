@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.233 2005/11/26 18:57:12 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.234 2005/12/12 02:40:38 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -270,13 +270,22 @@ class ArchitectureTemplate:
 		return GLIUtility.spawn(cmd, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 
 	##
-	# Returns the full version of a package to be emerged when given a short name
+	# Returns the full version of a package to be emerged when given a short name. This looks in PORDIR
 	# @param package short name of package (i.e. xorg-x11)
 	def _portage_best_visible(self, package, chroot=True):
 		chroot_dir = None
 		if chroot:
 			chroot_dir = self._chroot_dir
 		return GLIUtility.spawn("portageq best_visible / " + package, chroot=chroot_dir, return_output=True)[1].strip()
+
+	##
+	# Returns the full version of an installed package when given a short name. This looks in vdb
+	# @param package short name of package (i.e. xorg-x11)
+	def _portage_best_version(self, package, chroot=True):
+		chroot_dir = None
+		if chroot:
+			chroot_dir = self._chroot_dir
+		return GLIUtility.spawn("portageq best_version / " + package, chroot=chroot_dir, return_output=True)[1].strip()
 
 	##
 	# Private Function.  Will edit a config file and insert a value or two overwriting the previous value
