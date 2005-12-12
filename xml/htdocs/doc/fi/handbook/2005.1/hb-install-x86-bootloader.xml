@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/2005.1/hb-install-x86-bootloader.xml,v 1.1 2005/08/11 17:27:47 flammie Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/2005.1/hb-install-x86-bootloader.xml,v 1.2 2005/12/12 05:03:50 flammie Exp $ -->
 
 <sections>
 
-<version>5.0</version>
-<date>2005-08-08</date>
+<version>5.3</version>
+<date>2005-11-25</date>
 
 <section>
 <title>Käynnistyslataimen valinta</title>
@@ -203,7 +203,7 @@ Nyt kun meillä on tuntumaa käsitteisiin, voimme jopa asentaa GRUBin.
 GRUBin asennus aloitetaan emergellä:
 </p>
 
-<pre caption = "GRUBin asentaminen">
+<pre caption="GRUBin asentaminen">
 # <i>emerge grub</i>
 </pre>
 
@@ -213,7 +213,7 @@ viittaa uuteen ytimeemme. Luodaan <path>/boot/grub/grub.conf</path>
 <c>nano</c>lla (tai muulla editorilla):
 </p>
 
-<pre caption = "/boot/grub.confin luonti">
+<pre caption="/boot/grub.confin luonti">
 # <i>nano -w /boot/grub/grub.conf</i>
 </pre>
 
@@ -238,19 +238,19 @@ Jos juuren tiedostojärjestelmä on JFS, pitää <c>kernel</c>-riville lisätä
 tilan liitosta.
 </note>
 
-<pre caption = "grub.conf käsin asennetuille ytimille">
+<pre caption="grub.conf käsin asennetuille ytimille">
 <comment># Oletusvalinta listauksista, numerointi alkaa nollasta</comment>
 default 0
 <comment># Valintaruudun kesto sekunneissa ennen oletusvalinnan käynnistystä.</comment>
 timeout 30
 <comment># Tyylikäs käynnistyskuva mausteeksi :-)
 # kommentoi se pois jollei käytössä ole grafiikkakorttia</comment>
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoon Linux 2.6.26-r9
+title=Gentoon Linux 2.6.12-r10
 <comment># Osio jolla ydin sijaitsee</comment>
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r3 root=/dev/hda3
+kernel /boot/kernel-2.6.12-gentoo-r10 root=/dev/hda3
 
 <comment># Seuraavia kolmea riviä käytetään Windows-dualbooteissa.</comment>
 <comment># Tässä tapauksessa Windows on siis osiolla /dev/hda6.</comment>
@@ -261,18 +261,18 @@ chainloader +1
 </pre>
 
 
-<pre caption = "grub.conf genkernel-ytimille">
+<pre caption="grub.conf genkernel-ytimille">
 default 0
 timeout 30
 splashimage=(hd0,0)/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11
+title=Gentoo Linux 2.6.12
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r3
+kernel /boot/kernel-2.6.12-gentoo-r10
 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
 <comment># (kernel…udev yhdelle riville, mutta se on tässä katkottu
 # useammalle, jotta näkyisi selaimissa ja tulosteissa)</comment>
-initrd /initrd-2.6.11-gentoo-r3
+initrd /initrd-2.6.12-gentoo-r10
 
 <comment># Vain dualbooteille</comment>
 title=Windows XP
@@ -282,13 +282,23 @@ chainloader +1
 </pre>
 
 
-<note>
+<p>
 Muita osiointeja varten mallia pitää muuttaa tarpeen mukaan. Varmista kuitenkin
 että kaikki hakemistot liittyvät valitun GRUB-osion (kuten <path>(hd0,0)</path>)
 juurihakemistoon eikä koko järjestelmän juureen. Siksi siis <path>(hd0,0)/grub/splash.xpm.gz</path>
 onkin oikeasti <path>/boot/grub/splash.xpm.gz</path>, sillä <path>(hd0,0)</path>
 liittyy hakemistoon <path>/boot</path>.
-</note>
+</p>
+
+<p>
+Jos käytössä on toisenlainen osiointimalli, jossa ei ole erillistä 
+<path>/boot</path>-osiota, <e>täytyy</e> <path>/boot</path> kirjoittaa
+käynnistyslataimen asetuksiin. Jos erillinen <path>/boot</path>-osio on
+käytössä, voi sen jättää asetuksissa mainitsematta, mutta sen kirjoittaminen
+on suositeltavaa, sillä symbolisen linkin ansiosta se toimii molemmissa
+tapauksissa. Käytännössä siis <path>/boot</path>-osan kirjoittaminen
+asetuksiin toimii tapauksesta riippumatta.
+</p>
 
 <p>
 Jos ytimelle pitää antaa lisäparametrejä, ne voi lisätä kernel-komennon
@@ -333,12 +343,14 @@ Grubin asennus käsin</uri>.
 
 <p>Grubin asentamiseen riittää <c>grub-install</c>-komento. Kuitenkin,
 grub-install ei toimi suoraan koska olemme vielä chroot-ympäristössä. Ensin
-pitää päivittää <path>/etc/mtab</path> (tiedosto, joka sisältää tiedot
-liitetyistä tiedostojärjestelmistä): onneksi tämä on helppoa; kopioidaan
-vain <path>/proc/mounts</path> <path>/etc/mtab</path>iksi:</p>
+pitää luoda <path>/etc/mtab</path> (tiedosto, joka sisältää tiedot
+liitetyistä tiedostojärjestelmistä):
+onneksi tämä on helppoa; kopioidaan
+vain <path>/proc/mounts</path>ista kaikki paitsi rootfs
+<path>/etc/mtab</path>iksi:</p>
 
-<pre caption="/etc/mtabin päivitys">
-# cp /proc/mounts /etc/mtab
+<pre caption="/etc/mtabin teko">
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
 
 <p>Sitten voidaan asentaa grub:</p>
@@ -505,18 +517,18 @@ default=gentoo            <comment># 5 sekunnin jälkeen käynnistetään gentoo
 
 
 <comment># Käsin käännetty ydin</comment>
-image=/boot/kernel-2.6.11-gentoo-r3
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo            <comment># Ytimelle annettaan nimi</comment>
   read-only               <comment># Aloitetaan juuriosio kirjoitussuojattuna. Pakollinen!</comment>
   root=/dev/hda3          <comment># Juuriosion sijainti</comment>
 
 <comment># Genkernelillä käännetty ydin</comment>
-image=/boot/kernel-2.4.26-r9
+image=/boot/kernel-2.6.12-r10
   label=gentoo
   read-only
   root=/dev/ram0
   append="init=/linuxrc real_root=/dev/hda3 udev"
-  initrd=/boot/initrd-2.4.26-r9
+  initrd=/boot/initrd-2.6.12-r10
 
 <comment># Tätä kohdetta käytetään vain Windows-dualbooteissa</comment>
 <comment># Tässä esimerkissä Windows on osiolla /dev/hda6.</comment>
@@ -535,7 +547,7 @@ Jos ytimelle pitää antaa muita parametrejä, ne lisätään
 </p>
 
 <pre caption = "Parametrien lisäys framebufferilla">
-image=/boot/kernel-2.6.11-gentoo-r3
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo
   read-only
   root=/dev/hda3
@@ -550,20 +562,20 @@ kovalevyjä, merkkaa myös vastaavalle kovalevylaitteelle ydinasetus
 </p>
 
 <p>
-<c>genkernel</c>illä käännetyt ytimet käyttävät samoja käynnistysparametreja kuin
-asennus-CD:kin. Esimerkiksi SCSI-laitteet käynnistetään lisäämällä <c>doscsi</c>
-ydinparametreihin.
+<c>genkernel</c>illä käännetyt ytimet käyttävät samoja käynnistysparametreja 
+kuin asennus-CD:kin. Esimerkiksi SCSI-laitteet käynnistetään lisäämällä 
+<c>doscsi</c> ydinparametreihin.
 </p>
 
 
 <p>
-Seuraavaksi tallenna tiedosto ja poistu editorista. Lilon asennus viimeistellään
-komennolla <c>/sbin/lilo</c>. Se tallentaa LILOn asetukset järjestelmään
-(eli kopioi lataimen levylle). Muista että  <c>/sbin/lilo</c> pitää ajaa
-joka kerta kun uusi ydin asennetaan.
+Seuraavaksi tallenna tiedosto ja poistu editorista. Lilon asennus 
+viimeistellään komennolla <c>/sbin/lilo</c>. Se tallentaa LILOn asetukset 
+järjestelmään (eli kopioi lataimen levylle). Muista että  <c>/sbin/lilo</c> 
+pitää ajaa joka kerta kun uusi ydin asennetaan.
 </p>
 
-<pre caption = "LILOn asennuksen viimeistely">
+<pre caption="LILOn asennuksen viimeistely">
 # <i>/sbin/lilo</i>
 </pre>
 
