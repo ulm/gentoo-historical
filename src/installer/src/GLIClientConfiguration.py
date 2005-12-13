@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientConfiguration.py,v 1.41 2005/10/23 22:20:14 codeman Exp $
+$Id: GLIClientConfiguration.py,v 1.42 2005/12/13 02:37:15 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 The GLIClientConfiguration module contains the ClientConfiguration class
@@ -62,6 +62,7 @@ class ClientConfiguration:
 		self._http_proxy = ""
 		self._rsync_proxy = ""
 		self._verbose = False
+		self._install_mode = "normal"
 		self.data = ""  # used for serialization
 
 		self._parser = SimpleXMLParser.SimpleXMLParser()
@@ -71,6 +72,7 @@ class ClientConfiguration:
 		self._parser.addHandler('client-configuration/enable-ssh', self.set_enable_ssh)
 		self._parser.addHandler('client-configuration/ftp-proxy', self.set_ftp_proxy)
 		self._parser.addHandler('client-configuration/http-proxy', self.set_http_proxy)
+		self._parser.addHandler('client-configuration/install-mode', self.set_install_mode)
 		self._parser.addHandler('client-configuration/interactive', self.set_interactive)
 		self._parser.addHandler('client-configuration/kernel-modules', self.set_kernel_modules)
 		self._parser.addHandler('client-configuration/log-file', self.set_log_file)
@@ -99,6 +101,7 @@ class ClientConfiguration:
 					'enable-ssh': self.get_enable_ssh,
 					'ftp-proxy': self.get_ftp_proxy,
 					'http-proxy': self.get_http_proxy,
+					'install-mode': self.get_install_mode,
 					'interactive': self.get_interactive,
 					'log-file': self.get_log_file,
 					'network-broadcast': self.get_network_broadcast,
@@ -234,6 +237,25 @@ class ClientConfiguration:
 	# Returns the HTTP proxy
 	def get_http_proxy(self):
 		return self._http_proxy
+
+	# This variable has a simple serialize function.
+	
+	############################################################################
+	#### Install Mode
+
+	##
+	# Sets the install mode. (currently "normal", "stage4", or "chroot")
+	# @param xml_path not used here.
+	# @param install_mode Install mode
+	# @param xml_attr not used here.
+	def set_install_mode(self, xml_path, install_mode, xml_attr):
+		self._install_mode = install_mode
+
+	##
+	# Returns install mode
+	# @param self Parameter description
+	def get_install_mode(self):
+		return self._install_mode
 
 	# This variable has a simple serialize function.
 	

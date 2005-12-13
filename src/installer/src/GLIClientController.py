@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.73 2005/12/11 21:13:09 agaffney Exp $
+$Id: GLIClientController.py,v 1.74 2005/12/13 02:37:15 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -49,6 +49,7 @@ class GLIClientController(Thread):
 		self.set_configuration(configuration)
 		self._install_event = Event()
 		self._notification_queue = Queue.Queue(50)
+		self._install_mode = None
 		self._install_step = -1
 		self._install_steps = None
 		self._pretend = pretend
@@ -139,7 +140,10 @@ class GLIClientController(Thread):
 		except AttributeError:
 			self.addNotification("exception", GLIException("UnsupportedArchitectureError", 'fatal', 'run', 'This architecture template was not defined properly!'))
 
-		self._install_steps = self._arch_template.get_install_steps()
+		self._install_mode = self._configuration.get_install_mode()
+		tmp_install_steps = self._arch_template.get_install_steps()
+		self._install_steps = [step for step in tmp_install_steps if self._install_mode in step['modes']]
+
 		if self._configuration.get_verbose(): self._logger.log("DEBUG: install_steps: " + str(self._install_steps))
 
 		self.addNotification("int", NEXT_STEP_READY)
@@ -151,13 +155,13 @@ class GLIClientController(Thread):
 		configuration.close()
 
 		while 1:
-			if self._configuration.get_verbose(): self._logger.log("DEBUG: waiting at top of 'while' loop in CC in secondary thread...waiting to start step " + str(self._install_step+1) + ", " + self._install_steps[(self._install_step+1)][1])
+			if self._configuration.get_verbose(): self._logger.log("DEBUG: waiting at top of 'while' loop in CC in secondary thread...waiting to start step " + str(self._install_step+1) + ", " + self._install_steps[(self._install_step+1)]['name'])
 			self._install_event.wait()
-			if self._configuration.get_verbose(): self._logger.log("DEBUG: Event() cleared at top of 'while' loop in CC in secondary thread...starting step " + str(self._install_step) + ", " + self._install_steps[(self._install_step)][1])
+			if self._configuration.get_verbose(): self._logger.log("DEBUG: Event() cleared at top of 'while' loop in CC in secondary thread...starting step " + str(self._install_step) + ", " + self._install_steps[(self._install_step)]['name'])
 			if self._install_step <= (len(self._install_steps) - 1):
 				try:
 					if not self._pretend:
-						self._install_steps[self._install_step][0]()
+						self._install_steps[self._install_step]['function']()
 					self._install_event.clear()
 					if self.has_more_steps():
 						self.addNotification("int", NEXT_STEP_READY)
@@ -166,7 +170,7 @@ class GLIClientController(Thread):
 				except GLIException, error:
 					etype, value, tb = sys.exc_info()
 					s = traceback.format_exception(etype, value, tb)
-					self._logger.log("Exception received during '" + self._install_steps[self._install_step][1] + "': " + str(error))
+					self._logger.log("Exception received during '" + self._install_steps[self._install_step]['name'] + "': " + str(error))
 					for line in s:
 						line = line.strip()
 						self._logger.log(line)
@@ -197,13 +201,13 @@ class GLIClientController(Thread):
 	##
 	# Returns information about the next install step
 	def get_next_step_info(self):
-		return self._install_steps[(self._install_step + 1)][1]
+		return self._install_steps[(self._install_step + 1)]['name']
 
 	##
 	# Performs the next install step
 	def next_step(self):
 		self._install_step = self._install_step + 1
-		if self._configuration.get_verbose(): self._logger.log("DEBUG: next_step(): setting Event() flag...starting step " + str(self._install_step) + ", " + self._install_steps[(self._install_step)][1])
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: next_step(): setting Event() flag...starting step " + str(self._install_step) + ", " + self._install_steps[(self._install_step)]['name'])
 		self._install_event.set()
 
 	##

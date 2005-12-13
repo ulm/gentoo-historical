@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.234 2005/12/12 02:40:38 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.235 2005/12/13 02:37:15 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -55,37 +55,37 @@ class ArchitectureTemplate:
 		
 		self._architecture_name = "generic"
 		self._install_steps = [
-								 (self.partition, "Partition"),
-								 (self.mount_local_partitions, "Mount local partitions"),
-								 (self.mount_network_shares, "Mount network (NFS) shares"),
-								 (self.unpack_stage_tarball, "Unpack stage tarball"),
-								 (self.update_config_files, "Updating config files"),
-								 (self.configure_make_conf, "Configure /etc/make.conf"),
-								 (self.prepare_chroot, "Preparing chroot"),
-								 (self.install_portage_tree, "Syncing the Portage tree"),
-								 (self.stage1, "Performing bootstrap"),
-								 (self.stage2, "Performing 'emerge system'"),
-								 (self.set_root_password, "Set the root password"),
-								 (self.set_timezone, "Setting timezone"),
-								 (self.emerge_kernel_sources, "Emerge kernel sources"),
-								 (self.build_kernel, "Building kernel"),
-								 (self.install_distcc, "Install distcc"),
-								 (self.install_mta, "Installing MTA"),
-								 (self.install_logging_daemon, "Installing system logger"),
-								 (self.install_cron_daemon, "Installing Cron daemon"),
-								 (self.install_filesystem_tools, "Installing filesystem tools"),
-								 (self.setup_network_post, "Configuring post-install networking"),
-								 (self.install_bootloader, "Configuring and installing bootloader"),
-								 (self.update_config_files, "Re-Updating config files"),
-#                                 (self.configure_rc_conf, "Updating /etc/rc.conf"),
-                                 (self.set_users, "Add additional users."),
-                                 (self.install_packages, "Installing additional packages."),
-				 # services for startup need to come after installing extra packages
-				 # otherwise some of the scripts will not exist.
-                                 (self.set_services, "Setting up services for startup"),
-                                 (self.run_post_install_script, "Running custom post-install script"),
-                                 (self.finishing_cleanup, "Cleanup and unmounting local filesystems.")
-                                ]
+			{ 'function': self.partition, 'name': "Partition", 'modes': ("normal", "stage4") },
+			{ 'function': self.mount_local_partitions, 'name': "Mount local partitions", 'modes': ("normal", "stage4") },
+			{ 'function': self.mount_network_shares, 'name': "Mount network (NFS) shares", 'modes': ("normal", "stage4") },
+			{ 'function': self.unpack_stage_tarball, 'name': "Unpack stage tarball", 'modes': ("normal", "stage4", "chroot") },
+			{ 'function': self.update_config_files, 'name': "Updating config files", 'modes': ("normal", "chroot") },
+			{ 'function': self.configure_make_conf, 'name': "Configure /etc/make.conf", 'modes': ("normal", "chroot") },
+			{ 'function': self.prepare_chroot, 'name': "Preparing chroot", 'modes': ("normal", "stage4", "chroot") },
+			{ 'function': self.install_portage_tree, 'name': "Syncing the Portage tree", 'modes': ("normal", "chroot") },
+			{ 'function': self.stage1, 'name': "Performing bootstrap", 'modes': ("normal", "chroot") },
+			{ 'function': self.stage2, 'name': "Performing 'emerge system'", 'modes': ("normal", "chroot") },
+			{ 'function': self.set_root_password, 'name': "Set the root password", 'modes': ("normal", "chroot") },
+			{ 'function': self.set_timezone, 'name': "Setting timezone", 'modes': ("normal", "chroot") },
+			{ 'function': self.emerge_kernel_sources, 'name': "Emerge kernel sources", 'modes': ("normal", "chroot") },
+			{ 'function': self.build_kernel, 'name': "Building kernel", 'modes': ("normal", "chroot") },
+			{ 'function': self.install_distcc, 'name': "Install distcc", 'modes': ("normal", "chroot") },
+			{ 'function': self.install_mta, 'name': "Installing MTA", 'modes': ("normal", "chroot") },
+			{ 'function': self.install_logging_daemon, 'name': "Installing system logger", 'modes': ("normal", "chroot") },
+			{ 'function': self.install_cron_daemon, 'name': "Installing Cron daemon", 'modes': ("normal", "chroot") },
+			{ 'function': self.install_filesystem_tools, 'name': "Installing filesystem tools", 'modes': ("normal", "chroot") },
+			{ 'function': self.setup_network_post, 'name': "Configuring post-install networking", 'modes': ("normal", "chroot") },
+			{ 'function': self.install_bootloader, 'name': "Configuring and installing bootloader", 'modes': ("normal", "stage4") },
+			{ 'function': self.update_config_files, 'name': "Re-Updating config files", 'modes': ("normal", "chroot") },
+#			{ 'function': self.configure_rc_conf, 'name': "Updating /etc/rc.conf", 'modes': ("normal", "stage4", "chroot") },
+			{ 'function': self.set_users, 'name': "Add additional users.", 'modes': ("normal", "chroot") },
+			{ 'function': self.install_packages, 'name': "Installing additional packages.", 'modes': ("normal", "chroot") },
+			# services for startup need to come after installing extra packages
+			# otherwise some of the scripts will not exist.
+			{ 'function': self.set_services, 'name': "Setting up services for startup", 'modes': ("normal", "chroot") },
+			{ 'function': self.run_post_install_script, 'name': "Running custom post-install script", 'modes': ("normal", "stage4", "chroot") },
+			{ 'function': self.finishing_cleanup, 'name': "Cleanup and unmounting local filesystems.", 'modes': ("normal", "stage4", "chroot") }
+		]
 
 
 	##
