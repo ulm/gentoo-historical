@@ -1,13 +1,13 @@
 GLEP: 42
 Title: Critical News Reporting
-Version: $Revision: 1.4 $
+Version: $Revision: 1.5 $
 Author: Ciaran McCreesh <ciaranm@gentoo.org>
-Last-Modified: $Date: 2005/12/11 01:38:18 $
+Last-Modified: $Date: 2005/12/13 03:21:59 $
 Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
 Created: 31-Oct-2005
-Post-History: 1-Nov-2005, 5-Nov-2005, 7-Nov-2005, 11-Dec-2005
+Post-History: 1-Nov-2005, 5-Nov-2005, 7-Nov-2005, 11-Dec-2005, 13-Dec-2005
 
 Abstract
 ========
@@ -21,7 +21,7 @@ Motivation
 Although most package updates are clean and require little user action,
 occasionally an upgrade requires user intervention during the upgrade process.
 Recent examples of the latter include the ``gcc-3.4`` stabilisation on ``x86``
-and the ``mysql-5`` database format changes.
+and the ``mysql-4.1`` database format changes.
 
 There are currently several ways of delivering important news items to our
 users, none of them particularly effective:
@@ -31,6 +31,7 @@ users, none of them particularly effective:
 * The Gentoo Forums
 * The main Gentoo website
 * RSS feeds of Gentoo news
+* ``einfo`` and ``ewarn`` messages in ``pkg_setup`` or ``pkg_postinst``
 
 A more reliable way of getting news of critical updates out to users is required
 to avoid repeats of the various recent upgrade debacles. This GLEP proposes a
@@ -143,7 +144,7 @@ form ``yyyy-mm-dd-short-name``, where ``yyyy`` is the year (e.g. ``2005``),
 ``mm`` is the month (``01`` through ``12``) and dd is the day of the month
 (``01`` through ``31``). The ``short-name`` is a very short name describing the
 news item (e.g. ``yoursql-updates``), consisting only of the characters ``a-z``,
-``0-9`` and ``-`` (hyphen).
+``0-9``, ``+`` (plus), ``:`` (colon) and ``-`` (hyphen).
 
 News Item Directories
 ---------------------
@@ -336,13 +337,15 @@ Client Side
 '''''''''''
 
 Whenever relevant unread news items are found, the package manager will create a
-file named ``/var/lib/portage/news/news.unread`` (if it does not already exist)
-and append the news item identifier (eg ``2005-11-01-yoursql-updates``) on a new
-line.
+file named ``/var/lib/gentoo/news/news-magic-chicken.unread`` (if it does not
+already exist) and append the news item identifier (eg
+``2005-11-01-yoursql-updates``) on a new line.
 
 .. Note:: Future changes to Portage involving support for multiple repositories
-   may require one news list per repository. Assuming repositories have some
-   kind of unique identifier, this file could be named ``news-repoid.unread``.
+   may introduce repository names. In this case, the ``magic-chicken`` part of the
+   filename should be replaced by a string representation of the repository
+   name. Thus, news item clients should use a wildcard rather than hardcoding
+   the ``magic-chicken`` string.
 
 Notification that new relevant news items will be displayed via the
 ``emerge`` tool in a similar way to the existing "configuration files need
@@ -358,14 +361,15 @@ Checks for new news messages should be displayed:
 * After an ``emerge sync``
 * After an ``emerge --pretend``
 * Before an ``emerge <target>`` (which may also include a red warning message)
+* Before an ``emerge --ask <target>`` sequence
 
 The package manager may use a timestamp check file to avoid having to process
 news items unnecessarily.
 
 The package manager must keep track of news items that have already been added
 to the unread list to avoid repeatedly marking a deleted news item. This could
-be handled via a ``news.skip`` file, but implementation is not specified by this
-GLEP.
+be handled via a ``news-magic-chicken.skip`` file, but implementation is not
+specified by this GLEP.
 
 Users who really don't care about news items can use ``rsync_excludes`` to
 filter out the ``metadata/news/`` directory.
@@ -376,9 +380,11 @@ News Item Clients
 Once a news item is marked for reading, third party tools (or traditional core
 Unix tools) can be used to display and view the news files.
 
-When a news item is read, its name should be removed from the ``news.unread``
-file. News clients may add the name to a ``news.read`` file in the same
-directory with the same file format.
+When a news item is read, its name should be removed from the
+``news-magic-chicken.unread`` file. If a news client acts as an interactive
+reader rather than a gateway, it should then add the name to a
+``news-magic-chicken.read`` file in the same directory with the same file
+format (again, ``magic-chicken`` should be a wildcard rather than hardcoded).
 
 An ``eselect`` [#eselect]_ module shall be created as the 'suggested' display
 tool; other display tools (for example, a news to email forwarder, which would
