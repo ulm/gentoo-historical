@@ -98,8 +98,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		openrun, closerun = '<?', '?>'
 		openprint, closeprint = '<%', '%>'
 		openblock, closeblock = '<:', ':>'
-		output = []
-		indentlevel = 0
+		output = ["def tmphandler(get_params, post_params, headers_out, shared_info):", "\treturn_content = ''"]
+		indentlevel = 1
 		incodeblock = False
 		printre = re.compile(r"(^.+: |^\s+|^)print ")
 		f = open(htmlfile, "r")
@@ -173,6 +173,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						if not line:
 							tmpline += ' + "\\n"'
 						output.append('\t' * indentlevel + tmpline)
+		output += ["\treturn return_content"]
 		return "\n".join(output)
 
 	def status(self):
@@ -371,34 +372,6 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.common_handler(head_only)
 
 	def common_handler(self, head_only):
-		paths = {
-				  'ProfileHandler': [ '/loadprofile', '/loadprofile2', '/saveprofile', '/saveprofile2' ],
-				  'WebGLIHandler': ['/webgli', '/webgli/', 
-						'/webgli/ClientConfig', '/webgli/saveclientconfig',
-						'/webgli/NetworkMounts', '/webgli/savenetmounts',
-						'/webgli/Partitioning', '/webgli/Partitioning2', '/webgli/Partitioning3', '/webgli/Partitioning4',
-						'/webgli/StageSelection', '/webgli/savestage',
-						'/webgli/PortageTree', '/webgli/saveportage',
-						'/webgli/GlobalUSE', '/webgli/saveglobaluse',
-						'/webgli/LocalUSE', '/webgli/savelocaluse',
-						'/webgli/MakeDotConf', '/webgli/savemakedotconf',
-						'/webgli/ConfigFiles', '/webgli/saveconfigfiles',
-						'/webgli/EtcPortage',
-						'/webgli/Kernel', '/webgli/savekernel',
-						'/webgli/Bootloader', '/webgli/savebootloader',
-						'/webgli/Timezone', '/webgli/savetimezone',
-						'/webgli/Networking', '/webgli/savenetworking',
-						'/webgli/Daemons', '/webgli/savedaemons',
-						'/webgli/ExtraPackages', '/webgli/savepackages',
-						'/webgli/Services', '/webgli/saveservices',
-						'/webgli/Users', '/webgli/saveusers',
-						'/webgli/Review', '/webgli/savereview', 
-						'/webgli/URIBrowser',
-						'/webgli/loadprofile', '/webgli/loadprofile2',
-						'/webgli/saveprofile', '/webgli/saveprofile2'		],
-		          'Welcome': [ '/welcome' , '/showargs'],
-		          'Clients': [ '/showclients' ]
-		        }
 		if needauth:
 			authed = False
 			if self.headers.getheader('authorization'):
@@ -417,10 +390,6 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			print "get_params: " + str(self.get_params)
 			print "post_params: " + str(self.post_params)
 			print "----------------------------------------------------"
-		for path in paths:
-			if self.path in paths[path]:
-				module = path
-				# Horrible hack until I figure out a better way to skip to sending the content
 		# No code handler...look for actual file
 		path = self.translate_path(self.path)
 		if os.path.exists(path):
@@ -451,6 +420,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 							return_content = "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception())
 							break
 					exec tmpcode
+					return_content = tmphandler(self.get_params, self.post_params, self.headers_out, self.shared_info)
 				except GLIException, e:
 					if e.get_function_name() == "redirect":
 #						self.headers_out.append(("Location", e.get_error_msg()))
