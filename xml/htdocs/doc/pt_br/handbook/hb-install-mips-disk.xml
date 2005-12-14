@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/hb-install-mips-disk.xml,v 1.9 2005/09/06 21:08:39 vanquirius Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/hb-install-mips-disk.xml,v 1.10 2005/12/14 00:38:20 vanquirius Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>1.10</version>
-<date>2005-08-02</date>
+<version>1.11</version>
+<date>2005-10-02</date>
 
 <section>
 <title>Introdução a dispositivos de bloco</title>
@@ -126,13 +126,9 @@ um novo SGI Disk Label:
 
 <ul>
   <li>
-<!--    <e>SGI Volume Header</e> (9th partition): This partition is important. It
-    is where the kernel images will go. To store kernel images, you will utilize
-    the tool known as <c>dvhtool</c> to copy kernel images to this partition. 
-    You will then be able to boot kernels from this partition via the SGI PROM 
-    Monitor.	-->
     <e>SGI Volume Header</e> (nona partição): Esta partição é importante. Ela é
-    onde o gerenciador de inicialização arcboot será instalado.
+    onde o gerenciador de inicialização irá residir e, em alguns casos, também
+    conterá imagens de kernel.
   </li>
   <li>
     <e>SGI Volume</e> (décima-primeira partição): Esta partição tem um propósito
@@ -207,53 +203,66 @@ dados de zero com o seguinte comando: <c>dd if=/dev/zero of=/dev/sda bs=512
 count=1</c>.
 </note>
 
-<!-- This has been dropped in favour of using arcboot
-<p>Getting the SGI Volume Header to just the right size</p>
+</body>
+</subsection>
+
+<subsection>
+<title>Deixando o cabeçalho de volume SGI do tamanho correto</title>
+<body>
+
+<impo>
+Este passo é normalmente necessário, devido a um bug no <c>fdisk</c>. Por algum
+motivo, o cabeçalho de volume não é criado corretamente, e o resultado final é
+que começa e termina no cilindro 0. Isto impede que múltiplas partições sejam
+criadas. Pra contornar o problema... continue lendo.
+</impo>
 
 <p>
-Now that an SGI Disklabel is created, partitions may now be defined. In the
-above example, there are already two partitions defined for you. These are the
-special partitions mentioned above and should not normally be altered. However,
-for installing Gentoo, we'll need to load multiple kernel images directly into
-the volume header, as there is no supported SGI Bootloader available in Portage
-yet. The volume header itself can hold up to <e>eight</e> images of any size, 
-with each image allowed eight-character names.
+Agora que uma Disklabel de SGI foi criada, as partições podem ser definidas. No
+exemplo acima, já existem duas partições definidas para você, Elas são as
+partições especiais mencionadas acima e não devem normalmente ser alteradas.
+No entanto, para instalar o Gentoo, nós iremos carregar um gerenciador de
+inicialização e possivelmente imagens de kernel (dependendo do tipo de sistema)
+diretamente no cabeçalho de volume. O cabeçalho de volume pode ter até
+<e>oito</e> imagens de qualquer tamanho, com cada imagem permitindo nomes de
+oito caracteres.
 </p>
 
 <p>
-The process of making the volume header larger isn't exactly straight-forward - -
-there's a bit of a trick to it. One cannot simply delete and re-add the volume
-header due to odd fdisk behavior. In the example provided below, we'll create a
-50MB Volume header in conjunction with a 50MB /boot partition. The actual layout
-of your disk may vary, but this is for illustrative purposes only.
+O processo de tornar o cabeçalho de volume maior não é exatamente simples;
+existe um pouco de manha. Não é possível simplesmente apagar e re-adicionar o
+volume por causa de um comportamento estranho do fdisk. No exemplo fornecido
+abaixo, nós iremos criar um cabeçalho de volume de 50 MB junto com uma partição
+de /boot de 50MB. O esquema real de seu disco pode variar, mas isto é apenas
+para propósitos ilustrativos.
 </p>
 
-<pre caption="Resizing the SGI Volume Header correctly">
+<pre caption="Redimensionando o cabeçalho de volume SGI corretamente">
 Command (m for help): <i>n</i>
 Partition number (1-16): <i>1</i>
 First cylinder (5-8682, default 5): <i>51</i>
  Last cylinder (51-8682, default 8682): <i>101</i>
 
-<comment>(Notice how fdisk only allows Partition #1 to be re-created starting at a
-minimum of cylinder 5?  Had you attempted to delete &amp; re-create the SGI
-Volume Header this way, this is the same issue you would have encountered.
-In our example, we want /boot to be 50MB, so we start it at cylinder 51 (the 
-Volume Header needs to start at cylinder 0, remember?), and set its ending 
-cylinder to 101, which will roughly be 50MB (+/- 1-5MB).)</comment>
+<comment>(Note como o fdisk só permite que a primeira partição seja recriada começando )
+(com um cilindro mínimo 5? Se você tentasse apagar &amp; recriar o cabeçalho  )
+(de volume deste jeito, você teria encontrado o mesmo problema. Em nosso      )
+(exemplo, nós queremos que /boot tenha 50MB, então começamos no cilindro 51 (o)
+(cabeçalho de volume precisa começar no cilindro 0, lembra?) e colocamos seu  )
+(cilindro final como 101, o que dá mais ou menos 50 MB (+/- 1-5MB).           )</comment>
 
 Command (m for help): <i>d</i>
 Partition number (1-16): <i>9</i>
 
-<comment>(Delete Partition #9 (SGI Volume Header))</comment>
+<comment>(Apagar a nova partição (cabeçalho de volume SGI))</comment>
 
 Command (m for help): <i>n</i>
 Partition number (1-16): <i>9</i>
 First cylinder (0-50, default 0): <i>0</i>
  Last cylinder (0-50, default 50): <i>50</i>
 
-<comment>(Re-Create Partition #9, ending just before Partition #1)</comment>
+<comment>(Re-criar a nova partição, terminando bem antes da primeira)</comment>
 </pre>
--->
+
 <p>
 Se você não tiver certeza de como usar o <c>fdisk</c> leia abaixo as instruções
 de particionamento para Cobalts. Os conceitos são exatamente iguais -- apenas
@@ -261,12 +270,12 @@ lembre-se de deixar as partições de cabeçalho de volume e disco inteiro
 sozinhas.
 </p>
 
-<!-- <p>  Perhaps part of the above commented-out block?
-Once this is done, you are safe to create the rest of your partitions as you see
-fit. After all your partitions are laid out, make sure you set the partition ID
-of your swap partition to <c>82</c>, which is Linux Swap. By default, it will be
+<p>
+Uma vez feito isso, você pode criar o resto de suas partições como desejar.
+Depois que todas suas partições estiverem prontas, certifique-se de mudar a ID
+de sua partição de swap para <c>82</c>, que é Linux Swap. Por padrão, será
 <c>83</c>, Linux Native. 
-</p> -->
+</p>
 
 <p>
 Agora que suas partições foram criadas, você pode continuar com <uri
