@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/2005.1/hb-install-x86-bootloader.xml,v 1.1 2005/08/09 10:22:35 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/2005.1/hb-install-x86-bootloader.xml,v 1.2 2005/12/15 13:23:28 yoswink Exp $ -->
 
 <sections>
 
-<version>5.0</version>
-<date>2005-08-08</date>
+<version>5.3</version>
+<date>2005-11-25</date>
 
 <section>
 <title>Realizando su elección</title>
@@ -179,9 +179,12 @@ La numeración de los discos duros comienza con un cero, en lugar de utilizar
 una "a" y las particiones empiezan con cero en lugar de con un uno.
 Advertimos también que entre los dispositivos hd, sólo se cuentan los discos 
 duros y no los dispositivos atapi-ide como cdroms y grabadoras. Además, la
-especificación es igual para dispositivos scsi. (Usualmente son
-asignados números mayores, excepto cuando el bios está configurado para
+especificación es igual para dispositivos SCSI. (Usualmente son
+asignados números mayores, excepto cuando la BIOSs está configurada para
 arrancar desde los dispositivos scsi).
+Cuando se le indica a la BIOS que arranque desde un disco duro diferente (por
+ejemplo el esclavo primario), <e>ese</e> disco será marcado como 
+<path>hd0</path>.
 </p>
 
 <p>
@@ -259,12 +262,12 @@ default 0
 timeout 30
 <comment># Una bella, hermosa imagen para ensalzar las cosas un poco :)
 # Coméntela si no tiene una tarjeta gráfica instalada </comment>
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-r11
+title=Gentoo Linux 2.6.12-r10
 <comment># Partición donde se encuentra la imagen del kernel (o sistema operativo)</comment>
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r11 root=/dev/hda3
+kernel /boot/kernel-2.6.12-gentoo-r10 root=/dev/hda3
 
 <comment># Las siguientes cuatro líneas sólo se usan en caso de arranque dual con un sistema Windows.</comment>
 <comment># En este caso, Windows reside en la partición /dev/hda6.</comment>
@@ -277,13 +280,12 @@ chainloader +1
 <pre caption = "grub.conf para usuarios del genkernel">
 default 0
 timeout 30
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-r11
+title=Gentoo Linux 2.6.12-r10
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r11 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
-initrd /initrd-2.6.11-gentoo-r11
-
+kernel /boot/kernel-genkernel-x86-2.6.12-gentoo-r10 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
+initrd /boot/initramfs-genkernel-x86-2.6.12-gentoo-r10
 <comment># Solo en caso de arranque dual</comment>
 title=Windows XP
 root (hd0,5)
@@ -291,31 +293,35 @@ makeactive
 chainloader +1
 </pre>
 
-
-<note>
-Si usa un esquema de particiones y/o imagen de kernel distinta, haga
+<p>
+Si se utiliza un esquema de particiones y/o imagen de kernel distinta, haga
 los ajustes respectivos. Sin embargo, asegúrese que cualquier cosa que
 siga un dispositivo GRUB (tal como <path>(hd0,0)</path>) sea relativa
 al punto de montaje y no de la raíz. En otras palabras,
 <path>(hd0,0)/grub/splash.xpm.gz</path> es en realidad
 <path>/boot/grub/splash.xpm.gz</path> ya que <path>(hd0,0)</path> es
 <path>/boot</path>.
-</note>
+</p>
+
+<p>
+Además, si se eligió utilizar un esquema de particionamiento diferente y no
+colocó <path>/boot</path> en una partición separada, el prefijo 
+<path>/boot</path> empleado en los ejemplos anteriores, es realmente 
+<e>necesario</e>. Si ha seguido el plan de particionamiento sugerido, el
+prefijo <path>/boot</path> no es obligatorio, un enlace simbólico 
+<path>/boot</path>lo hace funcionar. En resumen, los ejemplos anteriores 
+deberían funcionar si ha definido una partición separada para 
+<path>/boot</path> o no.
+</p>
 
 <p>
 Si necesita pasar algún parámetro adicional al kernel, sencillamente
 agréguelo al final de la línea de comando del kernel. Ya estamos
 pasando una opción (<c>root=/dev/hda3</c> o
-<c>real_root=/dev/hda3</c>), pero se pueden pasar otras también. Como
-ejemplo usamos el enunciado <c>vga</c> para el framebuffer discutido
+<c>real_root=/dev/hda3</c>), pero se pueden pasar otras también. Cómo
+por ejemplo <c>video</c> y/o <c>vga</c> para el framebuffer discutido
 previamente:
 </p>
-
-<pre caption = "Agregando el enunciado vga como parámetro del kernel">
-title=Gentoo Linux 2.4.26-r9
-  root (hd0,0)
-  kernel /kernel-2.4.26-gentoo-r9 root=/dev/hda3 vga=788
-</pre>
 
 <p>
 Si está utilizando un kernel 2.6.7 o superior y ha puenteado su disco duro
@@ -336,15 +342,16 @@ cuando arranque su sistema.
 </p>
 
 <p>
-Los desarrolladores de GRUB recomiendan utilizar <c>grub-install</c>. Sin embargo, 
-si por alguna razón <c>grub-install</c> no funciona correctamente todavía tiene
-la opción de instalar GRUB manualmente.
+Los desarrolladores de GRUB recomiendan utilizar <c>grub-install</c>. Sin
+embargo, si por alguna razón <c>grub-install</c> no funciona correctamente 
+todavía tiene la opción de instalar GRUB manualmente.
 </p>
 
 <p>
 Continué con <uri link="#grub-install-auto">Por defecto: Configurando 
-GRUB utilizando grub-install</uri> o <uri link="#grub-install-manual">Alternativa: Configurando 
-GRUB a mano, utilizando instrucciones</uri>.
+GRUB utilizando grub-install</uri> o <uri 
+link="#grub-install-manual">Alternativa: Configurando GRUB a mano, 
+utilizando instrucciones</uri>.
 </p>
 
 </body>
@@ -357,14 +364,15 @@ GRUB a mano, utilizando instrucciones</uri>.
 Para instalar GRUB necesita ejecutar el comando <c>grub-install</c>. Sin 
 embargo <c>grub-install</c> no funcionará tal cual se instala, ya que estamos 
 dentro de un entorno chroot.  Antes de seguir, necesitará actualizar 
-<path>/etc/mtab</path> (el archivo que contiene la información relativa a 
-todos los sistemas de archivos montados): afortunadamente hay una manera 
+<path>/etc/mtab</path>, el cual contiene la información relativa a 
+todos los sistemas de archivos montados. Afortunadamente hay una manera 
 sencilla de realizar esto, simplemente copie <path>/proc/mounts</path> a 
-<path>/etc/mtab</path>:
+<path>/etc/mtab</path>, excluyendo la línea <c>rootfs</c> si no ha creado una
+partición separada para boot. El siguiente comando fucionará en ambos casos:
 </p>
 
-<pre caption="Actualizando /etc/mtab">
-# <i>cp /proc/mounts /etc/mtab</i>
+<pre caption="Crear /etc/mtab">
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
 
 <p>
@@ -377,15 +385,10 @@ Ahora podemos instalar GRUB utilizando <c>grub-install</c>:
 
 <p>
 Si tiene alguna pregunta más acerca de GRUB, por favor consulte el <uri
-link="http://www.gnu.org/software/grub/grub-faq.html">FAQ de GRUB (en inglés)</uri> o el <uri
+link="http://www.gnu.org/software/grub/grub-faq.html">FAQ de GRUB (en inglés)</uri> 
+o el <uri 
 link="http://www.gnu.org/software/grub/manual/">Manual de GRUB (en inglés)</uri>.
 </p>
-
-<note>
-Cuando reinstale un kernel, no necesita sobreescribir los archivos. Simplemente, 
-ejecute <c>make install</c> después de compilar el kernel; automáticamente 
-copiará los archivos necesarios y ajustará la configuración de GRUB.
-</note>
 
 <p>
 Continué con <uri link="#reboot">Reiniciando el sistema</uri>.
@@ -398,9 +401,10 @@ Continué con <uri link="#reboot">Reiniciando el sistema</uri>.
 <body>
 
 <p>
-Para comenzar a configurar GRUB, debe ejecutar los comandos dentro de <c>grub</c>.
-Conocerá al interprete de comandos propio de grub. Ahora necesita ejecutar los 
-comandos necesarios para instalar el registro de arranque de GRUB en su disco duro.
+Para comenzar a configurar GRUB, debe ejecutar los comandos dentro de
+<c>grub</c>.  Conocerá a <path>grub&gt;</path> intérprete de comandos propio
+de grub. Ahora necesita ejecutar los comandos necesarios para instalar el
+registro de arranque de GRUB en su disco duro.
 </p>
 
 <pre caption =" Iniciando el intérprete de comandos de GRUB">
@@ -456,6 +460,13 @@ Si tiene alguna pregunta más acerca de GRUB, por favor consulte el <uri
 link="http://www.gnu.org/software/grub/grub-faq.html">FAQ de GRUB</uri> o el <uri
 link="http://www.gnu.org/software/grub/manual/">Manual de GRUB</uri>.
 </p>
+
+<note>
+Cuando reinstale un kernel, no necesita copiar los archivos. Simplemente
+ejecute <c>make install</c> después de compilar el núcleo; automáticamente
+se copiarán los archivos necesarios y se ajustará la configuración de 
+GRUB.
+</note>
 
 <p>
 Continué con <uri link="#reboot">Reiniciando el sistema</uri>.
@@ -539,18 +550,18 @@ timeout=50               <comment># Esperar 5 (cinco) segundos antes de arrancar
 default=gentoo           <comment># Al transcurrir el plazo de espera, arrancar la opción "gentoo"</comment>  
 
 <comment># Para los que no usaron genkernel</comment>
-image=/boot/kernel-2.6.11-gentoo-r11
+image=/boot/kernel-2.6.12-gentoo-r10
  label=gentoo            <comment># El nombre de la sección</comment>
  read-only               <comment># Comience con la raíz solo lectura. ¡No modifique!</comment>
   root=/dev/hda3         <comment># Ubicación del sistema raíz de archivos</comment>
 
 <comment># Para usuarios de genkernel</comment>
-image=/boot/kernel-2.6.11-gentoo-r11
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo
   read-only
   root=/dev/ram0
   append="init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev"
-  initrd=/boot/initrd-2.6.11i-gentoo-r11
+  initrd=/boot/initramfs-genkernel-x86-2.6.12-gentoo-r10
 
 <comment># La siguientes dos línea solo corresponden si hace arranque
 dual con un sistema Windows.</comment>
@@ -571,7 +582,7 @@ enunciado <c>vga=788</c> para activar framebuffer:
 </p>
 
 <pre caption = "Usando append para agregar opciones al kernel">
-image=/boot/kernel-2.6.11-gentoo-r11
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo
   read-only
   root=/dev/hda3
@@ -603,10 +614,11 @@ instale un nuevo kernel o haga cambios en el menú.
 # <i>/sbin/lilo</i>
 </pre>
 
-<note>
-Cuando reinstale un kernel, no necesita sobreescribir los archivos. Simplemente, 
-ejecute <c>make install</c> después de compilar el kernel; automáticamente 
-copiará los archivos necesarios y ajustará la configuración de LILO.
+<note> 
+Cuando reinstale un kernel, ya no necesitará sobreescribir los
+archivos. Simplemente, ejecute <c>make install</c> después de compilar el
+kernel; automáticamente copiará los archivos necesarios y ajustará la
+configuración de LILO.
 </note>
 
 <p>
