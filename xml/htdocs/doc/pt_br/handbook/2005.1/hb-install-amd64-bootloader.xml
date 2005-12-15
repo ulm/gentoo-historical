@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/2005.1/hb-install-amd64-bootloader.xml,v 1.2 2005/09/07 17:59:56 vanquirius Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pt_br/handbook/2005.1/hb-install-amd64-bootloader.xml,v 1.3 2005/12/15 23:24:12 vanquirius Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>5.1</version>
-<date>2005-08-12</date>
+<version>5.6</version>
+<date>2005-11-25</date>
 
 <section>
 <title>Fazendo sua escolha</title>
@@ -153,7 +153,7 @@ Discos rígidos contam a partir de 0 (zero) ao invés de "a" e as partições
 iniciam em 0 (zero) ao invés de 1 (um). Esteja atento para isto com os
 dispositivos hd, somente os discos rígidos são contados, não dispositivos
 atapi-ide tais como leitores e gravadores de cdrom. O mesmo acontece com
-dispositivos scsi. (Normalmente eles recebem números maiores que os dispositivos
+dispositivos SCSI. (Normalmente eles recebem números maiores que os dispositivos
 ide exceto quando a BIOS está configurada para iniciar a partir de dispositivos
 SCSI.) Quando você pede à BIOS que inicie de um disco rígido diferente (por
 exemplo seu escravo primário), <e>aquele</e> disco rígido é visto como
@@ -204,7 +204,7 @@ editor):
 Agora nós vamos escrever o <path>grub.conf</path>. Abaixo você encontrará dois
 <path>grub.conf</path> possíveis para o exemplo de particionamento que usamos
 neste guia, com uma imagem de kernel chamada
-<path>kernel-2.6.11-gentoo-r1</path>. Nós somente fizemos comentários extensivos
+<path>kernel-2.6.12-gentoo-r10</path>. Nós somente fizemos comentários extensivos
 para o primeiro <path>grub.conf</path>. 
 </p>
 
@@ -232,12 +232,12 @@ default 0
 timeout 30
 <comment># Uma bela imagem de splash para deixar as coisas mais interessantes :)
 # Comente a linha se você não tem uma placa gráfica instalada</comment>
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11 Gentoo r1
+title=Gentoo Linux 2.6.12
 <comment># Partição onde a imagem de kernel (ou sistema operacional) está localizada</comment>
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r1 root=/dev/hda3
+kernel /boot/kernel-2.6.12-gentoo-r10 root=/dev/hda3
 
 <comment># As próximas quatro linhas só são para quem tem Windows instalado paralelamente.</comment>
 <comment># In this case, Windows is hosted on /dev/hda6.</comment>
@@ -251,12 +251,12 @@ chainloader +1
 <pre caption = "grub.conf para usuários do genkernel">
 default 0
 timeout 30
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-gentoo-r1
+title=Gentoo Linux 2.6.12
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r1 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
-initrd /initramfs-genkernel-amd64-2.6.11-gentoo-r1
+kernel /boot/kernel-2.6.12-gentoo-r10 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
+initrd /boot/initramfs-genkernel-amd64-2.6.12-gentoo-r10
 
 <comment># Só se você tiver Windows em paralelo</comment>
 title=Windows XP
@@ -265,15 +265,25 @@ makeactive
 chainloader +1
 </pre>
 
-<note>
-Se você usar um esquema de particionamento diferente e/ou imagem de kernel,
+<p>
+Se você usou um esquema de particionamento diferente e/ou imagem de kernel,
 ajuste de acordo. No entanto, certifique-se de que qualquer coisa depois de um
 dispositivo do GRUB  (como <path>(hd0,0)</path>) é relativo ao ponto de
 montagem, não a raiz. Em outras palavras,
 <path>(hd0,0)/grub/splash.xpm.gz</path> é na realidade
 <path>/boot/grub/splash.xpm.gz</path>, uma vez que <path>(hd0,0)</path> é 
 <path>/boot</path>.
-</note>
+</p>
+
+<p>
+Além disso, se você escolheu  usar um esquema de particionamento diferente e não
+colocou <path>/boot</path> em uma partição separada, o prefixo
+<path>/boot</path> usado nas amostras de código acima é realmente
+<e>necessário</e>. Se você seguiu nosso plano de particionamento sugerido, o
+prefixo <path>/boot</path> não é necessário, mas um link simbólico
+<path>boot</path> faz funcionar. Em resumo, os exemplos acima devem funcionar
+tanto com uma partição de <path>/boot</path> separada ou não.
+</p>
 
 <p>
 Se você precisa passar opções adicionais para o kernel, simplesmente adicione-as 
@@ -315,14 +325,16 @@ o GRUB manualmente</uri>.
 <p>
 Para instalar o GRUB você irá precisar rodar o comando <c>grub-install</c>. No
 entanto, o <c>grub-install</c> não irá funcionar sem ajustes porque estamos
-dentro de um ambiente de chroot. Precisamos atualizar o <path>/etc/mtab</path>
-(o arquivo com informações sobre todos sistemas de arquivos montados) primeiro:
-para nossa sorte existe um jeito fácil de fazê-lo - simplesmente copie
-<path>/proc/mounts</path> para <path>/etc/mtab</path>:
+dentro de um ambiente de chroot. Precisamos criar o <path>/etc/mtab</path>, que
+lista todos sistemas de arquivos montados. Felizmente, existe um jeito fácil de
+fazê-lo - simplesmente copiar <path>/proc/mounts</path> para
+<path>/etc/mtab</path>, excluindo a linha <c>rootfs</c> se você não criou uma
+partição de inicialização (boot) separada. O seguinte comando irá funcionar em
+ambos casos:
 </p>
 
-<pre caption="Atualizando o /etc/mtab">
-# <i>cp /proc/mounts /etc/mtab</i>
+<pre caption="Criando o /etc/mtab">
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
 
 <p>
