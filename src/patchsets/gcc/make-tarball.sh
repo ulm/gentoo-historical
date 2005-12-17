@@ -4,17 +4,22 @@ if [[ $# -ne 1 ]] ; then
 	echo "Usage: $0 <gcc ebuild>"
 	exit 1
 fi
-version=$1
-if [[ ! -f ${ebuild} ]] ; then
-	ebuild=/usr/local/gentoo-x86/sys-devel/gcc/gcc-${version}.ebuild
-	if [[ ! -e ${ebuild} ]] ; then
-		ebuild=$(portageq portdir)/sys-devel/gcc/gcc-${version}.ebuild
-	fi
-	if [[ ! -e ${ebuild} ]] ; then
-		echo "!!! gcc ebuild '${version}' does not exist"
-		exit 1
-	fi
+
+for ebuild in \
+	$1 \
+	/usr/local/gentoo-x86/sys-devel/gcc/gcc-$1.ebuild \
+	/usr/portage/sys-devel/gcc/gcc-$1.ebuild \
+	""
+do
+	[[ -e ${ebuild} ]] && break
+done
+if [[ -z ${ebuild} ]] ; then
+	echo "!!! gcc ebuild '$1' does not exist"
+	exit 1
 fi
+
+digest=${ebuild/.ebuild}
+rm -f ${digest/gcc\//gcc\/files\/digest-}
 gver=${ebuild##*/gcc/gcc-} # trim leading path
 gver=${gver%%.ebuild}      # trim post .ebuild
 gver=${gver%%-*}           # trim any -r#'s
