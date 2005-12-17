@@ -4,11 +4,14 @@ if [[ $# -ne 1 ]] ; then
 	echo "Usage: $0 <gcc ebuild>"
 	exit 1
 fi
-ebuild=$1
+version=$1
 if [[ ! -f ${ebuild} ]] ; then
-	ebuild=/usr/local/gentoo-x86/sys-devel/gcc/gcc-${ebuild}.ebuild
+	ebuild=/usr/local/gentoo-x86/sys-devel/gcc/gcc-${version}.ebuild
 	if [[ ! -e ${ebuild} ]] ; then
-		echo "!!! gcc ebuild '$1' does not exist"
+		ebuild=$(portageq portdir)/sys-devel/gcc/gcc-${version}.ebuild
+	fi
+	if [[ ! -e ${ebuild} ]] ; then
+		echo "!!! gcc ebuild '${version}' does not exist"
 		exit 1
 	fi
 fi
