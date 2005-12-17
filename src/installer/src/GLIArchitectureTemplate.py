@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.235 2005/12/13 02:37:15 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.236 2005/12/17 20:14:59 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -75,7 +75,8 @@ class ArchitectureTemplate:
 			{ 'function': self.install_cron_daemon, 'name': "Installing Cron daemon", 'modes': ("normal", "chroot") },
 			{ 'function': self.install_filesystem_tools, 'name': "Installing filesystem tools", 'modes': ("normal", "chroot") },
 			{ 'function': self.setup_network_post, 'name': "Configuring post-install networking", 'modes': ("normal", "chroot") },
-			{ 'function': self.install_bootloader, 'name': "Configuring and installing bootloader", 'modes': ("normal", "stage4") },
+			{ 'function': self.install_bootloader, 'name': "Configuring and installing bootloader", 'modes': ("normal", "chroot") },
+			{ 'function': self.setup_and_run_bootloader, 'name': "Setting up and running bootloader", 'modes': ( "normal", "stage4") },
 			{ 'function': self.update_config_files, 'name': "Re-Updating config files", 'modes': ("normal", "chroot") },
 #			{ 'function': self.configure_rc_conf, 'name': "Updating /etc/rc.conf", 'modes': ("normal", "stage4", "chroot") },
 			{ 'function': self.set_users, 'name': "Add additional users.", 'modes': ("normal", "chroot") },
