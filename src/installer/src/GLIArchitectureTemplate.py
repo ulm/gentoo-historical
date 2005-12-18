@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.236 2005/12/17 20:14:59 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.237 2005/12/18 17:50:55 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -874,7 +874,7 @@ class ArchitectureTemplate:
 		ret, kernel_major = GLIUtility.spawn("awk '/^PATCHLEVEL/{print $3}' /usr/src/linux/Makefile",chroot=self._chroot_dir,return_output=True)
 		# 6 == 2.6 kernel, 4 == 2.4 kernel
 		kernel_major = int(kernel_major)
-		if self._debug: self._logger.log("DEBUG: kernel major version is: "+kernel_major)
+		if self._debug: self._logger.log("DEBUG: kernel major version is: "+str(kernel_major))
 		#Copy the kernel .config to the proper location in /usr/src/linux
 		if kernel_config_uri != '':
 			try:
