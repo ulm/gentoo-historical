@@ -1,13 +1,13 @@
 GLEP: 42
 Title: Critical News Reporting
-Version: $Revision: 1.5 $
+Version: $Revision: 1.6 $
 Author: Ciaran McCreesh <ciaranm@gentoo.org>
-Last-Modified: $Date: 2005/12/13 03:21:59 $
+Last-Modified: $Date: 2005/12/18 04:16:44 $
 Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
 Created: 31-Oct-2005
-Post-History: 1-Nov-2005, 5-Nov-2005, 7-Nov-2005, 11-Dec-2005, 13-Dec-2005
+Post-History: 1-Nov-2005, 5-Nov-2005, 7-Nov-2005, 11-Dec-2005, 13-Dec-2005, 18-Dec-2005
 
 Abstract
 ========
@@ -136,6 +136,36 @@ News items are published and delivered to users as follows:
 6. The news item is handled by the user's choice of news item reader. See `News
    Item Clients`_.
 
+Required Portage Enhancements
+-----------------------------
+
+The following extensions to Portage are required:
+
+TODO: ferringb wants spaces added to the first item on the list. I don't,
+because it makes repo id -> filename mappings nasty.
+
+* Every repository (including overlays) will require a unique identifier. It is
+  assumed that an identifier will be a string consisting of characters from
+  ``a`` to ``z``, ``A`` to ``Z``, ``0`` to ``9``, ``+`` (plus), ``-`` (hyphen),
+  ``:`` (colon) and ``_`` (underscore).
+
+* Portage must provide a way for external programs to obtain a list of all
+  repository identifiers for a given system. It is assumed that this will be in
+  the form of a ``portageq`` command (e.g. ``portageq get_repo_ids``).
+
+* Portage must provide a way for external programs to obtain the base path for
+  a repository with a given ID. It is assumed that this will be in the form of
+  a ``portageq`` command (e.g. ``portageq get_repo_root gentoo-x86``).
+
+* Portage must extend ``portageq has_version`` to support restrictions to a
+  given repository ID.
+
+* Portage must extend ``portageq`` to implement a command which returns whether
+  or not the profile used for a given repository ID matches a certain base path
+  (e.g. ``portageq profile_used default-linux/sparc/sparc64/2004.3 gentoo-x86``).
+
+These extensions are assumed during the following specification.
+
 News Item Identities
 --------------------
 
@@ -144,7 +174,7 @@ form ``yyyy-mm-dd-short-name``, where ``yyyy`` is the year (e.g. ``2005``),
 ``mm`` is the month (``01`` through ``12``) and dd is the day of the month
 (``01`` through ``31``). The ``short-name`` is a very short name describing the
 news item (e.g. ``yoursql-updates``), consisting only of the characters ``a-z``,
-``0-9``, ``+`` (plus), ``:`` (colon) and ``-`` (hyphen).
+``0-9``, ``+`` (plus), ``:`` (colon), ``-`` (hyphen) and ``_`` (underscore).
 
 News Item Directories
 ---------------------
@@ -196,9 +226,8 @@ The following headers describe the purpose and format of the news item:
     Must be ``text/plain``. Mandatory.
 
 ``Posted:``
-    Date of posting, in ``dd-mmm-yyyy`` format (e.g. 14-Aug-2001) for
-    compatibility with GLEP 1 [#glep-1]_. UTC time in ``hh-mm-ss +0000`` format
-    may also be included. Mandatory.
+    Date of posting, in ``yyyy-mm-dd`` format (e.g. 2005-12-18) for
+    compatibility with GLEP 45 [#glep-45]_. Mandatory.
 
 ``Revision:``
     Initially 1. Incremented every time a non-trivial change is made.  Changes
@@ -215,16 +244,17 @@ The following headers are used for filtering:
 ``Display-If-Installed:``
     A dependency atom or simple package name (for example,
     ``<dev-lang/php-5_alpha`` or ``net-www/apache``). If the user has the
-    package specified installed, the news item should be displayed.
+    package specified installed from the repository from which the news item was
+    obtained, the news item should be displayed.
 
 ``Display-If-Keyword:``
     A keyword [#glep-22]_ name, for example ``mips`` or ``x86-fbsd``. If the
     user is on the keyword in question, the news item should be displayed.
 
 ``Display-If-Profile:``
-    A profile path, for example ``default-linux/sparc/sparc64/server``. Standard
-    shell GLOB wildcards may be used. If the user is using the exact profile in
-    question, the news item should be displayed. This header may be used to
+    A profile path, for example ``default-linux/sparc/sparc64/server``. If the
+    user is using the exact profile in question, or a subprofile of this
+    profile, the news item should be displayed. This header may be used to
     replace ``deprecated`` files in the future.
 
 .. Note:: When performing package moves, developers must also update any
@@ -337,15 +367,9 @@ Client Side
 '''''''''''
 
 Whenever relevant unread news items are found, the package manager will create a
-file named ``/var/lib/gentoo/news/news-magic-chicken.unread`` (if it does not
+file named ``/var/lib/gentoo/news/news-repoid.unread`` (if it does not
 already exist) and append the news item identifier (eg
 ``2005-11-01-yoursql-updates``) on a new line.
-
-.. Note:: Future changes to Portage involving support for multiple repositories
-   may introduce repository names. In this case, the ``magic-chicken`` part of the
-   filename should be replaced by a string representation of the repository
-   name. Thus, news item clients should use a wildcard rather than hardcoding
-   the ``magic-chicken`` string.
 
 Notification that new relevant news items will be displayed via the
 ``emerge`` tool in a similar way to the existing "configuration files need
@@ -368,8 +392,9 @@ news items unnecessarily.
 
 The package manager must keep track of news items that have already been added
 to the unread list to avoid repeatedly marking a deleted news item. This could
-be handled via a ``news-magic-chicken.skip`` file, but implementation is not
-specified by this GLEP.
+be handled via a ``news-repoid.skip`` file containing the IDs of news items that
+have already been added to a ``news-repoid.unread`` file, but this method is not
+required by this GLEP.
 
 Users who really don't care about news items can use ``rsync_excludes`` to
 filter out the ``metadata/news/`` directory.
@@ -381,10 +406,9 @@ Once a news item is marked for reading, third party tools (or traditional core
 Unix tools) can be used to display and view the news files.
 
 When a news item is read, its name should be removed from the
-``news-magic-chicken.unread`` file. If a news client acts as an interactive
-reader rather than a gateway, it should then add the name to a
-``news-magic-chicken.read`` file in the same directory with the same file
-format (again, ``magic-chicken`` should be a wildcard rather than hardcoded).
+``news-repoid.unread`` file. If a news client acts as an interactive reader
+rather than a gateway, it should then add the name to a ``news-repoid.read``
+file in the same directory with the same file format.
 
 An ``eselect`` [#eselect]_ module shall be created as the 'suggested' display
 tool; other display tools (for example, a news to email forwarder, which would
@@ -463,8 +487,6 @@ References
      http://forums.gentoo.org/profile.php?mode=viewprofile&u=55648
 .. [#forums-apache2] Forums thread "Gentoo Apache2 Config Change Idiocy",
      http://forums.gentoo.org/viewtopic-t-384368.html
-.. [#glep-1] GLEP 1: "GLEP Purpose and Guidelines", Grant Goodyear,
-     http://www.gentoo.org/proj/en/glep/glep-0001.html
 .. [#glep-22] GLEP 22: "New "keyword" system to incorporate various
      userlands/kernels/archs", Grant Goodyear,
      http://www.gentoo.org/proj/en/glep/glep-0022.html
@@ -476,6 +498,8 @@ References
 .. [#glep-36] GLEP 36: "Subversion/CVS for Gentoo Hosted Projects", Aaron
      Walker,
      http://www.gentoo.org/proj/en/glep/glep-0036.html
+.. [#glep-45] GLEP 45: "GLEP date format", Henrik Brix Andersen,
+     http://www.gentoo.org/proj/en/glep/glep-0045.html
 .. [#iso-639] ISO 639 "Code for the representation of names of languages"
 .. [#ramereth-repo] "Re: [gentoo-dev] GLEP ??: Critical News Reporting", Lance
      Albertson,
