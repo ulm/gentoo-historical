@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.237 2005/12/18 17:50:55 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.238 2005/12/18 23:34:19 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -456,11 +456,11 @@ class ArchitectureTemplate:
 		ret = GLIUtility.spawn("mount -t proc none "+self._chroot_dir+"/proc")
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /proc')
-		bind_mounts = [ '/dev', '/dev/shm', '/dev/pts' ]
+		bind_mounts = [ '/dev' ]
 		uname = os.uname()
 		if uname[0] == 'Linux' and uname[2].split('.')[1] == '6':
 			bind_mounts.append('/sys')
-		if self._debug: self._logger.log("DEBUG: mounting /dev, /dev/shm, /dev/pts")
+		if self._debug: self._logger.log("DEBUG: bind-mounting " + ", ".join(bind_mounts))
 		for mount in bind_mounts:
 			ret = GLIUtility.spawn('mount -o bind %s %s%s' % (mount,self._chroot_dir,mount))
 			if not GLIUtility.exitsuccess(ret):
