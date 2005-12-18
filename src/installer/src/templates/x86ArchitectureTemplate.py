@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.90 2005/12/18 01:12:05 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.91 2005/12/18 03:28:54 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -500,6 +500,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _configure_lilo(self):
 		self.build_mode = self._install_profile.get_kernel_build_method()
 		self._gather_lilo_drive_info()
+		root = self._chroot_dir
 		file_name3 = root + "/boot/kernel_name"
 		root = self._chroot_dir
 		exitstatus0 = GLIUtility.spawn("ls "+root+"/boot/kernel-* > "+file_name3)
