@@ -4,7 +4,7 @@
 <xsl:param name="showlevel">1</xsl:param>
 <xsl:template match="/projects">
 <xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
-        <guide  link="index.xml" type="project">
+        <guide  link="/proj/en/index.xml" type="project">
                 <title>Project Listing</title>
 		<author title="script generated">Gentoo Project</author>
 		<abstract>This is an overview of all current gentoo projects</abstract>
