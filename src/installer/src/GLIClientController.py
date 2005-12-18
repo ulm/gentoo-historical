@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.74 2005/12/13 02:37:15 agaffney Exp $
+$Id: GLIClientController.py,v 1.75 2005/12/18 23:25:00 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -155,39 +155,40 @@ class GLIClientController(Thread):
 		configuration.close()
 
 		while 1:
+			if self._install_step >= len(self._install_steps): break
 			if self._configuration.get_verbose(): self._logger.log("DEBUG: waiting at top of 'while' loop in CC in secondary thread...waiting to start step " + str(self._install_step+1) + ", " + self._install_steps[(self._install_step+1)]['name'])
 			self._install_event.wait()
 			if self._configuration.get_verbose(): self._logger.log("DEBUG: Event() cleared at top of 'while' loop in CC in secondary thread...starting step " + str(self._install_step) + ", " + self._install_steps[(self._install_step)]['name'])
-			if self._install_step <= (len(self._install_steps) - 1):
-				try:
-					if not self._pretend:
-						self._install_steps[self._install_step]['function']()
-					self._install_event.clear()
-					if self.has_more_steps():
-						self.addNotification("int", NEXT_STEP_READY)
-					else:
-						self.addNotification("int", INSTALL_DONE)
-				except GLIException, error:
-					etype, value, tb = sys.exc_info()
-					s = traceback.format_exception(etype, value, tb)
-					self._logger.log("Exception received during '" + self._install_steps[self._install_step]['name'] + "': " + str(error))
-					for line in s:
-						line = line.strip()
-						self._logger.log(line)
-					self.addNotification("exception", error)
-					self._install_event.clear()
-				except Exception, error:
-					# Something very bad happened
-					etype, value, tb = sys.exc_info()
-					s = traceback.format_exception(etype, value, tb)
-					self._logger.log("This is a bad thing. An exception occured outside of the normal install errors. The error was: '" + str(error) + "'")
-					for line in s:
-						line = line.strip()
-						self._logger.log(line)
-					self.addNotification("exception", error)
-					self._install_event.clear()
-			else:
-				break
+#			if self._install_step <= (len(self._install_steps) - 1):
+			try:
+				if not self._pretend:
+					self._install_steps[self._install_step]['function']()
+				self._install_event.clear()
+				if self.has_more_steps():
+					self.addNotification("int", NEXT_STEP_READY)
+				else:
+					self.addNotification("int", INSTALL_DONE)
+			except GLIException, error:
+				etype, value, tb = sys.exc_info()
+				s = traceback.format_exception(etype, value, tb)
+				self._logger.log("Exception received during '" + self._install_steps[self._install_step]['name'] + "': " + str(error))
+				for line in s:
+					line = line.strip()
+					self._logger.log(line)
+				self.addNotification("exception", error)
+				self._install_event.clear()
+			except Exception, error:
+				# Something very bad happened
+				etype, value, tb = sys.exc_info()
+				s = traceback.format_exception(etype, value, tb)
+				self._logger.log("This is a bad thing. An exception occured outside of the normal install errors. The error was: '" + str(error) + "'")
+				for line in s:
+					line = line.strip()
+					self._logger.log(line)
+				self.addNotification("exception", error)
+				self._install_event.clear()
+#			else:
+#				break
 
 		# This keeps the thread running until the FE exits
 		self._install_event.clear()
