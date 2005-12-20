@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gentoo-freebsd.xml,v 1.4 2005/11/10 19:32:38 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gentoo-freebsd.xml,v 1.5 2005/12/20 20:14:39 cam Exp $ -->
 
 <guide link="/doc/fr/gentoo-freebsd.xml" lang="fr">
 <title>Petit guide de Gentoo/FreeBSD</title>
@@ -34,8 +34,8 @@ instructions concernant l'installation de Gentoo/FreeBSD. Des références sont
 <!-- See http://createivecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.8</version>
-<date>2005-10-21</date>
+<version>1.9</version>
+<date>2005-12-06</date>
 
 <chapter>
 <title>Introduction à FreeBSD</title>
@@ -198,6 +198,7 @@ dans <path>/mnt/gentoo/usr/local/portage</path>.
 # <i>cd /mnt/gentoo/usr/local/portage</i>
 # <i>wget http://gentoo.osuosl.org/experimental/snapshots/portage-alt-overlay-latest.tar.bz2</i>
 # <i>tar -xjf portage-alt-overlay-latest.tar.bz2</i>
+# <i>rm portage-alt-overlay-latest.tar.bz2</i>
 </pre>
 
 <p>
@@ -238,6 +239,15 @@ PORTDIR_OVERLAY="/usr/local/portage/portage-alt-overlay"
 </pre>
 
 <p>
+Afin de pouvoir démarrer correctement, vous devez créer le répertoire
+<path>/proc</path>.
+</p>
+
+<pre caption="Créer le répertoire /proc">
+# <i>mkdir /proc</i>
+</pre>
+
+<p>
 Maintenant, il faut télécharger une copie de l'arbre principal de Portage. Cela
 peut prendre un bon moment selon votre connexion.
 </p>
@@ -252,13 +262,91 @@ peut prendre un bon moment selon votre connexion.
 </pre>
 
 <p>
-Félicitations. En finissant cette étape, vous venez d'obtenir un système
-Gentoo/FreeBSD fonctionnel&nbsp;! Si vous le voulez, vous pouvez maintenant
-reconstruire les paquets systèmes.
+Si vous le voulez, vous pouvez maintenant reconstruire les paquets systèmes.
 </p>
 
-<pre caption="Reconstruire les paquets systèmes de FreeBSD">
+<pre caption="Reconstruire les paquets systèmes de FreeBSD (facultatif)">
 # <i>emerge -e system</i>
+</pre>
+
+<p>
+Quand vous faites <c>emerge -e system</c>, les sources du noyau de FreeBSD sont
+installées dans le répertoire <path>/usr/src/sys</path>. Si vous avez sauté
+cette étape, vous pouvez tout de même obtenir les sources de cette façon&nbsp;:
+</p>
+
+<pre caption="Obtenir les sources du noyau de FreeBSD">
+# <i>emerge freebsd-sources</i>
+</pre>
+
+<p>
+La configuration et la compilation d'un noyau personnalisé se passent vraiment
+différemment d'avec Linux. Si vous n'êtes pas familier avec cette procédure,
+nous vous recommandons de jeter un œil au <uri
+link="http://www.freebsd.org/doc/fr/books/handbook/kernelconfig.html">chapitre 8
+du manuel FreeBSD</uri>.
+</p>
+
+<p>
+Veuillez noter qu'actuellement seule la manière «&nbsp;traditionnelle&nbsp;» de
+compiler le noyau est supportée dans Gentoo/FreeBSD. Notez aussi qu'un <c>make
+install</c> vous demandera certainement un fichier
+<path>/boot/device.hints</path>. Vous trouverez une version par défaut de ce
+fichier dans le sous-répertoire <path>conf</path> de la configuration
+<c>GENERIC</c> sous le nom de <path>GENERIC.hints</path>.
+</p>
+
+<p>
+Nous pouvons maintenant procéder à quelques configurations et réglages de base
+du système. Premièrement, nous allons définir les points de montage des systèmes
+de fichiers dans le fichier <path>/etc/fstab</path>.
+</p>
+
+<pre caption="Éditer le système de fichiers dans /etc/fstab">
+# <i>ee /etc/fstab</i>
+<comment>(Dans cet exemple, remplacez X et Y par les chiffres correspondants à ceux de
+votre disque dur.)</comment>
+#Device         Mountpoint      Fstype          Options         Dump    Pass
+/dev/adXsYb     none            swap            sw              0       0
+/dev/adXsYa     /               ufs             rw              1       1
+/dev/adXsYe     /usr/home       ufs             rw              2       2
+/dev/adXsYd     /tmp            ufs             rw              2       2
+/dev/acdX       /cdrom          cd9660          ro,noauto       0       0
+</pre>
+
+<p>
+Nous pouvons maintenant passer à la configuration du réseau avant le redémarrage
+final.
+</p>
+
+<pre caption="Configurer le réseau">
+# <i>ee /etc/conf.d/net</i>
+<comment>(Vous n'avez qu'à adapter cet exemple à votre réseau.)</comment>
+ifconfig_rl0=("192.168.0.10 netmask 255.255.255.0 broadcast 192.168.0.255")
+routes_rl0=("-net 0.0.0.0 -host 192.168.0.1")
+</pre>
+
+<p>
+Pour changer votre nom de machine, vous devez éditer le fichier
+<path>/etc/hostname</path>.
+</p>
+
+<pre caption="Modifier le nom de la machine">
+# <i>echo "LE_NOM_DE_LA_MACHINE" > /etc/hostname</i>
+</pre>
+
+<p>
+Au cas où vous devriez utiliser une autre configuration de clavier que celle par
+défaut pour votre langue, vous devez mettre la bonne valeur dans le fichier
+<path>/etc/conf.d/syscons</path>. L'exemple suivant installe la disposition de
+touches utilisée généralement en France, adaptez si vous utiliser une autre
+disposition de touches.
+</p>
+
+<pre caption="Changer la disposition de touches du clavier (facultatif)">
+# <i>ee /etc/conf.d/syscons</i>
+KEYMAP="french.iso.acc"
+<comment>(Les fichiers de dispositions se trouvent dans /usr/share/syscons/keymaps/.)</comment>
 </pre>
 
 <impo>
@@ -266,7 +354,8 @@ Veuillez vous assurer parfaitement que votre nouveau système Gentoo/FreeBSD fai
 partie de la configuration de votre chargeur de démarrage, car sinon vous ne
 pourrez pas le démarrer&nbsp;! Si vous n'avez pas d'autre chargeur de démarrage
 installé, vous devrez utiliser <c>boot0</c> car c'est le seul actuellement
-supporté par FreeBSD.
+supporté par FreeBSD. Dans ce cas, n'oubliez pas de configurer vos autres
+systèmes d'exploitation pour pouvoir passer le relai à <c>boot0</c>.
 </impo>
 
 <pre caption="Installer et paramétrer boot0">
@@ -287,23 +376,27 @@ du Manuel FreeBSD.
 </p>
 
 <p>
-Lorsque vous aviez fait <c>emerge system</c>, les sources du noyau de FreeBSD
-ont été installées dans <path>/usr/src/sys</path>. Configurer et compiler un
-noyau personnalisé est une chose très différente de compiler Linux. Si vous
-n'êtes pas familier avec cette procédure, nous vous encourageons à jeter un œil
-au <uri
-link="http://www.freebsd.org/doc/fr/books/handbook/kernelconfig.html">chapitre
-8</uri> du Manuel FreeBSD.
+Nous pouvons maintenant mettre un mot de passe pour l'utilisateur <c>root</c> et
+créer un compte normal pour votre travail quotidien.
 </p>
 
+<pre caption="Changer le mot de passe root et créer un nouvel utilisateur">
+# <i>passwd</i>
+<comment>(Si vous avez besoin d'aide pour ajouter un nouvel utilisateur, veuillez
+consulter le manuel de FreeBSD.)</comment>
+# <i>adduser</i>
+</pre>
+
 <p>
-Veuillez noter qu'actuellement seule la manière «&nbsp;traditionnelle&nbsp;» de
-compiler le noyau est supportée dans Gentoo/FreeBSD. Notez aussi qu'un <c>make
-install</c> vous demandera certainement un fichier
-<path>/boot/device.hints</path>. Vous trouverez une version par défaut de ce
-fichier dans le sous-répertoire <path>conf</path> de la configuration
-<c>GENERIC</c> sous le nom de <path>GENERIC.hints</path>.
+Félicitations, vous venez de finir votre installation de Gentoo/FreeBSD que vous
+pourrez commencer à apprécier juste après le redémarrage final. Amusez-vous
+bien&nbsp;!
 </p>
+
+<pre caption="Redémarrer le système">
+# <i>exit</i>
+# <i>reboot</i>
+</pre>
 
 </body>
 </section>
