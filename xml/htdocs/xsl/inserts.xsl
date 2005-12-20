@@ -27,7 +27,7 @@
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="contains('|ca|cs|da|de|el|en|es|fi|fr|id|it|ko|pl|pt_br|ro|ru|sv|tr|vi|zh_tw|',concat('|', $LANG,'|'))">
+    <xsl:when test="contains('|ca|cs|da|de|el|en|es|fi|fr|id|it|ko|lt|pl|pt_br|ro|ru|sv|tr|vi|zh_tw|',concat('|', $LANG,'|'))">
       <xsl:variable name="insert" select="document(concat('/doc/', $LANG, '/inserts-', $LANG, '.xml'))/inserts/insert[@name=$str]"/>
       <xsl:choose>
         <xsl:when test="$insert">
@@ -136,6 +136,11 @@
         <!-- French -->
         <xsl:when test="$lingua='fr'">
           <func:result select="func:format-date-fr($mensis, $Y, $M, $D)" />
+        </xsl:when>
+
+        <!-- Lithuanian -->
+        <xsl:when test="$lingua='lt'">
+          <func:result select="concat($Y, ' ', $mensis//months[@lang=$lingua]/month[position()=$M], ' ', $D)"/>
         </xsl:when>
 
         <!-- Dutch / Greek / Indonesian / Italian / Polish / Romanian / Russian / Swedish / Turkish / Vietnamese -->
