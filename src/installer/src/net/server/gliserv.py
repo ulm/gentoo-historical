@@ -98,8 +98,16 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		openrun, closerun = '<?', '?>'
 		openprint, closeprint = '<%', '%>'
 		openblock, closeblock = '<:', ':>'
-		output = ["def tmphandler(get_params, post_params, headers_out, shared_info):", "\treturn_content = ''"]
-		indentlevel = 1
+		output = [
+		          "class TempHandler(object):",
+		          "\tdef __init__(self):",
+		          "\t\tpass",
+		          "\tdef redirect(self, url):",
+		          "\t\traise Exception('redirect:' + url)",
+		          "\tdef handle(self, get_params, post_params, headers_out, shared_info):",
+		          "\t\treturn_content = ''",
+		         ]
+		indentlevel = 2
 		incodeblock = False
 		printre = re.compile(r"(^.+: |^\s+|^)print ")
 		f = open(htmlfile, "r")
@@ -173,7 +181,7 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						if not line:
 							tmpline += ' + "\\n"'
 						output.append('\t' * indentlevel + tmpline)
-		output += ["\treturn return_content"]
+		output += ["\t\treturn return_content"]
 		return "\n".join(output)
 
 	def status(self):
@@ -414,21 +422,21 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 							self.end_headers()
 							self.wfile.write("<h2>404 Not Found</h2>The resource you were looking for does not exist")
 							return
-						except:
+						except Exception, e:
 							if debug:
 								print "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception())
 							return_content = "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception())
 							break
 					exec tmpcode
-					return_content = tmphandler(self.get_params, self.post_params, self.headers_out, self.shared_info)
-				except GLIException, e:
-					if e.get_function_name() == "redirect":
-#						self.headers_out.append(("Location", e.get_error_msg()))
+					tmphandler = TempHandler()
+					return_content = tmphandler.handle(self.get_params, self.post_params, self.headers_out, self.shared_info)
+				except Exception, e:
+					errmsg = str(e)
+					if errmsg.split(":")[0] == "redirect":
 						self.send_response(302)
-						self.send_header("Location", e.get_error_msg())
+						self.send_header("Location", errmsg.split(":", 1)[1])
 						self.end_headers()
 						return
-				except:
 					if debug:
 						print "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception())
 					return_content = "Caught %s (%s) while trying to process '%s'. Traceback:\n<pre>\n%s</pre><br>Generated code:\n<pre>\n%s</pre>" % (sys.exc_info()[0], sys.exc_info()[1], path, self.get_exception(), cgi.escape(tmpcode))
