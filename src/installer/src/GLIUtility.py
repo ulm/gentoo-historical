@@ -611,7 +611,7 @@ def hash_password(password):
 def get_interface_realname(interface):
 	# TODO: rewrite with 2.4 support
 	if is_file("/sys/class/net/" + interface + "/device"):
-		return spawn("/sbin/lspci | grep $(basename $(readlink /sys/class/net/" + interface + r"/device)) | sed -e 's|^.\+ Ethernet controller: ||'", return_output=True)[1].strip()
+		return spawn("lspci | grep $(basename $(readlink /sys/class/net/" + interface + r"/device)) | sed -e 's|^.\+ Ethernet controller: ||'", return_output=True)[1].strip()
 	else:
 		return "No Information Found"
 
