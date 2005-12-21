@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.238 2005/12/18 23:34:19 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.239 2005/12/21 17:06:21 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -695,6 +695,8 @@ class ArchitectureTemplate:
 				# Fetch and unpack the tarball
 				if self._debug: self._logger.log("DEBUG: grabbing custom snapshot uri: "+portage_tree_snapshot_uri)
 				GLIUtility.fetch_and_unpack_tarball(portage_tree_snapshot_uri, self._chroot_dir + "/usr/", self._chroot_dir + "/", cc=self._cc)
+				if GLIUtility.is_file("/usr/livecd/metadata.tar.bz2"):
+					GLIUtility.fetch_and_unpack_tarball("/usr/livecd/metadata.tar.bz2", self._chroot_dir + "/", self._chroot_dir + "/", cc=self._cc)
 			self._logger.log("Portage tree install was custom.")
 		elif sync_type == "sync":
 			if self._debug: self._logger.log("DEBUG: starting emerge sync")
