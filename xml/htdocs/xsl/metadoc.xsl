@@ -25,6 +25,7 @@
   <author title="Author">Gentoo Documentation Project</author>
   <version>Dynamically</version>
   <date><xsl:value-of select="func:today()"/></date>
+  <license/>
 
   <xsl:if test="intro">
   <chapter>
@@ -447,7 +448,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.28 2005/12/09 12:36:06 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.29 2005/12/21 20:15:40 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -469,7 +470,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.28 2005/12/09 12:36:06 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.29 2005/12/21 20:15:40 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:otherwise>
