@@ -152,7 +152,8 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 					elif line.startswith(openprint):
 						tmpline = line.split(openprint, 1)[1].split(closeprint, 1)[0].strip()
 						line = line.split(closeprint, 1)[1]
-						tmpline = 'return_content += cgi.escape(%s)' % tmpline
+#						tmpline = 'return_content += cgi.escape(%s)' % tmpline
+						tmpline = 'return_content += %s' % tmpline
 						if not line:
 							tmpline += ' + "\\n"'
 						output.append('\t' * indentlevel + tmpline)
