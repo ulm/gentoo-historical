@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.2 2005/12/23 22:32:57 agaffney Exp $
+$Id: GLIPortage.py,v 1.3 2005/12/23 22:39:29 agaffney Exp $
 """
 
 import os
@@ -56,7 +56,7 @@ class depgraph:
 
 class GLIPortage(object):
 
-	def __init__(self, chroot_dir, logger, debug):
+	def __init__(self, chroot_dir, grp_install, logger, debug):
 		os.environ['ROOT'] = chroot_dir
 		import portage, portage_dep
 		self.vdb = portage.db["/"]["vartree"].dbapi
@@ -64,6 +64,7 @@ class GLIPortage(object):
 		self._chroot_dir = chroot_dir
 		self._logger = logger
 		self._debug = debug
+		self._grp_install = grp_install
 
 	def resolve_deps(self, dep_list):
 		if dep_list and dep_list[0] == "||":
@@ -118,8 +119,8 @@ class GLIPortage(object):
 				if graph.has_node(pkg):
 					graph.remove(pkg)
 
-	def get_deps(self, pkgs, grp_install):
-		if not grp_install:
+	def get_deps(self, pkgs):
+		if not self._grp_install:
 			del(os.environ['ROOT'])
 			return GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
 			os.environ['ROOT'] = self._chroot_dir

@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.240 2005/12/23 22:32:57 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.241 2005/12/23 22:39:29 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -477,7 +477,7 @@ class ArchitectureTemplate:
 	def install_packages(self):
 		installpackages = self._install_profile.get_install_packages()
 		if installpackages:
-			pkglist = self._portage.get_deps(installpackages, self._install_profile.get_grp_install())
+			pkglist = self._portage.get_deps(installpackages)
 			if self._install_profile.get_grp_install():
 				for i, pkg in enumerate(pkglist):
 					self.notify_frontend("progress", (float(i) / len(pkglist), "Copying " + package + " to chroot"))
