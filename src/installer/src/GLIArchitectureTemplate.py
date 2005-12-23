@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.239 2005/12/21 17:06:21 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.240 2005/12/23 22:32:57 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -15,6 +15,7 @@ The only definitions that are filled in here are architecture independent.
 """
 
 import GLIUtility, GLILogger, os, string, sys, shutil, re, time
+import GLIPortage
 from GLIException import *
 
 class ArchitectureTemplate:
@@ -35,6 +36,9 @@ class ArchitectureTemplate:
 		self._logger = GLILogger.Logger(self._client_configuration.get_log_file())
 		self._compile_logfile = "/tmp/compile_output.log"
 		self._debug = self._client_configuration.get_verbose()
+
+		self._portage = GLIPortage.GLIPortage(self._chroot_dir, self._install_profile.get_grp_install(), self._logger, self._debug)
+
 		# This will cleanup the logfile if it's a dead link (pointing
 		# to the chroot logfile when partitions aren't mounted, else
 		# no action needs to be taken
@@ -250,13 +254,11 @@ class ArchitectureTemplate:
 	# @param package package to be emerged
 	# @param binary=False defines whether to try a binary emerge (if GRP this gets ignored either way)
 	# @param binary_only=False defines whether to only allow binary emerges.
-	def _emerge(self, package, binary=True, binary_only=False, quickpkg=True):
+	def _emerge(self, package, binary=True, binary_only=False):
 		#Error checking of this function is to be handled by the parent function.
 #		self._logger.log("_emerge() called with: package='%s', binary='%s', binary_only='%s', grp_install='%s'" % (package, str(binary), str(binary_only), str(self._install_profile.get_grp_install())))
 		# now short-circuit for GRP
 		if self._install_profile.get_grp_install():
-			if quickpkg:
-				self._quickpkg_deps(package)
 			cmd="emerge -k " + package
 		# now normal installs
 		else:
@@ -474,48 +476,24 @@ class ArchitectureTemplate:
 	# In the future this function will lead to better things.  It may even wipe your ass for you.
 	def install_packages(self):
 		installpackages = self._install_profile.get_install_packages()
-		failed_list = []
-		installpackages2 = []
-		for package in installpackages:
-			if self._debug: self._logger.log("Determing best_visible for package " + package)
-			tmppkg = self._portage_best_visible(package)
-			if not tmppkg:
-				if self._debug: self._logger.log("DEBUG: Cannot determine best_visible for package '" + package + "'...skipping")
+		if installpackages:
+			pkglist = self._portage.get_deps(installpackages, self._install_profile.get_grp_install())
+			if self._install_profile.get_grp_install():
+				for i, pkg in enumerate(pkglist):
+					self.notify_frontend("progress", (float(i) / len(pkglist), "Copying " + package + " to chroot"))
+					try:
+						self._portage.copy_pkg_to_chroot(pkg)
+					except:
+						raise GLIException("ExtraPackagesError", "fatal", "install_packages", "Could not emerge " + package + "!")
 			else:
-				if self._debug: self._logger.log("DEBUG: best_visible for package '" + package + "' is " + tmppkg)
-				installpackages2.append(tmppkg)
-		if not installpackages2:
-			if self._debug: self._logger.log("DEBUG: Nothing in installpackages2 to emerge")
-			return
-		all_packages = self._get_packages_to_emerge("emerge -p =" + " =".join(installpackages2))
-		self._quickpkg_deps(" ".join(all_packages), nodeps=True)
+				for i, pkg in enumerate(pkglist):
+					self.notify_frontend("progress", (float(i) / len(pkglist), "Emerging " + package))
+					status = self._emerge("=" + pkg)
+					if not GLIUtility.exitsuccess(status):
+						raise GLIException("ExtraPackagesError", "fatal", "install_packages", "Could not emerge " + package + "!")
 
-		# This is here until I figure out why some packages are missed during quickpkg'ing
-#		more_packages = self._get_packages_to_emerge("emerge -pk =" + " =".join(installpackages2))
-#		self._quickpkg_deps(" ".join(more_packages), nodeps=True)
-
-		for i, package in enumerate(all_packages):
-			self.notify_frontend("progress", (float(i) / len(all_packages), "Emerging " + package))
-			#look for special cases first:
-			if package == "pcmcia-cs":
-				self.install_pcmcia_cs()
-			else:
-				self._logger.log("Starting emerge " + package)
-				if package in installpackages2:
-					status = self._emerge("=" + package, quickpkg=False)
-				else:
-					status = self._emerge("-1 =" + package, quickpkg=False)
-				if not GLIUtility.exitsuccess(status):
-					self._logger.log("Could not emerge " + package + "!")
-					failed_list.append(package)
-				else:
-					self._logger.log("Emerged package: " + package)
-		# error checking is important!
-		if len(failed_list) > 0:
-			self._logger.log("ERROR! Could not emerge " + str(failed_list) + "!")
-			
-		if GLIUtility.is_file(self._chroot_dir+"/etc/X11"):
-			#Now copy the XF86Config
+		if GLIUtility.is_file(self._chroot_dir + "/etc/X11"):
+			# Copy the xorg.conf from the LiveCD if they installed xorg-x11
 			exitstatus = GLIUtility.spawn("cp /etc/X11/xorg.conf " + self._chroot_dir + "/etc/X11/xorg.conf")
 			if not GLIUtility.exitsuccess(exitstatus):
 				self._logger.log("Could NOT copy the xorg configuration from the livecd to the new system!")
