@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.3 2005/12/23 22:39:29 agaffney Exp $
+$Id: GLIPortage.py,v 1.4 2005/12/24 17:29:33 agaffney Exp $
 """
 
 import os
@@ -125,24 +125,7 @@ class GLIPortage(object):
 			return GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
 			os.environ['ROOT'] = self._chroot_dir
 		else:
-			pkglist = []
-			graph = depgraph()
-			for pkg in pkgs.split():
-				if not self.vdb.match(pkg):
-					self._logger.log("get_deps(): " + pkg + " is not available via GRP...ignoring")
-					continue
-				self.calc_required_pkgs(pkg, graph)
-			while graph.node_count():
-				leaf_nodes = graph.leaf_nodes()
-				if not leaf_nodes:
-					node = graph.important_node()
-					pkglist.append(node)
-					graph.remove(node)
-					continue
-				pkglist.extend(leaf_nodes)
-				for node in leaf_nodes:
-					graph.remove(node)
-			return pkglist
+			return GLIUtility.spawn("../../runtimedeps.py " + pkgs, return_output=True)[1].split("\n")[:-1]
 
 	def copy_pkg_to_chroot(self, package):
 		symlinks = { '/bin/': '/mnt/livecd/bin/', '/boot/': '/mnt/livecd/boot/', '/lib/': '/mnt/livecd/lib/', 
@@ -224,8 +207,8 @@ class GLIPortage(object):
 		if res:
 			GLIUtility.spawn("echo " + res.group(1) + " >> " + self._chroot_dir + "/var/lib/portage/world")
 
-	def get_best_version_vdb(self, package):
-		return portage.best(vdb.match(package))
-
-	def get_best_version_tree(self, package):
-		return portage.best(tree.match(package))
+#	def get_best_version_vdb(self, package):
+#		return portage.best(vdb.match(package))
+#
+#	def get_best_version_tree(self, package):
+#		return portage.best(tree.match(package))
