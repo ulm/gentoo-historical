@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.4 2005/12/24 17:29:33 agaffney Exp $
+$Id: GLIPortage.py,v 1.5 2005/12/25 05:06:35 agaffney Exp $
 """
 
 import os
@@ -57,10 +57,6 @@ class depgraph:
 class GLIPortage(object):
 
 	def __init__(self, chroot_dir, grp_install, logger, debug):
-		os.environ['ROOT'] = chroot_dir
-		import portage, portage_dep
-		self.vdb = portage.db["/"]["vartree"].dbapi
-		self.tree = portage.db[chroot_dir]["porttree"].dbapi
 		self._chroot_dir = chroot_dir
 		self._logger = logger
 		self._debug = debug
@@ -93,31 +89,6 @@ class GLIPortage(object):
 					raise MissingPackagesError([dep])
 				atoms.append(dep)
 		return atoms
-
-	def calc_required_pkgs(self, atom, graph, parent=None):
-		pkg = portage.best(self.vdb.match(atom))
-		if not pkg:
-			raise MissingPackagesError([atom])
-		if pkg == parent:
-			return
-		already_processed = graph.has_node(pkg)
-		graph.add(pkg, parent)
-		if already_processed:
-			return
-		useflags = self.vdb.aux_get(pkg, ["USE"])[0].split()
-		rdep_raw = " ".join(self.vdb.aux_get(pkg, ["RDEPEND", "PDEPEND"]))
-		rdep_struct = portage_dep.use_reduce(portage_dep.paren_reduce(rdep_raw), uselist=useflags)
-		rdep_struct = portage.dep_virtual(portage_dep.dep_opconvert(rdep_struct), portage.settings)
-		rdep_atoms = portage.unique_array(resolve_deps(rdep_struct))
-		for atom in rdep_atoms:
-			calc_required_pkgs(atom, graph, pkg)
-
-	def prune_existing(self, graph):
-		db = portage.db[portage.root]["vartree"].dbapi
-		for atom in db.cp_all():
-			for pkg in db.match(atom):
-				if graph.has_node(pkg):
-					graph.remove(pkg)
 
 	def get_deps(self, pkgs):
 		if not self._grp_install:
@@ -207,8 +178,8 @@ class GLIPortage(object):
 		if res:
 			GLIUtility.spawn("echo " + res.group(1) + " >> " + self._chroot_dir + "/var/lib/portage/world")
 
-#	def get_best_version_vdb(self, package):
-#		return portage.best(vdb.match(package))
+	def get_best_version_vdb(self, package):
+		return GLIUtility.spawn("portageq best_version / " + package, return_output=True)[1].strip()
 #
 #	def get_best_version_tree(self, package):
 #		return portage.best(tree.match(package))
