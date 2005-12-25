@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.5 2005/12/25 05:06:35 agaffney Exp $
+$Id: GLIPortage.py,v 1.6 2005/12/25 14:14:43 agaffney Exp $
 """
 
 import os
@@ -96,7 +96,7 @@ class GLIPortage(object):
 			return GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
 			os.environ['ROOT'] = self._chroot_dir
 		else:
-			return GLIUtility.spawn("../../runtimedeps.py " + pkgs, return_output=True)[1].split("\n")[:-1]
+			return GLIUtility.spawn("python ../../runtimedeps.py " + pkgs, return_output=True)[1].split("\n")[:-1]
 
 	def copy_pkg_to_chroot(self, package):
 		symlinks = { '/bin/': '/mnt/livecd/bin/', '/boot/': '/mnt/livecd/boot/', '/lib/': '/mnt/livecd/lib/', 
