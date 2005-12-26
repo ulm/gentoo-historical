@@ -5,54 +5,12 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.7 2005/12/26 01:51:36 agaffney Exp $
+$Id: GLIPortage.py,v 1.8 2005/12/26 02:50:37 agaffney Exp $
 """
 
 import re
 import GLIUtility
 import GLIException
-
-class MissingPackagesError(Exception):
-	pass
-
-class depgraph:
-
-	def __init__(self):
-		self.graph = {}
-	
-	def add(self, node, parent=None):
-		if node not in self.graph:
-			self.graph[node] = [[], []]
-		if parent and parent not in self.graph[node][0]:
-			if parent not in self.graph:
-				self.graph[parent] = [[], []]
-			self.graph[node][0].append(parent)
-			self.graph[parent][1].append(node)
-
-	def remove(self, node):
-		for parent in self.graph[node][0]:
-			self.graph[parent][1].remove(node)
-		for child in self.graph[node][1]:
-			self.graph[child][0].remove(node)
-		return self.graph.pop(node)
-	
-	def has_node(self, node):
-		return node in self.graph
-	
-	def leaf_nodes(self):
-		return [node for node in self.graph if not self.graph[node][1]]
-	
-	def node_count(self):
-		return len(self.graph)
-	
-	def important_node(self):
-		important_node = None
-		importance = 0
-		for node in self.graph:
-			if len(self.graph[node][0]) > importance:
-				importance = len(self.graph[node][0])
-				important_node = node
-		return important_node
 
 class GLIPortage(object):
 
@@ -67,15 +25,22 @@ class GLIPortage(object):
 		if isinstance(pkgs, str):
 			pkgs = pkgs.split()
 		for pkg in pkgs:
+			if self._debug: self._logger.log("get_deps(): pkg is " + pkg)
 			if not self._grp_install or not self.get_best_version_vdb(pkg):
+				if self._debug: self._logger.log("get_deps(): grabbing compile deps")
 #				del(os.environ['ROOT'])
-				tmppkglist = GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
+				tmppkglist = GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n")
 #				os.environ['ROOT'] = self._chroot_dir
 			else:
-				tmppkglist = GLIUtility.spawn("env ROOT=" + self._chroot_dir + " python ../../runtimedeps.py " + pkg, return_output=True)[1].split("\n")[:-1]
+				if self._debug: self._logger.log("get_deps(): grabbing binary deps")
+				tmppkglist = GLIUtility.spawn("env ROOT='" + self._chroot_dir + "' python ../../runtimedeps.py " + pkg, return_output=True)[1].strip().split("\n")
+			if self._debug: self._logger.log("get_deps(): deplist for " + pkg + ": " + str(tmppkglist))
 			for tmppkg in tmppkglist:
+				if self._debug: self._logger.log("get_deps(): checking to see if " + tmmpkg + " is already in pkglist")
 				if not tmppkg in pkglist:
+					if self._debug: self._logger.log("get_deps(): adding " + tmmpkg + " to pkglist")
 					pkglist.append(tmppkg)
+		if self._debug: self._logger.log("get_deps(): pkglist is " + str(pkglist))
 		return pkglist
 
 	def copy_pkg_to_chroot(self, package):
