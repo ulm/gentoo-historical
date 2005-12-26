@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: runtimedeps.py,v 1.2 2005/12/26 03:22:25 agaffney Exp $
+$Id: runtimedeps.py,v 1.3 2005/12/26 19:26:26 agaffney Exp $
 """
 
 import os, sys
@@ -124,7 +124,7 @@ def get_deps(pkgs):
 				graph.remove(node)
 		return pkglist
 
-#os.environ['ROOT'] = sys.argv[1]
+os.environ['ROOT'] = sys.argv[1]
 import portage, portage_dep
 vdb = portage.db["/"]["vartree"].dbapi
-print "\n".join(get_deps(" ".join(sys.argv[1:])))
+print "\n".join(get_deps(" ".join(sys.argv[2:])))
