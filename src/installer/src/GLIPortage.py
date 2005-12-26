@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.9 2005/12/26 04:23:38 agaffney Exp $
+$Id: GLIPortage.py,v 1.10 2005/12/26 06:16:05 agaffney Exp $
 """
 
 import re
@@ -37,7 +37,7 @@ class GLIPortage(object):
 			if self._debug: self._logger.log("get_deps(): deplist for " + pkg + ": " + str(tmppkglist))
 			for tmppkg in tmppkglist:
 				if self._debug: self._logger.log("get_deps(): checking to see if " + tmppkg + " is already in pkglist")
-				if not tmppkg in pkglist:
+				if not tmppkg in pkglist and not self.get_best_version_vdb_chroot("=" + tmppkg):
 					if self._debug: self._logger.log("get_deps(): adding " + tmppkg + " to pkglist")
 					pkglist.append(tmppkg)
 		if self._debug: self._logger.log("get_deps(): pkglist is " + str(pkglist))
@@ -125,6 +125,9 @@ class GLIPortage(object):
 
 	def get_best_version_vdb(self, package):
 		return GLIUtility.spawn("portageq best_version / " + package, return_output=True)[1].strip()
+
+	def get_best_version_vdb_chroot(self, package):
+		return GLIUtility.spawn("portageq best_version " + self._chroot_dir + " " + package, return_output=True)[1].strip()
 
 #	def get_best_version_tree(self, package):
 #		return portage.best(tree.match(package))
