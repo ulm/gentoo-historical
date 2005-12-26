@@ -5,12 +5,12 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.6 2005/12/25 14:14:43 agaffney Exp $
+$Id: GLIPortage.py,v 1.7 2005/12/26 01:51:36 agaffney Exp $
 """
 
-import os
 import re
 import GLIUtility
+import GLIException
 
 class MissingPackagesError(Exception):
 	pass
@@ -58,45 +58,25 @@ class GLIPortage(object):
 
 	def __init__(self, chroot_dir, grp_install, logger, debug):
 		self._chroot_dir = chroot_dir
+		self._grp_install = grp_install
 		self._logger = logger
 		self._debug = debug
-		self._grp_install = grp_install
-
-	def resolve_deps(self, dep_list):
-		if dep_list and dep_list[0] == "||":
-			for dep in dep_list[1:]:
-				if isinstance(dep, list):
-					try:
-						atoms = resolve_deps(dep)
-					except MissingPackagesError:
-						continue
-				else:
-					atoms = [dep]
-				all_found = True
-				for atom in atoms:
-					if not atom.startswith("!") and not self.vdb.match(atom):
-						all_found = False
-						break
-				if all_found:
-					return atoms
-			raise MissingPackagesError(dep_list)
-		atoms = []
-		for dep in dep_list:
-			if isinstance(dep, list):
-				atoms.extend(resolve_deps(dep))
-			elif not dep.startswith("!"):
-				if not self.vdb.match(dep):
-					raise MissingPackagesError([dep])
-				atoms.append(dep)
-		return atoms
 
 	def get_deps(self, pkgs):
-		if not self._grp_install:
-			del(os.environ['ROOT'])
-			return GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
-			os.environ['ROOT'] = self._chroot_dir
-		else:
-			return GLIUtility.spawn("python ../../runtimedeps.py " + pkgs, return_output=True)[1].split("\n")[:-1]
+		pkglist = []
+		if isinstance(pkgs, str):
+			pkgs = pkgs.split()
+		for pkg in pkgs:
+			if not self._grp_install or not self.get_best_version_vdb(pkg):
+#				del(os.environ['ROOT'])
+				tmppkglist = GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].split("\n")
+#				os.environ['ROOT'] = self._chroot_dir
+			else:
+				tmppkglist = GLIUtility.spawn("env ROOT=" + self._chroot_dir + " python ../../runtimedeps.py " + pkg, return_output=True)[1].split("\n")[:-1]
+			for tmppkg in tmppkglist:
+				if not tmppkg in pkglist:
+					pkglist.append(tmppkg)
+		return pkglist
 
 	def copy_pkg_to_chroot(self, package):
 		symlinks = { '/bin/': '/mnt/livecd/bin/', '/boot/': '/mnt/livecd/boot/', '/lib/': '/mnt/livecd/lib/', 
@@ -180,6 +160,6 @@ class GLIPortage(object):
 
 	def get_best_version_vdb(self, package):
 		return GLIUtility.spawn("portageq best_version / " + package, return_output=True)[1].strip()
-#
+
 #	def get_best_version_tree(self, package):
 #		return portage.best(tree.match(package))
