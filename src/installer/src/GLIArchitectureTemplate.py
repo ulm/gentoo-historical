@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.245 2005/12/26 02:50:37 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.246 2005/12/26 04:59:33 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -482,7 +482,7 @@ class ArchitectureTemplate:
 			for i, pkg in enumerate(pkglist):
 				if self._debug: self._logger.log("install_packages(): processing package " + pkg)
 				self.notify_frontend("progress", (float(i) / len(pkglist), "Emerging " + pkg + " (" + str(i) + "/" + str(len(pkglist)) + ")"))
-				if not self._portage.get_best_version_vdb(pkg):
+				if not self._portage.get_best_version_vdb("=" + pkg):
 					status = self._emerge("=" + pkg)
 					if not GLIUtility.exitsuccess(status):
 						raise GLIException("ExtraPackagesError", "fatal", "install_packages", "Could not emerge " + pkg + "!")
