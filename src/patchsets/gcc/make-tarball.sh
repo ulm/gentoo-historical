@@ -11,7 +11,7 @@ for ebuild in \
 	/usr/portage/sys-devel/gcc/gcc-$1.ebuild \
 	""
 do
-	[[ -e ${ebuild} ]] && break
+	[[ -f ${ebuild} ]] && break
 done
 if [[ -z ${ebuild} ]] ; then
 	echo "!!! gcc ebuild '$1' does not exist"
