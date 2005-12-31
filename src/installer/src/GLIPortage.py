@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.13 2005/12/31 23:29:14 agaffney Exp $
+$Id: GLIPortage.py,v 1.14 2005/12/31 23:33:51 agaffney Exp $
 """
 
 import re
@@ -43,7 +43,7 @@ class GLIPortage(object):
 		if self._debug: self._logger.log("get_deps(): pkglist is " + str(pkglist))
 		return pkglist
 
-	def copy_pkg_to_chroot(self, package. use_root=False):
+	def copy_pkg_to_chroot(self, package, use_root=False):
 		symlinks = { '/bin/': '/mnt/livecd/bin/', '/boot/': '/mnt/livecd/boot/', '/lib/': '/mnt/livecd/lib/', 
 		             '/opt/': '/mnt/livecd/opt/', '/sbin/': '/mnt/livecd/sbin/', '/usr/': '/mnt/livecd/usr/',
 		             '/etc/gconf/': '/usr/livecd/gconf/' }
