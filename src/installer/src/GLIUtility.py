@@ -911,3 +911,6 @@ def parse_vdb_contents(file):
 			entries.append(" ".join(parts[1:4]))
 	entries.sort()
 	return entries
+
+def get_keymaps(self):
+	return GLIUtility.spawn(r"find /usr/share/keymaps -iname *.map.gz | sed -e 's:^.\+/::' -e 's:\..\+$::' | sort", return_output=True)[1].strip().split("\n")
