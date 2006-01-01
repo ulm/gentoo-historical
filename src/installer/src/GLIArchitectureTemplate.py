@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.247 2005/12/31 23:29:14 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.248 2006/01/01 01:08:11 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1405,3 +1405,5 @@ class ArchitectureTemplate:
 		if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): running: cp /tmp/compile_output.log /tmp/compile_output.log.failed then removing /tmp/compile_output.log")
 		GLIUtility.spawn("cp /tmp/compile_output.log /tmp/compile_output.log.failed")
 		GLIUtility.spawn("rm /tmp/compile_output.log")
+		GLIUtility.spawn("cp /var/log/installer.log /var/log/installer.log.failed")
+		GLIUtility.spawn("rm /var/log/installer.log")
