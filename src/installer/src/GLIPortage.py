@@ -5,12 +5,12 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.17 2006/01/01 02:07:54 agaffney Exp $
+$Id: GLIPortage.py,v 1.18 2006/01/01 03:46:04 agaffney Exp $
 """
 
 import re
 import GLIUtility
-import GLIException
+from GLIException import GLIException
 
 class GLIPortage(object):
 
@@ -50,9 +50,11 @@ class GLIPortage(object):
 
 		root_cmd = ""
 		tmp_chroot_dir = self._chroot_dir
+		portage_tmpdir = "/var/tmp/portage"
 		if use_root:
 			root_cmd = "ROOT=" + self._chroot_dir
 			tmp_chroot_dir = ""
+			portage_tmpdir = self._chroot_dir + "/var/tmp/portage"
 
 		# Copy the vdb entry for the package from the LiveCD to the chroot
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying vdb entry for " + package)
@@ -92,7 +94,7 @@ class GLIPortage(object):
 
 		# Run pkg_setup
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running pkg_setup for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + tmp_chroot_dir + tmpdir + "  ebuild /var/db/pkg/" + package + "/*.ebuild setup", chroot=tmp_chroot_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + portage_tmpdir + " ebuild /var/db/pkg/" + package + "/*.ebuild setup", chroot=tmp_chroot_dir)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute pkg_setup for " + package)
 
 		# Run qmerge
@@ -102,7 +104,7 @@ class GLIPortage(object):
 
 		# Run pkg_preinst
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running preinst for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + tmp_chroot_dir + tmpdir + " ebuild /var/db/pkg/" + package + "/*.ebuild preinst", chroot=tmp_chroot_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + portage_tmpdir + " ebuild /var/db/pkg/" + package + "/*.ebuild preinst", chroot=tmp_chroot_dir)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute preinst for " + package)
 
 		# Copy files from image_dir to chroot
@@ -112,7 +114,7 @@ class GLIPortage(object):
 
 		# Run pkg_postinst
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running postinst for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + tmp_chroot_dir + tmpdir + " ebuild /var/db/pkg/" + package + "/*.ebuild postinst", chroot=tmp_chroot_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + portage_tmpdir + " ebuild /var/db/pkg/" + package + "/*.ebuild postinst", chroot=tmp_chroot_dir)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute postinst for " + package)
 
 		# Remove image_dir
