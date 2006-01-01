@@ -296,7 +296,7 @@ def set_default_route(route):
 # @param return_output=False 	Returns the output along with the exit status
 def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False, linecount=0, match=None, cc=None, status_message=None):
 	# quiet and return_output really do the same thing. One of them need to be removed.
-	if chroot != None:
+	if chroot:
 		wrapper = open(chroot+"/var/tmp/spawn.sh", "w")
 		wrapper.write("#!/bin/bash -l\n" + cmd + "\nexit $?\n")
 		wrapper.close()
