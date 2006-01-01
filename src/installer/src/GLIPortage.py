@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.14 2005/12/31 23:33:51 agaffney Exp $
+$Id: GLIPortage.py,v 1.15 2006/01/01 01:05:39 agaffney Exp $
 """
 
 import re
@@ -33,7 +33,7 @@ class GLIPortage(object):
 #				os.environ['ROOT'] = self._chroot_dir
 			else:
 				if self._debug: self._logger.log("get_deps(): grabbing binary deps")
-				tmppkglist = GLIUtility.spawn("python " + self._chroot_dir + " ../../runtimedeps.py " + pkg, return_output=True)[1].strip().split("\n")
+				tmppkglist = GLIUtility.spawn("python ../../runtimedeps.py " + self._chroot_dir + " " + pkg, return_output=True)[1].strip().split("\n")
 			if self._debug: self._logger.log("get_deps(): deplist for " + pkg + ": " + str(tmppkglist))
 			for tmppkg in tmppkglist:
 				if self._debug: self._logger.log("get_deps(): checking to see if " + tmppkg + " is already in pkglist")
