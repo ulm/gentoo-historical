@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: amd64ArchitectureTemplate.py,v 1.8 2005/12/11 21:24:44 agaffney Exp $
+$Id: amd64ArchitectureTemplate.py,v 1.9 2006/01/02 22:56:24 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -33,9 +33,7 @@ class amd64ArchitectureTemplate(x86ArchitectureTemplate):
 		# This is the amd64 way.. it uses grub but must do it staticly.
 		
 		if self._install_profile.get_boot_loader_pkg():
-			exitstatus = self._emerge(self._install_profile.get_boot_loader_pkg())
-			if exitstatus != 0:
-				raise GLIException("BootLoaderEmergeError", 'fatal', 'install_bootloader', "Could not emerge bootloader!")
+			exitstatus = self._portage.emerge(self._install_profile.get_boot_loader_pkg())
 		else:
 			pass
 		

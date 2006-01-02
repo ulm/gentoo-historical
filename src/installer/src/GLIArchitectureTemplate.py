@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.249 2006/01/02 18:23:34 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.250 2006/01/02 22:56:24 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -542,11 +542,11 @@ class ArchitectureTemplate:
 		
 		# For each configuration option...
 		filename = self._chroot_dir + "/etc/make.conf"
-		self._edit_config(filename, {"COMMENT": "GLI additions ===>"})
+#		self._edit_config(filename, {"COMMENT": "GLI additions ===>"})
 		for key in make_conf.keys():
 			# Add/Edit it into make.conf
 			self._edit_config(filename, {key: make_conf[key]})
-		self._edit_config(filename, {"COMMENT": "<=== End GLI additions"})
+#		self._edit_config(filename, {"COMMENT": "<=== End GLI additions"})
 
 		self._logger.log("Make.conf configured")
 		# now make any directories that emerge needs, otherwise it will fail
@@ -692,29 +692,10 @@ class ArchitectureTemplate:
 		# Special case, livecd kernel
 		elif kernel_pkg == "livecd-kernel":
 			if self._debug: self._logger.log("DEBUG: starting livecd-kernel setup")
-			PKGDIR = "/usr/portage/packages"
-			PORTAGE_TMPDIR = "/var/tmp"
-			make_conf = self._install_profile.get_make_conf()
-			if "PKGDIR" in make_conf: PKGDIR = make_conf['PKGDIR']
-			if "PORTAGE_TMPDIR" in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
-			# directories are created previously
-			if self._debug: self._logger.log("DEBUG: running: env PKGDIR="+ self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
-			ret = GLIUtility.spawn("env PKGDIR=" + self._chroot_dir + PKGDIR + " PORTAGE_TMPDIR=" + self._chroot_dir + PORTAGE_TMPDIR + " quickpkg livecd-kernel")
-			if self._debug: self._logger.log("DEBUG: running: env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel")
-			ret = GLIUtility.spawn("env PKGDIR=" + PKGDIR + " emerge -K sys-kernel/livecd-kernel", chroot=self._chroot_dir)
-			# these should really be error-checked...
-			
-			#these are the hotplug/coldplug steps from build_kernel copied over here.  they will NOT be run there.
-#			exitstatus = self._emerge("hotplug")
-#			if not GLIUtility.exitsuccess(exitstatus):
-#				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
-#			self._logger.log("Hotplug emerged.")
-			exitstatus = self._emerge("coldplug")
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
+			self._portage.emerge("livecd-kernel")
+
+			exitstatus = self._portage.emerge("coldplug")
 			self._logger.log("Coldplug emerged.  Now they should be added to the boot runlevel.")
-			
-#			self._add_to_runlevel("hotplug")
 			self._add_to_runlevel("coldplug", runlevel="boot")
 
 			# Extra modules from kernelpkgs.txt...disabled until I can figure out why it sucks
@@ -733,9 +714,9 @@ class ArchitectureTemplate:
 
 		# normal case
 		else:
-			exitstatus = self._emerge(kernel_pkg)
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not retrieve kernel sources!")
+			exitstatus = self._portage.emerge(kernel_pkg)
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				raise GLIException("EmergeKernelSourcesError", 'fatal','emerge_kernel_sources',"Could not retrieve kernel sources!")
 			try:
 				os.stat(self._chroot_dir + "/usr/src/linux")
 			except:
@@ -824,9 +805,9 @@ class ArchitectureTemplate:
 		# Genkernel mode, including custom kernel_config. Initrd always on.
 		elif build_mode == "genkernel":
 			if self._debug: self._logger.log("DEBUG: build_kernel(): starting emerge genkernel")		
-			exitstatus = self._emerge("genkernel")
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("EmergeGenKernelError", 'fatal','build_kernel', "Could not emerge genkernel!")
+			exitstatus = self._portage.emerge("genkernel")
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				raise GLIException("EmergeGenKernelError", 'fatal','build_kernel', "Could not emerge genkernel!")
 			self._logger.log("Genkernel emerged.  Beginning kernel compile.")
 			# Null the genkernel_options
 			genkernel_options = ""
@@ -853,9 +834,9 @@ class ArchitectureTemplate:
 #			if not GLIUtility.exitsuccess(exitstatus):
 #				raise GLIException("EmergeHotplugError", 'fatal','build_kernel', "Could not emerge hotplug!")
 #			self._logger.log("Hotplug emerged.")
-			exitstatus = self._emerge("coldplug")
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
+			exitstatus = self._portage.emerge("coldplug")
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				raise GLIException("EmergeColdplugError", 'fatal','build_kernel', "Could not emerge coldplug!")
 			self._logger.log("Coldplug emerged.  Now they should be added to the default runlevel.")
 			
 #			self._add_to_runlevel("hotplug")
@@ -912,9 +893,9 @@ class ArchitectureTemplate:
 		if mta_pkg:
 			# Emerge MTA
 			if self._debug: self._logger.log("DEBUG: install_mta(): installing mta: "+mta_pkg)
-			exitstatus = self._emerge(mta_pkg)
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("MTAError", 'fatal','install_mta', "Could not emerge " + mta_pkg + "!")
+			exitstatus = self._portage.emerge(mta_pkg)
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				raise GLIException("MTAError", 'fatal','install_mta', "Could not emerge " + mta_pkg + "!")
 			self._logger.log("MTA installed: "+mta_pkg)
 
 	##
@@ -925,9 +906,9 @@ class ArchitectureTemplate:
 		if logging_daemon_pkg:
 			# Emerge Logging Daemon
 			if self._debug: self._logger.log("DEBUG: install_logging_daemon: emerging "+logging_daemon_pkg)
-			exitstatus = self._emerge(logging_daemon_pkg)
-			if not GLIUtility.exitsuccess(exitstatus):
-				raise GLIException("LoggingDaemonError", 'fatal','install_logging_daemon', "Could not emerge " + logging_daemon_pkg + "!")
+			exitstatus = self._portage.emerge(logging_daemon_pkg)
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				raise GLIException("LoggingDaemonError", 'fatal','install_logging_daemon', "Could not emerge " + logging_daemon_pkg + "!")
 
 			# Add Logging Daemon to default runlevel
 			# After we find the name of it's initscript
@@ -947,9 +928,9 @@ class ArchitectureTemplate:
 			else:
 				# Emerge Cron Daemon
 				if self._debug: self._logger.log("DEBUG: install_cron_daemon: emerging "+cron_daemon_pkg)
-				exitstatus = self._emerge(cron_daemon_pkg)
-				if not GLIUtility.exitsuccess(exitstatus):
-					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
+				exitstatus = self._portage.emerge(cron_daemon_pkg)
+#				if not GLIUtility.exitsuccess(exitstatus):
+#					raise GLIException("CronDaemonError", 'fatal', 'install_cron_daemon', "Could not emerge " + cron_daemon_pkg + "!")
 
 				# Add Cron Daemon to default runlevel
 				# After we find the name of it's initscript
@@ -1002,12 +983,12 @@ class ArchitectureTemplate:
 		failed_list = []
 		for package in package_list:
 			if self._debug: self._logger.log("DEBUG: install_filesystem_tools(): emerging "+package)
-			exitstatus = self._emerge(package)
-			if not GLIUtility.exitsuccess(exitstatus):
-				self._logger.log("ERROR! : Could not emerge "+package+"!")
-				failed_list.append(package)
-			else:
-				self._logger.log("FileSystemTool "+package+" was emerged successfully.")
+			exitstatus = self._portage.emerge(package)
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				self._logger.log("ERROR! : Could not emerge "+package+"!")
+#				failed_list.append(package)
+#			else:
+			self._logger.log("FileSystemTool "+package+" was emerged successfully.")
 		# error checking is important!
 		if len(failed_list) > 0:
 			raise GLIException("InstallFileSystemToolsError", 'warning', 'install_filesystem_tools', "Could not emerge " + failed_list + "!")
@@ -1018,12 +999,12 @@ class ArchitectureTemplate:
 		# If user wants us to install rp-pppoe, then do so
 		if self._install_profile.get_install_rp_pppoe():
 			if self._debug: self._logger.log("DEBUG: install_rp_pppoe: emerging rp-pppoe")
-			exitstatus = self._emerge("rp-pppoe")
-			if not GLIUtility.exitsuccess(exitstatus):
-				self._logger.log("ERROR! : Could not emerge rp-pppoe!")
+			exitstatus = self._portage.emerge("rp-pppoe")
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				self._logger.log("ERROR! : Could not emerge rp-pppoe!")
 			#	raise GLIException("RP_PPPOEError", 'warning', 'install_rp_pppoe', "Could not emerge rp-pppoe!")
-			else:
-				self._logger.log("rp-pppoe emerged but not set up.")	
+#			else:
+			self._logger.log("rp-pppoe emerged but not set up.")	
 		# Should we add a section here to automatically configure rp-pppoe?
 		# I think it should go into the setup_network_post section
 		# What do you guys think? <-- said by unknown. samyron or npmcallum
@@ -1032,14 +1013,14 @@ class ArchitectureTemplate:
 	# Installs and sets up pcmcia-cs if selected in the profile
 	def install_pcmcia_cs(self):
 		if self._debug: self._logger.log("DEBUG: install_pcmcia_cs(): emerging pcmcia-cs")
-		exitstatus = self._emerge("pcmcia-cs")
-		if not GLIUtility.exitsuccess(exitstatus):
-			self._logger.log("ERROR! : Could not emerge pcmcia-cs!")
+		exitstatus = self._portage.emerge("pcmcia-cs")
+#		if not GLIUtility.exitsuccess(exitstatus):
+#			self._logger.log("ERROR! : Could not emerge pcmcia-cs!")
 			
 		# Add pcmcia-cs to the default runlevel
-		else:
-			self._add_to_runlevel('pcmcia')
-			self._logger.log("PCMCIA_CS emerged and configured.")
+#		else:
+		self._add_to_runlevel('pcmcia')
+		self._logger.log("PCMCIA_CS emerged and configured.")
 			
 	##
 	# This runs etc-update and then re-overwrites the files by running the configure_*'s to keep our values.
@@ -1073,11 +1054,11 @@ class ArchitectureTemplate:
 		
 		# For each configuration option...
 		filename = self._chroot_dir + "/etc/rc.conf"
-		self._edit_config(filename, {"COMMENT": "GLI additions ===>"})
+#		self._edit_config(filename, {"COMMENT": "GLI additions ===>"})
 		for key in options.keys():
 			# Add/Edit it into rc.conf
 			self._edit_config(filename, {key: options[key]})
-		self._edit_config(filename, {"COMMENT": "<=== End GLI additions"})
+#		self._edit_config(filename, {"COMMENT": "<=== End GLI additions"})
 		self._logger.log("rc.conf configured.")
 		
 	##
@@ -1248,11 +1229,11 @@ class ArchitectureTemplate:
 					emerge_dhcp = True
 		if emerge_dhcp:
 			if self._debug: self._logger.log("DEBUG: setup_network_post(): emerging dhcpcd.")
-			exitstatus = self._emerge("dhcpcd")
-			if not GLIUtility.exitsuccess(exitstatus):
-				self._logger.log("ERROR! : Could not emerge dhcpcd!")
-			else:
-				self._logger.log("dhcpcd emerged.")		
+			exitstatus = self._portage.emerge("dhcpcd")
+#			if not GLIUtility.exitsuccess(exitstatus):
+#				self._logger.log("ERROR! : Could not emerge dhcpcd!")
+#			else:
+			self._logger.log("dhcpcd emerged.")		
 		
 	##
 	# Sets the root password

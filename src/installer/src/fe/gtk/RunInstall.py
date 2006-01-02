@@ -170,6 +170,7 @@ class RunInstall(gtk.Window):
 #			vadj = self.textviewscroll.get_vadjustment()
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, line, -1)
+			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textview.scroll_to_iter(iter_end, 0.0)
 #			if vadj.value == vadj.upper:
 #				vadj = self.textviewscroll.get_vadjustment()
@@ -195,6 +196,7 @@ class RunInstall(gtk.Window):
 #			print "vadj before adding text: upper - " + str(vadj.upper) + ", lower - " + str(vadj.lower) + ", max - " + str(vadj.upper - vadj.page_size) + ", value - " + str(vadj.value)
 			iter_end = self.logtextbuff.get_iter_at_offset(-1)
 			self.logtextbuff.insert(iter_end, line, -1)
+			iter_end = self.logtextbuff.get_iter_at_offset(-1)
 			self.logtextview.scroll_to_iter(iter_end, 0.0)
 #			if vvalue == vmax:
 #				print "vadj after adding text: upper - " + str(vadj.upper) + ", lower - " + str(vadj.lower) + ", max - " + str(vadj.upper - vadj.page_size) + ", value - " + str(vadj.value)
