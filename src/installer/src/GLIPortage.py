@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.20 2006/01/02 18:31:32 agaffney Exp $
+$Id: GLIPortage.py,v 1.21 2006/01/02 19:13:13 agaffney Exp $
 """
 
 import re
@@ -30,13 +30,13 @@ class GLIPortage(object):
 			if self._debug: self._logger.log("get_deps(): pkg is " + pkg)
 			if not self._grp_install or not self.get_best_version_vdb(pkg):
 				if self._debug: self._logger.log("get_deps(): grabbing compile deps")
-				tmppkglist = GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n")
+				tmppkglist = GLIUtility.spawn("emerge -p " + pkg + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n")
 			else:
 				if self._debug: self._logger.log("get_deps(): grabbing binary deps")
 				# Until I have a unified method of getting binary and compile deps, I can't reliably merge the deptrees
 #				tmppkglist = GLIUtility.spawn("python ../../runtimedeps.py " + self._chroot_dir + " " + pkg, return_output=True)[1].strip().split("\n")
 				tmppkglist = []
-				for tmppkg in GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n"):
+				for tmppkg in GLIUtility.spawn("emerge -p " + pkg + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n"):
 					if self.get_best_version_vdb_chroot("=" + tmppkg):
 						tmppkglist.append(tmppkg)
 			if self._debug: self._logger.log("get_deps(): deplist for " + pkg + ": " + str(tmppkglist))
