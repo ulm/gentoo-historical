@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.18 2006/01/01 03:46:04 agaffney Exp $
+$Id: GLIPortage.py,v 1.19 2006/01/02 18:23:34 agaffney Exp $
 """
 
 import re
@@ -14,11 +14,13 @@ from GLIException import GLIException
 
 class GLIPortage(object):
 
-	def __init__(self, chroot_dir, grp_install, logger, debug):
+	def __init__(self, chroot_dir, grp_install, logger, debug, cc, compile_logfile):
 		self._chroot_dir = chroot_dir
 		self._grp_install = grp_install
 		self._logger = logger
 		self._debug = debug
+		self._cc = cc
+		self._compile_logfile = compile_logfile
 
 	def get_deps(self, pkgs):
 		pkglist = []
@@ -28,12 +30,15 @@ class GLIPortage(object):
 			if self._debug: self._logger.log("get_deps(): pkg is " + pkg)
 			if not self._grp_install or not self.get_best_version_vdb(pkg):
 				if self._debug: self._logger.log("get_deps(): grabbing compile deps")
-#				del(os.environ['ROOT'])
 				tmppkglist = GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n")
-#				os.environ['ROOT'] = self._chroot_dir
 			else:
 				if self._debug: self._logger.log("get_deps(): grabbing binary deps")
-				tmppkglist = GLIUtility.spawn("python ../../runtimedeps.py " + self._chroot_dir + " " + pkg, return_output=True)[1].strip().split("\n")
+				# Until I have a unified method of getting binary and compile deps, I can't reliably merge the deptrees
+#				tmppkglist = GLIUtility.spawn("python ../../runtimedeps.py " + self._chroot_dir + " " + pkg, return_output=True)[1].strip().split("\n")
+				tmppkglist = []
+				for tmppkg in GLIUtility.spawn("emerge -p " + pkgs + r" | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n")
+					if self.get_best_version_vdb_chroot("=" + tmppkg):
+						tmppkglist.append(tmppkg)
 			if self._debug: self._logger.log("get_deps(): deplist for " + pkg + ": " + str(tmppkglist))
 			for tmppkg in tmppkglist:
 				if self._debug: self._logger.log("get_deps(): checking to see if " + tmppkg + " is already in pkglist")
@@ -126,7 +131,7 @@ class GLIPortage(object):
 		if package.find("/") == -1:
 			package = self.get_best_version_vdb_chroot(package)
 		if not package: return False
-		expr = re.compile('^(.+?)(-\d.+)?$')
+		expr = re.compile('^=?(.+?/.+?)(-\d.+)?$')
 		res = expr.match(package)
 		if res:
 			GLIUtility.spawn("echo " + res.group(1) + " >> " + self._chroot_dir + "/var/lib/portage/world")
@@ -139,3 +144,25 @@ class GLIPortage(object):
 
 #	def get_best_version_tree(self, package):
 #		return portage.best(tree.match(package))
+
+	def emerge(self, packages, add_to_world=True):
+		if isinstance(packages, str):
+			packages = packages.split()
+		pkglist = self.get_deps(packages)
+		if self._debug: self._logger.log("install_packages(): pkglist is " + str(pkglist))
+		for i, pkg in enumerate(pkglist):
+			if self._debug: self._logger.log("install_packages(): processing package " + pkg)
+			self._cc.add_notification("progress", (float(i) / len(pkglist), "Emerging " + pkg + " (" + str(i+1) + "/" + str(len(pkglist)) + ")"))
+			if not self.get_best_version_vdb("=" + pkg):
+				status = GLIUtility.spawn("emerge -1 =" + pkg, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
+#				status = self._emerge("=" + pkg)
+				if not GLIUtility.exitsuccess(status):
+					raise GLIException("EmergePackageError", "fatal", "emerge", "Could not emerge " + pkg + "!")
+			else:
+#				try:
+				self.copy_pkg_to_chroot(pkg)
+#				except:
+#					raise GLIException("EmergePackageError", "fatal", "emerge", "Could not emerge " + pkg + "!")
+		if add_to_world:
+			for package in packages:
+				self.add_pkg_to_world(package)

@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.248 2006/01/01 01:08:11 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.249 2006/01/02 18:23:34 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -37,7 +37,7 @@ class ArchitectureTemplate:
 		self._compile_logfile = "/tmp/compile_output.log"
 		self._debug = self._client_configuration.get_verbose()
 
-		self._portage = GLIPortage.GLIPortage(self._chroot_dir, self._install_profile.get_grp_install(), self._logger, self._debug)
+		self._portage = GLIPortage.GLIPortage(self._chroot_dir, self._install_profile.get_grp_install(), self._logger, self._debug, self._cc, self._compile_logfile)
 
 		# This will cleanup the logfile if it's a dead link (pointing
 		# to the chroot logfile when partitions aren't mounted, else
@@ -397,20 +397,21 @@ class ArchitectureTemplate:
 	def install_packages(self):
 		installpackages = self._install_profile.get_install_packages()
 		if installpackages:
-			pkglist = self._portage.get_deps(" ".join(installpackages))
-			if self._debug: self._logger.log("install_packages(): pkglist is " + str(pkglist))
-			for i, pkg in enumerate(pkglist):
-				if self._debug: self._logger.log("install_packages(): processing package " + pkg)
-				self.notify_frontend("progress", (float(i) / len(pkglist), "Emerging " + pkg + " (" + str(i) + "/" + str(len(pkglist)) + ")"))
-				if not self._portage.get_best_version_vdb("=" + pkg):
-					status = self._emerge("=" + pkg)
-					if not GLIUtility.exitsuccess(status):
-						raise GLIException("ExtraPackagesError", "fatal", "install_packages", "Could not emerge " + pkg + "!")
-				else:
-					try:
-						self._portage.copy_pkg_to_chroot(pkg)
-					except:
-						raise GLIException("ExtraPackagesError", "fatal", "install_packages", "Could not emerge " + pkg + "!")
+#			pkglist = self._portage.get_deps(" ".join(installpackages))
+#			if self._debug: self._logger.log("install_packages(): pkglist is " + str(pkglist))
+#			for i, pkg in enumerate(pkglist):
+#				if self._debug: self._logger.log("install_packages(): processing package " + pkg)
+#				self.notify_frontend("progress", (float(i) / len(pkglist), "Emerging " + pkg + " (" + str(i) + "/" + str(len(pkglist)) + ")"))
+#				if not self._portage.get_best_version_vdb("=" + pkg):
+#					status = self._emerge("=" + pkg)
+#					if not GLIUtility.exitsuccess(status):
+#						raise GLIException("ExtraPackagesError", "fatal", "install_packages", "Could not emerge " + pkg + "!")
+#				else:
+#					try:
+#						self._portage.copy_pkg_to_chroot(pkg)
+#					except:
+#						raise GLIException("ExtraPackagesError", "fatal", "install_packages", "Could not emerge " + pkg + "!")
+			self._portage.emerge(installpackages)
 
 		if GLIUtility.is_file(self._chroot_dir + "/etc/X11"):
 			# Copy the xorg.conf from the LiveCD if they installed xorg-x11
