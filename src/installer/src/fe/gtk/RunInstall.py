@@ -112,7 +112,8 @@ class RunInstall(gtk.Window):
 			error_msg = "Exception received:\n" + str(ndata) + "\nPlease submit a bug report (after searching to make sure it's not a known issue and verifying you didn't do something stupid) with the contents of /var/log/install.log and /tmp/installprofile.xml and the version of the installer you used\n"
 			iter_end = self.textbuffer.get_iter_at_offset(-1)
 			self.textbuffer.insert(iter_end, error_msg, -1)
-#			self.textview.scroll_to_iter(iter_end, 0.0)
+			iter_end = self.textbuffer.get_iter_at_offset(-1)
+			self.textview.scroll_to_iter(iter_end, 0.0)
 			self.progress.set_fraction(1)
 			self.progress.set_text("Performing install failure cleanup")
 			self.controller.cc.start_failure_cleanup()
