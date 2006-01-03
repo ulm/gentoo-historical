@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.251 2006/01/03 02:31:38 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.252 2006/01/03 02:54:01 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -693,7 +693,7 @@ class ArchitectureTemplate:
 		elif kernel_pkg == "livecd-kernel":
 			if self._debug: self._logger.log("DEBUG: starting livecd-kernel setup")
 			self.notify_frontend("progress", (0, "Copying livecd-kernel to chroot"))
-			self.copy_pkg_to_chroot(self._portage.get_best_version_vdb("livecd-kernel"))
+			self._portage.copy_pkg_to_chroot(self._portage.get_best_version_vdb("livecd-kernel"))
 			self.notify_frontend("progress", (1, "Done copying livecd-kernel to chroot"))
 
 			exitstatus = self._portage.emerge("coldplug")
