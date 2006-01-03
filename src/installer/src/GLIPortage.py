@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.24 2006/01/03 00:45:30 agaffney Exp $
+$Id: GLIPortage.py,v 1.25 2006/01/03 01:26:10 agaffney Exp $
 """
 
 import re
@@ -38,7 +38,7 @@ class GLIPortage(object):
 				tmppkglist = []
 				for tmppkg in GLIUtility.spawn("emerge -p " + pkg + r" 2>/dev/null | grep -e '^\[[a-z]' | cut -d ']' -f2 | sed -e 's:^ ::' -e 's: .\+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n"):
 					if self._debug: self._logger.log("get_deps(): looking at " + tmppkg)
-					if self.get_best_version_vdb_chroot("=" + tmppkg):
+					if self.get_best_version_vdb("=" + tmppkg):
 						if self._debug: self._logger.log("get_deps(): package " + tmppkg + " in host vdb...adding to tmppkglist")
 						tmppkglist.append(tmppkg)
 			if self._debug: self._logger.log("get_deps(): deplist for " + pkg + ": " + str(tmppkglist))
