@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/x/x11/modular-x-howto.xml,v 1.1 2006/01/03 04:53:25 fox2mike Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/en/desktop/x/x11/modular-x-howto.xml">
+<title>Migrating to Modular X HOWTO</title>
+
+<author title="Author">
+  <mail link="spyderous@gentoo.org">Donnie Berkholz</mail>
+</author>
+<author title="Author">
+  <mail link="joshuabaergen@gentoo.org">Joshua Baergen</mail>
+</author>
+
+<abstract>
+This guide shows you how to migrate to modular X.Org.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2006-01-02</date>
+
+<chapter>
+<title>Migrating to Modular X</title>
+
+<section>
+<title>Introduction</title>
+<body>
+    
+<p>
+To keep old packages from getting in the way, we're going to clean out all the
+old xorg-x11 cruft before installing modular X. This isn't absolutely crucial,
+but it will help ensure a smooth migration.
+</p>
+</body>
+</section>
+
+<section>
+<title>First step: Clean out your old X</title>
+<body>
+    
+<p>
+Before you start, make sure you have a package of the old, monolithic xorg-x11
+built with <c>USE=dlloader</c> if the <c>dlloader</c> flag was available in that
+version. It's not available in versions &gt;=6.8.99.15.
+</p>
+
+<pre caption="Backing up the old xorg-x11">
+# <i>emerge gentoolkit</i>
+# <i>quickpkg xorg-x11</i>
+</pre>
+
+<p>
+Get rid of the monolithic installation:
+</p>
+
+<pre caption="Unmerging the monolitic installation">
+# <i>emerge -Ca xorg-x11</i>
+# <i>rm -rf /usr/lib/opengl/xorg-x11</i>
+# <i>rm -rf /usr/lib/libGL*</i>
+</pre>
+
+<p>
+You definitely want a backup copy of the monolithic xorg-x11 so you can mix and
+match parts if desired.
+</p>
+
+<p>
+The later steps are helpful in getting rid of symlinks created by 
+<c>opengl-update</c>.
+</p>
+
+<p>
+If your <path>/usr/X11R6</path> isn't a symlink to <path>/usr</path>, delete it
+and start from scratch. But first, save a list of all the packages installing
+there.
+</p>
+
+<pre caption="Make a package list">
+# <i>if [[ ! -L /usr/X11R6 ]]; \
+	then equery belongs /usr/X11R6 > usr-x11r6-packages \
+	&amp;&amp; rm -rf /usr/X11R6; fi</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Second step: Installing modular X</title>
+<body>
+    
+<p>
+First, add the required packages to <path>/etc/portage/package.unmask</path>.
+Open <path>/usr/portage/profiles/package.mask</path> in a text editor of your
+choice, then copy and paste the full modular X mask over to
+<path>package.unmask</path>. Do the same with <path>package.keywords</path> if
+you're running stable.
+</p>
+
+<p>
+For direct rendering, you'll want to activate the <c>dri</c> USE flag.
+</p>
+
+<p>
+Now, install the metabuild. This will install the server and popular
+applications, giving you a working desktop implementation of X:
+</p>
+
+<pre caption="Installing the modular metabuild">
+# <i>emerge xorg-x11</i>
+</pre>
+
+<p>
+Note that this install tries to be rather minimal, so things like xcursor-themes
+are not installed by default.
+</p>
+
+<p>
+Next, install some drivers. This will vary depending on your input and video
+hardware, so take a look in <path>/usr/portage/x11-drivers/</path>. Here's a
+sample:
+</p>
+
+<pre caption="Installing some drivers">
+# <i>emerge xf86-input-mouse xf86-input-keyboard xf86-video-ati</i>
+</pre>
+
+<note>
+With modular installed, external drivers such as nvidia-glx and wacom as well as
+some vnc apps may not work if they install things to
+<path>/usr/lib/modules</path> instead of <path>/usr/lib/xorg/modules</path>.
+Many of these will have modular X detection added to the installation process
+and thus will need to be re-merged after modular X install.
+</note>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Caveats/Common Problems</title>
+<section>
+<title>'emerge -u world' wants to install xorg-x11</title>
+<body>
+
+<p>
+This is because the tree isn't fixed for modular dependencies yet. You can help
+the porting effort by reading the <uri
+link="http://dev.gentoo.org/~spyderous/xorg-x11/porting_to_modular_x_howto.txt">Porting
+to Modular X HowTo</uri> and filing bugs with patches to the individual package
+maintainers. The  maintainers will be listed in <path>metadata.xml</path> in the
+same directory as the package and the <c>herdstat</c> package will speed up
+querying for them.
+</p>
+
+
+</body>
+</section>
+<section>
+<title>Driver problems</title>
+<body>
+
+<p>
+I've had reports that:
+</p>
+
+<ul>
+  <li>ati won't start X
+    <ul>
+      <li>But it works fine on my FireGL 8800</li>
+      <li>
+        Resolved by moving <path>/usr/lib/xorg/modules/multimedia</path> out of
+        the way
+      </li>
+    </ul>
+  </li>
+  <li>vesa locks up box with an mga card</li>
+  <li>vga produces a very weird-looking screen, divided into quarters</li>
+</ul>
+</body>
+</section>
+<section>
+<title>Getting glxinfo/glxgears</title>
+<body>
+
+<p>
+The best way to deal with this is undecided by upstream so far, so there's an
+ebuild in my overlay contributed by <mail
+link="cardoe@gentoo.org">Cardoe</mail>. Alternately, you can build them by hand.
+</p>
+
+<p>
+Option 1: 
+<uri>http://dev.gentoo.org/~spyderous/overlay/x11-misc/glx-utils/</uri>
+</p>
+
+<p>
+I'm not going to tell you how to use an overlay, so if you don't know and are
+too lazy to read the docs, use option 2.
+</p>
+
+<p>
+Option 2: Build by hand
+</p>
+
+<pre caption="Build by hand">
+# <i>emerge freeglut</i>
+# <i>tar zxvf /usr/portage/distfiles/Mesa-6.3.1.1.tar.gz</i>
+# <i>cd Mesa-6.3.1.1/configs</i>
+# <i>ln -s linux-dri-x86 current</i>
+# <i>cd ../progs/xdemos</i>
+# <i>make glxinfo</i>
+# <i>make glxgears</i>
+# <i>cp glxinfo glxgears /usr/bin/</i>
+</pre>
+
+<p>
+To get some debugging info from glxinfo to help in getting direct rendering
+working:
+</p>
+
+<pre caption="Getting some debug info from glxinfo">
+# <i>LIBGL_DEBUG=verbose glxinfo</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Mouse protocol autodetection</title>
+<body>
+
+<p>
+If you have <c>Protocol "auto"</c> set in xorg.conf for your mouse, it may not
+work. You may need to specify <c>Protocol "ExplorerPS/2"</c> or <c>"IMPS/2"</c>
+for your wheel to work.
+</p>
+
+</body>
+</section>
+<section>
+<title>Where are imake/xmkmf?</title>
+<body>
+
+<p>
+These are now in the tree. However, <c>gccmakedep</c> is not modularized yet
+and thus the <c>imake</c> build system is still broken for some packages.
+</p>
+</body>
+</section>
+<section>
+<title>Everything in /usr/lib/xorg disappeared!</title>
+<body>
+
+<p>
+Remerge &gt;=xorg-server-0.99.1-r4. This was a temporary bug in the ebuild that 
+resulted in deletion after removal of a package. Instead, 
+<path>/usr/lib/xorg</path> should have only been deleted when no xorg-server
+remained on the system.
+</p>
+
+</body>
+</section>
+<section>
+<title>gdm/kdm don't work</title>
+<body>
+
+<p>
+If you installed modular X on a fresh Gentoo installation, you may not have a 
+<path>/usr/X11R6</path> -&gt; <path>/usr</path> symlink. Try creating one; no
+ebuild does yet.
+</p>
+
+<p>
+You can help get things out of <path>/usr/X11R6</path> by fixing the packages
+that do it and filing bugs.
+</p>
+
+</body>
+</section>
+<section>
+<title>Other Issues</title>
+<body>
+
+<ul>
+  <li>
+    The <c>trap</c> module will give errors on starting X, because the
+    modular <c>xorg-server</c> doesn't build it yet. You may want to copy it
+    over from your old X installation.
+  </li>
+  <li>
+    Make sure your <path>xorg.conf</path> doesn't list <c>ModulePath</c>,
+    because this directory changed from <path>/usr/lib/modules</path> to
+    <path>/usr/lib/xorg/modules</path>.
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>
