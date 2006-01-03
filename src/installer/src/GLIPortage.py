@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.28 2006/01/03 04:09:36 agaffney Exp $
+$Id: GLIPortage.py,v 1.29 2006/01/03 04:24:49 agaffney Exp $
 """
 
 import re
@@ -87,9 +87,9 @@ class GLIPortage(object):
 				for entry in entries:
 					parts = entry.split(" ")
 					# Hack for symlink crappiness
-#					for symlink in symlinks:
-#						if parts[0].startswith(symlink):
-#							parts[0] = symlinks[symlink] + parts[0][len(symlink):]
+					for symlink in symlinks:
+						if parts[0].startswith(symlink):
+							parts[0] = symlinks[symlink] + parts[0][len(symlink):]
 					tarfiles.write(parts[0] + "\n")
 				tarfiles.close()
 			except:
