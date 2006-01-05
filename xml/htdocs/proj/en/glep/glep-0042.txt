@@ -1,13 +1,13 @@
 GLEP: 42
 Title: Critical News Reporting
-Version: $Revision: 1.6 $
+Version: $Revision: 1.7 $
 Author: Ciaran McCreesh <ciaranm@gentoo.org>
-Last-Modified: $Date: 2005/12/18 04:16:44 $
+Last-Modified: $Date: 2006/01/05 15:10:45 $
 Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
 Created: 31-Oct-2005
-Post-History: 1-Nov-2005, 5-Nov-2005, 7-Nov-2005, 11-Dec-2005, 13-Dec-2005, 18-Dec-2005
+Post-History: 1-Nov-2005, 5-Nov-2005, 7-Nov-2005, 11-Dec-2005, 13-Dec-2005, 18-Dec-2005, 5-Jan-2006
 
 Abstract
 ========
@@ -141,13 +141,10 @@ Required Portage Enhancements
 
 The following extensions to Portage are required:
 
-TODO: ferringb wants spaces added to the first item on the list. I don't,
-because it makes repo id -> filename mappings nasty.
-
 * Every repository (including overlays) will require a unique identifier. It is
   assumed that an identifier will be a string consisting of characters from
-  ``a`` to ``z``, ``A`` to ``Z``, ``0`` to ``9``, ``+`` (plus), ``-`` (hyphen),
-  ``:`` (colon) and ``_`` (underscore).
+  ``a`` to ``z``, ``A`` to ``Z``, ``0`` to ``9``, ``+`` (plus), ``-`` (hyphen)
+  ``_`` (underscore).
 
 * Portage must provide a way for external programs to obtain a list of all
   repository identifiers for a given system. It is assumed that this will be in
@@ -174,7 +171,7 @@ form ``yyyy-mm-dd-short-name``, where ``yyyy`` is the year (e.g. ``2005``),
 ``mm`` is the month (``01`` through ``12``) and dd is the day of the month
 (``01`` through ``31``). The ``short-name`` is a very short name describing the
 news item (e.g. ``yoursql-updates``), consisting only of the characters ``a-z``,
-``0-9``, ``+`` (plus), ``:`` (colon), ``-`` (hyphen) and ``_`` (underscore).
+``0-9``, ``+`` (plus), ``-`` (hyphen) and ``_`` (underscore).
 
 News Item Directories
 ---------------------
@@ -197,9 +194,13 @@ A news item file is a text file, encoded using UTF-8 [#rfc-3629]_ for
 compatibility with and for the same reasons as existing Gentoo documentation
 [#docs-policy]_ and the tree [#glep-31]_.
 
-News items should be signed with a detached GPG signature: ::
+News items must be signed with a detached GPG signature.::
 
     gpg --armour --detach-sign ????-??-??-*.??.txt
+
+This GLEP does not specify the type or strength of signature to be used, nor
+does it discuss how, if at all, a centralised keychain will be provided. These
+issues should be handled as part of the signing policy discussions.
 
 A news item file's content will consist of an RFC 822 style header [#rfc-822]_
 followed by the main body of the message as plain text. This GLEP defines
@@ -230,9 +231,10 @@ The following headers describe the purpose and format of the news item:
     compatibility with GLEP 45 [#glep-45]_. Mandatory.
 
 ``Revision:``
-    Initially 1. Incremented every time a non-trivial change is made.  Changes
-    which require a re-read of the news item should instead use a new news item
-    file. Mandatory.
+    Initially 1. Should be incremented every time a change is made to the news
+    item. Changes that require a re-read of the news item (i.e., most changes
+    that are not spelling or formatting related) should instead use a new news
+    item. Mandatory.
 
 ``News-Item-Format:``
     Must be ``1.0``. Future revisions to the format may increment the minor
@@ -242,10 +244,10 @@ The following headers describe the purpose and format of the news item:
 The following headers are used for filtering:
 
 ``Display-If-Installed:``
-    A dependency atom or simple package name (for example,
-    ``<dev-lang/php-5_alpha`` or ``net-www/apache``). If the user has the
-    package specified installed from the repository from which the news item was
-    obtained, the news item should be displayed.
+    A dependency atom (for example, ``<dev-lang/php-5_alpha`` or
+    ``net-www/apache``). If the user has the package specified installed from
+    the repository from which the news item was obtained, the news item should
+    be displayed.
 
 ``Display-If-Keyword:``
     A keyword [#glep-22]_ name, for example ``mips`` or ``x86-fbsd``. If the
@@ -294,7 +296,7 @@ Hyperlinks may be used to refer to further information (for example, an upgrade
 guide). However, the main body of the news item should be descriptive and not
 simply a "read this link" text. It is assumed that the user will have access to
 a web browser *somewhere*, but not necessarily on the box which is being
-administrated — this will be the case on may servers and routers, for example.
+administrated — this will be the case on many servers and routers, for example.
 
 Example News Item
 '''''''''''''''''
@@ -318,12 +320,6 @@ posted to the ``gentoo-dev`` mailing list and ``Cc:``\ed to ``pr@gentoo.org``
 (exceptions may be made in exceptional circumstances). Any complaints — for
 example regarding wording, clarity or accuracy — **must** be addressed before
 the news item goes live.
-
-.. Note:: A previous draft of this GLEP allowed news items to be sent to
-   ``gentoo-core`` instead of ``gentoo-dev``. It is possible that a situation
-   may arise where this will be necessary (for example, a security update which
-   must break backwards compatibility and which cannot be revealed to the public
-   before a given date).
 
 News items must only be for **important** changes that may cause serious upgrade
 or compatibility problems. Ordinary upgrade messages and non-critical news items
@@ -358,18 +354,25 @@ the current year and ``mm`` is the current month number (01 for January through
 
 The contents of this repository will automatically be merged with the main rsync
 tree, placing the items in a ``metadata/news/`` directory. The method used for
-merging these items is beyond the scope of this GLEP — a similar setup is
-already used for merging GLSAs into the rsync tree.
+merging these items and the frequency at which it will occur is beyond the scope
+of this GLEP; a similar setup is already used for merging GLSAs into the rsync
+tree.
 
-The main rsync tree will **not** use the ``yyyy/mm/`` subdirectory layout.
+The main rsync tree will **not** use the ``yyyy/mm/`` subdirectory layout. The
+news item directories will all be immediately under the ``metadata/news/``
+directory.
 
 Client Side
 '''''''''''
 
 Whenever relevant unread news items are found, the package manager will create a
-file named ``/var/lib/gentoo/news/news-repoid.unread`` (if it does not
+file named ``/var/lib/gentoo/news/news-${repoid}.unread`` (if it does not
 already exist) and append the news item identifier (eg
 ``2005-11-01-yoursql-updates``) on a new line.
+
+All news item related files should be root owned and in the ``portage`` group
+with the group write (and, for directories, execute) bits set. News files should
+be world readable.
 
 Notification that new relevant news items will be displayed via the
 ``emerge`` tool in a similar way to the existing "configuration files need
@@ -385,16 +388,19 @@ Checks for new news messages should be displayed:
 * After an ``emerge sync``
 * After an ``emerge --pretend``
 * Before an ``emerge <target>`` (which may also include a red warning message)
-* Before an ``emerge --ask <target>`` sequence
+
+The package manager does not need to know how to launch the user's choice of
+news client. This is consistent with the way configuration file updates are
+handled.
 
 The package manager may use a timestamp check file to avoid having to process
 news items unnecessarily.
 
 The package manager must keep track of news items that have already been added
 to the unread list to avoid repeatedly marking a deleted news item. This could
-be handled via a ``news-repoid.skip`` file containing the IDs of news items that
-have already been added to a ``news-repoid.unread`` file, but this method is not
-required by this GLEP.
+be handled via a ``news-${repoid}.skip`` file containing the IDs of news items
+that have already been added to a ``news-${repoid}.unread`` file, but this
+method is not required by this GLEP.
 
 Users who really don't care about news items can use ``rsync_excludes`` to
 filter out the ``metadata/news/`` directory.
@@ -463,9 +469,9 @@ The idea behind notifying users of news updates via Portage comes from Stuart
 Herbert [#stuart-blog]_.
 
 Thanks to Lance Albertson, Stephen Bennett, Donnie Berkholz, Grant Goodyear,
-Brian Harring, Dan Meltzer, Jason Stubbs, Paul de Vrieze and Alec Warner for
-input.  Some of the ideas presented here are theirs, others go completely
-against their suggestions.
+Brian Harring, Marius Mauch, Dan Meltzer, Jason Stubbs, Paul de Vrieze and Alec
+Warner for input.  Some of the ideas presented here are theirs, others go
+completely against their suggestions.
 
 Example Files
 =============
