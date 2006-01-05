@@ -39,12 +39,7 @@ class Panel(GLIScreen.GLIScreen):
 		# grab from the install profile, and if its not blank, create it
 		try:
 			loaded = self.controller.install_profile.get_time_zone()
-			if loaded:
-				if loaded.beginswith("/usr/share/zoneinfo/"):
-					# strip the path /usr/share/zoneinfo/
-					loaded = loaded[20:]
-				zonetab_entry = self.zonetab2.findEntryByTZ(loaded)
-				self.map.setCurrent(zonetab_entry)
+			self.map.default = loaded
 		except:
 			# this isn't a valid timezone entry, or its not set!
 			print "Invalid timezone or timezone not set."
@@ -58,8 +53,6 @@ class Panel(GLIScreen.GLIScreen):
 	def deactivate(self):
 		try:
 			# retrieve the current selected timezone
-#			final_path = "/usr/share/zoneinfo/" + self.map.getCurrent().tz
-#			self.controller.install_profile.set_time_zone(None, final_path, None)
 			self.controller.install_profile.set_time_zone(None, self.map.getCurrent().tz, None)
 		except:
 			# page loading for the first time, no timezone is selected for
