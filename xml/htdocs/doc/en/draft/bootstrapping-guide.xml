@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/draft/bootstrapping-guide.xml,v 1.5 2006/01/05 19:09:34 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/draft/bootstrapping-guide.xml,v 1.6 2006/01/06 19:50:25 swift Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -52,6 +52,11 @@ build software for the target system, followed by a rebuild of the system to the
 native environment.
 </p>
 
+<p>
+Sounds strange to you? Don't despair, we'll discuss all that in the rest of this
+document...
+</p>
+
 </body>
 </section>
 <section>
@@ -86,6 +91,13 @@ There are three important terms we use in this definition:
     output (like the compiler)
   </li>
 </ul>
+
+<p>
+Each of those terms has a certain syntax used by the GNU compiler collection. It
+is therefore adviseable to consult the <uri
+link="http://gcc.gnu.org/onlinedocs">online GCC documentation</uri> for more
+information.
+</p>
 
 </body>
 </section>
@@ -228,7 +240,7 @@ that you are able to boot into the minimal environment later on.
 </p>
 
 <p>
-Our first task is to build a Linux kernel. 
+Our first task is to build a Linux kernel:
 </p>
 
 <pre caption="Building the Linux kernel">
@@ -237,17 +249,137 @@ $ <i>make menuconfig</i>
 $ <i>make dep boot CROSS_COMPILE=&lt;target&gt;</i>
 </pre>
 
+<p>
+Next, build the core packages required to succesfully boot the system. The set
+of packages you'll need are:
+</p>
+
+<dl>
+  <dt><c>coreutils</c></dt>
+  <dd>Standard set of (POSIX) commands</dd>
+  <dt><c>diffutils</c></dt>
+  <dd>Tools for displaying the differences between files</dd>
+  <dt><c>grep</c></dt>
+  <dd>Text pattern searcher</dd>
+  <dt><c>sed</c></dt>
+  <dd>Streaming text editor</dd>
+  <dt><c>make</c></dt>
+  <dd>Makefile parser</dd>
+  <dt><c>tar</c></dt>
+  <dd>Tape Archive tool</dd>
+  <dt><c>gzip</c></dt>
+  <dd>Compression tool</dd>
+  <dt><c>util-linux</c></dt>
+  <dd>Linux utilities</dd>
+</dl>
+
+<p>
+All these tools should be fairly easy to build. Generally, you can set the
+following variables to declare your platform; the <c>configure</c> and
+<c>make</c> steps will then use those variables to make their platform-dependant
+decisions:
+</p>
+
+<pre caption="Setting platform environment variables">
+$ <i>export CC=</i><comment>your-platform</comment><i>-gcc</i>
+$ <i>export AR=</i><comment>your-platform</comment><i>-ar</i>
+$ <i>export RANLIB=</i><comment>your-platform</comment><i>-ranlib</i>
+$ <i>export LD=</i><comment>your-platform</comment><i>-ld</i>
+$ <i>export BUILD_CC=cc</i>
+$ <i>export HOST_CC=cc</i>
+$ <i>export CFLAGS=</i><comment>sane cflags</comment><i> -I~/cd/usr/include</i>
+</pre>
+
+<p>
+The build steps are then quite simple:
+</p>
+
+<pre caption="Build steps for the core packages">
+$ <i>./configure --prefix=/usr</i>
+$ <i>make</i>
+$ <i>make install prefix=~/cd/final</i>
+</pre>
+
+<p>
+The last thing you'll need is a statically linked version of a shell, for
+instance, <c>bash</c>:
+</p>
+
+<pre caption="Building a statically-linked bash">
+$ <comment>TODO</comment>
+</pre>
+
 </body>
 </section>
 <section>
 <title>Bootstrapping the Toolchain</title>
 <body>
 
+<p>
+Now that you have build a minimal environment inside <path>~/cd</path>, we'll
+rebuild the toolchain so that it not only builds for the target platform (which
+it does already) but also builds <e>on</e> the target platform (it currently
+only works on the current system).
+</p>
+
+<p>
+First, we rebuild the <c>glibc</c> package:
+</p>
+
+<pre caption="Rebuilding glibc">
+$ <i>./configure --prefix=/usr --libdir=~/cd/usr/lib --build=${BUILD} \
+  --host=${TARGET} --with-headers=~/cd/usr/include --without-cvs \
+  --disable-profile --disable-debug --without-gd --enable-add-ons=nptl \
+  --with-tls --enable-kernel=2.6 --enable-shared</i>
+$ <i>make</i>
+$ <i>make install install_root=~/cd/final</i>
+</pre>
+
+<p>
+Next, we rebuild the <c>binutils</c> package:
+</p>
+
+<pre caption="Rebuilding binutils">
+$ <i>./configure --prefix=/usr --target=${TARGET} --with-sysroot=~/cd/final \
+  --libdir=~/cd/usr/lib --with-headers=~/cd/usr/include</i>
+$ <i>make all</i>
+$ <i>make install</i>
+</pre>
+
+<p>
+Finally, we rebuild the <c>gcc</c> package:
+</p>
+
+<pre caption="Rebuilding gcc">
+$ <i>./configure --prefix=/usr --target=${TARGET} --with-sysroot=~/cd/final \
+  --with-headers=~/cd/usr/include --enable-threads=posix \
+  --enable-languages=c,c++</i>
+$ <i>make</i>
+$ <i>make install</i>
+</pre>
+
+<p>
+Now the directory <path>~/cd/final</path> contains everything needed to
+continue.
+</p>
+
 </body>
 </section>
 <section>
-<title>Building the Core System Packages</title>
+<title>Booting the System</title>
 <body>
+
+<p>
+The next step is to try and boot the system. The easiest approach is to
+NFS-mount <path>~/cd/final</path> and boot the target platform using the kernel
+built at the beginning. Don't forget to set <c>init=/bin/sh</c> since the entire
+bootup sequence stuff (like <c>init</c>) isn't available yet.
+</p>
+
+<p>
+<brite>TODO</brite> inform how to boot from the CD and use an NFS-mounted root
+file system.
+</p>
 
 </body>
 </section>
@@ -255,11 +387,50 @@ $ <i>make dep boot CROSS_COMPILE=&lt;target&gt;</i>
 <title>Porting Portage</title>
 <body>
 
+<p>
+To be able to use Portage, we need to be able to use Python. Download the
+sources in <path>~/cd/final/tmp</path> (so that it is available for the booted
+platform) and build it:
+</p>
+
+<pre caption="Building python">
+<comment>TODO</comment>
+</pre>
+
+<p>
+Next, download a Portage rescue set and install it. As Portage is a set of
+Python scripts with bash scripts, this should have no further requirements after
+installation:
+</p>
+
+<pre caption="Installing Portage">
+<comment>TODO</comment>
+</pre>
+
+<p>
+Once installed, try to run <c>emerge</c> and <c>ebuild</c> to find out if they
+appear to work:
+</p>
+
+<pre caption="Checking emerge">
+$ <i>emerge --info</i>
+</pre>
+
 </body>
 </section>
 <section>
 <title>Creating a Stage1 Tarball</title>
 <body>
+
+<p>
+Booted in the platform and with a working Portage, you are now ready to create a
+stage1 tarball. Create a snapshot of your environment using <c>tar</c>:
+</p>
+
+<pre caption="Creating a stage1 tarball">
+<comment>TODO</comment>
+Don't forget to talk about unmasking all packages...
+</pre>
 
 </body>
 </section>
@@ -267,11 +438,34 @@ $ <i>make dep boot CROSS_COMPILE=&lt;target&gt;</i>
 <title>Creating a Bootable Environment</title>
 <body>
 
+<p>
+Next, to make sure that you'll always be able to boot the system (and help
+others as well), we'll create a bootable environment for the platform. Assuming
+that all platforms have a CD-ROM drive they can boot from, we'll focus on such
+environment.
+</p>
+
+<p>
+<brite>TODO</brite> talk about creating bootable CD.
+</p>
+
 </body>
 </section>
 <section>
 <title>Finishing Off</title>
 <body>
+
+<p>
+All set. Right? Nope, but almost :-)
+</p>
+
+<p>
+The most important step now is to inform the Gentoo community about what you've
+accomplished. Make sure you pay a visit at <c>#gentoo-dev</c> on
+<c>irc.freenode.net</c> and use our <uri link="http://forums.gentoo.org">Gentoo
+Forums</uri> to tell about the up and downfalls of your expedition. The most
+difficult steps are finished!
+</p>
 
 </body>
 </section>
@@ -343,6 +537,33 @@ complaints by Portage telling you certain packages are masked. This is because
 your architecture isn't supported by Gentoo yet, in which case you need to
 unmask the packages in <path>/etc/portage/package.keywords</path> like you did
 previously.
+</p>
+
+</body>
+</section>
+<section>
+<title>Creating a Fully Working Installation CD</title>
+<body>
+
+<p>
+If your entire installation has succeeded it is best to try and create an
+installation CD for your platform using <c>catalyst</c>. Not only will this
+require an additional profile (to support the new platform) but also some help
+from the Gentoo developers themselves. On the other hand, if you've succeeded in
+following all I've written until this part, you're probably already on your way
+to become a developer yourself :)
+</p>
+
+<p>
+The major benefit of using <c>catalyst</c> is that Gentoo is then able to create
+official support for the platform. Not only will there be a fully functional
+profile and keyword setting, but the core packages will be accepted for your
+platform, stages will be build and a working installation CD, just like those
+for the other architectures, will be available.
+</p>
+
+<p>
+<brite>TODO</brite> Talk about using <c>catalyst</c> to create all needed stuff.
 </p>
 
 </body>
