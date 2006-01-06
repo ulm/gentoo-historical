@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.30 2006/01/06 16:39:49 agaffney Exp $
+$Id: GLIPortage.py,v 1.31 2006/01/06 16:46:16 agaffney Exp $
 """
 
 import re
@@ -61,8 +61,8 @@ class GLIPortage(object):
 			parts = line.strip().split(" ")
 			if parts[0] == "obj":
 				entries.append(parts[1])
-			elif parts[0] == "dir":
-				entries.append(parts[1] + "/")
+#			elif parts[0] == "dir":
+#				entries.append(parts[1] + "/")
 			elif parts[0] == "sym":
 				entries.append(" ".join(parts[1:4]))
 		entries.sort()
@@ -103,7 +103,7 @@ class GLIPortage(object):
 				tarfiles = open("/tmp/tarfilelist", "w")
 				for entry in entries:
 					parts = entry.split(" ")
-					# Hack for symlink crappiness
+#					# Hack for symlink crappiness
 #					for symlink in symlinks:
 #						if parts[0].startswith(symlink):
 #							parts[0] = symlinks[symlink] + parts[0][len(symlink):]
@@ -113,8 +113,8 @@ class GLIPortage(object):
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not create filelist for " + package)
 
 			# Use tar to transfer files into IMAGE directory
-			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -x'")
-			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -c --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -x")):
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'tar -cp --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -xp'")
+			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -cp --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -xp")):
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute tar for " + package)
 
 #			# More symlink crappiness hacks
