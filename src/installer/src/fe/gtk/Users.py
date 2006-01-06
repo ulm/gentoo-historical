@@ -58,7 +58,7 @@ class Panel(GLIScreen.GLIScreen):
 		self.treewindow.set_shadow_type(gtk.SHADOW_IN)
 		self.treewindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 		self.treewindow.add(self.treeview)
-		vert.pack_start(self.treewindow, expand=False, fill=False, padding=0)
+		#vert.pack_start(self.treewindow, expand=False, fill=False, padding=0)
 		
 		# now add in the gtk.Notebook
 		self.notebook = gtk.Notebook()
@@ -78,24 +78,28 @@ class Panel(GLIScreen.GLIScreen):
 		hbox = gtk.HBox(False, 0)
 		#frame.add(frame_vert)
 		
+		vbox = gtk.VBox(False,0)
 		# setup the action buttons
 		reset = gtk.Button("Root Password", stock=None)
 		reset.connect("clicked", self.root, "root")
 		reset.set_size_request(150, -1)
 		reset.show()
-		hbox.pack_start(reset, expand=False, fill=False, padding=5)
+		vbox.pack_start(reset, expand=False, fill=False, padding=5)
 
-		edit = gtk.Button("Add user", stock=None)
-		edit.connect("clicked", self.addu, "edit")
-		edit.set_size_request(150, -1)
-		edit.show()
-		hbox.pack_start(edit, expand=False, fill=False, padding=5)
+		add = gtk.Button("Add user", stock=None)
+		add.connect("clicked", self.addu, "add")
+		add.set_size_request(150, -1)
+		add.show()
+		vbox.pack_start(add, expand=False, fill=False, padding=5)
 		
 		delete = gtk.Button("Delete user", stock=None)
 		delete.connect("clicked", self.delete, "delete")
 		delete.set_size_request(150, -1)
 		delete.show()
-		hbox.pack_start(delete, expand=False, fill=False, padding=5)
+		vbox.pack_start(delete, expand=False, fill=False, padding=5)
+		
+		hbox.pack_start(self.treewindow, expand=True, fill=True, padding=5)
+		hbox.pack_start(vbox, expand=False, fill=False, padding=5)
 		
 		vert.pack_start(hbox, expand=False, fill=False, padding=0)
 		
@@ -177,7 +181,7 @@ class Panel(GLIScreen.GLIScreen):
 		
 		hbox = gtk.HBox(False, 0)
 		label = gtk.Label("Username")
-		label.set_size_request(150, -1)
+		label.set_size_request(300, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=5)
 		self.username = gtk.Entry()
 		self.user['username'] = self.username
@@ -188,7 +192,7 @@ class Panel(GLIScreen.GLIScreen):
 		
 		hbox = gtk.HBox(False, 0)
 		label = gtk.Label("Password")
-		label.set_size_request(150, -1)
+		label.set_size_request(300, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=5)
 		self.password = gtk.Entry()
 		self.user['password'] = self.password
@@ -207,7 +211,7 @@ class Panel(GLIScreen.GLIScreen):
 		
 		hbox = gtk.HBox(False, 0)
 		label = gtk.Label("Groups")
-		label.set_size_request(150, -1)
+		label.set_size_request(300, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=5)
 		self.groups = gtk.Entry()
 		self.user['groups'] = self.groups
@@ -218,7 +222,7 @@ class Panel(GLIScreen.GLIScreen):
 		
 		hbox = gtk.HBox(False, 0)
 		label = gtk.Label("Shell")
-		label.set_size_request(150, -1)
+		label.set_size_request(300, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=5)
 		self.shell = gtk.Entry()
 		self.user['shell'] = self.shell
@@ -229,7 +233,7 @@ class Panel(GLIScreen.GLIScreen):
 		
 		hbox = gtk.HBox(False, 0)
 		label = gtk.Label("HomeDir")
-		label.set_size_request(150, -1)
+		label.set_size_request(300, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=5)
 		self.homedir = gtk.Entry()
 		self.user['homedir'] = self.homedir
@@ -240,7 +244,7 @@ class Panel(GLIScreen.GLIScreen):
 		
 		hbox = gtk.HBox(False, 0)
 		label = gtk.Label("UserID")
-		label.set_size_request(150, -1)
+		label.set_size_request(300, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=5)
 		self.userid = gtk.Entry()
 		self.user['userid'] = self.userid
@@ -251,7 +255,7 @@ class Panel(GLIScreen.GLIScreen):
 		
 		hbox = gtk.HBox(False, 0)
 		label = gtk.Label("Comment")
-		label.set_size_request(150, -1)
+		label.set_size_request(300, -1)
 		hbox.pack_start(label, expand=False, fill=False, padding=5)
 		self.comment = gtk.Entry()
 		self.user['comment'] = self.comment
@@ -270,9 +274,10 @@ class Panel(GLIScreen.GLIScreen):
 		# add a blank page
 		frame_vert = gtk.VBox(False,0)
 		label = gtk.Label("Blank page")
+		
 		self.notebook.append_page(frame_vert, label)
 		
-		vert.pack_start(self.notebook, expand=False, fill=False, padding=0)
+		vert.pack_start(self.notebook, expand=False, fill=False, padding=50)
 		self.add_content(vert)
 
 		
@@ -302,6 +307,8 @@ class Panel(GLIScreen.GLIScreen):
 		self.notebook.set_current_page(0)
 	
 	def addu(self,widget, data=None):
+		self.blank_the_boxes()
+		self.password.set_sensitive(True)
 		# select that page
 		self.notebook.set_current_page(1)
 		
@@ -333,7 +340,7 @@ class Panel(GLIScreen.GLIScreen):
 				self.password.set_sensitive(True)
 			
 		# show the edit box
-		#self.notebook.set_current_page(1)
+		self.notebook.set_current_page(1)
 	
 	def delete(self, widget, data=None):
 		self.blank_the_boxes()
@@ -349,9 +356,11 @@ class Panel(GLIScreen.GLIScreen):
 			
 		success = self.add_user(data)
 		
-		# if it was successful, blank the current entries
+		# if it was successful, blank the current entries and 
+		# ensure password box is sensitive
 		if success == True:
 			self.blank_the_boxes()
+			self.password.set_sensitive(True)
 			
 	def add_user(self,data):
 		return_val = False
@@ -544,6 +553,14 @@ class Panel(GLIScreen.GLIScreen):
 		# load the saved users
 		for user in self.users_iprofile:
 			groups = ",".join(user[2])
+			
+			# if the uid field is blank, it will be set to None.
+			if user[5] == None:
+				# it is a tuple, so we have to thaw it and re-harden.
+				user_temp = list(user)
+				user_temp[5]=""
+				user = tuple(user_temp)
+				
 			self.add_user({'password':user[1], 'username':user[0], 'groups':groups, 
 					      'shell':user[3], 'homedir':user[4], 
 					      'userid':user[5], 'comment':user[6]})
@@ -552,13 +569,16 @@ class Panel(GLIScreen.GLIScreen):
 			self.users_from_profile.append(user[0])
 		
 		# determine if root password is set, if so, automatically say its verified,
-		# load the hash into both boxes, and change icon to green check.
+		# load the hash into both boxes, change icon to green check, and disable the boxes.
 		if self.is_root_pass_set():
 			self.root_verified=True
 			self.verified.set_from_stock(gtk.STOCK_APPLY, gtk.ICON_SIZE_SMALL_TOOLBAR)
 			hash = self.controller.install_profile.get_root_pass_hash()
 			self.root1.set_text(hash)
 			self.root2.set_text(hash)
+			self.root1.set_sensitive(False)
+			self.root2.set_sensitive(False)
+			
 			
 	def deactivate(self):
 		# store everything
@@ -579,7 +599,6 @@ class Panel(GLIScreen.GLIScreen):
 			#  <home directory>, <user id>, <user comment> )
 			# retrieve everything
 			data = self.get_treeview_data()
-			print "treeview data"+str(data)
 
 			stored_users = []
 			# get the array of stored usernames
@@ -602,4 +621,3 @@ class Panel(GLIScreen.GLIScreen):
 			msgbox=Widgets().error_Box("Error","You have not verified your root password!")
 			msgbox.run()
 			msgbox.destroy()
-		
