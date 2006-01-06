@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.252 2006/01/03 02:54:01 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.253 2006/01/06 04:39:05 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -822,9 +822,9 @@ class ArchitectureTemplate:
 				
 			# Decide whether to use bootsplash or not
 			if self._install_profile.get_kernel_bootsplash():
-				genkernel_options = genkernel_options + " --bootsplash"
+				genkernel_options = genkernel_options + " --gensplash"
 			else:
-				genkernel_options = genkernel_options + " --no-bootsplash"
+				genkernel_options = genkernel_options + " --no-gensplash"
 			# Run genkernel in chroot
 			#print "genkernel all " + genkernel_options
 			if self._debug: self._logger.log("DEBUG: build_kernel(): running: genkernel all " + genkernel_options + " in chroot.")
