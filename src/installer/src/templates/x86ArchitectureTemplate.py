@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.93 2006/01/07 22:59:06 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.94 2006/01/07 23:10:52 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -84,7 +84,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			parts_old[device] = tmpdevice.get_install_profile_structure()
 
 		self.notify_frontend("progress", (0, "Examining partitioning data"))
-		total_steps = len(parts_new) * 3 + 1
+		total_steps = float(len(parts_new) * 3 + 1)
 		cur_progress = 0
 		for device in parts_new.keys():
 			# Skip this device in parts_new if device isn't detected on current system
