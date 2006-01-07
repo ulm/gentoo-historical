@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.31 2006/01/06 16:46:16 agaffney Exp $
+$Id: GLIPortage.py,v 1.32 2006/01/07 17:12:00 agaffney Exp $
 """
 
 import re
@@ -175,6 +175,7 @@ class GLIPortage(object):
 	def emerge(self, packages, add_to_world=True):
 		if isinstance(packages, str):
 			packages = packages.split()
+		self._cc.addNotification("progress", (0, "Calculating dependencies for " + " ".join(packages)))
 		pkglist = self.get_deps(packages)
 		if self._debug: self._logger.log("install_packages(): pkglist is " + str(pkglist))
 		for i, pkg in enumerate(pkglist):

@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.253 2006/01/06 04:39:05 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.254 2006/01/07 17:12:00 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -420,6 +420,8 @@ class ArchitectureTemplate:
 				self._logger.log("Could NOT copy the xorg configuration from the livecd to the new system!")
 			else:
 				self._logger.log("xorg.conf copied to new system.  X should be ready to roll!")
+		if GLIUtility.is_file(self._chroot_dir + "/etc/X11/gdm/gdm.conf"):
+			GLIUtility.spawn("cp -f /etc/X11/gdm/gdm.conf.old " + self._chroot_dir + "/etc/X11/gdm/gdm.conf")
 
 	##
 	# Will set the list of services to runlevel default.  This is a temporary solution!
