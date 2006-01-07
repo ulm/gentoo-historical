@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.92 2006/01/02 22:56:24 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.93 2006/01/07 22:59:06 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -83,6 +83,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			tmpdevice.set_partitions_from_disk()
 			parts_old[device] = tmpdevice.get_install_profile_structure()
 
+		self.notify_frontend("progress", (0, "Examining partitioning data"))
+		total_steps = len(parts_new) * 3 + 1
+		cur_progress = 0
 		for device in parts_new.keys():
 			# Skip this device in parts_new if device isn't detected on current system
 			if not device in detected_devices:
@@ -181,6 +184,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 			# First pass to delete old partitions that aren't resized
 			self._logger.log("partitioning: Processing " + device + "...")
+			self.notify_frontend("progress", (cur_progress / total_steps, "Deleting partitioning that aren't being resized for " + device))
+			cur_progress += 1
 			for part in parts_old[device]:
 				oldpart = parts_old[device][part]
 				# Replace 'x86' with call function to get arch from CC
@@ -227,6 +232,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 			# Second pass to resize old partitions that need to be resized
 			self._logger.log("Partitioning: Second pass...")
+			self.notify_frontend("progress", (cur_progress / total_steps, "Resizing remaining partitions for " + device))
+			cur_progress += 1
 			for part in parts_old[device]:
 				oldpart = parts_old[device][part]
 				for new_part in parts_new[device]:
@@ -276,6 +283,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 			# Third pass to create new partition table
 			self._logger.log("Partitioning: Third pass....creating partitions")
+			self.notify_frontend("progress", (cur_progress / total_steps, "Recreating partition table for " + device))
+			cur_progress += 1
 			start = 0
 			end = 0
 			extended_start = 0
@@ -382,6 +391,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					if tries == 3:
 						raise GLIException("PartitionFormatError", 'fatal', 'partition', errormsg)
 				start = end + 1
+			self.notify_frontend("progress", (cur_progress / total_steps, "Done with partitioning for " + device))
+#			cur_progress += 1
 
 	def _configure_grub(self):
 		self.build_mode = self._install_profile.get_kernel_build_method()
