@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.254 2006/01/07 17:12:00 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.255 2006/01/07 23:02:22 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -134,42 +134,6 @@ class ArchitectureTemplate:
 		return GLIUtility.spawn(cmd + r" 2>/dev/null | grep -e '\[ebuild' | sed -e 's:\[ebuild .\+ \] ::' -e 's: \[.\+\] ::' -e 's: \+$::'", chroot=self._chroot_dir, return_output=True)[1].strip().split("\n")
 
 	##
-	# Private function.  For binary installs it will attempt to quickpkg packages that are on the livecd.
-	# @param package package to be quickpkg'd.
-	def _quickpkg_deps(self, package, nodeps=False):
-		if self._debug:
-			self._logger.log("DEBUG: _quickpkg_deps() called with '%s'" % package)
-		PKGDIR = "/usr/portage/packages"
-		PORTAGE_TMPDIR = "/var/tmp"
-		make_conf = self._install_profile.get_make_conf()
-		if "PKGDIR" in make_conf and make_conf['PKGDIR']: 
-			if self._debug: self._logger.log("DEBUG: overwriting PKGDIR with make_conf value." + make_conf['PKGDIR'])
-			PKGDIR = make_conf['PKGDIR']
-		if "PORTAGE_TMPDIR" in make_conf and make_conf['PORTAGE_TMPDIR']: 
-			if self._debug: self._logger.log("DEBUG: overwriting PORTAGE_TMPDIR with make_conf value." + make_conf['PORTAGE_TMPDIR'])
-			PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
-		if self._debug: self._logger.log("DEBUG: creating PKGDIR if necessary")
-		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR, logfile=self._compile_logfile, append_log=True)
-		if self._debug: self._logger.log("DEBUG: creating PORTAGE_TMPDIR if necessary")
-		GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR, logfile=self._compile_logfile, append_log=True)
-		if nodeps:
-			packages = package.split()
-		else:
-			packages = self._get_packages_to_emerge("emerge -p " + package)
-			if self._debug: self._logger.log("DEBUG: packages obtained from _get_packages_to_emerge(): %s" % str(packages))
-		for pkg in packages:
-			if not pkg: continue
-			if self._debug: self._logger.log("DEBUG: Trying to quickpkg '" + pkg + "'")
-			pkgparts = pkg.split('/')
-			if not len(pkgparts) == 2: continue
-			if not GLIUtility.is_file(self._chroot_dir + PKGDIR + "/All/" + pkgparts[1] + ".tbz2"):
-				if self._debug: self._logger.log("DEBUG: running quickpkg on pkg: "+pkg)
-				ret = GLIUtility.spawn("env PKGDIR='" + self._chroot_dir + PKGDIR + "' PORTAGE_TMPDIR='" + self._chroot_dir + PORTAGE_TMPDIR + "' quickpkg =" + pkg)
-				if not GLIUtility.exitsuccess(ret):
-					# This package couldn't be quickpkg'd. This may be an error in the future
-					self._logger.log("DEBUG: Package "+pkg+" could not be quickpkg'd.  This may be an error in the future.")
-
-	##
 	# Private Function.  Will emerge a given package in the chroot environment.
 	# @param package package to be emerged
 	# @param binary=False defines whether to try a binary emerge (if GRP this gets ignored either way)
@@ -191,24 +155,6 @@ class ArchitectureTemplate:
 
 		self._logger.log("Calling emerge: "+cmd)
 		return GLIUtility.spawn(cmd, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
-
-	##
-	# Returns the full version of a package to be emerged when given a short name. This looks in PORDIR
-	# @param package short name of package (i.e. xorg-x11)
-	def _portage_best_visible(self, package, chroot=True):
-		chroot_dir = None
-		if chroot:
-			chroot_dir = self._chroot_dir
-		return GLIUtility.spawn("portageq best_visible / " + package, chroot=chroot_dir, return_output=True)[1].strip()
-
-	##
-	# Returns the full version of an installed package when given a short name. This looks in vdb
-	# @param package short name of package (i.e. xorg-x11)
-	def _portage_best_version(self, package, chroot=True):
-		chroot_dir = None
-		if chroot:
-			chroot_dir = self._chroot_dir
-		return GLIUtility.spawn("portageq best_version / " + package, chroot=chroot_dir, return_output=True)[1].strip()
 
 	##
 	# Private Function.  Will edit a config file and insert a value or two overwriting the previous value
