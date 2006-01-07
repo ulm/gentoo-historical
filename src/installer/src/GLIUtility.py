@@ -747,6 +747,8 @@ def validate_uri(uri):
 	# 4 - Port
 	# 5 - Path
 	uriparts = parse_uri(uri)
+    if not uriparts:
+		return False
 	if uriparts[0] in ('http', 'https', 'ftp'):
 		ret = spawn("wget --spider " + uri)
 		return exitsuccess(ret)
