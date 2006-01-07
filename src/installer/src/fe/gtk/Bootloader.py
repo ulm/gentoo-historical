@@ -120,6 +120,7 @@ a brief description beside it.
 				self.boot_device_combo.set_active(i)
 		if self.boot_device_combo.get_active() == -1:
 			self.boot_device_combo.set_active(0)
+		self.kernel_params_entry.set_text(self.controller.install_profile.get_bootloader_kernel_args())
 
 	def deactivate(self):
 		self.controller.install_profile.set_boot_loader_pkg(None, self.active_selection, None)
