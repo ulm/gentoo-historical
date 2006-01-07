@@ -146,6 +146,12 @@ Each option has a brief description beside it.
 				msgdlg.destroy()
 				if resp == gtk.RESPONSE_NO:
 					return False
+			elif self.active_selection == 3 and self.check_grp.get_active() and self.has_systempkgs:
+				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="When doing a GRP install, it is recommended to use the Dynamic option instead of selecting your own tarball. Continue?")
+				resp = msgdlg.run()
+				msgdlg.destroy()
+				if resp == gtk.RESPONSE_NO:
+					return False
 		self.controller.install_profile.set_install_stage(None, self.active_selection, None)
 		if self.active_selection == 3:
 			self.controller.install_profile.set_grp_install(None, self.check_grp.get_active(), None)
