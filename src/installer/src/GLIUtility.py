@@ -316,7 +316,8 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 		fd_tty = open('/dev/tty8','w')
 
 	# Set initial sub-progress display
-	cc.addNotification("progress", (0, status_message))
+	if cc:
+		cc.addNotification("progress", (0, status_message))
 
 	# open a read only pipe
 	ro_pipe = os.popen(cmd, 'r')
