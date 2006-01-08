@@ -295,8 +295,9 @@ def set_default_route(route):
 # @param append_log=False 		whether to start over on the logfile or append.
 # @param return_output=False 	Returns the output along with the exit status
 def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False, linecount=0, match=None, cc=None, status_message=None):
-	# quiet and return_output really do the same thing. One of them need to be removed.
-	debug = True
+	# This is a hack since spawn() can't access _logger...set to True for verbose output on console
+	debug = False
+
 	if chroot:
 		wrapper = open(chroot+"/var/tmp/spawn.sh", "w")
 		wrapper.write("#!/bin/bash -l\n" + cmd + "\nexit $?\n")
@@ -332,9 +333,14 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	last_percent = 0
 
 	while 1:
-		data = ro_pipe.read(16384)
+#		data = ro_pipe.read(16384)
+		data = os.read(ro_pipe.fileno(), 16384)
+		if debug:
+			print "DEBUG: read some data...length " + str(len(data))
 		if not data:
 			if linecount and cc:
+				if debug:
+					print "DEBUG: end of stream...progress is 1"
 				cc.addNotification("progress", (1, status_message))
 			break
 
@@ -356,14 +362,20 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 			while 1:
 				lastpos = data.find("\n", lastpos + 1)
 				if lastpos == -1: break
-				if match:
-					if not re.match(match, uri):
-						continue
+#				if match:
+#					if not re.match(match, uri):
+#						continue
 				seenlines += 1
+				if debug:
+					print "DEBUG: seenlines=" + str(seenlines)
 			percent = float(seenlines) / linecount
+			if debug:
+				print "DEBUG: percent=" + str(percent)
 #			print "DEBUG: spawn(): seenlines=" + str(seenlines) + ", linecount=" + str(linecount) + ", percent=" + str(percent)
 			if int(percent * 100) >= (last_percent + 5):
 				last_percent = int(percent * 100)
+				if debug:
+					print "DEBUG: setting next progress point...last_percent=" + str(last_percent)
 				cc.addNotification("progress", (percent, status_message))
 #				print "DEBUG: spawn(): send notification " + str((percent, status_message))
 
