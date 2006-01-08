@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.256 2006/01/08 03:56:09 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.257 2006/01/08 05:09:14 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -576,7 +576,7 @@ class ArchitectureTemplate:
 		GLIUtility.spawn("ln -s ../usr/share/zoneinfo/" + self._install_profile.get_time_zone() + " /etc/localtime", chroot=self._chroot_dir)
 		if not (self._install_profile.get_time_zone() == "UTC"):
 			if self._debug: self._logger.log("DEBUG: timezone was not UTC, setting CLOCK to local.  This may be overwritten later.")
-			self._edit_config(self._chroot_dir + "/etc/rc.conf", {"CLOCK":"local"})
+			self._edit_config(self._chroot_dir + "/etc/conf.d/clock", {"CLOCK":"local"})
 		self._logger.log("Timezone set.")
 		
 	##
