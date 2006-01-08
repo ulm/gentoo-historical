@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/cron-guide.xml,v 1.4 2005/08/13 03:43:12 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/cron-guide.xml,v 1.5 2006/01/08 15:54:34 rane Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/pl/cron-guide.xml" lang="pl">
@@ -22,8 +22,8 @@
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.4</version>
-<date>2005-07-25</date>
+<version>1.5</version>
+<date>2005-01-04</date>
 
 <chapter>
 <title>Cron - podstawy</title>
@@ -55,6 +55,12 @@ można wybierać. Wszystkie posiadają podobny interfejs. Mianowicie, używają
 komendy <c>crontab</c> lub podobnej. Istnieje także pokrewne narzędzie zwane
 Anacron, którego przeznaczeniem jest współpraca z cronem na systemach, które
 nie działają w sposób ciągły.
+</p>
+
+<p>
+Zależnością każdego z tych trzech cronów jest pakiet
+<c>sys-process/cronbase</c>. Może on wystarczyć do podstawowych zastosowań
+crona. 
 </p>
 
 <p>
@@ -211,19 +217,19 @@ Jeśli nie zainstalowaliśmy Fcrona, to opcjonalnie możemy zainstalować Anacro
 
 </body>
 </section>
-<section>
+<section id="systemtab">
 <title>Plik crontab dla systemu</title>
 <body>
 
 <p>
 Poinstalacyjne komunikaty z niektórych wersji crona informują o konieczności
 uruchomienia polecenia <c>crontab /etc/crontab</c>. Plik
-<path>/etc/crontab</path> jest plikiem <e>crontab dla systemu</e>.  Standardowa
-instalacja Gentoo używa go do uruchamiania skryptów z
+<path>/etc/crontab</path> jest plikiem <e>crontab dla systemu</e>. Demon cron
+dzięki <c>sys-process/cronbase</c> może uruchamiać skrypty z plików
 <path>/etc/cron.{daily,hourly,weekly,monthly}</path>. Należy wspomnieć, że
-Vixie-cron automatycznie planuje zadania w <path>/etc/crontab</path>.
-Użytkownicy programów Dcron i Fcron muszą uruchomić <c>crontab
-/etc/crontab</c>, każdorazowo po wprowadzeniu zmian w
+tylko vixie-cron automatycznie planuje zadania w <path>/etc/crontab</path>.
+Użytkownicy programów Dcron i Fcron muszą uruchomić crontab
+<path>/etc/crontab</path>, każdorazowo po wprowadzeniu zmian w
 <path>/etc/crontab</path>.
 </p>
 
@@ -350,33 +356,38 @@ Następujące zestawienie pokazuje jak używać komend w poszczególnych pakieta
 <table>
 <tr>
   <th>Wersja</th>
-  <th>Edycja</th>
-  <th>Usuwanie</th>
-  <th>Nowy wpis</th>
-  <th>Lista</th>
+  <th>Edycja crontab</th>
+  <th>Usuwanie crontab</th>
+  <th>Nowy crontab</th>
+  <th>Lista prac crona</th>
 </tr>
 <tr>
   <ti>dcron</ti>
   <ti><c>crontab -e</c></ti>
-  <ti><c>crontab -d</c></ti>
+  <ti><c>crontab -d <e>[użytkownik]</e></c></ti>
   <ti><c>crontab <e>plik</e></c></ti>
   <ti><c>crontab -l</c></ti>
 </tr>
 <tr>
   <ti>fcron</ti>
   <ti><c>fcrontab -e</c></ti>
-  <ti><c>fcrontab -r</c></ti>
+  <ti><c>fcrontab -r <e>[użytkownik]</e></c></ti>
   <ti><c>fcrontab <e>plik</e></c></ti>
   <ti><c>fcrontab -l</c></ti>
 </tr>
 <tr>
   <ti>vixie-cron</ti>
   <ti><c>crontab -e</c></ti>
-  <ti><c>crontab -r</c></ti>
+  <ti><c>crontab -r <e>[użytkownik]</e></c></ti>
   <ti><c>crontab <e>plik</e></c></ti>
   <ti><c>crontab -l</c></ti>
 </tr>
 </table>
+
+<note>
+Jeśli nie podamy parametru polecenia "usuń", zostanie usunięty aktualny crontab
+danego użytkownika
+</note>
 
 <note>
 Fcron tworzy także dowiązanie symboliczne do <c>crontaba</c>.
@@ -585,6 +596,58 @@ Ponownie sprawdzamy listę zadań zaplanowanych do wykonania, tak jak to
 czyniliśmy w poprzednim przykładzie. Upewniamy się że zadanie zostało
 zaplanowane. Jeśli tak jest, to mamy wszystko gotowe.
 </p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Korzystaie z cronbase</title>
+<section>
+<body>
+
+<p>
+Tak jak wspominaliśmy wcześniej, wszystkie trzy pakiety crona są zależne od
+<c>sys-process/cronbase</c>. Pakiet cronbase tworzy pliki
+<path>/etc/cron.{hourly,daily,weekly,monthly}</path> i skrypt o nazwie
+<c>run-crons</c>. W domyślnym pliku <path>/etc/crontab</path> znajdują się
+takie wpisy:
+</p>
+
+<pre caption="Domyślny crontab">
+*/15 * * * *     test -x /usr/sbin/run-crons &amp;&amp; /usr/sbin/run-crons
+0  *  * * *      rm -f /var/spool/cron/lastrun/cron.hourly
+0  3  * * *      rm -f /var/spool/cron/lastrun/cron.daily
+15 4  * * 6      rm -f /var/spool/cron/lastrun/cron.weekly
+30 5  1 * *      rm -f /var/spool/cron/lastrun/cron.monthly
+</pre>
+
+<p>
+Nie będziemy wdawać się w zbytnie szczegóły, opowiemy pokrótce jak uruchamiać
+poszczególne skrypty co godzinę, co jeden dzień, co tydzień i co miesiąc. Takie
+ustawienie ma kilka zalet:
+</p>
+
+<ul>
+  <li>
+    Zostaną uruchomione nawet jeśli komputer był wyłączony w czasie, na który
+    zaplanowano ich wykonanie
+  </li>
+  <li>
+    Ułatwia to umieszczanie skryptów przez osoby opiekujące się poszczególnymi
+    pakietami
+  </li>
+  <li>
+    Od razu wiadomo gdzie znajdują się wszystkie zadania, ułatwia to tworzenie
+    kopii zapasowych i odtwarzanie części systemu.
+  </li>
+</ul>
+
+<note>
+Po raz kolejny przypominamy, że Vixie cron automatycznie czyta
+<path>/etc/crontab</path>, podczas gdy dcron i fcron tego nie robią. Więcej
+szczegółów na ten temat znajduje się w akapacie o <uri
+link="#systemtab">crontab dla systemu</uri>.
+</note>
 
 </body>
 </section>
