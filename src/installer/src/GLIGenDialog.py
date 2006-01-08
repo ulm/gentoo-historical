@@ -445,11 +445,10 @@ on partitioning and the various filesystem types available in Linux.""")
 				if not GLIUtility.is_nfs(nfsmount):
 					if GLIUtility.is_ip(nfsmount) or GLIUtility.is_hostname(nfsmount):
 						status, remotemounts = GLIUtility.spawn("/usr/sbin/showmount -e " + nfsmount + " 2>&1 | egrep '^/' | cut -d ' ' -f 1 && echo", return_output=True)
-						if (not GLIUtility.exitsuccess(status)) or (not len(remotemounts)):
+						remotemounts = remotemounts.strip().split("\n")
+						if (not GLIUtility.exitsuccess(status)) or (not len(remotemounts)) or not remotemounts[0]:
 							self._d.msgbox(_(u"No NFS exports were detected on ") + nfsmount)
 							continue
-						for i in range(0, len(remotemounts)):
-							remotemounts[i] = remotemounts[i].strip()
 						code, nfsmount2 = self._d.menu(_(u"Select a NFS export"), choices=self._dmenu_list_to_choices(remotemounts), cancel=_(u"Back"))
 						if code != self._DLG_OK: 
 							continue
