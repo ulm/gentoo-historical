@@ -296,6 +296,7 @@ def set_default_route(route):
 # @param return_output=False 	Returns the output along with the exit status
 def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, append_log=False, return_output=False, linecount=0, match=None, cc=None, status_message=None):
 	# quiet and return_output really do the same thing. One of them need to be removed.
+	debug = True
 	if chroot:
 		wrapper = open(chroot+"/var/tmp/spawn.sh", "w")
 		wrapper.write("#!/bin/bash -l\n" + cmd + "\nexit $?\n")
@@ -303,7 +304,8 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 		cmd = "chmod a+x " + chroot + "/var/tmp/spawn.sh && chroot " + chroot + " /var/tmp/spawn.sh 2>&1"
 	else:
 		cmd += " 2>&1 "
-#	print "Command: " + cmd
+	if debug:
+		print "Command: " + cmd
 
 	output = ""
 
@@ -404,7 +406,7 @@ def get_uri(uri, path, cc=None):
 
 	if re.match('^(ftp|http(s)?)://',uri):
 		if cc:
-			status = spawn("wget " + uri + " -O " + path + r""" 2>&1 | sed -u -e 's:^.\+\([0-9]\+\)%.\+$:\1:' | while read line; do [ "$line" = "$tmp_lastline" ] || echo $line; tmp_lastline=$line; done | grep -e '^[1-9][0-9]?'""", linecount=100, cc=cc, status_message="Fetching " + uri.split('/')[-1])
+			status = spawn("wget " + uri + " -O " + path + r""" 2>&1 | sed -u -e 's:^.\+\([0-9]\+\)%.\+$:\1:' | while read line; do [ "$line" = "$tmp_lastline" ] || echo $line | grep -e '^[1-9][0-9]?'; tmp_lastline=$line; done""", linecount=100, cc=cc, status_message="Fetching " + uri.split('/')[-1])
 		else:
 			status = spawn("wget --quiet " + uri + " -O " + path)
 	elif re.match('^rsync://', uri):
