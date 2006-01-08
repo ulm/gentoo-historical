@@ -577,6 +577,7 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 	# Get number of files in tarball
 	tarfiles = 0
 	if cc:
+		cc.addNotification("progress", (0, "Determining the number of files in " + tarball_filename))
 		tarfiles = int(spawn("tar -t" + format_option + "f " + temp_directory + "/" + tarball_filename + " 2>/dev/null | wc -l", return_output=True)[1].strip())
 
 	# Unpack the tarball

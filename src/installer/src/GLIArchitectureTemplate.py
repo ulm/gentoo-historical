@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.255 2006/01/07 23:02:22 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.256 2006/01/08 03:56:09 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -307,9 +307,9 @@ class ArchitectureTemplate:
 			self.notify_frontend("progress", (1, "Done"))
 			self._logger.log("Stage3 was generated successfully")
 		else:
-			self._logger.log("Unpacking tarball: "+self._install_profile.get_stage_tarball_uri())
+			self._logger.log("Fetching and unpacking tarball: "+self._install_profile.get_stage_tarball_uri())
 			GLIUtility.fetch_and_unpack_tarball(self._install_profile.get_stage_tarball_uri(), self._chroot_dir, temp_directory=self._chroot_dir, keep_permissions=True, cc=self._cc)
-			self._logger.log(self._install_profile.get_stage_tarball_uri()+" was unpacked.")
+			self._logger.log(self._install_profile.get_stage_tarball_uri()+" was fetched and unpacked.")
 
 	##
 	# Prepares the Chroot environment by copying /etc/resolv.conf and mounting proc and dev
