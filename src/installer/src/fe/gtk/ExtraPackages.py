@@ -6,10 +6,11 @@
 import gtk, gobject, copy
 import GLIScreen
 from Widgets import Widgets
+import GLIUtility
 
 class Panel(GLIScreen.GLIScreen):
 	"""
-	The make.conf section of the installer.
+	The extrapackages section of the installer.
 	
 	@author:    John N. Laliberte <allanonjl@gentoo.org>
 	@license:   GPL
@@ -23,16 +24,15 @@ class Panel(GLIScreen.GLIScreen):
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
 
-		vert    = gtk.VBox(False, 10) # This box is content so it should fill space to force title to top
-		horiz   = gtk.HBox(False, 10)
+		self.vert    = gtk.VBox(False, 10)
+		self.vert2    = gtk.VBox(False, 10)
 		
-		vert2    = gtk.VBox(False, 10)
-		
+	def draw_screen(self):
 		content_str = """
 This is where you emerge extra packages that your system may need."""
 		
 		# pack the description
-		vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=5)
+		self.vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=5)
 		
 		scrolled_window = gtk.ScrolledWindow(hadjustment=None, vadjustment=None)
 		scrolled_window.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
@@ -42,44 +42,64 @@ This is where you emerge extra packages that your system may need."""
 		self.package_objects = {}
 		
 		self.categories = self.controller.install_profile.get_install_package_list()
+		self.group_packages = GLIUtility.get_grp_pkgs_from_cd()
 		
 		# first load the category
 		for category in self.categories:
 			categ = self.Category(category)
 			self.category_objects[category] = categ
 			hbox = categ.Generate_GTK()
-			vert2.pack_start(hbox,expand=False,fill=False,padding=0)
+			self.vert2.pack_start(hbox,expand=False,fill=False,padding=0)
 			
 			# then load the packages in that category
 			packages = self.categories[category][1]
 			for package in packages:
-				pack = self.Package(self, package, packages[package])
+				# group_packages may be in the format category/package or just package
+				if "/" in package:
+					displayname = package[package.index("/")+1:]
+				else:
+					displayname = package
+				
+				# if its a grp install, append (GRP) to the name
+				if self.controller.install_profile.get_grp_install():
+					if package in self.group_packages:
+						displayname = displayname + " (GRP)"
+						
+				pack = self.Package(self, package, packages[package], displayname)
 				self.package_objects[package] = pack
 				hbox = pack.Generate_GTK()
-				vert2.pack_start(hbox,expand=False,fill=False,padding=0)
-			
+				self.vert2.pack_start(hbox,expand=False,fill=False,padding=0)
+		
 		# add the custom space-seperated list bar
 		entry_description = gtk.Label("Enter a space seperated list of extra packages to install on the system ( in addition to those checked above ):")
 		self.entry=gtk.Entry()
 
-		scrolled_window.add_with_viewport(vert2)
+		scrolled_window.add_with_viewport(self.vert2)
 		viewport = scrolled_window.get_children()[0]
 		viewport.set_shadow_type (gtk.SHADOW_IN)
 		viewport.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse ("white"))
 		
-		vert.pack_start(scrolled_window,expand=True,fill=True,padding=0)
-		vert.pack_start(entry_description,expand=False,fill=False,padding=0)
-		vert.pack_start(self.entry,expand=False,fill=False,padding=0)
-		self.add_content(vert)
-		
-
-		
+		self.vert.pack_start(scrolled_window,expand=True,fill=True,padding=0)
+		self.vert.pack_start(entry_description,expand=False,fill=False,padding=0)
+		self.vert.pack_start(self.entry,expand=False,fill=False,padding=0)
+		self.vert.show_all()
+		self.add_content(self.vert)
+	
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = True
 		self.controller.SHOW_BUTTON_HELP    = True
 		self.controller.SHOW_BUTTON_BACK    = True
 		self.controller.SHOW_BUTTON_FORWARD = True
 		self.controller.SHOW_BUTTON_FINISH  = False
+		
+		# remove all checked items to start with
+		self.checked_items = []
+		
+		# we are destroying and redrawing because we have to
+		# dynamically change what the options looks like based
+		# on another screen's values.
+		self.vert.destroy()
+		self.draw_screen()
 		
 		# load the custom packages from the profile
 		unjoined = self.controller.install_profile.get_install_packages()		
@@ -158,13 +178,17 @@ This is where you emerge extra packages that your system may need."""
 	
 	class Package:
 
-		def __init__(self, parent, portage_name, description):
+		def __init__(self, parent, portage_name, description, display_name):
 			self.parent = parent
 			self.portage_name = portage_name
 			self.description = description
+			self._display_name = display_name
 		
 		def Name(self):
 			return self.portage_name
+		
+		def DisplayName(self):
+			return self._display_name
 		
 		def Description(self):
 			return self.description
@@ -185,7 +209,7 @@ This is where you emerge extra packages that your system may need."""
 			button = gtk.CheckButton()
 			
 			title=gtk.Label("")
-			title.set_markup('<span weight="bold">' + self.portage_name + '</span>'
+			title.set_markup('<span weight="bold">' + self._display_name + '</span>'
 					 + " - " + self.description)
 			button.add(title)
 			button.connect("toggled", self.checkbox_callback, self.portage_name)
