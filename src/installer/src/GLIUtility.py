@@ -303,6 +303,7 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 		cmd = "chmod a+x " + chroot + "/var/tmp/spawn.sh && chroot " + chroot + " /var/tmp/spawn.sh 2>&1"
 	else:
 		cmd += " 2>&1 "
+#	print "Command: " + cmd
 
 	output = ""
 
@@ -403,7 +404,7 @@ def get_uri(uri, path, cc=None):
 
 	if re.match('^(ftp|http(s)?)://',uri):
 		if cc:
-			status = spawn("wget " + uri + " -O " + path + r"""2>&1 | sed -u -e 's:^.\+\([0-9]\+\)%.\+$:\1:' | while read line; do [ "$line" = "$tmp_lastline" ] || echo $line; tmp_lastline=$line; done | grep -e '^[1-9][0-9]?'""", linecount=100, cc=cc, status_message="Fetching " + uri.split('/')[-1])
+			status = spawn("wget " + uri + " -O " + path + r""" 2>&1 | sed -u -e 's:^.\+\([0-9]\+\)%.\+$:\1:' | while read line; do [ "$line" = "$tmp_lastline" ] || echo $line; tmp_lastline=$line; done | grep -e '^[1-9][0-9]?'""", linecount=100, cc=cc, status_message="Fetching " + uri.split('/')[-1])
 		else:
 			status = spawn("wget --quiet " + uri + " -O " + path)
 	elif re.match('^rsync://', uri):
