@@ -315,6 +315,9 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 	if display_on_tty8:
 		fd_tty = open('/dev/tty8','w')
 
+	# Set initial sub-progress display
+	cc.addNotification("progress", (0, status_message))
+
 	# open a read only pipe
 	ro_pipe = os.popen(cmd, 'r')
 
@@ -349,6 +352,9 @@ def spawn(cmd, quiet=False, logfile=None, display_on_tty8=False, chroot=None, ap
 			while 1:
 				lastpos = data.find("\n", lastpos + 1)
 				if lastpos == -1: break
+				if match:
+					if not re.match(match, uri):
+						continue
 				seenlines += 1
 			percent = float(seenlines) / linecount
 #			print "DEBUG: spawn(): seenlines=" + str(seenlines) + ", linecount=" + str(linecount) + ", percent=" + str(percent)
@@ -390,16 +396,17 @@ def spawn_bash():
 # Will download or copy a file/uri to a location
 # @param uri 	uri to be fetched.
 # @param path 	destination for the file.
-def get_uri(uri, path):
+def get_uri(uri, path, cc=None):
 	uri = uri.strip()
 	status = 0
 
 	if re.match('^(ftp|http(s)?)://',uri):
-		status = spawn("wget --quiet " + uri + " -O " + path)
-		
+		if cc:
+			status = spawn("wget " + uri + " -O " + path + r"""2>&1 | sed -u -e 's:^.\+\([0-9]\+\)%.\+$:\1:' | while read line; do [ "$line" = "$tmp_lastline" ] || echo $line; tmp_lastline=$line; done | grep -e '^[1-9][0-9]?'""", linecount=100, cc=cc, status_message="Fetching " + uri.split('/')[-1])
+		else:
+			status = spawn("wget --quiet " + uri + " -O " + path)
 	elif re.match('^rsync://', uri):
 		status = spawn("rsync --quiet " + uri + " " + path)
-
 	elif uri.startswith("scp://"):
 		# Get tuple of matches
 		# 0 - Protocol
@@ -531,7 +538,7 @@ def fetch_and_unpack_tarball(tarball_uri, target_directory, temp_directory="/tmp
 	tarball_filename = tarball_uri.split("/")[-1]
 
 	# Get the tarball
-	if not get_uri(tarball_uri, temp_directory + "/" + tarball_filename):
+	if not get_uri(tarball_uri, temp_directory + "/" + tarball_filename, cc):
 		raise GLIException("GLIUtilityError", 'fatal', 'fetch_and_unpack_tarball',"Could not fetch " + tarball_uri)
 
 	# Reset tar options
