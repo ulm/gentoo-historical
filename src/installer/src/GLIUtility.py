@@ -406,7 +406,7 @@ def get_uri(uri, path, cc=None):
 
 	if re.match('^(ftp|http(s)?)://',uri):
 		if cc:
-			status = spawn("wget " + uri + " -O " + path + r""" 2>&1 | sed -u -e 's:^.\+\([0-9]\+\)%.\+$:\1:' | while read line; do [ "$line" = "$tmp_lastline" ] || echo $line | grep -e '^[1-9][0-9]?'; tmp_lastline=$line; done""", linecount=100, cc=cc, status_message="Fetching " + uri.split('/')[-1])
+			status = spawn("wget --progress=dot " + uri + " -O " + path + r""" 2>&1 | sed -u -e 's:^.\+\([0-9]\+\)%.\+$:\1:' | while read line; do [ "$line" = "$tmp_lastline" ] || echo $line | grep -e '^[1-9][0-9]?'; tmp_lastline=$line; done""", linecount=100, cc=cc, status_message="Fetching " + uri.split('/')[-1])
 		else:
 			status = spawn("wget --quiet " + uri + " -O " + path)
 	elif re.match('^rsync://', uri):
