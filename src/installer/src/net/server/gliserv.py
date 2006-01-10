@@ -9,7 +9,7 @@ import urllib
 import shutil
 import mimetypes
 from StringIO import StringIO
-from threading import *
+from threading import Thread
 import socket
 import SocketServer
 import mimetools
