@@ -528,7 +528,7 @@ class GLINetBe:
 		self.shared_info = SharedInfo()
 		
 	def register_client(self, mac, ip):
-		self.shared_info.client_state[mac] = { 'ip': ip, 'install_status': "waiting for server", 'start_install': True }
+		self.shared_info.client_state[mac] = { 'ip': ip, 'install_status': "waiting for server", 'start_install': False }
 		for client in self.shared_info.clients:
 			if client['mac'] == mac: break
 		else:
@@ -562,6 +562,7 @@ class GLINetBe:
 						tmpfile = open(profile['ipxmlfile'], "r")
 						xml = "".join(tmpfile.readlines())
 						tmpfile.close()
+						#INJECT THE CUSTOM CLIENT SETTNGS HERE
 						return xml
 		return ""
 
@@ -595,7 +596,7 @@ def register():
 			if data == "GLIAutoInstall":	
 				data = "GLIAutoInstall version 1.0"
 			else:
-				data = "This is the GLIAutoInstall Service. Please make you application aware of this."
+				data = "This is the GLIAutoInstall Service. Please make your application aware of this."
 			UDPSock.sendto(data, (fromaddr[0], fromaddr[1]))
 
 	# Close socket
