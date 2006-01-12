@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/desktop/x/x11/porting-modular-x-howto.xml,v 1.1 2006/01/12 18:48:37 rane Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/pl/desktop/x/x11/porting-modular-x-howto.xml">
+<title>Przenoszenie programów na modularne X</title>
+
+<author title="Autor">
+  <mail link="spyderous@gentoo.org">Donnie Berkholz</mail>
+</author>
+<author title="Tłumacz">
+  <mail link="damjanek@gmail.com">Damian Szeluga</mail>
+</author>
+
+<abstract>
+Ten przewodnik pokazuje jak naprawiać pakiety, by działały z nowym modularnym
+X.Org.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2006-01-03</date>
+
+<chapter>
+<title>Tło</title>
+
+<section>
+<title>Wstęp</title>
+<body>
+
+<p>
+Dlaczego jeden wygodny pakiet zmienił się w 300 mniejszych?  Proces ten
+realizowany jest przez twórców X.Org. Rozdzielają oni wszystkie pakiety na
+pomniejsze, a my jedynie podążamy za nimi.
+</p>
+
+<p>
+Polecamy lekturę <uri
+link="/proj/pl/desktop/x/x11/modular-x-howto.xml#doc_chap1_sect1">Migracja na
+modularne X</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Sprawdzanie zależności</title>
+<section>
+<body>
+
+<p>
+Chcemy wyliczyć wszystkie zależności tak dobrze, jak to tylko możliwe, by
+użytkownicy nie musieli mieć w systemie zbędnych programów, których nawet nie
+używają (na przyład XPrint). Jeśli pakiet jest od czegoś zależny, to w
+zależnościach wpisujemy pakiety z bibliotekami i nagłówkami, a nie virtuale.
+</p>
+
+<p>
+Nie możemy także zagwarantować, że użytkownicy wciąż będą mieli zainstalowane
+pewne zależności, ponieważ instalowali metapakiet, więc eliminacja tego typu
+błędu pozwoli zaoszczędzić nam dużo czasu.
+</p>
+
+<p>
+Jeśli znajdę jakikolwiek pakiet, dla którego zależnością będzie metapakiet, będę
+prześladował osobę zajmującą się tym pakietem, dopóki tego nie naprawi.
+</p>
+
+<p>
+Pierwszy krok, to zainstalowanie modularnego X lub odnalezienie kogoś, kto ma go
+zainstalowanego. Może to zostać wykonane w środowisku chroot - nie ma żadnego
+powodu, by uruchamiać X. Potrzeba jedynie, by pliki były dostępne podczas
+sprawdzania zależności.
+</p>
+
+<pre caption="Pobieranie potrzebnych skryptów">
+$ <i>wget http://dev.gentoo.org/~spyderous/scripts/linking_libs.sh \
+	http://dev.gentoo.org/~spyderous/scripts/included_headers.sh</i>
+</pre>
+
+<impo>
+<e>Nie należy</e> używać <c>gentoolkit-0.2.1_pre9</c> ponieważ tworzy
+nieprawidłowe wyjście. Więcej informacji znajduje się tutaj:
+<uri>https://bugs.gentoo.org/show_bug.cgi?id=111501</uri>.
+</impo>
+
+<p>
+Pierwszy skrypt, <c>linking_libs.sh</c>, sprawdza wyjście kompilacji danego
+pakietu poszukując wszystkich bibliotek połączonych z nim i wyświetla wszystkie
+pakiety, do których one należą.
+</p>
+
+<p>
+Drugi skrypt, <c>included_headers.sh</c>, przeszukuje rozpakowane źródła danego
+pakietu w poszukiwaniu linii, które zaczynają się od #include i sprawdza, jakie
+pliki zawierają się w &lt;&gt;. Na dzień 9 września 2005, tak jak &lt;&gt;
+działa również użycie "" w include.
+</p>
+
+<p>
+Uruchomienie dwóch powyższych skryptów powinno dać dobrą listę pakietów dla
+RDEPEND (dla bibliotek) i DEPEND (nagłówków i bibliotek). Jeśli biblioteka
+pokazuje na liście RDEPEND coś, co nie pojawiło się na liście DEPEND, należy być
+ostrożnym. Może to być "fałszywa zależność" (biblioteka, z którą pakiet jest
+związany bez żadnego powodu).
+</p>
+
+<p>
+Sporadycznie skrypt <c>included_headers.sh</c> znajdzie zły nagłówek, ponieważ
+niektóre z nich używają tej samej nazwy, a to powoduje, że skrypt zwróci
+nieprawidłowy pakiet. Zwykle takie pomyłki są oczywiste.
+</p>
+
+<p>
+Jeśli dopiszemy opcję <c>-d</c>, może to spowodować, że dostaniemy informację
+"Not found". Może to oznaczać, że odinstalowaliśmy nagłówek, który jest wymagany
+przez pakiet, by go zbudować lub jest to opcjonalny nagłówek, z którego nie
+korzystamy w naszym systemie. W przypadku biblioteki znaczyć to może, że
+odinstalowaliśmy bibliotekę, która została tylko statycznie zbudowana, ale nigdy
+nie została zainstalowana. 
+</p>
+
+<p>
+Warto poświęcić trochę czasu i zorientować się, które biblioteki lub nagłówki
+nie są dodawane do listy zależności. W przypadku nagłówków, nie trzeba mieć ich
+zainstalowanych, by przeprowadzić skanowanie.
+</p>
+
+<p>
+W niektórych przypadkach, w pewnym sensie, pakiet wymaga serwera X. Jeśli nie
+jest to wymagane, by w czasie instalacji serwer X był obecny w systemie,
+odradzamy umieszczanie go na liście RDEPEND. Psuje to instalacje bez X, gdzie
+program jest uruchamiamiany na innym komputerze, więc nie wymaga istnienia
+nagłówków ani bibliotek na danej maszynie.
+</p>
+
+<p>
+W drzewie portage znajduje się kilka serwerów X, więc jeśli nie potrzeba nam
+owego, należy dołączyć wszystkie. Modularne serwery X znajdują się w
+pakiecie xorg-server. Mamy również serwer DirectFB w pakiecie xdirectfb; kdrive
+jest małym serwerem X. Oczywiście mamy też do dyspozycji stare &lt;xorg-x11-7.
+Należy również dołączyć restrykcje odnośnie wersji xorg-x11, by być pewnym, że
+mamy serwer X, zamiast metapakietu. W bliskiej przyszłości spodziewam się, że
+kdrive przeniesie się do serwera X.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Struktura zależności</title>
+<section>
+<body>
+
+<p>
+By dodać zależności, będziemy potrzebowali następującej struktury:
+</p>
+
+<pre caption="Struktura RDEPEND/DEPEND">
+RDEPEND="|| ( ( x11-libs/libXfoo
+			x11-libs/libXbar
+			blah? ( x11-libs/libXblah )
+			cokolwiek innego pokaże skrypt od bibliotek
+		)
+		virtual/x11
+	)
+
+DEPEND="${RDEPEND}
+	|| ( ( x11-proto/fooproto
+			blah? ( x11-proto/blahproto )
+			cokolwiek innego pokażą oba skrypty
+		)
+		virtual/x11
+	)
+</pre>
+
+<impo>
+Pewna część wyniku powyższych skryptów <e>będzie</e> zbyteczna. Jeśli RDEPEND
+jednej biblioteki włącza również inną, nie trzeba dołączać obu do zależności.
+Jeżeli DEPEND jednej biblioteki włącza również protokół, <e>nie trzeba</e>
+wówczas dodawać pakietu do listy DEPEND. Potencjalnymi bibliotekami, które będą
+chciały instalować wiele innych mogą być <c>libXaw</c>, <c>libXmu</c>,
+<c>libXpm</c>, <c>libXcursor</c> i <c>libXt</c>. Wykonujemy wówczas <c>emerge
+-ep $biblioteka | grep lib[SIX]</c>. Trzeba mieć również na uwadze, że inne
+pakiety, takie jak na przykład <c>gtk+</c>, również zostały przeniesione na
+modularne zależności, więc mogą one zainstalować wymagane biblioteki. 
+</impo>
+
+<note>
+Dwie oddzielne flagi USE włączą wsparcie dla X, ale jedna nie jest zależna od
+drugiej. W tym przypadku, trzeba będzie powielić sekcję zależności wsparcia dla
+X lub zdefiniować w innym miejcu jako ${X_DEPEND}. Jeśli definiujemy ją w innym 
+miejcu, należy pamiętać by dołączyć również sekcje specyficzne dla każdej z flag
+USE.
+</note>
+
+<p>
+Naszym celem jest nie tylko wparcie dla nowego, modularnego X, ale również
+umożliwienie spełnienie zależności użytkowników korzystających ze starego,
+monolitycznego X. By prawidłowo móc je spełnić, odrzucamy starą formę
+deklarowania virtual/x11.
+</p>
+
+<impo>
+To pozwoli użytkownikom korzystającym z gałęzi eksperymentalnej portage na
+bezproblemową instalację modularnego X, a osobom korzystającyh ze stabilnej
+wciąż mieć virtual/x11.
+</impo>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Radzenie sobie z flagami USE</title>
+<section>
+<body>
+
+<p>
+Caleb zadał dobre pytanie: jak radzić sobie z flagami USE w pakietach, które
+mają ogromną ilość opcjonalnych bibliotek X? W wielu przypadkach ma sens
+wymuszanie włączenia lub też niewłączania flag. Można to sobie ułatwić,
+grupując flagi.  Należy upewnić się, że nazwa flagi bierze się od funkcji jaką
+wprowadzają, a nie od nazw biblitek czy też pakietów, z których będą korzystać.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Wprowadzanie zmian do drzewa portage</title>
+<section>
+<body>
+
+<p>
+Jeśli jesteśmy opiekunami lub twórcami pakietu, nadsyłamy nasze poprawki. Jeżeli
+nie, nadsyłamy poprawkę w formie błędu przydzielonego do opiekunów pakietu
+(można ich znaleźć w pliku metadata.xml). Dodajemy informację, że jest to
+błąd blokujący <uri link="http://bugs.gentoo.org/112675">#112675</uri>.
+Załączamy łatę naprawiającą zależności.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>

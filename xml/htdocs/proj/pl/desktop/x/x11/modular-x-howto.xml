@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/desktop/x/x11/modular-x-howto.xml,v 1.1 2006/01/12 18:48:37 rane Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/pl/desktop/x/x11/modular-x-howto.xml" lang="pl">
+<title>Migracja na modularne X</title>
+
+<author title="Autor">
+  <mail link="spyderous@gentoo.org">Donnie Berkholz</mail>
+</author>
+<author title="Autor">
+  <mail link="joshuabaergen@gentoo.org">Joshua Baergen</mail>
+</author>
+<author title="Tłumaczenie">
+  <mail link="damjanek@gmail.com">Damian Szeluga</mail>
+</author>
+
+<abstract>
+Ten dokument pomaga w procesie migracji na modularne X.Org.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.1</version>
+<date>2006-01-02</date>
+
+<chapter>
+<title>Wprowadzenie</title>
+
+<section>
+<title>Dlaczego modularne X?</title>
+<body>
+
+<p>
+Dlaczego jeden wygodny pakiet zmienił się w 300 mniejszych? Proces ten jest
+realizowany przez twórców X.Org. Rozdzielają oni wszystkie pakiety na
+pomniejsze, a my jedynie podążamy za nimi.
+</p>
+
+<p>
+Powodów, dla których pakiet został podzielony i zmienił się system budowania
+pakietu, jest co najmniej kilka:
+</p>
+
+<ul>
+  <li>
+    Nowym deweloperom trudno dołączyć do projektu X, więc postanowiono, by
+    przejść na autotools, który jest znacznie wygodniejszy dla większości
+    ludzi.
+  </li>
+  <li>
+    Podział zródeł programu jest możliwy z autotools, co powoduje, że projekt
+    jest łatwiejszy do zarządzania dla deweloperów.
+  </li>
+  <li>
+    Rzeczy, które niepotrzebnie stały się zależne od siebie w przeszłości,
+    niejednokrotnie uniemożliwiają tworzenie poprawek. A jeśli już poprawki
+    były tworzone, wymagało to przebudowywania całego X.Org. Na przykład błąd w
+    sterownikach ATI musiał czekać 6 miesięcy do następnego wydania lub
+    wymagał przebudowania czcionek, zupełnie bez powodu.
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Migracja do modularnego X</title>
+<section>
+<title>Wstęp</title>
+<body>
+
+<p>
+Aby stare pakiety nie wchodziły nam w drogę, najpierw pozbędziemy się starego
+xorg-x11, a następnie zainstalujemy modularne X. Nie jest to niezbędne, ale
+ułatwi nam migrację.
+</p>
+
+</body>
+</section>
+<section>
+<title>Krok pierwszy: pozbycie się starego X</title>
+<body>
+    
+<pre caption="Wykonanie kopii zapasowej starego xorg-x11">
+# <i>emerge gentoolkit</i>
+# <i>quickpkg xorg-x11</i>
+</pre>
+
+<p>
+Usuwamy starą, monolityczną instalację:
+</p>
+
+<pre caption="Usuwanie monolitycznej instalacji">
+# <i>emerge -Ca xorg-x11</i>
+# <i>rm -rf /usr/lib/opengl/xorg-x11</i>
+# <i>rm -rf /usr/lib/libGL*</i>
+</pre>
+
+<p>
+Lepiej mieć kopię zapasową poprzedniej wersji, na wypadek gdyby wydarzyło się
+coś złego.
+</p>
+
+<p>
+Następne kroki pomagają pozbyć się starych dowiązań stworzonych przez
+<c>opengl-update</c>.  
+</p>
+
+<p>
+Jeśli <path>/usr/X11R6</path> nie jest dowiązaniem do <path>/usr</path>,
+usuwamy ten katalog i zaczynamy od początku. Najpierw jednak zapisujemy listę
+pakietów tam zainstalowanych.
+</p>
+
+<pre caption="Tworzenie listy pakietów">
+# <i>if [[ ! -L /usr/X11R6 ]]; \
+        then equery belongs /usr/X11R6 > usr-x11r6-packages \
+        &amp;&amp; rm -rf /usr/X11R6; fi</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Krok drugi: instalacja modularnego X</title>
+<body>
+    
+<p>
+Najpierw dodamy listę wymaganych pakietów do pliku
+<path>/etc/portage/package.unmask</path>. Otwieramy plik
+<path>/usr/portage/profiles/package.mask</path> w naszym ulubionym edytorze i
+przeklejamy pełną listę pakietów należących do modularnego X do pliku
+<path>package.unmask</path>. To samo robimy z
+<path>/etc/portage/package.keywords</path>, jeżeli korzystamy ze stabilnej
+gałęzi drzewa Portage. Jeśli nie rozumiemy powyższych instrukcji, należy
+przeczytać część Podręcznika dotyczącą <uri
+link="/doc/pl/handbook/handbook-x86.xml?part=3&amp;chap=3">instalacji
+zamaskowanych pakietów</uri>.
+</p>
+
+<p>
+Jeśli chcemy korzystać z direct rendering, należy aktywować <c>dri</c> we
+flagach USE.
+</p>
+
+<p>
+Teraz jesteśmy gotowi, by zainstalować metapakiet. Spowoduje to instalację
+serwera X oraz popularnych aplikacji, dając nam do dyspozycji sprawną
+implementację X:
+</p>
+
+<pre caption="Instalacja modularnego metapakietu">
+# <i>emerge xorg-x11</i>
+</pre>
+
+<p>
+Należy pamiętać, że to polecenie spowoduje minimalną instalację i że rzeczy
+takie jak xcursor-themes, nie są instalowane standardowo.
+</p>
+
+<p>
+Następnie instalujemy sterowniki. Te z kolei zależą od posiadanego  przez nas
+sprzętu. Sprawdzamy więc <path>/usr/portage/x11-drivers/</path>. Przykład:
+</p>
+
+<pre caption="Instalowanie sterowników">
+# <i>emerge xf86-input-mouse xf86-input-keyboard xf86-video-ati</i>
+</pre>
+
+<note>
+Jeżeli mamy zainstalowane modularne X, zewnętrzne sterowniki, takie jak
+nvidia-glx i wacom, tak jak niektóre aplikacje vnc mogą nie działać, jeżeli
+instalują się do <path>/usr/lib/modules</path> zamiast do
+<path>/usr/lib/xorg/modules</path>. Wiele z nich będzie miało możliwość
+wykrywania modularnych X w procesie instalacyjnym, więc wymagają one
+przeinstalowania, po instalacji modularnego X.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Częste problemy</title>
+<section>
+<title>'emerge -u world' chce instalować xorg-x11 6.x</title>
+<body>
+
+<p>
+Zdarza się to dlatego, że drzewo portage jeszcze nie jest w pełni przygotowane
+do obsługi modularnych zależności. Można nas w tym wspomóc, czytając <uri
+link="http://dev.gentoo.org/~spyderous/xorg-x11/porting_to_modular_x_howto.txt">Porting
+to Modular X HowTo</uri> i nadsyłając poprawki do opiekunów poszczególnych
+pakietów. Opiekunowie są wylistowani w pliku <path>metadata.xml</path> w tym
+samym katalogu, w którym jest pakiet, a program <c>herdstat</c> pozwoli
+przyspieszyć ich wyszukiwanie.
+</p>
+
+
+</body>
+</section>
+<section>
+<title>Co się stało ze wszystkimi flagami flags?</title>
+<body>
+
+<p>
+Wiele flag USE z xorg-x11-6.8 zniknęło, kilka zostało przeniesionych na 7.0.
+Pojawiło się również kilka nowych. Oto powód:
+</p>
+
+<table>
+<tr>
+  <th>Flaga USE</th>
+  <th>Co się z nią stało w X 7.0?</th>
+</tr>
+<tr>
+  <ti>3dfx</ti>
+  <ti>W 7.0 powoduje dopisanie glide-v3 do zależności pakietu X</ti>
+</tr>
+<tr>
+  <ti>3dnow, mmx, sse</ti>
+  <ti>
+    Te flagi są standardowo włączone w czasie budowania pakietu, ponieważ ich
+    obsługa jest sprawdzana w momencie uruchomienia.
+  </ti>
+</tr>
+<tr>
+  <ti>bitmap-fonts, truetype-fonts, type1-fonts</ti>
+  <ti>
+    Metapakiet xorg-x11 instaluje tylko niewielką ilość najczęściej używanych i
+    wymaganych czcionek. Można samodzielnie zainstalować dodatkowe czcionki z
+    katalogu <path>media-fonts/</path>.
+  </ti>
+</tr>
+<tr>
+  <ti>cjk</ti>
+  <ti>
+    Należy zainstalować font-misc-misc i font-sony-misc z włączoną flagą nls,
+    by uzyskać japońskie czcionki w JISX0201. Więcej znajduje się w pakiecie
+    font-jis-misc. Chińskie czcionki są w font-isas-misc, koreańskie w
+    font-daewoo-misc.  
+  </ti>
+</tr>
+<tr>
+  <ti>dlloader</ti>
+  <ti>
+    X 7.0 standardowo używa dlloader by default, a elfloader nie działa
+  </ti> 
+</tr>
+<tr>
+  <ti>doc</ti>
+  <ti>Przeniesione do app-doc/xorg-docs</ti>
+</tr>
+<tr>
+  <ti>dmx</ti>
+  <ti>Wbudowane w xorg-server, o ile nie użyto flagi minimal</ti>
+</tr>
+<tr>
+  <ti>font-server</ti>
+  <ti>Można samodzielnie zainstalować xfs</ti>
+</tr>
+<tr>
+  <ti>ipv6</ti>
+  <ti>
+    Przeniesiono do oddzielnych pakietów korzystających z ipv6. Można również
+    uruchomić flagę globalnie, jeśli potrzeba.
+  </ti>
+</tr>
+<tr>
+  <ti>minimal</ti>
+  <ti>
+    By uzyskać ten sam efekt należy zainstalować tylko xorg-server zamiast
+    xorg-x11. By uniknąć budowania Xdmx, Xvfb i Xnest można włączyć flagę
+    minimal w xorg-server. Jeśli potrzebujemy czegoś jeszcze mniejszego, warto
+    zainteresować się x11-base/kdrive.
+  </ti>
+</tr>
+<tr>
+  <ti>nls</ti>
+  <ti>
+    W 7.0, użycie flagi nls powoduje instalację wszystkich wersji czcionek
+    różnych od ISO-8859-1.
+  </ti>
+</tr>
+<tr>
+  <ti>nocxx</ti>
+  <ti>Nie ma jeszcze swojego odpowiednika w X 7.0</ti>
+</tr>
+<tr>
+  <ti>opengl</ti>
+  <ti>
+    Zmienia nazwę na "dri", co uruchamia direct rendering w xorg-server i wielu
+    sterownikach. Niezależnie czy dri jest włączona, czy nie, wciąż jest
+    zapownione programowe wsparcie 3D przy pomocy Mesa.
+  </ti>
+</tr>
+<tr>
+  <ti>pam</ti>
+  <ti>
+    Przeniesione do indywidualnych pakietów korzystających z pam, takich jak
+    xorg-server i xdm
+  </ti> 
+</tr>
+<tr>
+  <ti>sdk</ti>
+  <ti>X 7.0 musi zainstalować SDK, w konsekwencji modularyzacji</ti> 
+</tr>
+<tr>
+  <ti>static</ti>
+  <ti>
+    Nie ma sensu budować statycznego serwera, jeżeli cała reszta jest
+    modularna, ponieważ sterownik by sobie z tym nie poradził.
+  </ti>
+</tr>
+<tr>
+  <ti>xprint</ti>
+  <ti>
+    Metapakiet instaluje libXp. W innych aplikacjach uruchamia wsparcie dla
+    xprint. Większość osób nie chce tego uruchamiać.
+  </ti>
+</tr>
+<tr>
+  <ti>xv</ti>
+  <ti>
+    Przestała być opcjonalna, ponieważ nie zaoszczędza zbyt wiele miejsca i
+    powoduje problemy z pakietami, oczekującymi, że ta flaga będzie
+    uruchomiona.
+  </ti>
+</tr>
+</table>
+
+</body>
+</section>
+<section>
+<title>Problemy ze sterownikami</title>
+<body>
+
+<p>
+Zgłaszano nam, że:
+</p>
+
+<ul>
+  <li>vesa zawiesza komputery z kartą mga</li>
+  <li>vga tworzy bardzo dziwnie wyglądający ekran, podzielony na cztery części</li> 
+</ul>
+
+</body>
+</section>
+<section>
+<title>Uruchamianie glxinfo/glxgears</title>
+<body>
+
+<p>
+Te programy zawarte są teraz w pakiecie <c>x11-apps/mesa-progs</c>. Pakiet
+<c>mesa-progs</c> zostanie zainstalowany przez pakiet <c>x11-base/xorg-x11</c>
+automatycznie.
+</p>
+
+<p>
+Włączanie informacji diagnostycznych w glxinfo, by ułatwić uruchomienie
+direct rendering: 
+</p>
+
+<pre caption="Włączanie informacji diagnostycznych w glxinfo">
+# <i>LIBGL_DEBUG=verbose glxinfo</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Automatyczne wykrywanie protokołu myszki</title>
+<body>
+
+<p>
+Opcja <c>Protocol "auto"</c> w xorg.conf dla naszej myszy, może to nie
+zadziałać. Należy ustawić <c>Protocol "ExplorerPS/2"</c> lub <c>"IMPS/2"</c> by
+działało kółko myszki.
+</p>
+
+</body>
+</section>
+<section>
+<title>Zawartość /usr/lib/xorg zniknęła!</title>
+<body>
+
+<p>
+Należy przeinstalować &gt;=xorg-server-0.99.1-r4. Ten tymczasowy błąd w
+ebuildzie jest spowodowany kasowaniem po usunięciu pakietu.
+<path>/usr/lib/xorg</path> powinno być usunięte tylko wtedy, gdy żaden
+xorg-server nie pozostał w systemie.  
+</p>
+
+</body>
+</section>
+<section>
+<title>Program gdm/kdm nie działa</title>
+<body>
+
+<p>
+Jeżeli instalowaliśmy modularne X na nowej instalacji Gentoo, w systemie może
+nie być obecny symlink <path>/usr/X11R6</path> -&gt; <path>/usr</path>. Pakiet
+<c>x11-base/xorg-x11</c> upewni się, czy symlink istnieje podczas procesu
+instalacji.
+</p>
+
+<p>
+Można nas wesprzeć w poprawianiu pakietów instalujących się w
+<path>/usr/X11R6</path> poprzez tworzenie poprawek i nadsyłanie nam ich.
+</p>
+
+</body>
+</section>
+<section>
+<title>Pozostałe sprawy</title>
+<body>
+
+<ul>
+  <li>
+    Pakiet <c>x11-base/xorg-x11</c> filtruje teraz wszystkie linie ModulePath i
+    RgbPath w <path>/etc/X11/xorg.conf</path>, ponieważ obie te ścieżki zmieniły
+    się od czasu poprzedniej wersji. Należy pamiętać o uruchomieniu
+    <c>etc-update</c> w celu sfinalizowania tych zmian.
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>
