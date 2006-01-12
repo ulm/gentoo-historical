@@ -1,0 +1,65 @@
+<? include /main_top.pyhtml ?>
+
+<h2>Clients</h2>
+<?
+errormsg = ""
+print "DEBUG: Client_state:<br>"
+print str(shared_info.client_state)
+if post_params:
+	print "<br>WE got post params, bitch!"
+	if post_params['mark_for_install']:
+		if type(post_params['clients']) == list:
+			for client in post_params['clients']:
+				print "<br>Found a client.:" +client
+				if client in shared_info.client_state:
+					print "client was found in client_state"
+					shared_info.client_state[client]['install_status'] = "Ready to Install"
+		else:
+			print "<br>Found a client.:" + post_params['clients']
+			if post_params['clients'] in shared_info.client_state:
+				print "client was found in the client_state"
+				shared_info.client_state[post_params['clients']]['install_status'] = "Ready to Install"
+	elif post_params['remove_mark']:
+		if type(post_params['clients']) == list:
+			for client in post_params['clients']:
+				shared_info.client_state[client]['install_status'] = "waiting for server"
+		else:
+			if post_params['clients'] in shared_info.client_state:
+				shared_info.client_state[post_params['clients']]['install_status'] = "waiting for server"
+?>
+
+
+<form action="/configure.pyhtml" method="POST" enctype="multipart/form-data">
+
+<table width="100%" cellpadding="0" cellpadding="0">
+  <tr>
+    <td><u>Hostname</u></td>
+    <td><u>MAC</u></td>
+    <td><u>Current IP</u></td>
+    <td><u>Post-install IP</u></td>
+    <td><u>Profile</u></td>
+    <td><u>Status</u></td>
+	<td><u>MARK</u></td>
+  </tr>
+<: for client in shared_info.clients:
+<?
+client_info = [client['hostname'], client['mac'], client['current_ip'], client['post_ip'], client['profile'], client['status']]
+if client['mac'] in shared_info.client_state:
+	client_info[2] = shared_info.client_state[client['mac']]['ip']
+	client_info[5] = shared_info.client_state[client['mac']]['install_status']
+?>
+  <tr>
+    <td><% client_info[0] %></td>
+    <td><% client_info[1] %></td>
+    <td><% client_info[2] %></td>
+    <td><% client_info[3] %></td>
+    <td><% client_info[4] %></td>
+    <td><% client_info[5] %></td>
+	<td><input type="checkbox" name="clients" value="<% client_info[1] %>"></td>
+  </tr>
+:>
+</table>
+<input type="submit" name="mark_for_install" value="Mark for INSTALL">
+<input type="submit" name="remove_mark" value="Remove Ready-To-Install mark">
+</form>
+<? include /main_bottom.pyhtml ?>

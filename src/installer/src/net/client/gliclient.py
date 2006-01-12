@@ -107,6 +107,12 @@ if __name__ == '__main__':
 	tmpfile.write(install_profile)
 	tmpfile.close()
 	
+	#STOP HERE BECAUSE WE ARE FAKING IT
+	print "Wrote the temporary xml profiles."
+	sys.exit(0)
+	break
+	pass
+	
 	client_config = GLIClientConfiguration.ClientConfiguration()
 	client_config.parse("/tmp/client_config.xml")
 	install_profile = GLIInstallProfile.InstallProfile()
