@@ -29,7 +29,11 @@ class Panel(GLIScreen.GLIScreen):
 		
 	def draw_screen(self):
 		content_str = """
-This is where you emerge extra packages that your system may need."""
+This is where you emerge extra packages that your system may need. Packages that
+are fetch-restricted (e.g. sun-jdk) or require you to accept licenses (e.g. many
+big games) will cause your install to fail. Add additional packages with
+caution, you hoser. These trouble packages can be installed manually after you
+reboot."""
 		
 		# pack the description
 		self.vert.pack_start(gtk.Label(content_str), expand=False, fill=False, padding=5)
