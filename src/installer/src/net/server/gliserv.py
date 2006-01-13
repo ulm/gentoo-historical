@@ -532,7 +532,7 @@ class GLINetBe:
 		for client in self.shared_info.clients:
 			if client['mac'] == mac: break
 		else:
-			self.shared_info.clients.append({ 'name': "", 'ip': "", 'mac': mac, 'profile': "" })
+			self.shared_info.clients.append({ 'hostname': "", 'current_ip': ip, 'mac': mac, 'profile': "" , 'post_ip': "", 'status': "waiting for server"})
 		return True
 
 	def get_client_config(self, mac):
