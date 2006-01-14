@@ -2,32 +2,33 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-amd64-kernel.xml,v 1.1 2005/04/22 20:06:55 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-amd64-kernel.xml,v 1.2 2006/01/14 08:45:16 idani Exp $ -->
 
 <sections>
 
-<version>2.1</version>
-<date>2005-04-16</date>
-<!-- Original revision: 1.23 -->
+<version>2.11</version>
+<date>2005-11-26</date>
+<!-- Original revision: 1.34 -->
 
 <section>
 <title>タイムゾーン</title>
 <body>
 
 <p>
-
 最初にタイムゾーンを選択する必要があります。そうするとシステムがどの地域に置かれているかがわかります。
-自分のタイムゾーンを<path>/usr/share/zoneinfo</path>から探して、<c>ln</c>を使って<path>/etc/localtime</path>にリンクを張ってください。
+自分のタイムゾーンを<path>/usr/share/zoneinfo</path>から探して、<path>/etc/localtime</path>にコピーしてください。
+<path>/usr/share/zoneinfo/Etc/GMT*</path>タイムゾーンは、名前から予測されるゾーンを指し示してはいません。
+<path>GMT-8</path>は、事実GMT+8です。
 </p>
 
 <pre caption="タイムゾーン情報を設定する">
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(GMTを使うとして)</comment>
-# <i>ln -sf /usr/share/zoneinfo/GMT /etc/localtime</i>
+# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
 <comment>(訳注：JST(日本時間)を使う例)</comment>
-# <i>ln -sf /usr/share/zoneinfo/Japan /etc/localtime</i>
+# <i>cp /usr/share/zoneinfo/Japan /etc/localtime</i>
 </pre>
 
 </body>
@@ -51,10 +52,11 @@ AMD64ベースのシステムでは、<c>gentoo-sources</c>(amd64特有の安定
 
 <p>
 カーネルソースを選んで、<c>emerge</c>を使ってインストールしてください。
+この時点での、x11-orgや他の依存パッケージのインストールをさけるため、<c>USE="-doc"</c>は必要です。
 </p>
 
 <pre caption="カーネルソースをインストールする">
-# <i>emerge gentoo-sources</i>
+# <i>USE="-doc" emerge gentoo-sources</i>
 </pre>
 
 <p>
@@ -63,7 +65,7 @@ AMD64ベースのシステムでは、<c>gentoo-sources</c>(amd64特有の安定
 
 <pre caption="カーネルソースへのシンボリックリンクを見る">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.11-gentoo-r3
+ lrwxrwxrwx    1 root    root        12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.12-gentoo-r10
 </pre>
 
 <p>
@@ -73,7 +75,7 @@ lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; lin
 <pre caption="カーネルソースへのシンボリックリンクを変更する">
 # <i>rm /usr/src/linux</i>
 # <i>cd /usr/src</i>
-# <i>ln -s linux-2.6.11-gentoo-r3 linux</i>
+# <i>ln -s linux-2.6.12-gentoo-r10 linux</i>
 </pre>
 
 <p>
@@ -103,7 +105,10 @@ lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; lin
 
 <p>
 しかし、一つだけは<e>本当</e>です。手動でカーネルの設定を始めるときに自分のシステムを判ってなければなりません。
-ほとんどの情報は<path>/proc/pci</path>の内容を見ることで集められます(もしくは有効であれば<c>lspci</c>を使って)。
+ほとんどの情報は<c>lspci</c>を含むpciutilsをemergeすること(<c>emerge pciutils</c>)によって集めることが出来ます。
+これでchrootされた環境で、<c>lspci</c>を使用することが出来ます。
+<c>lspci</c>がはき出す<c>pcilib</c>の警告(たとえば pcilib: cannot open /sys/bus/pci/devices)は、安全に無視することが出来ます。
+別に<e>non-chrooted</e>で<c>lspci</c>を走らせることもできます。 結果は同じです。
 インストールCDではどんなカーネルモジュールを使っているかを見るために<c>lsmod</c>を実行することもできます(これはどんな機能が利用可能かの良いヒントを与えてくれるかも知れません)。
 </p>
 
@@ -142,6 +147,23 @@ Code maturity level options ---&gt;
 さて、<c>General Setup</c>を選択し、udev使用のための<c>ホットプラグ可能デバイスのサポート</c>を有効にします。
 これはAMD64はカーネル2.6のみがサポートしているからです。
 </p>
+
+<pre caption="一般的なサポート">
+General setup ---&gt;
+ [*] Support for hot-pluggable devices
+</pre>
+
+<p>
+次に正確なプロセッサの種類を選択しましょう。
+</p>
+
+<pre caption="プロセッサの種類と機能の選択">
+ Processor type and features  --->
+  Processor family (AMD-Opteron/Athlon64)  --->
+  ( ) AMD-Opteron/Athlon64
+  ( ) Intel EM64T
+  ( ) Generic-x86-64"
+</pre>
 
 <p>
 次に<c>File Systems</c>に行き、使用するファイルシステムの項目を選択してください。
@@ -233,7 +255,7 @@ Device Drivers ---&gt;
 </p>
 
 <pre caption="カーネルをインストールする">
-# <i>cp arch/x86_64/boot/bzImage /boot/kernel-2.6.11-gentoo-r3</i>
+# <i>cp arch/x86_64/boot/bzImage /boot/kernel-2.6.12-gentoo-r10</i>
 </pre>
 
 <p>
@@ -241,7 +263,7 @@ Device Drivers ---&gt;
 </p>
 
 <pre caption="カーネル設定をバックアップする">
-# <i>cp .config /boot/config-2.6.11-gentoo-r3</i>
+# <i>cp .config /boot/config-2.6.12-gentoo-r10</i>
 </pre>
 
 <p>
@@ -295,7 +317,7 @@ genkernelではどんな手動のカーネル設定も要求されないので�
 </p>
 
 <pre caption="作成されたカーネルイメージとinitrdの名前を確認する">
-# <i>ls /boot/kernel* /boot/initrd*</i>
+# <i>ls /boot/kernel* /boot/initramfs*</i>
 </pre>
 
 <p>
@@ -307,15 +329,6 @@ genkernelではどんな手動のカーネル設定も要求されないので�
 <pre caption="coldplugをemergeして有効にする">
 # <i>emerge coldplug</i>
 # <i>rc-update add coldplug boot</i>
-</pre>
-
-<p>
-もし自分のシステムをhotplugを実行するように戻したければ、hotplugもインストールして設定する必要があるでしょう。
-</p>
-
-<pre caption="hotplugをemergeして有効にする">
-# <i>emerge hotplug</i>
-# <i>rc-update add hotplug default</i>
 </pre>
 
 </body>
