@@ -1,0 +1,250 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/mysql-upgrading.xml,v 1.1 2006/01/16 20:11:14 grahl Exp $ -->
+
+<!-- English CVS Version: 1.7 -->
+
+<guide link="/doc/de/mysql-upgrading.xml" lang="de">
+<title>Upgrade Guide zu MySQL 4.1.x</title>
+
+<author title="Autor">
+  <mail link="citizen428@gentoo.org">Michael Kohl</mail>
+</author>
+<author title="Autor">
+  <mail link="vivo@gentoo.org">Francesco Riosa</mail>
+</author>
+<author title="Übersetzer">
+  <mail link="Thesan@thaor.net">Stefan Becker</mail>
+</author>
+
+<abstract>
+Das MySQL Team ist stolz ankündigen zu können das MySQL 4.1 nun im Gentoo
+unstable Zweig (~arch) verfügbar ist. Das Team hofft, dass das Ebuild bald
+stabil sein wird. Hier ist ein Upgrade Guide für alle interessierten Tester.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.6</version>
+<date>2006-01-04</date>
+
+<chapter>
+<title>Von einer alten MySQL-Version upgraden</title>
+<section>
+<body>
+
+<p>
+Benutzer die von einer alten Version (&lt;4.0.24) von MySQL aus upgraden müssen
+zuerst MySQL 4.0.25 installieren. Wenn Sie bereits eine aktuelle Version
+einsetzen, können Sie diesen Abschnitt überspringen und mit dem nächsten
+fortfahren.
+</p>
+
+<pre caption="Einfaches Upgrade">
+# <i>emerge -av --buildpkg "&lt;mysql-4.1"</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Ein Backup Ihrer aktuellen Daten anlegen</title>
+<section>
+<body>
+
+<p>
+Eine der wichtigsten Aufgaben die ein Datenbank-Administrator wahr nimmt ist
+die Sicherung von Daten. Fangen wir an:
+</p>
+
+<pre caption="Dump von allen Datenbanken">
+# <i>mysqldump \</i>
+  <i>-uroot \</i>
+  <i>--password=</i><comment>'Ihr_Passwort'</comment><i> \</i>
+  <i>-hlocalhost \</i>
+  <i>--all-databases \</i>
+  <i>--opt \</i>
+  <i>--allow-keywords \</i>
+  <i>--flush-logs \</i>
+  <i>--hex-blob \</i>
+  <i>--master-data \</i>
+  <i>--max_allowed_packet=16M \</i>
+  <i>--quote-names \</i>
+  <i>--result-file=BACKUP_MYSQL_4.0.SQL</i>
+</pre>
+
+<p>
+Es sollte nun eine Datei mit dem Namen <path>BACKUP_MYSQL_4.0.SQL</path>
+existieren, die später genutzt werden kann um Ihre Daten wiederherzustellen.
+Die Daten sind im MySQL-Dialekt der SQL (Structured Query Language)
+beschrieben.
+</p>
+
+<p>
+Jetzt ist auch ein guter Zeitpunkt zu überprüfen ob das Backup, das Sie gerade
+erstellt haben, funktioniert.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Von einer aktuelleren MySQL-Version upgraden</title>
+<section>
+<body>
+
+<p>
+Wenn Sie Schritt #1 übersprungen haben, sollten Sie jetzt ein Backup-Paket (des
+Servers, nicht der Daten) der installierten Version erstellen:
+</p>
+
+<pre caption="Backup des Binär-Pakets">
+# <i>quickpkg dev-db/mysql</i>
+</pre>
+
+<p>
+Jetzt ist es an der Zeit die aktuelle Installation mit allen seinen Daten zu
+löschen:
+</p>
+
+<pre caption="Deinstallieren von MySQL">
+# <i>/etc/init.d/mysql stop</i>
+# <i>emerge -C mysql</i>
+# <i>tar cjpvf ~/mysql.$(date +%F_%H-%M).tar.bz2 /etc/mysql/my.cnf /var/lib/mysql/</i>
+# <i>ls -l ~/mysql.*</i>
+# <i>rm -rf /var/lib/mysql/ /var/log/mysql</i>
+</pre>
+
+<note>
+Nun sollte es zwei Backups geben: Das SQL-Backup, welches zwischen den
+verschiedenen MySQL-Versionen portabel ist, und das andere, welches Ihnen
+erlaubt Ihre Datenbank schnell wiederherzustellen. Dies wird später noch
+genauer erklärt.
+</note>
+
+<p>
+Nachdem Sie Ihre alte MySQL-Installation losgeworden sind können Sie die neue
+Version installieren. Beachten Sie, dass es notwendig ist <c>revdep-rebuild</c>
+zu verwenden um Pakete erneut zu kompilieren, die gegen MySQL gelinkt sind.
+</p>
+
+<pre caption="Upgraden der Programmdateien">
+# <i>emerge -av "&gt;mysql-4.1"</i>
+# <i>dispatch-conf</i>
+# <i>revdep-rebuild</i>
+</pre>
+
+<p>
+Konfigurieren Sie nun die neu installierte MySQL-Version und starten Sie den
+Daemon neu:
+</p>
+
+<pre caption="Basiskonfiguration von MySQL 4.1">
+# <i>emerge --config =mysql-4.1.&lt;micro_version&gt;</i>
+# <i>/etc/init.d/mysql start</i>
+</pre>
+
+<p>
+Abschließend können Sie die Daten aus dem Backup, das Sie in Schritt #2
+erstellt haben, importieren.
+</p>
+
+<pre caption="Importieren des SQL-Backups">
+# <i>cat BACKUP_MYSQL_4.0.SQL \</i>
+     <i>| mysql \</i>
+     <i>-uroot \</i>
+     <i>--password=</i><comment>'Ihr_Passwort'</comment><i> \</i>
+     <i>-hlocalhost \</i>
+     <i>--max_allowed_packet=16M</i>
+
+# <i>mysql_fix_privilege_tables \</i>
+     <i>--defaults-file=/etc/mysql/my.cnf \</i>
+     <i>--user=root \</i>
+     <i>--password=</i><comment>'Ihr_Passwort'</comment><i></i>
+</pre>
+
+<p>
+Wenn Sie Ihren MySQL-Daemon nun neustarten und alles wie erwartet verlaufen ist,
+haben Sie nun eine voll funktionsfähige Version 4.1.x! :-)
+</p>
+
+<pre caption="Den MySQL-Daemon neustarten">
+# <i>/etc/init.d/mysql restart</i>
+</pre>
+
+<p>
+Wenn Sie irgendwelche Probleme während des Upgrade-Vorgangs hatten, schreiben
+Sie bitte einen Bugreport in unserem <uri
+link="https://bugs.gentoo.org">Bugzilla</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Ihre alte MySQL 4.0 Installation wieder herstellen</title>
+<section>
+<body>
+
+<p>
+Wenn Sie mit MySQL 4.1 nicht glücklich sind ist es möglich Ihre MySQL 4.0
+Installation wieder herzustellen.
+</p>
+
+<pre caption="Zurück in die Vergangenheit">
+# <i>/etc/init.d/mysql stop</i>
+# <i>emerge -C mysql</i>
+# <i>rm -rf /var/lib/mysql/ /var/log/mysql</i>
+# <i>emerge --usepkgonly "&lt;mysql-4.1"</i>
+# <i>tar -xjpvf mysql.[tag] -C /</i>
+# <i>/etc/init.d/mysql start</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Direktes Upgrade, nicht unterstützt, gefährlich</title>
+<section>
+<body>
+
+<p>
+Unter bestimmten Vorraussetzungen ist es möglich direkt zur nächsten
+Hauptversion zu upgraden. Wenn Sie wissen was Sie tun und der Meinung sind,
+dass dies auf Sie zutrifft, dann ist hier ein kleiner Trick für Sie, der es
+Ihnen ermöglicht gleich auf MySQL 4.1 zu upgraden.
+</p>
+
+<pre caption="Direktes Upgrade">
+# <i>quickpkg dev-db/mysql</i>
+# <i>/etc/init.d/mysql stop</i>
+# <i>tar -cjpvf ~/mysql.$(date +%F_%H-%M).tar.bz2 /etc/mysql/my.cnf /var/lib/mysql/</i>
+# <i>ls -l ~/mysql.*</i>
+# <i>export MYSQL_STRAIGHT_UPGRADE=1</i>
+# <i>emerge -av "&gt;mysql-4.1"</i>
+# <i>unset MYSQL_STRAIGHT_UPGRADE</i>
+# <i>dispatch-conf</i>
+# <i>revdep-rebuild</i>
+# <i>/etc/init.d/mysql start</i>
+# <i>mysql_fix_privilege_tables --defaults-file=/etc/mysql/my.cnf \</i>
+     <i>-uroot --password=</i><comment>'Ihr_Passwort'</comment><i></i>
+# <i>mysql --database=mysql -uroot --password=</i><comment>'Ihr_Passwort'</comment><i> &lt; /tmp/new_pieces.sql</i>
+# <i>/etc/init.d/mysql restart</i> # Nur um sicher zu sein. 
+</pre>
+
+<p>
+Viel Glück und wenn irgendetwas schief geht, sagen Sie nicht wir hätten Sie
+nicht gewarnt! ;-)
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
