@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- English CVS Version: 1.4 -->
+<!-- English CVS Version: 1.7 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/2005.1/hb-install-x86-bootloader.xml,v 1.2 2005/09/09 22:37:36 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/2005.1/hb-install-x86-bootloader.xml,v 1.3 2006/01/16 23:02:55 grahl Exp $ -->
 
 <sections>
 
-<version>5.0</version>
-<date>2005-08-08</date>
+<version>5.3</version>
+<date>2005-11-25</date>
 
 <section>
 <title>Eine Wahl treffen</title>
@@ -261,12 +261,12 @@ default 0
 timeout 30
 <comment># Eine nettes, fettes Hintergrundbild um die ganze Sache ein wenig zu würzen :)
 # Auskommentieren, wenn Sie keine Grafikkarte installiert haben.</comment>
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-r11
+title=Gentoo Linux 2.6.12-r10
 <comment># Partition in der das Kernel-Image (oder das Betriebssystem) vorhanden ist</comment>
 root (hd0,0)
-kernel (hd0,0)/kernel-2.6.11-gentoo-r11 root=/dev/hda3
+kernel /boot/kernel-2.6.12-gentoo-r10 root=/dev/hda3
 
 <comment># Die nächsten vier Zeilen werden nur benötigt wenn Sie einen Dualboot mit einem Windows System einrichten wollen.</comment>
 <comment># Hier in diesem Fall liegt Windows auf /dev/hda6.</comment>
@@ -279,12 +279,12 @@ chainloader +1
 <pre caption = "grub.conf für genkernel Benutzer">
 default 0
 timeout 30
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-r11
+title=Gentoo Linux 2.6.12-r10
 root (hd0,0)
-kernel (hd0,0)/kernel-2.6.11-gentoo-r11 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
-initrd (hd0,0)/initrd-2.6.11-gentoo-r11
+kernel /boot/kernel-genkernel-x86-2.6.12-gentoo-r10 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
+initrd /boot/initramfs-genkernel-x86-2.6.12-gentoo-r10
 
 <comment># Nur wenn Sie einen Dual-Boot einrichten möchten</comment>
 title=Windows XP
@@ -293,7 +293,7 @@ makeactive
 chainloader +1
 </pre>
 
-<note>
+<p>
 Wenn Sie ein anderes Partitionierungschema verwenden und/oder Kernel-Image,
 passen Sie Ihre Konfiguration entsprechend an. Stellen Sie jedoch sicher, dass
 alles was einem GRUB-Device folgt (wie z.B. <path>(hd0,0)</path>) relativ zum
@@ -301,7 +301,17 @@ Mountpoint ist, nicht dem Root. Mit anderen Worten,
 <path>(hd0,0)/grub/splash.xpm.gz</path> ist in Wirklichkeit
 <path>/boot/grub/splash.xpm.gz</path> denn <path>(hd0,0)</path> ist
 <path>/boot</path>.
-</note>
+</p>
+
+<p>
+Außerdem wird, wenn Sie ein anderes Partitionsschema verwendet haben und
+<path>/boot</path> nicht auf eine separate Partition gelegt haben, das
+<path>/boot</path> Präfix wirklich <e>benötigt</e>. Wenn Sie unserem
+vorgeschlagenen Partitionierungsplan gefolgt sind, wird das <path>/boot</path>
+Präfix nicht benötigt, aber ein <path>boot</path> Symlink sorgt dafür, dass es
+funktioniert. Kurz gesagt, das obige Beispiel sollte funktionieren, egal ob Sie
+eine separate <path>/boot</path> Partition haben oder nicht.
+</p>
 
 <p>
 Wenn Sie noch zusätzliche Optionen an den Kernel übergeben müssen, fügen Sie
@@ -348,16 +358,18 @@ GRUB händisch installieren</uri> fort.
 <body>
 
 <p>
-Um GRUB zu installieren führen sie das <c>grub-install</c> Kommando aus.
-<c>grub-install</c> wird nicht direkt funktionieren, da wir uns innerhalb einer
-chroot Umgebung befinden. Wir müssen <path>/etc/mtab</path> (die Datei die
-Informationen über alle gemounteten Dateisysteme enthält) zunächst
-aktualisieren: Glücklicherweise gibt es einen recht einfachen Weg dies zu tun -
-kopieren Sie einfach <path>/proc/mounts</path> nach <path>/etc/mtab</path>:
+Um GRUB zu installieren müssen Sie den <c>grub-install</c> Befehl ausführen.
+Allerdings wird <c>grub-install</c> nicht sofort funktionieren, da wir uns
+innerhalb einer chroot-Umgebung befinden. Wir müssen zunächst
+<path>/etc/mtab</path>, welches alle gemounteten Dateisysteme auflistet,
+erstellen. Glücklicherweise gibt es einen einfachen Weg um dies zu erreichen -
+kopieren Sie einfach <path>/proc/mounts</path> nach <path>/etc/mtab</path>,
+ausgenommen der <c>rootfs</c> Zeile, wenn Sie keine separate Bootpartition
+erstellt haben. Der folgende Befehl wird in jedem Fall funktionieren.
 </p>
 
-<pre caption="/etc/mtab aktualisieren">
-# <i>cp /proc/mounts /etc/mtab</i>
+<pre caption="/etc/mtab erstellen">
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
 
 <p>
@@ -531,17 +543,17 @@ timeout=50                <comment># Warte 5 (fünf) Sekunden bevor die Standard
 default=gentoo            <comment># Wenn das Timeout verstrichen ist, dann boote die "gentoo" Sektion</comment>
 
 <comment># Nur für Nicht-genkernel Benutzer</comment>
-image=/boot/kernel-2.6.11-gentoo-r11
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo            <comment># Der Name den wir der Sektion geben</comment>
   read-only               <comment># Starte mit einem nur-lesen Root. Nicht ändern!</comment>
   root=/dev/hda3          <comment># Ort des Root Dateisystems</comment>
 <comment># Für genkernel Benutzer</comment>
-image=/boot/kernel-2.6.11-gentoo-r11
+image=/boot/kernel-genkernel-x86-2.6.12-gentoo-r10
   label=gentoo
   read-only
   root=/dev/ram0
   append="init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev"
-  initrd=/boot/initrd-2.6.11-gentoo-r11
+  initrd=/boot/initramfs-genkernel-x86-2.6.12-gentoo-r10
 <comment># Die nächsten zwei Zeilen werden nur benötigt, wenn Sie Dualboot mit einem Windowssystem einrichten wollen.</comment>
 <comment># In diesem Fall liegt Windows auf /dev/hda6.</comment>
 other=/dev/hda6
@@ -560,7 +572,7 @@ Wenn Sie weitere Optionen an den Kernel übermitteln müssen, fügen Sie ein
 </p>
 
 <pre caption = "Benutzung von append um Kerneloptionen hinzuzufügen">
-image=/boot/kernel-2.6.11-gentoo-r11
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo
   read-only
   root=/dev/hda3
