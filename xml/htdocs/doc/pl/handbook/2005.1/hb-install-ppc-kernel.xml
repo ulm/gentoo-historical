@@ -1,15 +1,15 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/2005.1/hb-install-ppc-kernel.xml,v 1.1 2005/10/07 00:58:19 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/2005.1/hb-install-ppc-kernel.xml,v 1.2 2006/01/18 14:14:09 rane Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>5.2</version>
-<date>2005-08-21</date>
+<version>5.4</version>
+<date>2006-01-06</date>
 
 <section>
 <title>Strefa czasowa</title>
@@ -48,48 +48,43 @@ link="/doc/pl/gentoo-kernel.xml">Przewodniku jąder Gentoo</uri>.
 <p>
 Dla architektury PPC polecamy jądra <c>vanilla-sources</c> i
 <c>gentoo-sources</c> (oba serii 2.6). Druga opcja jest dobra dla instalacji bez
-dostępu do sieci. Wybierzmy któreś i zainstalujmy:
+dostępu do sieci. Wybierzmy któreś i zainstalujmy. Flaga <c>USE="-doc"</c>
+uniemożliwi zainstalowanie xorg-x11 i innych zbędnych na tym etapie 
+zależności. Flaga <c>USE="symlink"</c> nie jest konieczna w przypadku nowej
+instalacji, jednak zapewnia w późniejszym okresie tworzenie prawidłowych
+dowiązań symbolicznych <path>/usr/src/linux</path>.
 </p>
 
 <pre caption="Instalowanie źródeł jądra">
-# <i>emerge gentoo-sources</i>
+# <i>USE="-doc symlink" emerge gentoo-sources</i>
 </pre>
 
+<!-- Removed, as we're trying to avoid specific kernel versions to improve
+HB maintainability
 <note>
 W momencie wydawania Gentoo 2005.1 źródła te były w wersjach:
 <c>gentoo-sources-2.6.12-r4</c> i <c>vanilla-sources-2.6.12.2</c>.
 </note>
+-->
 
 <p>
 W katalogu <path>/usr/src</path> powinien być mniej więcej taki jak poniższy
 symlink, o nazwie <path>linux</path>, wskazujący na źródła jądra. W przykładzie
-zakładamy, że źródła jądra zostały zainstalowane jako
-<c>gentoo-sources-2.6.12-r4</c>: 
+zakładamy, że źródła jądra zostały zainstalowane jako 
+<c>gentoo-sources-2.6.12-r6</c>. W komputerze użytkownika może być to inna 
+wersja, dlatego należy mieć to na uwadze.
 </p>
 
 <pre caption="Podgląd symlinka do źródeł kernela">
 # <i>ls -l /usr/src/linux</i> 
-lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.12-gentoo-r4
-</pre>
-
-<p>
-Jeśli informacje z symlinka nie pokrywają się z rzeczywistością (np. wskazuje na
-inne źródła jądra) to będziemy musieli go poprawić przed przejściem do dalszych
-części tego dokumentu. Poniżej zakładamy, że zainstalowano jądro
-<c>gentoo-sources-2.6.12-r4</c>.
-</p>
-
-<pre caption="Zmiana dowiązania symbolicznego do źródeł jądra">
-# <i>rm /usr/src/linux</i>
-# <i>cd /usr/src</i>
-# <i>ln -s linux-2.6.12-gentoo-r6 linux</i>
+lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.12-gentoo-r6
 </pre>
 
 <p>
 Pora na skonfigurowanie i skompilowanie źródeł jądra. Można użyć do tego celu
 program <c>genkernel</c>, który zbuduje uniwersalne jądro, takie jak np.
 to używane przez płyty instalacyjne. Można też przeprowadzić cały proces
-ręcznie i lepiej dostostosować kernel do własnych potrzeb. Zaczniemy od
+ręcznie i lepiej dostosować kernel do własnych potrzeb. Zaczniemy od
 omówienia tej drugiej, znacznie lepszej metody.
 </p>
 
@@ -112,7 +107,7 @@ genkernel</uri>
 <p>
 Ręczna konfiguracja kernela jest często postrzegana jako najtrudniejsza czynność
 jaką użytkownicy Linuksa muszą wykonywać. Nie jest to prawdą, po skompilowaniu
-kilku kerneli nie będziemy pamiętać, że kiedykowiek uważaliśmy to za trudne
+kilku kerneli nie będziemy pamiętać, że kiedykolwiek uważaliśmy to za trudne
 zadanie.  
 </p>
 
@@ -121,7 +116,7 @@ Nie sposób jednak zaprzeczyć, że należy dobrze znać swój komputer, aby mó
 prawidłowo skonfigurować jądro. Większość informacji można zdobyć poprzez
 zemergowanie pakietu pciutils (<c>emerge pciutils</c>) zawierającego program
 <c>lspci</c>. Dzięki temu będzie możliwe używanie <c>lspci</c> wewnątrz
-chrootowanego środowiska. Podczas pracy z tym programem możne bezpieczenie
+chrootowanego środowiska. Podczas pracy z tym programem można bezpiecznie
 zignorować wszelkie ostrzeżenia związane z <e>pcilib</e> (jak np.
 "pcilib: cannot open /sys/bus/pci/devices). Ponadto można również uruchomić
 <c>lspci</c> poza środowiskiem chroot. Powinno dać to taki sam efekt. Dodatkowe
@@ -133,13 +128,16 @@ okazać się cennym źródłem informacji. Do ich wyświetlania służy poleceni
 </p>
 
 <p>
-Kiedy już zbierzemy wszystkie informacje przechodzimy do katalogu ze
-źródłami i wpisujemy polecenie <c>make menuconfig</c>. Uruchomi się menu
-konfiguracyjne oparte na ncurses.
+Teraz pora na przeniesienie się do katalogu ze źródłami kernel, a następnie
+jego konfiguracja. Aby dodać domyślne ustawienia do konfiguracji, zaleca się
+uruchomienie najpierw polecenia <c>make defconfig</c>. Po wygenerowaniu
+domyślnej konfiguracji pora na wydanie polecenia <c>make menuconfig</c>, po
+którym uruchomi się menu konfiguracyjne oparte na ncurses.
 </p>
 
 <pre caption="Uruchamianie menuconfig">
 # <i>cd /usr/src/linux</i>
+# <i>make defconfig</i>
 # <i>make menuconfig</i>
 </pre>
 
@@ -174,15 +172,13 @@ plików, których zamierzamy używać. Jeśli o to nie zadbamy, Gentoo nie będz
 stanie zamontować partycji, a czasem nawet się nie uruchomi. Pamiętać należy
 również, aby włączać te sterowniki na stałe do jądra, w żadnym wypadku nie
 kompilujmy ich jako moduły. Przy okazji zaznaczamy też <c>Virtual memory</c> i
-<c>/proc file system</c>. <e>Nie należy</e> włączać opcji <c>/dev file
-system</c>.  
+<c>/proc file system</c>. 
 </p>
 
 <pre caption="Wybór potrzebnych systemów plików">
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
-    [ ] /dev file system support (OBSOLETE)
     [*] Virtual memory file system support (former shm fs)
 
 <comment>(Wybieramy jedną lub kilka z tych opcji zależnie od używanych systemów plików.)</comment>
@@ -318,18 +314,9 @@ Pegasosie)</path>.
 </p>
 
 <pre caption="Instalowanie kernela">
-<comment>Zastępujemy 2.6.12 wersją jądra</comment>
-(Apple/IBM)  # <i>cp vmlinux /boot/kernel-2.6.12</i>
-(Pegasos)    # <i>cp arch/ppc/boot/images/zImage.chrp /boot/kernel-2.6.12</i>
-</pre>
-
-<p>
-Dobrym pomysłem jest skopiowanie tam również pliku konfiguracyjnego, który
-posłużył do zbudowania jądra.
-</p>
-
-<pre caption="Tworzenie kopii zapasowej konfiguracji jądra">
-# <i>cp .config /boot/config-2.6.12-gentoo-r6</i>
+<comment>replace &lt;kernel-version&gt; with your kernel version</comment>
+(Apple/IBM)  # <i>cp vmlinux /boot/&lt;kernel-version&gt;</i>
+(Pegasos)    # <i>cp arch/ppc/boot/images/zImage.chrp /boot/&lt;kernel-version&gt;</i>
 </pre>
 
 <p>
@@ -439,10 +426,10 @@ dostępne sterowniki.
 <p>
 Jeśli partycja rozruchowa została sformatowana w innym niż ext2 lub ext3
 systemie plików należy ręcznie dodać potrzebne dla nich sterowniki, wybiera się
-je przy pomocy menu <c>genkernel --menuconfig all</c>. Sterowniki te muszą być
-wkompilowane w jądro <e>na stałe</e>, nie można dodawać ich w postaci modułów.
-Użytkownicy EVMS2 lub LVM2 powinni dodać również <c>--evms2</c> lub
-<c>--lvm2</c> do listy argumentów.
+je przy pomocy menu <c>genkernel --menuconfig --genzimage all</c>. Sterowniki
+te muszą być wkompilowane w jądro <e>na stałe</e>, nie można dodawać ich w 
+postaci modułów. Użytkownicy EVMS2 lub LVM2 powinni dodać również 
+<c>--evms2</c> lub <c>--lvm2</c> do listy argumentów.
 </p>
 
 <pre caption="Uruchamianie genkernel">
@@ -477,8 +464,7 @@ uruchomienia systemu urządzenia, natomiast coldplug zajmuje się wszystkim inny
 </p>
 
 <pre caption="Emergowanie i uruchamianie coldplug">
-	<comment>(Należy to wykonać po instalacji, czyli w trakcie instalacji
-		według wskazówek GRP)</comment>	
+<comment>(Należy to wykonać po instalacji, czyli w trakcie instalacji według wskazówek GRP)</comment>	
 # <i>emerge -k coldplug</i>
 # <i>rc-update add coldplug boot</i>
 </pre>
@@ -488,7 +474,7 @@ Jeśli chcemy, aby system reagował na zdarzenia hotplug, wtedy powinniśmy
 zainstalować i ustawić <c>hotplug</c>:
 </p>
 
-<pre caption="Emerging and enabling hotplug">
+<pre caption="Emergowanie i uruchamianie hotplug">
 # <i>emerge hotplug</i>
 # <i>rc-update add hotplug default</i>
 </pre>

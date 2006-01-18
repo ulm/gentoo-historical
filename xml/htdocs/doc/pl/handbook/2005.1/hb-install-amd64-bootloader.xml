@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/2005.1/hb-install-amd64-bootloader.xml,v 1.1 2005/10/07 00:58:19 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/2005.1/hb-install-amd64-bootloader.xml,v 1.2 2006/01/18 14:14:09 rane Exp $ -->
 
 <sections>
-<version>5.1</version>
-<date>2005-08-12</date>
+<version>5.6</version>
+<date>2006-11-25</date>
 
 <section>
 <title>Podejmowanie decyzji</title>
@@ -105,7 +105,7 @@ My przedstawimy trzy najczęściej używane opcje:
      <ti>ywrap</ti>
      <ti>
      Przyjmuje, że karta graficzna może dzielić bloki swojej pamięci (na
-     przyklad kiedy zbliża się do końca pamięci może kontynuować zapis na
+     przykład kiedy zbliża się do końca pamięci może kontynuować zapis na
      początku).
      </ti>
   </tr>
@@ -199,7 +199,7 @@ pomocy nano, lub dowolnego innego edytora należy utworzyć plik
 Następnie zredagujmy plik <path>grub.conf</path>. Poniżej znajdują się trzy
 przykłady pliku <path>grub.conf</path>, odpowiadające schematowi partycjonowania
 użytemu w tym przewodniku, z obrazem jądra o nazwie
-<path>kernel-2.6.11-gentoo-r1</path>. Wyczerpująco opatrzymy komentarzami tylko
+<path>kernel-2.6.12-gentoo-r10</path>. Wyczerpująco opatrzymy komentarzami tylko
 pierwszy <path>grub.conf</path>.
 </p>
 
@@ -228,12 +228,12 @@ default 0
 timeout 30
 <comment># Ładniutki, tłuściutki obrazek na zaostrzenie apetytu :)
 # Należy zakomentować jeśli nie mamy zainstalowanej karty graficznej</comment>
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-gentoo-r1
+title=Gentoo Linux 2.6.12
 <comment># Partycja na której znajduje się obraz jądra (lub system operacyjny) </comment>
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r1 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
+kernel /kernel-2.6.12-gentoo-r10 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
 initrd /initramfs-genkernel-amd64-2.6.11-gentoo-r1
 
 <comment># Następne cztery linie potrzebne są tylko gdy chcemy uruchamiać także
@@ -248,12 +248,12 @@ chainloader +1
 <pre caption = "grub.conf dla użytkowników genkernela">
 default 0
 timeout 30
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11
+title=Gentoo Linux 2.6.12
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r3 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3
-initrd /initramfs-genkernel-amd64-2.6.11-gentoo-r3
+kernel /kernel-2.6.12-gentoo-r10 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3
+initrd /initramfs-genkernel-amd64-2.6.12-gentoo-r10
 
 <comment># Tylko, gdy chcemy uruchamiać dwa systemy</comment>
 title=Windows XP
@@ -262,7 +262,7 @@ makeactive
 chainloader +1
 </pre>
 
-<note>
+<p>
 Jeśli partycjonowanie wykonane zostało w inny sposób i/lub używasz innego obrazu
 jądra, należy dokonać niezbędnych poprawek. Warto pilnować, aby wszystko co
 dotyczy urządzenia z GRUB-em (np. <path>(hd0,0)</path>) było względne w stosunku
@@ -270,7 +270,18 @@ do punktu montowania, a nie partycji root. Innymi słowy,
 <path>(hd0,0)/grub/splash.xpm.gz</path> w rzeczywistości znaczy
 <path>/boot/grub/splash.xpm.gz</path>, gdyż <path>(hd0,0)</path>
 to partycja <path>/boot</path>.
-</note>
+</p>
+
+<p>
+Ponadto, jeżeli nie będziemy postępować zgodnie z podanym wyżej schematem
+partycji i nie stworzymy osobnej dla <path>/boot</path>, prefiks
+<path>/boot</path> będzie <e>wymagany</e> w przykładach, zaprezentowanych
+poprzednio. Jeżeli jednak postępowaliśmy zgodnie ze wskazówkami tutaj
+zawartymi, prefiks <path>/boot</path> nie jest konieczny, ponieważ dowiązanie
+symboliczne <path>boot</path> sprawia, że działają one bez zarzutu. W skrócie,
+powyższe przykłady, będą działać bez względu na to czy wydzielimy oddzielną
+partycję <path>/boot</path> czy nie.
+</p>
 
 <p>
 Jeśli chcemy przekazać do jądra przy starcie jakieś dodatkowe opcje, po prostu
@@ -314,13 +325,15 @@ Alternatywnie: Ręczne instalowanie GRUB-a</uri>.
 <p>
 Żeby zainstalować GRUB-a należy wpisać komendę <c>grub-install</c>. Nie zadziała
 to jednak bez pewnych zmian, bo wciąż działamy w chrootowanym środowisku.
-Będziemy musieli uaktualnić plik <path>/etc/mtab</path> (plik z informacjami
-dotyczącymi zamontowanych napędów). Na szczęście jest na to prosta
-metoda, wystarczy nadpisać ten plik plikiem <path>/proc/mounts</path>.
+Będziemy musieli stworzyć plik <path>/etc/mtab</path>, który wyświetla
+wszystkie zamontowane systemy plików. Na szczęście jest prosta metoda.
+Wystarczy skopiować nadpisać ten plik, plikiem <path>/proc/mounts</path>,
+wyłączając linię <c>rootfs</c>, jeżeli nie mamy stworzonej oddzielnej partycji
+dla <path>/boot</path>. Poniższa komenda zadziała w obu przypadkach:
 </p>
 
 <pre caption="Aktualizacja /etc/mtab">
-# <i>cp /proc/mounts /etc/mtab</i>
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
 
 <p>
@@ -436,8 +449,9 @@ Gentoo z dysku, a nie z płyty CD.
 </p>
 
 <p>
-Następnie kończymy proces instalacji zgodnie ze wskazówkami spisanymi w rozdziale <uri
-link="?part=1&amp;chap=11">Finalizowanie instalacji Gentoo</uri>.
+Następnie kończymy proces instalacji zgodnie ze wskazówkami spisanymi w
+rozdziale <uri link="?part=1&amp;chap=11">Finalizowanie instalacji
+Gentoo</uri>.
 </p>
 
 </body>
