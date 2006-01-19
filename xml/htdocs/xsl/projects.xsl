@@ -130,7 +130,7 @@
       </tr>
     </xsl:if>
     <xsl:for-each select="project/subproject">
-      <xsl:sort select="document(string(@ref))/project/name"/>
+      <xsl:sort select="translate(document(string(@ref))/project/name,'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/>
       <xsl:call-template name="projlist">
         <xsl:with-param name="ref" select="string(@ref)"/>
         <xsl:with-param name="level" select="$level + 1"/>
