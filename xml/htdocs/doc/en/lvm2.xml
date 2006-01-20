@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/lvm2.xml,v 1.16 2005/10/03 22:49:15 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/lvm2.xml,v 1.17 2006/01/20 11:42:43 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link = "/doc/en/lvm2.xml">
+<guide link="/doc/en/lvm2.xml">
 <title>Gentoo LVM2 installation</title>
 
 <author title="Author">
@@ -24,8 +24,8 @@ Manager version 2 (LVM2).
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.0.11</version>
-<date>2005-08-17</date>
+<version>2.1</version>
+<date>2006-01-20</date>
 
 <chapter>
 <title>Introduction</title>
@@ -62,7 +62,7 @@ If you do a fresh install of Gentoo, you will need to use a bootable CD with
 LVM2 support such as a Gentoo Installation CD. You can find the Installation CDs for an x86
 architecture on our <uri
 link="/main/en/mirrors.xml">mirrors</uri> under
-<path>/releases/x86/2005.1/installcd</path>. Other architectures might
+<path>/releases/x86/2005.1-r1/installcd</path>. Other architectures might
 be supported as well.
 </p>
 
@@ -134,20 +134,15 @@ own needs.
 </p>
 
 <p>
-Create a small physical /boot partition (hda1). In this example, /boot will be
-not managed by LVM2. This partition will contain your bootloader and your
-kernel(s).  A 64MB partition should be well enough for quite a few kernel
-generations.
+Create a small physical <path>/boot</path> partition (hda1). In this example,
+<path>/boot</path> will be not managed by LVM2. This partition will contain
+your bootloader and your kernel(s).  A 64MB partition should be well enough for
+quite a few kernel generations.
 </p>
 
 <p>
-Create a swap partition (hda2) and activate it.
+Create a swap partition (hda2).
 </p>
-
-<pre caption="Activating the swap partition">
-# <i>mkswap /dev/hda2</i>
-# <i>swapon /dev/hda2</i>
-</pre>
 
 <p>
 Create a / (root) partition (hda3). If you are interested in trying to put your
@@ -167,10 +162,10 @@ still somewhat usable, as root) if something goes terribly wrong.
 </note>
 
 <p>
-Assuming the /boot, swap and root partitions do not use the whole physical disk,
-create a fourth partition on this disk and set it to type 8e (Linux LVM).
-If you have more physical drives you would like to use with LVM, create 
-one partition on each and give them the same type (8e).
+Assuming the <path>/boot</path>, swap and root partitions do not use the whole
+physical disk, create a fourth partition on this disk and set it to type 8e
+(Linux LVM).  If you have more physical drives you would like to use with LVM,
+create one partition on each and give them the same type (8e).
 </p>
 
 <note>
@@ -184,6 +179,12 @@ until you know you need it. As an example, one contributor had split his
 </note>
 
 <p>
+Create the filesystems on <path>/dev/hda1</path> and <path>/dev/hda3</path>,
+and create and activate the swap on <path>/dev/hda2</path> as described in the
+handbook.
+</p>
+
+<p>
 Load the LVM2 <path>dm-mod</path> module.
 </p>
 
@@ -192,13 +193,22 @@ Load the LVM2 <path>dm-mod</path> module.
 </pre>
 
 <p>
-Scan and activate LVM:
+Before scanning and activating LVM, you might want to edit
+<path>/etc/lvm/lvm.conf</path> to exclude some devices. By default, LVM2 will
+scan all devices, even your CDROM which can generate error messages. In the
+following exemple, the line that allows scanning of all devices is replaced by
+one that rejects every device but our two IDE disks.
 </p>
 
 <pre caption="Activating LVM">
-<comment>(Avoid scanning your cdrom)</comment>
-# <i>mkdir -p /etc/lvm</i>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >/etc/lvm/lvm.conf</i>
+<comment>(Avoid scanning all devices but our disks)</comment>
+# <i>nano -w /etc/lvm/lvm.conf</i>
+<comment>(Look for the following line)</comment>
+    filter = [ "a/.*/" ]
+<comment>(Replace it with the following one to scan
+/dev/hda and /dev/hdb and reject anything else)</comment>
+    filter = [ "a|/dev/hd[ab]|", "r/.*/" ]
+<comment>(Save the file and quit nano)</comment>
 # <i>vgscan</i>
   Reading all physical volumes.  This may take a while...
   No volume groups found
@@ -389,14 +399,14 @@ will check the presence of a required source file under
 
 <pre caption="Emerging the LVM2 package">
 # <i>emerge lvm2</i>
-<comment>(At the time of writing, the stable version is 2.00.08.
-With version 2.00.08, prevent lvm2 from probing your cdrom by doing:</comment>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >> /etc/lvm/lvm.conf</i>
-
-<comment>(Versions 2.00.15 and later come with a /etc/lvm/lvm.conf
-Edit your /etc/lvm/lvm.conf and follow the comments</comment>
-# <i>nano -w /etc/lvm/lvm.conf</i>
 </pre>
+
+<p>
+Edit <path>/etc/lvm/lvm.conf</path> as described <uri
+link="#doc_chap2_pre2">earlier</uri>. The file you previously edited is part of
+your installation environment and will disappear after the next reboot.  This
+time, you edit the real one inside your new Gentoo install.
+</p>
 
 <p>
 When editing your <path>/etc/fstab</path> file, follow the handbook and add
@@ -481,10 +491,9 @@ instead:
     The <uri link="http://tldp.org/HOWTO/LVM-HOWTO">LVM Howto</uri>
   </li>
   <li>
-    Daniel Robbins's articles on LVM at IBM's DeveloperWorks:
-    <uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm/?dwzone=linux</uri>
-    and 
-    <uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm2.html?dwzone=linux</uri>
+    Daniel Robbins's articles on LVM for IBM's DeveloperWorks: <uri
+    link="/doc/en/articles/lvm-p1.xml">Part 1</uri> and <uri
+    link="/doc/en/articles/lvm-p2.xml">Part 2</uri>
   </li>
   <li>
     How to boot your root FS off of LVM1:
