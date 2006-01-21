@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pt_br/desktop/x/x11/modular-x-howto.xml,v 1.1 2006/01/21 22:41:14 vanquirius Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/pt_br/desktop/x/x11/modular-x-howto.xml" lang="pt_br">
+<title>Guia de migração para o X modular</title>
+
+<author title="Autor">
+  <mail link="spyderous@gentoo.org">Donnie Berkholz</mail>
+</author>
+<author title="Autor">
+  <mail link="joshuabaergen@gentoo.org">Joshua Baergen</mail>
+</author>
+<author title="Tradutor">
+  <mail link="vanquirius@gentoo.org">Marcelo Góes</mail>
+</author>
+
+<abstract>
+Este guia explica como migrar para o X.Org modular.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.1</version>
+<date>2006-01-02</date>
+
+<chapter>
+<title>Introdução</title>
+
+<section>
+<title>Por que modular?</title>
+<body>
+
+<p>
+Você deve estar pensando, por que aquele pacote xorg-x11 simpático e simples se
+transformou em quase 300 separados? E você está justificado em perguntar. =)
+Não é uma coisa que o Gentoo está fazendo independentemente dos desenvolvedores
+do X.Org; eles estão dividindo os pacotes em lançamentos separados, e nós
+estamos seguindo eles.
+</p>
+
+<p>
+O raciocínio atrás da divisão e mudança no sistema de construção tem pelo menos
+três motivos:
+</p>
+<ul>
+<li>
+O X é muito difícil para atrair novos desenvolvedores, portanto a mudança para
+autotools, um sistema com que mais pessoas sentem-se confortáveis, se não
+contentes.
+</li>
+<li>
+Junto com esta mudança, dividir o código é possível com autotools, e também
+torna mais fácil para desenvolvedores.
+</li>
+<li>
+As coisas estavam desnecessariamente amarradas no passado, e isto tornou a
+solução de bugs quase impossível. Para poder lançar consertos, era necessário
+reconstruir todo XOrg. Por exemplo, um bug no driver ati poderia ou esperar 6
+meses até o próximo lançamento, ou você teria que reconstruir suas fontes para
+tê-lo, sem qualquer razão.
+</li>
+</ul>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Migrando para o X modular</title>
+
+<section>
+<title>Introdução</title>
+<body>
+
+<p>
+Para impedir que pacotes antigos entrem no caminho, nós iremos limpar as sobras
+do xorg-x11 antigo antes de instalar o X modular. Isto não é absolutamente
+crucial, mas irá garantir uma migração suave.
+</p>
+</body>
+</section>
+
+<section>
+<title>Primeiro passo: limpe seu X antigo</title>
+<body>
+    
+<pre caption="Fazendo back-up do xorg-x11 antigo">
+# <i>emerge gentoolkit</i>
+# <i>quickpkg xorg-x11</i>
+</pre>
+
+<p>
+Livre-se da instalação monolítica:
+</p>
+
+<pre caption="Desinstalando a instalação monolítica">
+# <i>emerge -Ca xorg-x11 virtual/x11</i>
+# <i>rm -rf /usr/lib/opengl/xorg-x11</i>
+# <i>rm -rf /usr/lib/libGL*</i>
+</pre>
+
+<p>
+Você certamente deve ter uma cópia de backup do xorg-x11 monolítico caso as
+coisas dêem totalmente errado.
+</p>
+
+<p>
+Os passos seguintes ajudam a limpar os links simbólicos criados por
+<c>opengl-update</c>.
+</p>
+
+<p>
+Se seu <path>/usr/X11R6</path> não for um link simbólico para <path>/usr</path>,
+apague-o e comece do zero. Mas primeiro, salve uma lista de todos pacotes lá
+instalados.
+</p>
+
+<pre caption="Faça uma lista dos pacotes">
+# <i>if [[ ! -L /usr/X11R6 ]]; \
+	then equery belongs /usr/X11R6 > usr-x11r6-packages \
+	&amp;&amp; rm -rf /usr/X11R6; fi</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Segundo passo: instalando o X modular</title>
+<body>
+    
+<p>
+Primeiro, adicione os pacotes necessários a
+<path>/etc/portage/package.unmask</path>. Abra
+<path>/usr/portage/profiles/package.mask</path> no editor de texto de sua
+escolha e copie e cole a lista completa da máscara do X modular para
+<path>package.unmask</path>. Faça o mesmo com
+<path>/etc/portage/package.keywords</path> se você estiver rodando estável. Se
+nada disso fez sentido, leia a <uri
+link="/doc/pt_br/handbook/handbook-x86.xml?part=3&amp;chap=3">seção do manual
+sobre máscaras</uri>.
+</p>
+
+<p>
+Para direct rendering, você deve ativar a opção de USE <c>dri</c>.
+</p>
+
+<p>
+Agora, instale a metabuild. Ela irá instalar o servidor e aplicações populares,
+dando a você uma implementação de desktop de X funcional:
+</p>
+
+<pre caption="Instalando a metabuild modular">
+# <i>emerge xorg-x11</i>
+</pre>
+
+<p>
+Note que esta instalação tenta ser mínima, então coisas como xcursor-themes não
+são instaladas por padrão.
+</p>
+
+<p>
+A seguir, instale alguns drivers. Isto irá variar dependendo de seu hardware de
+entrada e de vídeo, então por favor olhe em
+ <path>/usr/portage/x11-drivers/</path>. Aqui está um exemplo:
+</p>
+
+<pre caption="Instalando alguns drivers">
+# <i>emerge xf86-input-mouse xf86-input-keyboard xf86-video-ati</i>
+</pre>
+
+<note>
+Com o X modular instalado, drivers externos como nvidia-glx e wacom bem como
+algumas aplicações de vnc podem não funcionar se instalarem coisas em
+<path>/usr/lib/modules</path> ao invés de <path>/usr/lib/xorg/modules</path>.
+Vários deles terão detecção de X modular no processo de instalação e irão
+precisar ser re-instalados depois da instalação do X modular.
+</note>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Avisos/Problemas comuns</title>
+<section>
+<title>'emerge -u world' quer instalar o xorg-x11 6.x</title>
+<body>
+
+<p>
+Este problema ocorre porque a árvore ainda não está pronta para dependências
+modulares ainda. Você pode ajudar o esforço de porting lendo o <uri
+link="/proj/en/desktop/x/x11/porting-modular-x-howto.xml">Guia de porting para
+X modular</uri> e abrindo bugs com patches para os mantenedores de cada pacote.
+Os mantenedores são listados no <path>metadata.xml</path> no mesmo diretório
+que o pacote e o pacote <c>herdstat</c> irá agilizar sua procura.
+</p>
+
+
+</body>
+</section>
+<section>
+<title>O que aconteceu com todas opções de USE?</title>
+<body>
+
+<p>
+Muitas opções de USE da série do xorg-x11-6.8 sumiram ou foram mudadas no 7.0.
+Algumas novas opções de USE apareceram. Aqui está o motivo:
+</p>
+
+<table>
+<tr>
+	<th>Opção de USE</th>
+	<th>O que acontece no 7.0?</th>
+</tr>
+<tr>
+	<ti>3dfx</ti>
+	<ti>No 7.0, puxa glide-v3 da metabuild do xorg-x11</ti>
+</tr>
+<tr>
+	<ti>3dnow, mmx, sse</ti>
+	<ti>Ativadas por padrão na hora de construção, porque são verificações de runtime</ti>
+</tr>
+<tr>
+	<ti>bitmap-fonts, truetype-fonts, type1-fonts</ti>
+	<ti>
+		A metabuild do xorg-x11 puxa uma pequena seleção das fontes mais usadas e
+		necessárias. Você pode instalar outras fontes adicionais de media-fonts/.
+	</ti>
+</tr>
+<tr>
+	<ti>cjk</ti>
+	<ti>
+		USE=nls em font-misc-misc e font-sony-misc para obter fontes
+                japonesas JISX0201. Mais fontes estão em font-jis-misc. Fontes
+		chinesas estão em font-isas-misc. Fontes coreanas estão em
+		font-daewoo-misc.
+	</ti>
+</tr>
+<tr>
+	<ti>dlloader</ti>
+	<ti>O 7.0 usa dlloader por padrão, e o elfloader não funciona/</ti>
+</tr>
+<tr>
+	<ti>doc</ti>
+	<ti>Mudado para app-doc/xorg-docs</ti>
+</tr>
+<tr>
+	<ti>dmx</ti>
+	<ti>Construído com xorg-server a menos que USE=minimal</ti>
+</tr>
+<tr>
+	<ti>font-server</ti>
+	<ti>Você pode instalar o xfs manualmente.</ti>
+</tr>
+<tr>
+	<ti>ipv6</ti>
+	<ti>
+		Mudado para pacotes individuais que usam a opção. Selecione
+		globalmente se quiser.
+	</ti>
+</tr>
+<tr>
+	<ti>minimal</ti>
+	<ti>
+		Para obter o mesmo efeito, instale só o xorg-server ao invés de xorg-x11.
+		USE=minimal no xorg-server irá evitar a construção de Xdmx, Xvfb
+		e Xnest. Se você precisar de algo ainda mais minimalista, veja
+		x11-base/kdrive.
+	</ti>
+</tr>
+<tr>
+	<ti>nls</ti>
+	<ti>No 7.0, USE=nls instala todas versões não-ISO8859-1 das fontes.</ti>
+</tr>
+<tr>
+	<ti>nocxx</ti>
+	<ti>Ainda não há equivalente no 7.0</ti>
+</tr>
+<tr>
+	<ti>opengl</ti>
+	<ti>
+		Nome mudado para "dri," que ativa suporte de direct rendering no
+		xorg-server e muitos drivers. Estando USE=dri ligado ou
+		desligado, você ainda pode ter software 3D através de Mesa.
+	</ti>
+</tr>
+<tr>
+	<ti>pam</ti>
+	<ti>Mudada para pacotes individuais que a usam, como xorg-server e xdm</ti>
+</tr>
+<tr>
+	<ti>sdk</ti>
+	<ti>7.0 deve instalar o SDK como uma conseqüência da modularização.</ti>
+</tr>
+<tr>
+	<ti>static</ti>
+	<ti>
+		Não faz mais sentido construir um servidor estático em um mundo
+		modular, porque o driver não pode ser construído dentro dele.
+	</ti>
+</tr>
+<tr>
+	<ti>xprint</ti>
+	<ti>
+		Na metabuild, puxa libXp. Em outras aplicações, constrói suporte
+		para xprint. A maior parte das pessoas não devem ativar isto.
+	</ti>
+</tr>
+<tr>
+	<ti>xv</ti>
+	<ti>
+		Não é mais opcional já que não economiza muito tamanho e causa
+		outros problemas com pacotes que esperam xv.
+	</ti>
+</tr>
+</table>
+
+</body>
+</section>
+
+<section>
+<title>Problemas de drivers</title>
+<body>
+
+<p>
+Ouvi relatos de que:
+</p>
+
+<ul>
+  <li>vesa trava em máquina com placa mga</li>
+  <li>vga produz uma tela muito estranha, dividida em quartos</li>
+</ul>
+</body>
+</section>
+<section>
+<title>Obtendo glxinfo/glxgears</title>
+<body>
+
+<p>
+Estes programas são agora fornecidos por <c>x11-apps/mesa-progs</c>.
+<c>mesa-progs</c> é puxado pelo pacote <c>x11-base/xorg-x11</c> automaticamente.
+</p>
+
+<p>
+Para obter informações de debug do glxinfo para ajudar a fazer direct rendering
+funcionar:
+</p>
+
+<pre caption="Obtendo informações de debug do glxinfo">
+# <i>LIBGL_DEBUG=verbose glxinfo</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Auto-detecção de protocolo de mouse</title>
+<body>
+
+<p>
+Se você tiver <c>Protocol "auto"</c> configurado no xorg.conf para seu mouse
+pode não funcionar. Você pode ter que especificar <c>Protocol "ExplorerPS/2"</c>
+ou <c>"IMPS/2"</c> para que sua roda funcione.
+</p>
+
+</body>
+</section>
+<section>
+<title>Tudo em /usr/lib/xorg sumiu!</title>
+<body>
+
+<p>
+Reinstale o &gt;=xorg-server-0.99.1-r4. Isto foi um bug temporário que resultou
+em apagamento depois da remoção de um pacote. Ao invés disso,
+<path>/usr/lib/xorg</path> só deveria ter sido apagado se nenhum xorg-server
+houvesse sobrado no sistema.
+</p>
+
+</body>
+</section>
+<section>
+<title>gdm/kdm não funcionam</title>
+<body>
+
+<p>
+Se você instalou o X modular em uma nova instalação do Gentoo, pode ser que você
+não tem um link simbólico <path>/usr/X11R6</path> -&gt; <path>/usr</path>. O
+pacote <c>x11-base/xorg-x11</c> irá certificar que o link simbólico existe
+durante o processo de emerge.
+</p>
+
+<p>
+Você pode ajudar a tirar as coisas de <path>/usr/X11R6</path> consertando os
+pacotes que instalam coisas ali e abrindo bugs.
+</p>
+
+</body>
+</section>
+<section>
+<title>Outros problemas</title>
+<body>
+
+<ul>
+  <li>
+    O pacote <c>x11-base/xorg-x11</c> agora filtra todas linhas ModulePath e
+    RgbPath de seu <path>/etc/X11/xorg.conf</path>, já que os dois caminhos
+    foram mudados desde versões anteriores. Certifique-se de rodar
+    <c>etc-update</c> para finalizar estas mudanças.
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>
