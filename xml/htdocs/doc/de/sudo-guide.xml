@@ -1,0 +1,457 @@
+<?xml version='1.0' encoding="UTF-8"?>
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/sudo-guide.xml,v 1.1 2006/01/21 07:32:57 grahl Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- English CVS Version: 1.8 -->
+<guide link="/doc/de/sudo-guide.xml">
+<title>Gentoo Sudo(ers) Anleitung</title>
+
+<author title="Autor">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Übersetzer">
+  <mail link="erik.bergmann at gmail.com">Erik Bergmann</mail>
+</author>
+<author title="Übersetzer">
+  <mail link="gentoodoc@itsnotmy.name">Sebastian Westermayer</mail>
+</author>
+
+<abstract>
+Will man, dass mehrere Benutzer administrative Aufgaben übernehmen ohne ihnen
+volle Rootrechte zu geben, ist sudo die beste Wahl. Mit sudo kann man
+kontrollieren wer was darf. Diese Anleitung stellt eine kurze Einführung zu
+diesem großartigen Werkzeug dar.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.5</version>
+<date>2005-12-31</date>
+
+<chapter>
+<title>Über Sudo</title>
+<section>
+<title>Rechte vergeben</title>
+<body>
+
+<p>
+Das Paket <c>app-admin/sudo</c> erlaubt es dem Admininstrator anderen Benutzern
+Rechte auf eine oder mehrere Anwendungen zu vergeben, auf die sie normalerweise
+keine Rechte hätten. Anstatt das <e>setuid</e> Bit für diese Anwendungen zu
+setzen, bietet <c>sudo</c> eine präzise Kontrolle darüber <e>wer</e> <e>wann</e>
+einen bestimmten Befehl ausführen darf.
+</p>
+
+<p>
+Mit <c>sudo</c> kann man eine klare Liste erstellen, <e>wer</e> eine bestimmte
+Anwendung ausführen darf. Würde man das setuid Bit setzen, könnte jeder
+Benutzer die jeweilige Anwendung starten (bzw. jeder Benutzer einer bestimmten
+Gruppe, je nach dem welche Berechtigungen vergeben wurden). Sie können (und
+sollten sogar) vom Benutzer die Eingabe eines Passworts verlangen, wenn er
+eine Anwendung ausführen will und Sie können die Berechtigungen anhand des
+Standorts an dem sich der Benutzer befindet genau festlegen: ob er direkt am
+System angemeldet ist oder über SSH von einem entfernten Rechner.
+</p>
+
+</body>
+</section>
+<section>
+<title>Aktivitäten protokollieren</title>
+<body>
+
+<p>
+Ein weiterer Vorteil von <c>sudo</c> ist, dass jeder Versuch (erfolgreich oder
+nicht) eine Anwendung auszuführen, protokolliert werden kann. Das kann sehr
+hilfreich sein, wenn man denjenigen finden will, der für diesen fatalen Fehler
+verantwortlich ist, für dessen Beseitigung man 10 Stunden gebraucht hat :)
+</p>
+
+</body>
+</section>
+<section>
+<title>Sudo konfigurieren</title>
+<body>
+
+<p>
+Die <c>sudo</c> Konfiguration wird in <path>/etc/sudoers</path> verwaltet.
+Diese Datei sollte man nie mit <c>nano&nbsp;/etc/sudoers</c>,
+<c>vim&nbsp;/etc/sudoers</c> oder irgendeinem anderen Editor bearbeiten. Wenn
+Sie diese Datei verändern wollen, sollte Sie immer <c>visudo</c> verwenden.
+</p>
+
+<p>
+Dieses Werkzeug stellt sicher, dass diese Datei niemals von zwei
+Systemadministratoren gleichzeitig bearbeitet wird, es erhält die Rechte der
+Datei und überprüft die Syntax der Einstellungen um schwerwiegende Fehler zu
+verhindern.
+</p>
+
+</body>
+</section>
+<section>
+<title>Über diese Anleitung</title>
+<body>
+
+<p>
+Diese Anleitung ist als kurze Einführung gedacht. Das <c>sudo</c> Paket ist
+wesentlich mächtiger als das, was hier beschrieben wird. So gibt es spezielle
+Funktionen zum Bearbeiten von Dateien als anderer Benutzer (<c>sudoedit</c>),
+zum Einsatz innerhalb von Skripten (es läuft dann im Hintergrund und liest das
+Passwort von der Standardeingabe anstatt von der Tastatur, ...) usw.
+</p>
+
+<p>
+Bitte lesen Sie die <c>sudo</c> und <c>sudoers</c> manual Seiten für weitere
+Informationen.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Sudoers Syntax</title>
+<section>
+<title>Grundlegende Syntax</title>
+<body>
+
+<p>
+Der schwierigste Teil von <c>sudo</c> ist die Syntax in
+<path>/etc/sudoers</path>. Die grundlegende Syntax lautet in etwa so:
+</p>
+
+<pre caption="Grundlegende Syntax in /etc/sudoers">
+user  host = commands
+</pre>
+
+<p>
+Diese Zeile teilt <c>sudo</c> mit, dass der Benutzer, festgelegt durch
+<e>user</e>, von <e>host</e> aus eingeloggt, die Befehle die in
+<e>commands</e> aufgelistet sind als root ausführen darf. Ein praxisnäheres
+Beispiel macht es vielleicht verständlicher: Erlaube dem Benutzer <e>swift</e>
+das Ausführen von <c>emerge</c> wenn er lokal (nicht über SSH) eingeloggt ist:
+</p>
+
+<pre caption="Praktisches Beispiel für /etc/sudoers">
+swift  localhost = /usr/bin/emerge
+</pre>
+
+<p>
+Eine <brite>große Warnung</brite> ist allerdings angebracht: Erlauben Sie
+keinem Benutzer eine Anwendung auszuführen, die dazu genutzt werden kann
+weitere Zugriffsrechte zu erlangen. Zum Beispiel können Benutzer durch
+<c>emerge</c> Rootzugriff aufs gesamte System erlangen, da <c>emerge</c> so
+manipuliert werden kann, dass der Benutzer beliebige Dateien zu seinem Vorteil
+verändern kann. Wenn Sie Ihren <c>sudo</c> Benutzern nicht vertrauen dann
+gewähren Sie ihnen keine Rechte.
+</p>
+
+<!--
+  Wrapper sind hier auch kein wirklicher Vorteil, siehe #71750
+-->
+
+<p>
+Der Name des Benutzers kann auch durch einen Gruppennamen ersetzt werden. In
+dem Fall muss dem Gruppennamen ein <c>%</c> vorangestellt werden. Zum Beispiel
+jeden in der Gruppe <c>wheel</c> dazu berechtigen <c>emerge</c> zu starten:
+</p>
+
+<pre caption="Der wheel-Gruppe das Ausführen von emerge erlauben">
+%wheel  localhost = /usr/bin/emerge
+</pre>
+
+<p>
+Anstatt für jedes Programm eine einzelne Zeile anzulegen, können die Einträge
+auch erweitert werden. Zum Beispiel um dem Benutzer zu erlauben nicht nur
+<c>emerge</c> sondern auch <c>ebuild</c> und <c>emerge-webrsync</c> als root
+zu starten:
+</p>
+
+<pre caption="Mehrere Befehle">
+swift  localhost = /usr/bin/emerge, /usr/bin/ebuild, /usr/sbin/emerge-webrsync
+</pre>
+
+<p>
+Es ist auch möglich einen präzisen Befehl und nicht nur den Pfad zum Programm
+selbst anzugeben. Dies kann dazu verwendet werden, um die Benutzung einer
+Anwendung auf einen Satz von vorgeschriebenen Befehlsoptionen zu begrenzen. Das
+Programm <c>sudo</c> erlaubt zu diesem Zweck auch die Benutzung von regulären
+Ausdrücken.
+</p>
+
+<p>
+Lassen Sie uns das testen:
+</p>
+
+<pre caption="Versuch das System mit sudo zu updaten">
+$ <i>sudo emerge -uDN world</i>
+
+We trust you have received the usual lecture from the local System
+Administrator. It usually boils down to these three things:
+
+    #1) Respect the privacy of others.
+    #2) Think before you type.
+    #3) With great power comes great responsibility.
+
+Password: <comment>(Das Benutzerpasswort eingeben, nicht Root!)</comment>
+</pre>
+
+<p>
+<c>sudo</c> verlangt das Passwort des Benutzers. Damit wird sichergestellt,
+dass kein versehentlich offen gelassenes Terminal für bösartige Zwecke
+missbraucht wird.
+</p>
+
+<p>
+Sie sollten wissen, dass <c>sudo</c> die <c>${PATH}</c> Variable nicht
+verändert: Jeder Befehl den Sie nach <c>sudo</c> eingeben, geht von
+<e>Ihrer</e> Umgebung aus. Will ein Benutzer zum Beispiel ein Programm in
+<path>/sbin</path> ausführen, so muss er <c>sudo</c> den vollständigen Pfad
+übergeben, etwa so:
+</p>
+
+<pre caption="Den vollständigen Pfad zu einem Programm angeben">
+$ <i>sudo /usr/sbin/emerge-webrsync</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Aliase verwenden</title>
+<body>
+
+<p>
+In größeren Umgebungen kann es eine ermüdende Aufgabe sein alle Benutzer (oder
+Hosts oder Befehle) immer und immer wieder einzugeben. Um die Administration
+von <path>/etc/sudoers</path> zu vereinfachen können Sie <e>Aliase</e>
+definieren. Das Format um Aliase festzulegen ist ziemlich einfach:
+</p>
+
+<pre caption="Aliase in /etc/sudoers definieren">
+Host_Alias hostalias = hostname1, hostname2, ...
+User_Alias useralias = user1, user2, ...
+Cmnd_Alias cmndalias = command1, command2, ...
+</pre>
+
+<p>
+Ein Alias der immer und an jeder Stelle funktioniert, ist der <c>ALL</c> Alias
+(Um Aliase von Nicht-Aliasen deutlich zu unterscheiden, wird empfohlen Aliase
+in großen Buchstaben zu schreiben). Wie Sie sich vielleicht denken können, ist
+<c>ALL</c> ein Alias für alle möglichen Einstellungen.
+</p>
+
+<p>
+Ein Anwendungsbeispiel des <c>ALL</c> Alias, dass <e>jedem</e> lokal
+angemeldetem Benutzer erlaubt <c>shutdown</c> auszuführen:
+</p>
+
+<pre caption="Jedem Benutzer erlauben shutdown auszuführen">
+ALL  localhost = /sbin/shutdown
+</pre>
+
+<p>
+Ein weiteres Beispiel ist dem Benutzer <c>swift</c> zu erlauben <c>emerge</c>
+als root auszuführen, egal von wo aus er angemeldet ist:
+</p>
+
+<pre caption="Einem Benutzer ortsunabhängig erlauben eine Anwendung auszuführen">
+swift   ALL = /usr/bin/emerge
+</pre>
+
+<p>
+Interessanter ist es eine Liste von Benutzern festzulegen, die Anwendungen zur
+Softwareverwaltung (wie <c>emerge</c> und <c>ebuild</c>) auf dem System
+ausführen dürfen und eine Gruppe von Administratoren, die die Passwörter aller
+Benutzer (root ausgenommen) ändern dürfen.
+</p>
+
+<pre caption="Aliase für Benutzer und Befehle">
+User_Alias  <i>SOFTWAREMAINTAINERS</i> = swift, john, danny
+User_Alias  <i>PASSWORDMAINTAINERS</i> = swift, sysop
+Cmnd_Alias  <i>SOFTWARECOMMANDS</i>    = /usr/bin/emerge, /usr/bin/ebuild
+Cmnd_Alias  <i>PASSWORDCOMMANDS</i>    = /usr/bin/passwd [a-zA-Z0-9_-]*, !/usr/bin/passwd root
+
+<i>SOFTWAREMAINTAINERS</i>  localhost = <i>SOFTWARECOMMANDS</i>
+<i>PASSWORDMAINTAINERS</i>  localhost = <i>PASSWORDCOMMANDS</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Ausführen als anderer Benutzer (nicht root)</title>
+<body>
+
+<p>
+Es ist auch möglich einen Benutzer eine Anwendung als ein anderer Benutzer
+(nicht root) auszuführen zu lassen. Das kann interessant sein, wenn man Dienste
+als anderer Benutzer ausführt (wie <c>apache</c> für den Webserver) und man
+bestimmten Benutzern erlauben will administrative Aufgaben als dieser Benutzer
+auszuführen (wie das Killen von Zombieprozessen).
+</p>
+
+<p>
+In <path>/etc/sudoers</path> listen Sie die Benutzer zwischen
+<c>(</c>&nbsp;und&nbsp;<c>)</c> vor der Auflistung der Befehle auf:
+</p>
+
+<pre caption="Syntax zum Ausführen als anderer Benutzer">
+users  hosts = (run-as) commands
+</pre>
+
+<p>
+Um beispielsweise <c>swift</c> zu erlauben das Programm <c>kill</c> als
+Benutzer <c>apache</c> oder <c>gorg</c> auszuführen:
+</p>
+
+<pre caption="Beispiel für Ausführung als anderer Benutzter">
+Cmnd_Alias KILL = /bin/kill, /usr/bin/pkill
+
+swift   ALL = (apache, gorg) KILL
+</pre>
+
+<p>
+Mit diesen Einstellungen kann der Benutzer <c>sudo -u</c> aufrufen um den
+Benutzer auszuwählen als der er die Anwendung ausführen will:
+</p>
+
+<pre caption="pkill als apache-Benutzer starten">
+$ <i>sudo -u apache pkill apache</i>
+</pre>
+
+<p>
+Mit der <c>Runas_Alias</c> Direktive können Sie für die Benutzer, unter deren
+Namen die Anwendung ausgeführt werden soll, ebenfalls Aliase anlegen. Die
+Benutzung ist identisch zu den anderen <c>_Alias</c> Direktiven, die wir vorher
+behandelt haben.
+</p>
+
+</body>
+</section>
+<section>
+<title>Passwörter und Standardeinstellungen</title>
+<body>
+
+<p>
+Standardmäßig fordert <c>sudo</c> den Benutzer auf sich mit seinem eigenen
+Passwort zu identifizieren. Ist das Passwort einmal eingegeben, merkt
+<c>sudo</c> es sich für 5 Minuten um den Benutzer nicht durch andauernde
+Passwortabfragen von der Arbeit abzuhalten.
+</p>
+
+<p>
+Natürlich kann dieses Verhalten geändert werden: Sie können die
+<c>Defaults:</c> Direktive in <path>/etc/sudoers</path> setzen um das
+Verhalten für die einzelnen Benutzer zu ändern.
+</p>
+
+<p>
+Um zum Beispiel die standardmäßigen 5 Minuten auf 0 (nicht merken) zu
+verändern:
+</p>
+
+<pre caption="Den Wert für das Timeout ändern">
+Defaults:swift  timestamp_timeout=0
+</pre>
+
+<p>
+Mit der Einstellung <c>-1</c> wird das Passwort unendlich lange gemerkt (bis
+das System neu gestartet wird).</p>
+
+<p>
+Durch eine weitere Einstellung, kann vom Benutzer anstelle des eigenen
+Passworts, das des Benutzers unter dessen Namen der Befehl ausgeführt werden
+soll, verlangt werden. Dies wird mit <c>runaspw</c> erreicht. Im folgenden
+Beispiel wird außerdem die Anzahl der Versuche für die Passworteingabe (wie oft
+ein Benutzer das Passwort erneut eingeben kann, bevor <c>sudo</c> abbricht) auf
+<c>2</c> statt der normalen 3 gesetzt.
+</p>
+
+<pre caption="Verlangen des root-Passworts anstelle des Benutzerpassworts">
+Defaults:john   runaspw, passwd_tries=2
+</pre>
+
+<p>
+Ein anderes interessantes Feature ist das Beibehalten der <c>DISPLAY</c>
+Variable, so dass man grafische Programme ausführen kann:
+</p>
+
+<pre caption="die DISPLAY-Variable erhalten">
+Defaults:john env_keep=DISPLAY
+</pre>
+
+<p>
+Sie können etliche Standardeinstellungen über die <c>Defaults:</c> Direktive
+ändern. Lesen Sie dazu die <c>sudo</c> manual Seiten und suchen nach
+<c>Defaults</c>.
+</p>
+
+<p>
+Wenn Sie einem Benutzer das Ausführen vom Befehlen ohne vorherige
+Passworteingabe erlauben wollen, ist <c>NOPASSWD:</c> erforderlich:
+</p>
+
+<pre caption="emerge als root erlauben, ohne dass nach einen Passwort gefragt wird">
+swift     localhost = NOPASSWD: /usr/bin/emerge
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Sudo benutzen</title>
+<section>
+<title>Berechtigungen anzeigen</title>
+<body>
+
+<p>
+Um sich von seinen eigenen Möglichkeiten ein Bild zum machen, verwendet man
+<c>sudo&nbsp;-l</c>:
+</p>
+
+<pre caption="Möglichkeiten anzeigen">
+$ <i>sudo -l</i>
+User swift may run the following commands on this host:
+    (root)   /usr/libexec/xfsm-shutdown-helper
+    (root)   /usr/bin/emerge
+    (root)   /usr/bin/passwd [a-zA-Z0-9_-]*
+    (root)   !/usr/bin/passwd root
+    (apache) /usr/bin/pkill
+    (apache) /bin/kill
+</pre>
+
+<p>
+Wenn Sie einen Befehl in <path>/etc/sudoers</path> haben der die Eingabe eines
+Passworts nicht erfordert, wird auch zum Anzeigen der Einträge kein Passwort
+nötig sein. Andernfalls werden Sie zur Eingabe des Passworts aufgefordert, wenn
+sich sudo nicht mehr daran erinnert.
+</p>
+
+</body>
+</section>
+<section>
+<title>Verlängern des Passwort Timeouts</title>
+<body>
+
+<p>
+Normalerweise merkt <c>sudo</c> sich das Passwort für 5 Minuten, nachdem es der
+Benutzer eingegeben hat. Um diese Frist zu verlängern, kann <c>sudo -v</c>
+aufgerufen werden. Der Zeitstempel wird dann zurückgesetzt, so dass <c>sudo</c>
+erst nach weiteren 5 Minuten wieder nach dem Passwort fragt.
+</p>
+
+<pre caption="Die Frist des Passworts verlängern">
+$ <i>sudo -v</i>
+</pre>
+
+<p>
+Umgekehrt kann der Zeitstempel mit <c>sudo&nbsp;-k</c> gelöscht werden.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
