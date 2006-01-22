@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: SimpleXMLParser.py,v 1.12 2005/10/15 17:24:46 agaffney Exp $
+$Id: SimpleXMLParser.py,v 1.13 2006/01/22 23:42:29 agaffney Exp $
 
 """
 
@@ -23,6 +23,7 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 		self._xml_current_data = ""
 		self._fntable = {}
 		self._path = file
+		self._prepass = False
 
 	##
 	# Brief description of function
@@ -68,6 +69,12 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 	# @param name Parameter description
 	def endElement(self, name):
 		path = self._xml_element_path()
+		if self._prepass:
+			if self._xml_elements[-2] == "include":
+				if self._xml_elements[-1] == "file":
+					pass
+				elif self._xml_elements[-1] == "command":
+					pass
 		if path in self._fntable.keys():
 			for fn in self._fntable[path]:
 				if self._xml_current_data != "" or fn[1]:
@@ -120,6 +127,7 @@ class SimpleXMLParser(xml.sax.ContentHandler):
 		"""
 		Parse serialized configuration file.
 		"""
+#		self._prepass = True
 		if path == None and self._path == None:
 			raise GLIException("NoFileGiven",'fatal', 'parse', "You must specify a file to parse!")
 		elif path == None:       
