@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.75 2005/12/18 23:25:00 agaffney Exp $
+$Id: GLIClientController.py,v 1.76 2006/01/23 01:26:58 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -224,6 +224,7 @@ class GLIClientController(Thread):
 	##
 	# Sets proxy information from the environment
 	def set_proxys(self):
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: beginning of set_proxys()")
 		if self._configuration.get_ftp_proxy() != "":
 			os.environ['ftp_proxy'] = self._configuration.get_ftp_proxy()
 
@@ -232,13 +233,17 @@ class GLIClientController(Thread):
 
 		if self._configuration.get_rsync_proxy() != "":
 			os.environ['RSYNC_PROXY'] = self._configuration.get_rsync_proxy()
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: end of set_proxys()")
 
 	##
 	# Loads kernel modules specified in the GLIClientConfiguration object
 	def load_kernel_modules(self):
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: beginning of load_kernel_modules()")
 		modules = self._configuration.get_kernel_modules()
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: load_kernel_modules(): modules are " + str(modules))
 		for module in modules:
 			try:
+				if self._configuration.get_verbose(): self._logger.log("DEBUG: load_kernel_modules(): trying to load module " + module)
 				ret = GLIUtility.spawn('modprobe ' + module)
 				if not GLIUtility.exitsuccess(ret):
 					self._logger.log("ERROR! : Could not load module: "+module)
@@ -266,6 +271,7 @@ class GLIClientController(Thread):
 	##
 	# Starts portmap if specified in the GLIClientConfiguration object
 	def start_portmap(self):
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: beginning of start_portmap()")
 		status = GLIUtility.spawn('/etc/init.d/portmap start') #, display_on_tty8=True)
 		if not GLIUtility.exitsuccess(status):
 			self._logger.log("ERROR! : Could not start the portmap service!")
@@ -276,6 +282,7 @@ class GLIClientController(Thread):
 	##
 	# Configures networking as specified in the GLIClientConfiguration object
 	def configure_networking(self):
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: beginning of configure_networking()")
 		# Do networking setup right here.
 		if self._configuration.get_network_type() != None:
 			type = self._configuration.get_network_type()
@@ -283,6 +290,7 @@ class GLIClientController(Thread):
 				# don't do anything, it's not our problem if the user specifies this.
 				return
 			if type == "dhcp":
+				if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): DHCP selected")
 				# Run dhcpcd.
 				try:
 					interface = self._configuration.get_network_interface()
@@ -293,11 +301,15 @@ class GLIClientController(Thread):
 					dhcp_options = ""
 
 				if interface and not dhcp_options:
+					if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): running '/sbin/dhcpcd -n " + interface + "'")
 					status = GLIUtility.spawn("/sbin/dhcpcd -n " + interface)
 				elif interface and dhcp_options:
+					if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): running '/sbin/dhcpcd " + dhcp_options + " " + interface + "'")
 					status = GLIUtility.spawn("/sbin/dhcpcd " + dhcp_options + " " + interface)
 				else:
+					if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): running '/sbin/dhcpcd -n'")
 					status = GLIUtility.spawn("/sbin/dhcpcd -n")
+				if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): call to /sbin/dhcpcd complete")
 
 				if not GLIUtility.exitsuccess(status):
 					raise GLIException("DHCPError", 'fatal', 'configure_networking', "Failed to get a dhcp address for " + interface + ".")
@@ -311,6 +323,7 @@ class GLIClientController(Thread):
 				print "Please fix either the network settings or the interactive mode!"
 				sys.exit(1)
 			elif type == "static":
+				if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): setting static IP")
 				# Configure the network from the settings they gave.
 				net_interface = self._configuration.get_network_interface()
 				net_ip        = self._configuration.get_network_ip()
@@ -322,10 +335,12 @@ class GLIClientController(Thread):
 				route = self._configuration.get_network_gateway()
 				if not GLIUtility.set_default_route(route):
 					raise GLIException("DefaultRouteError", 'fatal','configure_networking', "Could not set the default route!")
+				if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): done setting static IP")
 
 	##
 	# Enables SSH if specified in the GLIClientConfiguration object
 	def enable_ssh(self):
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: beginning of enable_ssh()")
 		if self._configuration.get_enable_ssh():
 			status = GLIUtility.spawn("/etc/init.d/sshd start")
 			if not GLIUtility.exitsuccess(status):
@@ -333,8 +348,6 @@ class GLIClientController(Thread):
 			#	raise GLIException("SSHError", 'warning','enable_ssh',"Could not start SSH daemon!")
 			else:
 				self._logger.log("SSH Started.")
-
-
 
 	##
 	# Loads the install profile
