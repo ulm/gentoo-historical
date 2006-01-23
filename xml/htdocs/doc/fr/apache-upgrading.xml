@@ -1,0 +1,335 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/apache-upgrading.xml,v 1.1 2006/01/23 11:48:58 neysx Exp $ -->
+
+<guide link="/doc/fr/apache-upgrading.xml" lang="fr">
+<title>Guide de mise à jour d'Apache</title>
+
+<author title="Auteur">
+  <mail link="vericgar@gentoo.org">Michael Stewart</mail>
+</author>
+<author title="Traducteur">
+  <mail link="koppatroopa@yahoo.fr">Bertrand Coppa</mail>
+</author>
+
+<abstract>
+Ce document décrit la procédure à suivre par les utilisateurs pour mettre à
+jour sans risque leur installation Apache.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>2.3</version>
+<date>2005-09-29</date>
+
+<chapter>
+<title>Introduction</title>
+<section>
+<body>
+
+<p>
+La situation d'Apache et de ses modules dans Gentoo devenait vraiment
+insupportable.  De nombreux problèmes ont rendu le support et la maintenance
+très difficiles pour l'équipe responsable d'Apache&nbsp;:
+</p>
+
+<ul>
+  <li>
+    La configuration par défaut venant avec Gentoo était vraiment trop
+    différente de la configuration par défaut usuelle à laquelle la plupart des
+    utilisateurs s'attendent.
+  </li>
+  <li>
+    De nombreux modules utilisaient du code similaire, mais tous faisaient les
+    choses à leur manière.
+  </li>
+  <li>
+    La plupart des modules n'étaient pas maintenus correctement -
+    principalement à cause du grand nombre de modules disponibles.
+  </li>
+  <li>Les modules n'avaient pas de standard de configuration.</li>
+  <li>
+    Certains modules fonctionnaient avec les deux versions d'Apache, mais les
+    ebuilds ne savaient pas le gérer.
+  </li>
+  <li>
+    Des options disponibles d'Apache ne l'étaient pas pour les utilisateurs de
+    Gentoo (par exemple les MPM).
+  </li>
+  <li>Les bogues pour Apache s'accumulaient.</li>
+</ul>
+
+<p>
+La solution&nbsp;? L'équipe Apache a été agrandie, accueillant plusieurs
+nouveaux membres qui ont travaillé ensemble pour créer une eclass, mettre à
+jour les modules et corriger un bon nombre de bogues.
+</p>
+
+<p>
+Ce document détaille comment effectuer la mise à jour sans casser votre
+système. Si vous êtes développeur ou voulez savoir ce que nous avons changé ou
+comment les ebuilds doivent être modifiés pour tirer parti de notre eclass,
+alors jetez un œil au <uri link="/doc/en/apache-developer.xml">Apache Developer
+Reference</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="upgrade">
+<title>Instructions pour la mise à jour</title>
+<section>
+<body>
+
+<p>
+Nous avons fait de nombreux changements dans la manière de fonctionner d'Apache
+au sein de Gentoo. Chaque paquet qui est directement relié à Apache doit être
+mis à jour et certaines choses qui marchaient avant ne fonctionneront plus.
+</p>
+
+<p>
+D'abord, vous devez déterminer quels paquets vous devez mettre à jour. Vous
+pouvez faire cela en utilisant l'outil <c>equery</c>, appartenant au paquet
+<c>app-portage/gentoolkit</c>.
+</p>
+
+<pre caption="Trouver les paquets à mettre à jour">
+$ <i>equery depends net-www/apache</i>
+[ Searching for packages depending on net-www/apache... ]
+dev-db/phpmyadmin-2.5.6
+dev-php/mod_php-4.3.10
+dev-php/phpsysinfo-2.1-r2
+net-www/mod_bandwidth-2.0.5
+net-www/mod_layout-4.0.1a
+net-www/mod_ldap_userdir-1.1.4
+net-www/mod_loopback-1.04
+net-www/mod_mp3-0.40
+net-www/mod_random-2.0
+net-www/mod_throttle-3.1.2-r1
+net-www/mod_watch-3.18
+www-apps/viewcvs-0.9.2_p20030430
+</pre>
+
+<impo>
+Les paquets que vous avez installés peuvent être bien différents de cette
+liste, donc assurez-vous de bien lancer cette commande sur votre système.
+</impo>
+
+<warn>
+Certains modules et paquets dépendent d'Apache et n'ont pas encore été mis à
+jour. Veuillez faire une <uri link="http://bugs.gentoo.org">recherche sur
+bugzilla</uri> pour chaque paquet important que vous utilisez avec Apache.
+</warn>
+
+<p>
+De nombreuses applications web ne sont pas concernées du fait qu'elles
+utilisent l'eclass <c>webapp</c> qui s'occupe de les installer correctement. Il
+est conseillé de vérifier l'existence d'une nouvelle révision.
+</p>
+
+<p>
+Comme nous avons ajouté de nouvelles options à la variable USE, il peut être
+intéressant d'y jeter un œil et d'ajouter ce qui est nécessaire au fichier
+<path>/etc/portage/package.use</path>. Consultez <uri link="#use">les options
+USE d'Apache</uri> pour plus d'informations.
+</p>
+
+<pre caption="Vérifier les options USE et recompiler">
+<comment>(Contrôler les options USE et les mises à jour nécessaires)</comment>
+# <i>emerge --pretend --verbose --update --newuse --deep apache subversion \
+mod_php mod_bandwidth mod_layout mod_ldap_userdir mod_loopback mod_mp3 \
+mod_random mod_throttle mod_watch</i>
+
+<comment>(Mettre les paquets à jour)</comment>
+# <i>emerge --verbose --update --newuse --deep apache subversion mod_php \
+mod_bandwidth mod_layout mod_ldap_userdir mod_loopback mod_mp3 mod_random \
+mod_throttle mod_watch</i>
+
+<comment>(Il peut être plus simple de mettre world à jour
+plutôt que de faire comme ci-dessus)</comment>
+# <i>emerge --ask --verbose --update --newuse --deep world</i>
+</pre>
+
+<p>
+Maintenant, il faut reconfigurer Apache et ses modules. Commencez par utiliser
+<c>etc-update</c> ou <c>dispatch-conf</c> pour mettre à jour les fichiers de
+<path>/etc/init.d</path> et <path>/etc/conf.d</path>. Vous remarquerez que les
+fichiers de configuration d'Apache ne s'affichent pas lors de la mise à jour,
+car ils ont été déplacés.
+</p>
+
+<p>
+Si vous avez apporté des modifications aux anciens <path>apache.conf</path> et
+<path>commonapache.conf</path> par défaut, il vous faudra les transposer au
+fichier <path>/etc/apache{|2}/httpd.conf</path>. Les fichiers de configuration
+des modules et des hôtes virtuels ont aussi été déplacés&nbsp;: ils se trouvent
+maintenant respectivement dans <path>/etc/apache2/modules.d</path> et
+<path>/etc/apache2/vhosts.d</path> .
+</p>
+
+<p>
+Une fois le transfert de vos modifications vers les nouveaux fichiers de
+configuration effectué, il vous faudra effacer les anciens fichiers (ou bien
+les déplacer dans un endroit sûr). Le nouveau script
+<path>/etc/init.d/apache{|2}</path> vérifie l'existence de ces fichiers et ne
+vous laisse pas lancer Apache tant qu'ils n'ont pas été enlevés pour signifier
+que vous avez reconfiguré Apache à l'aide des nouveaux fichiers.
+</p>
+
+<note>
+De nombreux modules qui étaient activés par défaut ne le sont plus. Si ce sont
+des modules internes à Apache, alors décommentez la ligne appropriée dans
+httpd.conf. Si ce sont des modules externes, recherchez dans le fichier .conf
+du module la balise <c>IfDefine</c> et ajoutez le nom au fichier
+<path>/etc/conf.d/apache{|2}</path> pour l'activer.
+</note>
+
+<p>
+Vous pouvez maintenant relancer Apache.
+</p>
+
+<pre caption="Redémarrer Apache">
+# <i>/etc/init.d/apache stop</i>
+# <i>/etc/init.d/apache start</i>
+</pre>
+
+<p>
+Si vous rencontrez des problèmes, jetez un œil au  <uri
+link="/doc/en/apache-troubleshooting.xml">Apache Troubleshooting Guide</uri> et
+si ça ne résoud pas votre problème, veuillez le rapporter sur le <uri
+link="http://bugs.gentoo.org">Bugzilla Gentoo</uri>. Veuillez préciser les
+modules activés et, si vous utilisez Apache 2, les options USE MPM que vous
+avez utilisées lors de la compilation. Vous pouvez aussi vous connecter à
+<path>#gentoo-apache</path> sur <path>irc.freenode.net</path> pour plus
+d'assitance.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="use">
+<title>Options de la variable USE affectant Apache</title>
+<section>
+<body>
+
+<p>
+Des options de la variable USE sont particulières à Apache et ses modules.
+Apache supporte aussi plusieurs options plus génériques telles que <c>ssl</c>,
+mais leur effet sur Apache n'est guère différent de celui qu'elles ont sur les
+autres paquets, elles ne sont donc pas énumérées ici. Lancez <c>emerge
+--verbose --pretend apache</c> pour voir une liste complète des options
+supportées.
+</p>
+
+<table>
+<tr>
+  <th>Option USE</th>
+  <th>Paquet</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti>apache2</ti>
+  <ti>eclass depend.apache (tous les modules)</ti>
+  <ti>
+    Doit toujours être activée si on utilise Apache 2, et être désactivée dans
+    le cas de l'utilisation d'Apache 1.3. L'eclass s'en sert pour déterminer de
+    quelle version d'Apache on doit dépendre.
+  </ti>
+</tr>
+<tr>
+  <ti>mpm-leader</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Compile le MPM <uri
+    link="http://httpd.apache.org/docs-2.0/mod/leader.html">leader</uri>
+    </ti>
+</tr>
+<tr>
+  <ti>mpm-metux</ti>
+  <ti>apache-2*</ti>
+  <ti>Compile le MPM <uri link="http://www.metux.de/mpm/">metux</uri></ti>
+</tr>
+<tr>
+  <ti>mpm-peruser</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Compile le MPM <uri link="http://www.telana.com/peruser.php">peruser</uri>
+  </ti>
+</tr>
+<tr>
+  <ti>mpm-prefork</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Compile le MPM <uri
+    link="http://httpd.apache.org/docs-2.0/mod/prefork.html">prefork</uri>
+  </ti>
+</tr>
+<tr>
+  <ti>mpm-threadpool</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Compile le MPM <uri
+    link="http://httpd.apache.org/docs-2.0/mod/threadpool.html">threadpool</uri>
+  </ti>
+</tr>
+<tr>
+  <ti>mpm-worker</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Compile le MPM <uri
+    link="http://httpd.apache.org/docs-2.0/mod/worker.html">worker</uri>
+  </ti>
+</tr>
+<tr>
+  <ti>no-suexec</ti>
+  <ti>apache</ti>
+  <ti>
+    Désactive la compilation du module suexec (pour ceux qui ne veulent pas un
+    suid binaire potentiellement non-sécurisé sur leur système).
+  </ti>
+</tr>
+<tr>
+  <ti>static-modules</ti>
+  <ti>apache</ti>
+  <ti>
+    Lie statiquement les modules au binaire d'Apache, de manière à ce que
+    LoadModule ne soit pas nécessaire pour charger les modules de base
+    d'Apache.
+  </ti>
+</tr>
+<tr>
+  <ti>lingerd</ti>
+  <ti>apache-1*</ti>
+  <ti>
+    Ajoute le support pour <uri
+    link="http://www.iagora.com/about/software/lingerd/">lingerd</uri>
+  </ti>
+</tr>
+<tr>
+  <ti>no-htdocs</ti>
+  <ti>gentoo-webroot-default</ti>
+  <ti>
+    Désactive l'installatation du webroot par défaut dans
+    <path>/var/www/localhost</path> de façon à ce que les fichiers modifiés ne
+    soient pas remplacés. À la place, le webroot par défaut est installé dans
+    <path>/usr/share/doc/gentoo-webroot-default-*/webroot/</path>.
+  </ti>
+</tr>
+</table>
+
+<note>
+Bien qu'il y ait beaucoup d'options relatives aux MPM, elles sont mutuellement
+exclusives. Il ne faut donc en activer qu'une seule. Si aucune n'est activée,
+mpm-prefork ou mpm-worker sera utilisée, selon que l'option USE threads est
+activée ou non.
+</note>
+
+</body>
+</section>
+</chapter>
+
+</guide>
