@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/fr/desktop/x/x11/porting-modular-x-howto.xml,v 1.1 2006/01/23 11:34:56 neysx Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/fr/desktop/x/x11/porting-modular-x-howto.xml" lang="fr">
+<title>Guide de portage vers X modulaire</title>
+
+<author title="Auteur">
+  <mail link="spyderous@gentoo.org">Donnie Berkholz</mail>
+</author>
+<author title="Traducteur">
+  <mail link="koppatroopa@yahoo.fr">Bertrand Coppa</mail>
+</author>
+
+<abstract>
+Ce guide vous explique comment porter les paquets pour qu'ils utilisent la
+nouvelle version modulaire de X.Org.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2006-01-03</date>
+
+<chapter>
+<title>Environnement</title>
+
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+Vous vous demandez surement pourquoi changer un simple et unique paquet
+xorg-x11 en environ 300 paquets séparés. Cela est justifié.  Ce n'est pas
+Gentoo qui a fait ce choix indépendament du projet X.Org&nbsp;; ce sont leurs
+développeurs qui ont décidé de séparer tous ces paquets, et nous ne faisons que
+suivre.
+</p>
+
+<p>
+Vous pouvez lire les détails à ce sujet dans le <uri
+link="modular-x-howto.xml#doc_chap1_sect1"> Guide de migration vers X.Org
+modulaire</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Contrôle des dépendances</title>
+<section>
+<body>
+
+<p>
+Nous voulons énumerer les dépendances aussi finement que possible afin que les
+les gens n'aient pas plein de paquets inutiles (p.ex. XPrint) qui traînent sur
+leur système. On veut donc dépendre directement des paquets qui contiennent les
+bibliothèques et les fichiers d'en-tête dont on a besoin plutôt que de
+n'importe quel paquet virtuel.
+</p>
+
+<p>
+Aussi, nous ne pouvons guarantir que les gens auront toujours des sous-paquets
+installés parce qu'ils ont un méta-paquet installé et éliminer cette
+possibilité de problème nous fera gagner beaucoup de temps qui serait perdu à
+marquer les bogues «&nbsp;INVALID&nbsp;».
+</p>
+
+<p>
+Si je trouve un seul paquet dépendant sur n'importe quel méta-paquet possible,
+je n'hésiterai pas à harasser son mainteneur jusqu'à la fin des temps.
+</p>
+
+<p>
+La première étape est d'installer X modulaire ou de trouver quelqu'un qui l'a
+installé. Cela peut être effectué dans un chroot -- il n'est pas nécessaire que
+X soit lancé, il faut seulement avoir ses fichiers disponibles pour le
+contrôle des dépendances.
+</p>
+
+<pre caption="Obtenir les scripts nécessaires">
+$ <i>wget http://dev.gentoo.org/~spyderous/scripts/linking_libs.sh \
+    http://dev.gentoo.org/~spyderous/scripts/included_headers.sh</i>
+</pre>
+
+<impo>
+<e>Ne pas</e> utiliser <c>gentoolkit-0.2.1_pre9</c>, cela donne des sorties
+invalides. Consultez <uri>https://bugs.gentoo.org/show_bug.cgi?id=111501</uri>.
+</impo>
+
+<p>
+Le premier script, <c>linking_libs.sh</c>, contrôle un journal de compilation
+de votre paquet pour vérifier toutes les bibliothèques dont il est fait
+référence et affiche les noms des paquets auxquels appartiennent ces
+bibliothèques.
+</p>
+
+<p>
+Le second script, <c>included_headers.sh</c>, scanne le code source de votre
+paquet à la recherche de lignes commençant par #include et extrait les noms des
+fichiers inclus entre &lt;&gt;. Depuis le 9 septembre 2005, cela marche aussi
+pour les inclusions de type "".
+</p>
+
+<p>
+Lancer ces deux scripts devrait vous donner une bonne liste de paquets pour
+RDEPEND (pour les bibliothèques) et DEPEND (fichiers d'en-tête et
+bibliothèques).  Si une bibliothèque appartenant à RDEPEND n'appartient pas à
+DEPEND, vous devriez vous méfier&nbsp;: cela pourrait être une «&nbsp;fausse
+dépendance&nbsp;», i.e. une bibliothèque liée sans raison.
+</p>
+
+<p>
+Parfois, la recherche de fichiers d'en-tête relatifs de
+<c>included_headers.sh</c> trouvera de mauvais fichiers, car il certains ont
+des nom identiques et, du coup, il renverra un mauvais paquet. En général,
+l'erreur est assez visible.
+</p>
+
+<p>
+Si vous spécifiez l'option <c>-d</c>, il arrivera parfois qu'une bibliothèque
+ou qu'un fichier d'en-tête soit noté «&nbsp;Not found!&nbsp;». Cela peut
+vouloir dire que vous avez désinstallé un fichier d'en-tête dont un paquet a
+besoin depuis que vous l'avez compilé, ou bien que c'est un fichier optionnel
+que vous n'utilisez pas. Dans le cas d'une bibliothèque, cela peut vouloir dire
+que vous l'avez désinstallée ou bien que c'était seulement une bibliothèque
+statique compilée en interne qui n'a jamais été installée.
+</p>
+
+<p>
+Cela vaut le coup de passer le temps nécessaire pour savoir si les
+bibliothèques ou les fichiers d'en-tête non-trouvés doivent être ajouter à la
+liste des dépendances, particulièrement dans le cas des fichiers d'en-tête car
+on n'a pas besoin d'avoir ces fichiers installés pour lancer le scanner.
+</p>
+
+<p>
+Dans certains cas, les paquets ont besoin d'un serveur X réel quelconque.  Mais
+s'il ne le demande pas lors de l'installation, je vous encourage à ne pas le
+mettre dans RDEPEND. Cela pose problème avec les installations de X sur des
+machines sans écran, pour lesquelles les programmes tournent sur une autre
+machine et n'ont donc besoin que de bibliothèques et de fichiers d'en-tête
+locaux.
+</p>
+
+<p>
+Il y a déjà un bon nombre de serveurs X dans l'arbre, donc si vous avez besoin
+d'un serveur X, veuillez tous les inclure. Les serveurs pour X modulaire sont
+dans xorg-server&nbsp;;il y a un serveur DirectFB (xdirectfb)&nbsp;; kdrive
+fournit des serveurs X légers&nbsp;; et bien sûr, les vieux  &lt;xorg-x11-7.
+Spécifiez les restrictions de versions pour xorg-x11 pour être sûr d'avoir un
+serveur X et pas un méta-paquet. Dans un futur proche, je prévois que kdrive va
+devenir xserver.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Structure de dépendance</title>
+<section>
+<body>
+
+<p>
+Sur le fait d'ajouter les dépendances -- on veut une structure comme
+celle-ci&nbsp;:
+</p>
+
+<pre caption="Structures RDEPEND/DEPEND">
+RDEPEND="|| ( ( x11-libs/libXfoo
+      x11-libs/libXbar
+      blah? ( x11-libs/libXblah )
+      tout ce qui s'affiche d'autre lors du test de bibliothèque
+    )
+    virtual/x11
+  )
+
+DEPEND="${RDEPEND}
+  || ( ( x11-proto/fooproto
+      blah? ( x11-proto/blahproto )
+      tout ce qui est affiché par les deux scripts
+    )
+    virtual/x11
+  )
+</pre>
+
+<impo>
+Certains résultats fournis par les scripts <e>seront</e> redondants. Si le
+RDEPEND d'une bibliothèque en inclut une autre, il n'est pas nécessaire de les
+mettre les deux en dépendances. Si le DEPEND d'une bibliothèque contient un
+prototype, il <e>faut</e> le mettre dans la liste des dépendances du paquet.
+Les candidates prévisibles pour les bibliothèques présentes dans beaucoup
+d'autres sont <c>libXaw</c>, <c>libXmu</c>, <c>libXpm</c>, <c>libXcursor</c>,
+<c>libXt</c>. Faites simplement un <c>emerge -ep $library | grep lib[SIX]</c>.
+N'oubliez pas non plus que d'autres paquets comme <c>gtk+</c> ont été portés
+pour les dépendances modulaires, donc ils peuvent fournir les bibliothèques
+nécessaires.
+</impo>
+
+<note>
+Deux options distinctes de la variable USE installeront X, mais l'une n'est pas
+dépendante de l'autre. Dans ce cas là, il faut soit dupliquer la section de
+dépendance vers X, soit la définir ailleurs et l'inclure en tant que
+${X_DEPEND}. Si elle est définie ailleurs, n'oubliez pas d'inclure aussi les
+portions spécifiques à chaque option USE.
+</note>
+
+<p>
+Le but ici est de faire du nouveau X modulaire l'option par défaut, mais de
+permettre aux gens de satisfaire les dépendances avec l'ancien paquet
+monolithique xorg-x11. Nous abandonnons complètement virtual/x11 afin
+d'encourager l'énumération des dépendances réelles.
+</p>
+
+<impo>
+Cela devrait permettre aux utilisateurs dits ~arch d'utiliser le X modulaire
+par défaut tout en envoyant les utilisateurs dits stables vers virtual/x11.
+</impo>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Gérer les options de la variable USE</title>
+<section>
+<body>
+
+<p>
+Caleb a soulevé un point intéressant&nbsp;: comment gérer toutes les options
+USE sur les paquets qui ont des tonnes de dépendances optionnelles vers des
+bibliothèques X&nbsp;? Dans de nombreux cas, ce sera une bonne méthode que de
+toujours forcer les options dans un état donné. Aussi, vous pouvez rendre cela
+plus facile en groupant les options. Assurez-vous de nommer les options par
+leurs fonctions et non pas par les bibliothèques ou les paquets qu'elles
+utilisent.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Faire entrer vos corrections dans l'arbre</title>
+<section>
+<body>
+
+<p>
+Si vous êtes développeur, soumettez-les. Sinon, remplissez un nouveau rapport
+de bug, assignez-le aux mainteneurs du paquet (disponible dans le fichier
+metadata.xml).  Faites-le bloquer le bogue <uri
+link="http://bugs.gentoo.org/112675">#112675</uri>.  Attachez-y un correctif
+pour corriger les dépendances.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
