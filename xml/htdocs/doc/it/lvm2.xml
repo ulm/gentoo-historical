@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/lvm2.xml,v 1.9 2005/10/11 21:02:02 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/lvm2.xml,v 1.10 2006/01/24 19:45:10 so Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/it/lvm2.xml" lang="it">
@@ -31,8 +31,8 @@ del Logical Volume Manager versione 2 (LVM2).
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.0.11</version>
-<date>2005-08-17</date>
+<version>2.1</version>
+<date>2006-01-20</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -69,8 +69,8 @@ Per un completo HOWTO su LVM si consiglia di visitare
 Se si sta effettuando una nuova installazione di Gentoo, occorre un CD
 avviabile con il supporto a LVM2, come ad esempio il CD di installazione di
 Gentoo. E' possibile trovare il CD di installazione per l'architettura x86
-nei nostri <uri link="/main/en/mirrors.xml">mirror</uri> sotto
-<path>/releases/x86/2005.1/installcd</path>.  Altre architetture potrebbero
+sui nostri <uri link="/main/en/mirrors.xml">mirror</uri> sotto
+<path>/releases/x86/2005.1-r1/installcd</path>.  Altre architetture potrebbero
 essere ugualmente supportate.
 </p>
 
@@ -140,21 +140,15 @@ che va adattato alle proprie esigenze.
 </p>
 
 <p>
-Si crei una piccola partizione fisica per /boot (hda1). In questo esempio /boot
-non viene gestita da LVM2. In questa partizione vengono memorizzati il
-bootloader e i vari kernel. Una partizione di 64MB dovrebbe essere
-sufficientemente grande.
+Si crei una piccola partizione fisica per <path>/boot</path> (hda1). In
+questo esempio <path>/boot</path> non viene gestita da LVM2. In questa
+partizione vengono memorizzati il bootloader e i vari kernel. Una
+partizione di 64MB dovrebbe essere sufficientemente grande.
 </p>
 
 <p>
-Si crei una partizione di swap (hda2) e la si attivi.
+Si crei una partizione di swap (hda2).
 </p>
-
-<pre caption="Attivazione della partizione di swap">
-# <i>mkswap /dev/hda2</i>
-# <i>swapon /dev/hda2</i>
-</pre>
-
 
 <p>
 Si crei una partizione per / (root) (hda3). Se si fosse interessati a gestire
@@ -177,11 +171,11 @@ andasse storto.
 
 
 <p>
-Supponendo che le partizioni di /boot, swap e root non utilizzino l'intero
-disco fisico, si crei una quarta partizione sul disco e la si imposti di tipo
-8e (Linux LVM). Se si hanno più dispositivi fisici che si vogliono utilizzare
-con LVM, si crei una partizione su ognuno di essi e la imposti dello stesso
-tipo (8e).
+Supponendo che le partizioni di <path>boot</path>, swap e root non utilizzino
+l'intero disco fisico, si crei una quarta partizione sul disco e la si imposti
+di tipo 8e (Linux LVM). Se si hanno più dispositivi fisici che si vogliono
+utilizzare con LVM, si crei una partizione su ognuno di essi e la si imposti
+dello stesso tipo (8e).
 </p>
 
 <note>
@@ -196,6 +190,12 @@ se non è necessario.  Per esempio si può pensare di dividere un hard disk da
 </note>
 
 <p>
+Si crei il filesystem su <path>/dev/hda1</path> e <path>/dev/hda3</path>, e si
+crei ed attivi la partizione di swap su <path>/dev/hda2</path> come descritto
+nell'handbook.
+</p>
+
+<p>
 Si carichi il modulo di LVM2 <path>dm-mod</path>.
 </p>
 
@@ -205,12 +205,22 @@ Si carichi il modulo di LVM2 <path>dm-mod</path>.
 
 
 <p>
-Si esegua lo scan e l'attivazione di LVM:
+Prima di effettuare lo scan e di attivare LVM, si potrebbe voler editare
+<path>/etc/lvm/lvm.conf</path> per escludere alcuni device. Per default, LVM2
+effettua lo scan di tutti i devices, persino del CDROM, il che potrebbe
+generare messaggi d'errore. Nell'esempio seguente, la linea che consente lo scan
+di tutti i device è sostituita da una linea che evita lo scan di tutti i device
+tranne i nostri due dischi IDE.
 </p>
+
 <pre caption="Attivazione di LVM">
-<comment>(Evitare la scansione dei cdrom)</comment>
-# <i>mkdir -p /etc/lvm</i>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >/etc/lvm/lvm.conf</i>
+<comment>(Evitare la scansione di tutti i device tranne i nostri dischi)</comment>
+# <i>nano -w /etc/lvm/lvm.conf</i>
+<comment>(Cercare la linea seguente)</comment>
+  filter = [ "a/.*/" ]
+<comment>(Sostituire tale linea con la seguente, in modo da effettuare lo scan di /dev/hda e /dev/hdb e di nessun altro device)</comment>
+  filter = [ "a|/dev/hd[ab]|". "r/.*/" ]
+<comment>(Salvare il file ed uscire da nano)</comment>
 # <i>vgscan</i>
   Reading all physical volumes.  This may take a while...
   No volume groups found
@@ -404,15 +414,15 @@ che controlla la presenza di un file sorgente richiesto sotto
 
 <pre caption="Installazione del pacchetto lvm2">
 # <i>emerge lvm2</i>
-<comment>(Nel momento in cui si sta scrivendo questo documento, la versione stabile
-è la 2.00.08.
-Con la versione 2.00.08, si può evitare di far controllare i cdrom a lvm2 eseguendo:</comment>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >> /etc/lvm/lvm.conf</i>
-<comment>(La versione 2.00.15 e le successive contengono il file /etc/lvm/lvm.conf.
-Si modifichi il proprio /etc/lvm/lvm.conf seguendo i commenti)</comment>
-# <i>nano -w /etc/lvm/lvm.conf</i>
 </pre>
 
+<p>
+Editare <path>/etc/lvm/lvm.conf</path> come descritto <uri
+link="#doc_chap2_pre2">precedentemente</uri>. Questo file editato
+fa parte dell'ambiente di installazione e scomparirà dopo il reboot
+successivo. Questa volta si sta editando quello reale all'interno della nuova
+installazione Gentoo.
+</p>
 
 <p>
 Nel modificare il file <path>/etc/fstab</path> si segua il manuale e si
@@ -496,10 +506,9 @@ riattivare i volumi:
 </li>
 <li><uri link="http://tldp.org/HOWTO/LVM-HOWTO">LVM Howto</uri></li>
 <li>
-  Articoli di Daniel Robbins riguardanti LVM su IBM DeveloperWorks:
-  <uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm/?dwzone=linux</uri>
-  e
-  <uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm2.html?dwzone=linux</uri>
+	Articoli di Daniel Robbins riguardanti LVM su IBM DeveloperWorks: <uri
+	link="/doc/en/articles/lvm-p1.xml">Parte 1</uri> e <uri
+	link="/doc/en/articles/lvm-p2.xml">Parte 2</uri>
 </li>
 <li>
   Come fare il boot con il filesystem di root sotto LVM:
