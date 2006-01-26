@@ -7,106 +7,248 @@
   <style type="text/css">
   <!--
     html {
-      margin: 0;
+      margin: 0px;
     }
     body {
-      margin: 0;
+      margin: 0px;
       font-family: Bitstream Vera Sans, Helvetica, Sans;
       font-size: 10pt;
     }
     table {
-      border-spacing: 0;
+      border-spacing: 0px;
     }
     td {
-      padding: 0;
+      padding: 0px;
+    }
+    p {
+      margin-top: 0px;
+      margin-bottom: 5px;
     }
     ul {
-      margin: 0;
-      padding: 0;
+      margin: 0px;
+      padding: 0px;
+      border-top: 1px solid #ffffff;
+      border-bottom: 10px solid #ffffff;
     }
     li {
-      display: block;
-      border-left: 1px solid #a8a8a8;
-      border-right: 1px solid #a8a8a8;
-      border-bottom: 1px solid #a8a8a8;
+      width: 150px;
+      border-right: 1px solid #ffffff;
+      border-bottom: 1px solid #ffffff;
     }
-    #menu {
-      border-top: 1px solid #a8a8a8;
+    #content {
+      padding-top: 7px;
+      padding-left: 7px;
     }
-    #steps li a {
+    .title {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    a.step {
       display: block;
+      position: relative;
+      width: 100%;
       padding: 1px;
-      text-decoration: none;
-      color: #7b68ee;
-    }
-    #steps li a:hover {
-      background-color: #7b68ee;
+      background-color: #d8d4e2;
       color: #000000;
+      text-decoration: none;
+    }
+    a.step:hover {
+      background: #7e60e2 url("arrow_l.gif") no-repeat scroll right;
     }
     .currentstep {
       padding: 1px;
-      color: #000000;
+      background: #ffffff url("arrow_r.gif") no-repeat scroll right;
+      font-weight: bold;
+      cursor: default;
     }
-    #menu li a {
+    a.menuitem {
       display: block;
+      position: relative;
       padding: 1px;
-      text-decoration: none;
-      color: #7b68ee;
-    }
-    #menu li a:hover {
-      background-color: #7b68ee;
+      background-color: #d8d4e2;
       color: #000000;
+      text-decoration: none;
     }
-    #content {
-      padding: 7px;
+    a.menuitem:hover {
+      background: #7e60e2 url("arrow_l.gif") no-repeat scroll right;
+    }
+    .partition {
+      display: table;
+      background: #d8d4e2 url("partition_bg.png") no-repeat;
+    }
+    .partition_drag {
+      padding-right: 15px;
+      height: 30px;
+      background: transparent url("partition_drag.png") no-repeat scroll top right;
+      cursor: w-resize;
+      overflow: hidden;
+      position: relative;
+    }
+    .partition_drag[class] {
+      position: static;
+      display: table;
+    }
+    .partition_inner {
+      cursor: default;
+      position: absolute;
+      top: 50%;
+    }
+    .partition_inner[class] {
+      position: static;
+      display: table-cell;
+      vertical-align: middle;
+    }
+    .partition_free {
+      height: 18px;
+      margin-left: 6px;
+      border-right: 4px solid #d8d4e2;
+      background-color: #ffffff;
+      position: relative;
+      top: -50%;
+    }
+    .partition_free[class] {
+      position: static;
+    }
+    .partition_used {
+      height: 18px;
+      background-color: #00ffff;
     }
   -->
   </style>
+  <script language="javascript">
+  <!--
+    function browserType() {
+      var type;
+      if (document.layers) {
+        type = 'nn4';
+      }
+      if (document.all) {
+        type = 'ie';
+      }
+      if (window.navigator.userAgent.toLowerCase().match("gecko")) {
+        type = 'gecko';
+      }
+      return type;
+    }
+    var browser_type = browserType();
+    function findLayer(name) {
+      var layer;
+      if (browser_type == 'gecko') {
+        layer = eval('document.getElementById(\'' + name + '\')');
+      } else if (browser_type == 'ie') {
+        layer = eval('document.all[\'' + name + '\']');
+      } else {
+        layer = eval('document.layers[\'' + name + '\']');
+      }
+      return layer;
+    }
+    var resizeOb = new Object();
+    function resizeStart(event) {
+      var x;
+      if (browser_type == 'ie') {
+        resizeOb.layer = window.event.srcElement;
+        x = window.event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft;
+      } else {
+        resizeOb.layer = event.target;
+        x = event.clientX + window.scrollX;
+      }
+      resizeOb.startX = x;
+      resizeOb.startW = parseInt(resizeOb.layer.style.width, 10);
+      if (isNaN(resizeOb.startW)) {
+        resizeOb.startW = 0;
+      }
+      if (browser_type == 'ie') {
+        document.attachEvent("onmousemove", resizeMove);
+        document.attachEvent("onmouseup", resizeStop);
+        window.event.cancelBubble = true;
+        window.event.returnValue = false;
+      } else {
+        document.addEventListener("mousemove", resizeMove, true);
+        document.addEventListener("mouseup", resizeStop, true);
+        event.preventDefault();
+      }
+    }
+    function resizeMove(event) {
+      var x, w;
+      if (browser_type == 'ie') {
+        x = window.event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft;
+      } else {
+        x = event.clientX + window.scrollX;
+      }
+      w = (resizeOb.startW + (x - resizeOb.startX));
+      if (w <= (parseInt(resizeOb.layer.parentNode.style.width, 10) - (15 + 4))) {
+        if (w >= (parseInt(findLayer('partition_used').style.width, 10) + 10)) {
+          resizeOb.layer.style.width = w + 'px';
+        }
+      }
+      if (browser_type == 'ie') {
+        window.event.cancelBubble = true;
+        window.event.returnValue = false;
+      } else {
+        event.preventDefault();
+      }
+    }
+    function resizeStop(event) {
+      if (browser_type == 'ie') {
+        document.detachEvent("onmousemove", resizeMove);
+        document.detachEvent("onmouseup", resizeStop);
+      } else {
+        document.removeEventListener("mousemove", resizeMove, true);
+        document.removeEventListener("mouseup", resizeStop, true);
+      }
+    }
+  //-->
+  </script>
 </head>
 <body>
 
-<table id="layout" width="100%" height="100%" cellspacing="0" cellpadding="0">
-	<tr id="header">
-		<td width="150">
-      <img src="/images/header_bg.png" width="100%" height="64">
+<table id="layout" width="100%" height="100%" border="0" cellspacing="0" cellpadding="0">
+  <tr id="header">
+    <td colspan="2">
+      <table width="100%" height="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td width="50%">
+            <img src="/images/header_bg.png" border="0" width="100%" height="64">
+          </td>
+          <td>
+            <img src="/images/header.png" alt="Gentoo Linux Installer" border="0" width="400" height="64">
+          </td>
+          <td width="50%">
+            <img src="/images/header_bg.png" border="0" width="100%" height="64">
+          </td>
+        </tr>
+      </table>
     </td>
-    <td width="400">
-      <img src="/images/header.png" alt="Gentoo Linux Installer" width="400" height="64">
-    </td>
-    <td>
-      <img src="/images/header_bg.png" width="100%" height="64">
-    </td>
-	</tr>
-	<tr>
-		<td valign="top">
+  </tr>
+  <tr>
+    <td valign="top">
       <ul id="steps">
-        <li><a href="/webgli/index.pyhtml">Welcome</a></li>
-        <li><a href="/webgli/clientconfig.pyhtml">Client Config</a></li>
-        <li><a href="/webgli/partitioning.pyhtml">Partitioning</a></li>
-        <li><a href="/webgli/networkmounts.pyhtml">Network Mounts</a></li>
-        <li><a href="/webgli/stageselection.pyhtml">Stage Selection</a></li>
-        <li><a href="/webgli/portagetree.pyhtml">Portage Tree</a></li>
-        <li><a href="/webgli/globaluse.pyhtml">Global USE Flags</a></li>
-        <li><a href="/webgli/localuse.pyhtml">Local USE Flags</a></li>
+        <li><a class="step" href="/webgli/index.pyhtml">Welcome</a></li>
+        <li><a class="step" href="/webgli/clientconfig.pyhtml">Client Config</a></li>
+        <li><a class="step" href="/webgli/partitioning.pyhtml">Partitioning</a></li>
+        <li><a class="step" href="/webgli/networkmounts.pyhtml">Network Mounts</a></li>
+        <li><a class="step" href="/webgli/stageselection.pyhtml">Stage Selection</a></li>
+        <li><a class="step" href="/webgli/portagetree.pyhtml">Portage Tree</a></li>
+        <li><a class="step" href="/webgli/globaluse.pyhtml">Global USE Flags</a></li>
+        <li><a class="step" href="/webgli/localuse.pyhtml">Local USE Flags</a></li>
 <: if shared_info.advanced_mode:
-        <li><a href="/webgli/makedotconf.pyhtml">Make.conf</a></li>
-        <li><a href="/webgli/configfiles.pyhtml">Config Files</a></li>
-		<li><a href="/webgli/etc_portage.pyhtml">etc/portage</a></li>
+        <li><a class="step" href="/webgli/makedotconf.pyhtml">Make.conf</a></li>
+        <li><a class="step" href="/webgli/configfiles.pyhtml">Config Files</a></li>
+        <li><a class="step" href="/webgli/etc_portage.pyhtml">etc/portage</a></li>
 :>
-        <li><a href="/webgli/kernel.pyhtml">Kernel</a></li>
-        <li><a href="/webgli/bootloader.pyhtml">Bootloader</a></li>
-        <li><a href="/webgli/timezone.pyhtml">Timezone</a></li>
-        <li><a href="/webgli/networking.pyhtml">Networking</a></li>
-        <li><a href="/webgli/daemons.pyhtml">Daemons</a></li>
-        <li><a href="/webgli/extrapackages.pyhtml">Extra Packages</a></li>
-        <li><a href="/webgli/services.pyhtml">Services</a></li>
-        <li><a href="/webgli/users.pyhtml">Users</a></li>
-        <li><a href="/webgli/review.pyhtml">Review</a></li>
+        <li><a class="step" href="/webgli/kernel.pyhtml">Kernel</a></li>
+        <li><a class="step" href="/webgli/bootloader.pyhtml">Bootloader</a></li>
+        <li><a class="step" href="/webgli/timezone.pyhtml">Timezone</a></li>
+        <li><a class="step" href="/webgli/networking.pyhtml">Networking</a></li>
+        <li><a class="step" href="/webgli/daemons.pyhtml">Daemons</a></li>
+        <li><a class="step" href="/webgli/extrapackages.pyhtml">Extra Packages</a></li>
+        <li><a class="step" href="/webgli/services.pyhtml">Services</a></li>
+        <li><a class="step" href="/webgli/users.pyhtml">Users</a></li>
+        <li><a class="step" href="/webgli/review.pyhtml">Review</a></li>
       </ul>
-      <p></p>
       <ul id="menu">
         <li><a href="/webgli/saveprofile.pyhtml">Save Profile</a></li>
         <li><a href="/webgli/loadprofile.pyhtml">Load Profile</a></li>
       </ul>
     </td>
-    <td id="content" valign="top" colspan="2">
+    <td id="content" width="100%" valign="top">
