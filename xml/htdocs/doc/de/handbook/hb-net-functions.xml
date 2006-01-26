@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- English CVS Version: 1.5 -->
+<!-- English CVS Version: 1.7 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-net-functions.xml,v 1.2 2005/06/17 23:53:49 dertobi123 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-net-functions.xml,v 1.3 2006/01/26 02:32:23 grahl Exp $ -->
 
 <sections>
 
-<version>1.1</version>
-<date>2005-06-14</date>
+<version>1.2</version>
+<date>2005-12-22</date>
 
 <section>
 <title>Erweiterung der Standardfunktionen</title>
@@ -19,77 +19,78 @@
 
 <p>
 Vier Funktionen können definiert werden, die im Zusammenhang mit den
-Start/Stopp-Funktionen aufgerufen werden. Die Funktionen werden mit dem Namen
-der Schnittstelle zuerst aufgerufen, so dass eine Funktion mehrere Adapter
-kontrollieren kann.
+<c>start</c>/<c>stop</c> Funktionen aufgerufen werden. Die Funktionen werden
+mit dem Namen der Schnittstelle zuerst aufgerufen, so dass eine Funktion
+mehrere Adapter kontrollieren kann.
 </p>
 
 <p>
-Der Rückgabewert der preup und predown Funktionen sollte 0 (Erfolg) sein um die
-erfolgreiche Konfiguration der Schnittstelle anzuzeigen. Gibt preup einen von
-Null verschiedenen Wert zurück, wird die Konfiguration abgebrochen. Eine
-Dekonfiguration wird nicht durchgeführt, falls predown einen von Null
-verschiedenen Wert zurückgibt.
+Der Rückgabewert der <c>preup()</c> und <c>predown()</c> Funktionen sollte 0
+(Erfolg) sein um die erfolgreiche Konfiguration der Schnittstelle anzuzeigen.
+Gibt <c>preup()</c> einen von Null verschiedenen Wert zurück, wird die
+Konfiguration abgebrochen. Eine Dekonfiguration wird nicht durchgeführt,
+falls <c>predown()</c> einen von Null verschiedenen Wert zurückgibt.
 </p>
 
 <p>
-Die Rückgabewerte der postup und postdown Funktionen werden ignoriert, da dort
-keine Reaktion auf Fehler vorgesehen ist.
+Die Rückgabewerte der <c>postup()</c> und <c>postdown()</c> Funktionen werden
+ignoriert, da dort keine Reaktion auf Fehler vorgesehen ist.
 </p>
 
 <p>
-<c>${IFACE}</c> wird auf die Schnittstelle gesetzt, die (de-)aktiviert werden soll
-<c>${IFVAR}</c> ist <c>${IFACE}</c> konvertiert zu einem Variablennamen, den die bash erlaubt
+<c>${IFACE}</c> wird auf die Schnittstelle gesetzt, die (de-)aktiviert werden
+soll. <c>${IFVAR}</c> ist <c>${IFACE}</c> konvertiert zu einem Variablennamen,
+den die Bash erlaubt.
 </p>
 
 <pre caption="Beispiele für pre/post up/down Funktionen">
 preup() {
-	<comment># Überprüfe die Verbindung der Schnittstelle, bevor sie aktiviert wird.
-	# Funktioniert nur bei einigen Netzwerkadaptern und setzt voraus,
-	# das das mii-diag Paket installiert ist.</comment>
-	if mii-tool ${IFACE} 2> /dev/null | grep -q 'no link'; then
-		ewarn "No link on ${IFACE}, aborting configuration"
-		return 1
-	fi
+  <comment># Überprüfe die Verbindung der Schnittstelle, bevor sie aktiviert wird.
+  # Funktioniert nur bei einigen Netzwerkadaptern und setzt voraus,
+  # das das mii-diag Paket installiert ist.</comment>
+  if mii-tool ${IFACE} 2> /dev/null | grep -q 'no link'; then
+    ewarn "No link on ${IFACE}, aborting configuration"
+    return 1
+  fi
 
-	<comment># Überprüfe die Verbindung der Schnittstelle, bevor sie aktiviert wird.
-	# Funktioniert nur bei einigen Netzwerkadaptern und setzt voraus,
-	# das das ethtool Paket installiert ist.</comment>
-	if ethtool ${IFACE} | grep -q 'Link detected: no'; then
-		ewarn "No link on ${IFACE}, aborting configuration"
-		return 1
-	fi
+  <comment># Überprüfe die Verbindung der Schnittstelle, bevor sie aktiviert wird.
+  # Funktioniert nur bei einigen Netzwerkadaptern und setzt voraus,
+  # das das ethtool Paket installiert ist.</comment>
+  if ethtool ${IFACE} | grep -q 'Link detected: no'; then
+    ewarn "No link on ${IFACE}, aborting configuration"
+    return 1
+  fi
 
-	<comment># Denken Sie daran, im Erfolgsfall 0 zurückzugeben</comment>
-	return 0
+  <comment># Denken Sie daran, im Erfolgsfall 0 zurückzugeben</comment>
+  return 0
 }
 
 predown() {
-	<comment># Standardmäßig wird die Deaktivierung einer Schnittstelle nicht
-	# durchgeführt, wenn darüber NFS Laufwerke gemounted sind. Geben Sie jedoch eine
-	# eigene predown() Funktion an, wird dieses Verhalten überschrieben. Hier ist
-	# diese Funktion für den Fall, das sie sie brauchen...</comment>
-	if is_net_fs /; then
-		eerror "root filesystem is network mounted -- can't stop ${IFACE}"
-		return 1
-	fi
+  <comment># Standardmäßig wird die Deaktivierung einer Schnittstelle nicht
+  # durchgeführt, wenn darüber NFS Laufwerke gemounted sind. Geben Sie jedoch eine
+  # eigene predown() Funktion an, wird dieses Verhalten überschrieben. Hier ist
+  # diese Funktion für den Fall, das sie sie brauchen...</comment>
+  if is_net_fs /; then
+    eerror "root filesystem is network mounted -- can't stop ${IFACE}"
+    return 1
+  fi
 
-	<comment># Denken Sie daran, im Erfolgsfall 0 zurückzugeben</comment>
-	return 0
+  <comment># Denken Sie daran, im Erfolgsfall 0 zurückzugeben</comment>
+  return 0
 }
 
 postup() {
-	<comment># Diese Funktion können Sie beispielsweise benutzen, um bei einem dynamischen
-	# DNS Service zu registrieren. Eine weitere Möglichkeit wäre, bei Aktivierung der
-	# Schnittstelle Emails zu senden und zu empfangen.</comment>
-	return 0
+  <comment># Diese Funktion können Sie beispielsweise benutzen, um bei einem dynamischen
+  # DNS Service zu registrieren. Eine weitere Möglichkeit wäre, bei Aktivierung der
+  # Schnittstelle Emails zu senden und zu empfangen.</comment>
+  return 0
 }
 
 postdown() {
-	<comment># Diese Funktion gibt es in erster Linie aus Vollständigkeitsgründen.
-	# Mir ist bislang noch nichts Sinnvolles eingefallen, was man mit ihr
-	# machen könnte ;-)</comment>
-	return 0
+  <comment># Diese Funktion gibt es in erster Linie aus Vollständigkeitsgründen.
+  # Mir ist bislang noch nichts Sinnvolles eingefallen, was man mit ihr
+  # machen könnte ;-)</comment>
+  return 0
 }
 </pre>
 
@@ -101,7 +102,7 @@ postdown() {
 
 <note>
 Funktioniert nicht mit WPA Supplicant - die <c>${ESSID}</c> und
-<c>${ESSIDVAR}</c> Variablen sind allerdings in der postup() Funktion
+<c>${ESSIDVAR}</c> Variablen sind in der <c>postup()</c> Funktion
 verfügbar.
 </note>
 
@@ -113,61 +114,61 @@ kontrollieren kann.
 </p>
 
 <p>
-Der Rückgabewert der preassociate Funktion sollte 0 sein, um anzuzeigen, dass
-die (De-)Konfiguration der Schnittstelle fortgesetzt werden kann. Wird ein von
-Null verschiedener Wert zurückgeben, wird die Konfiguration der Schnittstelle
-abgebrochen.
+Der Rückgabewert der <c>preassociate()</c> Funktion sollte 0 sein, um
+anzuzeigen, dass die (De-)Konfiguration der Schnittstelle fortgesetzt werden
+kann. Wenn <c>preassociate()</c> einen von Null verschiedenen Wert zurückgibt,
+wird die Konfiguration der Schnittstelle abgebrochen.
 </p>
 
 <p>
-Der Rückgabewert der postassociate Funktion wird ignoriert, da es im Fehlerfall
-nichts zu tun gibt.
+Der Rückgabewert der <c>postassociate()</c> Funktion wird ignoriert, da es im
+Fehlerfall nichts zu tun gibt.
 </p>
 
 <p>
 <c>${ESSID}</c> wird auf die exakte ESSID des Zugangspunktes gesetzt, zu dem
 Sie sich verbinden.
 <c>${ESSIDVAR}</c> ist <c>${ESSID}</c> umgewandelt in einen Variablennamen,
-den die bash erlaubt.
+den die Bash erlaubt.
 </p>
 
 <pre caption="pre/post association Funktionen">
 preassociate() {
-	<comment># Im folgenden werden zwei Konfigurationsvariablen leap_user_ESSID
-	# und leap_pass_ESSID hinzugefügt. Sind beide für die ESSID gesetzt, zu der
-	# verbunden wird, dann wird das CISCO LEAP Skript ausgeführt.</comment>
+  <comment># Im folgenden werden zwei Konfigurationsvariablen leap_user_ESSID
+  # und leap_pass_ESSID hinzugefügt. Sind beide für die ESSID gesetzt, zu der
+  # verbunden wird, dann wird das CISCO LEAP Skript ausgeführt.</comment>
 
-	local user pass
-	eval user=\"\$\{leap_user_${ESSIDVAR}\}\"
-	eval pass=\"\$\{leap_pass_${ESSIDVAR}\}\"
+  local user pass
+  eval user=\"\$\{leap_user_${ESSIDVAR}\}\"
+  eval pass=\"\$\{leap_pass_${ESSIDVAR}\}\"
 
-	if [[ -n ${user} &amp;&amp; -n ${pass} ]]; then
-		if [[ ! -x /opt/cisco/bin/leapscript ]]; then
-			eend "For LEAP support, please emerge net-misc/cisco-aironet-client-utils"
-			return 1
-		fi
-		einfo "Waiting for LEAP Authentication on \"${ESSID//\\\\//}\""
-		if /opt/cisco/bin/leapscript ${user} ${pass} | grep -q 'Login incorrect'; then
-			ewarn "Login Failed for ${user}"
-			return 1
-		fi
-	fi
+  if [[ -n ${user} &amp;&amp; -n ${pass} ]]; then
+    if [[ ! -x /opt/cisco/bin/leapscript ]]; then
+      eend "For LEAP support, please emerge net-misc/cisco-aironet-client-utils"
+      return 1
+    fi
+    einfo "Waiting for LEAP Authentication on \"${ESSID//\\\\//}\""
+    if /opt/cisco/bin/leapscript ${user} ${pass} | grep -q 'Login incorrect'; then
+      ewarn "Login Failed for ${user}"
+      return 1
+    fi
+  fi
 
-	return 0
+  return 0
 }
 
 postassociate() {
-	<comment># Diese Funktion gibt es in erster Linie aus Vollständigkeitsgründen.
-	# Mir ist bislang noch nichts Sinnvolles eingefallen, was man mit ihr
-	# machen könnte ;-)</comment>
+  <comment># Diese Funktion gibt es in erster Linie aus Vollständigkeitsgründen.
+  # Mir ist bislang noch nichts Sinnvolles eingefallen, was man mit ihr
+  # machen könnte ;-)</comment>
 
-	return 0
+  return 0
 }
 </pre>
 
 <note>
-Auf <c>${ESSID}</c> und <c>${ESSIDVAR}</c> kann in den predown() und postdown()
-Funktionen nicht zugegriffen werden.
+Auf <c>${ESSID}</c> und <c>${ESSIDVAR}</c> kann in den <c>predown()</c> und
+<c>predown()</c> Funktionen nicht zugegriffen werden.
 </note>
 
 </body>
