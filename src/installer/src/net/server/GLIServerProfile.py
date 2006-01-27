@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIServerProfile.py,v 1.1 2005/09/30 20:33:29 agaffney Exp $
+$Id: GLIServerProfile.py,v 1.2 2006/01/27 02:19:33 agaffney Exp $
 Copyright 2005 Gentoo Technologies Inc.
 """
 
@@ -110,7 +110,7 @@ class ServerProfile:
 
 	def add_client(self, xml_path, client, attr):
 		tmp_client = {}
-		if "name" in attr.getNames():
+		if "hostname" in attr.getNames():
 			for attrName in attr.getNames():
 				tmp_client[attrName] = str(attr.getValue(attrName))
 		self._tmp_clients.append(tmp_client)

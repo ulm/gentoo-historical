@@ -458,7 +458,10 @@ class GLIHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			try:
 				f = open(path, 'rb')
 			except IOError:
-				self.send_error(404, "File not found")
+				self.send_response(404)
+				self.end_headers()
+				self.wfile.write("<h2>404 Not Found</h2>The resource you were looking for does not exist")
+#				self.send_error(404, "File not found")
 				return None
 			filestat = os.stat(path)
 			filesize = filestat[6]
