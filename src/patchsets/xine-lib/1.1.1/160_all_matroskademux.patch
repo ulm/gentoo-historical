@@ -1,0 +1,62 @@
+Index: xine-lib-1.1.1/src/demuxers/demux_matroska.c
+===================================================================
+--- xine-lib-1.1.1.orig/src/demuxers/demux_matroska.c
++++ xine-lib-1.1.1/src/demuxers/demux_matroska.c
+@@ -1750,12 +1750,13 @@ static int parse_block (demux_matroska_t
+         /* size of each frame */
+         for (i = 0; i < lace_num; i++) {
+           int size = 0;
+-          while (*data == 255) {
+-            size += *data;
++          int partial_size;
++          do
++          {
++            partial_size = *data;
++            size += partial_size;
+             data++; block_size_left--;
+-          }
+-          size += *data;
+-          data++; block_size_left--;
++          } while (partial_size == 255);
+           frame[i] = size;
+           block_size_left -= size;
+         }
+@@ -1765,14 +1766,19 @@ static int parse_block (demux_matroska_t
+       }
+       break;
+ 
+-      case MATROSKA_FIXED_SIZE_LACING:
++      case MATROSKA_FIXED_SIZE_LACING: {
++        int frame_size;
++
+         lprintf("fixed size lacing\n");
++        
++        frame_size = block_size_left / (lace_num + 1);
+         for (i = 0; i < lace_num; i++) {
+-          frame[i] = block_size / (lace_num + 1);
+-          block_size_left -= frame[i];
++          frame[i] = frame_size;
+         }
+-        frame[lace_num] = block_size_left;
+-        break;
++        frame[lace_num] = block_size_left - (lace_num * frame_size);
++        block_size_left = 0;
++      }
++      break;
+ 
+       case MATROSKA_EBML_LACING: {
+         int64_t tmp;
+Index: xine-lib-1.1.1/src/xine-engine/demux.c
+===================================================================
+--- xine-lib-1.1.1.orig/src/xine-engine/demux.c
++++ xine-lib-1.1.1/src/xine-engine/demux.c
+@@ -525,7 +525,8 @@ void _x_demux_send_data(fifo_buffer_t *f
+ 
+   decoder_flags |= BUF_FLAG_FRAME_START;
+ 
+-  while (fifo && size) {
++  _x_assert(size > 0);
++  while (fifo && size > 0) {
+ 
+     buf = fifo->buffer_pool_alloc (fifo);
+ 
