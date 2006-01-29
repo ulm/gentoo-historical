@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/articles/hardware-stability-p1.xml,v 1.1 2006/01/29 21:42:05 so Exp $ -->
+
+<guide link="/doc/it/articles/hardware-stability-p1.xml" lang="it" disclaimer="articles">
+<title>Guida alla stabilità hardware su Linux, Parte 1</title>
+
+<author title="Author">
+<mail link="drobbins@gentoo.org">Daniel Robbins</mail>
+</author>
+<!-- modificato da Joshua Saddler, jackdark@gmail.com -->
+
+<abstract>
+In questo articolo, Daniel Robbins spiega come diagnosticare e sistemare CPU
+difettose, così come testare la tua RAM per cercare difetti. Alla fine di
+questo articolo, sarai in grado di assicurarti che il tuo sistema Linux sia
+il più stabile possibile.
+</abstract>
+
+<!--
+La versione originale di questo articolo è stata precedentemente pubblicata su IBM 
+developerWorks, ed è proprietà della Westtech Information Services. Questo  
+documento è un versione aggiornata dell'articolo originale, e contiene
+diversi miglioramenti fatti dal team di Documentazione Gentoo Linux 
+-->
+
+<version>1.2</version>
+<date>2005-10-09</date>
+
+<chapter>
+<title>Ricerca di errori nella CPU</title>
+<section>
+<body>
+
+<p>
+Molti di noi nel mondo Linux hanno affrontato brutti problemi di hardware.
+Quanti di noi hanno settato una Linux box, installato le proprie applicazioni
+preferite, compilate ed installate applicazioni aggiuntive, e ottenuto che
+tutto funzioni perfettamente solo per scoprire che il nostro sistema ha un
+(argh!) fatale bug nell'hardware? Che i sintomi siano dei segmentation faults
+casuali, la corruzione dei dati, un blocco hardware, o la perdita dei dati è
+irrilevante -- il difetto hardware effettivamente trasforma il nostro
+affidabile sistema operativo Linux in qualcosa che a male pena è in grado di
+restare a galla.  In questo articolo, noi daremo un sguardo in profondità su
+come scoprire una CPU o delle RAM difettose -- consentendovi di sostituire la
+parti difettose prima che possano fare gravi danni.
+</p>
+
+<p>
+Se stai incontrando problemi di instabilità e sospetti che siano correlati
+all'hardware, ti invito a testare la CPU e la memoria per assicurarti che
+stiano lavorando bene. Tuttavia, anche se tu non hai incontrato questi
+problemi, è comunque una buona idea eseguire questi test di CPU e memoria.
+Nel farlo, potresti scoprire un problema hardware che avrebbe potuto
+importunarti nel momento sbagliato, o magari che avrebbe causato la perdita
+di dati o ore di frustrazione in una ricerca frenetica della causa del
+problema. La giusta, proattiva applicazione di queste tecniche possono
+aiutarti ad evitare molti mal di testa, e se il tuo sistema supera i test,
+puoi stare sicuro che il tuo sistema è all'altezza del compito assegnatogli.
+</p>
+
+</body>
+</section>
+<section>
+<title>Problemi di CPU</title>
+<body>
+
+<p>
+Se hai una CPU terribilmente difettosa, la tua macchina potrebbe non essere
+in grado di avviare Linux o potrebbe farlo solo per pochi minuti prima di
+bloccarsi. Le CPU in questo stato malandato sono facilmente diagnosticabili
+come difettose perché i sintomi sono chiari. Ma ci sono difetti più subdoli
+che non sono così facili da rilevare; di solito gli errori meno evidenti sono
+quelli che causano il blocco della macchina ogni volta senza una ragione
+apparente, o provocano la chiusura di certi processi in modo inaspettato.
+Molte instabilità connesse alla CPU possono essere provocate "esercitando" la
+CPU -- dandogli un mucchio di lavoro da fare, provocandogli un riscaldamento
+e in alcuni casi a "farle perdere i sensi". Diamo un'occhiata ad alcuni modi
+per stressare-testare la CPU.
+</p>
+
+<p>
+Potreste essere sopreso di sentirti dire che uno dei migliori test sulla
+stabilità della CPU è dentro Linux -- la compilazione del kernel. Il
+compilatore gcc è un ottimo strumento per testare la stabilità generica di
+una CPU, e la costruzione di un kernel usa un bel po' gcc. Con la creazione e
+il test dei seguenti script dalla tua directory <path>/usr/src/linux</path>,
+potrai dare alla tua macchina un test di stress di compilazione del kernel di
+livello industriale:
+</p>
+
+<pre caption="The cpubuild script">
+#!/bin/bash
+make dep
+while [ "foo" = "foo" ]
+do
+make clean
+make -j2 bzImage
+if [ $? -ne 0 ]
+then
+echo OUCH OUCH OUCH OUCH
+exit 1
+fi
+done
+</pre>				
+
+<p>
+Ti accorgerai che questo script compila <e>ripetutamente</e> il kernel. Il
+motivo per questo è semplice -- alcune CPU hanno difetti intermittenti, che
+le permettono di compilare perfettamente il kernel il 95% delle volte, ma
+provocando errori di compilazione qualche volta. Potrebbero servire cinque o
+più compilazioni del kernel prima che il processore si scaldi al punto da
+diventare instabile.
+</p>
+
+<p>
+Nello script precedente. accertati di sistemare l'opzione <c>-j</c> così che
+il numero che lo segua sia superiore di uno al numero di processori nel tuo
+sistema; in altre parole, usa "2" se hai un unico processore, "3" per un
+dual-processor, etc. L'opzione <c>-j</c> dice a <c>make</c> di costruire il
+kernel in parallelo, assicurando che ci sia sempre almeno un processo gcc in
+azione dopo che ogni file sorgente sia stato compilato -- assicurando così
+che lo stress nella tua CPU sia massimo. Se la tua Linux box non verrà usata
+nel pomeriggio, lasciagli eseguire questo script, e lascia che la macchina
+ricompili il kernel per un po' di ore.
+</p>
+
+</body>
+</section>
+<section>
+<title>Possibili problemi di CPU</title>
+<body>
+
+<p>
+Se lo script viene eseguito perfettamente per diverse ore, congratulazioni!
+La tua CPU ha superato il primo test. Tuttavia, è possibile che lo script
+muoia inaspettatamente. Come puoi sapere se hai un problema di CPU o un
+qualsiasi altro problema? Bene, se gcc tira fuori un errore del genere,
+allora ci sono buone possibilità che la tua CPU sia difettosa:
+</p>
+
+<pre caption="GCC error">
+gcc: Internal compiler error: program cc1 got fatal signal 11
+</pre>
+
+<p>
+A questo punto, lo stato della tua CPU potrebbe rientrare in una una di
+queste tre possibilità:
+</p>
+
+<ul>
+  <li>
+		Se digiti <c>make bzImage</c> per riprendere la compilazione del kernel,
+		e il compilatore muore nello stesso identico file, prova ancora a
+		digitare <c>make bzImage</c> per diverse volte. Se dopo circa dieci
+		tentativi il processo di costruzione continua a morire in questo file
+		particolare, allora il problema è causato molto probabilmente da un
+		(raro) bug del compilatore gcc che è stato provocato da questo
+		particolare file sorgente, piuttosto che da una CPU difettosa. Tuttavia,
+		di questi tempi, gcc è abbastanza stabile, così questo non sembra possa
+		accadere.
+  </li>
+  <li>
+		Se digiti <c>make bzImage</c> per riprendere la compilazione del kernel e
+		ottieni un altro signal 11 un po' più in là, allora la tua CPU ha le ore
+		contate.
+  </li>
+  <li>
+		Se digiti <c>make bzImage</c> per riprendere la compilazione del kernel e
+		il kernel si compila con successo, non significa che la tua CPU è OK.  Di
+		solito questo significa che il difetto della CPU compare ogni tanto, di
+		solito quando la CPU raggiunge una certa temperatura (una CPU diventerà
+		più calda quando è stata usata per un lungo periodo di tempo, e
+		potrebbero servirgli diverse compilazioni del kernel per raggiungere il
+		suddetto punto critico).
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Salvare la tua CPU</title>
+<body>
+
+<p>
+Se la tua CPU ha errori casuali quando si trova sotto grosso carico, è
+possibile che non sia affatto difettosa -- forse, semplicemente, non è
+raffreddata in modo corretto. Ecco alcune cose che puoi controllare:
+</p>
+
+<ul>
+  <li>La ventola della tua CPU è collegata alla corrente?</li>
+  <li>E' relativamente priva di polvere?</li>
+  <li>
+		La ventola gira realmente (e gira alla giusta velocità) quando il pc è
+		acceso?
+  </li>
+  <li>Il dissipatore è posizionato correttamente sulla CPU?</li>
+  <li>E' presente la pasta conduttiva tra la CPU e il dissipatore di calore?</li>
+  <li>Il tuo case ha una ventilazione adeguata?</li>
+</ul>
+
+<p>
+Se tutto pare a posto, potresti voler far ripartire il test della
+compilazione del kernel con il case aperto. Lascia che il kernel si compili
+per circa cinque minuti e poi metti la tua mano dentro la macchina accesa e
+tocca il metallo esterno del case per scaricare una tua eventuale tensione di
+corrente. Poi, facendo molta attenzione, controlla la temperatura del
+dissipatore con la punta delle dita. Se è insolitamente calda, allora è molto
+probabile che la ventola/dissipatore non sia adeguata per la tua particolare
+CPU. In questo caso, aggiorna il sistema di raffreddamento -- sperando che la
+tua CPU non abbia subìto nessun danno permanente e sia ancora funzionante.
+</p>
+
+</body>
+</section>
+<section>
+<title>Il test definitivo della CPU</title>
+<body>
+
+<p>
+Il test della compilazione del kernel è un buon metodo per testare la
+stabilità della CPU, ma c'è un altro test estremo disponibile per la
+stabilità della CPU che tu potresti voler provare. L'ho lasciato per ultimo,
+perché se la tua CPU ha un sistema di raffreddamento del tutto inadeguato,
+questo particolare test potrebbe scaldarla molto e <e>teoricamente</e>
+causare danni permanenti alla tua CPU. Questo test è per i sistemi che hanno
+superato il test della compilazione del kernel senza problemi -- sistemi di
+cui vuoi assicurarti che possano gestire anche i carichi di CPU più
+problematici con facilità. Se la tua CPU è adeguamente raffreddata, allora
+supererà il test, in caso contrario, avrai bisogno di raffreddarla meglio.
+</p>
+
+<p>
+Per eseguire il mio test "definitivo" per la CPU, la prima cosa che faccio è
+andare alla pagina lm_sensors (vedi <uri link="#resources">Risorse</uri>) e
+scaricare il pacchetto lm_sensors. Questo tarball dei sorgenti contiene vari
+moduli del kernel che si interfacciano con il servizio di healt monitoring
+che si trova ormai in ogni scheda madre moderna. Una volta che il pacchetto è
+installato correttamete, e i moduli necessari caricati (usa lo script
+prog/detect/sensors-detect per capire quali sono), vedrai alcuni nuovi file
+apparire su <path>/proc/sys/dev/sensors</path>. Questi file contengono
+informazioni pratiche come la velocità delle ventole della CPU, la
+temperatura della CPU e della scheda madre, e il voltaggio della scheda
+madre, il tutto aggiornato in tempo reale. Ti consiglio di configurare questo
+pacchetto per essere compilato come modulo e di usare il sensors-detect
+script per capire quali moduli caricare all'avvio, poiché ho ottenuto
+migliori risultati con questa configurazione.
+</p>
+
+<p>
+Quando avrai i moduli lm_sensors caricati, ti raccomando di installare un
+monitor grafico CPU/sensori, che ti permetterà di guardare il carico della
+tua CPU e le temperature in tempo reale senza dover ripetutamente fare
+<c>cat</c> dei file in /proc/sys/dev/sensors. A questo scopo, io uso un
+grande piccolo programma chiamato gkrellm (vedi <uri
+link="#resources">Risorse</uri>. Qui c'è uno snapshot del mio gkrellm che sta
+monitorando l'uso della mia CPU, i settaggi della temperatura della scheda
+madre e un sacco di altre cose:
+</p>
+
+<figure link="/images/docs/hardware-stability-gkrellm.jpg" caption="gkrellm is 
+up and running"/>
+
+<p>
+Ci sono altri pacchetti disponibili per il monitoraggio grafico che sono
+compatibili con lm_sensors; ne potrai trovare un bel po' elencati sulla home
+page di lm_sensors, sotto la sezione "links".
+</p>
+
+<p>
+L'ultimo step preparatorio è quello di scaricare il programma cpuburn (vedi
+<uri link="#resources">Risorse</uri>). Questo piccolo programma manuale usa
+una combinazione di istruzioni macchina fatte a mano per dare il massimo
+stress alla tua particolare CPU -- perfino un po' di più di quello causato da
+una ripetitiva compilazione del kernel. Incluso in questo archivio ci sono
+diversi piccoli programmi configurati per i processori di classe P5 e P6,
+così come per le versioni speciali dell'AMD K6. Una volta scompattato il
+tarball di cpuburn, leggi il file README; ti spiega come compilare il file
+sorgente in assembly incluso. Dopo averlo fatto, avrai il tuo piccolo
+programma cpuburn.
+</p>
+
+<p>
+Ora, per il test. Di solito faccio partire i monitor grafici dei sensori, e
+poi eseguo il programma cpuburn come root. Poi, guardo il lettore della
+temperatura della CPU alzarsi e stabilizzarsi, e poi lascio che cpuburn resti
+in esecuzione per un'ora circa. Se ripetendo questa procedura la tua CPU
+raggiungere sempre una temperatura inusuale (70 gradi Celsius dovrebbero
+essere considerati "insolitamente elevati"), allora il tuo sistema di
+raffreddamento della CPU necessita di più lavoro. E, se la tua macchina va in
+crash o si	blocca, o se il processo di cpuburn muore, il raffreddamento
+della tua CPU deve essere migliorato -- o forse la tua particolare CPU
+semplicemente non è costruita sulle "specifiche". Puoi farti un giudizio
+usando i lettori di temperatura della CPU.  Ma se tutto va bene, allora il
+tuo sistema dovrebbe essere in grado di affrontare ogni sfida che gli si
+dovesse presentare. Dopo un'ora circa, puoi proseguire e uccidere cpuburn per
+ripristinare le normali operazioni.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Ricerca di errori nella memoria</title>
+<section>
+<title>Test della memoria</title>
+<body>
+
+<p>
+E' molto importante avere una CPU completamente affidabile, ed è altrettanto
+importante avere i chip della RAM solidi come la roccia. Alcune persone
+pensano che le SIMM e le DIMM non falliscano mai e non abbiano bisogno di
+test.  Sfortunatamente questo non è vero -- la memoria cattiva è molto
+comune, e qualche volta è tutto quello che dobbiamo tenere d'occhio. Altre
+persone credono che sebbene ci potrebbe essere della RAM cattiva, ogni errore
+di memoria verrà rilevato dal memory check effettuato dal BIOS all'avvio del
+sistema. Anche questo è falso; il memory check del BIOS non rileverà la
+maggior parte della RAM cattiva, perciò non lasciare che il check del BIOS ti
+lasci con un falso senso di sicurezza.
+</p>
+
+</body>
+</section>
+<section id="badmem">
+<title>Sintomi di memoria guasta</title>
+<body>
+
+<p>
+OK, così c'è della memoria guasta qui fuori, e qualcuna potrebbe essere nella
+tua macchina ora. Qui ci sono alcuni segnali di allarme che potrebbero
+indicare la presenza nel tuo computer di RAM guasta.
+</p>
+
+<ul>
+  <li>
+		Quando carichi un po' di programmi insieme, qualche volta un certo
+		programma morirà senza una ragione apparente.
+  </li>
+  <li>
+		Qualche volta, quando apri un file, esso appare corrotto. Se lo apri più
+		tardi, esso apparirà buono.
+  </li>
+  <li>
+		Quando estrai le tarball (<c>tar -xzvf</c>), tar riporta spesso che la
+		tarball è corrotta. Provi ad estrarre la tarball di nuovo un po' più
+		tardi e tar non riporta nessun errore. Errori simili possono capitare con
+		gzip e bzip.
+  </li>
+  <li>
+		Se tu stai avendo esperienza di problemi come questi, è probabile che la
+		RAM del tuo sistema sia difettosa. Vorrai senza dubbio testare la tua RAM
+		con il seguente metodo. E anche se non hai mai avuto questi problemi, è
+		una buona idea dare alla RAM del tuo sistema un buon allenamento per
+		assicurarsi di non rimanere mai sopresi da una bizzarria inaspettata
+		della RAM in futuro. Ecco come fare.
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>memtest86</title>
+<body>
+
+<p>
+Per nostra fortuna, c'è un eccellente programma di testing basato su Linux
+che si installa su un floppy disk avviabile. E' chiamato memtest86 (vedi
+<uri>link="#resources">Risorse</uri> per averlo). Creare un floppy memtest è
+semplice. Primo, scarica il tarball. Secondo, scompatta l'archivio e
+costruisci l'immagine binaria del disco:
+</p>
+
+<pre caption="Building memtest86">
+# <i>tar -xzvf memtest86-2.5.tar.gz</i>
+# <i>cd memtest86-2.5</i>
+# <i>make</i>
+</pre>
+
+<p>
+Poi, inserisci un disco vuoto da 3,5" nel tuo lettore di floppy, e digita:
+</p>
+
+<pre caption="Installing memtest86">
+# <i>make install</i>
+</pre>
+
+<p>
+Dopo pochi secondi appena, il tuo dischetto da 3,5" avrà un meravigliso
+piccolo tester di memoria, pronto per essere avviato. Il modo migliore per
+eseguire questo test è quello di trovare un po' di tempo quando la tua
+macchina può rimanere ferma per almeno sei ore -- avviare il test appena
+prima di andare a letto (o di lasciare il lavoro) è una buona idea. Per
+iniziare il test, riavvia la tua macchina con il floppy nel lettore. Quando
+il tuo sistema si avvia, il programma memtest86 partirà immediatamente:
+</p>
+
+<figure link="/images/docs/hardware-stability-memtest86.gif" 
+caption="memtest86 controlla la RAM sulla mia macchina di sviluppo"/>
+
+<p>
+Bizzarrie della memoria più vistose (come i bit "morti") verranno rilevate in
+pochi secondi. I fallimenti innescati da spefici schemi di bit (che
+sfortunatamente sono abbastanza frequenti) potrebbero non essere rilevati per
+diverse ore, ma alla fine dovrebbero essere scovati anche questi. Non appena
+memtest86 scopre un bit difettoso, un messaggio apparirà sulla parte bassa
+dello schermo -- e il test continuerà. Quando accenderai il monitor la
+mattina seguente, troverai il test concluso, e se non troverai avvertimenti
+sullo schermo, allora con tutte le probabilità la tua RAM è buona. Tuttavia,
+se continui ad avere i problemi elencati nella sezione <uri
+link="#badmem">Sintomi di memoria guasta</uri>, allora <e>è</e> possibile che
+la tua RAM vada incontro a infrequenti bizzarrie e potrebbe lo stesso essere
+necessario sostituirla.
+</p>
+
+</body>
+</section>
+<section>
+<title>Risolvere i problemi di RAM</title>
+<body>
+
+<p>
+Spero che tutta la vostra RAM lavori bene. Tuttavia, se tu sei uno degli
+sfortunati, non è tutto perduto -- ci sono ancora alcune cose che puoi fare
+per "aggiustare" la tua RAM difettosa. La prima cosa che suggerisco di fare è
+di fare una visita al setup del BIOS e guardare i settaggi di memoria. Alcuni
+BIOS hanno una opzione per la memoria chiamata "Turbo Mode" -- ovviamente, se
+hai qualcosa del genere abilitato, dovrai disabilitarlo. E' anche possibile
+che i timing di memoria del BIOS sono impostati in modo scorretto -- puoi
+provare ad aggiustarli (aumentando il resfresh rate, abbassando il CAS) e
+rieseguire memtest86 per vedere se il problema è scomparso.
+</p>
+
+<p>
+Se memtest continua a scovare errori, allora è tempo di scovare la SIMM o la
+DIMM danneggiata e rimuoverla dalla tua macchina. Se hai più di un modulo di
+memoria installato, allora installerai solo un singolo modulo (o due moduli
+se hai le SIMMS), e rieseguirai memtest86. Inserisci ciclicamente tutti i
+tuoi moduli e sarai in grado di determinare quali sono quelli difettosi --
+non c'è motivo di gettare un modulo buono nel cestino.
+</p>
+
+<p>
+Questo è tutto per ora; nella seconda e finale installazione in queste serie,
+vedremo come risolvere problemi relativi alla configurazione hardware,
+incluse problematiche di latenza IRQ e PCI. Nel frattempo, potresti
+controllare queste risorse.
+</p>
+
+</body>
+</section>
+<section id="resources">
+<title>Risorse</title>
+<body>
+
+<ul>
+  <li>
+		Scarica il <uri link="http://www.netroedge.com/~lm78">pacchetto
+		lm_sensors</uri>.
+  </li>
+  <li>Prendi una copia di <uri link="http://gkrellm.net/">gkrellm</uri>.</li>
+  <li>
+		Afferra il <uri link="http://users.ev1.net/~redelm/">programma
+		cpuburn</uri>.
+  </li>
+  <li>
+		Prendi la tua copia personale di <uri
+		link="http://www.memtest86.com/">memtest86</uri>.
+  </li>
+  <li>
+		Per maggiori informazioni sul "problema signal 11", controlla le <uri
+		link="http://www.bitwizard.nl/sig11/">Sig 11 FAQ</uri>.
+  </li>
+  <li>
+		Puoi trovare un bel po' di Window-maker dockapps (alcune sono CPU e
+		sensors data grafici) al <uri
+		link="http://www.windowmaker.org/links-general.html">Linuxpowered.com's
+		Window-maker links page</uri>.
+  </li>
+  <li>
+		Se stai cercando di diagnosticare un problema hardware correlato alla tua
+		scheda grafica nVidia, assicurati di controllare le <uri
+		link="http://www.technologyvault.co.uk/geforce/faq.php?list=categories&amp;prog=gef&amp;lang=en">
+		GeForce FAQ</uri>.  Qui ci sono molte buone informazioni riguardanti
+		Linux e Windows.
+  </li>
+  <li>
+		Per maggiori informazioni sulla ricerca di errori nVidia, controlla la
+		<uri link="/doc/it/nvidia-guide.xml">Guida nVidia</uri> di Sven
+		Vermeulen.
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Note sull'autore</title>
+<body>
+
+<p>
+Daniel Robbins vive ad Albuquerque, Nuovo Messico. E' stato il presidente di
+Gentoo Technologies Inc., il Capo Architetto del Progetto Gentoo ed è uno
+degli autori di alcuni libri pubblicati da MacMillan: Caldera OpenLinux
+Unleashed, Suse Linux Unleashed, e Samba Unleashed. Daniel si è interessato
+ai computer un po' di maniera fin dalle superiori, quando fu per la prima
+volta messo di fronte al linguaggio di programmazione Logo e a una dose
+potenzialmente letale di Pac Man. Questo probabilmente spiega perché ha
+lavorato come Capo Artista Grafico alla SONY Electronic Publishing/Psygnosis.
+Daniel si diverte a passare il suo tempo con sua moglie Mary e la sua nuova
+bambina, Hadassah. Lo puoi contattare su <mail>drobbins@gentoo.org</mail>.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
