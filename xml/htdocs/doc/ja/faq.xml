@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/faq.xml,v 1.28 2005/08/14 17:48:13 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/faq.xml,v 1.29 2006/01/29 15:55:43 idani Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/ja/faq.xml">
@@ -50,9 +50,9 @@
 
 <license/>
 
-<version>3.0.8</version>
-<date>2005-08-06</date>
-<!-- Original revision: 1.97 -->
+<version>3.5</version>
+<date>2006-01-16</date>
+<!-- Original revision: 1.103 -->
 
 <chapter> 
 <title>質問</title> 
@@ -114,6 +114,12 @@
   </li>
   <li>
     <uri link="#dhcp">リブートした後にネットワークが接続されません。何が間違ってるのでしょうか？</uri>
+  </li>
+  <li>
+    <uri link="#dualboot">GRUBまたはLILOを使用してWindowsを起動させたいのですが、真っ黒な画面だけが表示されてしまいます。どうすればいいでしょうか？</uri>
+  </li>
+  <li>
+    <uri link="#stage12">Stage1またはStage2のtarballを使用してGentooをインストールするにはどうしたらいいでしょうか？</uri>
   </li>
 </ul> 
 
@@ -354,14 +360,19 @@ usernameをwheelグループに追加するには、root で次のコマンド�
 <body>
 
 <p>
-Gentooは、正しく動作するためにdevfsカーネルサポート又はudevユーザランドサポートのどちらかを必要とします。
-2.6カーネルが、ほとんどのアーキテクチャで安定してきているので、
+Gentooはdevfsカーネルサポート、udevのユーザランドでのサポート、静的な<path>/dev</path>のどれでも動きます。2.6カーネルが、ほとんどのアーキテクチャで安定してきているので、
 udevが推奨されています。
 udevの設定方法は、
 <uri
 link="/doc/en/udev-guide.xml">udev guide</uri>(<uri
 link="/doc/ja/udev-guide.xml">日本語訳</uri>)をご覧ください。
 </p>
+
+<p>
+静的な<path>/dev</path>を使用したい場合には、
+<path>/etc/conf.d/rc</path>で<c>RC_DEVICES="static"</c>を指定してください。
+</p>
+ 
 
 </body>
 </section>
@@ -511,11 +522,10 @@ link="http://www.google.com">Google</uri>も同じくらい効果的でしょう
 </p>
 
 <p>
-ステージ1から構築した場合には、Gentooのバイナリで提供されてるステージよりもたくさんの選択肢があることに注意してください。
-<c>-march</c>を設定方法については、
-<uri
+GentooがバイナリStageを構築する際に使用しているオプションよりも、もっとたくさんのオプションがあることに注意してください。
+「<c>-march</c>の設定は、<uri
 link="http://gcc.gnu.org/onlinedocs/gcc-3.4.4/gcc/i386-and-x86_002d64-Options.html#i386-and-x86_002d64-Options">gcc
-guide</uri>を参照してください。
+guide</uri>を参照ください。
 </p>
 
 </body>
@@ -545,6 +555,89 @@ guide</uri>を参照してください。
 <p>
 インストールCDを使用してシステムを復旧させるための情報は<uri
 link="#bootrescue">available</uri>にもあります。
+</p>
+
+</body>
+</section>
+<section id="dualboot">
+<title>
+GRUBまたはLILOを使用してWindowsを起動させたいのですが、真っ黒な画面だけが表示されてしまいます。どうすればいいでしょうか？
+</title>
+<body>
+
+<p>
+これはよく知られている問題です。
+Windowsが最初のハードディスクにインストールされていないときに、Windowsは起動せず、黒い/何も表示されない画面を表示します。
+これを解決するために、bootローダーを調整して、Windowsが最初のハードディスクにインストールされていると、Windowsを"だます"必要があります。
+下記の例を参照してください。Gentooは<path>hda</path>(最初のディスク)に、
+Windowsは<path>hdb</path>(二つ目のディスク)にインストールされています。
+必要に応じてあなたの設定を調整してください。
+</p>
+
+<pre caption="Windows用のデュアルブートのgrub.confの例">
+title Windows XP
+     map (hd1) (hd0)
+     map (hd0) (hd1)
+     rootnoverify (hd1,0)
+     chainloader +1
+</pre>
+
+<pre caption="Windows用のデュアルブートのlilo.confの例">
+other=/dev/hdb1
+     label=WindowsXP
+     table=/dev/hdb
+     map-drive = 0x80
+     to = 0x81
+     map-drive = 0x81
+     to = 0x80
+</pre>
+
+<p>
+これで、Windowsに最初のハードディスクにインストールされていると思い込ませ、問題なくbootさせることができます。
+さらなる情報は使用しているブートローダーによって、<uri
+link="http://www.gnu.org/software/grub/manual/html_node/DOS_002fWindows.html">GRUB
+documentation</uri>、または<c>man lilo.conf</c>を参照ください。
+</p>
+
+</body>
+</section>
+<section id="stage12">
+<title>Stage1またはStage2のtarballを使用してGentooをインストールするにはどうしたらいいでしょうか？</title>
+<body>
+
+<p>
+GentooハンドブックはStage3のtarballを使用してのインストールのみを説明しています。
+しかし、Gentooは現在もStage1とStage2のtarballを提供しています。
+これは、開発目的(リリースエンジニアリングチームは、Stage3のtarballを作成するために、Stage1のtarballを使用します)ですので一般のユーザーは使うべきではないでしょう。Stage3のtarballは、
+システムをbootstrapするためにとても良いです。接続されているインターネットが必要です。
+</p>
+
+<p>
+bootstrapとは、すべてのコアシステムパッケージをインストールした後で、toolchain(Cライブラリとコンパイラ)を構築することです。
+システムをbootstrapするために、stage3インストールを実行してください。
+
+<e>Configuring the Kernel(カーネル設定)</e>の章を開始する前に、<path>bootstrap.sh</path>を必要に合わせて編集してから、実行してください。
+</p>
+
+<pre caption="システムをbootstrapする">
+# <i>cd /usr/portage/scripts</i>
+# <i>vi bootstrap.sh</i>
+
+# <i>./bootstrap.sh</i>
+</pre>
+
+<p>
+次にすべてのコアシステムパッケージを新しく構築したtoolchainで再構築します。
+Stage3のtarballがそれらを提供しているので、再構築する必要があります。
+</p>
+
+<pre caption="コアシステムパッケージの再構築">
+# <i>emerge -e system</i>
+</pre>
+
+<p>
+これで、<e>Configuring the Kernel</e>章から続けることができます。
+しかし、あらかじめビルドされたGRPパッケージを今後使用することはできません。
 </p>
 
 </body>
@@ -671,12 +764,17 @@ emergeが実行されていない<e>場合には</e>、安全に削除するこ�
 <title>どうすれば国際化キーボードレイアウトが使えますか？</title>
 <body>
 <p>
-<path>/etc/conf.d/keypmaps</path> の <c>KEYMAP</c> 変数を編集してください。
-そして、リブートするか、keymapsスクリプト再起動してください。
+<path>/etc/conf.d/keymaps</path>の<c>KEYMAP</c>を編集してください。
+拡張された文字をコンソールで正しく使用したい場合には、
+<path>/etc/conf.d/consolefont</path>に<c>CONSOLETRANSLATION</c>と<c>CONSOLEFONT</c>を設定する必要があるかもしれません(環境をさらにローカライズするためのさらなる情報は、<uri 
+link="/doc/en/guide-localization.xml">our localisation guide</uri>(<uri 
+link="/doc/ja/guide-localization.xml">日本語訳</uri>)を参照してください)。
+それから、<c>reboot</c>をするか、keymapとconsolefontのスクリプトを再起動してください。
 </p>
 
 <pre caption="keymapsのリスタート">
 # <i>/etc/init.d/keymaps restart</i>
+# <i>/etc/init.d/consolefont restart</i>
 </pre>
 
 </body>
