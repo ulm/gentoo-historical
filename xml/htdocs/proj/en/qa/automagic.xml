@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/automagic.xml,v 1.1 2006/01/30 05:49:16 flameeyes Exp $ -->
+
+<guide link="/proj/en/qa/automagic.xml" lang="en">
+<title>--as-needed introduction and fixing guide</title>
+
+<author title="Author">
+  <mail link="flameeyes@gentoo.org">Diego Pettenò</mail>
+</author>
+
+<abstract>
+This guide aim to describe the problem of "automagic dependencies", describing
+the reason why they are problematic and how to handle them in most common cases.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>0.1</version>
+<date>2006-01-30</date>
+
+<chapter> <!-- Introduction -->
+<title>Introduction</title>
+
+<section>
+<title>What are automagic dependencies?</title>
+<body>
+
+<p>
+The so-called <e>automagic dependecies</e> are shallow dependencies of a
+software recognized at build or runtime and changes the way the software works.
+The name <e>automagic</e> is a pun referred to the use of GNU autotools, that
+produces most of the cases of <e>automagic dependencies</e>.
+</p>
+
+<p>
+Software usually have two kind of dependencies: mandatory dependencies and
+optional dependencies. The first kind of dependencies are needed to use the
+software (that might be a library or a program), and cannot be missing in the
+system while building or running the program (depending whether they are build
+or runtime dependencies). Optional dependencies are the ones that can be
+disabled, usually at buildtime (but sometimes at runtime, too).
+</p>
+
+<p>
+Optional dependencies are usually up to the user (or the builder) to enable or
+disable, the classical example is brought by the <c>--enable-foo</c> or
+<c>--with-bar</c> options at <c>./configure</c> call (those parameters are used
+to enable dependencies that are off by default, but there are cases when the
+dependencies are on by default so you have <c>--disable-foo</c> and
+<c>--without-bar</c>).
+</p>
+
+<p>
+But with build systems that tries to understand what is present in the system
+they are building it, sometimes dependencies get <e>automagic</e>. This means
+that the build system doesn't give the builder a way to decide if he wants
+something enabled, so the dependency added, but they just enable it when they
+find it. This is the wrong behaviour.
+</p>
+
+</body>
+</section>
+
+<section> <!-- Why automagic dependencies are wrong -->
+<title>Why automagic dependencies are wrong</title>
+
+<body>
+
+<p>
+In the case of binary-based distributions, like RPM or DEB based ones,
+automagic dependencies does not change anything: if the user has something
+installed and is building by hand, it's usually what he wants to enable, while
+if it's the maintainer, he'll just have to add a dependency over the packages
+required to run the binaries he has created.
+</p>
+
+<p>
+Different is for source-based distributions like Gentoo Linux (and variants).
+As source-based distributions doesn't detach user and devel packages, the build
+systems might find more stuff than the user required, and will try to link to
+all it know about. This is the major cause of binary linking breaking after
+a depclean.
+</p>
+
+<p>
+To simplify, when an automagic dependency is not stated as mandatory in an
+ebuild, but rather has a flag that just adds or remove the dependencies on a
+given package, if this package is present in the system building the software
+with automagic dependencies, but then it's removed, the software will break,
+requiring to run <c>revdep-rebuild</c> to fix the linking. It's also possible
+that an user really don't want some dependency enabled because he know it's
+likely to break from time to time, or because he's going to create a binary
+package for another machine where the dependency might not be present (or might
+not work at all).
+</p>
+
+<p>
+When a package has automagic dependencies there are only two things that can
+be done: the first is to state the dependency as mandatory, no matter what the
+users put in their USE variable, but that might mean that some support that
+people don't want is always enable and its dependencies pulle din; the other
+is to fix the build system to be able to disable at build time the dependency
+also if it's present on the system.
+</p>
+
+<p>
+Most of the time upstream developers don't really think of adding support for
+disabling automagic dependencies as they don't feel them as actual problems:
+they do have all of them installed, or the ones they need, and they usually
+build with all of them. Luckily, most of upstream developers also don't mind
+adding options to disable them if patches are provided (sometimes also without
+patches, but of course it might be more welcome if already prepared patches are
+sent), but that's not always the case, for example Wine's upstream don't want
+to add support for enabling or disabling features in <c>./configure</c> call
+as they want the software to always use as much as options as possible.
+</p>
+
+</body>
+
+</section>
+
+</chapter>
+
+<chapter> <!-- Fixing automagic dependencies -->
+<title>Fixing automagic dependencies</title>
+
+<section> <!-- Autotools -->
+<title>Autotools</title>
+
+<body>
+
+<p>
+Most of the automagic dependencies, like the name suggests, are due to (bad) use
+of GNU autotools (<c>autoconf</c> to be exact). There are two main cases where
+automagic dependencies are brought in: the first is the "lazy devs" case, where
+the dependencies does not have a <c>./configure</c> parameter at all, they are
+just checked with <b>AC_CHECK_LIB</b> or the <c>pkg-config</c> macro
+<b>PKG_CHECK_MODULES</b>, that allows to run specific code when a library (or
+a package) is present or not; the other case is the "silly argument" case, where
+a <c>--disable-foo</c> or <c>--without-bar</c> parameter is actually accepted by
+<c>./configure</c>, but it's not checked correctly.
+</p>
+
+<p>
+The first case is actually simple to fix, it's just matter of adding a
+<b>AC_ARG_WITH</b> (or <b>AC_ARG_ENABLE</b>) call and then check for the
+corresponding variable before doing the test. It's useful to know that the first
+parameter passed to the above macro actually names a variable that gets loaded
+by <c>autoconf</c> without having to add the extra parameters for action to
+execute when the parameter is present and when it's not, the variale is named
+<path>$enable_foo</path> or <path>$with_bar</path>, depending on which of the
+two macros are called.
+</p>
+
+<note>
+For the patches to be accepted by upstream, it's usually suggested not to change
+the default behaviour, when <c>./configure</c> is called without parameters; for
+this reason, here will be listed two methods to make non-automagic the
+dependencies, one for enabled-by-default deps and one for disabled-by-default
+deps.
+</note>
+
+<pre caption="Adding an enabled-by-default check for an optional dependency">
+<i>AC_ARG_WITH([foo], AS_HELP_STRING([--without-foo], [Build without foo library (default: test)]))</i>
+
+<i>if test "x$with_foo" != "xno"; then</i>
+  PKG_CHECK_MODULES([FOO], [foo >= 0.1])
+<i>fi</i>
+</pre>
+
+<pre caption="Adding a disabled-by-default check for an optional dependency">
+<i>AC_ARG_WITH([foo], AS_HELP_STRING([--with-foo], [Build with foo library (default: disabled)]))</i>
+
+<i>if test "x$with_foo" == "xyes"; then</i>
+  PKG_CHECK_MODULES([FOO], [foo >= 0.1])
+<i>fi</i>
+</pre>
+
+<p>
+When the parameter is present but it's not honoured, it might be simple as well
+as complex to fix the dependency. It might just be a test that's not properly
+written, so it has to be changed in something alike to the tests above, or it
+might be a complete screwup in calls of <b>AC_ARG_WITH</b> macros. In those
+cases, it's better to check the code carefully and contact upstream if a screw
+up seems likely.
+</p>
+
+<warn>
+Often (almost always when a package is using automake) automagic dependencies
+are coupled with <b>AM_CONDITIONAL</b> calls. It's very important that those
+calls are put <e>outside</e> the if/fi block, or <c>./configure</c> call will
+bomb out.
+</warn>
+
+<p>
+There's actually another way to workaround, without fixing (and patching), the
+automagic dependencies generated by <b>AC_CHECK_LIB</b>, and it's by playing
+around with the cache values used by <c>autoconf</c>. This method is actually
+deprecated because it does not fix the issue to the roots and might create
+problems if upstream changes the tests a bit using a different cache variable
+name. Also, in this way fixes can't be sent upstream for integration in later
+versions.
+</p>
+
+</body>
+</section>
+
+<section> <!-- Other build systems -->
+<title>Other build systems</title>
+
+<body>
+
+<impo>
+Please expand this guide ;) Notes about other non-custom build systems such as
+<c>scons</c> are welcome, if the build system has ways to define automagic
+dependencies, it should have a way to fix them, too.
+</impo>
+
+<p>
+Automagic dependencies can be created also with custom build systems that are
+used by some software. Unfortunately, being custom, those build systems are
+usually difficult to tweak, and there's no way to describe a general approach
+to fix them.
+</p>
+
+</body>
+</section>
+
+</chapter>
+
+</guide>
+
+<!-- kate: space-indent on; indent-width 2; replace-tabs on; indent-mode normal; -->
