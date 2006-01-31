@@ -782,6 +782,14 @@ class Panel(GLIScreen.GLIScreen):
 					return False
 				
 			iter = store.iter_next(iter)
+
+		# If there are no interfaces configured, confirm this is what the user actually wants
+		if not interfaces:
+			msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="You have not configured any interfaces. Continue?")
+			resp = msgdlg.run()
+			msgdlg.destroy()
+			if resp == gtk.RESPONSE_NO:
+				return False
 		
 		# store the stuff
 		try:
