@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- English CVS Version: 1.36 -->
+<!-- English CVS Version: 1.38 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-ppc-kernel.xml,v 1.17 2005/09/05 15:47:11 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-ppc-kernel.xml,v 1.18 2006/01/31 06:18:19 grahl Exp $ -->
 
 <sections>
 
-<version>2.13</version>
-<date>2005-08-21</date>
+<version>2.15</version>
+<date>2006-01-06</date>
 
 <section>
 <title>Setzen der Zeitzone des Systems</title>
@@ -19,17 +19,17 @@
 
 <p>
 Zuerst müssen Sie dem System sagen, in welcher Zeitzone es sich befindet.
-Suchen Sie Ihre Zeitzone in<path>/usr/share/zoneinfo/</path> und erstellen
-Sie dann einen symbolischen Link zu <path>/etc/localtime</path> mit <c>ln</c>.
-Bitte vermeiden Sie die <path>/usr/share/zoneinfo/Etc/GMT*</path> Zeitzonen,
-denn deren Namen verweisen nicht auf die erwarteten Zonen. Zum Beispiel ist
-<path>GMT-8</path> in Wirklichkeit GMT+8.
+Suchen Sie Ihre Zeitzone in<path>/usr/share/zoneinfo/</path> und kopieren Sie
+diese nach <path>/etc/localtime</path>. Bitte vermeiden Sie die
+<path>/usr/share/zoneinfo/Etc/GMT*</path> Zeitzonen, denn deren Namen verweisen
+nicht auf die erwarteten Zonen. Zum Beispiel ist <path>GMT-8</path> in
+Wirklichkeit GMT+8.
 </p>
 
 <pre caption="Setzen der Zeitzone">
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(Beispiel: GMT)</comment>
-# <i>ln -sf /usr/share/zoneinfo/GMT /etc/localtime</i>
+# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
 </pre>
 
 </body>
@@ -44,48 +44,43 @@ denn deren Namen verweisen nicht auf die erwarteten Zonen. Zum Beispiel ist
 Der Kern um den herum alle Distributionen gebaut sind ist der Linux Kernel. Es
 ist die Ebene zwischen den Benutzerprogrammen und der Systemhardware. Gentoo
 bietet seinen Benutzern verschiedene mögliche Kernelquellen. Eine komplette
-Liste mit Beschreibungen finden Sie im <uri link="http://www.gentoo.org/doc/de/gentoo-kernel.xml">
-Gentoo Kernel Guide</uri>.
+Liste mit Beschreibungen finden Sie im <uri
+link="/doc/de/gentoo-kernel.xml">Gentoo Kernel Guide</uri>.
 </p>
 
 <p>
-Wir empfehlen die Verwendung von <c>vanilla-sources</c> oder 
+Wir empfehlen die Verwendung von <c>vanilla-sources</c> oder
 <c>gentoo-sources</c> unter PPC, beide sind 2.6 Kernel. Der letztgenannte
-ist für netzwerklose Installationen verfügbar. Fahren wir mit dem 
-Installieren der Kernel Sourcen fort:
+ist für netzwerklose Installationen verfügbar. Fahren wir mit dem
+installieren der Kernelquellen fort. Das <c>USE="-doc"</c> ist notwendig um zu
+verhindern, dass xorg-x11 oder andere Abhängigkeiten zu diesem Zeitpunkt
+installiert werden. <c>USE="symlink"</c> ist nicht zwingend bei einer
+Neuinstallation, stellt aber sicher, dass der <path>/usr/src/linux</path>
+Symlink korrekt erstellt wird.
 </p>
 
 <pre caption="Installieren der Kernelquellen">
-# <i>emerge gentoo-sources</i>
+# <i>USE="-doc symlink" emerge gentoo-sources</i>
 </pre>
 
+<!-- Removed, as we're trying to avoid specific kernel versions to improve HB
+      maintainability
 <note>
 Die Quellen, welche zum Zeitpunkt des 2005.1 Release verfügbar waren, sind 
 <c>gentoo-sources-2.6.12-r4</c> und <c>vanilla-sources-2.6.12.2</c>.
 </note>
+-->
 
 <p>
 Wenn Sie einen Blick in <path>/usr/src</path> werfen, sollten Sie einen Symlink
-namens <path>linux</path> sehen, der auf Ihre momentane Kernelquelle verweist. 
-Wir werden davon ausgehen, dass Ihre installierte Kernelquelle
-<c>gentoo-sources-2.6.12-r4</c> ist:
+namens <path>linux</path> sehen, der auf Ihre momentane Kernelquelle verweist.
+In diesem Fall verweist die Kernequelle auf <c>gentoo-sources-2.6.12-r4</c>.
+Beachten Sie, dass Ihre Version davon abweichen kann.
 </p>
 
 <pre caption="Anzeigen des Kernelquellen Symlinks">
 # <i>ls -l /usr/src/linux</i>
 lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.12-gentoo-r4
-</pre>
-
-<p>
-Wenn der symbolische Link nicht auf die von Ihnen gewünschte Kernelquelle 
-verweist (denken Sie daran, dass <c>linux-2.6.12-gentoo-r4</c> nur ein 
-Beispiel ist), dann sollten Sie ihn für den richtigen Kernel anpassen:
-</p>
-
-<pre caption="Ändern des Kernelquellen Symlinks">
-# <i>rm /usr/src/linux</i>
-# <i>cd /usr/src</i>
-# <i>ln -s linux-2.6.12-gentoo-r4 linux</i>
 </pre>
 
 <p>
@@ -119,30 +114,35 @@ sich gar nicht daran erinnern, dass es schwer war ;-)
 </p>
 
 <p>
-Um einen Kernel erfolgreich zu erstellen, müssen sie Ihr System kennen, wenn
-Sie beginnen einen Kernel manuell zu konfigurieren. Die meisten Informationen
-können gesammelt werden, indem Sie sich pciutils installieren (<c>emerge 
-pciutils</c>), welches <c>lspci</c> enthält. Sie haben nun die Möglichkeit 
-<c>lspci</c> innerhalb der chroot Umgebung zu verwenden. Sie können ohne Sorge 
-jegliche <e>pcilib</e> Warnungen (wie pcilib: cannot open 
-/sys/bus/pci/devices), die <c>lspci</c> auswirft, ignorieren. Alternativ 
-können Sie <c>lspci</c> aus einer <e>nicht-chroot</e> Umgebung ausführen. Das 
-Resultat ist dasselbe. Sie können auch <c>lsmod</c> ausführen um zu sehen 
-welche Kernelmodule die Installations CD verwendet (es kann ihnen einen netten 
-Hinweis darauf geben was zu aktivieren ist). Ein weiterer Ort an dem man nach
-Hinweisen suchen kann, um festzustellen welche Komponenten aktiviert werden 
-sollten, sind die Nachrichtenprotokolle des Kernels vom bisherigen 
-erfolgreichen Boot. Tippen Sie <c>dmesg</c> ein um die Kernelnachrichten zu 
-betrachten.
+Eine Sache jedoch <e>ist</e> wahr: Sie müssen Ihr System kennen, wenn Sie
+beginnen einen Kernel manuell zu konfigurieren. Die meisten Informationen
+über vorhandene Hardware können gesammelt werden, indem Sie sich pciutils
+installieren (<c>emerge pciutils</c>), welches <c>lspci</c> enthält.
+Sie haben nun die Möglichkeit <c>lspci</c> innerhalb der chroot Umgebung zu
+verwenden. Sie können ohne Sorge jegliche <e>pcilib</e> Warnungen (wie
+pcilib: cannot open /sys/bus/pci/devices), die <c>lspci</c> auswirft,
+ignorieren. Alternativ können Sie <c>lspci</c> aus einer <e>nicht-chroot</e>
+Umgebung ausführen. Das Resultat ist dasselbe. Sie können auch <c>lsmod</c>
+ausführen um zu sehen welche Kernelmodule die Installations CD verwendet (es
+kann ihnen einen netten Hinweis darauf geben was zu aktivieren ist). Ein
+weiterer Ort an dem man nach Hinweisen suchen kann, um festzustellen welche
+Komponenten aktiviert werden sollten, sind die Nachrichtenprotokolle des
+Kernels vom bisherigen erfolgreichen Boot. Tippen Sie <c>dmesg</c> ein um die
+Kernelnachrichten zu betrachten.
 </p>
 
 <p>
-Gehen Sie nun in Ihr Kernelquellverzeichnis und führen Sie <c>make menuconfig</c>
-aus. Dies startet ein ncurses-basierendes Konfigurationsmenü.
+Gehen Sie nun in Ihr Kernelquellverzeichnis, es ist nun Zeit Ihren Kernel zu
+konfigurieren. Es wird empfohlen, dass Sie zuerst die Standardeinstellungen zu
+Ihrer Konfiguration hinzufügen indem Sie zuerst <c>make defconfig</c>
+ausführen. Nachdem die Standardkonfiguration generiert wurde, führen Sie
+<c>make menuconfig</c> aus. Dies startet ein ncurses-basierendes
+Konfigurationsmenü.
 </p>
 
-<pre caption="Menuconfig starten">
+<pre caption="menuconfig starten">
 # <i>cd /usr/src/linux</i>
+# <i>make defconfig</i>
 # <i>make menuconfig</i>
 </pre>
 
@@ -176,15 +176,13 @@ General setup ---&gt;
 Gehen Sie nun in <c>File Systems</c> und selektieren Sie Unterstützung für die
 Dateisysteme die Sie benutzen. Kompilieren Sie diese <e>nicht</e> als Module,
 ansonsten wird ihr Gentoo System nicht fähig sein, Ihre Partitionen zu mounten.
-Selektieren Sie auch <c>/proc file system</c> und <c>Virtual memory</c>. 
-Selektieren Sie <e>nicht</e> <c>/dev file system</c>.
+Selektieren Sie auch <c>/proc file system</c> und <c>Virtual memory</c>.
 </p>
 
 <pre caption="Selektieren notwendiger Dateisysteme">
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
-    [ ] /dev file system support (OBSOLETE)
     [*] Virtual memory file system support (former shm fs)
 
 <comment>(Selektieren Sie eine oder mehrere der folgenden Optionen, wie benötigt
@@ -328,18 +326,9 @@ Pegasos eingebunden ist).
 </p>
 
 <pre caption="Installieren des Kernels">
-<comment>Ersetzen Sie 2.6.12 mit Ihrer Kernel Version</comment>
-Apple/IBM)  # <i>cp vmlinux /boot/kernel-2.6.12</i>
-(Pegasos)   # <i>cp arch/ppc/boot/images/zImage.chrp /boot/kernel-2.6.12</i>
-</pre>
-
-<p>
-Es ist auch Weise Ihre Kernelkonfiguration nach <path>/boot</path> zu kopieren,
-nur für alle Fälle :)
-</p>
-
-<pre caption="Erstellen eines Backups der Kernelkonfiguration ">
-# <i>cp .config /boot/config-2.6.12-gentoo-r4</i>
+<comment>Ersetzen Sie  &lt;Kernelversion&gt; mit Ihrer Kernelversion</comment>
+(Apple/IBM)  # <i>cp vmlinux /boot/&lt;Kernelversion&gt;</i>
+(Pegasos)    # <i>cp arch/ppc/boot/images/zImage.chrp /boot/&lt;Kernelversion&gt;</i>
 </pre>
 
 <p>
