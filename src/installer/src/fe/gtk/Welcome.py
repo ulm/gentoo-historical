@@ -17,9 +17,7 @@ class Panel(GLIScreen.GLIScreen):
 		vert.set_border_width(10)
 
 		content_str = _("""
-Welcome to the GTK+ frontend for the Gentoo Linux Installer. This is a TESTING
-release. If your system dies a horrible, horrible death, don't come crying to us.
-No, really, don't. We'll all just point and laugh and tell you that we told you so.
+Welcome to the GTK+ front-end for the Gentoo Linux Installer.
 
 It is highly recommended that you have gone through the manual install process a time
 or two, or at least read through the install guide. The purpose of this installer is
