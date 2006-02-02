@@ -1,0 +1,106 @@
+  PR c++/24389
+  * decl2.c (mark_used): Use uses_template_parms instead of
+  dependent_type_p.
+  * init.c (constant_value_1): Handle uninstantiated templates
+  specially.
+  * pt.c (instantiate_decl): Add sanity check.
+  PR c++/24389
+  * g++.dg/template/static21.C: New test.
+  * g++.dg/template/static21-a.cc: Likewise.
+
+--- gcc/gcc/cp/pt.c	2005/10/16 23:18:58	105475
++++ gcc/gcc/cp/pt.c	2005/10/16 23:18:58	105476
+@@ -11451,6 +11451,10 @@
+   td = template_for_substitution (d);
+   code_pattern = DECL_TEMPLATE_RESULT (td);
+ 
++  /* We should never be trying to instantiate a member of a class
++     template or partial specialization.  */ 
++  gcc_assert (d != code_pattern);
++ 
+   if ((DECL_NAMESPACE_SCOPE_P (d) && !DECL_INITIALIZED_IN_CLASS_P (d))
+       || DECL_TEMPLATE_SPECIALIZATION (td))
+     /* In the case of a friend template whose definition is provided
+--- gcc/gcc/cp/init.c	2005/10/16 23:18:58	105475
++++ gcc/gcc/cp/init.c	2005/10/16 23:18:58	105476
+@@ -1574,16 +1574,27 @@
+ 		&& CP_TYPE_CONST_NON_VOLATILE_P (TREE_TYPE (decl)))))
+     {
+       tree init;
+-      /* If DECL is a static data member in a template class, we must
+-	 instantiate it here.  The initializer for the static data
+-	 member is not processed until needed; we need it now.  */ 
+-      mark_used (decl);
+-      init = DECL_INITIAL (decl);
+-      /* If we are currently processing a template, the
+-	 initializer for a static data member may not be dependent,
+-	 but it is not folded until instantiation time.  */
+-      if (init)
+-	init = fold_non_dependent_expr (init);
++      /* Static data members in template classes may have
++	 non-dependent initializers.  References to such non-static
++	 data members are no value-dependent, so we must retrieve the
++	 initializer here.  The DECL_INITIAL will have the right type,
++	 but will not have been folded because that would prevent us
++	 from performing all appropriate semantic checks at
++	 instantiation time.  */
++      if (DECL_CLASS_SCOPE_P (decl)
++	  && CLASSTYPE_TEMPLATE_INFO (DECL_CONTEXT (decl))
++	  && uses_template_parms (CLASSTYPE_TI_ARGS 
++				  (DECL_CONTEXT (decl))))
++	init = fold_non_dependent_expr (DECL_INITIAL (decl));
++      else
++	{
++	  /* If DECL is a static data member in a template
++	     specialization, we must instantiate it here.  The
++	     initializer for the static data member is not processed
++	     until needed; we need it now.  */
++	  mark_used (decl);
++	  init = DECL_INITIAL (decl);
++	}
+       if (!(init || init == error_mark_node)
+ 	  || !TREE_TYPE (init)
+ 	  || (integral_p
+--- gcc/gcc/cp/decl2.c	2005/10/16 23:18:58	105475
++++ gcc/gcc/cp/decl2.c	2005/10/16 23:18:58	105476
+@@ -3210,22 +3210,26 @@
+      DECL.  However, if DECL is a static data member initialized with
+      a constant, we need the value right now because a reference to
+      such a data member is not value-dependent.  */
+-  if (processing_template_decl)
++  if (TREE_CODE (decl) == VAR_DECL
++      && DECL_INITIALIZED_BY_CONSTANT_EXPRESSION_P (decl)
++      && DECL_CLASS_SCOPE_P (decl))
+     {
+-      if (TREE_CODE (decl) == VAR_DECL
+-	  && DECL_INITIALIZED_BY_CONSTANT_EXPRESSION_P (decl)
+-	  && DECL_CLASS_SCOPE_P (decl)
+-	  && !dependent_type_p (DECL_CONTEXT (decl)))
+-	{
+-	  /* Pretend that we are not in a template so that the
+-	     initializer for the static data member will be full
+-	     simplified.  */
+-	  saved_processing_template_decl = processing_template_decl;
+-	  processing_template_decl = 0;
+-	}
+-      else
+-	return;  
++      /* Don't try to instantiate members of dependent types.  We
++	 cannot just use dependent_type_p here because this function
++	 may be called from fold_non_dependent_expr, and then we may
++	 see dependent types, even though processing_template_decl
++	 will not be set.  */
++      if (CLASSTYPE_TEMPLATE_INFO ((DECL_CONTEXT (decl)))
++	  && uses_template_parms (CLASSTYPE_TI_ARGS (DECL_CONTEXT (decl))))
++	return;
++      /* Pretend that we are not in a template, even if we are, so
++	 that the static data member initializer will be processed.  */
++      saved_processing_template_decl = processing_template_decl;
++      processing_template_decl = 0;
+     }
++  
++  if (processing_template_decl)
++    return;  
+ 
+   if (TREE_CODE (decl) == FUNCTION_DECL && DECL_DECLARED_INLINE_P (decl)
+       && !TREE_ASM_WRITTEN (decl))
