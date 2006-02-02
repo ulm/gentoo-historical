@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/fr/desktop/x/x11/modular-x-howto.xml,v 1.3 2006/02/01 11:25:19 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/fr/desktop/x/x11/modular-x-howto.xml,v 1.4 2006/02/02 15:09:23 neysx Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -24,12 +24,11 @@ Ce guide vous explique comment migrer vers la version modulaire de X.Org.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.18</version>
-<date>2006-01-26</date>
+<version>1.1</version>
+<date>2006-01-02</date>
 
 <chapter>
 <title>Introduction</title>
-
 <section>
 <title>Pourquoi une version modulaire&nbsp;?</title>
 <body>
@@ -74,7 +73,6 @@ système de compilation sont&nbsp;:
 
 <chapter>
 <title>Migration vers X modulaire</title>
-
 <section>
 <title>Introduction</title>
 <body>
@@ -102,8 +100,6 @@ Se débarasser de l'installation monolithique&nbsp;:
 
 <pre caption="Désinstallation de la version monolithique">
 # <i>emerge -Ca xorg-x11 virtual/x11</i>
-# <i>rm -rf /usr/lib/opengl/xorg-x11</i>
-# <i>rm -rf /usr/lib/libGL*</i>
 </pre>
 
 <p>
@@ -112,19 +108,15 @@ cas où les choses se passeraient vraiment très mal.
 </p>
 
 <p>
-Les dernières opérations sont nécessaires pour être certain de se débarasser
-des liens symboliques créés par <c>opengl-update</c>.
-</p>
-
-<p>
 Si <path>/usr/X11R6</path> n'est pas un lien symbolique vers <path>/usr</path>,
 effacez-le et partez de zéro. Mais d'abord, établissez une liste de tous les
-paquets s'installant dans ce répertoire.
+paquets s'installant dans ce répertoire. L'utilitaire <c>equery</c> est
+disponible avec le paquet <c>gentoolkit</c>.
 </p>
 
 <pre caption="Établir la liste des paquets">
 # <i>if [[ ! -L /usr/X11R6 ]]; \
-    then equery belongs /usr/X11R6 > usr-x11r6-packages \
+    then equery belongs /usr/X11R6 > ~/usr-x11r6-packages \
     &amp;&amp; rm -rf /usr/X11R6; fi</i>
 </pre>
 
@@ -143,8 +135,35 @@ masqués pour X modulaire dans <path>package.unmask</path>. Faites de même pour
 <path>/etc/portage/package.keywords</path> si vous êtes dans la branche stable.
 Si tout ceci vous est incompréhensible, lisez <uri
 link="/doc/fr/handbook/handbook-x86.xml?part=3&amp;chap=3"> la section
-concernant le masquage du manuel.</uri>.
+concernant le masquage du manuel</uri>.
 </p>
+
+<table>
+<tr>
+  <th>
+    Autres paquets pouvant avoir besoin de package.keywords pour les
+    utilisateurs de la branche stable
+  </th>
+</tr>
+<tr>
+  <ti>&gt;=sys-apps/portage-2.1_pre4</ti>
+</tr>
+<tr>
+  <ti>=sys-apps/man-1.6b-r2</ti>
+</tr>
+<tr>
+  <ti>app-admin/eselect-opengl</ti>
+</tr>
+<tr>
+  <ti>&gt;=app-admin/eselect-1.0_rc1</ti>
+</tr>
+<tr>
+  <ti>media-video/nvidia-kernel</ti>
+</tr>
+<tr>
+  <ti>media-video/nvidia-glx</ti>
+</tr>
+</table>
 
 <p>
 Pour avoir accès au «&nbsp;direct rendering&nbsp;», ajoutez l'option <c>dri</c>
@@ -152,30 +171,10 @@ Pour avoir accès au «&nbsp;direct rendering&nbsp;», ajoutez l'option <c>dri</
 </p>
 
 <p>
-Maintenant, installez le méta-paquet. Cela installera le serveur et les
-applications usuelles, vous donnant accès à une implémentation fonctionnelle de
-X.
-</p>
-
-<pre caption="Installer le méta-paquet modulaire">
-# <i>emerge xorg-x11</i>
-</pre>
-
-<p>
-Remarquez que cette installation est plutôt minimaliste, donc les choses comme
-xcursor-themes ne seront pas installées par défaut. Pour cet exemple précis, il
-vous faudra installer xcursor-themes si vous avez changé les réglages de votre
-curseur en whiteglass, redglass ou handhelds. Si vous utilisez les thèmes de
-curseur gentoo, gentoo-blue ou gentoo-silver, il faut alors installer
-gentoo-xcursors.
-</p>
-
-<p>
-Ensuite, installez quelques pilotes. Cela dépend de votre matériel vidéo et de
-vos périphériques d'entrée, donc jetez un œil au répertoire
-<path>/usr/portage/x11-drivers/</path>. Si vous avez déjà un fichier de
-configuration <path>/etc/X11/xorg.conf</path> fonctionnel, alors il vous suffit
-d'utiliser cette commande pour avoir une idée des pilotes dont vous avez
+Ensuite, choisissez quels sont les pilotes à installer. Cela dépend de votre
+matériel vidéo et de vos périphériques d'entrée. Si vous avez déjà un fichier
+de configuration <path>/etc/X11/xorg.conf</path> fonctionnel, alors il vous
+suffit d'utiliser cette commande pour avoir une idée des pilotes dont vous avez
 besoin&nbsp;:
 </p>
 
@@ -186,19 +185,46 @@ besoin&nbsp;:
   Driver      "radeon"
 </pre>
 
-<p>
-Voici les paquets qui correspondent à ces pilotes&nbsp;:
-</p>
-
-<pre caption="Installer quelques pilotes">
-# <i>emerge xf86-input-mouse xf86-input-keyboard xf86-video-ati</i>
+<pre caption="Lister les pilotes disponibles">
+# <i>emerge --verbose --pretend xorg-x11</i>
+[ebuild   R   ] x11-base/xorg-x11-7.0-r1  USE="-xprint" INPUT_DEVICES="keyboard
+mouse -acecad -aiptek -calcomp -citron -digitaledge -dmc -dynapro -elo2300
+-elographics -evdev -fpit -hyperpen -jamstudio -joystick -magellan -magictouch
+-microtouch -mutouch -palmax -penmount -spaceorb -summa -synaptics% -tek4957
+-ur98 -vmmouse -void" VIDEO_CARDS="i128 mga savage -apm -ark -ati* -chips
+-cirrus -cyrix -dummy -fbdev -fglrx% -glint -i740 -i810 -imstt -neomagic
+-newport -nsc -nv -nvidia% -rendition -s3 -s3virge -siliconmotion -sis -sisusb
+-sunbw2 -suncg14 -suncg3 -suncg6 -sunffb -sunleo -suntcx -tdfx -tga -trident
+-tseng -v4l -vesa -vga -via -vmware -voodoo" 0 kB
 </pre>
 
 <p>
-Ce n'est pas une mauvaise idée que d'installer xf86-video-vesa et
-xf86-video-fbdev en tant que pilotes de secours au cas où quelque chose ne
-fonctionnerait plus ainsi que xf86-input-evdev comme éventuel remplaçant
-pour les pilotes du clavier et de la souris.
+Configurez INPUT_DEVICES et VIDEO_CARDS selon vos besoins dans le fichier
+<path>/etc/make.conf</path>. Les paramètres minimaux pour l'exemple ci-dessus
+seraient INPUT_DEVICES="<c>keyboard mouse</c>" VIDEO_CARDS="<c>ati</c>". Si
+vous ne configurer pas une de ces variables, xorg-x11 installera tous les
+pilotes disponibles correspondants. En tant que pilotes de secours, il peut
+être intéressant d'ajouter <c>vesa</c> et <c>fbdev</c> à VIDEO_CARDS.
+</p>
+
+<p>
+Maintenant, installez le méta-paquet. Cela installera le serveur et les
+applications usuelles, vous donnant accès à une implémentation fonctionnelle de
+X.
+</p>
+
+<pre caption="Installer le méta-paquet modulaire">
+# <i>emerge xorg-x11</i>
+# <i>etc-update</i>
+</pre>
+
+<p>
+Remarquez que cette installation est plutôt minimaliste, donc les choses comme
+xcursor-themes ne seront pas installées par défaut. Pour cet exemple précis, il
+vous faudra installer xcursor-themes si vous avez changé les réglages de votre
+curseur en whiteglass, redglass ou handhelds. Si vous utilisez les thèmes de
+curseur gentoo, gentoo-blue ou gentoo-silver, il faut alors installer
+gentoo-xcursors.
 </p>
 
 <note>
@@ -217,7 +243,7 @@ besoin d'être réinstallés après l'installation de X modulaire.
 <chapter>
 <title>Remarques/problèmes usuels</title>
 <section>
-<title>'emerge -u world' veut installer xorg-x11 6.x</title>
+<title>'emerge -u world' veut installer xorg-x11 6.x ou virtual/x11</title>
 <body>
 
 <p>
@@ -244,7 +270,7 @@ la 7.0.  De nouvelles sont aussi apparues. En voici la description&nbsp;:
 <table>
 <tr>
   <th>Variable USE</th>
-  <th>Que se passe-t-il avec la 7.0&nbsp;?</th>
+  <th>Qu'en est-il avec la 7.0&nbsp;?</th>
 </tr>
 <tr>
   <ti>3dfx</ti>
@@ -372,7 +398,7 @@ On m'a rapporté que&nbsp;:
 </p>
 
 <ul>
-  <li>vesa bloque la machine avec les cartes mga</li>
+  <li>vesa bloque la machine avec les cartes Matrox</li>
   <li>
     vga donne un affichage très étrange, l'écran étant divisé en quatre.
   </li>
@@ -381,7 +407,7 @@ On m'a rapporté que&nbsp;:
 </body>
 </section>
 <section>
-<title>Utiliser glxinfo/glxgears</title>
+<title>Faire fonctionner l'accélération 3D</title>
 <body>
 
 <p>
@@ -390,11 +416,12 @@ Ces programmes sont maintenant fournis par <c>x11-apps/mesa-progs</c>.
 </p>
 
 <p>
-Pour obtenir des informations de débogage de la part de glxinfo pour faire
-fonctionner le rendu direct&nbsp;:
+Pour obtenir des informations de débogage afin de faire fonctionner le rendu
+direct&nbsp;:
 </p>
 
-<pre caption="Obtenir des informations de débogage par glxinfo">
+<pre caption="Obtenir des informations de débogage ">
+# <i>grep -e EE -e WW /var/log/Xorg.0.log</i>
 # <i>LIBGL_DEBUG=verbose glxinfo</i>
 </pre>
 
@@ -413,7 +440,8 @@ cela risque de ne pas fonctionner. Il vous faudra alors spécifier <c>Protocol
 </body>
 </section>
 <section>
-<title>Le contenu de /usr/lib/xorg a disparu&nbsp;!</title>
+<title>Un message d'erreur me dit que libbitmap ou libpcidata est
+introuvable</title>
 <body>
 
 <p>
@@ -421,6 +449,11 @@ Installez à nouveau &gt;=xorg-server-0.99.1-r4. C'était un bogue temporaire
 dans l'ebuild qui avait pour conséquence l'effacement après désinstallation du
 paquet. Normalemment, <path>/usr/lib/xorg</path> ne devrait être effacé que
 s'il n'y a plus aucun xorg-server sur le système.
+</p>
+
+<p>
+Assurez-vous aussi que <c>ModulePath</c> n'est pas configuré dans le fichier
+<path>/etc/X11/xorg.conf</path>.
 </p>
 
 </body>
@@ -439,10 +472,40 @@ existe durant le processus d'installation.
 <p>
 Vous pouvez aider à sortir les choses de <path>/usr/X11R6</path> en corrigeant
 les paquets qui s'y installent et en remplissant des rapports de bogue.
+N'oubliez pas non plus de réinstaller ces paquets.
 </p>
+
+<pre caption="Paquets qui s'installent dans /usr/X11R6">
+# <i>cat ~/usr-x11r6-packages</i>
+# <i>emerge --pretend $(&lt; ~/usr-x11r6-packages )</i>
+</pre>
 
 </body>
 </section>
+
+<section>
+<title>XKB ne marche pas, impossible changer de terminal virtuel, etc.</title>
+<body>
+
+<ul>
+  <li>
+    De nombreuses dispositions de clavier XKB ont été déplacées, consolidées ou
+    ont disparu. Regardez le répertoire
+    <path>/usr/share/X11/xkb/symbols/pc</path> pour voir ce qu'il est advenu de
+    votre ancien paramètre XkbLayout de xorg.conf. Par exemple, pour remplacer
+    la disposition "us_intl", vous devriez mettre <c>XkbLayout "latin"</c>,
+    <c>XkbOptions "lv3:ralt_switch"</c>. Pour remplacer la disposition
+    "sk_qwerty", il faut mettre <c>XkbLayout "sk", XkbVariant "qwerty"</c>. Cas
+    plus compliqué, vous avez <c>XkbLayout "us,sk_qwerty"</c>. Pour le faire
+    fonctionner, le nouveau paramètre serait <c>XkbLayout "us,sk"</c>, et
+    l'astuce, c'est la virgule dans <c>XkbVariant ",qwerty"</c>, parce qu'on
+    veut que la variante s'applique à la seconde disposition.
+  </li>
+</ul>
+
+</body>
+</section>
+
 <section>
 <title>Autres problèmes</title>
 <body>
@@ -453,19 +516,6 @@ les paquets qui s'y installent et en remplissant des rapports de bogue.
     RgbPath de votre <path>/etc/X11/xorg.conf</path>, puisque ces deux chemins
     ont changé depuis les versions précédentes. Assurez-vous de lancer
     <c>etc-update</c> pour que ces modifications prennent effet.
-  </li>
-  <li>
-    De nombreuses dispositions de clavier XKB ont été déplacées, consolidées ou
-    ont disparu. Regardez le répertoire
-    <path>/usr/share/X11/xkb/symbols/pc</path> pour voir ce qu'il est advenu de
-    votre ancien paramètre XkbLayout de xorg.conf. Par exemple, pour remplacer
-    la disposition "us_intl", vous devriez mettre XkbLayout "latin", XkbOptions
-    "lv3:ralt_switch". Pour remplacer la disposition "sk_qwerty", il faut
-    mettre XkbLayout "sk", XkbVariant "qwerty". Cas plus compliqué, vous avez
-    XkbLayout "us,sk_qwerty". Pour le faire fonctionner, le nouveau paramètre
-    serait XkbLayout "us,sk", et l'astuce, c'est la virgule dans XkbVariant
-    ",qwerty", parce qu'on veut que la variante s'applique à la seconde
-    disposition.
   </li>
 </ul>
 
