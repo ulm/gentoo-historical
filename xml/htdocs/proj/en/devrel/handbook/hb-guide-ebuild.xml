@@ -10,7 +10,7 @@
 
 <sections>
 
-<date>2005-10-01</date>
+<date>2006-02-02</date>
 
 <section>
 <title>The Portage tree</title>
@@ -1344,6 +1344,37 @@ default setting is for mysql or X (enable/disabled), we explicitly tell
 <c>econf</c> what we want it to do based upon the <c>USE</c> variable.  Not to 
 mention it's quite clean in terms of readability :).
 </p>
+
+<p>
+Occasionally, ebuilds will have conflicting <c>USE</c> flags for functionality.
+Checking for them and returning an error is <e>not</e> a viable solution. Instead,
+you must pick one of the <c>USE</c> flags in conflict to favour.
+
+One example comes from the msmtp ebuilds. The package can use either SSL
+with GnuTLS, SSL with OpenSSL, or no SSL at all. Because GnuTLS is more
+featureful than OpenSSL, it is favoured:
+</p>
+
+<pre caption="Favouring conflicting USE flags">
+src_compile() {
+    local myconf
+
+    if use ssl &quot;&quot; use gnutls ; then
+        myconf="${myconf} --enable-ssl --with-ssl=gnutls"
+    elif use ssl &quot;&quot; ! use gnutls ; then
+        myconf="${myconf} --enable-ssl --with-ssl=openssl"
+    else
+        myconf="${myconf} --disable-ssl"
+    fi
+
+    econf \
+        # Other stuff
+        ${myconf} \
+        || die "configure failed"
+
+    emake || die "make failed"
+}
+</pre>
 
 <p>
 To view a continuously updated table of USE variables, please go
