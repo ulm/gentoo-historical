@@ -1,0 +1,301 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/draft/2006.0/Attic/hb-install-ppc64-kernel.xml,v 1.1 2006/02/03 00:24:55 so Exp $ -->
+
+<sections>
+
+<version>5.5</version>
+<date>2006-01-06</date>
+
+<section>
+<title>Timezone</title>
+<body>
+
+<p>
+Innanzitutto è necessario selezionare la propria timezone, in modo che il
+sistema riconosca in che parte del globo è collocato. Per la propria timezone,
+consultare <path>/usr/share/zoneinfo</path>, e copiarla in
+<path>/etc/localtime</path>. Evitare le timezone di
+<path>/usr/share/zoneinfo/Etc/GMT*</path> poichè i loro nomi non indicano le
+rispettive zone. Per esempio <path>GMT-8</path> è GMT+8.
+</p>
+
+<pre caption="Abilitare le informazioni sulla timezone">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Per esempio GMT)</comment>
+# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Installare i sorgenti</title>
+<subsection>
+<title>Scegliere un Kernel</title>
+<body>
+
+<p>
+Il cuore, intorno al quale sono sviluppate tutte le distribuzioni, è il Kernel
+di Linux. E' la parte di software compresa tra i programmi e l'hardware.
+Gentoo dà la possibilità ai suoi utenti di scegliere tra diversi sorgenti
+del kernel. Una lista completa delle descrizioni dei kernel disponibili, è
+consultabile nella <uri link="http://www.gentoo.org/doc/it/gentoo-kernel.xml">
+Guida ai Kernel Gentoo</uri>.
+</p>
+
+<p>
+Per PPC64 si dovrebbero usare <c>gentoo-sources</c>. Usare <c>emerge</c> per
+installare i sorgenti del kernel. E'
+necessario <c>USE="-doc"</c> per evitare di installare xorg-x11 o altre
+dipendenze. <c>USE="symlink"</c> non è necessario per una
+nuova installazione, ma assicura la creazione del symlink
+<path>/usr/src/linux</path>.
+</p>
+
+<pre caption="Installare un sorgente del kernel">
+# <i>USE="-doc symlink" emerge gentoo-sources</i>
+</pre>
+
+<p>
+Se si dà un'occhiata a <path>/usr/src</path>, si dovrebbe vedere un link
+simbolico chiamato <path>linux</path>, che punta al sorgente del kernel. In
+questo caso il sorgente del kernel installato punta a
+<c>gentoo-sources-2.6.12-r10</c>. La versione potrebbe essere differente.
+</p>
+
+<pre caption="Il link simbolico al sorgente del kernel">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux
+-&gt; linux-2.6.12-gentoo-r10
+</pre>
+
+<p>
+Ora si procede a configurare e compilare il sorgente del kernel. Allo scopo è
+possibile utilizzare "genkernel" che compila un kernel generico come quello
+usato dal CD di installazione ma al momento non è completamente funzionante
+per PPC64.
+</p>
+
+<p>
+Continuare con <uri link="#manual">Configurazione manuale</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>Configurazione manuale</title>
+<subsection>
+<title>Introduzione</title>
+<body>
+
+<p>
+La configurazione manuale del kernel è spesso considerata la parte più
+difficile che ogni utente Linux incontra. Non è assolutamente vero -- dopo
+aver configurato un po' di kernel, l'operazione risulta semplice.
+</p>
+
+<p>
+Una cosa <e>è</e> però vera: si deve conoscere il proprio sistema quando si
+comincia una configurazione manuale del kernel. La maggior parte delle
+informazioni può essere raccolta con emergere pciutils
+(<c>emerge pciutils</c>) che contiene <c>lspci</c>. Si potrà usare
+<c>lspci</c> con l'ambiente in cui si è effettuato il chroot. Si può ignorare
+i warning <e>pcilib</e> (come pcilib: cannot open /sys/bus/pci/devices). E'
+possibile anche eseguire <c>lspci</c> da un ambiente in cui
+<e>non si è effettuato il chroot</e>. I risultati sono gli stessi. Si può
+anche eseguire <c>lsmod</c> per vedere che moduli del kernel usa il CD di
+installazione (potrebbe fornire un buon suggerimento su cosa abilitare).
+</p>
+
+<p>
+Andare nella directory del sorgente del kernel, e digitare
+<c>make menuconfig</c> per visualizzare un menu di configurazione basato su
+ncurses.
+</p>
+
+<p>
+Quando si compila il kernel su un sistema 32bit aggiungere il seguente alla
+fine di /etc/profile:
+</p>
+
+<pre caption="32bit make alias">
+# <i>echo 'alias ppc64make="make ARCH=ppc64 CROSS_COMPILE=powerpc64-unknown-linux-gnu-"' >> /etc/profile</i>
+# <i>source /etc/profile</i>
+</pre>
+
+<pre caption="Aprire menuconfig">
+# <i>cd /usr/src/linux</i>
+(64bit userland)  # <i>make menuconfig</i>
+(32bit userland)  # <i>ppc64make menuconfig</i>
+</pre>
+
+<p>
+Vengono visualizzate molte sezioni di configurazione. Ecco ora alcune opzioni
+che devono essere attivate (altrimenti Gentoo non può funzionare, o non
+funziona correttamente senza modifiche aggiuntive).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Attivare le opzioni indispensabili</title>
+<body>
+
+<p>
+Prima di tutto, si deve attivare l'uso di codice/driver di sviluppo e
+sperimentale. Se non lo si fa, non si ha la possibilità di utilizzare qualche
+codice/driver molto importante:
+</p>
+
+<pre caption="Selezionare codice/driver sperimentale, General setup">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+General setup --->
+  [*] Support for hot-pluggable devices
+</pre>
+
+<p>
+Andare su <c>File Systems</c> e selezionare il supporto per il filesystem che
+si usa. <e>Non</e> compilarlo come modulo altrimenti Gentoo non può montare
+le partizioni. Selezionare anche <c>Virtual memory</c>,
+<c>/proc file system</c> e <c>/dev/pts file system for Unix98 PTYs</c>:
+</p>
+
+<pre caption="Selezionare il filesystem">
+File systems ---&gt;
+  [*] Virtual memory file system support (former shm fs)
+  [*] /proc file system support
+  [*] /dev/pts file system for Unix98 PTYs
+
+<comment>(Selezionare una o più delle seguenti opzioni in base al sistema)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<note>
+Si troverano alcune opzioni, in <c>Pseudo filesystems</c> una sezione di
+<c>File systems</c>.
+</note>
+
+<p>
+Se si sta usando PPPoE per connettersi a Internet o si sta usando un modem
+dial-up, si ha bisogno delle seguenti opzioni nel kernel (si troveranno in
+<c>Networking support</c> una sezione di <c>Device Drivers</c>):
+</p>
+
+<pre caption="Selezionare i driver necessari per PPPoE">
+Network device support ---&gt;
+  &lt;*&gt; PPP (point-to-point protocol) support
+  &lt;*&gt;   PPP support for async serial ports
+  &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+Le due opzioni di compressione non sono dannose, ma neppure necessarie; lo
+stesso vale per <c>PPP over Ethernet</c>, che potrebbe essere usata soltanto
+da <c>rp-pppoe</c> se configurato in modalità kernel.
+</p>
+
+<p>
+Chi ne ha bisogno, non deve dimenticare di includere il supporto, per la scheda
+ethernet, nel kernel.
+</p>
+
+<p>
+Disabilitare ADB raw keycodes:
+</p>
+
+<pre caption="Disabilitare ADB raw keycodes">
+Macintosh Device Drivers ---&gt;
+  [ ] Support for ADB raw keycodes
+</pre>
+
+<p>
+Una volta terminata la configurazione del kernel continuare con
+<uri link="#compiling">Compilazione e Installazione</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Compilazione e Installazione</title>
+<body>
+
+<p>
+Ora che il kernel è configurato, il prossimo passo sarà  la sua
+compilazione e la sua installazione. Uscire dal menu di configurazione e
+avviare il processo di compilazione:
+</p>
+
+<pre caption="Compilare il kernel">
+(64bit userland)  # <i>make &amp;&amp; make modules_install</i>
+(32bit userland)  # <i>ppc64make &amp;&amp; ppc64make modules_install</i>
+</pre>
+
+<p>
+Quando la compilazione è finita, è necessario copiare l'immagine del kernel
+in <path>/boot</path>. Ricordarsi di sostituire
+<path>&lt;kernel-version&lt;</path> con la versione del kernel che si è
+scelta.
+</p>
+
+<pre caption="Installare il kernel">
+# <i>cp vmlinux /boot/&lt;kernel-version&lt;</i>
+</pre>
+
+<p>
+Adesso continuare con <uri link="#kernel_modules">Configurare i moduli</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="kernel_modules">
+<title>Configurare i moduli</title>
+<body>
+
+<p>
+Si dovrebbero inserire i moduli che si vogliono caricare in
+<path>/etc/modules.autoload.d/kernel-2.6</path>. Se si vuole, si possono anche
+aggiungere altre opzioni ai moduli.
+</p>
+
+<p>
+Per vedere tutti i moduli disponibili, eseguire il comando <c>find</c>. Non
+dimenticarsi di sostituire "&lt;kernel version&gt;" con la versione del kernel
+che si è compilata:
+</p>
+
+<pre caption="Vedere tutti i moduli disponibili">
+# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+</pre>
+
+<p>
+Per esempio, per caricare automaticamente il modulo <c>3c59x.o</c>, modificare
+il file <path>kernel-2.6</path> e inserire il nome.
+</p>
+
+<pre caption="Modificare /etc/modules.autoload.d/kernel-2.6">
+# <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.6">
+3c59x
+</pre>
+
+<p>
+Continuare l'installazione con la <uri link="?part=1&amp;chap=8">
+Configurazione del sistema</uri>.
+</p>
+
+</body>
+</section>
+</sections>
