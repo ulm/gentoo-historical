@@ -10,6 +10,12 @@ from gettext import gettext as _
 class Panel(GLIScreen.GLIScreen):
 
 	title = _("Welcome to the Gentoo Linux Installer")
+	_helptext = """
+<b><u>Welcome screen</u></b>
+
+This is the fscking Welcome screen. Do you <i>really</i> need help here? If so,
+please turn back now and install Windows or something.
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

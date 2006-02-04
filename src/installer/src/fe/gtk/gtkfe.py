@@ -13,6 +13,7 @@ import GLIClientConfiguration
 import GLIClientController
 import GLIUtility
 from GLIFutureBar import GLIFutureBar
+from HelpDialog import HelpDialog
 import gtk
 import crypt
 import random
@@ -238,7 +239,13 @@ class Installer:
 			self.loadPanel(self._cur_panel + 1)
 
 	def help(self, widget, data=None):
-		GLIUtility.spawn("firefox http://www.gentoo.org/doc/en/handbook/index.xml &>/dev/null &")
+#		GLIUtility.spawn("firefox http://www.gentoo.org/doc/en/handbook/index.xml &>/dev/null &")
+		try:
+			helptext = self.panels[self._cur_panel]._helptext
+		except:
+			helptext = "There is no help available for this screen"
+		helpdlg = HelpDialog(self.window, helptext)
+		helpdlg.run()
 
 	def exit_button(self, widget, data=None):
 		msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="Are you sure you want to exit?")
