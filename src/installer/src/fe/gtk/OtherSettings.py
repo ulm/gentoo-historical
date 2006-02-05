@@ -176,7 +176,8 @@ class Panel(GLIScreen.GLIScreen):
 		etc_files['conf.d/consolefont']['CONSOLEFONT'] = self.font.GetValue()
 		etc_files['conf.d/clock']['CLOCK'] = self.clock.GetValue()
 		etc_files['rc.conf']['EDITOR'] = self.editor.GetValue()
-		etc_files['rc.conf']['DISPLAYMANAGER'] = self.displaymanager.GetValue()
+		if self.displaymanager.GetValue() != "":
+			etc_files['rc.conf']['DISPLAYMANAGER'] = self.displaymanager.GetValue()
 		if self.xsession.GetValue() != "":
 			etc_files['rc.conf']['XSESSION'] = self.xsession.GetValue()
 			
