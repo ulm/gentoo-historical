@@ -4,15 +4,15 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-system.xml,v 1.20 2005/08/26 16:32:17 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-system.xml,v 1.21 2006/02/05 13:35:47 idani Exp $ -->
 
-<!-- Original revision: 1.84 -->
+<!-- Original revision: 1.88 -->
 <!-- Translator: igarashi -->
 
 <sections>
 
-<version>2.11</version>
-<date>2005-08-17</date>
+<version>2.15</version>
+<date>2006-01-19</date>
 
 <section>
 <title>chrootする</title>
@@ -73,15 +73,17 @@ Gentooサイトの<uri link="/main/en/mirrors.xml">mirror list</uri>
 </body>
 </subsection>
 <subsection>
-<title>procファイルシステムのマウント</title>
+<title>/procと/devファイルシステムのマウント</title>
 <body>
 
 <p>
 chroot後の環境でもカーネルが提供する情報を参照できるようにするために、<path>/mnt/gentoo/proc</path>に<path>/proc</path>ファイルシステムをマウントしてください。
+そして、<path>/dev</path>ファイルシステムをbindマウントします。
 </p>
 
-<pre caption="/procのマウント">
+<pre caption="/procと/devのマウント">
 # <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
 </pre>
 
 </body>
@@ -107,6 +109,7 @@ chroot後の環境でもカーネルが提供する情報を参照できるよ�
 # <i>env-update</i>
  * Caching service dependencies...
 # <i>source /etc/profile</i>
+# <i>export PS1="(chroot) $PS1"</i>
 </pre>
 
 <p>
@@ -116,6 +119,10 @@ chroot後の環境でもカーネルが提供する情報を参照できるよ�
 
 </body>
 </subsection>
+</section>
+
+<section>
+<title>Portageシステムの設定</title>
 <subsection>
 <title>Portageツリーの更新</title>
 <body>
@@ -185,8 +192,8 @@ lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/defau
 </p>
 
 <pre caption="添付されているprofileが存在するかどうかの確認">
-# <i>ls -d /usr/portage/profiles/default-linux/x86/2005.1/2.4</i>
-/usr/portage/profiles/default-linux/x86/2005.1/2.4
+# <i>ls -d /usr/portage/profiles/default-linux/x86/no-nptl/2.4</i>
+/usr/portage/profiles/default-linux/x86/no-nptl/2.4
 </pre>
 
 <p>
@@ -197,7 +204,7 @@ lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/defau
 
 <pre caption="2.4 profileに変更する">
 <comment>(使用しているアーキテクチャであることを確認してください。以下の例はx86向けです。)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/x86/2005.1/2.4 /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/x86/no-nptl/2.4 /etc/make.profile</i>
 <comment>(2.4 profileにあるファイルの表示)</comment>
 # <i>ls -FGg /etc/make.profile/</i>
 total 12
@@ -342,171 +349,8 @@ ja_JP.UTF-8/UTF-8
 ja_JP/EUC-JP
 </pre>
 
-</body>
-</subsection>
-</section>
-<section>
-<title>stage1、stage2、stage3の違い</title>
-<body>
-
 <p>
-さて、腰を落ち着けて、これまでのインストール工程について思い出してみてください。
-私たちは、あなたに<e>stage1</e>、<e>stage2</e>、<e>stage3</e>から一つ選ぶようにといいました。そしてそれは、後々のインストール工程にとって、とても重要な選択だと警告しました。そう。今ここが、あなたの選択によって、後に続くインストール工程を決定する最初の場面です。
-</p>
-
-<ul>
-<li>
-<e>stage1</e>を選択したなら、この章の<e>両方の</e>ステップに従ってください。
-(<uri link="#doc_chap3">stage1からstage2に進む</uri>から始めます。)
-</li>
-<li>
-<e>stage2</e>を選択したなら、最初のステップを飛ばして、すぐに2番目のステップ
-(<uri link="#doc_chap4">stage2からstage3へ進む</uri>)から始められます。
-</li>
-<li>
-<e>stage3</e>を選んだのなら、両方のステップを飛ばして、<uri link="?part=1&amp;chap=7">カーネル設定</uri>に進んでください。
-</li>
-</ul>
-
-</body>
-</section>
-<section>
-<title>stage1からstage2に進む</title>
-<subsection>
-<title>ブートストラップ概説</title>
-<body>
-
-<p>
-このステップに進んできたあなたは、何もかもスクラッチからコンパイルしたいことでしょう。わかりました。:-)
-</p>
-
-<p>
-このステップではあなたのGentooシステムを<e>ブートストラップ</e>します。
-これは非常に長い時間がかかります。しかしその結果、システムはあなたのマシンに特化し、あなたの要求を満たした根底からの最適化がなされます。
-</p>
-
-<p>
-<e>ブートストラップ</e>とは、GNU Cライブラリや、GNUコンパイラコレクションや、
-いくつかの重要なシステムプログラムをビルドすることを意味します。
-</p>
-
-<p>
-ブートストラップを開始する前に、まず全ての必要なソースコードをダウンロードしたいかもしれません。もししたくなければ、<uri link="#bootstrap">システムをブートストラップする</uri>に進んでください。
-</p>
-
-</body>
-</subsection>
-<subsection>
-<title>自由選択: 最初にソースコードをダウンロードする</title>
-<body>
-
-<p>
-以前にすべてのソースコードを取得していない場合、bootstrapスクリプトが必要なファイルすべてをダウンロードしてくれます。最初にソースコードをダウンロードして、その後システムをブートストラップしたいなら(例えば、コンパイル中にインターネットに接続しっぱなしにしたくないという理由で)、bootstrapスクリプトの<e>-f</e>オプションを使用してください。このオプションは、全てのソースコードを取ってきます(fetchしてきます:<e>f</e>オプションの由来)。
-</p>
-
-<pre caption = "必要なソースコードを最初にダウンロード">
-# <i>cd /usr/portage</i>
-# <i>scripts/bootstrap.sh -f</i>
-</pre>
-
-</body>
-</subsection>
-<subsection id="bootstrap">
-<title>システムをブートストラップする</title>
-<body>
-
-<p>
-OKです。では、キーボードから次のコマンドを打ち、ブートストラップを始めてください。このステップは終了まで非常に長い時間がかかるので、何か他のことをして楽しんでいてください。
-</p>
-
-<pre caption = "システムをブートストラップする">
-# <i>cd /usr/portage</i>
-# <i>scripts/bootstrap.sh</i>
-</pre>
-
-<p>
-さあ、次のステップ、<uri link="#doc_chap4">stage2からstage3へ進む</uri>に進みましょう。
-</p>
-
-</body>
-</subsection>
-</section>
-<section>
-<title>stage2からstage3へ進む</title>
-<subsection>
-<title>概説</title>
-<body>
-
-<p>
-あなたがこの章を読んでいるということは、すでにブートストラップが完了したシステム(事前にブートストラップを行ったか、もしくは<e>stage2</e>を使った)ができあがっているのだと思います。では、いよいよすべてのシステムのパッケージをビルドします。
-</p>
-
-<p>
-本当に<e>全部の</e>システムパッケージをビルドしなければいけないのですか?
-いいえ。正確にはその必要はありません。このステップでは、選択肢が他にないシステムパッケージをビルドします。システムパッケージの中には、いくつか選択の幅があるパッケージ(例えばシステムロガー)がありますが、選択あってのGentooですから、あなたにどのパッケージをインストールしなさいというような強制はしたくありません。
-</p>
-
-</body>
-</subsection>
-<subsection>
-<title>自由選択: あらかじめ何が行われるのかを見てみる</title>
-<body>
-
-<p>
-どんなパッケージがインストールされるのかを知りたければ、<c>emerge --pretend --emptytree system</c>を実行します。
-これは、これからビルドされるすべてのパッケージのリストを表示します。このリストは非常に大きいので、上下にスライドさせて見るために<c>less</c>や<c>more</c>などのページャーも使用すべきです。
-</p>
-
-<pre caption = "'emerge system'が何をするかを見てみる">
-# <i>emerge --pretend --emptytree system | less</i>
-</pre>
-
-<p>
-CFLAGS/CXXFLAGSの初期設定を変更していないなら、<c>emerge --pretend --newuse system</c>を使うだけで十分です。
-これは(こちらで用意したstage2を構築する間に使用したUSEフラグと比較して)USEフラグの変更によって影響を受けるアプリケーションを再構築します。
-さらにUSEフラグも変更していないなら、どうしてstage2インストールをしているのでしょうか(訳注: stage3インストールをお勧めしますという意味)。
-</p>
-
-</body>
-</subsection>
-<subsection>
-<title>自由選択: ソースコードのダウンロード</title>
-<body>
-
-<p>
-このまま続ける前に、ソースコードをダウンロードするために<c>emerge</c>したいなら((例えば、すべてのパッケージをビルドしている間中、インターネットに接続しっぱなしにしたくないという理由で)、<c>emerge</c>の<e>--fetchonly</e>を使用できます。このオプションは、全てのソースコードを取ってきます(fetchしてきます)。
-</p>
-
-<pre caption = "ソースコードを取ってくる">
-# <i>emerge --fetchonly --emptytree system</i>
-</pre>
-
-</body>
-</subsection>
-<subsection>
-<title>システムのビルド</title>
-<body>
-
-<p>
-システムのビルドを開始するには<c>emerge --emptytree system</c>を実行してください。このステップは終了するまで大変時間がかかるので、なにか退屈しのぎでもしていてください。
-</p>
-
-<pre caption = "システムのビルド">
-# <i>emerge --emptytree system</i>
-</pre>
-
-<p>
-繰り返しますが、CFLAGSとCXXFLAGSの初期設定を変更していないなら、<c>--newuse</c>を使用するだけで十分です。
-</p>
-
-<p>
-更新された設定ファイル(と<c>etc-update</c>の実行)に関するすべての警告は、今のところ無視してもかまいません。ただし、Gentooシステムが完全にインストールされたら、必ず<uri
-link="?part=3&amp;chap=2#doc_chap3">ファイルの保護設定</uri>を読んでください。
-</p>
-
-<p>
-ビルドが完了したら、<uri
-link="?part=1&amp;chap=7">カーネル設定</uri>へ進んでください。
+では、<uri link="?part=1&amp;chap=7">カーネル設定</uri>へ進んでください。
 </p>
 
 </body>
