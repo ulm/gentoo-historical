@@ -1,11 +1,24 @@
 This patch make sure that the internal libmp4v2 is not built, and mpeg4ip is
 used instead.
 It also disables mpeg4ip plugin as version 1.4.1 is incompatible with it.
-Index: faad2-2.0/configure.in
+
+Note: this patch is now updated to remove the requirement of libmp4v2 when
+building the xmms plugin.
+
+Index: faad2/configure.in
 ===================================================================
---- faad2-2.0.orig/configure.in
-+++ faad2-2.0/configure.in
-@@ -66,26 +66,8 @@ MY_CHECK_TYPEDEF_FROM_INCLUDE([fpos_t fo
+--- faad2.orig/configure.in
++++ faad2/configure.in
+@@ -19,8 +19,6 @@ AC_ARG_WITH( xmms,   [  --with-xmms     
+ 
+ AC_ARG_WITH( drm,    [  --with-drm              compile libfaad with DRM support],WITHDRM=$withval, WITHDRM=no)
+ 
+-AC_ARG_WITH( mp4v2,  [  --with-mp4v2            compile libmp4v2],WITHMP4V2=$withval, WITHMP4V2=no)
+-
+ dnl Checks for header files required for mp4.h
+ AC_HEADER_STDC
+ AC_CHECK_HEADERS(stdint.h inttypes.h)
+@@ -66,26 +64,8 @@ MY_CHECK_TYPEDEF_FROM_INCLUDE([fpos_t fo
          [#include <stdio.h>],
          [HAVE_FPOS_T_POS])
  
@@ -33,3 +46,42 @@ Index: faad2-2.0/configure.in
  
  if test x$WITHXMMS = xyes; then
    AC_CHECK_PROGS(XMMS_CONFIG, xmms-config,"not_found")
+@@ -102,8 +82,6 @@ if test x$WITHXMMS = xyes; then
+   fi
+ 
+   AM_CONDITIONAL(HAVE_XMMS, true)
+-  AC_MSG_NOTICE("xmms plugin requires libmp4v2 to be build")
+-  AM_CONDITIONAL(WITH_MP4V2, true)
+   AC_CONFIG_FILES(plugins/xmms/Makefile plugins/xmms/src/Makefile)
+ else
+  AC_MSG_NOTICE(no xmms build configured)
+Index: faad2/plugins/xmms/src/Makefile.am
+===================================================================
+--- faad2.orig/plugins/xmms/src/Makefile.am
++++ faad2/plugins/xmms/src/Makefile.am
+@@ -3,10 +3,10 @@ lib_LTLIBRARIES = libmp4.la
+ 
+ libmp4_la_CFLAGS = `$(XMMS_CONFIG) --cflags` -Wall \
+        `$(GTK_CONFIG) --cflags` -DHAVE_GLIB_H=1 \
+-       -I$(top_srcdir)/include -I$(top_srcdir)/common/mp4v2
++       -I$(top_srcdir)/include
+ 
+ libmp4_la_LIBADD = $(top_builddir)/libfaad/libfaad.la \
+-       $(top_builddir)/common/mp4v2/libmp4v2.la
++	-lmp4v2
+ 
+ libmp4_la_LDFLAGS = -module -avoid-version `$(XMMS_CONFIG) --libs` \
+        `$(GTK_CONFIG) --libs` -lpthread -lstdc++
+Index: faad2/plugins/xmms/src/libmp4.c
+===================================================================
+--- faad2.orig/plugins/xmms/src/libmp4.c
++++ faad2/plugins/xmms/src/libmp4.c
+@@ -9,7 +9,7 @@
+ #include <pthread.h>
+ #include <gtk/gtk.h>
+ #include "faad.h"
+-#include "mp4.h"
++#include <mp4.h>
+ 
+ #include <xmms/plugin.h>
+ #include <xmms/util.h>
