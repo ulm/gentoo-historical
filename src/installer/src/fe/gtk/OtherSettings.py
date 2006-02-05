@@ -171,13 +171,13 @@ class Panel(GLIScreen.GLIScreen):
 
 		etc_files['conf.d/keymaps']['KEYMAP'] = self.keymap.GetValue()
 		etc_files['conf.d/keymaps']['SET_WINDOWSKEYS'] = self.windowkeys.GetValue()
-		if self.extkeymap.GetValue != "":
+		if self.extkeymap.GetValue() != "":
 			etc_files['conf.d/keymaps']['EXTENDED_KEYMAPS'] = self.extkeymap.GetValue()
 		etc_files['conf.d/consolefont']['CONSOLEFONT'] = self.font.GetValue()
 		etc_files['conf.d/clock']['CLOCK'] = self.clock.GetValue()
 		etc_files['rc.conf']['EDITOR'] = self.editor.GetValue()
 		etc_files['rc.conf']['DISPLAYMANAGER'] = self.displaymanager.GetValue()
-		if self.xsession.GetValue != "":
+		if self.xsession.GetValue() != "":
 			etc_files['rc.conf']['XSESSION'] = self.xsession.GetValue()
 			
 		try:
