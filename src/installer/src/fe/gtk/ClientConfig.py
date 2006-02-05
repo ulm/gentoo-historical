@@ -11,6 +11,53 @@ from gettext import gettext as _
 class Panel(GLIScreen.GLIScreen):
 
 	title = _("Pre-install Configuration")
+	_helptext = """
+<b><u>Pre-install Config - aka Client Configuration</u></b>
+
+If your network is already set up and you can ping www.gentoo.org, then the
+checkbox labeled "My network is already set up and running" will be checked.
+In that case you do not need to set up any pre-install networking.  If it is
+not, you need to set up your networking.
+
+Note: If you intend to use wireless to connect to the Internet from the Livecd,
+you will need to set up your connection before starting the installer.  See the
+Wireless Networking guide at
+http://www.gentoo.org/doc/en/handbook/handbook-x86.xml?part=4&chap=4
+
+To connect to the Internet you will need to configure one network device,
+usually eth0.  In most cases you can select DHCP unless you have a specific IP
+address or network configuration where you need to give Static information.
+
+In the rare case that you need to connect to the Internet through a proxy, there
+are three proxy types to enter.
+
+In the Misc. tab there are a few customizable items:
+
+Chroot directory:  This is the directory the the installer mounts your /
+partition to and then chroots to in order to do the installation.  It is best to
+not change this unless you need to.
+
+Logfile:  The path and filename of the installer logfile.  The default is
+recommended.
+
+SSH:  If you want to start sshd to allow remote access to your machine during
+the installation, select Yes, otherwise No.  No is recommended since it is not
+necessary for an installation.
+
+Root password: This sets the root password for the <b>Livecd environment <u>only</u></b>.
+If you chose Yes for SSH then you will need to enter a root password or you will
+not be able to login remotely.
+
+Kernel Modules:  If you have additional modules (ex. some rare networking module
+that didn't autoload) you need to load that are not in the Loaded modules list
+on the right, you can enter them here.  
+
+Verbose logging:  This adds a lot of debugging information to the logfiles,
+which is useful for reporting bugs.
+
+Install mode:  You want "Normal".  the Chroot mode is still under development
+and will not leave you with a bootable system.
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

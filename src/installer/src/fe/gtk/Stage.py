@@ -13,6 +13,42 @@ class Panel(GLIScreen.GLIScreen):
 	title = "Stage Selection"
 	active_selection = 1
 	radio_stages = [None, None, None, None]
+	_helptext = """
+<b><u>Stage</u></b>
+
+Gentoo has traditionally provided three differently-sized stage tarballs to
+install Gentoo.  
+
+The Stage 1 is the smallest to download but takes the longest to compile because
+it builds all the standard C libraries and compiler from scratch (meant for
+those who are totally obsessed with optimization).  
+
+The Stage 2 tarball is slightly bigger but still requires the compilation of the
+base system from scratch.  This stage is rarely used by anybody.  
+
+The Stage 3 tarball is the recommended tarball for Gentoo instllations.  It
+contains a complete base system and is already optimized for whatever
+architecture/processor you download the stage3 for.  While Gentoo still offers
+stage1 and stage2 tarballs, the official installation method uses the stage3
+tarball.
+
+The Livecd also provides many programs using GRP, which will package up the
+livecd files and install them as binaries.  This is useful for getting large
+applications like gnome installed quickly.  If doing a GRP install, the Dynamic
+stage3 is also recommended.  Dynamic creates a stage3 tarball on the fly from
+the contents of the Livecd, and does not involve any downloading, but can be a
+bit slow.
+
+<b>For those doing a networkless installation, you must select "Dynamic" and
+"GRP Install" from the Stage screen.</b> Otherwise select a stage and click
+the "..." to browse for a tarball location.
+
+In the URI Browser, select the type (such as http) and then press the "..." next
+to Host to choose a mirror address. Once your host has been selected the path
+below should change automatically and you should be able to browse through the
+folders to find your stage tarball. The path to the tarballs is usually
+/releases/{architecture ex. x86}/current/stages/{sub-arch}/filename.tar.bz2
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

@@ -18,6 +18,71 @@ class Panel(GLIScreen.GLIScreen):
 	arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
 	optimizations = ["-O0", "-O1", "-O2", "-Os", "-O3"]
 	arch_chosts = { 'x86': ("i386-pc-linux-gnu", "i486-pc-linux-gnu", "i586-pc-linux-gnu", "i686-pc-linux-gnu") }
+	_helptext = """
+<b><u>Make.conf</u></b>
+
+One of the unique (and best) features of Gentoo is the ability to define flags
+(called USE flags) that determine what components are compiled into
+applications.  For example, you can enable the "alsa" flag and programs that
+have alsa capability will compile in support for alsa.  Otherwise they will
+leave it out, resulting in smaller, faster applications.  The result is a
+finely-tuned OS with no unnecessary components to slow you down.
+
+There are two types of USE flags, local (for only one application), and global
+(for all apps).  The local use flags will tell you which package they refer to
+in the Description.  Note that the names of the USE flags can sometimes be
+misleading since they often refer to only one package.
+
+CFLAGS:
+
+The CFLAGS variable defines the optimization flags for the gcc C and C++
+compilers. Although we define those generally here, you will only have maximum
+performance if you optimize these flags for each program separately. The reason
+for this is because every program is different. 
+
+A first setting is the processor, which specifies the name of the target
+architecture.  Select your Proc from the list.
+
+A second one is the -O flag (that is a capital O, not a zero), which specifies
+the gcc optimization class flag. Possible classes are s (for size-optimized),
+0 (zero - for no optimizations), 1, 2 or 3 for more speed-optimization flags
+(every class has the same flags as the one before, plus some extras).  2 is a
+safe level of optimization.
+
+You can add additional custom CFLAGS with the textbox.
+
+Another popular optimization flag is -pipe (use pipes rather than temporary
+files for communication between the various stages of compilation).
+
+Mind you that using -fomit-frame-pointer (which doesn't keep the frame pointer
+in a register for functions that don't need one) might have serious
+repercussions on the debugging of applications! 
+
+Other:
+
+Select Use unstable only if you are an expert Gentoo user or want to use
+bleeding edge unstable applications.  This is highly NOT recommended because it
+will often result in failed installations due to compilation errors in unstable
+applications.
+
+Select Build binary packages if you plan on using the compiled packages
+elsewhere (very rarely needed).
+
+DistCC functionality has not yet been implemented with the GTK+ frontend.  If
+you need this, use gli-dialog, the command-line frontend to GLI.
+
+Select ccache to enable ccache support via CC.
+
+The CHOST variable declares the target build host for your system. This variable
+should already be set to the correct value. Do not edit it as that might break
+your system. If the CHOST variable does not look correct to you, you might be
+using the wrong stage3 tarball.
+
+With MAKEOPTS you define how many parallel compilations should occur when you
+install a package. A good choice is the number of CPUs in your system plus one,
+but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
+"-jN" where N is the number of parallel compilations (for example: -j2).
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

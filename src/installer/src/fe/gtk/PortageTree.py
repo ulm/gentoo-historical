@@ -13,6 +13,35 @@ class Panel(GLIScreen.GLIScreen):
 	title = "Portage Tree"
 	active_selection = None
 	radio_syncs = {}
+	_helptext = """
+<b><u>Portage Tree</u></b>
+
+Portage is probably Gentoo's most notable innovation in software management. 
+When we talk about packages, we often mean software titles that are available
+to the Gentoo users through the Portage tree. The Portage tree is a collection
+of ebuilds, files that contain all information Portage needs to maintain
+software (install, search, query, ...). These ebuilds reside in /usr/portage by
+default.
+
+Whenever you ask Portage to perform some action regarding software titles, it
+will use the ebuilds on your system as a base. It is therefore important that
+you regularly update the ebuilds on your system so Portage knows about new
+software, security updates, etc.
+
+There are several ways of obtaining an initial Portage tree.
+
+Normal: This is the normal method of downloading and syncing the Portage tree
+from the Internet.  It will give you the most up-to-date tree.
+
+Webrsync: This is similar to Normal.  It will download via http a dialy Portage
+snapshot and sync that.
+
+Snapshot: This is if you have a specially-built portage snapshot you want to use
+or if you want to use the copy on the Livecd to save downloading the tree
+(useful for those on dial-up).  This is the least up-to-date way to get an
+initial Portage tree.  It is necessary to choose the Livecd snapshot if you are
+doing a Dynamic or GRP install.
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
