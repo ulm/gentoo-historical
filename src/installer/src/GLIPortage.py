@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.33 2006/02/05 19:42:22 agaffney Exp $
+$Id: GLIPortage.py,v 1.34 2006/02/05 20:29:40 agaffney Exp $
 """
 
 import re
@@ -78,12 +78,12 @@ class GLIPortage(object):
 		root_cmd = ""
 		tmp_chroot_dir = self._chroot_dir
 		portage_tmpdir = "/var/tmp/portage"
-		vdb_dir = "/var/db/pkg"
+		vdb_dir = "/var/db/pkg/"
 		if use_root:
 			root_cmd = "ROOT=" + self._chroot_dir
 			tmp_chroot_dir = ""
 			portage_tmpdir = self._chroot_dir + "/var/tmp/portage"
-			vdb_dir = self._chroot_dir + "/var/db/pkg"
+			vdb_dir = self._chroot_dir + "/var/db/pkg/"
 
 		# Copy the vdb entry for the package from the LiveCD to the chroot
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying vdb entry for " + package)
