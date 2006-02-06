@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.95 2006/01/07 23:16:08 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.96 2006/02/06 15:41:19 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -373,7 +373,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #					time.sleep(1)
 
 					tries = 0
-					while tries < 4:
+					while tries <= 10:
 						# now the actual command
 						cmd = "%s %s %s" % (cmdname,newpart['mkfsopts'],devnode)
 						self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))
