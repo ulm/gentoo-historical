@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/desktop/x/x11/modular-x-howto.xml,v 1.3 2006/01/15 14:10:07 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/desktop/x/x11/modular-x-howto.xml,v 1.4 2006/02/06 16:05:43 rane Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -96,18 +96,11 @@ Usuwamy starą, monolityczną instalację:
 
 <pre caption="Usuwanie monolitycznej instalacji">
 # <i>emerge -Ca xorg-x11 virtual/x11</i>
-# <i>rm -rf /usr/lib/opengl/xorg-x11</i>
-# <i>rm -rf /usr/lib/libGL*</i>
 </pre>
 
 <p>
 Lepiej mieć kopię zapasową poprzedniej wersji, na wypadek gdyby wydarzyło się
 coś złego.
-</p>
-
-<p>
-Następne kroki pomagają pozbyć się starych dowiązań stworzonych przez
-<c>opengl-update</c>.  
 </p>
 
 <p>
@@ -118,7 +111,7 @@ pakietów tam zainstalowanych.
 
 <pre caption="Tworzenie listy pakietów">
 # <i>if [[ ! -L /usr/X11R6 ]]; \
-        then equery belongs /usr/X11R6 > usr-x11r6-packages \
+        then equery belongs /usr/X11R6 > ~/usr-x11r6-packages \
         &amp;&amp; rm -rf /usr/X11R6; fi</i>
 </pre>
 
@@ -141,33 +134,90 @@ link="/doc/pl/handbook/handbook-x86.xml?part=3&amp;chap=3">instalacji
 zamaskowanych pakietów</uri>.
 </p>
 
+<table>
+<tr>
+  <th>Inne pakiety, które wymagają dodania do package.keywords u osób
+  korzystających ze stabilnej gałęzi drzewa portage</th> </tr>
+<tr>
+  <ti>&gt;=sys-apps/portage-2.1_pre4</ti>
+</tr>
+<tr>
+  <ti>=sys-apps/man-1.6b-r2</ti>
+</tr>
+<tr>
+  <ti>app-admin/eselect-opengl</ti>
+</tr>
+<tr>
+  <ti>&gt;=app-admin/eselect-1.0_rc1</ti>
+</tr>
+<tr>
+  <ti>media-video/nvidia-kernel</ti>
+</tr>
+<tr>
+  <ti>media-video/nvidia-glx</ti>
+</tr>
+</table>
+
 <p>
 Aby korzystać z Direct Rendering, należy aktywować <c>dri</c> we flagach USE.
 </p>
 
 <p>
-Potem można przystąpić do ainstalacji metapakietu. Spowoduje to instalację
-serwera X oraz najczęściej używanych aplikacji, dając nam do dyspozycji sprawną
-implementację X:
+Następnie decydujemy, jakie sterowniki chcemy zainstalować. Są one zależne od
+naszej konfiguracji sprzętowej. Jeśli posiadamy sprawny plik
+<path>/etc/X11/xorg.conf</path>, wystarczy wykonać tylko poniższe polecenie, by
+dowiedzieć się jakich sterowników potrzebujemy:
+</p>
+
+<pre caption="Sprawdzanie potrzebnych sterowników">
+# <i>grep Driver /etc/X11/xorg.conf</i>
+	Driver      "kbd"
+	Driver      "mouse"
+	Driver      "radeon"
+</pre>
+
+<pre caption="Checking available drivers">
+# <i>emerge --verbose --pretend xorg-x11</i>
+[ebuild   R   ] x11-base/xorg-x11-7.0-r1  USE="-xprint" INPUT_DEVICES="keyboard
+mouse -acecad -aiptek -calcomp -citron -digitaledge -dmc -dynapro -elo2300
+-elographics -evdev -fpit -hyperpen -jamstudio -joystick -magellan -magictouch
+-microtouch -mutouch -palmax -penmount -spaceorb -summa -synaptics% -tek4957
+-ur98 -vmmouse -void" VIDEO_CARDS="i128 mga savage -apm -ark -ati* -chips
+-cirrus -cyrix -dummy -fbdev -fglrx% -glint -i740 -i810 -imstt -neomagic
+-newport -nsc -nv -nvidia% -rendition -s3 -s3virge -siliconmotion -sis -sisusb
+-sunbw2 -suncg14 -suncg3 -suncg6 -sunffb -sunleo -suntcx -tdfx -tga -trident
+-tseng -v4l -vesa -vga -via -vmware -voodoo" 0 kB 
+</pre>
+
+<p>
+INPUT_DEVICES i VIDEO_CARDS ustawiamy w <path>/etc/make.conf</path>, tak by
+odpowiadały naszej konfiguracji. Minimalne ustawienia dla powyższego przykładu
+byłby następujące: INPUT_DEVICES="<c>keyboard mouse</c>"
+VIDEO_CARDS="<c>ati</c>". Jeśli nie ustawimy pierwszej lub drugej zmiennej,
+xorg-x11 zainstaluje wszystkie możliwe sterowniki tego typu. Jako sterowniki
+zapasowe, można dodać <c>vesa</c> i <c>fbdev</c> do VIDEO_CARDS.
+</p>
+
+<p>
+Następnie instalujemy metapakiet. Spowoduje to instalację serwera X oraz
+najczęściej używanych aplikacji, dając nam do dyspozycji sprawną implementację
+X:
 </p>
 
 <pre caption="Instalacja modularnego metapakietu">
 # <i>emerge xorg-x11</i>
+# <i>etc-update</i>
 </pre>
+
 
 <p>
 Należy pamiętać, że to polecenie spowoduje minimalną instalację i że rzeczy
-takie jak xcursor-themes, nie będą instalowane standardowo.
+takie jak xcursor-themes, nie będą instalowane standardowo. Na przykład, jeśli
+zmienialiśmy nasz cursor na whiteglass, redglass lub handhelds, instalujemy
+xcursor-themes. Jeśli korzystaliśmy z kursora gentoo, gentoo-blue lub
+gentoo-silver, instalujemy gentoo-xcursor.
 </p>
 
-<p>
-Następnie należy zainstalować sterowniki. Te z kolei zależą od posiadanego
-sprzętu. Sprawdzamy więc <path>/usr/portage/x11-drivers/</path>. Przykład:
-</p>
-
-<pre caption="Instalowanie sterowników">
-# <i>emerge xf86-input-mouse xf86-input-keyboard xf86-video-ati</i>
-</pre>
 
 <note>
 Jeżeli mamy zainstalowane modularne X, zewnętrzne sterowniki (takie jak
@@ -185,7 +235,7 @@ przeinstalowania po instalacji modularnego X.
 <chapter>
 <title>Częste problemy</title>
 <section>
-<title>'emerge -u world' chce instalować xorg-x11 6.x</title>
+<title>'emerge -u world' chce instalować xorg-x11 6.x lub virtual/x11</title>
 <body>
 
 <p>
@@ -340,28 +390,23 @@ Zgłaszano nam, że:
 </p>
 
 <ul>
-  <li>vesa zawiesza komputery z kartą mga</li>
+  <li>vesa zawiesza komputery z kartą Matrox</li>
   <li>vga tworzy bardzo dziwnie wyglądający ekran, podzielony na cztery części</li> 
 </ul>
 
 </body>
 </section>
 <section>
-<title>Uruchamianie glxinfo/glxgears</title>
+<title>Ponowne uruchomienie akceleracji 3D</title>
 <body>
 
 <p>
-Te programy zawarte są teraz w pakiecie <c>x11-apps/mesa-progs</c>. Pakiet
-<c>mesa-progs</c> zostanie zainstalowany przez pakiet <c>x11-base/xorg-x11</c>
-automatycznie.
+Programy te, zawarte są w pakiecie <c>x11-apps/mesa-progs</c>. <c>mesa-progs</c>
+jest instalowane przez pakiet <c>x11-base/xorg-x11</c> automatycznie.
 </p>
 
-<p>
-Włączanie informacji diagnostycznych w glxinfo, by ułatwić uruchomienie
-Direct Rendering: 
-</p>
-
-<pre caption="Włączanie informacji diagnostycznych w glxinfo">
+<pre caption="Włączanie informacji diagnostycznych">
+# <i>grep -e EE -e WW /var/log/Xorg.0.log</i>
 # <i>LIBGL_DEBUG=verbose glxinfo</i>
 </pre>
 
@@ -380,14 +425,19 @@ nie zadziałać.  Należy ustawić <c>Protocol "ExplorerPS/2"</c> lub
 </body>
 </section>
 <section>
-<title>Zawartość /usr/lib/xorg zniknęła!</title>
+<title>Pojawiają się błędy dotyczące braku libbitmap lub libpcidata</title>
 <body>
 
 <p>
-Należy przeinstalować &gt;=xorg-server-0.99.1-r4. Ten tymczasowy błąd w
+Należy przeinstalować <c>&gt;=xorg-server-0.99.1-r4</c>. Ten tymczasowy błąd w
 ebuildzie polegał na kasowaniu katalogu po usunięciu pakietu.
 <path>/usr/lib/xorg</path> powinno być usunięte tylko wtedy, gdy żaden
 xorg-server nie pozostał w systemie.  
+</p>
+
+<p>
+Należy się również upewnić, że wpis <c>ModulePath</c> istnieje w
+<path>/etc/X11/xorg.conf</path>.
 </p>
 
 </body>
@@ -409,8 +459,35 @@ Można nas wesprzeć w poprawianiu pakietów instalujących się w
 <path>/usr/X11R6</path> poprzez tworzenie poprawek i nadsyłanie nam ich.
 </p>
 
+<pre caption="Pakiety, które instalują się w /usr/X11R6">
+# <i>cat ~/usr-x11r6-packages</i>
+# <i>emerge --pretend $(&lt; ~/usr-x11r6-packages )</i>
+</pre>
+
 </body>
 </section>
+
+<section>
+<title>XKB nie działa, nie można zmienić VT, itd.</title>
+<body>
+
+<ul>
+  <li>Wiele układów klawiatury z XKB zostało przeniesionych, połączonych, lub
+  usuniętych. Radzimy zajrzeć do <path>/usr/share/X11/xkb/symbols/pc</path>, by
+  zobaczyć, co stało się z naszym starym ustawieniem XkbLayout w xorg.conf. Na
+  przykład, by zmienić stary układ "us_intl", dodajemy <c>"XkbLayout"
+  "latin"</c> i <c>"XkbOptions" "lv3:ralt_switch"</c>. Zamiast "sk_qwerty"
+  użyjemy <c>"XkbLayout" "sk"</c> i <c>"XkbVariant" "qwerty"</c>. Jako bardziej
+  zaawansowany przykład, możemy użyć <c>"XkbLayout" "us,sk_qwerty"</c>, które
+  zamienilibyśmy na <c>"XkbLayout" "us,sk"</c>. Teraz ważna część:
+  <c>"XkbVariant" ",qwerty"</c>. Należy zwrócić uwagę na przecinek, ponieważ
+  chcemy, by wariant dotyczył drugiego układu.
+  </li>
+</ul>
+
+</body>
+</section>
+
 <section>
 <title>Pozostałe sprawy</title>
 <body>
