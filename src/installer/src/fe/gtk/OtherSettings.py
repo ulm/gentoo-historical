@@ -67,7 +67,7 @@ class Panel(GLIScreen.GLIScreen):
 		# create the Keymap object
 		self.keymap = self.Option("Keymap")
 		self.keymap.HelpText = "Choose your desired keymap"
-		self.keymap.Options = GLIUtility.generate_keymap_list()
+		self.keymap.Options = [""] + GLIUtility.generate_keymap_list()
 		self.keymap.Type = self.Option.OptionType.COMBO
 		editor_gtk = self.keymap.Generate_GTK()
 		addme_to_vert.append(editor_gtk)
@@ -75,7 +75,7 @@ class Panel(GLIScreen.GLIScreen):
 		# create the Console Font object
 		self.font = self.Option("Console Font")
 		self.font.HelpText = "Choose your default console font"
-		self.font.Options = GLIUtility.generate_consolefont_list()
+		self.font.Options = [""] + GLIUtility.generate_consolefont_list()
 		self.font.Type = self.Option.OptionType.COMBO
 		editor_gtk = self.font.Generate_GTK()
 		addme_to_vert.append(editor_gtk)
@@ -169,11 +169,13 @@ class Panel(GLIScreen.GLIScreen):
 		etc_files = self.controller.install_profile.get_etc_files()
 		etc_files = self.create_etc_files(etc_files)
 
-		etc_files['conf.d/keymaps']['KEYMAP'] = self.keymap.GetValue()
+		if self.keymap.GetValue():
+			etc_files['conf.d/keymaps']['KEYMAP'] = self.keymap.GetValue()
 		etc_files['conf.d/keymaps']['SET_WINDOWSKEYS'] = self.windowkeys.GetValue()
 		if self.extkeymap.GetValue() != "":
 			etc_files['conf.d/keymaps']['EXTENDED_KEYMAPS'] = self.extkeymap.GetValue()
-		etc_files['conf.d/consolefont']['CONSOLEFONT'] = self.font.GetValue()
+		ifself.font.GetValue():
+			etc_files['conf.d/consolefont']['CONSOLEFONT'] = self.font.GetValue()
 		etc_files['conf.d/clock']['CLOCK'] = self.clock.GetValue()
 		etc_files['rc.conf']['EDITOR'] = self.editor.GetValue()
 		if self.displaymanager.GetValue() != "":
