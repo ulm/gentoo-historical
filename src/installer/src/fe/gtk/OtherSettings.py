@@ -174,7 +174,7 @@ class Panel(GLIScreen.GLIScreen):
 		etc_files['conf.d/keymaps']['SET_WINDOWSKEYS'] = self.windowkeys.GetValue()
 		if self.extkeymap.GetValue() != "":
 			etc_files['conf.d/keymaps']['EXTENDED_KEYMAPS'] = self.extkeymap.GetValue()
-		ifself.font.GetValue():
+		if self.font.GetValue():
 			etc_files['conf.d/consolefont']['CONSOLEFONT'] = self.font.GetValue()
 		etc_files['conf.d/clock']['CLOCK'] = self.clock.GetValue()
 		etc_files['rc.conf']['EDITOR'] = self.editor.GetValue()
