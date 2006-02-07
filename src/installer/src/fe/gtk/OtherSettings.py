@@ -118,8 +118,8 @@ class Panel(GLIScreen.GLIScreen):
 	def create_etc_files(self, etc_files):
 		if not "conf.d/keymaps" in etc_files: 
 			etc_files['conf.d/keymaps'] = {}
-		if not "conf.d/consolefont" in etc_files: 
-			etc_files['conf.d/consolefont'] = {}
+#		if not "conf.d/consolefont" in etc_files: 
+#			etc_files['conf.d/consolefont'] = {}
 		if not "conf.d/clock" in etc_files: 
 			etc_files['conf.d/clock'] = {}
 		if not "rc.conf" in etc_files: 
@@ -175,6 +175,8 @@ class Panel(GLIScreen.GLIScreen):
 		if self.extkeymap.GetValue() != "":
 			etc_files['conf.d/keymaps']['EXTENDED_KEYMAPS'] = self.extkeymap.GetValue()
 		if self.font.GetValue():
+			if not "conf.d/consolefont" in etc_files: 
+				etc_files['conf.d/consolefont'] = {}
 			etc_files['conf.d/consolefont']['CONSOLEFONT'] = self.font.GetValue()
 		etc_files['conf.d/clock']['CLOCK'] = self.clock.GetValue()
 		etc_files['rc.conf']['EDITOR'] = self.editor.GetValue()
