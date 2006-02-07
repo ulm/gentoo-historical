@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.34 2006/02/05 20:29:40 agaffney Exp $
+$Id: GLIPortage.py,v 1.35 2006/02/07 02:05:39 agaffney Exp $
 """
 
 import re
@@ -68,7 +68,7 @@ class GLIPortage(object):
 		entries.sort()
 		return entries
 
-	def copy_pkg_to_chroot(self, package, use_root=False):
+	def copy_pkg_to_chroot(self, package, use_root=False, ignore_missing=False):
 		symlinks = { '/bin': '/mnt/livecd/bin/', '/boot': '/mnt/livecd/boot/', '/lib': '/mnt/livecd/lib/', 
 		             '/opt': '/mnt/livecd/opt/', '/sbin': '/mnt/livecd/sbin/', '/usr': '/mnt/livecd/usr/',
 		             '/etc/gconf': '/usr/livecd/gconf/' }
@@ -84,6 +84,15 @@ class GLIPortage(object):
 			tmp_chroot_dir = ""
 			portage_tmpdir = self._chroot_dir + "/var/tmp/portage"
 			vdb_dir = self._chroot_dir + "/var/db/pkg/"
+
+		# Check to see if package is actually in vdb
+		if not GLIUtility.is_file("/var/db/pkg/" + package):
+			if ignore_missing:
+				if self._debug:
+					self._logger.log("DEBUG: copy_pkg_to_chroot(): package " + package + " does not have a vdb entry but ignore_missing=True...ignoring error")
+				return
+			else:
+				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "There is no vdb entry for " + package)
 
 		# Copy the vdb entry for the package from the LiveCD to the chroot
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying vdb entry for " + package)

@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.257 2006/01/08 05:09:14 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.258 2006/02/07 02:05:38 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -254,28 +254,11 @@ class ArchitectureTemplate:
 				syspkgs.close()
 			except:
 				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not open /usr/livecd/systempkgs.txt")
-#			make_conf = self._install_profile.get_make_conf()
-#			PKGDIR = '/usr/portage/packages'
-#			PORTAGE_TMPDIR = '/var/tmp'
-#			if 'PKGDIR' in make_conf: PKGDIR = make_conf['PKGDIR']
-#			if 'PORTAGE_TMPDIR' in make_conf: PORTAGE_TMPDIR = make_conf['PORTAGE_TMPDIR']
-#			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PKGDIR)
-#			GLIUtility.spawn("mkdir -p " + self._chroot_dir + PORTAGE_TMPDIR)
-#			os.environ["PKGDIR"] = self._chroot_dir + PKGDIR
-#			os.environ["PORTAGE_TMPDIR"] = self._chroot_dir + PORTAGE_TMPDIR
-#			ret = GLIUtility.spawn("quickpkg $(sed -e 's:^:=:' /usr/livecd/systempkgs.txt)", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-#			if not GLIUtility.exitsuccess(ret):
-#				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not quickpkg necessary packages for generating stage3")
-#			ret = GLIUtility.spawn("env ROOT=" + self._chroot_dir + " emerge -KO $(sed -e 's:^:=:' /usr/livecd/systempkgs.txt)", display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
-#			if not GLIUtility.exitsuccess(ret):
-#				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not emerge necessary packages in chroot for generating stage3")
-#			del os.environ["PKGDIR"]
-#			del os.environ["PORTAGE_TMPDIR"]
 			syspkglen = len(systempkgs)
 			for i, pkg in enumerate(systempkgs):
 				pkg = pkg.strip()
 				self.notify_frontend("progress", (float(i) / (syspkglen+1), "Copying " + pkg + " (" + str(i+1) + "/" + str(syspkglen) + ")"))
-				self._portage.copy_pkg_to_chroot(pkg, True)
+				self._portage.copy_pkg_to_chroot(pkg, True, ignore_missing=True)
 			self.notify_frontend("progress", (float(syspkglen) / (syspkglen+1), "Finishing"))
 			GLIUtility.spawn("cp /etc/make.conf " + self._chroot_dir + "/etc/make.conf")
 			GLIUtility.spawn("ln -s `readlink /etc/make.profile` " + self._chroot_dir + "/etc/make.profile")
