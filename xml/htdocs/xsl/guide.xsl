@@ -172,7 +172,7 @@
   </tr>
   <tr>
     <td colspan="2" align="right" class="infohead">
-      Copyright 2001-2005 Gentoo Foundation, Inc.  Questions, Comments?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
+      Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
     </td>
   </tr>
 </table>
@@ -454,7 +454,7 @@
   </tr>
   <tr lang="en">
     <td align="right" class="infohead" colspan="3">
-      Copyright 2001-2005 Gentoo Foundation, Inc.  Questions, Comments?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
+      Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
     </td>
   </tr>
 </table>
