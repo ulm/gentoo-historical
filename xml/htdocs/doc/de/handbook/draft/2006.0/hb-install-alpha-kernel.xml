@@ -1,0 +1,518 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- English CVS Version: 1.1 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/draft/2006.0/Attic/hb-install-alpha-kernel.xml,v 1.1 2006/02/07 05:38:08 grahl Exp $ -->
+
+<sections>
+
+<version>5.5</version>
+<date>2006-01-06</date>
+
+<section>
+<title>Setzen der Zeitzone des Systems</title>
+<body>
+
+<p>
+Zuerst müssen Sie dem System sagen, in welcher Zeitzone es sich befindet.
+Suchen Sie Ihre Zeitzone in<path>/usr/share/zoneinfo/</path> und kopieren Sie
+diese dann nach <path>/etc/localtime</path>. Bitte vermeiden Sie die
+<path>/usr/share/zoneinfo/Etc/GMT*</path> Zeitzonen, denn deren Namen verweisen
+nicht auf die erwarteten Zonen. Zum Beispiel ist <path>GMT-8</path> in
+Wirklichkeit GMT+8.
+</p>
+
+<pre caption="Setzen der Zeitzone">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Beispiel: GMT)</comment>
+# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Installieren der Quellen</title>
+<subsection>
+<title>Auswählen eines Kernels</title>
+<body>
+
+<p>
+Der Kern um den herum alle Distributionen gebaut sind ist der Linux Kernel. Es
+ist die Ebene zwischen den Benutzerprogrammen und der Systemhardware. Gentoo
+bietet seinen Benutzern verschiedene mögliche Kernelquellen. Eine komplette
+Liste mit Beschreibungen finden Sie im <uri 
+link="/doc/de/gentoo-kernel.xml">Gentoo Kernel Guide</uri>.
+</p>
+
+<p>
+Für Alpha-basierende Systeme haben wir die <c>vanilla-sources</c> (die
+Standard 2.6 Kernelquellen).
+</p>
+
+<p>
+Wählen Sie Ihre Kernelquelle aus und installieren Sie diese mit <c>emerge</c>.
+Das <c>USE="-doc"</c> ist notwendig um zu verhindern, dass xorg-x11 oder andere
+Abhängigkeiten zu diesem Zeitpunkt installiert werden. <c>USE="symlink"</c> ist
+nicht zwingend bei einer Neuinstallation, stellt aber sicher, dass der
+<path>/usr/src/linux</path> Symlink korrekt erstellt wird.
+</p>
+
+<p>
+Im nächsten Beispiel installieren wir die <c>vanilla-sources</c> Natürlich
+sollten Sie hier die Quelle verwenden, die Sie ausgewählt haben. Dies ist nur
+ein Beispiel:
+</p>
+
+<pre caption="Installieren einer Kernelquelle">
+# <i>USE="-doc symlink" emerge vanilla-sources</i>
+</pre>
+
+<p>
+Wenn Sie einen Blick in <path>/usr/src</path> werfen, sollten Sie einen Symlink
+sehen, genannt <path>linux</path>, der auf Ihre Kernelquelle verweist. In
+diesem Fall verweisen die installierten Kernelquellen auf
+<c>gentoo-sources-2.6.11.2</c>. Denken Sie daran, dass Ihre Version eine
+andere sein kann.
+</p>
+
+<pre caption="Anzeigen des Kernelquellen Symlinks">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.11.2
+</pre>
+
+<p>
+Nun ist es Zeit Ihre Kernelquelle zu konfigurieren und zu kompilieren. Sie
+können hierfür <c>genkernel</c> verwenden, welches einen generischen
+Kernel erstellt, wie er von der Installations-CD verwendet wird. Wir erklären
+die "manuelle" Konfiguration jedoch zuerst, denn es ist der beste Weg Ihre
+Umgebung zu optimieren.
+</p>
+
+<p>
+Wenn Sie Ihren Kernel manuell konfigurieren wollen, fahren Sie nun mit <uri
+link="#manual">Standard: Manuelle Konfiguration</uri> fort. Wenn
+Sie <c>genkernel</c> benutzen wollen, sollten Sie stattdessen
+<uri link="#genkernel">Alternativ: Benutzung von Genkernel</uri> lesen.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>Standard: Manuelle Konfiguration</title>
+<subsection>
+<title>Einführung</title>
+<body>
+
+<p>
+Einen Kernel manuell zu konfigurieren wird oft als der schwierigste Teil
+gesehen, den jeder Linux Benutzer insgesamt meistern muss. Nichts ist weiter von
+der Wahrheit entfernt -- nach der Konfiguration von einigen Kerneln werden Sie
+sich gar nicht daran erinnern, dass es schwer war ;-)
+</p>
+
+<p>
+Jedoch eine Sache <e>ist</e> wahr: Sie müssen Ihr System kennen, wenn Sie
+beginnen einen Kernel manuell zu konfigurieren. Sie können <c>lsmod</c>
+ausführen um zu sehen, welche Kernelmodule die Installations-CD verwendet (dies
+kann Ihnen einen hilfreichen Tipp geben, was aktiviert werden sollte).
+</p>
+
+<p>
+Gehen Sie nun in Ihr Kernelquellverzeichnis und führen Sie <c>make menuconfig</c>
+aus. Dies startet ein ncurses-basiertes Konfigurationsmenü.
+</p>
+
+<pre caption="menuconfig starten">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Ihnen werden verschiedene Konfigurationsabschnitte präsentiert. Wir listen
+zunächst einige Optionen auf, die sie aktivieren müssen (ansonsten wird Gentoo
+nicht funktionieren, oder ohne zusätzliche Veränderungen nicht richtig
+funktionieren).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Aktivieren der benötigten Optionen</title>
+<body>
+
+<p>
+Zunächst aktivieren Sie die Benutzung von Entwicklungs- und Experiementellem/n
+Code/Treiber(n). Sie brauchen dies, denn ansonsten werden einige wichtige
+Codeabschnitte/Treiber nicht angezeigt.
+</p>
+
+<pre caption="Selektieren experimenteller/n Codes/Treiber; generelle Einstellungen">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+General setup ---&gt;
+  [*] Support for hot-pluggable devices
+</pre>
+
+<p>
+Gehen Sie nun in <c>File Systems</c> und selektieren Sie Unterstützung für die
+Dateisysteme die Sie benutzen. Kompilieren Sie diese <e>nicht</e> als Module,
+ansonsten wird Ihr Gentoo System nicht fähig sein, Ihre Partitionen zu mounten.
+Selektieren Sie auch <c>Virtual memory</c>, <c>/proc file system</c>. Nur bei
+einem 2.4 Kernel sollten Sie auch <c>/dev file system</c> und
+<c>Automatically mount at boot</c> aktivieren.
+</p>
+
+<pre caption="Selektieren notwendiger Dateisysteme">
+<comment>(Bei einem 2.4.x Kernel)</comment>
+File systems ---&gt;
+  [*] Virtual memory file system support (former shm fs)
+  [*] /proc file system support
+  [*] /dev file system support (EXPERIMENTAL)
+  [*]   Automatically mount at boot
+  [ ] /dev/pts file system for Unix98 PTYs
+
+<comment>(Bei einem 2.6.x Kernel)</comment>
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>(Selektieren Sie eine oder mehrere der folgenden Optionen, wie benötigt
+von Ihrem System)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<p>
+Wenn Sie PPPoE benutzen um sich ins Internet einzuwählen oder Sie ein
+Einwahlmodem benutzen, brauchen Sie folgende Optionen im Kernel:
+</p>
+
+<pre caption="Auswählen PPPoE notwendiger Treiber">
+<comment>Mit einem 2.4.x Kernel)</comment>
+Network device support ---&gt;
+&lt;*&gt; PPP (point-to-point protocol) support
+&lt;*&gt;   PPP support for async serial ports
+&lt;*&gt;   PPP support for sync tty ports
+<comment>(Mit einem 2.6.x Kernel)</comment>
+Device Drivers ---&gt;
+Networking support ---&gt;
+  &lt;*&gt; PPP (point-to-point protocol) support
+  &lt;*&gt;   PPP support for async serial ports
+  &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+Die zwei Komprimierungsoptionen werden nicht schaden, aber werden auch nicht
+definitiv gebraucht, ebenso die <c>PPP over Ethernet</c> Option, die vielleicht
+nur von <c>rp-pppoe</c> verwendet wird, wenn der Kernelmodus PPPoE benutzt wird.
+</p>
+
+<p>
+Wenn Sie es benötigen, vergessen Sie nicht Ünterstützung für Ihre Netzwerkkarte
+in Ihren Kernel einzubinden.
+</p>
+
+<p>
+Die folgenden Optionen werden außerdem empfohlen:
+</p>
+
+<pre caption="Empfohlene Alpha Optionen">
+General setup ---&gt;
+&lt;*&gt; SRM environment through procfs
+&lt;*&gt; Configure uac policy via sysctl
+
+Plug and Play configuration ---&gt;
+&lt;*&gt; Plug and Play support
+&lt;M&gt;   ISA Plug and Play support
+
+SCSI support ---&gt;
+SCSI low-level drivers ---&gt;
+  &lt;*&gt; SYM53C8XX Version 2 SCSI support (NEW)
+  &lt;*&gt; Qlogic ISP SCSI support
+
+Network device support ---&gt;
+Ethernet (10 or 100 Mbit) ---&gt;
+  &lt;M&gt; DECchip Tulip (dc21x4x) PCI support
+  &lt;M&gt; Generic DECchip &amp; DIGITAL EtherWORKS PCI/EISA
+  &lt;M&gt; EtherExpressPro/100 support (eepro100)
+  &lt;M&gt; EtherExpressPro/100 support (e100)
+Ethernet (1000 Mbit) ---&gt;
+  &lt;M&gt; Alteon AceNIC
+    [*] Omit support for old Tigon I
+  &lt;M&gt; Broadcom Tigon3
+[*] FDDI driver support
+&lt;M&gt; Digital DEFEA and DEFPA
+&lt;*&gt; PPP support
+  &lt;*&gt; PPP Deflate compression
+
+Character devices ---&gt;
+[*] Support for console on serial port
+[*] Direct Rendering Manager
+
+File systems ---&gt;
+&lt;*&gt; Kernel automounter version 4 support
+Network File Systems ---&gt;
+  &lt;*&gt; NFS
+    [*] NFSv3 client
+    &lt;*&gt; NFS server
+    [*] NFSv3 server
+Partition Types ---&gt;
+  [*] Advanced partition selection
+  [*] Alpha OSF partition support
+Native Language Support
+  &lt;*&gt; NLS ISO 8859-1
+
+Sound ---&gt;
+&lt;M&gt; Sound card support
+  &lt;M&gt; OSS sound modules
+    [*] Verbose initialisation
+    [*] Persistent DMA buffers
+    &lt;M&gt; 100% Sound Blaster compatibles
+</pre>
+
+<p>
+Wenn Sie die Konfiguration des Kernel beendet haben fahren Sie mit <uri
+link="#compiling">Kompilieren und Installieren</uri> fort.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Kompilieren und Installieren</title>
+<body>
+
+<p>
+Nun da Ihr Kernel konfiguriert ist, ist es Zeit ihn zu kompilieren und zu
+installieren. Verlassen Sie die Konfiguration und starten Sie den 
+Kompilierungsvorgang:
+</p>
+
+<pre caption="Kompilieren des Kernels">
+<comment>(Für 2.4 Kernel)</comment>
+# <i>make dep &amp;&amp; make vmlinux modules modules_install</i>
+
+<comment>(Für 2.6 Kernel)</comment>
+# <i>make &amp;&amp; make modules_install</i>
+
+<comment>(Für alle Kernel)</comment>
+# <i>make boot</i>
+</pre>
+
+<p>
+Wenn der Kernel mit der Kompilierung fertig ist, kopieren Sie das Kernel-Image
+nach <path>/boot</path>. Neuere Kernel erstellen unter Umständen
+<path>vmlinux</path> anstatt von <path>vmlinux.gz</path>. Beachten Sie dies
+bitte, wenn Sie Ihr Kernel-Image kopieren.
+</p>
+
+<pre caption="Installieren des Kernels">
+# <i>cp arch/alpha/boot/vmlinux.gz /boot/</i>
+</pre>
+
+<p>Fahren Sie nun mit dem <uri link="#kernel_modules">Installieren separater
+Kernelmodule</uri> fort.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="genkernel">
+<title>Alternativ: Benutzung von Genkernel</title>
+<body>
+
+<p>
+Wenn Sie diesen Abschnitt lesen, haben Sie sich entschieden unser
+<c>genkernel</c> Skript zu benutzen, um sich Ihren Kernel konfigurieren zu
+lassen.
+</p>
+
+<p>
+Nun da Ihr Kernelquellbaum installiert ist, ist es an der Zeit Ihren Kernel
+automatisch durch das <c>genkernel</c> Skript erstellen zu lassen. <c>genkernel</c>
+arbeitet so, dass es einen Kernel konfiguriert, der fast identisch ist zu denen
+auf unser Installations-CD ist. Dies bedeutet, dass wenn Sie <c>genkernel</c> 
+benutzen um Ihren Kernel zu erstellen, Ihr System generell alle Hardware beim 
+Booten erkennt, genau wie es unsere Installations-CD tut. Weil 
+<c>genkernel</c> keine manuelle Kernelkonfiguration erfordert ist es eine 
+ideale Lösung für die Benutzer, denen Unwohl bei der Kompilierung eines 
+eigenen Kernel ist.
+</p>
+
+<p>
+Nun lassen Sie uns sehen wie man Genkernel benutzt. Zuerst installieren Sie
+<c>genkernel</c>:
+</p>
+
+<pre caption="Genkernel emergen">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+Kompilieren Sie nun Ihre Kernelquellen durch <c>genkernel all</c>.
+Seien Sie sich aber bewusst, dass <c>genkernel</c> einen Kernel kompiliert,
+der fast alle Hardware unterstützt, was bedeutet dass das Kompilieren durchaus
+eine ganze Weile dauern kann!
+</p>
+
+<p>
+Beachten Sie das, wenn Ihre Boot Partition weder ext2 noch ext3 als Dateisystem
+benutzt Sie Ihren Kernel selber mit <c>genkernel --menuconfig all</c>
+konfigurieren und Unterstützung für Ihr Dateisystem <c>im</c> Kernel aktivieren
+müssen (<e>nicht</e> als Modul).
+</p>
+
+<pre caption="Ausführen von Genkernel">
+# <i>genkernel all</i>
+GenKernel v3.0.1_beta10
+* ARCH: Alpha
+* KERNEL VER: 2.6.11.2
+* kernel: configuring source
+* kernel: running mrproper
+<comment>(Ausgabe entfernt, um die Lesbarkeit zu erhöhen)</comment>
+* Kernel compiled successfully!
+* Required Kernel Params:
+*   : root=/dev/ram0 init=/linuxrc real_root=/dev/$ROOT
+*     where $ROOT is the devicenode for your root partition as
+*     you should have specified in /etc/fstab
+*
+* You MUST tell your bootloader to use the generated initrd
+*
+* Recommended Kernel Params:
+*   : vga=0x317 splash=verbose
+*
+* Do NOT report kernel bugs (configs included) as genkernel bugs.
+* Make sure you have the latest genkernel before reporting bugs
+*
+* For more info see /usr/share/genkernel/README
+</pre>
+
+<p>
+Sobald <c>genkernel</c> beendet ist werden ein Kernel, ein voller Satz Module
+und eine <e>initial root disk</e> (initrd) erstellt sein. Wir werden den Kernel
+und initrd benutzen wenn wir später in diesem Handbuch einen Bootloader
+konfigurieren. Schreiben Sie den Namen des Kernels und den Ihrer initrd auf, da
+Sie diese brauchen werden, wenn Sie die den Bootloader konfigurieren.
+Die initrd wird direkt nach dem Booten gestartet um die Hardware
+Autoerkennung zu starten (genau wie auf der Installations-CD) bevor Ihr 
+"richtiges" System startet.
+</p>
+
+<pre caption="Kontrollieren des Namens des Kernel-Image und des initrd">
+# <i>ls /boot/kernel* /boot/initramfs*</i>
+</pre>
+
+<p>
+Nun lassen Sie uns einen weiteren Schritt tun, der unser System dazu bringt mehr
+wie die Installations-CD zu sein -- lassen Sie uns <c>coldplug</c> emergen.
+Während das initrd die Hardware automatisch erkennt, die nötig ist um Ihr 
+System zu starten, wird <c>coldplug</c> automatisch alles andere erkennen. Um 
+<c>coldplug</c> zu installieren und zu aktivieren tippen sie folgendes:
+</p>
+
+<pre caption="Installieren und aktivieren von coldplug">
+# <i>emerge coldplug</i>
+# <i>rc-update add coldplug boot</i>
+</pre>
+
+</body>
+</section>
+<section id="kernel_modules">
+<title>Installieren separater Kernelmodule</title>
+<subsection>
+<title>Installation zusätzlicher Module</title>
+<body>
+
+<p>
+Wenn angebracht, sollten Sie mit emerge Ebuilds für jegliche zusätzliche
+Hardware, die in Ihrem System steckt, installieren. Hier ist eine Liste von
+Kernel-relevanten Ebuilds die Sie emergen können:
+</p>
+
+<table>
+<tcolumn width="1in"/>
+<tcolumn width="4in"/>
+<tcolumn width="2in"/>
+<tr>
+  <th>Ebuild</th>
+  <th>Zweck</th>
+  <th>Befehl</th>
+</tr>
+<tr>
+  <ti>x11-drm</ti>
+  <ti>
+    Beschleunigte Darstellungen für ATI Radeon bis 9200, Rage128, Matrox,
+    Voodoo und andere Karten für xorg-x11. Beachten Sie die
+    <c>IUSE_VIDEO_CARDS</c> Variable in den
+    <path>/usr/portage/x11-base/x11-drm</path> Ebuilds um zu sehen, was Sie
+    als <c>IhreKarte</c> eintragen müssen.
+  </ti>
+  <ti><c>VIDEO_CARDS="IhreKarte" emerge x11-drm</c></ti>
+</tr>
+</table>
+
+<p>
+Beachten Sie jedoch, dass einige dieser Ebuilds große Abhängigkeiten (sog.
+Dependencies) mit sich bringen können. Um zu erfahren, welche Pakete durch das
+emerge eines Ebuilds installiert werden sollen, benutzen Sie <c>emerge --pretend</c>.
+Zum Beispiel für das <c>x11-drm</c> Paket:
+</p>
+
+<pre caption="Betrachten der vollen Liste der zu installierenden Pakete">
+# <i>emerge --pretend x11-drm</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Konfiguration der Module</title>
+<body>
+
+<p>
+Sie sollten alle Module, die automatisch geladen werden sollen, in
+<path>/etc/modules.autoload.d/kernel-2.4</path> (oder <path>kernel-2.6</path>)
+eintragen. Wenn Sie möchten, können Sie auch zusätzliche Optionen anhängen.
+</p>
+
+<p>
+Um alle verfügbaren Module anzuzeigen, führen Sie den folgende <c>find</c>
+Befehl aus. Vergessen Sie nicht  "&lt;kernel version&gt;" mit der Version
+Ihres Kernel zu ersetzen, den Sie gerade kompiliert haben:
+</p>
+
+<pre caption="Listen aller verfügbarer Module">
+# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+</pre>
+
+<p>
+Um zum Beispiel das <c>3c59x.o</c> Modul automatisch zu laden, editieren Sie 
+entweder die <path>kernel-2.4</path> oder die <path>kernel-2.6</path> Datei und
+tragen das Modul ein.
+</p>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.4 editieren">
+<comment>(Beispiel für 2.4 Kernel)</comment>
+# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.4 oder kernel-2.6">
+3c59x
+</pre>
+
+<p>
+Fahren Sie nun mit der <uri link="?part=1&amp;chap=8">Konfiguration des
+System</uri> fort.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
