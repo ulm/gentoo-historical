@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/desktop/x/x11/porting-modular-x-howto.xml,v 1.2 2006/01/18 14:26:37 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/desktop/x/x11/porting-modular-x-howto.xml,v 1.3 2006/02/08 01:42:15 rane Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -80,7 +80,9 @@ sprawdzania zależności.
 
 <pre caption="Pobieranie potrzebnych skryptów">
 $ <i>wget http://dev.gentoo.org/~spyderous/scripts/linking_libs.sh \
-	http://dev.gentoo.org/~spyderous/scripts/included_headers.sh</i>
+	http://dev.gentoo.org/~spyderous/scripts/included_headers.sh
+	http://dev.gentoo.org/~betelgeuse/scripts/deputils/checkdeps.rb \
+       	http://dev.gentoo.org/~betelgeuse/scripts/deputils/pkgutil.rb</i>
 </pre>
 
 <impo>
@@ -92,8 +94,20 @@ nieprawidłowe wyjście. Więcej informacji znajduje się tutaj:
 <p>
 Pierwszy skrypt, <c>linking_libs.sh</c>, sprawdza wyjście kompilacji danego
 pakietu poszukując wszystkich bibliotek połączonych z nim i wyświetla wszystkie
-pakiety, do których one należą.
+pakiety, do których one należą. By uzyskać wyjście kompilatora, można ustawić
+zmienną PORT_LOGDIR w <path>/etc/make.conf</path> lub użyć przekierowania
+wyjścia.
 </p>
+
+<pre caption="Uruchomienie linking_libs.sh dla pakietu gdm">
+$ <i>ls /var/log/portage/*gdm* -l</i>
+-rw-r--r-- 1 root portage 556551 2006-01-09 11:41
+/var/log/portage/8430-gdm-2.8.0.7.log 
+-rw-r--r-- 1 root portage    855 2006-01-09 11:42
+/var/log/portage/8431-gdm-2.8.0.7.log 
+$ <i>linking_libs.sh
+/var/log/portage/8430-gdm-2.8.0.7.log</i>
+</pre>
 
 <p>
 Drugi skrypt, <c>included_headers.sh</c>, przeszukuje rozpakowane źródła danego
@@ -103,17 +117,29 @@ działa również użycie "" w include.
 </p>
 
 <p>
+Trzeci skrypt, <c>checkdeps.rb</c>, skanuje w poszukiwaniu zainstalowanych
+plików należących do pakietu, używając <c>scanelf</c> z pax-utils. Jest to
+praktyczne dla pakietów binarnych lub pakietów, które nie pokazują wyjścia
+kompilatora. Jest to skrypt pisany w języku Ruby więc wymaga on dev-lang/ruby,
+tak jak app-misc/pax-utils. Czwarty skrypt, <c>pkgutil.rb</c>, jest zależnością
+<c>checkdeps.rb</c>.
+</p>
+
+<p>
 Uruchomienie dwóch powyższych skryptów powinno dać dobrą listę pakietów dla
 RDEPEND (dla bibliotek) i DEPEND (nagłówków i bibliotek). Jeśli biblioteka
 pokazuje na liście RDEPEND coś, co nie pojawiło się na liście DEPEND, należy być
 ostrożnym. Może to być "fałszywa zależność" (biblioteka, z którą pakiet jest
-związany bez żadnego powodu).
+związany bez żadnego powodu). Przykładem prawdziwej zależności jest libXt. Wiele
+pakietów szuka nagłówków libXt, w celu sprawdzenia występowania X w systemie.
 </p>
 
 <p>
 Sporadycznie skrypt <c>included_headers.sh</c> znajdzie zły nagłówek, ponieważ
 niektóre z nich używają tej samej nazwy, a to powoduje, że skrypt zwróci
-nieprawidłowy pakiet. Zwykle takie pomyłki są oczywiste.
+nieprawidłowy pakiet. Zwykle takie pomyłki są oczywiste, tak jak w przypadku
+nagłówków Windowsa, przez które wydaje się, że app-emulation/wine jest
+zależnością.
 </p>
 
 <p>
@@ -135,7 +161,7 @@ zainstalowanych, by przeprowadzić skanowanie.
 W niektórych przypadkach, w pewnym sensie, pakiet wymaga serwera X. Jeśli nie
 jest to wymagane, by w czasie instalacji serwer X był obecny w systemie,
 odradzamy umieszczanie go na liście RDEPEND. Psuje to instalacje bez X, gdzie
-program jest uruchamiamiany na innym komputerze, więc nie wymaga istnienia
+program jest uruchamiany na innym komputerze, więc nie wymaga istnienia
 nagłówków ani bibliotek na danej maszynie.
 </p>
 
@@ -146,7 +172,9 @@ pakiecie xorg-server. Mamy również serwer DirectFB w pakiecie xdirectfb; kdriv
 jest małym serwerem X. Oczywiście mamy też do dyspozycji stare &lt;xorg-x11-7.
 Należy również dołączyć restrykcje odnośnie wersji xorg-x11, by być pewnym, że
 mamy serwer X, zamiast metapakietu. W bliskiej przyszłości spodziewam się, że
-kdrive przeniesie się do serwera X.
+kdrive przeniesie się do serwera X. Jeśli potrzeba nam serwera X, należy
+skontaktować się z członkiem drużyny zajmującej się X. Możemy stworzyć wirtual,
+jeśli wystarczająca liczba pakietów będzie tego wymagać
 </p>
 
 </body>
@@ -195,8 +223,8 @@ modularne zależności, więc mogą one zainstalować wymagane biblioteki.
 <note>
 Dwie oddzielne flagi USE włączą wsparcie dla X, ale jedna nie jest zależna od
 drugiej. W tym przypadku, trzeba będzie powielić sekcję zależności wsparcia dla
-X lub zdefiniować w innym miejcu jako ${X_DEPEND}. Jeśli definiujemy ją w innym 
-miejcu, należy pamiętać by dołączyć również sekcje specyficzne dla każdej z flag
+X lub zdefiniować w innym miejscu jako ${X_DEPEND}. Jeśli definiujemy ją w innym 
+miejscu, należy pamiętać by dołączyć również sekcje specyficzne dla każdej z flag
 USE.
 </note>
 
@@ -207,9 +235,18 @@ monolitycznego X. By prawidłowo móc je spełnić, odrzucamy starą formę
 deklarowania virtual/x11.
 </p>
 
+<p>
+Na początek przenoszenie aplikacji na nowy system jest jedynie wymagane dla
+użytkowników korzystających z niestabilnej gałęzi drzewa Portage (~arch) i
+nowszej (KEYWORDS=-* lub package.mask). Opiekunowie pojedynczych pakietów mogą
+wybierać, czy pozbyć się niewspieranych ebuildów z drzewa portage, ale
+najprawdopodobniej będą chcieli przenieść wszystkie swoje ebuildy naraz.
+</p>
+
+
 <impo>
 To pozwoli użytkownikom korzystającym z gałęzi eksperymentalnej portage na
-bezproblemową instalację modularnego X, a osobom korzystającyh ze stabilnej
+bezproblemową instalację modularnego X, a osobom korzystających ze stabilnej
 wciąż mieć virtual/x11.
 </impo>
 
@@ -222,12 +259,18 @@ wciąż mieć virtual/x11.
 <section>
 <body>
 
+<p>Wiele osób ma wyłączoną flagę xinerama. Jednakże, jeśli uruchomimy
+<c>included_headers.sh</c>, x11-proto/xineramaproto zostanie pokazane jako
+zależność. Dodajemy wówczas ten pakiet do DEPEND zasłonięte USE flagą xinerama i
+dodajemy x11-libs/libXinerama do RDEPEND, także z flagą xinerama.
+</p>
+
 <p>
 Caleb zadał dobre pytanie: jak radzić sobie z flagami USE w pakietach, które
 mają ogromną ilość opcjonalnych bibliotek X? W wielu przypadkach ma sens
 wymuszanie włączenia lub też niewłączania flag. Można to sobie ułatwić,
 grupując flagi.  Należy upewnić się, że nazwa flagi bierze się od funkcji jaką
-wprowadzają, a nie od nazw biblitek czy też pakietów, z których będą korzystać.
+wprowadzają, a nie od nazw bibliotek czy też pakietów, z których będą korzystać.
 </p>
 
 </body>
