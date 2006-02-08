@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.82 2005/12/09 14:47:09 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.83 2006/02/08 19:58:44 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -578,9 +578,13 @@ class InstallProfile:
 	def get_install_package_list(self):
 		install_package_list = { 
 			'Desktop': ("Popular Desktop Applications",
-				{"gaim": "GTK Instant Messenger client",
-				"gftp": "Gnome based FTP Client",
+				{"bittorrent": "tool for distributing files via a distributed network of nodes",
 				"evolution": "A GNOME groupware application, a Microsoft Outlook workalike",
+				"gaim": "GTK Instant Messenger client",
+				"gftp": "Gnome based FTP Client",
+				"gimp": "GNU Image Manipulation Program",
+				"inkscape": "A SVG based generic vector-drawing program",
+				"koffice": "An integrated office suite for KDE, the K Desktop Environment",
 				"mozilla": "The Mozilla Web Browser",
 				"mozilla-firefox": "The Mozilla Firefox Web Browser",
 				"mozilla-thunderbird": "Thunderbird Mail Client",
@@ -588,16 +592,26 @@ class InstallProfile:
 				"openoffice": "OpenOffice.org, a full office productivity suite.",
 				"openoffice-bin": "Same as OpenOffice but a binary package (no compiling!)",
 				"realplayer": "Real Media Player",
+				"rhythmbox": "Music management and playback software for GNOME",
+				"vlc": "VLC media player - Video player and streamer",
 				"xchat": "Graphical IRC Client",
+				"xine-ui": "Xine movie player",
 				"xmms": "X MultiMedia System"  }),
 			'Servers': ("Applications often found on servers.",
 				{"apache": "Apache Web Server",
+				"cups": "The Common Unix Printing System",
+				"exim": "A highly configurable, drop-in replacement for sendmail",
 				"iptables": "Linux kernel (2.4+) firewall, NAT and packet mangling tools",
+				"mod_php": "Apache module for PHP",
+				"mysql": "A fast, multi-threaded, multi-user SQL database server",
+				"postfix": "A fast and secure drop-in replacement for sendmail",
+				"postgresql": "sophisticated Object-Relational DBMS",
 				"proftpd": "ProFTP Server",
 				"samba": "SAMBA client/server programs for UNIX",
+				"sendmail": "Widely-used Mail Transport Agent (MTA)",
 				"traceroute": "Utility to trace the route of IP packets"  }),
 			'X11': ("Window managers and X selection.", 
-				{"xorg-x11": "An X11 implementation maintained by the X.Org Foundation.",
+				{"xorg-x11": "An X11 implementation maintained by the X.Org Foundation",
 				"gnome": "The Gnome Desktop Environment",
 				"kde": "The K Desktop Environment",
 				"blackbox": "A small, fast, full-featured window manager for X",
@@ -605,17 +619,27 @@ class InstallProfile:
 				"fluxbox": "Fluxbox is an X11 window manager featuring tabs and an iconbar",
 				"xfce4": "XFCE Desktop Environment"  }),
 			'Misc': ("Miscellaneous Applications you may want.",
-				{"gkrellm": "Single process stack of various system monitors",
+				{"emacs": "An incredibly powerful, extensible text editor",
+				"ethereal": "A commercial-quality network protocol analyzer",
+				"gkrellm": "Single process stack of various system monitors",
+				"gvim": "GUI version of the Vim text editor",
+				"keychain": "ssh-agent manager",
 				"logrotate": "Rotates, compresses, and mails system logs",
+				"ntp": "Network Time Protocol suite/programs",
+				"rdesktop": "A Remote Desktop Protocol Client",
 				"slocate": "Secure way to index and quickly search for files on your system",
-				"ufed": "Gentoo Linux USE flags editor"  }),
+				"ufed": "Gentoo Linux USE flags editor",
+				"vim": "Vim, an improved vi-style text editor" }),
 			'Recommended': ("Applications recommended by the GLI Team.",
 				{"anjuta": "A versatile IDE for GNOME",
 				"chkrootkit": "a tool to locally check for signs of a rootkit",
 				"crack-attack": "Addictive OpenGL-based block game",
+				"gnupg": "The GNU Privacy Guard, a GPL pgp replacement",
+				"net-snmp": "Software for generating and retrieving SNMP data",
 				"netcat": "the network swiss army knife",
 				"nmap": "A utility for network exploration or security auditing",
-				"screen": "full-screen window manager that multiplexes between several processes"  })
+				"screen": "full-screen window manager that multiplexes between several processes",
+				"xpdf": "An X Viewer for PDF Files" })
 		}
 		return install_package_list
 
