@@ -11,6 +11,14 @@ from gettext import gettext as _
 class Panel(GLIScreen.GLIScreen):
 
 	title = _("Startup Services")
+	_helptext = """
+<b><u>Startup Services</u></b>
+
+If you installed gnome, kde, or another graphical desktop, be sure to select xdm
+if you want to startup into your graphical environment.  
+
+sshd is also a recommended service already installed in the base system.
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

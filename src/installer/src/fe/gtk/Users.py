@@ -24,6 +24,49 @@ class Panel(GLIScreen.GLIScreen):
 	users = []
 	current_users=[]
 	root_verified = False
+	_helptext = """
+<b><u>Users</u></b>
+
+Start off by setting the root password.  This will be the root password on the
+newly-installed system, *NOT* the Livecd. Type it again to verify, and then
+click the Verify button to check your typing.
+
+Once you have clicked Verify you can then click Add user to add a normal user.
+
+Adding a User for Daily Use:
+
+Working as root on a Unix/Linux system is dangerous and should be avoided as
+much as possible. Therefore it is strongly recommended to add a user for
+day-to-day use.
+
+Enter the username and password in respective boxes.  Make sure to type your
+password carefully, it is not verified. All other fields are optional, but
+setting groups is highly recommended.
+
+The groups the user is member of define what activities the user can perform.
+The following table lists a number of important groups you might wish to use:
+
+<u>Group</u> 		<u>Description</u>
+audio 		be able to access the audio devices
+cdrom 		be able to directly access optical devices
+floppy 		be able to directly access floppy devices
+games 		be able to play games
+portage 	be able to use emerge --pretend as a normal user
+usb 		be able to access USB devices
+plugdev 	Be able to mount and use pluggable devices such as cameras and USB sticks
+video 		be able to access video capturing hardware and doing hardware acceleration
+wheel 		be able to use su
+
+Enter them in a comma-separated list in the groups box.
+
+Optinally you may also specify the user's shell.  The default is /bin/bash.  If
+you want to disable the user from logging in you can set it to /bin/false. You
+can also specify the user's home directory (default is /home/username), userid
+(default is the next available ID), and a comment describing the user.
+
+Make sure to click Accept Changes to save the changes to your user.  They will
+then show up in the list.
+"""
 	
 	def __init__(self,controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

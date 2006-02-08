@@ -17,6 +17,24 @@ class Panel(GLIScreen.GLIScreen):
 	"""
 	# Attributes:
 	title="Do you need any extra packages?"
+	_helptext = """
+<b><u>Extra Packages</u></b>
+
+Packages available via GRP (pre-compiled binaries on the livecd that get copied
+over) are labeled with (GRP), and include all of their dependencies.  For
+instance gnome (GRP) includes all of gnome, including xorg-x11.  Fluxbox,
+however, is not available in GRP and must be compiled.  The list of packages is
+very limited, as Portage has a vast list of available packages.  If you have
+packages you need to install in addition to the list, enter them in a space
+separated list in the text field.  The installer is designed to get you a system
+capable of booting into a graphical environment, not install every single
+package you will ever use.  That would just massively increase the changes of a
+failed package ruining your installation.
+
+If you choose a graphical desktop such as gnome, kde, or fluxbox, be sure to
+choose xdm from the startup services and to set your Display Manager (and/or
+XSession for fluxbox) in the Other Settings screen.
+"""
 	
 	# list of packages to emerge from the checked off items.
 	checked_items = []

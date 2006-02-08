@@ -20,6 +20,16 @@ class Panel(GLIScreen.GLIScreen):
 	"""
 	# Attributes:
 	title="Timezone"
+	_helptext = """
+Timezone:
+You're joking right?  Pick your timezone, or pick UTC. If you dual-boot with
+Windows you'll want to choose your local timezone. If your BIOS clock is set to
+local time you'll also want to chosoe your local timezone.
+
+If you choose a local timezone, you'll want to choose "local" for the clock
+setting later on in the Other Settings screen.
+"""
+
 	# Operations
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

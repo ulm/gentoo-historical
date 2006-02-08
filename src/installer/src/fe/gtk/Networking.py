@@ -22,6 +22,23 @@ class Panel(GLIScreen.GLIScreen):
 	"""
 	# Attributes:
 	title="Networking Settings"
+	_helptext = """
+<b><u>Networking</u></b>
+
+If you previously set up a network interface in the Pre-install Configuration
+screen, it should show up configured again in the Device list.
+
+All detected interfaces should show up in the list, but you also have the option
+to type in your own interface. Once you select an interface, select DHCP or
+Static Configuration.  Then once you have set your network settings make sure to
+click Save to add the interface to the list.
+
+Wireless support currently is unavailable, but coming soon!  We even have the
+boxes for it all ready to go.
+
+Don't forget to set a hostname and domain name in the
+"Hostname / Proxy Information / Other" tab!
+"""
 	
 	# Operations
 	def __init__(self, controller):

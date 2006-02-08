@@ -18,6 +18,37 @@ class Panel(GLIScreen.GLIScreen):
 	"""
 	# Attributes:
 	#title="Other Settings"
+	_helptext = """
+<b><u>Other Settings</u></b>
+
+Display Manager:
+If you installed gnome, choose gdm. If you installed kde, choose kdm. If you
+installed anything else specified in XSession, choose xdm.
+
+Console Font:
+You probably don't want to mess with this.
+
+Extended Keymaps:
+You probably don't want to mess with this.
+
+Windowkeys:
+If installing on x86 you are safe with Yes, otherwise you'll probably want to
+say No.
+
+Keymap:
+This defaults to "us" if not set (recommended).  If you don't want an English
+keymap, choose it from the list.
+
+XSession:
+Choose this only if you didn't choose gdm or kdm from the Display Manager list.
+
+Clock:
+If you chose a local timezone, you'll want to choose "local" for the clock
+setting. Otherwise if you chose UTC in the Timezone screen, choose UTC here.
+
+Default Editor:
+Pick one.  Nano is the default and recommended.
+"""
 	
 	# Operations
 	def __init__(self, controller):

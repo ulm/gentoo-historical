@@ -16,6 +16,32 @@ class Panel(GLIScreen.GLIScreen):
 	           ("hardened-sources", "These are the vanilla sources patched with the hardened patchset. This results in a more secure system. Do not use these unless you have read the hardened guide first."),
 	           ("grsec-sources", "These are the vanilla sources patched with the grsecurity patchset. Do not use these unless you wear a tinfoil hat and think the government is out to get you."),
 	           ("livecd-kernel", "This will install the LiveCD's kernel/initrd into your new system. Use this option to get your system up and running quickly. You should not tell the installer to emerge any packages that require kernel sources as they won't be present.")]
+	_helptext = """
+<b><u>Choosing a Kernel</u></b>
+
+The core around which all distributions are built is the Linux kernel. It is the
+layer between the user programs and your system hardware. Gentoo provides its
+users several possible kernel sources. A full listing with description is
+available at the Gentoo Kernel Guide at
+http://www.gentoo.org/doc/en/gentoo-kernel.xml.
+
+For x86-based systems we have, amongst other kernels, vanilla-sources (the
+default kernel source as developed by the linux-kernel developers), 
+gentoo-sources (kernel source patched with performance-enhancing features) (less
+stable), 
+ 
+livecd-kernel:  This will copy the currently running kernel over to the new
+system, just as if genkernel had created your kernel.  This is generally
+recommended since it is much faster than genkernel and just as good, except that
+once your system is installed you will eventually need to recreate a kernel
+again.
+
+If you're not concerned about time, select vanilla-sources or gentoo-sources if
+you're feeling lucky.
+
+For non-livecd-kernel sources, selecting Enable Bootsplash gives you a colorful
+background image in a frame buffer.
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

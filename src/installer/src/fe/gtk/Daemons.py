@@ -13,6 +13,45 @@ class Panel(GLIScreen.GLIScreen):
 	active_selection_logger = None
 	cron_daemons = {}
 	log_daemons = {}
+	_helptext = """
+<b><u>Daemons</u></b>
+
+System Logger:
+
+Some tools are missing from the stage3 archive because several packages provide
+the same functionality. 
+
+Unix and Linux have an excellent history of logging capabilities -- if you want
+you can log everything that happens on your system in logfiles. This happens
+through the system logger.
+
+Gentoo offers several system loggers to choose from. There are sysklogd, which
+is the traditional set of system logging daemons, syslog-ng, an advanced system
+logger, and metalog which is a highly-configurable system logger. Others might
+be available through Portage as well - our number of available packages
+increases on a daily basis.
+
+If you plan on using sysklogd or syslog-ng you might want to install logrotate
+afterwards as those system loggers don't provide any rotation mechanism for the
+log files.
+
+Syslog-ng is provided by GRP and is the default, though the others are just as
+good.
+
+Cron Daemon:
+
+Although it is optional and not required for your system, it is wise to install
+one. But what is a cron daemon? A cron daemon executes scheduled commands. It is
+very handy if you need to execute some command regularly (for instance daily,
+weekly or monthly).
+
+Gentoo offers three possible cron daemons: dcron, fcron and vixie-cron.
+Installing one of them is similar to installing a system logger. However, dcron
+and fcron require an extra configuration command, namely crontab /etc/crontab.
+If you don't know what to choose, use vixie-cron.
+
+Vixie-cron is provided by GRP and is the recommended default. 
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

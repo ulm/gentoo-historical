@@ -13,6 +13,25 @@ class Panel(GLIScreen.GLIScreen):
 	active_selection = None
 	install_in_mbr = True
 	boot_loaders = {}
+	_helptext = """
+<b><u>Bootloader</u></b>
+
+The bootloaders available depend on the architecture to be installed. For x86,
+the two bootloaders available are grub and lilo.  In amd64, only grub is
+available. Gentoo recommends grub.
+
+For those who still like lilo, it is available.  Lilo will also detect windows
+partitions (this support for grub coming soon).
+
+You almost always will want to check the Install in MBR option, unless you do
+not want your system to be bootable using your bootloader.
+
+Set the boot drive to whatever hard drive is set to boot first on your computer.
+
+If you have any extra kernel parameters you want to add, such as "doscsi", enter
+them in the textbox.  Possible parameters can be found in the Handbook.  Usually
+you will just leave this blank.
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)

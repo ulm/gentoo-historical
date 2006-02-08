@@ -16,6 +16,24 @@ class Panel(GLIScreen.GLIScreen):
 	"""
 	# Attributes:
 	title="Summary of Installation Options"
+	_helptext = """
+<b><u>Review</u></b>
+
+The review screen currently doesn't do anything.  This is still a work in
+progress, and is almost completed. If you want to review any of your settings
+you can use the back arrow and go to them. Otherwise, you have reached the point
+of no return. Click Install to begin the installation.  This is the point at
+which changes are made to your disk and your system will be completely installed
+without any user intervention necessary.  There will be an overall progress bar
+at the bottom as well as a sub-progress bar above it giving progress for that
+individual step.
+
+The log output is shown on the main tab, but compile output is also available in
+the Output tab.  If an installation fails, these tabs will usually contain the
+relevant error information necessary to provide to the developers when reporting
+a bug.
+"""
+
 	# Operations
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
