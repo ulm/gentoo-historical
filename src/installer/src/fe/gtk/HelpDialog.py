@@ -14,7 +14,7 @@ class HelpDialog(gtk.Window):
 
 		self.connect("delete_event", self.delete_event)
 		self.connect("destroy", self.destroy_event)
-		self.set_default_size(400,300)
+		self.set_default_size(500,400)
 #		self.set_resizable(True)
 		self.set_title("Gentoo Installer Help")
 

@@ -22,7 +22,7 @@ not, you need to set up your networking.
 Note: If you intend to use wireless to connect to the Internet from the Livecd,
 you will need to set up your connection before starting the installer.  See the
 Wireless Networking guide at
-http://www.gentoo.org/doc/en/handbook/handbook-x86.xml?part=4&chap=4
+http://www.gentoo.org/doc/en/handbook/handbook-x86.xml?part=4&amp;chap=4
 
 To connect to the Internet you will need to configure one network device,
 usually eth0.  In most cases you can select DHCP unless you have a specific IP
@@ -44,7 +44,7 @@ SSH:  If you want to start sshd to allow remote access to your machine during
 the installation, select Yes, otherwise No.  No is recommended since it is not
 necessary for an installation.
 
-Root password: This sets the root password for the <b>Livecd environment <u>only</u></b>.
+Root password: This sets the root password for the <i>Livecd environment <b>only</b></i>.
 If you chose Yes for SSH then you will need to enter a root password or you will
 not be able to login remotely.
 

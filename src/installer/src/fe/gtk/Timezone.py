@@ -21,7 +21,8 @@ class Panel(GLIScreen.GLIScreen):
 	# Attributes:
 	title="Timezone"
 	_helptext = """
-Timezone:
+<b><u>Timezone</u></b>
+
 You're joking right?  Pick your timezone, or pick UTC. If you dual-boot with
 Windows you'll want to choose your local timezone. If your BIOS clock is set to
 local time you'll also want to chosoe your local timezone.
