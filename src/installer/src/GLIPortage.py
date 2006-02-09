@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.37 2006/02/09 01:00:26 agaffney Exp $
+$Id: GLIPortage.py,v 1.38 2006/02/09 02:49:04 agaffney Exp $
 """
 
 import re
@@ -185,7 +185,14 @@ class GLIPortage(object):
 			return GLIUtility.spawn("portageq best_version / " + package, return_output=True)[1].strip()
 
 	def get_best_version_vdb_chroot(self, package):
-		return GLIUtility.spawn("portageq best_version / " + package, chroot=self._chroot_dir, return_output=True)[1].strip()
+		if package.startswith('='):
+			package = package[1:]
+			if GLIUtility.is_file(self._chroot_dir + "/var/db/pkg/" + package):
+				return package
+			else:
+				return ""
+		else:
+			return GLIUtility.spawn("portageq best_version / " + package, chroot=self._chroot_dir, return_output=True)[1].strip()
 
 #	def get_best_version_tree(self, package):
 #		return portage.best(tree.match(package))
