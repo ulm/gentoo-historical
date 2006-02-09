@@ -1,0 +1,216 @@
+GLEP: 47
+Title: Creating 'safe' environment variables
+Version: $Revision: 1.1 $
+Last-Modified: $Date: 2006/02/09 21:42:57 $
+Author:	Diego Pettenò, Fabian Groffen <{flameeyes,grobian}@gentoo.org>
+Status: Active
+Type: Standards Track
+Content-Type: text/x-rst
+Created: 14-Oct-2005
+Post-History:
+
+
+Credits
+=======
+
+The text of this GLEP is a result of a discussion and input of the
+following persons, in no particular order: Mike Frysinger, Diego
+Pettenò, Fabian Groffen and Finn Thain.
+
+
+Abstract
+========
+
+In order for ebuilds and eclasses to be able to make host specific
+decisions, it is necessary to have a number of environmental variables
+which allow for such decisions.  This GLEP introduces some measures that
+need to be made to make these decisions 'safe', by making sure the
+variables the decisions are based on are 'safe'.  A small overlap with
+GLEP 22 [1]_ is being handled in this GLEP where the use of 2-tuple
+keywords are being kept instead of 4-tuple keywords.  Additionally, the
+``ELIBC``, ``KERNEL`` and ``ARCH`` get auto filled starting from
+``CHOST`` and the 2-tuple keyword, instead of solely from they 4-tuple
+keyword as proposed in GLEP 22.
+   
+The destiny of the ``USERLAND`` variable is out of the scope of this
+GLEP.  Depending on its presence in the tree, it may be decided to set
+this variable the same way we propose to set ``ELIBC``, ``KERNEL`` and
+``ARCH``, or alternatively, e.g. via the profiles.
+
+
+Motivation
+==========
+
+The Gentoo/Alt project is in an emerging state to get ready to serve a
+plethora of 'alternative' configurations such as FreeBSD, NetBSD,
+DragonflyBSD, GNU/kFreeBSD, Mac OS X, (Open)Darwin, (Open)Solaris and so
+on.  As such, the project is in need for a better grip on the actual
+host being built on.  This information on the host environment is
+necessary to make proper (automated) decisions on settings that are
+highly dependant on the build environment, such as platform or as in
+[2]_.
+
+
+Rationale
+=========
+
+Gentoo's unique Portage system allows easy installation of applications
+from source packages.  Compiling sources is prone to many environmental
+settings and availability of certain tools.  Only recently the Gentoo
+for FreeBSD project has started, as second Gentoo project that operates
+on a foreign host operating system using foreign (non-GNU) C-libraries
+and userland utilities.  Such projects suffer from the current implicit
+assumption made within Gentoo Portage's ebuilds that there is a single
+type of operating system, C-libraries and system utilities.  In order to
+enable ebuilds -- and also eclasses -- to be aware of these
+environmental differences, information regarding it should be supplied.
+Since decisions based on this information can be vital, it is of high
+importance that this information can be trusted and the values can be
+considered 'safe' and correct.
+
+
+Backwards Compatibility
+=======================
+
+The proposed keywording scheme in this GLEP is fully compatible with the
+current situation of the portage tree, this in contrast to GLEP 22.  The
+variables provided by GLEP 22 can't be extracted from the new keyword,
+but since GLEP 22-style keywords aren't in the tree at the moment, that
+is not a problem.  The same information can be extracted from the CHOST
+variable, if necessary.  No modifications to ebuilds will have to be
+made.
+
+
+Specification
+=============
+
+Unlike GLEP 22 the current keyword scheme as used in practice is not
+changed.  Instead of proposing a 4-tuple [3]_ keyword, a 2-tuple
+keyword is chosen for archs that require them.  Archs for which a
+1-tuple keyword suffices, keep that keyword.  Since this doesn't change
+anything to the current situation in the tree, it is considered to be a
+big advantage over the 4-tuple keyword from GLEP 22.  This GLEP is an
+official specification of the syntax of the keyword.
+
+Keywords will consist out of two parts separated by a hyphen ('-').  The
+left hand part of the keyword 2-tuple is the architecture, such as
+ppc64, sparc and x86.  The right hand part indicates the operating
+system or distribution, such as linux, macos, darwin, obsd, etc.  If the
+right hand part is omitted, it implies the operating system/distribution
+type is GNU/Linux.  In such case the hyphen is also omitted.  Examples
+of such keywords are ppc-darwin and x86.  This is fully compatible with
+the current keywords used in the tree.
+
+The variables ``ELIBC``, ``KERNEL`` and ``ARCH`` are currently set in
+the profiles when other than their defaults for a GNU/Linux system.
+They can as such easily be overridden and defined by the user.  To
+prevent this from happening, the variables should be auto filled by
+Portage itself, based on the ``CHOST`` variable.
+
+A map file can be used to have the various ``CHOST`` values being
+translated to the correct values for the four variables.  This change is
+invisible for ebuilds and eclasses, but allows to rely on these
+variables as they are based on a 'safe' value -- the ``CHOST`` variable.
+Ebuilds should not be sensitive to the keyword value, but use the
+aforementioned four variables instead.  They allow specific tests for
+properties.  If this is undesirable, the full ``CHOST`` variable can be
+used to match a complete operating system.
+
+Current USE-expansion is being maintained, for backwards compatibility.
+Since the expansion is based on the variables mentioned above which do
+not change, but only in the way they are generated, there should be no
+problem in maintaining them.
+
+
+Variables
+---------
+
+The ``ELIBC``, ``KERNEL``, ``ARCH`` variables are filled from a profile
+file.  The file can be overlaid, such that the following entries in the
+map file (on the left of the arrow) will result in the assigned
+variables on the right hand side of the arrow:
+
+::
+
+    *-*-linux-*      -> KERNEL="linux"  
+    *-*-*-gnu        -> ELIBC="glibc"
+    *-*-kfreebsd-gnu -> KERNEL="FreeBSD" ELIBC="glibc"
+    *-*-freebsd*     -> KERNEL="FreeBSD" ELIBC="FreeBSD"
+    *-*-darwin*      -> KERNEL="Darwin" ELIBC="Darwin"
+    *-*-netbsd*      -> KERNEL="NetBSD" ELIBC="NetBSD"
+    *-*-solaris*     -> KERNEL="Solaris" ELIBC="Solaris"
+
+A way to achieve this is proposed by Mike Frysinger [4]_, which
+suggests to have a env-map file, for instance filled with:
+
+::
+
+    % cat env-map
+    *-linux-* KERNEL=linux
+    *-gnu ELIBC=glibc
+    x86_64-* ARCH=amd64
+
+then the following bash script can be used to set the four variables to
+their correct values:
+
+::
+
+    % cat readmap 
+    #!/bin/bash 
+    
+    CBUILD=${CBUILD:-${CHOST=${CHOST:-$1}}} 
+    [[ -z ${CHOST} ]] && echo need chost 
+    
+    unset KERNEL ELIBC ARCH 
+    
+    while read LINE ; do 
+        set -- ${LINE} 
+        targ=$1 
+        shift 
+        [[ ${CBUILD} == ${targ} ]] && eval $@ 
+    done < env-map 
+    
+    echo ARCH=${ARCH} KERNEL=${KERNEL} ELIBC=${ELIBC}
+
+Given the example env-map file, this script would result in:
+
+::
+
+    % ./readmap x86_64-pc-linux-gnu 
+    ARCH=amd64 KERNEL=linux ELIBC=glibc
+
+It should be noted, however, that the bash script is a proof of concept
+implementation.  It cannot be used as Portage will need this
+information, which is written in Python.  Hence, an equivalent of this
+bash script should be written in Python to be able to use it within
+Portage.  This is considered to be a non-issue coding wise.
+
+
+References
+==========
+
+.. [1] GLEP 22, New "keyword" system to incorporate various
+   userlands/kernels/archs, Goodyear,
+   (http://glep.gentoo.org/glep-0022.html)
+
+.. [2] For example in the perl ebuild, it is necessary to
+   fill in the C-library part, which on a FreeBSD system is other than
+   on a Linux system and currently is handled as follows:
+   ::
+   
+   [[ ${ELIBC} == "FreeBSD" ]] && myconf="${myconf} -Dlibc=/usr/lib/libc.a"
+
+.. [3] For the purpose of readability, we will refer to 1, 2 and
+   4-tuples, even though tuple in itself suggest a field consisting of
+   two values.  For clarity: a 1-tuple describes a single value field,
+   while a 4-tuple decribes a field consisting out of four values.
+
+.. [4] mailto:vapier [at) gentoo .dot org
+
+
+
+Copyright
+=========
+
+This document has been placed in the public domain.
+
