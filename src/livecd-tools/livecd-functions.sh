@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.19 2006/01/26 22:49:18 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.20 2006/02/09 19:25:05 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -374,9 +374,9 @@ livecd_fix_inittab() {
 		fi
 
 		# SPARC serial port A, HPPA mux / serial
-		if [ -c "/dev/tts/0" ]
+		if [ -c "/dev/ttyS0" ]
 		then
-			LIVECD_CONSOLE_BAUD=$(stty -F /dev/tts/0 speed)
+			LIVECD_CONSOLE_BAUD=$(stty -F /dev/ttyS0 speed)
 			echo "s0:12345:respawn:/sbin/agetty -nl /bin/bashlogin ${LIVECD_CONSOLE_BAUD} ttyS0 vt100" >> /etc/inittab
 		fi
 		# HPPA software PDC console (K-models)
