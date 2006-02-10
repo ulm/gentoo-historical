@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.98 2006/02/10 03:02:06 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.99 2006/02/10 23:37:31 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -295,8 +295,14 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			for part in new_part_list:
 				newpart = parts_new[device][part]
 				self._logger.log("  Partition " + str(part) + " has " + str(newpart['mb']) + "MB")
-				part_sectors = long(newpart['mb']) * MEGABYTE / 512
-				end = start + part_sectors
+				if newpart['start']:
+					start = newpart['start']
+				if newpart['end']:
+					end = newpart['end']
+				else:
+					part_sectors = long(newpart['mb']) * MEGABYTE / 512
+					end = start + part_sectors
+				# Make sure end doesn't overlap next partition's existing start sector
 				for i in new_part_list:
 					if i <= part: continue
 					if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
