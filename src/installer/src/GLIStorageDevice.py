@@ -636,6 +636,17 @@ class Partition:
 		return self._mountopts
 
 	##
+	# Set whether to format the partition
+	# @param format Format this partition (True/False)
+	def set_format(self, format):
+		self._format = format
+
+	##
+	# Returns whether to format the partition
+	def get_format(self):
+		return self._format
+
+	##
 	# Returns whether to partition is resized
 	def get_resized(self):
 		return self._resized
