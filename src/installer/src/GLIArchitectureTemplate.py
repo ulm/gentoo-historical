@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.261 2006/02/09 23:49:01 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.262 2006/02/10 04:00:20 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -270,6 +270,11 @@ class ArchitectureTemplate:
 			GLIUtility.spawn("cp /etc/make.conf " + self._chroot_dir + "/etc/make.conf")
 			GLIUtility.spawn("ln -s `readlink /etc/make.profile` " + self._chroot_dir + "/etc/make.profile")
 			GLIUtility.spawn("cp -f /etc/inittab.old " + self._chroot_dir + "/etc/inittab")
+
+			# Nasty, nasty, nasty hack because vapier is a tool
+			for tmpfile in ("/etc/passwd", "/etc/group", "/etc/shadow"):
+				GLIUtility.spawn("grep -ve '^gentoo' " + tmpfile + " > " + self._chroot_dir + tmpfile)
+
 			chrootscript = r"""
 			#!/bin/bash
 
