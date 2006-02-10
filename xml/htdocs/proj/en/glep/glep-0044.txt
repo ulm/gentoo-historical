@@ -1,7 +1,7 @@
 GLEP: 44
 Title: Manifest2 format
-Version: $Revision: 1.3 $
-Last-Modified: $Date: 2006/01/23 10:24:24 $
+Version: $Revision: 1.4 $
+Last-Modified: $Date: 2006/02/10 23:26:55 $
 Author:	Marius Mauch <genone@gentoo.org>,
 Status: Draft
 Type: Standards Track
@@ -41,15 +41,15 @@ The new Manifest format would change the existing format in the following ways:
 
 - Addition of a filetype specifier, currently planned are
 
-  * ``AUXFILE`` for files directly used by ebuilds (e.g. patches or initscripts),
+  * ``AUX`` for files directly used by ebuilds (e.g. patches or initscripts),
     located in the ``files/`` subdirectory
 
   * ``EBUILD`` for all ebuilds
 
-  * ``MISCFILE`` for files not directly used by ebuilds like ``ChangeLog`` or
+  * ``MISC`` for files not directly used by ebuilds like ``ChangeLog`` or
     ``metadata.xml`` files
 
-  * ``DISTFILE`` for release tarballs recorded in the ``SRC_URI`` variable of an ebuild,
+  * ``DIST`` for release tarballs recorded in the ``SRC_URI`` variable of an ebuild,
     these were previously recorded in the digest files
 
   Future portage improvements might extend this list (for example with types 
@@ -69,31 +69,9 @@ Each line in the new format has the following format:
 
 However theses entries will be stored in the existing Manifest files.
 
-An actual example for a (pure) Manifest2 file could look like this (using 
-indentation to indicate line continuation):  
+An `actual example`__ for a (pure) Manifest2 file..
 
-::
-
-	AUXFILE ldif-buffer-overflow-fix.diff 5007 RMD160 1354a6bd2687430b628b78aaf43f5c793d2f0704 
-		SHA1 424e1dfca06488f605b9611160020227ecdd03ac MD5 06d23c04b3d6ddfb1431c22ecc5b28f6
-	AUXFILE procmime.patch 977 RMD160 39a51a4d654759b15d1644a79fb6e8921130df3c 
-		SHA1 d76929f6dfc2179281f7ccee5789aab4e970ba9e MD5 bf4c9cd9cb7cdc6ece7d4d327910f0cf
-	EBUILD sylpheed-claws-1.0.5-r1.ebuild 3906 RMD160 cdd546c128db2dea7044437de01ec96e12b4f5bf 
-		SHA1 a84b49e76961d7a9100852b64c2bfbf9b053d45e MD5 b9fe79135a475458ef1b2240ee302ebd
-	EBUILD sylpheed-claws-1.9.100.ebuild 4444 RMD160 89326038bfc694dafd22f10400a08d3f930fb2bd 
-		SHA1 8895342f3f0cc6fcbdd0fdada2ad8e23ce539d23 MD5 0643de736b42d8c0e1673e86ae0b7f80
-	EBUILD sylpheed-claws-1.9.15.ebuild 4821 RMD160 ec0ff811b893084459fe5b17b8ba8d6b35a55687 
-		SHA1 358278a43da244e1f4803ec4b04d6fa45c41ab4d MD5 15b5c9348ba0b0a416892588256b4cbc
-	MISCFILE ChangeLog 25770 RMD160 0e69dd7425add1560d630dd3367342418e9be776 
-		SHA1 1210160f7baf0319de3b1b58dc80d7680d316d28 MD5 732cdc3b41403a115970d497a9ec257e
-	MISCFILE metadata.xml 269 RMD160 39d775de55f9963f8946feaf088aa0324770bacb 
-		SHA1 4fd7b285049d0e587f89e86becf06c0fd77bae6d MD5 82e806ed62f0596fb7bef493d225712f
-	DISTFILE sylpheed-claws-1.0.5.tar.bz2 3268626 RMD160 f2708b5d69bc9a5025812511fde04eca7782e367 
-		SHA1 d351d7043eef7a875df18a8c4b9464be49e2164b MD5 ef4a1a7beb407dc7c31b4799bc48f12e
-	DISTFILE sylpheed-claws-1.9.100.tar.bz2 3480063 RMD160 72fbcbcc05d966f34897efcc1c96377420dc5544 
-		SHA1 47465662b5470af5711493ce4eaad764c5bf02ca MD5 863c314557f90f17c2f6d6a0ab57e6c2
-	DISTFILE sylpheed-claws-1.9.15.tar.bz2 3481018 RMD160 b01d1af2df55806a8a8275102b10e389e0d98e94 
-		SHA1 a17fc64b8dcc5b56432e5beb5c826913cb3ad79e MD5 0d187526e0eca23b87ffa4981f7e1765
+.. __: glep-0044-extras/manifest2-example
 
 
 Compability Entries
@@ -122,6 +100,18 @@ might be coupled).
 Also while multiple hash functions will become standard with the proposed
 implementation they are not a specific feature of this format [#multi-hash-thread]_.
 
+Number of hashes
+----------------
+
+While using multiple hashes for each file is a major feature of this proposal
+we have to make sure that the number of hashes listed is limited to avoid
+an explosion of the Manifest size that would revert the main benefit of this proposal
+(reduzing tree size). Therefore the number of hashes that will be generated
+will be limited to three different hash functions. For compability though we 
+have to rely on at least one hash function to always be present, this proposal
+suggest to use SHA1 for this purpose (as it is supposed to be more secure than MD5
+and currently only SHA1 and MD5 are directly available in python, also MD5 doesn't
+have any benefit in terms of compability).
 
 Rationale
 =========
@@ -163,7 +153,7 @@ use, but expected to change soon (see [#multi-hash-thread]_).
 Removal of checksum collisions
 ------------------------------
 
-The current system theoretically allows for a ``DISTFILE`` type file to be recorded 
+The current system theoretically allows for a ``DIST`` type file to be recorded 
 in multiple digest files with different sizes and/or checksums. In such a case
 one version of a package would report a checksum violation while another one 
 would not. This could create confusion and uncertainity among users.
@@ -175,22 +165,22 @@ Flexible verification system
 ----------------------------
 
 Right now portage verifies the checksum of every file listed in the Manifest
-before using any file of the package and all ``DISTFILE`` files of an ebuild 
+before using any file of the package and all ``DIST`` files of an ebuild 
 before using that ebuild. This is unnecessary in many cases:
 
 - During the "depend" phase (when the ebuild metadata is generated) only 
   files of type ``EBUILD`` are used, so verifying the other types isn't
   necessary. Theoretically it is possible for an ebuild to include other
-  files like those of type ``AUXFILE`` at this phase, but that would be a
+  files like those of type ``AUX`` at this phase, but that would be a
   major QA violation and should never occur, so it can be ignored here.
   It is also not a security concern as the ebuild is verified before parsing
   it, so each manipulation would show up.
 
-- Generally files of type ``MISCFILE`` don't need to be verified as they are 
+- Generally files of type ``MISC`` don't need to be verified as they are 
   only used in very specific situations, aren't executed (just parsed at most)
   and don't affect the package build process.
 
-- Files of type ``DISTFILE`` only need to be verified directly after fetching and
+- Files of type ``DIST`` only need to be verified directly after fetching and
   before unpacking them (which often will be one step), not every time their 
   associated ebuild is used.
 
@@ -292,11 +282,11 @@ yet for various reasons:
   like any other checksum. But so far no real benefit (other than a slightly 
   more modular implementation) for this has been seen while it has several 
   drawbacks: For once, unlike checksums, the size field is definitely required
-  for all ``DISTFILE`` files, also it would slightly increase the length of 
+  for all ``DIST`` files, also it would slightly increase the length of 
   each entry by adding a ``SIZE`` keyword.
 
-- removal of the ``MISCFILE`` type: It has been suggested to completely drop
-  entries of type ``MISCFILE``. This would result in a minor space reduction
+- removal of the ``MISC`` type: It has been suggested to completely drop
+  entries of type ``MISC``. This would result in a minor space reduction
   (its rather unlikely to free any blocks) but completely remove the ability
   to check these files for integrity. While they don't influence portage 
   or packages directly they can contain viable information for users, so
@@ -326,6 +316,8 @@ References
    and official Gentoo keyring", Message-ID <20051117075838.GB15734@curie-int.vc.shawcable.net>
 
 .. [#manifest2-patch] http://thread.gmane.org/gmane.linux.gentoo.portage.devel/1374
+
+.. [#manifest2-example] http://www.gentoo.org/proj/en/glep/glep-0044-extras/manifest2-example
 
 Copyright
 =========
