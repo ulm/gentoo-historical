@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/uml.xml,v 1.7 2005/10/13 11:27:58 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/uml.xml,v 1.8 2006/02/10 21:36:58 so Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -23,6 +23,9 @@
 <author title="Revisione">
  <mail link="posta@massimo.biz">Massimo Canali</mail>
 </author>
+<author title="Traduzione">
+  <mail link="cristiano.chiucchiolo@gmail.com">Cristiano Chiucchiolo</mail>
+</author>
 
 
 <abstract>
@@ -34,8 +37,8 @@ user-mode per testare cambiamenti potenzialmente dannosi per il sistema.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.11</version>
-<date>2005-02-05</date>
+<version>0.13</version>
+<date>2005-12-16</date>
 
 <chapter>
 <title>Ottenere le sorgenti per i Linux User-Mode</title>
@@ -57,18 +60,28 @@ possibili danni causati al sistema principale.
 </p>
 
 <p>
-L'installazione dei Linux user-mode è essenzialmente identica alla normale
-installazione di un kernel. Prima si devono installare le sorgenti del kernel
-(adeguatamente corrette per i Linux user-mode), e poi si configura il kernel
-nella maniera usuale. Dalla versione 2.6.9 del kernel, i Linux User-Mode sono
-stati integrati nel kernel 'vanilla'.
+La maggior parte dei kernel 2.6 hanno il supporto UML. Sebbene si possano
+usare i sorgenti del kernel attuali, potrebbe essere più saggio mantenere
+separati gli alberi del kernel UML. Dopotutto, compilerai un nuovo kernel,
+con una diversa configurazione, e potresti voler avere diversi sistemi sul
+tuo sistema Linux principale (più di un kernel UML).
 </p>
 
-<pre caption="Installare i sorgenti del kernel UML">
-<comment>(Installeremo il kernel 2.6 'vanilla' ma puoi usare anche le
-usermode-sources)</comment>
-# <i>emerge sys-kernel/usermode-sources</i>
-# <i>cd /usr/src/uml/linux</i>
+<p>
+Dunque, scarica un buon albero del kernel (come il vanilla, da <uri
+link="http://www.kernel.org">kernel.org</uri>) ed estrailo in una cartella di
+sviluppo.
+</p>
+
+<p>
+Poi, configura il kernel UML come faresti per qualunque altro sistema, ma
+aggiungi <e>ARCH=um</e>, cosicché il software di compilazione del kernel
+sappia che il kernel sarà destinato a girare come processo ospite sul sistema
+principale.
+</p>
+
+<pre caption="Compilare il kernel UML">
+# <i>cd /srv/aegis/src/uml-linux</i>
 # <i>make menuconfig <comment>ARCH=um</comment></i>
 # <i>make linux <comment>ARCH=um</comment></i>
 # <i>cp linux /usr/local/bin/linux</i>
@@ -168,16 +181,16 @@ Continuate e alla fine smontate il file .iso. Ora non vi serve null'altro.
 </p>
 
 <p>
-Eseguite il bootstrap e create il sistema come al solito. Dovete soltanto
-seguire le istruzioni dell'installazione.
+Create il sistema come al solito: eseguite il chroot in
+<path>/mnt/gentoo</path> e seguite le istruzioni dell'installazione.
 </p>
 
 <p>
 Aggiungete qualsiasi pacchetto che desiderate. Se volete, date pure un hostname
 al vostro sistema virtuale. In <path>/etc/fstab</path> fate in modo che
-<path>/dev/ROOT</path> sia <path>/dev/ubd/0</path> il tipo di fs può essere
+<path>/dev/ROOT</path> sia <path>/dev/ubda</path> il tipo di fs può essere
 ext2, ext3 o reiserfs. Impostate <path>/dev/SWAP</path> a
-<path>/dev/ubd/1</path> e commentate <path>/dev/BOOT</path>.
+<path>/dev/ubdb</path> e commentate <path>/dev/BOOT</path>.
 </p>
 
 <p>
@@ -268,8 +281,9 @@ collegamento di rete dalla macchina virtuale al sistema ospitante.
 </chapter>
 
 <chapter>
-<title>Networking</title>
+<title>Reti</title>
 <section>
+<title>Usare una rete esistente</title>
 <body>
 
 <p>
@@ -355,6 +369,53 @@ valido (se necessario), ed eseguiamo un ping verso www.gentoo.org per
 assicurarci che la risoluzione dei nomi (e in generale l'accesso ad internet)
 sia funzionante dal nostro sistema nello user-mode. Adesso il sistema nello
 user-mode può fare <c>emerge</c> a volontà.
+</p>
+
+</body>
+</section>
+<section>
+<title>Usare una rete virtuale</title>
+<body>
+	
+<p>
+Prima che ti ecciti troppo, sappi che non si tratta di una rete privata
+virtuale. È una rete accessibile solo dai processi UML. Il pacchetto
+<c>usermode-utilities</c> contiene un tool chiamato <c>uml_switch</c>, che
+definisce gli end points dello switch.
+</p>
+
+<pre caption="Attivare gli end points di uno switch UML">
+<comment>(Se le informazioni di switch dovrebbero stare in primo piano:)</comment>
+$ <i>uml_switch -unix ~/tmp/switch.sock</i>
+
+<comment>(Se dovrebbero stare sullo sfondo:)</comment>
+$ <i>uml_switch -unix ~/tmp/switch.sock &amp;&gt;
+~/tmp/switch.log &amp;</i>
+ </pre>
+ 
+<p>
+Per avviare i processi UML sullo switch, esegui il seguente comando. La tua
+interfaccia di rete (virtuale) verrà connessa al processo <c>uml_switch</c> e
+userà il MAC address dato.
+</p>
+
+<pre caption="Eseguire il primo processo UML">
+$ <i>linux ubd0=first_rootfs ubd1=first_swapfs eth0=daemon,10:00:01:02:00:00,,~/tmp/switch.sock</i>
+</pre>
+
+<p>
+Puoi ancora connettere il sistema alla rete esistente, oppure collegare un
+secondo processo sia alla rete virtuale che a quella esistente:
+</p>
+
+<pre caption="Eseguire il secondo processo UML">
+$ <i>linux ubd0=second_rootfs ubd1=second_swapfs eth0=daemon,10:00:01:02:00:01,,~/tmp/switch.sock \
+eth1=tuntap,,,192.168.1.43</i>
+</pre>
+
+<p>
+Maggiori informazioni sulla configurazione di tuntap possono essere trovate
+nella sezione precedente.
 </p>
 
 </body>
