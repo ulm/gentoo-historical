@@ -111,7 +111,7 @@ class Device:
 			existing = False
 			if tmppart['origminor'] and not tmppart['format']:
 				existing = True
-			self._partitions[tmppart['minor']] = Partition(self, tmppart['minor'], tmppart['mb'], tmppart['start'], tmppart['end'], tmppart['type'], format=tmppart['format'], origminor=tmppart['origminor'], existing=existing, mountpoint=tmppart['mountpoint'], mountopts=tmppart['mountopts'], mkfsopts=tmppart['mkfsopts'])
+			self._partitions[tmppart['minor']] = Partition(self, tmppart['minor'], tmppart['mb'], tmppart['start'], tmppart['end'], tmppart['type'], format=tmppart['format'], origminor=tmppart['origminor'], existing=existing, mountpoint=tmppart['mountpoint'], mountopts=tmppart['mountopts'], mkfsopts=tmppart['mkfsopts'], resized=(existing and tmppart['resized']))
 
 	##
 	# Returns name of device (e.g. /dev/hda) being represented
@@ -330,7 +330,7 @@ class Device:
 		devdic = {}
 		for part in self._partitions:
 			tmppart = self._partitions[part]
-			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format(), 'mkfsopts': tmppart.get_mkfsopts(), 'start': 0, 'end': 0 }
+			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format(), 'mkfsopts': tmppart.get_mkfsopts(), 'start': 0, 'end': 0, 'resized': tmppart.get_resized() }
 		return devdic
 
 	##
@@ -424,6 +424,7 @@ class Partition:
 	_min_mb_for_resize = 0
 	_mb = ""
 	_mkfsopts = None
+	_resized = False
 	
 	##
 	# Initialization function for the Partition class
@@ -438,7 +439,7 @@ class Partition:
 	# @param mkfsopts='' Additional mkfs options
 	# @param format=True Format partition
 	# @param existing=False This partition exists on disk
-	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False, origminor=0, mkfsopts=''):
+	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False, origminor=0, mkfsopts='', resized=False):
 		self._device = device
 		self._minor = float(minor)
 		self._start = long(start)
@@ -451,6 +452,7 @@ class Partition:
 		self._orig_minor = origminor
 		self._mkfsopts = mkfsopts
 		self._resizeable = False
+		self._resized = resized
 		if type != "free":
 			if existing and not origminor:
 				self._orig_minor = self._minor
@@ -634,15 +636,9 @@ class Partition:
 		return self._mountopts
 
 	##
-	# Set whether to format the partition
-	# @param format Format this partition (True/False)
-	def set_format(self, format):
-		self._format = format
-
-	##
-	# Returns whether to format the partition
-	def get_format(self):
-		return self._format
+	# Returns whether to partition is resized
+	def get_resized(self):
+		return self._resized
 
 	##
 	# Returns whether the partition is resizeable
@@ -703,6 +699,7 @@ class Partition:
 			# Growing
 			self._device._partitions[free_minor]._mb = mb - self._mb
 			self._mb = mb
+		self._resized = True
 
 ##
 # Returns a list of detected partitionable devices

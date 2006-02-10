@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.38 2006/02/09 02:49:04 agaffney Exp $
+$Id: GLIPortage.py,v 1.39 2006/02/10 02:01:58 agaffney Exp $
 """
 
 import re
@@ -152,7 +152,8 @@ class GLIPortage(object):
 			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): no files for " + package + "...skipping copy from image dir to /")
 		else:
 			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying files from " + image_dir + " to / for " + package)
-			if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a " + self._chroot_dir + image_dir + "/* " + self._chroot_dir)):
+#			if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a " + self._chroot_dir + image_dir + "/* " + self._chroot_dir)):
+			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -C " + self._chroot_dir + image_dir + "/ -c . | tar -C " + self._chroot_dir + "/ -x")):
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy files from " + image_dir + " to / for " + package)
 
 		# Run pkg_postinst

@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.96 2006/02/06 15:41:19 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.97 2006/02/10 02:01:58 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -133,12 +133,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					if parted_part.is_flag_available(flag) and parted_part.get_flag(flag):
 						if not "flags" in tmppart_new: tmppart_new['flags'] = []
 						tmppart_new['flags'].append(flag)
-				if tmppart_old['mb'] == tmppart_new['mb']:
-					tmppart_new['start'] = tmppart_old['start']
-					tmppart_new['end'] = tmppart_old['end']
-				else:
+#				if tmppart_old['mb'] == tmppart_new['mb']:
+				if tmppart_new['resized']:
 					tmppart_new['start'] = tmppart_old['start']
 					tmppart_new['end'] = 0
+				else:
+					tmppart_new['start'] = tmppart_old['start']
+					tmppart_new['end'] = tmppart_old['end']
 
 #			if parts_new[dev][parts_new[dev].keys()[0]]['mb']:
 #				# Change MB/%/* into sectors

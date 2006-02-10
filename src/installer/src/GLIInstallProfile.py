@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.83 2006/02/08 19:58:44 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.84 2006/02/10 02:01:58 agaffney Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -1209,6 +1209,7 @@ class InstallProfile:
 			for attrName in attr.getNames():
 				part_entry[attrName] = str(attr.getValue(attrName))
 		if type(part_entry['format']) == str: part_entry['format'] = GLIUtility.strtobool(part_entry['format'])
+		if type(part_entry['resized']) == str: part_entry['resized'] = GLIUtility.strtobool(part_entry['resized'])
 #		if GLIUtility.is_numeric(part_entry['end']): part_entry['end'] = long(part_entry['end'])
 #		if GLIUtility.is_numeric(part_entry['start']): part_entry['start'] = long(part_entry['start'])
 		if GLIUtility.is_numeric(part_entry['mb']): part_entry['mb'] = long(part_entry['mb'])
@@ -1323,7 +1324,7 @@ class InstallProfile:
 				ips = partitions[device].get_install_profile_structure()
 				for minor in ips:
 					part = ips[minor]
-					self.xmldoc += "<partition minor=\"%s\" origminor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" mountopts=\"%s\" format=\"%s\" mkfsopts=\"%s\" />" % (str(minor), str(part['origminor']), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['mountopts']), str(part['format']), str(part['mkfsopts']))
+					self.xmldoc += "<partition minor=\"%s\" origminor=\"%s\" mb=\"%s\" type=\"%s\" mountpoint=\"%s\" mountopts=\"%s\" format=\"%s\" mkfsopts=\"%s\" resized=\"%s\" />" % (str(minor), str(part['origminor']), str(part['mb']), str(part['type']), str(part['mountpoint']), str(part['mountopts']), str(part['format']), str(part['mkfsopts']), str(part['resized']))
 				self.xmldoc += "</device>"
 			self.xmldoc += "</partitions>"
 
