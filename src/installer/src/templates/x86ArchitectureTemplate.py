@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.97 2006/02/10 02:01:58 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.98 2006/02/10 03:02:06 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -128,7 +128,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				# This partition in parts_new corresponds with an existing partitions, so we save the start/end sector and flags
 				for flag in range(0, 10):
 					# The 10 is completely arbitrary. If flags seem to be missed, this number should be increased
-					parted_part = parted_disk.get_partition(part)
+					parted_part = parted_disk.get_partition(tmppart_new['origminor'])
 					if not parted_part: break
 					if parted_part.is_flag_available(flag) and parted_part.get_flag(flag):
 						if not "flags" in tmppart_new: tmppart_new['flags'] = []
