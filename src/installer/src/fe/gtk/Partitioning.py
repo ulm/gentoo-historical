@@ -363,6 +363,15 @@ class Panel(GLIScreen.GLIScreen):
 			self.detected_dev_combo.set_active(0)
 			self.drive_changed(None)
 
+		for device in self.devices:
+			tmpparts = self.devices[device].get_partitions()
+			for part in tmpparts:
+				if tmpparts[part].get_type() == "unknown":
+					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format="One of your disks contains a partition of a type that the installer cannot currently handle. If you continue, you risk damaging your partition table. You have been warned!")
+					msgdlg.run()
+					msgdlg.destroy()
+					return
+
 	def deactivate(self):
 		parts_tmp = {}
 		for device in self.devices.keys():
