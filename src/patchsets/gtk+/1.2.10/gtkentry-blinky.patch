@@ -1,0 +1,273 @@
+diff --exclude=Makefile.in --exclude=*.gmo -Nrc -x *~ gtk+-1.2.9.orig/gtk/gtkentry.c gtk+-1.2.9/gtk/gtkentry.c
+*** gtk+-1.2.9.orig/gtk/gtkentry.c	Mon Feb 19 17:46:17 2001
+--- gtk+-1.2.9/gtk/gtkentry.c	Sun Apr  1 03:23:32 2001
+***************
+*** 34,42 ****
+  #include "gtksignal.h"
+  #include "gtkstyle.h"
+  
+! #define MIN_ENTRY_WIDTH  150
+! #define DRAW_TIMEOUT     20
+! 
+  /* If you are going to change this, see the note in entry_adjust_scroll */
+  #define INNER_BORDER     2
+  
+--- 34,42 ----
+  #include "gtksignal.h"
+  #include "gtkstyle.h"
+  
+! #define MIN_ENTRY_WIDTH      150
+! #define DRAW_TIMEOUT         20
+! #define CURSOR_BLINK_TIMEOUT 500
+  /* If you are going to change this, see the note in entry_adjust_scroll */
+  #define INNER_BORDER     2
+  
+***************
+*** 77,82 ****
+--- 77,84 ----
+  					   GdkEventMotion    *event);
+  static gint gtk_entry_key_press           (GtkWidget         *widget,
+  					   GdkEventKey       *event);
++ static void gtk_entry_cursor_reset        (GtkEntry *entry);
++ static gint gtk_entry_cursor_timeout_cb   (gpointer data);
+  static gint gtk_entry_focus_in            (GtkWidget         *widget,
+  					   GdkEventFocus     *event);
+  static gint gtk_entry_focus_out           (GtkWidget         *widget,
+***************
+*** 425,430 ****
+--- 427,434 ----
+    tmp_pos = entry->text_length;
+    gtk_editable_insert_text (GTK_EDITABLE(entry), text, strlen (text), &tmp_pos);
+    GTK_EDITABLE(entry)->current_pos = tmp_pos;
++ 
++   gtk_entry_cursor_reset (entry);
+  }
+  
+  void
+***************
+*** 516,521 ****
+--- 520,526 ----
+  gtk_entry_finalize (GtkObject *object)
+  {
+    GtkEntry *entry;
++   int cursor_timeout_id;
+  
+    g_return_if_fail (object != NULL);
+    g_return_if_fail (GTK_IS_ENTRY (object));
+***************
+*** 525,530 ****
+--- 530,541 ----
+    if (entry->timer)
+      gtk_timeout_remove (entry->timer);
+  
++   cursor_timeout_id =
++     cursor_timeout_id = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (entry),
++ 							      "gtk_entry_cursor_timeout_id"));
++   if (cursor_timeout_id != 0)
++     gtk_timeout_remove (cursor_timeout_id);
++ 
+    entry->text_size = 0;
+  
+    if (entry->text)
+***************
+*** 682,687 ****
+--- 693,699 ----
+  gtk_entry_unrealize (GtkWidget *widget)
+  {
+    GtkEntry *entry;
++   int cursor_timeout_id;
+  
+    g_return_if_fail (widget != NULL);
+    g_return_if_fail (GTK_IS_ENTRY (widget));
+***************
+*** 701,706 ****
+--- 713,729 ----
+      }
+  #endif
+  
++   cursor_timeout_id =
++     cursor_timeout_id = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (entry),
++ 							      "gtk_entry_cursor_timeout_id"));
++   if (cursor_timeout_id != 0)
++     {  
++       gtk_timeout_remove (cursor_timeout_id);
++       gtk_object_set_data (GTK_OBJECT (entry), "gtk_entry_cursor_timeout_id",
++ 			   GINT_TO_POINTER (0));
++     }
++   
++ 
+    if (entry->text_area)
+      {
+        gdk_window_set_user_data (entry->text_area, NULL);
+***************
+*** 1190,1195 ****
+--- 1213,1220 ----
+  	  gtk_editable_insert_text (editable, event->string, event->length, &tmp_pos);
+  	  editable->current_pos = tmp_pos;
+  
++ 	  gtk_entry_cursor_reset (entry);
++ 
+  	  return_val = TRUE;
+  	}
+        break;
+***************
+*** 1234,1239 ****
+--- 1259,1308 ----
+  }
+  
+  static gint
++ gtk_entry_cursor_timeout_cb (gpointer data)
++ {
++   GtkEntry *entry;
++   gboolean cursor_visible;
++ 
++   entry = GTK_ENTRY (data);
++ 
++   cursor_visible = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (entry),
++ 							 "gtk_entry_cursor_visible"));
++   cursor_visible = ! cursor_visible;
++   gtk_object_set_data (GTK_OBJECT (entry), "gtk_entry_cursor_visible",
++ 		       GINT_TO_POINTER (cursor_visible));
++ 
++   gtk_entry_draw_cursor (entry);
++ 
++   return TRUE;
++ }
++ 
++ static void
++ gtk_entry_cursor_reset (GtkEntry *entry)
++ {
++   gint timeout_id;
++ 
++   gtk_object_set_data (GTK_OBJECT (entry), "gtk_entry_cursor_visible",
++ 		       GINT_TO_POINTER (TRUE));
++ 
++   timeout_id = GPOINTER_TO_INT (gtk_object_get_data (GTK_OBJECT (entry),
++ 						     "gtk_entry_cursor_timeout_id"));
++   if (timeout_id != 0)
++     gtk_timeout_remove (timeout_id);
++ 
++   if (GTK_WIDGET_HAS_FOCUS (entry))
++     {
++       timeout_id = gtk_timeout_add (CURSOR_BLINK_TIMEOUT,
++ 				    gtk_entry_cursor_timeout_cb, entry);
++       gtk_object_set_data (GTK_OBJECT (entry), "gtk_entry_cursor_timeout_id",
++ 			   GINT_TO_POINTER (timeout_id));
++     }
++   else
++     gtk_object_set_data (GTK_OBJECT (entry), "gtk_entry_cursor_timeout_id",
++ 			 GINT_TO_POINTER (0));
++ }
++ 
++ static gint
+  gtk_entry_focus_in (GtkWidget     *widget,
+  		    GdkEventFocus *event)
+  {
+***************
+*** 1249,1254 ****
+--- 1318,1325 ----
+      gdk_im_begin (GTK_EDITABLE(widget)->ic, GTK_ENTRY(widget)->text_area);
+  #endif
+  
++   gtk_entry_cursor_reset (GTK_ENTRY (widget));
++ 
+    return FALSE;
+  }
+  
+***************
+*** 1267,1272 ****
+--- 1338,1344 ----
+    gdk_im_end ();
+  #endif
+  
++   gtk_entry_cursor_reset (GTK_ENTRY (widget));
+    return FALSE;
+  }
+  
+***************
+*** 1467,1472 ****
+--- 1539,1545 ----
+    GtkEditable *editable;
+    gint xoffset;
+    gint text_area_height;
++   gboolean cursor_visible;
+  
+    g_return_if_fail (entry != NULL);
+    g_return_if_fail (GTK_IS_ENTRY (entry));
+***************
+*** 1481,1487 ****
+  
+        gdk_window_get_size (entry->text_area, NULL, &text_area_height);
+  
+!       if (GTK_WIDGET_HAS_FOCUS (widget) &&
+  	  (editable->selection_start_pos == editable->selection_end_pos))
+  	{
+  	  gdk_draw_line (drawable, widget->style->fg_gc[GTK_STATE_NORMAL], 
+--- 1554,1565 ----
+  
+        gdk_window_get_size (entry->text_area, NULL, &text_area_height);
+  
+!       cursor_visible = GPOINTER_TO_INT (gtk_object_get_data
+! 					(GTK_OBJECT (widget),
+! 					 "gtk_entry_cursor_visible"));
+! 
+!       if (cursor_visible &&
+! 	  GTK_WIDGET_HAS_FOCUS (widget) &&
+  	  (editable->selection_start_pos == editable->selection_end_pos))
+  	{
+  	  gdk_draw_line (drawable, widget->style->fg_gc[GTK_STATE_NORMAL], 
+***************
+*** 1957,1962 ****
+--- 2035,2042 ----
+      editable->current_pos += x;
+  
+    /* Ignore vertical motion */
++ 
++   gtk_entry_cursor_reset (entry);
+  }
+  
+  static void
+***************
+*** 2022,2027 ****
+--- 2102,2109 ----
+  	}
+  
+        editable->current_pos = i;
++ 
++       gtk_entry_cursor_reset (entry);
+      }
+  }
+  
+***************
+*** 2064,2069 ****
+--- 2146,2153 ----
+  	i = 0;
+  	  
+        editable->current_pos = i;
++ 
++       gtk_entry_cursor_reset (entry);
+      }
+  }
+  
+***************
+*** 2078,2083 ****
+--- 2162,2169 ----
+      editable->current_pos = entry->text_length;
+    else
+      editable->current_pos = column;
++ 
++   gtk_entry_cursor_reset (entry);
+  }
+  
+  static void
+***************
+*** 2224,2229 ****
+--- 2310,2317 ----
+    gtk_editable_claim_selection (editable, entry->text_length != 0, time);
+  
+    editable->current_pos = editable->selection_end_pos;
++ 
++   gtk_entry_cursor_reset (entry);
+  }
+  
+  static void 
