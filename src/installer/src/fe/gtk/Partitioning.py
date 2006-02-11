@@ -29,6 +29,64 @@ class Panel(GLIScreen.GLIScreen):
 	active_part_minor = 0
 	colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat16': '#3d07f9', 'fat32': '#3d07f9', 'reiserfs': '#f0ff00', 'linux-swap': '#12ff09', 'xfs': '#006600', 'jfs': '#ffb400' }
 	supported_filesystems = ["ext2", "ext3", "linux-swap", "xfs", "jfs", "reiserfs", "fat16", "fat32", "ntfs"]
+	_helptext = """
+<b><u>Partitioning</u></b>
+
+The choices you make on this screen are very important. There are 2 ways to do
+your partitioning.
+
+The first method is the Recommended Layout. If you really have no idea how you
+should lay out your partitions, this is probably the best option. You will need
+at least 4GB of concurrent disk space to use this option. If you have any
+existing partitions, they will be kept intact. Three partitions will be created:
+/boot (100MB), swap (calculated based on physical memory, up to 512MB), and
+/ (remaining concurrent space). The mountpoints and default mount options will
+be automatically set for you. If you would like to mount any of your previously
+existing partitions, you will need to edit those manually.
+
+The second method is the old fashioned one: doing it yourself. The partition
+edit is fairly straightforward (although, not <i>that</i> straightforward as
+this help would not need to exist).
+
+The currently active disk is represented by the bar near the top of the screen.
+If you have more than one disk present in your system, you can change the
+active disk by choosing another disk from the drop down box labeled 'Devices'.
+Along the bottom of the screen, there is a color key for the disk representation
+above.
+
+To edit an existing partition, you must first select it by clicking it in the
+bar above. You will get a brief overview of the partition below the bar. To edit
+the partition's properties, click the button labeled 'Properties'. To delete it,
+click the 'Delete' button. You will be asked for confirmation before the
+partition is removed.
+
+When you edit a partition's properties, you'll get a popup dialog with a few
+options. If the installer is able to resize the partition, you will be able to
+slide the bar at the top or enter a new size in the fields below the slider.
+You can choose whether or not you want the partition to be formatted. If you
+to keep the data, you should leave this as No. You can also choose a mountpoint
+and mount options for the partition. If you don't enter a mountpoint, the
+partition will not be mounted during the install and will not be added to your
+/etc/fstab. Click 'OK' to save the changes you have made or 'Cancel' to leave it
+as it was.
+
+To create a new partition, select some unallocated space in the bar at the top.
+The popup dialog that appears is the same one used for editing an existing
+partition. The difference is that you will be able to select a partition type
+(primary or logical for x86/amd64) and a filesystem type. If you select logical
+for the type, an extended partition will be created automatically and take up
+all of the remaining unallocated space. All partitions created after this will
+automatically be logical. For a partition for use by Linux, you will want to use
+ext2, ext3, reiserfs, jfs, or xfs. Ext3 is the recommended type.
+
+Keep in mind that none of the changes to your partition table and filesystems
+will be committed until you click the 'Install' button on the last screen of the
+installer. Also, if your existing partitions are out of disk order, you should
+<b>not</b> use the installer to manipulate them. The installer's partitioning
+code cannot handle this. The visual representation of the partition will
+probably look very weird in this situation. If you continue with the install,
+your existing partitions will very likely be destroyed.
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller, show_title=True)
