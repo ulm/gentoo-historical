@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.39 2006/02/10 02:01:58 agaffney Exp $
+$Id: GLIPortage.py,v 1.40 2006/02/11 17:26:33 agaffney Exp $
 """
 
 import re
@@ -165,6 +165,12 @@ class GLIPortage(object):
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): removing " + image_dir + " for " + package)
 		if not GLIUtility.exitsuccess(GLIUtility.spawn("rm -rf " + self._chroot_dir + image_dir)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not remove + " + image_dir + " for " + package)
+
+		# Run env-update
+		if not use_root:
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running env-update inside chroot")
+			if not GLIUtility.exitstatus(GLIUtility.spawn("env-update", chroot=self._chroot_dir)):
+				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not run env-update for " + package)
 
 	def add_pkg_to_world(self, package):
 		if package.find("/") == -1:
