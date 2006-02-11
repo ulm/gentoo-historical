@@ -1,13 +1,13 @@
 GLEP: 47
 Title: Creating 'safe' environment variables
-Version: $Revision: 1.1 $
-Last-Modified: $Date: 2006/02/09 21:42:57 $
-Author:	Diego Pettenò, Fabian Groffen <{flameeyes,grobian}@gentoo.org>
-Status: Active
+Version: $Revision: 1.2 $
+Last-Modified: $Date: 2006/02/11 21:43:14 $
+Author:	Diego Pettenò, Fabian Groffen
+Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
 Created: 14-Oct-2005
-Post-History:
+Post-History: 09-Feb-2006
 
 
 Credits
@@ -47,8 +47,8 @@ DragonflyBSD, GNU/kFreeBSD, Mac OS X, (Open)Darwin, (Open)Solaris and so
 on.  As such, the project is in need for a better grip on the actual
 host being built on.  This information on the host environment is
 necessary to make proper (automated) decisions on settings that are
-highly dependant on the build environment, such as platform or as in
-[2]_.
+highly dependant on the build environment, such as platform or C-library
+implementation.
 
 
 Rationale
@@ -84,12 +84,12 @@ made.
 Specification
 =============
 
-Unlike GLEP 22 the current keyword scheme as used in practice is not
-changed.  Instead of proposing a 4-tuple [3]_ keyword, a 2-tuple
-keyword is chosen for archs that require them.  Archs for which a
-1-tuple keyword suffices, keep that keyword.  Since this doesn't change
-anything to the current situation in the tree, it is considered to be a
-big advantage over the 4-tuple keyword from GLEP 22.  This GLEP is an
+Unlike GLEP 22 the currently used keyword scheme is not changed.
+Instead of proposing a 4-tuple [2]_ keyword, a 2-tuple keyword is chosen
+for archs that require them.  Archs for which a 1-tuple keyword
+suffices, can keep that keyword.  Since this doesn't change anything to
+the current situation in the tree, it is considered to be a big
+advantage over the 4-tuple keyword from GLEP 22.  This GLEP is an
 official specification of the syntax of the keyword.
 
 Keywords will consist out of two parts separated by a hyphen ('-').  The
@@ -97,15 +97,45 @@ left hand part of the keyword 2-tuple is the architecture, such as
 ppc64, sparc and x86.  The right hand part indicates the operating
 system or distribution, such as linux, macos, darwin, obsd, etc.  If the
 right hand part is omitted, it implies the operating system/distribution
-type is GNU/Linux.  In such case the hyphen is also omitted.  Examples
-of such keywords are ppc-darwin and x86.  This is fully compatible with
-the current keywords used in the tree.
+type is Gentoo GNU/Linux.  In such case the hyphen is also omitted.
+Examples of such keywords are ppc-darwin and x86.  This is fully
+compatible with the current use of keywords in the tree.
 
 The variables ``ELIBC``, ``KERNEL`` and ``ARCH`` are currently set in
 the profiles when other than their defaults for a GNU/Linux system.
 They can as such easily be overridden and defined by the user.  To
 prevent this from happening, the variables should be auto filled by
-Portage itself, based on the ``CHOST`` variable.
+Portage itself, based on the ``CHOST`` variable.  While the ``CHOST``
+variable can be as easy as the others set by the user, it still is
+assumed to be 'safe'.  This assumption is grounded in the fact that the
+variable itself is being used in various other places with the same
+intention, and that an invalid ``CHOST`` will cause major malfunctioning
+of the system.  A user that changes the ``CHOST`` into something that is
+not valid for the system, is already warned that this might render the
+system unusable.  Concluding, the 'safeness' of the ``CHOST`` variable
+is based on externally assumed 'safeness', which's discussion falls
+outside this GLEP.
+
+Current USE-expansion of the variables is being maintained, as this
+results in full backward compatibility.  Since the variables themself
+don't change in what they represent, but only how they are being
+assigned, there should be no problem in maintaining them.  Using
+USE-expansion, conditional code can be written down in ebuilds, which is
+not different from any existing methods at all::
+
+    ...
+    RDEPEND="elibc_FreeBSD? ( sys-libs/com_err )"
+    ...
+    src_compile() {
+        ...
+        use elibc_FreeBSD && myconf="${myconf} -Dlibc=/usr/lib/libc.a"
+        ...
+    }
+
+Alternatively, the variables ``ELIBC``, ``KERNEL`` and ``ARCH``
+are available in the ebuild evironment and they can be used instead of
+invoking ``xxx_Xxxx`` or in switch statements where they are actually
+necessary.
 
 A map file can be used to have the various ``CHOST`` values being
 translated to the correct values for the four variables.  This change is
@@ -116,21 +146,14 @@ aforementioned four variables instead.  They allow specific tests for
 properties.  If this is undesirable, the full ``CHOST`` variable can be
 used to match a complete operating system.
 
-Current USE-expansion is being maintained, for backwards compatibility.
-Since the expansion is based on the variables mentioned above which do
-not change, but only in the way they are generated, there should be no
-problem in maintaining them.
 
-
-Variables
----------
+Variable Assignment
+-------------------
 
 The ``ELIBC``, ``KERNEL``, ``ARCH`` variables are filled from a profile
 file.  The file can be overlaid, such that the following entries in the
 map file (on the left of the arrow) will result in the assigned
-variables on the right hand side of the arrow:
-
-::
+variables on the right hand side of the arrow::
 
     *-*-linux-*      -> KERNEL="linux"  
     *-*-*-gnu        -> ELIBC="glibc"
@@ -140,10 +163,8 @@ variables on the right hand side of the arrow:
     *-*-netbsd*      -> KERNEL="NetBSD" ELIBC="NetBSD"
     *-*-solaris*     -> KERNEL="Solaris" ELIBC="Solaris"
 
-A way to achieve this is proposed by Mike Frysinger [4]_, which
-suggests to have a env-map file, for instance filled with:
-
-::
+A way to achieve this is proposed by Mike Frysinger, which
+suggests to have a env-map file, for instance filled with::
 
     % cat env-map
     *-linux-* KERNEL=linux
@@ -151,9 +172,7 @@ suggests to have a env-map file, for instance filled with:
     x86_64-* ARCH=amd64
 
 then the following bash script can be used to set the four variables to
-their correct values:
-
-::
+their correct values::
 
     % cat readmap 
     #!/bin/bash 
@@ -172,18 +191,38 @@ their correct values:
     
     echo ARCH=${ARCH} KERNEL=${KERNEL} ELIBC=${ELIBC}
 
-Given the example env-map file, this script would result in:
-
-::
+Given the example env-map file, this script would result in::
 
     % ./readmap x86_64-pc-linux-gnu 
     ARCH=amd64 KERNEL=linux ELIBC=glibc
 
-It should be noted, however, that the bash script is a proof of concept
-implementation.  It cannot be used as Portage will need this
-information, which is written in Python.  Hence, an equivalent of this
-bash script should be written in Python to be able to use it within
-Portage.  This is considered to be a non-issue coding wise.
+The entries in the ``env-map`` file will be evaluated in a forward
+linear full scan.  A side-effect of this exhaustive search is that the
+variables can be re-assigned if multiple entries match the given
+``CHOST``.  Because of this, the order of the entries does matter.
+Because the ``env-map`` file size is assumed not to exceed the block
+size of the file system, the performance penalty of a full scan versus
+'first-hit-stop technique' is assumed to be minimal.
+
+It should be noted, however, that the above bash script is a proof of
+concept implementation.  Since Portage is largerly written in Python, it
+will be more efficient to write an equivalent of this code in Python
+also.  Coding wise, this is considered to be a non-issue, but the format
+of the ``env-map`` file, and especially its wildcard characters, might
+not be the best match with Python.  For this purpose, the format
+specification of the ``env-map`` file is deferred to the Python
+implementation, and only the requirements are given here.
+
+The ``env-map`` file should be capable of encoding a ``key``, ``value``
+pair, where ``key`` is a (regular) expression that matches a
+chost-string, and ``value`` contains at least one, distinct variable
+assignment for the variables ``ARCH``, ``KERNEL`` and ``ELIBC``.  The
+interpreter of the ``env-map`` file must scan the file linearly and
+continue trying to match the ``key``\s and assign variables if
+appropriate until the end of file.
+
+Since Portage will use the ``env-map`` file, the location of the file is
+beyond the scope of this GLEP and up to the Portage implementors.
 
 
 References
@@ -193,20 +232,10 @@ References
    userlands/kernels/archs, Goodyear,
    (http://glep.gentoo.org/glep-0022.html)
 
-.. [2] For example in the perl ebuild, it is necessary to
-   fill in the C-library part, which on a FreeBSD system is other than
-   on a Linux system and currently is handled as follows:
-   ::
-   
-   [[ ${ELIBC} == "FreeBSD" ]] && myconf="${myconf} -Dlibc=/usr/lib/libc.a"
-
-.. [3] For the purpose of readability, we will refer to 1, 2 and
+.. [2] For the purpose of readability, we will refer to 1, 2 and
    4-tuples, even though tuple in itself suggest a field consisting of
    two values.  For clarity: a 1-tuple describes a single value field,
-   while a 4-tuple decribes a field consisting out of four values.
-
-.. [4] mailto:vapier [at) gentoo .dot org
-
+   while a 4-tuple describes a field consisting out of four values.
 
 
 Copyright
