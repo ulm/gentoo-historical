@@ -17,6 +17,26 @@ class Panel(GLIScreen.GLIScreen):
 	netmounts = []
 	active_entry = -1
 	mount_types = ["NFS"]
+	_helptext = """
+<b><u>Network Mounts</u></b>
+
+Here, you can specify network shares to mount during (and after) the install.
+They will be mounted along with the local partitions you specified on the
+previous screen when the install starts. This is useful for using a NFS mounted
+/usr/portage.
+
+To start, click the button labeled 'New'. Then, select a mount type. Currently,
+the only supported type is NFS. If you get this choice wrong, you shall be
+shunned. Next, enter a hostname or IP address. Then, you can either enter the
+name of the share/export or click the button next to the field to have it
+auto-populated with the available shares on the host you entered in the box
+above. Enter a local mountpoint and mount options. Click the button labeled
+'Update' to save the new network mount.
+
+To edit an existing mount, select it in the list above. Edit any fields below
+and then click the 'Update' button. You can remove it from the list by clicking
+the 'Delete' button.
+"""
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
