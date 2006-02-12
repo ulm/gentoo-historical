@@ -4,15 +4,73 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/2006.0/Attic/hb-install-mips-bootloader.xml,v 1.1 2006/02/12 13:54:32 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/2006.0/Attic/hb-install-mips-bootloader.xml,v 1.2 2006/02/12 14:31:58 nightmorph Exp $ -->
 
 <sections>
 
-<version>1.8</version>
-<date>2006-01-19</date>
+<version>1.9</version>
+<date>2006-02-12</date>
 
 <section id="sgi">
-<title>Silicon Graphics Machines -- Setting Up Arcboot</title>
+<title>Silicon Graphics Machines -- Setting Up arcboot/arcload</title>
+<subsection>
+<title>Which one?</title>
+<body>
+
+<p>
+On SGI machines, you have two options for bootloaders.  <c>arcboot</c> and
+<c>arcload</c>.  The table below lists the pros and cons for each bootloader.
+</p>
+
+<table>
+<tr>
+  <th> </th>
+  <th>arcboot</th>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>
+    It can load off EXT2 and EXT3 partitions, so no need to store them in the
+    volume header
+  </ti>
+</tr>
+<tr>
+  <th>-</th>
+  <ti>
+    It doesn't work on Octane/Octane2, Origin 200/2000 or
+    Indigo2 Impact (R10000)
+  </ti>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th> </th>
+  <th>arcload</th>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>
+    It boots ALL Linux-compatable SGI systems
+  </ti>
+</tr>
+<tr>
+  <th>-</th>
+  <ti>
+    Currently, It cannot read EXT2/EXT3 partitions, and so needs the kernels
+    and config file to be placed in the volume header
+  </ti>
+</tr>
+</table>
+
+<note>
+The SGI volume header filenames are limited to 8 characters, and there may be no
+more than 16 files contained in a single volume header.
+</note>
+
+</body>
+</subsection>
+
 <subsection>
 <title>Installing arcboot</title>
 <body>
@@ -45,12 +103,21 @@ That should have installed two tools, <c>arcboot</c> which sits in the volume
 header and loads kernels for us, and <c>dvhtool</c> which helps us put
 <c>arcboot</c> into the volume header.
 </p>
+
 <p>
-The magic binary we want, hides in <path>/usr/lib/arcboot</path> -- on IP22
-systems (Indy, Indigo 2, Challenge S), it'll be called
-<path>arcboot.ip22</path>.  Other systems should be similar.  We
-first copy this file into the volume header.
+The <c>arcboot</c> binary lurks in <path>/usr/lib/arcboot</path>.  The name of
+the binary depends on the machine it's compiled for.
 </p>
+
+<ul>
+  <li>
+    <c>arcboot.ip22</c>: The binary for Indy, Indigo2 (R4k) and Challenge S
+    systems
+  </li>
+  <li>
+    <c>arcboot.ip32</c>: The binary for O2 systems
+  </li>
+</ul>
 
 <pre caption="Installing arcboot into the volume header">
 # <i>dvhtool --unix-to-vh /usr/lib/arcboot/arcboot.ip?? arcboot</i>
@@ -70,19 +137,11 @@ Entry #3, name "arcboot", start 21260, bytes 51448
 </pre>
 
 <note>
-You'll notice that in my case, I've got two old kernels sitting around there,
-<path>linux</path> and <path>newlinux</path>.  This is a hangover from before we
-started using <c>arcboot</c>.  Their presence doesn't matter -- just so long as
-<c>arcboot</c> is present, everything is fine.
+You'll notice that in the example above, there are two old kernels sitting
+around, <path>linux</path> and <path>newlinux</path>.  This is a hangover from
+before we started using <c>arcboot</c>.  Their presence doesn't matter -- just
+so long as <c>arcboot</c> is present, everything is fine.
 </note>
-
-</body>
-</subsection>
-
-<subsection>
-<title>Configuring arcboot</title>
-
-<body>
 
 <p>
 If you've ever set up the Linux Loader (<c>lilo</c>) before, you'll find that
@@ -92,8 +151,13 @@ EXT2/3 partition as <path>/etc/arcboot.conf</path>.  The easiest way around this
 is to make sure <path>/boot</path> is an EXT2/3 partition and that there's a
 file called <path>arcboot.conf</path> inside the <path>/boot/etc</path>
 directory.  An example config can be found in
-<path>/etc/arcboot.conf.sample</path>
+<path>/etc/arcboot.conf.sample</path>.
 </p>
+
+<note>
+Adjust the paths accordingly if you
+don't have a separate <path>/boot</path> partition.
+</note>
 
 <pre caption="Putting arcboot.conf in its place">
 <comment>(Create the /boot/etc directory)</comment>
@@ -111,9 +175,10 @@ directory.  An example config can be found in
 
 <p>
 You can then edit <path>/etc/arcboot.conf</path> to your own preference.
-Personally, I prefer to set up two kernel images: <path>new</path>, a freshly built
-image that may or may not work; and <path>working</path>, a proven trustworthy 
-kernel image.  My <path>arcboot.conf</path> looks a bit like this.
+One possible layout, is to set up two kernel images: <path>new</path>, a
+freshly built image that may or may not work; and <path>working</path>, a
+proven trustworthy kernel image.  The <path>arcboot.conf</path> for that
+setup looks a bit like this.
 </p>
 
 <pre caption="Example arcboot.conf">
@@ -121,11 +186,12 @@ kernel image.  My <path>arcboot.conf</path> looks a bit like this.
 <comment>#</comment>
 <comment># copyright 2002 Guido Guenther &lt;agx@sigxcpu.org&gt;</comment>
 <comment>#</comment>
+<comment># known working version</comment>
 label=working
         image=/vmlinux
         append="root=/dev/sda3"
 
-<comment># backup version</comment>
+<comment># fresh "untested" version</comment>
 label=new
         image=/vmlinux-new
         append="root=/dev/sda3"
@@ -140,6 +206,129 @@ section (that's for Cobalt servers) but the following section
 
 </body>
 </subsection>
+
+<subsection>
+<title>Installing arcload</title>
+<body>
+
+<p>
+<c>arcload</c> was written for machines that require 64-bit kernels, and
+therefore can't use <c>arcboot</c> (which can't easily be compiled as a 64-bit
+binary).  It also works around peculiarities that arise when loading kernels
+directly from the volume header.  So, now you know what this is about, we
+can proceed with the installation:
+</p>
+
+<pre caption="Merging arcload and dvhtool">
+# <i>emerge arcload dvhtool</i>
+</pre>
+
+<p>
+Once this has finished, you should find the <c>arcload</c> binary in
+<path>/usr/lib/arcload</path>.  Now, two files exist:
+</p>
+
+<ul>
+  <li>
+    <c>sashARCS</c>: The 32-bit binary for Indy, Indigo2 (R4k), Challenge S
+    and O2 systems
+  </li>
+  <li>
+    <c>sash64</c>: The 64-bit binary for Octane/Octane2, Origin 200/2000 and
+    Indigo2 Impact systems
+  </li>
+</ul>
+
+<p>
+Use <c>dvhtool</c> to install the appropriate binary for your system into the
+volume header:
+</p>
+
+<pre caption="Placing arcload in the volume header">
+<comment>(Indy/Indigo2/Challenge S/O2 users)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sashARCS sashARCS</i>
+
+<comment>(Indigo2 Impact/Octane/Octane2/Origin 200/Origin 2000 users)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sash64 sash64</i>
+</pre>
+
+<note>
+You don't have to use the name <c>sashARCS</c> or <c>sash64</c>, unless you are
+installing to the volume header of a bootable CD.  For normal boot from
+hard-disk, you may name them something else if you wish.
+</note>
+
+<p>
+Now just use <c>dvhtool</c> to verify they are in the volume header.
+</p>
+
+<pre caption="Checking arcload is present in the volume header">
+# <i>dvhtool --print-volume-directory</i>
+----- directory entries -----
+Entry #0, name "sash64", start 4, bytes 55859
+#
+</pre>
+
+<p>
+Now, the <c>arc.cf</c> file has a C-like syntax.  For the full detail on how
+one configures it, see the <uri
+link="http://www.linux-mips.org/wiki/Arcload">arcload page on the
+Linux/MIPS wiki</uri>.  In short, you define a number of options, which you
+enable and disable at boot time using the <c>OSLoadFilename</c> variable.
+</p>
+
+<pre caption="An example arc.cf">
+<comment># ARCLoad Configuration</comment>
+
+<comment># Some default settings...</comment>
+append  "root=/dev/sda3";
+append  "ro";
+append  "console=ttyS0,9600";
+
+<comment># Our main definition.  ip28 may be changed if you wish.</comment>
+ip28 {
+        <comment># Definition for a "working" kernel</comment>
+        <comment># Select this by setting OSLoadFilename="ip28(working)"</comment>
+        working {
+                description     "SGI Indigo2 Impact R10000\n\r";
+                image system    "/working";
+        }
+
+        <comment># Definition for a "new" kernel</comment>
+        <comment># Select this by setting OSLoadFilename="ip28(new)"</comment>
+        new {
+                description     "SGI Indigo2 Impact R10000 - Testing Kernel\n\r";
+                image system    "/new";
+        }
+
+        <comment># For debugging a kernel</comment>
+        <comment># Select this by setting OSLoadFilename="ip28(working,debug)"</comment>
+        <comment># or OSLoadFilename="ip28(new,debug)"</comment>
+        debug {
+                description     "Debug console";
+                append          "init=/bin/bash";
+        }
+}
+</pre>
+
+<p>
+This is then placed in the volume header with <c>sash64</c> (or
+<c>sashARCS</c>) as shown below.  Kernels also get placed in the volume header.
+</p>
+
+<pre caption="Placing arc.cf and kernel in the volume header">
+# <i>dvhtool --unix-to-vh arc.cf arc.cf</i>
+# <i>dvhtool --unix-to-vh /usr/src/linux/vmlinux new</i>
+</pre>
+
+<p>
+With this done, now all that's left is to set some options in the PROM.  See the
+section on <uri link="#reboot">Rebooting the System</uri>.
+</p>
+
+</body>
+</subsection>
+
 </section>
 
 <section id="cobalt">
@@ -156,9 +345,9 @@ number of serious limitations.
 
 <ul>
   <li>
-    There's a 675kB limit on kernels.  The current size of Linux 2.4 makes it
-    damn near impossible to make a kernel this size.  Linux 2.6 is totally out
-    of the question.
+    There's a 675kB (approximate) limit on kernels.  The current size of Linux
+    2.4 makes it damn near impossible to make a kernel this size.  Linux 2.6 is
+    totally out of the question.
   </li>
   <li>
     64-bit kernels are not supported by the stock firmware (although these are
@@ -254,41 +443,40 @@ scripts.
 
 <p>
 It is also possible to ask a question, such as which kernel &amp; configuration
-you'd like to boot, with a default timeout.  This is the configuration I use on
-my Cobalt server:
+you'd like to boot, with a default timeout.  This configuration does exactly
+this, asks the user which kernel they wish to use, and executes the chosen
+image.  <path>vmlinux.gz.new</path> and <path>vmlinux.gz.working</path> may be
+actual kernel images, or just symlinks pointing to the kernel images on that
+disk.  The <c>50</c> argument to <c>select</c> specifies that it should proceed
+with the first option ("Working") after 50/10 seconds.
 </p>
-
-<impo>
-Please note that you need to be using CoLo v1.12 or v1.13 to use the <c>menu</c>
-command. The following example won't work with v1.11.
-</impo>
-
-<impo>
-The <c>menu</c> command was replaced by the <c>select</c> command in CoLo v1.14.
-If you've installed a later version by hand, have a look at
-<path>menu.colo</path> in the <path>examples</path> subdirectory of the CoLo
-distribution.
-</impo>
 
 <pre caption="Menu-based configuration">
 <comment>#:CoLo:#</comment>
 
 lcd "Mounting hda1"
 mount hda1
-menu "Which Kernel?" 50 Working working New new
-lcd "Loading Linux" {menu-option}
-load /kernel.gz.{menu-option}
+select "Which Kernel?" 50 Working New
+
+goto {menu-option}
+var image-name vmlinux.gz.working
+goto 3f
+@var image-name vmlinux.gz.working
+goto 2f
+@var image-name vmlinux.gz.new
+
+@lcd "Loading Linux" {image-name}
+load /{image-name}
 lcd "Booting..."
 execute root=/dev/hda5 ro console=ttyS0,115200
 boot
 </pre>
 
 <p>
-The above script asks the user which kernel he/she would like to boot (either
-New or Working), then loads <path>vmlinux.gz.new</path> or
-<path>vmlinux.gz.working</path> depending on the selection.  If a selection is
-not made within 5 seconds (50/10ths of a second) it boots the first option.
+See the documentation in <path>/usr/share/doc/colo-VERSION</path> for more
+details.
 </p>
+
 </body>
 
 </subsection>
@@ -307,7 +495,7 @@ is particularly bad -- there's no such thing as a physical terminal.
 </p>
 
 <note>
-Those who do have the luxury of a supported framebuffer may skip this section if
+Those who do have the luxury of a supported video chipset may skip this section if
 they wish.
 </note>
 
@@ -395,10 +583,10 @@ cdimage ~# <i>reboot</i>
 
 <note>
 <e>Cobalt Users:</e> The rest of this section covers the setting up of the SGI
-PROM so that it boots <c>arcboot</c> off disk and loads Linux.  This is not
-applicable to the setup of Cobalt servers.  In fact, all your work is done --
-there is no configuration needed for the first boot up, you can skip to the next
-section: <uri link="?part=1&amp;chap=11">Finalising your Gentoo
+PROM so that it boots <c>arcboot</c>/<c>arcload</c> off disk and loads Linux.
+This is not applicable to the setup of Cobalt servers.  In fact, all your work
+is done -- there is no configuration needed for the first boot up, you can skip
+to the next section: <uri link="?part=1&amp;chap=11">Finalising your Gentoo
 Installation</uri>
 </note>
 
@@ -408,14 +596,29 @@ Installation</uri>
 <section>
 <title>Tweaking the SGI PROM</title>
 <subsection>
+<title>Setting generic PROM settings</title>
 <body>
 
 <p>
+Now that you've installed the bootloader, you're ready to reboot the machine.
+</p>
+
+<pre caption="Rebooting">
+<comment>(Exit the chroot environment)</comment>
+# <i>exit</i>
+
+<comment>(Unmount the drives)</comment>
+# <i>umount /gentoo/boot</i>
+# <i>umount /gentoo</i>
+
+<comment>(Reboot)</comment>
+# <i>reboot</i>
+</pre>
+
+<p>
 When you are rebooted, go to the <e>System Maintenance Menu</e> and select 
-<e>Enter Command Monitor</e> (<c>5</c>). If you want to test your new Gentoo 
-installation, you can just run <c>boot -f &lt;kernel name&gt;</c>. To have your 
-system permanently boot into the Gentoo installation, you need to set some 
-variables in the SGI PROM: 
+<e>Enter Command Monitor</e> (<c>5</c>) like you did when you netbooted the
+machine.
 </p>
 
 <pre caption="Configuring the PROM to Boot Gentoo">
@@ -428,15 +631,7 @@ variables in the SGI PROM:
 Option? <i>5</i>
 Command Monitor.  Type "exit" to return to the menu.
 
-<comment>(&lt;root device&gt; = Gentoo's root partition, e.g. /dev/sda3)</comment>
-&gt;&gt; <i>setenv OSLoadPartition &lt;root device&gt;</i>
-
-<comment>(To list the available kernels, type "ls")</comment>
-&gt;&gt; <i>setenv OSLoader &lt;kernel name&gt;</i>
-&gt;&gt; <i>setenv OSLoadFilename &lt;kernel name&gt;</i>
-
-<comment>(Declare the kernel parameters you want to pass)</comment>
-&gt;&gt; <i>setenv OSLoadOptions &lt;kernel parameters&gt;</i>
+<comment>(Set some options which are common for both arcload and arcboot)</comment>
 
 <comment>(Provide the location of the Volume Header)</comment>
 &gt;&gt; <i>setenv SystemPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
@@ -449,7 +644,125 @@ Command Monitor.  Type "exit" to return to the menu.
 
 <comment>(Use the serial console - graphic adapter users should have "g" instead of "d1" (one))</comment>
 &gt;&gt; <i>setenv console d1</i>
+
+<comment>(Setting the serial console baud rate.  This is optional, 9600 is the           )
+(default setting, although one may use rates up to 38400 if that is desired.   )</comment>
+&gt;&gt; <i>setenv dbaud 9600</i>
 </pre>
+
+<p>
+Now, the next settings depend on how you are booting the system.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Settings for direct volume-header booting</title>
+<body>
+
+<p>
+This is covered here for completeness.  It's recommended that users look into
+installing <c>arcboot</c> or <c>arcload</c> instead.
+</p>
+
+<note>
+This only works on the Indy, Indigo2 (R4k) and Challenge S.
+</note>
+
+<pre caption="PROM settings for booting off the volume header">
+<comment>(&lt;root device&gt; = Gentoo's root partition, e.g. /dev/sda3)</comment>
+&gt;&gt; <i>setenv OSLoadPartition &lt;root device&gt;</i>
+
+<comment>(To list the available kernels, type "ls")</comment>
+&gt;&gt; <i>setenv OSLoader &lt;kernel name&gt;</i>
+&gt;&gt; <i>setenv OSLoadFilename &lt;kernel name&gt;</i>
+
+<comment>(Declare the kernel parameters you want to pass)</comment>
+&gt;&gt; <i>setenv OSLoadOptions &lt;kernel parameters&gt;</i>
+</pre>
+
+<p>
+If you wish to try a kernel without messing with kernel parameters, you may do
+so using the <c>boot -f</c> PROM command:
+</p>
+
+<pre caption="Booting without changing environment variables">
+<comment>(Booting a kernel, "new", with additional options)</comment>
+# <i>boot -f new root=/dev/sda3 ro</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Settings for arcload</title>
+<body>
+
+<p>
+<c>arcload</c> uses the <c>OSLoadFilename</c> option to specify which options to
+set from <path>arc.cf</path>.  The configuration file is essentially a script,
+with the top-level blocks defining boot images for different systems, and inside
+that, optional settings.  Thus, setting <c>OSLoadFilename=mysys(serial)</c>
+pulls in the settings for the <c>mysys</c> block, then sets further options
+overridden in <c>serial</c>.
+</p>
+
+<p>
+In the example file above, we have one system block defined, <c>ip28</c> with
+<c>working</c>, <c>new</c> and <c>debug</c> options available.  We define our
+PROM variables as so:
+</p>
+
+<pre caption="PROM settings for using arcload">
+<comment>(Select arcload as the bootloader:- sash64 or sashARCS)</comment>
+&gt;&gt; setenv OSLoader sash64
+
+<comment>(Use the "working" kernel image, defined in "ip28" section of arc.cf)</comment>
+&gt;&gt; setenv OSLoadFilename ip28(working)
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Settings for arcboot</title>
+<body>
+
+<p>
+<c>arcboot</c> loads its configuration file and kernels from your
+<path>/boot</path> partition, which needs to be formatted either EXT2 or EXT3.
+Thus <c>OSLoadPartition</c> needs to point to that partition.  <c>OSLoader</c>
+should point to the <c>arcboot</c> binary in the volume header, and
+<c>OSLoadFilename</c> is the image name being used.
+</p>
+
+<pre caption="PROM settings for using arcboot">
+<comment>(Read configuration and kernels from SCSI ID# 1, partition 0 -- sda1)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(0)</i>
+
+<comment>(Use arcboot as the bootloader)</comment>
+&gt;&gt; <i>setenv OSLoader arcload</i>
+
+<comment>(Which boot image in arcboot.conf to load)</comment>
+&gt;&gt; <i>setenv OSLoadFilename working</i>
+</pre>
+
+<p>
+When testing kernels via <c>arcboot</c> you can specify an alternate image like
+so (where <c>new</c> is the alternate image):
+</p>
+
+<pre caption="Specifying an alternate image">
+# <i>boot new</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>All Done</title>
+<body>
 
 <p>
 Now you're ready to enjoy Gentoo! Boot in your Gentoo installation and finish 
