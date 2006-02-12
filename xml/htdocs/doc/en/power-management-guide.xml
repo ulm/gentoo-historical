@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/power-management-guide.xml,v 1.16 2006/01/01 11:51:43 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/power-management-guide.xml,v 1.17 2006/02/12 11:53:08 nightmorph Exp $ -->
 <guide link="/doc/en/power-management-guide.xml">
 <title>Power Management Guide</title>
 
 <author title="Author">
-  <mail link="fragfred@gmx.de">Dennis Nienhüser</mail>
+  <mail link="earthwings@gentoo.org">Dennis Nienhüser</mail>
 </author>
 
 <abstract>
@@ -17,13 +17,12 @@ laptops. This guide assists you setting it up on your laptop.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.25</version>
-<date>2005-10-02</date>
+<version>1.26</version>
+<date>2006-02-12</date>
 
 <chapter>
 <title>Introduction</title>
 <section>
-<title>Why Power Management?</title>
 <body>
 
 <p>
@@ -95,12 +94,11 @@ in the operating system adapting to different situations can achieve much more.
 <chapter>
 <title>Prerequisites</title>
 <section>
-<title>What has to be done first</title>
 <body>
 
 <p>
-Before going into the details on making individual devices Power Management
-aware, make sure certain requirements are met. After controlling the BIOS
+Before discussing the details of making individual devices Power Management
+aware, make sure certain requirements are met. After controlling BIOS
 settings, some kernel options want to be enabled - these are in short ACPI,
 sleep states and CPU frequency scaling. As power saving most of the time comes
 along with performance loss or increased latency, it should only be enabled
@@ -120,6 +118,21 @@ combine BIOS and operating system policies, but for the moment it's better to
 disable most of the BIOS part. This makes sure it doesn't interfere with your
 policies. Don't forget to re-check BIOS settings after you configured
 everything else.
+</p>
+
+</body>
+</section>
+<section>
+<title>Setting USE flags</title>
+<body>
+
+<p>
+Please check that the <c>acpi</c> USE flag is set in
+<path>/etc/make.conf</path>. Other USE flags that might be interesting for your
+system are <c>apm</c>, <c>lm_sensors</c>, <c>nforce2</c>, <c>nvidia</c>,
+<c>pmu</c>. See <path>/usr/portage/profiles/use*.desc</path> for details. If
+you forgot to set one of these flags, you can recompile affected packages using
+the <c>--newuse</c> flag in <c>emerge</c>, see <c>man 1 emerge</c>.
 </p>
 
 </body>
@@ -282,27 +295,27 @@ RUNLEVEL_BATTERY="battery"
 
 if [ ! -d "/etc/runlevels/${RUNLEVEL_AC}" ]
 then
-        logger "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
-        exit 1
+    logger "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
+    exit 1
 fi
 
 if [ ! -d "/etc/runlevels/${RUNLEVEL_BATTERY}" ]
 then
-        logger "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
-        exit 1
+    logger "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
+    exit 1
 fi
 
 if on_ac_power
 then
     if [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_AC}" ]]
-  then
-            logger "Switching to ${RUNLEVEL_AC} runlevel"
-            /sbin/rc ${RUNLEVEL_AC}
-        fi
+    then
+        logger "Switching to ${RUNLEVEL_AC} runlevel"
+         /sbin/rc ${RUNLEVEL_AC}
+    fi
 elif [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_BATTERY}" ]]
 then
-        logger "Switching to ${RUNLEVEL_BATTERY} runlevel"
-        /sbin/rc ${RUNLEVEL_BATTERY}
+    logger "Switching to ${RUNLEVEL_BATTERY} runlevel"
+    /sbin/rc ${RUNLEVEL_BATTERY}
 fi
 </pre>
 
@@ -393,6 +406,19 @@ devices.
 
 <chapter>
 <title>CPU Power Management</title>
+<section>
+<body>
+
+<p>
+Mobile processors can operate at different frequencies. Some allow changing
+voltage as well. Most of the time your CPU doesn't need to run at full speed
+and scaling it down will save much energy - often without any performance
+decrease.
+</p>
+
+</body>
+</section>
+
 <section>
 <title>Some technical terms</title>
 <body>
@@ -554,11 +580,14 @@ provide a GUI for easy configuration and changes.
 <tr>
   <ti><uri link="http://sourceforge.net/projects/cpufreqd/">cpufreqd</uri></ti>
   <ti>Daemon</ti>
-  <ti>Battery state, CPU load, temperature, running programs</ti>
+  <ti>Battery state, CPU load, temperature, running programs and more</ti>
   <ti>All available</ti>
   <ti>None</ti>
   <ti>
-    Sophisticated (but also complicated) setup.
+    Sophisticated (but somewhat complicated) setup. Extendible through plugins
+    like sensor monitoring (lm_sensors) or coordinating some NVidia based
+    graphics card memory and core. Cpufreqd is SMP aware and can optionally be
+    controlled manually at runtime.
   </ti>
 </tr>
 <tr>
@@ -640,55 +669,64 @@ Which one to choose? If you have no idea about it, try <c>cpufreqd</c>:
 <c>cpufreqd</c> can be configured by editing <path>/etc/cpufreqd.conf</path>.
 The default one that ships with cpufreqd may look a bit confusing. I recommend
 replacing it with the one from Gentoo developer Henrik Brix Andersen (see
-below).
+below). Please notice that you need cpufreqd-2.0.0 or later. Earlier versions
+have a different syntax for the config file.
 </p>
 
-<pre caption="/etc/cpufreqd.conf">
+<pre caption="/etc/cpufreqd.conf (cpufreqd-2.0.0 and later)">
 [General]
 pidfile=/var/run/cpufreqd.pid
-poll_interval=2
-pm_type=acpi
+poll_interval=3
+enable_plugins=acpi_ac, acpi_battery
 verbosity=5
+[/General]
 
 [Profile]
 name=ondemand
 minfreq=0%
 maxfreq=100%
 policy=ondemand
+[/Profile]
 
 [Profile]
 name=conservative
 minfreq=0%
 maxfreq=100%
 policy=conservative
+[/Profile]
 
 [Profile]
 name=powersave
 minfreq=0%
 maxfreq=100%
 policy=powersave
+[/Profile]
 
 [Profile]
 name=performance
 minfreq=0%
 maxfreq=100%
 policy=performance
+[/Profile]
 
 [Rule]
 name=battery
 ac=off
 profile=conservative
+[/Rule]
 
 [Rule]
 name=battery_low
 ac=off
 battery_interval=0-10
 profile=powersave
+[/Rule]
 
 [Rule]
 name=ac
 ac=on
 profile=ondemand
+[/Rule]
 </pre>
 
 <p>
@@ -700,6 +738,15 @@ Now you can start the cpufreqd daemon. Add it to the <e>default</e> and
 # <i>rc-update add cpufreqd default battery</i>
 # <i>rc</i>
 </pre>
+
+<p>
+Sometimes it can be desirable to select another policy than the daemon chooses,
+for example when battery power is low, but you know that AC will be available
+soon. In that case you can turn on cpufreqd's manual mode with
+<c>cpufreqd-set manual</c> and select one of your configured policies (as
+listed by <c>cpufreqd-get</c>). You can leave manual mode by executing
+<c>cpufreqd-set dynamic</c>.
+</p>
 
 <warn>
 Do not run more than one of the above programs at the same time. It may cause
@@ -746,7 +793,6 @@ information about what's happening reported to syslog.
 <chapter>
 <title>LCD Power Management</title>
 <section>
-<title>Energy consumer no. 1</title>
 <body>
 
 <p>
@@ -757,13 +803,19 @@ needed, but also to reduce it's backlight if possible. Most laptops offer the
 possibility to control the backlight dimming. 
 </p>
 
+</body>
+</section>
+<section>
+<title>Standby settings</title>
+<body>
+
 <p>
-First thing to check is the standby/suspend/off timings of the display. As this
-depends heavily on your windowmanager, I'll let you figure it out yourself.
-Just two common places: Blanking the terminal can be done with <c>setterm
--blank &lt;number-of-minutesM&gt;</c>, <c>setterm -powersave on</c> and
-<c>setterm -powerdown &lt;number-of-minutesM&gt;</c>.
-For X.org, modify <path>/etc/X11/xorg.conf</path> similar to this:
+The first thing to check is the standby/suspend/off timings of the display. As
+this depends heavily on your windowmanager, I'll let you figure it out
+yourself.  Just two common places: Blanking the terminal can be done with
+<c>setterm -blank &lt;number-of-minutesM&gt;</c>, <c>setterm -powersave on</c>
+and <c>setterm -powerdown &lt;number-of-minutesM&gt;</c>.  For X.org, modify
+<path>/etc/X11/xorg.conf</path> similar to this:
 </p>
 
 <pre caption="LCD suspend settings in X.org and XFree86">
@@ -790,12 +842,19 @@ EndSection
 This is the same for XFree86 and <path>/etc/X11/XF86Config</path>.
 </p>
 
+</body>
+</section>
+<section>
+<title>Backlight dimming</title>
+<body>
+
 <p>
 Probably more important is the backlight dimming. If you have access to the
 dimming settings via a tool, write a small script that dims the backlight in
 battery mode and place it in your <e>battery</e> runlevel. The following script
-should work on most IBM Thinkpads. It needs the <c>app-laptop/ibm-acpi</c>
-package or the appropriate option in your kernel has to be enabled.
+should work on most IBM Thinkpads and Toshiba laptops. You've got to enable the
+appropriate option in your kernel (IBM Thinkpads only). For Toshiba laptops, install 
+<c>app-laptop/acpitool</c> and skip configuration of ibm_acpi as described below.
 </p>
 
 <warn>
@@ -811,7 +870,6 @@ with the experimental parameter.
 
 <pre caption="automatically loading the ibm_acpi module">
 <comment>(Please read the warnings above before doing this!)</comment>
-<i># emerge ibm-acpi</i>
 <i># echo "options ibm_acpi experimental=1" >> /etc/modules.d/ibm_acpi</i>
 <i># /sbin/modules-update</i>
 <i># echo ibm_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
@@ -827,7 +885,7 @@ to the power source.
 
 <pre caption="/etc/conf.d/lcd-brightness">
 <comment># See /proc/acpi/ibm/brightness for available values</comment>
-<comment># Please read /usr/share/doc/ibm-acpi-*/README.gz</comment>
+<comment># Please read /usr/src/linux/Documentation/ibm-acpi.txt</comment>
 
 <comment># brigthness level in ac mode. Default is 7.</comment>
 BRIGHTNESS_AC=7
@@ -852,9 +910,15 @@ set_brightness() {
         ebegin "Setting LCD brightness"
         echo "level ${LEVEL}" > /proc/acpi/ibm/brightness
         eend $?
+    elif [[ -e /usr/bin/acpitool &amp;&amp; -n $(acpitool -T | grep "LCD brightness") ]]
+    then
+        ebegin "Setting LCD brightness"
+        acpitool -l $LEVEL >/dev/null || ewarn "Unable to set lcd brightness"
+        eend $?
     else
         ewarn "Setting LCD brightness is not supported."
-        ewarn "Check that ibm_acpi is loaded into the kernel"
+        ewarn "For IBM Thinkpads, check that ibm_acpi is loaded into the kernel"
+        ewarn "For Toshiba laptops, you've got to install app-laptop/acpitool"
     fi
 }
 
@@ -885,80 +949,22 @@ battery runlevel.
 <chapter>
 <title>Disk Power Management</title>
 <section>
-<title>Sleep when idle</title>
 <body>
-
 <p>
-Let's bring the hard disk to sleep as early as possible whenever it is not
-needed. I'll show you two possibilities to do it. First <c>cpudyn</c> supports
-Disk Power Management. Uncomment the lines in the "Disk Options" section in
-<path>/etc/conf.d/cpudyn</path>. To put your first disk to sleep after 60
-seconds of no activity, you would modify it like this:
+Hard disks consume less energy in sleep mode. Therefore it makes sense to
+activate power saving features whenever the hard disk is not used for a certain
+amount of time. I'll show you two alternative possibilities to do it. First,
+laptop-mode will save most energy due to several measures which prevent or at
+least delay write accesses. The drawback is that due to the delayed write
+accesses a power outage or kernel crash will be more dangerous for data loss.
+If you don't like this, you have to make sure that there are no processes which
+write to your hard disk frequently. Afterwards you can enable power saving
+features of your hard disk with hdparm as the second alternative.
 </p>
-
-<pre caption="Using cpudyn for disk standby">
-<comment>################################################
-# DISK OPTIONS
-# (disabled by default)
-################################################
-
-#
-# Timeout to put the disk in standby mode if there was no
-# io during that period (in seconds)
-#
-</comment>
-TIMEOUT=60
-<comment>
-#
-# Specified disks to spindown (comma separated devices)
-#
-</comment>
-DISKS=/dev/hda
-</pre>
-
-<p>
-The second possibility is using a small script and hdparm. Create
-<path>/etc/init.d/pm.hda</path> like this:
-</p>
-
-<pre caption="Using hdparm for disk standby">
-#!/sbin/runscript
-
-depend() {
-  after hdparm
-}
-
-start() {
-  ebegin "Activating Power Management for Hard Drives"
-  hdparm -q -S12 /dev/hda
-  eend $?
-}
-
-stop () {
-  ebegin "Deactivating Power Management for Hard Drives"
-  hdparm -q -S253 /dev/hda
-  eend $?
-}
-</pre>
-
-<p>
-See <c>man hdparm</c> for the options. If your script is ready, add it to the
-battery runlevel.
-</p>
-
-<pre caption="Automate disk standby settings">
-# <i>chmod +x /etc/init.d/pm.hda</i>
-# <i>/sbin/depscan.sh</i>
-# <i>rc-update add pm.hda battery</i>
-</pre>
-
-<impo>
-Be careful with sleep/spin down settings of your hard drive. Setting it to
-small values might wear out your drive and lose warranty.
-</impo>
 
 </body>
 </section>
+
 <section>
 <title>Increasing idle time - laptop-mode</title>
 <body>
@@ -975,31 +981,134 @@ minimizes the time the hard disk needs to be spun up.
 </pre>
 
 <p>
-<c>laptop-mode-tools</c> has it's configuration file in
+<c>laptop-mode-tools</c> has its configuration file in
 <path>/etc/laptop-mode/laptop-mode.conf</path>. Adjust it the way you like it,
 it's well commented. Run <c>rc-update add laptop_mode battery</c> to start it
 automatically.
 </p>
 
+<p>
+Recent versions (1.11 and later) of laptop-mode-tools include a new tool
+<c>lm-profiler</c>. It will monitor your system's disk usage and running
+network services and suggests to disable unneeded ones. You can either disable
+them through laptop-mode-tools builtin runlevel support (which will be reverted
+by Gentoo's <c>/sbin/rc</c>) or use your <e>default</e>/<e>battery</e>
+runlevels (recommended).
+</p>
+
+<pre caption="Sample output from running lm-profiler">
+# lm-profiler
+Profiling session started.
+Time remaining: 600 seconds
+[4296896.602000] amarokapp
+Time remaining: 599 seconds
+[4296897.714000] sort
+[4296897.970000] mv
+Time remaining: 598 seconds
+Time remaining: 597 seconds
+[4296900.482000] reiserfs/0
+</pre>
+
+<p>
+After profiling your system for ten minutes, lm-profiler will present a list of
+services which might have caused disk accesses during that time.
+</p>
+
+<pre caption="lm-profiler suggests to disable some services">
+Program:     "atd"
+Reason:      standard recommendation (program may not be running)
+Init script: /etc/init.d/atd (GUESSED)
+
+Do you want to disable this service in battery mode? [y/N]: n
+</pre>
+
+<p>
+To disable atd as suggested in the example above, you would run <c>rc-update
+del atd battery</c>. Be careful not to disable services that are needed for
+your system to run properly - lm-profiler is likely to generate some false
+positives. Do not disable a service if you are unsure whether it's needed.
+</p>
+
 </body>
 </section>
+
 <section>
-<title>Other tricks</title>
+<title>Limiting write accesses</title>
 <body>
 
 <p>
-Besides putting your disk to sleep state as early as possible, it is a good
-idea to minimize disk accesses. Have a look at processes that write to your
-disk frequently - the syslogd is a good candidate. You probably don't want to
-shut it down completely, but it's possible to modify the config file so that
-"unnecessary" things don't get logged and thus don't create disk traffic. Cups
-writes to disk periodically, so consider shutting it down and only enable it
-manually when needed.
+If you don't want to use laptop-mode, you must take special care to disable
+services that write to your disk frequently - <c>syslogd</c> is a good
+candidate, for example. You probably don't want to shut it down completely, but
+it's possible to modify the config file so that "unnecessary" things don't get
+logged and thus don't create disk traffic. Cups writes to disk periodically, so
+consider shutting it down and only enable it manually when needed.
 </p>
 
 <pre caption="Disabling cups in battery mode">
 # <i>rc-update del cupsd battery</i>
 </pre>
+
+<p>
+You can also use <c>lm-profiler</c> from laptop-mode-tools (see above) to find
+services to disable. Once you eliminated all of them, go on with configuring
+hdparm.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>hdparm</title>
+<body>
+
+<p>
+The second possibility is using a small script and hdparm. Skip this if you
+are using laptop-mode. Otherwise, create <path>/etc/init.d/pmg_hda</path>:
+</p>
+
+<pre caption="Using hdparm for disk standby">
+#!/sbin/runscript
+
+depend() {
+after hdparm
+}
+
+start() {
+ebegin "Activating Power Management for Hard Drives"
+hdparm -q -S12 /dev/hda
+eend $?
+}
+
+stop () {
+ebegin "Deactivating Power Management for Hard Drives"
+hdparm -q -S253 /dev/hda
+eend $?
+}
+</pre>
+
+<p>
+See <c>man hdparm</c> for the options. If your script is ready, add it to the
+battery runlevel.
+</p>
+
+<pre caption="Automate disk standby settings">
+# <i>chmod +x /etc/init.d/pmg_hda</i>
+# <i>/sbin/depscan.sh</i>
+# <i>rc-update add pmg_hda battery</i>
+</pre>
+
+<impo>
+Be careful with sleep/spin down settings of your hard drive. Setting it to
+small values might wear out your drive and lose warranty.
+</impo>
+
+</body>
+</section>
+
+<section>
+<title>Other tricks</title>
+<body>
 
 <p>
 Another possibility is to deactivate swap in battery mode. Before writing a
@@ -1063,15 +1172,20 @@ EndSection
 <body>
 
 <p>
-Wireless LAN cards consume quite a few energy. Put them in Power Management
-mode in analogy to the pm.hda script.
+Wireless LAN cards consume quite a bit of energy. Put them in Power Management
+mode in analogy to the pmg_hda script.
 </p>
+
+<note>
+This script assumes your wireless interface is called <c>wlan0</c>; replace
+this with the actual name of your interface.
+</note>
 
 <pre caption="WLAN Power Management automated">
 #!/sbin/runscript
 start() {
   ebegin "Activating Power Management for Wireless LAN"
-  iwconfig wlan0 power on power max period 3
+  iwconfig wlan0 power on
   eend $?
 }
 
@@ -1083,18 +1197,18 @@ stop () {
 </pre>
 
 <p>
-Starting this script will put wlan0 in Power Management mode, going to sleep at
-the latest three seconds after no traffic.
-Save it as <path>/etc/init.d/pm.wlan0</path> and add it to the battery runlevel
-like the disk script above. See <c>man iwconfig</c> for details and more
-options. If your driver and access point support changing the beacon time, this
-is a good starting point to save even more energy.
+Starting this script will activate power saving features for wlan0. Save it as
+<path>/etc/init.d/pmg_wlan0</path> and add it to the battery runlevel like the
+disk script above. See <c>man iwconfig</c> for details and more options like
+the period between wakeups or timeout settings. If your driver and access point
+support changing the beacon time, this is a good starting point to save even
+more energy.
 </p>
 
 <pre caption="Power Management for WLAN">
-# <i>chmod +x /etc/init.d/pm.wlan0</i>
+# <i>chmod +x /etc/init.d/pmg_wlan0</i>
 # <i>/sbin/depscan.sh</i>
-# <i>rc-update add pm.wlan0 battery</i>
+# <i>rc-update add pmg_wlan0 battery</i>
 </pre>
 
 </body>
@@ -1128,7 +1242,6 @@ Device Drivers
 <chapter>
 <title>Sleep states: sleep, standby, suspend to disk</title>
 <section>
-<title>Overview</title>
 <body>
 
 <p>
@@ -1167,7 +1280,7 @@ together.
 </pre>
 
 <p>
-Once your kernel is prepared like above, you can use the
+Once your kernel is properly configured, you can use the
 <c>hibernate-script</c> to activate suspend or sleep mode. Let's install that
 first.
 </p>
@@ -1396,7 +1509,6 @@ the fbsplash options. Execute <c>hibernate</c> and enjoy.
 <chapter>
 <title>Troubleshooting</title>
 <section>
-<title>If things go wrong...</title>
 <body>
 
 <p>
@@ -1488,6 +1600,21 @@ it as a module, make sure the module is loaded.
 </p>
 
 <p>
+<e>Q:</e> My system logger reports things like "logger: ACPI group battery / action 
+battery is not defined".
+</p>
+
+<p>
+<e>A:</e> This message is generated by the /etc/acpi/default.sh script that is
+shipped with acpid. You can safely ignore it. If you like to get rid of it, you
+can comment the appropriate line in /etc/acpi/default.sh as shown below:
+</p>
+
+<pre caption="Disabling warnings about unknown acpi events">
+        *)      # logger "ACPI action $action is not defined"
+</pre>
+
+<p>
 <e>Q:</e> I have a Dell Inspiron 51XX and I don't get any ACPI events.
 </p>
 
@@ -1552,8 +1679,11 @@ your battery is probably broken. Try to claim your warranty.
 </p>
 
 <p>
-<e>A:</e> Don't fear to contact me, <mail link="fragfred@gmx.de">Dennis
-Nienhüser</mail>, directly.
+<e>A:</e> Don't fear to contact me, <mail link="earthwings@gentoo.org">Dennis
+Nienhüser</mail>, directly. The
+<uri link="http://forums.gentoo.org">Gentoo Forums</uri> are a good place to
+get help as well. If you prefer IRC, try the <e>#gentoo-laptop</e> channel at
+<e>irc.freenode.net</e>.
 </p>
 
 </body>
