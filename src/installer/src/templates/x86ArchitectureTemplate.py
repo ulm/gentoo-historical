@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.99 2006/02/10 23:37:31 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.100 2006/02/12 23:13:55 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -125,21 +125,22 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				tmppart_new = parts_new[device][part]
 				if not tmppart_new['origminor'] or tmppart_new['format']: continue
 				tmppart_old = parts_old[device][tmppart_new['origminor']]
+				parted_part = parted_disk.get_partition(tmppart_new['origminor'])
 				# This partition in parts_new corresponds with an existing partitions, so we save the start/end sector and flags
 				for flag in range(0, 10):
 					# The 10 is completely arbitrary. If flags seem to be missed, this number should be increased
-					parted_part = parted_disk.get_partition(tmppart_new['origminor'])
 					if not parted_part: break
 					if parted_part.is_flag_available(flag) and parted_part.get_flag(flag):
 						if not "flags" in tmppart_new: tmppart_new['flags'] = []
 						tmppart_new['flags'].append(flag)
-#				if tmppart_old['mb'] == tmppart_new['mb']:
 				if tmppart_new['resized']:
-					tmppart_new['start'] = tmppart_old['start']
+					self._logger.log("  Partition " + str(part) + " has oldminor " + str(tmppart_new['oldminor']) + " and it being resized...saving start sector " + str(parted_part.geom.start))
+					tmppart_new['start'] = parted_part.geom.start
 					tmppart_new['end'] = 0
 				else:
-					tmppart_new['start'] = tmppart_old['start']
-					tmppart_new['end'] = tmppart_old['end']
+					self._logger.log("  Partition " + str(part) + " has origminor " + str(tmppart_new['origminor']) + "...saving start sector " + str(parted_part.geom.start) + " and end sector " + str(parted_part.geom.end))
+					tmppart_new['start'] = parted_part.geom.start
+					tmppart_new['end'] = parted_part.geom.end
 
 #			if parts_new[dev][parts_new[dev].keys()[0]]['mb']:
 #				# Change MB/%/* into sectors
@@ -239,7 +240,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				oldpart = parts_old[device][part]
 				for new_part in parts_new[device]:
 					tmppart = parts_new[device][new_part]
-					if tmppart['origminor'] == part and tmppart['start'] and not tmppart['end']:
+					if tmppart['origminor'] == part and tmppart['resized'] and tmppart['start'] and not tmppart['end']:
 						self._logger.log("  Resizing old minor " + str(part) + " from " + str(oldpart['start']) + "-" + str(oldpart['end'])+  " to " + str(tmppart['start']) + "-" + str(tmppart['end']))
 						type = tmppart['type']
 						minor = part
@@ -296,17 +297,26 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				newpart = parts_new[device][part]
 				self._logger.log("  Partition " + str(part) + " has " + str(newpart['mb']) + "MB")
 				if newpart['start']:
+					self._logger.log("    Old start sector " + str(newpart['start']) + " retrieved")
+					if start != newpart['start']:
+						self._logger.log("    Retrieved start sector is not the same as the calculated next start sector")
 					start = newpart['start']
+				else:
+					self._logger.log("    Start sector calculated to be " + str(start))
 				if newpart['end']:
+					self._logger.log("    Old end sector " + str(newpart['end']) + " retrieved")
 					end = newpart['end']
+					part_sectors = end - start + 1
 				else:
 					part_sectors = long(newpart['mb']) * MEGABYTE / 512
 					end = start + part_sectors
+					self._logger.log("    End sector calculated to be " + str(end))
 				# Make sure end doesn't overlap next partition's existing start sector
 				for i in new_part_list:
 					if i <= part: continue
 					if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
-						end = parts_new[device][i]['start'] - 1
+						if not newpart['type'] == "extended" or i <= 4:
+							end = parts_new[device][i]['start'] - 1
 					break
 				# cap to end of device
 				if end >= device_sectors:
