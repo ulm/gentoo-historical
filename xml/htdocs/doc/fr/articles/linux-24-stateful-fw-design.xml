@@ -1,0 +1,1377 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/articles/linux-24-stateful-fw-design.xml,v 1.1 2006/02/13 12:10:15 neysx Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/fr/articles/linux-24-stateful-fw-design.xml" lang="fr" disclaimer="articles">
+<title>Pare-feu avec suivi de connexion sous Linux 2.4</title>
+
+<author title="Auteur">
+  <mail link="drobbins@gentoo.org">Daniel Robbins</mail>
+</author>
+<author title="Traducteur">
+  <mail link="guillp.ml@gmail.com">Guillaume Pujol</mail>
+</author>
+
+<abstract>
+Ce guide va vous apprendre à bâtir un puissant pare-feu avec suivi de connexion
+en utilisant NetFilter sous Linux.
+</abstract>
+
+<!-- La version originale de ce document a été rendu publique sur IBM
+developerWorks, et est la propriété de Westtech Information Services. Ce
+document est une version mise à jour de l'original, et contient plusieurs
+améliorations apportées par l'équipe de Documentation de Gentoo Linux -->
+
+<version>1.3</version>
+<date>2005-10-09</date>
+
+<chapter>
+<title>À propos de ce guide</title>
+<section>
+<title>À qui s'adresse ce guide&nbsp;?</title>
+<body>
+
+<p>
+Ce guide vous montre comment utiliser NetFilter pour configurer un puissant
+pare-feu avec suivi de connexion (en anglais, «&nbsp;firewall stateful&nbsp;»).
+Tout ce dont vous aurez besoin est d'un système Linux existant utilisant une
+version 2.4 ou supérieure du noyau Linux. Un portable, PC de bureau, routeur ou
+serveur avec un Linux 2.4 ou plus fera l'affaire.
+</p>
+
+<p>
+Vous devez être assez familier avec le vocabulaire réseau, comme les adresses
+IP, les ports source et destination, TCP, UDP ou ICMP, etc. Après avoir suivi
+ce guide jusqu'au bout, vous aurez compris le fonctionnement d'un firewall
+stateful sous Linux. De nombreux exemples de configurations vous seront
+également exposés.
+</p>
+
+</body>
+</section>
+<section>
+<title>À propos de l'auteur</title>
+<body>
+
+<p>
+Pour toute question technique sur le contenu de ce guide, contactez l'auteur,
+Daniel Robbins, à l'adresse suivante&nbsp;: <mail link="drobbins@gentoo.org">
+drobbins@gentoo.org</mail>.
+</p>
+
+<p>
+Résidant à Albuquerque, dans le Nouveau Mexique, Daniel Robbins a été le PDG de
+Gentoo Technologies, Inc., le créateur de Gentoo Linux, un système
+d'exploitation Linux moderne pour PC et du système Portage, un gestionnaire de
+ports nouvelle génération pour Linux. Il a également été un des auteurs
+contributeurs pour les livres Caldera OpenLinux Unleashed, SuSE Linux Unleashed,
+et Samba Unleashed, parus aux éditions Macmillan. Daniel a été au contact de
+l'informatique depuis l'école élémentaire quand il fut confronté au langage de
+programmation Logo ainsi qu'à une dose potentiellement dangereuse de Pac Man.
+Cela explique sans doute pourquoi il a depuis été employé en tant que Chef
+Infographiste chez SONY Electronic Publishing/Psygnosis. Daniel aime passer son
+temps libre avec sa femme, Mary et sa fille, Hadassah.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Premières étapes</title>
+<section>
+<title>Le but du jeu</title>
+<body>
+
+<p>
+Dans ce guide, nous allons bâtir un pare-feu avec suivi de connexion pour
+Linux. Notre firewall va s'exécuter sur un ordinateur portable, de bureau,
+serveur ou routeur sous Linux&nbsp;; son but principal est d'autoriser
+seulement certains types de trafic réseau à le traverser. Pour augmenter la
+sécurité, nous allons configurer le firewall pour ignorer ou rejeter le trafic
+qui ne nous intéresse pas ainsi que le trafic potentiellement dangereux pour la
+sécurité.
+</p>
+
+</body>
+</section>
+<section>
+<title>Les outils nécessaires</title>
+<body>
+
+<p>
+Avant de commencer à bâtir le pare-feu, il faut faire deux choses. Tout
+d'abord, il faut s'assurer que la commande <c>iptables</c> est disponible sur
+la machine.  Pour cela, en tant que super-utilisateur, tapez <c>iptables</c> et
+vérifiez ce que vous répond le shell. Si la commande n'existe pas, alors il
+faut l'installer. Voilà comment faire&nbsp;:
+</p>
+
+<pre caption="Installation de iptables">
+# <i>emerge iptables</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Configuration du noyau</title>
+<body>
+
+<p>
+Une fois installée, la commande <c>iptables</c> est disponible, ainsi que la
+page de manuel qui lui correspond (<c>man iptables</c>).  Ensuite, il faut nous
+assurer que les fonctionnalités nécessaires sont bien activées dans le noyau.
+Ce guide suppose que vous compilez vos propres noyaux.  Dans le répertoire
+<path>/usr/src/linux</path>, tapez <c>make menuconfig</c> ou <c>make
+xconfig</c>&nbsp;; nous allons choisir certaines fonctionnalités pour notre
+noyau.
+</p>
+
+<p>
+Dans la section "Networking options" (dans le menu "Networking-&gt;Networking
+Options" pour le noyau 2.6), assurez-vous d'activer au moins les options
+suivantes&nbsp;:
+</p>
+
+<pre caption="Fonctionnalités noyaux nécessaires">
+&lt;*&gt; Packet socket
+[*] Network packet filtering (replaces ipchains)
+&lt;*&gt; Unix domain sockets
+[*] TCP/IP networking
+[*]   IP: advanced router
+[*]   IP: policy routing
+[*]    IP: use netfilter MARK value as routing key
+[*]    IP: fast network address translation
+[*]   IP: use TOS value as routing key
+</pre>
+
+<p>
+Ensuite, dans le menu "IP: Netfilter Configuration -&gt;", activez toutes les
+options, afin d'avoir toutes les fonctionnalités NetFilter disponibles pour
+votre pare-feu. Elles ne sont pas toutes nécessaires, mais vous pourrez ainsi
+mener quelques expériences avec ces options plus tard.
+</p>
+
+<p>
+Il y a une fonctionnalité dans la section "Networking options" que vous ne
+<e>devriez pas</e> activer&nbsp;: la notification explicite de congestion.
+Laissez cette option décochée.
+</p>
+
+<pre caption="L'option à désactiver">
+[ ]   IP: TCP Explicit Congestion Notification support
+</pre>
+
+<p>
+Si cette option est activée, votre machine Linux ne sera pas capable de
+supporter des communications réseau avec environ 8% de l'Internet. Quand l'ECN
+est activée, certains paquets envoyés par votre machine Linux auront le bit ECN
+à 1. En pratique, ce bit engendre des comportements bizarres sur certains
+routeurs Internet, aussi vaut-il mieux garder l'ECN désactivée.
+</p>
+
+<p>
+Maintenant que le noyau est configuré correctement, compilez-le, installez-le et
+rebootez. Nous pouvons maintenant nous amuser avec NetFilter :)
+</p>
+
+</body>
+</section>
+<section>
+<title>Premiers pas</title>
+<body>
+
+<p>
+Pour construire un pare-feu, la commande <c>iptables</c> sera votre meilleure
+alliée. Elle permet d'interagir avec les règles de filtrage de paquets au
+niveau du noyau. Nous utiliserons la commande <c>iptables</c> pour créer de
+nouvelles règles, afficher les règles existantes, en supprimer et choisir la
+politique de filtrage par défaut. Ce qui signifie que la création d'un pare-feu
+se résume à entrer une série de commandes iptables, comme par exemple
+(ATTENTION, ne pas la taper tout de suite&nbsp;!)
+</p>
+
+<pre caption="Choisir la politique par défaut DROP">
+# <i>iptables -P INPUT DROP</i>
+</pre>
+
+<p>
+Si vous voulez créer un pare-feu <e>quasiment</e> parfait et que vous entrez
+cette commande, vous serez absolument bien protégé contre toutes formes
+d'attaques malicieuses. En effet, cette commande ordonne au noyau d'ignorer
+tous les paquets réseau entrants. Cependant, même si ce firewall est
+extrêmement sécurisé, il est également un peu mauvais. Mais avant de continuer,
+essayons de comprendre comment cette commande peut faire ce qu'elle fait.
+</p>
+
+</body>
+</section>
+<section>
+<title>Modifier la politique par défaut</title>
+<body>
+
+<p>
+La commande <c>iptables -P</c> est utilisée pour selectionner la politique par
+défaut pour une chaîne de filtrage de paquets. Dans cet exemple, <c>iptables
+-P</c> est utilisé pour changer la politique par défaut de la chaîne INPUT, une
+chaîne préinstallée qui est appliquée à chaque paquet entrant. En sélectionnant
+la potique par défaut DROP, on indique au noyau que chaque paquet qui atteint la
+fin de la chaîne INPUT doit être «&nbsp;droppé&nbsp;» (c'est-à-dire ignoré, supprimé de la
+mémoire). Et comme nous n'avons pas encore ajouté de règles dans la chaîne
+INPUT, tous les paquets atteignent la fin de la chaîne et donc tous les paquets
+sont ignorés.
+</p>
+
+<p>
+Encore une fois, à elle seule, cette commande est totalement inutile.
+Cependant, elle montre une bonne stratégie pour la construction d'un pare-feu.
+On commence par ignorer tous les paquets par défaut, puis on ouvre au fur et à
+mesure les ports dont on a besoin. Cela garantit que le pare-feu est aussi
+sécurisé que possible.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Definir ses règles</title>
+<section>
+<title>Une (petite) amélioration</title>
+<body>
+
+<p>
+Dans cet exemple, nous supposons que nous construisons un pare-feu pour une
+machine avec deux interfaces réseau, nommées eth0 et eth1. L'interface eth0 est
+connectée sur notre LAN, tandis que eth1 est branchée sur notre routeur DSL
+qui mène vers Internet. Dans une telle situation, nous améliorerons notre
+<e>pare-feu ultime</e> en rajoutant une ligne&nbsp;:
+</p>
+
+<pre caption="Améliorons notre pare-feu ultime">
+# <i>iptables -P INPUT DROP</i>
+# <i>iptables -A INPUT -i ! eth1 -j ACCEPT</i>
+</pre>
+
+<p>
+Cette ligne supplémentaire <c>iptables -A</c> ajoute une nouvelle règle de
+filtrage de paquets à la fin de la chaîne INPUT. Après avoir ajouté cette
+règle, la chaîne INPUT consiste en une règle unique et une règle DROP par
+défaut. Maintenant, voyons ce que fait notre pare-feu désormais à moitié
+terminé.
+</p>
+
+</body>
+</section>
+<section>
+<title>Le long de la chaîne INPUT...</title>
+<body>
+
+<p>
+Quand un paquet arrive sur l'une des interfaces (lo, eth0 ou eth1), le code de
+NetFilter l'envoie sur la chaîne INPUT et vérifie s'il correspond à la première
+règle. Si c'est le cas, il est accepté et le traitement de ce paquet est
+terminé.  Sinon, la règle par défaut de INPUT est appliquée et le paquet est
+effacé (DROP).
+</p>
+
+<p>
+Voilà pour le point de vue conceptuel. Plus concrètement, la première règle
+correspond à tous les paquets arrivant sur les interfaces eth0 et lo, et les
+laisse passer. Tous les paquets arrivant sur l'interface eth1 sont droppés.
+Donc, si nous activons ce firewall sur notre machine, il pourra interagir avec
+notre LAN, mais ne pourra pas communiquer avec Internet. Voyons comment
+autoriser le trafic Internet, et ce de deux manières différentes.
+</p>
+
+</body>
+</section>
+<section>
+<title>Pare-feu traditionnels</title>
+<body>
+
+<p>
+Évidemment, pour que notre firewall serve à quelque chose, il nous faut
+sélectionner quels paquets seront autorisés à atteindre notre machine en
+passant par Internet. Il y a deux approches pour faire cela&nbsp;: l'une
+utilise des règles statiques, tandis que l'autre utilise des règles dynamiques,
+avec suivi de connexion.
+</p>
+
+<p>
+Prenons pour exemple le cas du téléchargement de pages Web. Si nous voulons que
+notre machine soit capable de recevoir les paquets correspondants au
+téléchargement, nous pouvons ajouter une règle statique qui sera toujours vraie
+pour les paquets HTTP entrants, quelle que soit leur origine&nbsp;:
+</p>
+
+<pre caption="Acceptons tous les paquets HTTP entrants">
+# <i>iptables -A INPUT --sport 80 -j ACCEPT</i>
+</pre>
+
+<p>
+Comme tout le trafic Web standard provient d'un serveur avec port source 80,
+cette règle permet effectivement à votre machine de télécharger des pages Web.
+Cependant, cette approche traditionnelle, bien qu'acceptable dans certains cas,
+engendre de nombreux problèmes.
+</p>
+
+</body>
+</section>
+<section>
+<title>Problèmes des pare-feu traditionnels</title>
+<body>
+
+<p>
+Voilà le premier problème&nbsp;: bien que la plupart du trafic Web ait pour
+origine un port 80, ce n'est quelquefois pas vrai. Donc, cette règle marche,
+mais seulement la plupart du temps. Par exemple, vous avez peut-être déjà vu
+une URL du genre "http://www.foo.com:81". Cette URL pointe vers un serveur Web
+hébergé sur un serveur écoutant sur le port 81 plutôt que le port 80 par
+défaut, et est donc inaccessible derrière notre pare-feu. Prendre en compte
+toutes les exceptions de ce genre va vite faire de notre firewall sécurisé un
+sac de n¿uds et remplira notre chaîne INPUT avec un tas de règles pour gérer
+chaque cas particulier.
+</p>
+
+<p>
+Cependant, le problème majeur de ce genre de règle est lié à la sécurité.
+Évidemment, il est vrai que seulement le trafic avec un port source 80 sera
+autorisé à passer notre pare-feu, mais le port source d'un paquet est un
+élément facilement manipulable par un attaquant. Par exemple, si un intrus
+connaît la façon dont notre pare-feu est conçu, il peut le contourner
+simplement en s'assurant que toutes ses connexions entrantes viennent d'un port
+80 de l'une de ses machines&nbsp;! Puisque cette règle statique est trop facile
+à contourner, il nous faut une approche plus sécurisée et dynamique.
+Heureusement, iptables et le noyau 2.4 et supérieurs incluent tout ce dont nous
+avons besoin pour construire un pare-feu dynamique avec suivi de connexion.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Pare-feu dynamique avec suivi de connexion</title>
+<section>
+<title>Quelques mots sur le suivi de connexion</title>
+<body>
+
+<p>
+Plutôt que de creuser des trous dans notre pare-feu en se basant sur des
+caractéristiques statiques des protocoles, on peut utiliser les nouvelles
+fonctionnalités de suivi de connexion de Linux pour baser les décisions du
+pare-feu sur l'état dynamique des paquets par rapport à la connexion.
+Conntrack fonctionne en associant chaque paquet avec une et une seule
+communication bidirectionnelle, ou connexion.
+</p>
+
+<p>
+Par exemple, imaginons ce qui se passe lorsque vous utilisez telnet ou ssh pour
+vous connecter sur une machine distante. Si vous regarder le trafic réseau au
+niveau des paquets, tout ce que vous verrez sera un tas de paquets passant
+d'une machine sur l'autre. Cependant, à un niveau d'abstraction plus élevé, cet
+échange de paquets est en fait une communication bidirectionnelle entre votre
+machine locale et la machine distante. Les pare-fxu traditionnels ne font que
+regarder chaque paquet indépendamment les uns des autres, sans se soucier
+qu'ils fassent en réalité partie d'un tout, d'une connexion.
+</p>
+
+</body>
+</section>
+<section>
+<title>Conntrack en détails</title>
+<body>
+
+<p>
+C'est là que la technologie de suivi de connexion entre en jeu. La
+fonctionnalité conntrack de Linux peut <e>voir</e> les connexions de haut
+niveau lorsqu'elles ont lieu, reconnaissant votre session SSH comme une seule
+entité logique. Conntrack peut aussi reconnaître les échanges de paquets UDP et
+ICMP comme des connexions logiques, même si UDP et ICMP sont sans connexion par
+nature&nbsp;; cela est très utile puisque cela permet d'utiliser conntrack pour
+gérer des échanges de paquets ICMP et UDP.
+</p>
+
+<p>
+Si vous avez déjà redémarré avec votre nouveau noyau avec NetFilter activé,
+vous pouvez voir une liste des connexions réseau actives auxquelles votre
+machine participe en entrant <c>cat /proc/net/ip_conntrack</c>. Même sans
+pare-feu configuré, conntrack fonctionne en arrière-plan, en gardant trace des
+connexions établies ou reçues par votre machine.
+</p>
+
+</body>
+</section>
+<section>
+<title>État de connexion NEW</title>
+<body>
+
+<p>
+Conntrack ne fait pas que reconnaître les connexions, il classe également
+chaque paquet qu'il voit dans l'un des quatres états de connexion. Le premier
+état dont nous allons parler est appelé NEW (nouveau). Quand vous tapez <c>ssh
+hote.distant.com</c>, le premier paquet ou la première rafale de paquets qui
+sortent de votre machine et sont destinés à hote.distant.com sont dans l'état
+NEW. Cependant, dès que vous aurez reçu ne serait ce qu'un seul paquet de
+hote.distant.com, tous les futurs paquets que vous enverrez à hote.distant.com
+dans cette connexion ne seront plus considérés comme des packets NEW. Pour
+résumer, un paquet est considéré NEW lorsqu'il sert à établir une nouvelle
+connexion, et qu'aucun trafic n'a été reçu de l'hôte distant en retour (dans
+le cadre de cette connexion précise, évidemment).
+</p>
+
+<p>
+J'ai décrit les paquets NEW sortants, mais il est également tout à fait
+possible (et normal) d'avoir des paquets NEW entrants. Les paquets NEW entrants
+viennent généralement d'une machine distante et servent à établir une connexion
+avec vous. Le(s) premier(s) paquet(s) que votre serveur Web reçoit pour une
+requête HTTP sont considérés comme des paquets NEW entrants&nbsp;; cependant,
+une fois que vous aurez répondu à un seul de ces paquets, tous les autres
+paquets que vous recevrez ne seront plus considérés dans l'état NEW.
+</p>
+
+</body>
+</section>
+<section>
+<title>Etat de connexion ESTABLISHED</title>
+<body>
+
+<p>
+Une fois qu'une connexion a vu du trafic dans les deux sens, tous les nouveaux
+paquets de cette connexion sont considérés dans l'état ESTABLISHED (établi). La
+distinction entre les états NEW et ESTABLISHED est très importante, comme nous
+le verrons dans un instant.
+</p>
+
+</body>
+</section>
+<section>
+<title>Etat de connexion RELATED</title>
+<body>
+
+<p>
+Le troisième état de connexion est appelé RELATED (en rapport avec). Les
+paquets RELATED sont ceux qui établissent une nouvelle connexion, mais qui sont
+en rapport avec une connexion déjà existante. L'état RELATED peut être utilisé
+pour filtrer des connexions qui font partie d'un protocole multi-connexion,
+comme FTP, ainsi que les paquets d'erreur en rapport avec des connexions
+existantes (comme les paquets d'erreur ICMP).
+</p>
+
+</body>
+</section>
+<section>
+<title>Etat de connexion INVALID</title>
+<body>
+
+<p>
+Pour terminer, il existe aussi les paquets INVALID&nbsp;: ce sont ceux qui ne
+peuvent être classés dans aucune des trois précédentes catégories. Il est
+important de noter qu'un paquet considéré comme INVALID n'est pas
+automatiquement ignoré&nbsp;; c'est à vous de choisir les règles appropriées et
+d'ajuster les politiques pour que ces paquets soient gérés de la manière que
+vous préférez.
+</p>
+
+</body>
+</section>
+<section>
+<title>Ajout d'une règle stateful</title>
+<body>
+
+<p>
+Bien, maintenant que nous avons compris le suivi de connexion, il est temps de
+jeter un ¿il à une simple règle supplémentaire qui va transformer notre
+pare-feu non-fonctionnel en quelque chose de plutôt utile.
+</p>
+
+<pre caption="Ajout d'une règle stateful">
+# <i>iptables -P INPUT DROP</i>
+# <i>iptables -A INPUT -i ! eth1 -j ACCEPT</i>
+# <i>iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Fonctionnement de cette règle</title>
+<body>
+
+<p>
+Cette simple règle, insérée à la fin de votre chaîne INPUT existante, va nous
+permettre d'établir des connexions avec des machines distantes. Elle fonctionne
+comme ceci&nbsp;: disons que l'on veuille faire du ssh vers hote.distant.com.
+Après avoir lancé <c>ssh hote.distant.com</c>, notre machine envoie un paquet
+pour établir la connexion. Ce paquet particulier est dans l'état NEW, et notre
+pare-feu le laisse passer, puisque nous bloquons seulement les paquets qui
+entrent dans notre firewall, pas ceux qui en sortent.
+</p>
+
+<p>
+Quand nous recevons une réponse de hote.distant.com, ce paquet passe par notre
+chaîne INPUT. Il ne correspond pas à la première règle (puisqu'il arrive de
+eth1), donc il passe à la seconde et dernière règle. S'il correspond à cette
+règle, il sera accepté, et sinon, il arrivera à la fin de la chaîne INPUT et la
+politique par défaut lui sera appliquée (DROP). Alors, ce paquet entrant
+sera-t-il accepté ou droppé&nbsp;?
+</p>
+
+<p>
+Réponse&nbsp;: accepté. Quand le noyau examine ce paquet entrant, il reconnaît
+en premier qu'il fait partie d'une connexion existante. Ensuite, le noyau doit
+décider s'il s'agit d'un paquet NEW ou ESTABLISHED. Puisqu'il s'agit d'un
+paquet entrant, il vérifie si cette connexion a déjà eu du trafic sortant et
+trouve que c'est le cas (le paquet NEW initial que nous avons envoyé). Ensuite,
+le paquet entrant est classé ESTABLISHED, comme le seront tous les futurs
+paquets reçus ou envoyés qui seront associés avec cette connexion.
+</p>
+
+</body>
+</section>
+<section>
+<title>Paquets NEW entrants</title>
+<body>
+
+<p>
+Maintenant, considérons ce qui ce passe si quelqu'un sur une machine distante
+essaie de se connecter en ssh chez nous. Le premier paquet que nous recevons
+est marqué NEW et ne correspond pas à la règle 1, donc il passe à la règle 2.
+Puisque ce paquet n'est pas dans l'état ESTABLISHED ou RELATED, il arrive à la
+fin de la chaîne INPUT et la politique par défaut, DROP, est appliquée. Notre
+demande d'établissement de connexion ssh entrante est donc ignorée sans même
+une réponse (ou un paquet TCP reset) de notre part.
+</p>
+
+</body>
+</section>
+<section>
+<title>Un pare-feu proche de la perfection</title>
+<body>
+
+<p>
+Alors, quel genre de pare-feu avons-nous jusqu'à présent&nbsp;? Un excellent
+choix pour un portable ou un poste de travail si vous voulez que personne ne
+puisse se connecter depuis Internet vers vous, mais avec lequel vous pouvez
+quand même vous connecter à des sites sur Internet. Vous pourrez utiliser
+Netscape, Konqueror, ftp, ping, faire des recherches DNS, et bien plus. Toutes
+les connexions dont vous êtes l'initiateur pourront passer votre firewall.
+Cependant, les connexions non sollicitées qui viennent depuis Internet seront
+ignorées, à moins d'être en relation avec une connexion existante que vous avez
+initiée. Tant que vous ne devez pas fournir un service réseau vers
+l'extérieur, c'est un pare-feu pratiquement parfait.
+</p>
+
+</body>
+</section>
+<section>
+<title>Un script de pare-feu simple</title>
+<body>
+
+<p>
+Voilà un script simple qui peut être utilisé pour configurer notre premier
+firewall de station de travail&nbsp;:
+</p>
+
+<pre caption="Un script de pare-feu simple">
+#!/bin/bash
+<comment># Un script de firewall simple pour une station de travail ou un portable
+# qui ne fournit aucun service réseau comme un serveur web, ftp, smtp, etc.</comment>
+
+if [ "$1" = "start" ]
+then
+        echo "Démarrage du firewall..."
+        iptables -P INPUT DROP
+        iptables -A INPUT -i ! eth1 -j ACCEPT
+        iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+elif [ "$1" = "stop" ]
+then
+        echo "Arrêt du firewall..."
+        iptables -F INPUT
+        iptables -P INPUT ACCEPT
+fi
+</pre>
+
+</body>
+</section>
+<section>
+<title>Utilisation du script</title>
+<body>
+
+<p>
+En utilisant ce script, vous pouvez désactiver le pare-feu en tapant
+<c>./firewall stop</c> et le relancer en tapant <c>./firewall start</c>. Pour
+désactiver le firewall, on supprime les règles de la chaîne INPUT en faisant
+<c>iptables -F INPUT</c>, puis reprenons la politique par défaut de INPUT en
+ACCEPT avec la commande <c>iptables -P INPUT ACCEPT</c>. Maintenant, voyons
+tout un tas d'améliorations que nous pouvons faire sur notre pare-feu. Après
+avoir expliqué chaque amélioration, je présenterai un script avancé pour un
+poste de travail. Ensuite, nous commencerons à modifier notre pare-feu pour des
+serveurs.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Améliorations du suivi de connexion</title>
+<section>
+<title>Désactication explicite de l'ECN</title>
+<body>
+
+<p>
+J'ai parlé plus haut de l'importance de désactiver l'ECN (explicit congestion
+notification) pour que les communications Internet fonctionnent correctement.
+Même si vous avez désactivé l'ECN dans le noyau en suivant ma suggestion, il
+est possible que vous l'oubliez dans le futur. Ou, comme c'est possible, vous
+allez passer votre script de pare-feu à quelqu'un qui a activé l'ECN. Pour ces
+raisons, c'est une bonne idée d'utiliser l'interface <path>/proc</path> pour
+désactiver explicitement l'ECN, comme ceci&nbsp;:
+</p>
+
+<pre caption="Désactivation explicite de l'ECN">
+if [ -e /proc/sys/net/ipv4/tcp_ecn ]
+then
+        echo 0 > /proc/sys/net/ipv4/tcp_ecn
+fi
+</pre>
+
+</body>
+</section>
+<section>
+<title>Forwarding</title>
+<body>
+
+<p>
+Si vous utilisez votre machine Linux comme un routeur, alors vous voudrez
+activer l'IP forwarding, ce qui donnera la permission au noyau de transmettre
+des paquets de l'interface eth0 à eth1, et inversement. Dans notre exemple de
+configuration, oú eth0 est connecté à notre LAN, et eth1 à Internet, activer
+l'IP forwarding est une étape nécessaire pour permettre à notre LAN de se
+connecter à Internet en passant par notre machine Linux. Pour activer l'IP
+forwarding, utilisez cette ligne&nbsp;:
+</p>
+
+<pre caption="Forwarding">
+# <i>echo 1 > /proc/sys/net/ipv4/ip_forward</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Gestion des rejets</title>
+<body>
+
+<p>
+Jusqu'à présent, nous avons ignoré tout le trafic non sollicité venant
+d'Internet. Bien que celà soit un moyen efficace pour contrer l'activité réseau
+non désirable, cela engendre également quelques inconvénients. Le plus gros
+problème avec cette approche est qu'il est facile pour un intrus de détecter
+que nous utilisons un pare-feu puisque notre machine ne répond pas avec les
+réponses standards TCP reset et ICMP port-unreachable, c'est-à-dire les
+réponses qu'une machine normale devrait renvoyer pour indiquer une tentative
+de connexion échouée vers un service non existant.
+</p>
+
+<p>
+Plutôt que de laisser des intrus potentiels savoir que nous utilisons un
+pare-feu (ce qui peut leur laisser penser que nous fournissons des services
+précieux auquels ils ne peuvent pas accéder), il serait à notre avantage de
+faire croire que nous n'utilisons pas de firewall. En ajoutant ces deux règles
+à la fin de la chaîne INPUT, on peut facilement accomplir cette tâche&nbsp;:
+</p>
+
+<pre caption="Gestion des rejets">
+# <i>iptables -A INPUT -p tcp -i eth1 -j REJECT --reject-with tcp-reset</i>
+# <i>iptables -A INPUT -p udp -i eth1 -j REJECT --reject-with
+icmp-port-unreachable</i>
+</pre>
+
+<p>
+La première règle s'occupe de rejeter correctement les connexions TCP, alors
+que la seconde s'occupe de l'UDP. Avec ces deux règles, il devient difficile
+pour un intrus de détecter que nous sommes derrière un pare-feu&nbsp;; avec de
+la chance, l'intrus se détournera de notre machine pour chercher d'autres
+cibles potentiellement plus intéressantes.
+</p>
+
+<p>
+En plus de rendre notre firewall plus <e>discret</e>, ces règles éliminent
+aussi le délai lors de la connexion à certains serveurs FTP et IRC. Ce délai
+est dû au serveur qui tente de faire une requête ident sur votre machine (en
+se connectant sur le port 113), qui échoue après un timeout d'environ 15
+secondes.  Maintenant, notre firewall va renvoyer un TCP reset et la requête
+ident va échouer immédiatement plutôt que de réssayer pendant 15 secondes
+(alors que vous attendez patiemment une réponse du serveur).
+</p>
+
+</body>
+</section>
+<section>
+<title>Protection contre le Spoof</title>
+<body>
+
+<p>
+Dans plusieurs distributions, quand une interface réseau est activée, plusieurs
+vieilles règles ipchains sont également ajoutées au système. Ces règles
+spéciales avaient été ajoutées par les créateurs de la distribution pour
+contrer un problème appelé spoofing dans lequel les adresses sources des
+paquets ont été trafiqués pour contenir une valeur invalide (c'est une des
+choses que les script kiddies font). Bien que l'on pourrait créer des règles
+iptables similaires pour bloquer ces paquets spoofés, il y a une manière de
+faire plus facile. De nos jours, le noyau a la fonctionnalité intégrée
+d'ignorer les paquets spoofés&nbsp;; il suffit de l'activer par le biais de
+l'interface <path>/proc</path>. Voilà comment&nbsp;:
+</p>
+
+<pre caption="Protection contre le spoofing">
+for x in lo eth0 eth1
+do
+        echo 1 > /proc/sys/net/ipv4/conf/${x}/rp_filter
+done
+</pre>
+
+<p>
+Ce script shell va indiquer au noyau d'ignorer tous les paquets spoofés sur les
+interfaces lo, eth0 et eth1. Vous pouvez soit ajouter ces lignes à votre script
+de firewall, soit dans le script qui active vos interfaces lo, eth0 et eth1.
+</p>
+
+</body>
+</section>
+<section>
+<title>Masquerading</title>
+<body>
+
+<p>
+Le NAT (network address translation) et l'IP masquerading, bien que non
+directement en rapport avec les pare-feu, sont souvent utilisés en complément.
+Nous allons voir deux configurations répandues de NAT/Masquerading que vous
+pourrez devoir utiliser. La première règle servira dans les situations où vous
+utilisez un lien non permanent vers Internet (ppp0) avec une adresse IP
+dynamique.
+</p>
+
+<pre caption="Masquerading">
+# <i>iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE</i>
+</pre>
+
+<p>
+Si vous êtes dans cette situation, vous voudrez également convertir mes scripts
+de firewall pour que les références à "eth1" (le routeur DSL dans notre
+exemple) soient changées en "ppp0". Et il est tout à fait possible d'ajouter
+des règles qui font références à "ppp0" alors que cette interface n'existe pas
+encore. Dès que ppp0 est activée, tout fonctionnera à merveille. Vérifiez
+quannd même que vous avez activé l'IP forwarding.
+</p>
+
+</body>
+</section>
+<section>
+<title>SNAT</title>
+<body>
+
+<p>
+Si vous utilisez une ligne DSL pour vous connecter à Internet, vous avez
+probablement une des deux configurations suivantes. Dans la première, votre
+routeur DSL ou modem a sa propre adresse IP et s'occupe de la translation
+d'adresse pour vous. Si vous êtes dans cette situation, vous n'avez pas besoin
+de faire du NAT puisque votre routeur DSL le fait déjà.
+</p>
+
+<p>
+Cependant, si vous voulez avoir plus de contrôle sur vos fonctionnalités NAT,
+vous pouvez eventuellement, si votre fournisseur d'accès le permet, configurer
+votre routeur DSL en mode "bridge" (pont). Dans ce mode, votre pare-feu
+devient un élément officiel du réseau de votre fournisseur d'accès et le
+routeur DSL s'occupe de relayer le trafic de et vers votre machine Linux de
+manière transparente. Il n'a plus besoin d'une adresse IP&nbsp;; à la place,
+eth1 (dans notre exemple) en a une. Si quelqu'un envoie un ping à votre adresse
+IP depuis Internet, il recevra une réponse de votre machine Linux et pas de
+votre routeur.
+</p>
+
+<p>
+Avec ce genre de configuration, vous devrez utiliser SNAT (source NAT) plutôt
+que le Masquerading. Voici la ligne que vous devriez rajouter à votre
+firewall&nbsp;:
+</p>
+
+<pre caption="SNAT">
+# <i>iptables -t nat -A POSTROUTING -o eth1 -j SNAT --to 1.2.3.4</i>
+</pre>
+
+<p>
+Dans cet exemple, remplacez eth1 par l'interface Ethernet connectée sur votre
+routeur DSL ainsi que 1.2.3.4 par votre adresse IP statique (l'IP de votre
+interface Ethernet). Encore une fois, n'oubliez pas l'IP forwarding.
+</p>
+
+</body>
+</section>
+<section>
+<title>Problèmes avec le NAT</title>
+<body>
+
+<p>
+Heureusement pour nous, le NAT et le masquerading s'entendent bien sur notre
+pare-feu. Quand vous écrivez vos règles de firewall, ignorez simplement que
+vous utilisez du NAT. Vos règles doivent accepter, ignorer ou rejeter les
+paquets en se basant sur leur "véritables" adresses source et destination. Le
+code de filtrage du pare-feu prend en compte l'adresse source d'origine et
+l'adresse de destination finale. C'est tant mieux pour nous, puisque cela
+permet à notre firewall de fonctionner correctement même si on désactive
+temporairement le NAT ou le masquerading.
+</p>
+
+</body>
+</section>
+<section>
+<title>Comprendre les tables</title>
+<body>
+
+<p>
+Dans les exemples de NAT/masquerading précédents, on a ajouté des règles à une
+chaîne, mais nous avons également fait des choses un peu différemment.
+Remarquez l'option "-t". L'option "-t" permet de choisir la table à laquelle
+appartient notre chaîne. Quand cette option n'est pas spécifiée, la table par
+défaut est la table "filter". Par conséquent, toutes les commandes précédentes
+sans rapport avec le NAT ont modifié la chaîne INPUT qui fait partie de la
+table "filter". La table "filter" contient toutes les règles associées à
+l'acceptation/rejet de paquets, tandis que la table "nat" (comme vous pouvez le
+deviner) contient les règles concernant la translation d'adresse. Il existe
+d'autres chaînes iptables qui sont décrites en détail dans la page de manuel
+iptables, ainsi que dans les HOWTO de Rusty Russel (cf. dans la section <uri
+link="#ressources">Ressources </uri> plus bas pour les liens).
+</p>
+
+</body>
+</section>
+<section>
+<title>Notre script amélioré</title>
+<body>
+
+<p>
+Maintenant que nous avons vu tout un tas d'améliorations possibles, il est
+temps de voir un second script plus souple d'activation/désactivation du
+firewall&nbsp;:
+</p>
+
+<pre caption="Notre script amélioré">
+#!/bin/bash
+
+<comment># Un pare-feu avec suivi de connexion amélioré pour une station de travail, portable ou
+# routeur qui ne fourni aucun service réseau (comme serveur web, smtp, ftp, etc.)</comment>
+
+<comment># Cette variable définit le nom de l'interface qui est connectée à Internet)</comment>
+
+UPLINK="eth1"
+
+<comment># Si vous êtes un routeur, vous devez forwarder les paquets IP entre les interfaces,
+# mettez ROUTER="yes" ; sinon, ROUTER="no"</comment>
+
+ROUTER="yes"
+
+<comment># Changez la prochaîne ligne pour mettre l'adresse IP statique de votre interface
+# uplink pour faire du SNAT statique, ou "dynamic" si vous avez une IP dynamique
+# Si vous n'avez pas besoin de NAT, laissez NAT="" pour le désactiver.</comment>
+
+NAT="1.2.3.4"
+
+<comment># Changez cette variable pour lister toutes vos interfaces réseau, y compris lo</comment>
+
+INTERFACES="lo eth0 eth1"
+
+if [ "$1" = "start" ]
+then
+    echo "Demarrage du firewall..."
+    iptables -P INPUT DROP
+    iptables -A INPUT -i ! ${UPLINK} -j ACCEPT
+    iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+    iptables -A INPUT -p tcp -i ${UPLINK} -j REJECT --reject-with tcp-reset
+    iptables -A INPUT -p udp -i ${UPLINK} -j REJECT --reject-with icmp-port-unreachable
+
+    <comment># Desactivation explicite de l'ECN</comment>
+    if [ -e /proc/sys/net/ipv4/tcp_ecn ]
+    then
+        echo 0 > /proc/sys/net/ipv4/tcp_ecn
+    fi
+
+    <comment># Désactiver le spoofing sur toutes les interfaces</comment>
+    for x in ${INTERFACES}
+    do
+        echo 1 > /proc/sys/net/ipv4/conf/${x}/rp_filter
+    done
+
+    if [ "$ROUTER" = "yes" ]
+    then
+        <comment># Activation de l'IP forwarding pour le routage</comment>
+        echo 1 > /proc/sys/net/ipv4/ip_forward
+        if [ "$NAT" = "dynamic" ]
+        then
+            <comment># Adresse IP dynamique, utilisation du masquerading</comment>
+            echo "Activation du masquerading (IP dynamique)..."
+            iptables -t nat -A POSTROUTING -o ${UPLINK} -j MASQUERADE
+        elif [ "$NAT" != "" ]
+        then
+            <comment># IP statique, utilisation du SNAT</comment>
+            echo "Activation SNAT (IP statique)..."
+            iptables -t nat -A POSTROUTING -o ${UPLINK} -j SNAT --to ${UPIP}
+        fi
+    fi
+elif [ "$1" = "stop" ]
+then
+    echo "Arret du firewall..."
+    iptables -F INPUT
+    iptables -P INPUT ACCEPT
+    <comment># Désactive le NAT/masquerading</comment>
+    iptables -t nat -F POSTROUTING
+fi
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Serveurs avec suivi de connexion</title>
+<section>
+<title>Voir ses règles</title>
+<body>
+
+<p>
+Avant de commencer à modifier notre pare-feu pour pouvoir l'utiliser sur un
+serveur, je dois vous montrer comment afficher les règles actives sur votre
+pare-feu. Pour voir les règles dans la chaîne INPUT de la table filter,
+tapez&nbsp;:
+</p>
+
+<pre caption="Voir les règles">
+# <i>iptables -v -L INPUT</i>
+</pre>
+
+<p>
+L'option -v nous donne une sortie verbeuse afin que l'on puisse voir le nombre
+total de paquets et d'octets transférés par règle. On peut aussi voir la chaîne
+POSTROUTING de la table nat avec la commande suivante&nbsp;:
+</p>
+
+<pre caption="Voir les règles de la chaîne POSTROUTING de la table nat">
+# <i>iptables -t nat -v -L POSTROUTING</i>
+Chain POSTROUTING (policy ACCEPT 399 packets, 48418 bytes)
+pkts bytes target     prot opt in     out     source               destination
+2728  170K SNAT       all  --  any    eth1    anywhere             anywhere
+to:215.218.215.2
+</pre>
+
+</body>
+</section>
+<section>
+<title>Prêts pour le service</title>
+<body>
+
+<p>
+À l'heure actuelle, notre firewallare-feu ne permet pas au public de se
+connecter aux services sur notre machine, car elle accepte seulement les
+paquets entrants dans l'état ESTABLISHED ou RELATED. Comme il ignore tous les
+paquets NEW entrants, toutes les tentatives de connexion sont systématiquement
+rejetées. Cependant, en autorisant sélectivement certains paquets à traverser
+notre pare-feu, on peut permettre au public de se connecter aux services que
+nous offrons.
+</p>
+
+</body>
+</section>
+<section>
+<title>HTTP avec suivi</title>
+<body>
+
+<p>
+Bien que l'on veuille accepter quelques connexions entrantes, on ne souhaite
+tout de même pas les accepter toutes. Il est préférable de partir d'une
+politique "rejet par défaut" (comme nous l'avons configuré actuellement) et
+d'ouvrir l'accès aux seuls services que l'on souhaite rendre publics. Par
+exemple, si nous avons un serveur Web, nous allons autoriser les paquets NEW
+vers notre machine, mais seulement s'ils sont destinés au port 80 (HTTP). C'est
+tout ce qu'il suffit de faire. Dès que nous autorisons le paquet NEW à passer,
+on autorise l'établissement de connexion. Une fois la connexion établie, la
+règle existante qui autorise les paquets entrants ESTABLISHED et RELATED entre
+en scène, laissant se dérouler la connexion HTTP sans accrocs.
+</p>
+
+</body>
+</section>
+<section>
+<title>Exemple d'HTTP avec suivi</title>
+<body>
+
+<p>
+Jetons un ¿il au <e>c¿ur</e> de notre pare-feu et à la nouvelle règle qui
+autorise les connexion HTTP entrantes&nbsp;:
+</p>
+
+<pre caption="Exemple d'HTTP avec suivi">
+iptables -P INPUT DROP
+iptables -A INPUT -i ! ${UPLINK} -j ACCEPT
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+<comment># Notre nouvelle règle</comment>
+iptables -A INPUT -p tcp --dport http -m state --state NEW -j ACCEPT
+iptables -A INPUT -p tcp -i ${UPLINK} -j REJECT --reject-with tcp-reset
+iptables -A INPUT -p udp -i ${UPLINK} -j REJECT --reject-with icmp-port-unreachable
+</pre>
+
+<p>
+Cette nouvelle règle autorise les paquets TCP NEW entrants destinés au port 80
+(HTTP) de notre machine à entrer. Remarquez la place de cette règle. Il est
+important qu'elle soit placée avant notre règle REJECT. Comme iptables
+applique seulement la première règle qui correspond, la mettre derrière les
+lignes REJECT serait sans effets.
+</p>
+
+</body>
+</section>
+<section>
+<title>Notre script de pare-feu avancé</title>
+<body>
+
+<p>
+Maintenant, voyons notre dernier script de pare-feu qui peut être utilisé sur
+un portable, station de travail, routeur ou serveur (ou une quelconque
+combinaison&nbsp;!)
+</p>
+
+<pre caption="Notre script de pare-feu avancé">
+#!/bin/bash
+
+<comment># Notre script de firewall complement stateful. Ce firewall peut être adapté
+# pour un portable, station de travail, routeur ou même un serveur.</comment>
+
+<comment># Changez cette variable pour le numéro de l'interface "uplink"
+# (connexion vers Internet)</comment>
+
+UPLINK="eth1"
+
+<comment># Si vous êtes routeur (et donc souhaitez forwarder les paquets IP entre
+# les interfaces), mettez ROUTER="yes"; sinon, ROUTER="no"</comment>
+
+ROUTER="yes"
+
+<comment># Changez la ligne qui suit vers l'adresse IP statique de votre interface
+# uplink pour du SNAT statique, ou "dynamic" si vous avez une IP dynamique.
+# Si vous ne voulez pas de NAT, mettez NAT="" pour le désactiver.</comment>
+
+NAT="1.2.3.4"
+
+<comment># Changez cette ligne pour lister toutes vos interfaces réseau, y compris lo</comment>
+
+INTERFACES="lo eth0 eth1"
+
+<comment># Changez cette ligne pour lister les numéros de ports ou noms symboliques
+# (de /etc/services) de tous les services que vous souhaiter rendre publics.
+# Si vous ne souhaitez publiez aucun service, laissez ""</comment>
+
+SERVICES="http ftp smtp ssh rsync"
+
+if [ "$1" = "start" ]
+then
+    echo "Démarrage du firewall..."
+    iptables -P INPUT DROP
+    iptables -A INPUT -i ! ${UPLINK} -j ACCEPT
+    iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+    <comment># Activer l'accès publics aux services</comment>
+    for x in ${SERVICES}
+    do
+        iptables -A INPUT -p tcp --dport ${x} -m state --state NEW -j ACCEPT
+    done
+
+    iptables -A INPUT -p tcp -i ${UPLINK} -j REJECT --reject-with tcp-reset
+    iptables -A INPUT -p udp -i ${UPLINK} -j REJECT --reject-with icmp-port-unreachable
+
+    <comment># Désactivation explicite de l'ECN</comment>
+    if [ -e /proc/sys/net/ipv4/tcp_ecn ]
+    then
+        echo 0 > /proc/sys/net/ipv4/tcp_ecn
+    fi
+
+    <comment># Protection anti-spoofing</comment>
+    for x in ${INTERFACES}
+    do
+        echo 1 > /proc/sys/net/ipv4/conf/${x}/rp_filter
+    done
+
+    if [ "$ROUTER" = "yes" ]
+    then
+        <comment># Activation de l'IP forwarding</comment>
+        echo 1 > /proc/sys/net/ipv4/ip_forward
+        if [ "$NAT" = "dynamic" ]
+        then
+        <comment># IP dynamique => masquerading</comment>
+        echo "Activation du masquerading (ip dynamique)..."
+            iptables -t nat -A POSTROUTING -o ${UPLINK} -j MASQUERADE
+        elif [ "$NAT" != "" ]
+        then
+            <comment># IP statique => SNAT</comment>
+            echo "Activation du SNAT (ip statique)..."
+            iptables -t nat -A POSTROUTING -o ${UPLINK} -j SNAT --to ${UPIP}
+        fi
+    fi
+elif [ "$1" = "stop" ]
+then
+    echo "Arrêt du firewall..."
+    iptables -F INPUT
+    iptables -P INPUT ACCEPT
+    <comment># Arrêt du masquerading</comment>
+    iptables -t nat -F POSTROUTING
+fi
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Construire un meilleur pare-feu pour serveur</title>
+<section>
+<title>Améliorations</title>
+<body>
+
+<p>
+Il est souvent possible de rendre son pare-feu toujours un peu <e>mieux</e>.
+Bien sûr, la signification de <e>mieux</e> dépend de vos besoins spécifiques.
+Notre script existant peu combler exactement les vôtres, ou peut-être que
+quelques retouches seront nécessaires. Cette section est sensée servir de livre
+à idées pour vous montrer plusieurs moyens d'améliorer notre pare-feu.
+</p>
+
+</body>
+</section>
+<section>
+<title>Techniques de log</title>
+<body>
+
+<p>
+Jusqu'à présent, nous n'avons pas vu comment logger des événements. Il y a une
+cible spéciale appelée LOG que vous pouvez utiliser. Associée à LOG, il y a une
+option spéciale appelée <c>--log-prefix</c> qui permet de choisir le texte qui
+apparaîtra devant le descriptif du paquet dans les logs du système.  Voilà un
+exemple de règle LOG&nbsp;:
+</p>
+
+<pre caption="Exemple de règle LOG">
+# <i>iptables -A INPUT -j LOG --log-prefix "Anomalie INPUT:"</i>
+</pre>
+
+<p>
+Vous ne voudrez certainement pas ajouter cette règle en premier dans votre
+chaîne INPUT, car elle entraînerait qu'une entrée dans les logs soit créée pour
+chaque paquet que vous recevez&nbsp;! À la place, placez cette règle assez bas
+dans la chaîne INPUT pour logguer uniquement les paquets bizarres et autres
+anomalies.
+</p>
+
+<p>
+Une remarque importante sur la cible LOG. Normalement, quand une règle
+correspond à un paquet, ce paquet est soit accepté, rejeté ou ignoré, et les
+règles suivantes ne sont pas vérifiées. Cependant, quand une règle LOG
+correspond, ce paquet est loggué. Il n'est ni accepté, ni rejeté, ni ignoré. À
+la place, le paquet est confronté à la règle suivante, ou bien la règle par
+défaut est appliquée s'il n'y a pas de règle suivante.
+</p>
+
+<p>
+La cible LOG peut également être combinée avec le module "limit" (décrit dans
+la page de manuel iptables) pour éviter d'avoir trop d'entrées dupliquées.
+Voilà un exemple&nbsp;:
+</p>
+
+<pre caption="Limiter la taille des logs">
+# <i>iptables -A INPUT -m state --state INVALID -m limit --limit 5/minute -j LOG --log-prefix "Etat INVALID:"</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Créer vos propres chaînes</title>
+<body>
+
+<p>
+<c>iptables</c> vous permet de créer vos propres chaînes qui peuvent être
+ensuite spécifiée comme cibles dans vos règles. Pour en apprendre plus à ce
+sujet, étudiez le Packet filtering HOWTO hebergé sur le site du projet
+netfilter/iptables (<uri>http://www.netfilter.org/</uri>).
+</p>
+
+</body>
+</section>
+<section>
+<title>Politique de restriction d'usages</title>
+<body>
+
+<p>
+Les pare-feu offrent une grande puissance à ceux qui veulent restreindre les
+usages d'un réseau dans une entreprise ou un réseau académique. Vous pouvez
+contrôler quels paquets votre machine relaie en ajoutant des règles dans la
+chaîne FORWARD. En ajoutant des règles à la chaîne OUTPUT, vous pouvez
+également contrôler ce qui arrive aux paquets générés localement, par les
+utilisateurs sur la machine Linux elle-même. iptables a aussi l'incroyable
+capacité de filtrer les paquets générés localement en fonction de leur
+propriétaire (UID ou GID). Pour plus d'informations à ce sujet, cherchez
+"owner" (propriétaire) dans la page de manuel iptables.
+</p>
+
+</body>
+</section>
+<section>
+<title>Autres angles de la sécurité</title>
+<body>
+
+<p>
+Dans notre exemple de pare-feu, nous avons supposé que tout le trafic du LAN
+interne est digne de confiance et que seul le trafic Internet devait être
+filtré avec soin. Selon votre réseau interne, cela peut être ou ne pas être le
+cas. Rien ne vous empêche de configurer votre firewall pour vous protéger
+également du coté du LAN. Envisagez les autres angles de votre réseau que vous
+voulez protéger. Il peut être aussi approprié de configurer deux zones de
+sécurité différentes dans votre LAN, chacune avec sa propre politique de
+sécurité.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="ressources">
+<title>Ressources</title>
+<section>
+<title>tcpdump</title>
+<body>
+
+<p>
+Dans cette section, je vous indique des ressources variées que vous trouverez
+certainement utiles pour vous aider à mettre au point votre pare-feu.
+Commençons par un outil important...
+</p>
+
+<p>
+<uri link="http://www.tcpdump.org/">tcpdump</uri> est un outil essentiel pour
+l'exploration bas niveau des echanges de paquets et pour vérifier que votre
+pare-feu fonctionne correctement. Si vous ne l'avez pas, installez-le. Si vous
+l'avez, commencez à l'utiliser.
+</p>
+
+</body>
+</section>
+<section>
+<title>netfilter.kernelnotes.org</title>
+<body>
+
+<p>
+Visitez le site web du projet netfilter/iptables
+(<uri>http://www.netfilter.org</uri>). Il fournit un grand nombre de
+ressources, y compris les sources de iptables et une <uri
+link="http://www.netfilter.org/documentation/index.html#documentation-faq">FAQ
+netfilter</uri>. De plus le <uri
+link="http://people.netfilter.org/~rusty/unreliable-guides/index.html">Rusty's
+Remarkably Guides</uri> est excellent. Il décit les concepts de base des
+réseaux et ajoute des guides netfilter (iptables), NAT et un «&nbsp;netfilter
+hacking HOWTO&nbsp;» pour les développeurs.
+</p>
+
+</body>
+</section>
+<section>
+<title>La page de manuel iptables</title>
+<body>
+
+<p>
+Heureusement, de nombreuses ressources sont disponibles en ligne à propos de
+Netfilter&nbsp;; cependant, n'oubliez pas les bases. La page de manuel iptables
+est très détaillée et est un excellent exemple de ce à quoi une page de manuel
+devrait ressembler. C'est une lecture passionnante.
+</p>
+
+</body>
+</section>
+<section>
+<title>Guide du routage et du contrôle de trafic avancé</title>
+<body>
+
+<p>
+Le <uri link="http://www.ds9a.nl/2.4Routing/">Advanced Linux Routing and
+Traffic Control HOWTO</uri> est disponible (également <uri
+link="http://www.linux-france.org/prj/inetdoc/guides/lartc/"> en
+français</uri>). Il contient tout un chapitre sur l'utilisation d'iptables pour
+le marquage de paquets, puis sur l'utilisation des fonctionnalités de routage
+de Linux pour router les paquets en fonction de ces marques.
+</p>
+
+<note>
+Ce guide contient des références vers la fonction de contrôle de trafic
+(qualité de service) de Linux (accessible via la commande <c>tc</c>). Cette
+nouvelle fonctionnalité, bien que très puissante, est très peu documentée, et
+essayer de cerner tous les aspects du contrôle de trafic peut être une tâche
+très frustrante pour le moment.
+</note>
+
+</body>
+</section>
+<section>
+<title>Listes de diffusion</title>
+<body>
+
+<p>
+Les utilisateurs qui ont des questions sur l'utilisation, l'installation ou la
+configuration de Netfilter/iptables, ou qui veulent aider les autres
+utilisateurs en partageant leurs experience et connaissances, peuvent contacter
+<uri link="http://www.netfilter.org/mailinglists.html#ml-user">la mailing-list
+des utilisateurs de Netfilter</uri>.
+</p>
+
+<p>
+Les développeurs Netfilter/iptables qui ont des questions, suggestions ou
+contributions pour le developpement de Netfilter/iptables peuvent contacter
+<uri link="http://www.netfilter.org/mailinglists.html#ml-devel">la mailing-list
+des développeurs de Netfilter</uri>.
+</p>
+
+<p>
+Vous pouvez aussi parcourir les archives sur ces URL.
+</p>
+
+</body>
+</section>
+<section>
+<title>« Building Internet Firewalls, Second Edition&nbsp;»</title>
+<body>
+
+<p>
+En juin 2000, O'Reilly a publié un excellent livre&nbsp;: <uri
+link="http://www.oreilly.com/catalog/fire2/">Building Internet Firewalls,
+Second Edition</uri>. C'est un bon manuel de référence, en particulier dans les
+cas où vous voulez configurer votre pare-feu pour accepter (ou rejeter) un
+protocole peu connu avec lequel vous n'êtes pas familier.
+</p>
+
+<p>
+Voilà, c'était la liste de nos ressources et ce guide est terminé. J'espère
+qu'il vous a été utile et j'attends vos remarques.
+</p>
+
+</body>
+</section>
+<section>
+<title>Vos remarques</title>
+<body>
+
+<p>
+Nous acceptons volontier vos remarques sur ce tutoriel. De plus, n'hésitez pas
+à contacter l'auteur, Daniel Robbins, à l'adresse
+<mail>drobbins@gentoo.org</mail>.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
