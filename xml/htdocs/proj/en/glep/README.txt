@@ -18,41 +18,42 @@ converted to html or xml for viewing with a browser.
 
 Converting ReST to html or xml requires the "docutils" python package
 [#docutils]_::
-	
-	# USE=glep emerge docutils
+    
+    # USE=glep emerge docutils
 
-You will also need to have the ``docutils.conf`` file and the ``tools``
-subdirectory (with ``glep.css`` and ``glep-html-template``, all found in the
-same place as this README.txt file) in the directory where you intend to
-process GLEPs.
-
-The Gentoo Linux docutils package includes the *docutils-glep.py* program 
+The Gentoo Linux docutils package includes the *glep.py* program 
 which transforms a GLEP in text form to the equivalent html version::
 
-	# docutils-glep.py glep-0001.txt glep-0001.html
+    # glep.py glep-0001.txt glep-0001.html
 
-(Incidentally, *docutils-glep.py* contains special code to verify that
+The above usage embeds the CSS stylesheet in the html file.  For pages
+on glep.gentoo.org, it is better to use a link instead::
+
+    # glep.py --link-stylesheet --stylesheet-path=tools/glep.css \
+    > glep-0001.txt glep-0001.html
+
+(Incidentally, *glep.py* contains special code to verify that
 the GLEP header is reasonable.  This README lacks that header,
 so to convert this file to html using docutils you need to 
 use the more generic transformation program::
 
-	# rst2html.py --stylesheet-path=tools/glep.css README.txt README.html
+    # rst2html.py --stylesheet-path=tools/glep.css README.txt README.html
 
 to convert README.txt to README.html.)
 
 Files
 =====
 
-========================	======================================
-File 						Purpose
-========================	======================================
-README.txt					This file (duh!)
-docutils.conf				Configuration file for GLEP conversion 
-								from txt to html
-glep-xxxx.txt				GLEPs in text (ReST) form
-tools/glep.css				GLEP html stylesheet
-tools/glep-html-template	GLEP boilerplate template
-========================	======================================
+========================    ======================================
+File                        Purpose
+========================    ======================================
+README.txt                  This file (duh!)
+docutils.conf               Configuration file for GLEP conversion 
+                                from txt to html
+glep-xxxx.txt               GLEPs in text (ReST) form
+tools/glep.css              GLEP html stylesheet
+tools/glep-html-template    GLEP boilerplate template
+========================    ======================================
 
 
 References
