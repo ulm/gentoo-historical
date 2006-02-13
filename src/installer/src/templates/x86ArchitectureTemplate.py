@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.100 2006/02/12 23:13:55 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.101 2006/02/13 00:24:49 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -110,6 +110,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				self._logger.log("Partition table for " + device + " is unchanged...skipping")
 				continue
 
+			self._logger.log("partitioning: Processing " + device + "...")
+
 			# Create pyparted objects for this device
 			parted_dev = parted.PedDevice.get(device)
 			try:
@@ -185,7 +187,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 #			else:
 
 			# First pass to delete old partitions that aren't resized
-			self._logger.log("partitioning: Processing " + device + "...")
 			self.notify_frontend("progress", (cur_progress / total_steps, "Deleting partitioning that aren't being resized for " + device))
 			cur_progress += 1
 			for part in parts_old[device]:
@@ -204,16 +205,16 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							# This partition is unchanged in the new layout
 							if tmppart['origminor'] == part_log and tmppart['start'] and tmppart['end']:
 								self._logger.log("  Deleting old minor " + str(part_log) + " to be recreated later")
-								delete_log = 1
+								try:
+									parted_disk.delete_partition(parted_disk.get_partition(part_log))
+								except:
+									self._logger.log("    Could not delete partition...ignoring")
 								break
 							# This partition is resized with the data preserved in the new layout
-							if tmppart['origminor'] == part_log and tmppart['start'] and not tmppart['end']:
+							if tmppart['origminor'] == part_log and tmppart['resized'] and tmppart['start'] and not tmppart['end']:
 								self._logger.log("  Ignoring old minor " + str(part_log) + " to resize later")
 								logical_to_resize = 1
 								break
-						if delete_log:
-							self._logger.log("  No match found...deleting partition " + str(part_log))
-							parted_disk.delete_partition(parted_disk.get_partition(part_log))
 					if not logical_to_resize:
 						self._logger.log("  Deleting extended partition with minor " + str(part))
 						parted_disk.delete_partition(parted_disk.get_partition(part))
@@ -222,14 +223,14 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					tmppart = parts_new[device][new_part]
 					if tmppart['origminor'] == part and tmppart['start'] and tmppart['end']:
 						self._logger.log("  Deleting old minor " + str(part) + " to be recreated later")
-						delete = 1
+						try:
+							parted_disk.delete_partition(parted_disk.get_partition(part))
+						except:
+							self._logger.log("    Could not delete partition...ignoring")
 						break
 					if tmppart['origminor'] == part and tmppart['start'] and not tmppart['end']:
 						self._logger.log("  Ignoring old minor " + str(part) + " to resize later")
 						break
-				if delete:
-					self._logger.log("  No match found...deleting partition " + str(part))
-					parted_disk.delete_partition(parted_disk.get_partition(part))
 			parted_disk.commit()
 
 			# Second pass to resize old partitions that need to be resized
