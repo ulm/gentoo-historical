@@ -923,3 +923,23 @@ def get_grp_pkgs_from_cd():
 
 def get_keymaps(self):
 	return GLIUtility.spawn(r"find /usr/share/keymaps -iname *.map.gz | sed -e 's:^.\+/::' -e 's:\..\+$::' | sort", return_output=True)[1].strip().split("\n")
+
+def get_chosts(arch):
+	chosts = []
+	if arch == "x86":
+		chosts = ["i386-pc-linux-gnu", "i486-pc-linux-gnu", "i586-pc-linux-gnu", "i686-pc-linux-gnu"]
+	if arch == "amd64":
+		chosts = ["x86_64-pc-linux-gnu"]
+	if arch == "alpha":
+		chosts = ["alpha-unknown-linux-gnu"]
+	if arch == "ppc":
+		chosts = ["powerpc-unknown-linux-gnu"]
+	if arch == "ppc64":
+		chosts = ["powerpc64-unknown-linux-gnu"]
+	if arch in ["sparc", "sparc64"]:
+		chosts = ["sparc-unknown-linux-gnu"]
+	if arch == "hppa":
+		chosts = ["hppa-unknown-linux-gnu", "hppa1.1-unknown-linux-gnu", "hppa2.0-unknown-linux-gnu"]
+	if arch == "mips":
+		chosts = ["mips-unknown-linux-gnu"]
+	return chosts

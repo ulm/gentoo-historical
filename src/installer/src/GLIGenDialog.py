@@ -741,28 +741,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				if cflags:
 					make_conf['CFLAGS'] = cflags
 			elif menuitem == "CHOST":
-				choices_list = []
-				if self._client_profile.get_architecture_template() == "x86":
-					choices_list.append("i386-pc-linux-gnu")
-					choices_list.append("i486-pc-linux-gnu")
-					choices_list.append("i586-pc-linux-gnu")
-					choices_list.append("i686-pc-linux-gnu")
-				if self._client_profile.get_architecture_template() == "amd64":
-					choices_list.append("x86_64-pc-linux-gnu")
-				if self._client_profile.get_architecture_template() == "alpha":
-					choices_list.append("alpha-unknown-linux-gnu")
-				if self._client_profile.get_architecture_template() == "ppc":
-					choices_list.append("powerpc-unknown-linux-gnu")
-				if self._client_profile.get_architecture_template() == "ppc64":
-					choices_list.append("powerpc64-unknown-linux-gnu")
-				if self._client_profile.get_architecture_template() in ["sparc", "sparc64"]:
-					choices_list.append("sparc-unknown-linux-gnu")
-				if self._client_profile.get_architecture_template() == "hppa":
-					choices_list.append("hppa-unknown-linux-gnu")
-					choices_list.append("hppa1.1-unknown-linux-gnu")
-					choices_list.append("hppa2.0-unknown-linux-gnu")
-				if self._client_profile.get_architecture_template() == "mips":
-					choices_list.append("mips-unknown-linux-gnu")
+				choices_list = GLIUtility.get_chosts(self._client_profile.get_architecture_template())
 				code, chost = self._d.menu(_(u"Choose from the available CHOSTs for your architecture."), choices=self._dmenu_list_to_choices(choices_list), width=77)
 				if code != self._DLG_OK: 
 					continue

@@ -7,6 +7,7 @@ import gtk
 import GLIScreen
 import commands
 import gobject
+import GLIUtility
 
 class Panel(GLIScreen.GLIScreen):
 
@@ -17,7 +18,6 @@ class Panel(GLIScreen.GLIScreen):
 	columns = []
 	arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
 	optimizations = ["-O0", "-O1", "-O2", "-Os", "-O3"]
-	arch_chosts = { 'x86': ("i386-pc-linux-gnu", "i486-pc-linux-gnu", "i586-pc-linux-gnu", "i686-pc-linux-gnu") }
 	_helptext = """
 <b><u>Make.conf</u></b>
 
@@ -201,9 +201,9 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(gtk.Label("CHOST:"), expand=False, fill=False, padding=0)
 		self.chost_combo = gtk.combo_box_new_text()
-		for chost in self.arch_chosts['x86']:
-			self.chost_combo.append_text(chost)
-		self.chost_combo.set_active(0)
+#		for chost in GLIUtility.get_chosts(self.controller.client_profile.get_architecture_template()):
+#			self.chost_combo.append_text(chost)
+#		self.chost_combo.set_active(0)
 		hbox.pack_start(self.chost_combo, expand=False, fill=False, padding=10)
 		hbox.pack_start(gtk.Label(" "), expand=False, fill=False, padding=15)
 		hbox.pack_start(gtk.Label("MAKEOPTS:"), expand=False, fill=False, padding=0)
@@ -307,12 +307,11 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 		# Parsing CHOST
 		if not self.make_conf_values.has_key('CHOST') or not self.make_conf_values['CHOST']:
 			self.make_conf_values['CHOST'] = self.system_chost
-		i = 0
-		for chost in self.arch_chosts['x86']:
-			if chost == self.make_conf_values['CHOST']:
+		self.chost_combo.get_model().clear()
+		for i, chost in enumerate(GLIUtility.get_chosts(self.controller.client_profile.get_architecture_template())):
+			self.chost_combo.append_text(chost)
+			if chost == self.make_conf_values['CHOST'] or i == 0:
 				self.chost_combo.set_active(i)
-				break
-			i += 1
 		if self.controller.install_profile.get_install_stage() > 1:
 			self.chost_combo.set_sensitive(False)
 		else:
@@ -349,7 +348,7 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 			if 'CHOST' in self.make_conf_values:
 				del self.make_conf_values['CHOST']
 		else:
-			self.make_conf_values['CHOST'] = self.arch_chosts['x86'][self.chost_combo.get_active()]
+			self.make_conf_values['CHOST'] = GLIUtility.get_chosts(self.controller.client_profile.get_architecture_template())[self.chost_combo.get_active()]
 		self.make_conf_values['MAKEOPTS'] = self.makeopts_entry.get_text()
 		self.etc_files['make.conf'] = self.make_conf_values
 		self.controller.install_profile.set_etc_files(self.etc_files)
