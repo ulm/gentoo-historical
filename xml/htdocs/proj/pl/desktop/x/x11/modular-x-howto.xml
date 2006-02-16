@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/desktop/x/x11/modular-x-howto.xml,v 1.4 2006/02/06 16:05:43 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/desktop/x/x11/modular-x-howto.xml,v 1.5 2006/02/16 20:45:47 rane Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -24,7 +24,7 @@ Ten dokument pomaga w migracji na modularne X.Org.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.1</version>
+<version>1.1.1</version>
 <date>2006-01-02</date>
 
 <chapter>
@@ -51,7 +51,7 @@ budowania budowania jest co najmniej kilka:
     na autotools, który jest znacznie wygodniejszy dla większości ludzi.
   </li>
   <li>
-    Jeśli korzysta się z autotools, jest możliwy podział zródeł programu,
+    Jeśli korzysta się z autotools, jest możliwy podział źródeł programu,
     dzięki czemu cały projekt jest łatwiejszy do zarządzania dla deweloperów.
   </li>
   <li>
@@ -193,7 +193,7 @@ mouse -acecad -aiptek -calcomp -citron -digitaledge -dmc -dynapro -elo2300
 INPUT_DEVICES i VIDEO_CARDS ustawiamy w <path>/etc/make.conf</path>, tak by
 odpowiadały naszej konfiguracji. Minimalne ustawienia dla powyższego przykładu
 byłby następujące: INPUT_DEVICES="<c>keyboard mouse</c>"
-VIDEO_CARDS="<c>ati</c>". Jeśli nie ustawimy pierwszej lub drugej zmiennej,
+VIDEO_CARDS="<c>ati</c>". Jeśli nie ustawimy pierwszej lub drugiej zmiennej,
 xorg-x11 zainstaluje wszystkie możliwe sterowniki tego typu. Jako sterowniki
 zapasowe, można dodać <c>vesa</c> i <c>fbdev</c> do VIDEO_CARDS.
 </p>
@@ -243,7 +243,7 @@ Zdarza się to dlatego, że drzewo portage jeszcze nie jest w pełni przygotowan
 do obsługi modularnych zależności. Można nas w tym wspomóc, czytając opis<uri
 link="/proj/pl/desktop/x/x11/porting-modular-x-howto.xml">przenoszenia
 programów na modularne X</uri> i nadsyłając poprawki do opiekunów
-poszczególnych pakietów.  Opiekunowie są wylistowani w pliku
+poszczególnych pakietów.  Opiekunowie są wymienieni w pliku
 <path>metadata.xml</path> w tym samym katalogu, w którym jest pakiet, a program
 <c>herdstat</c> pozwoli przyspieszyć ich wyszukiwanie.
 </p>
@@ -484,6 +484,62 @@ Można nas wesprzeć w poprawianiu pakietów instalujących się w
   chcemy, by wariant dotyczył drugiego układu.
   </li>
 </ul>
+
+<pre caption="Odszukiwanie zmian w XKB">
+<comment>Przeszukujemy /var/log/Xorg.0.log w poszukiwaniu tej
+informacji:</comment> 
+<comment>(WW) Couldn't load XKB keymap, falling back to pre-XKB keymap</comment>
+<comment>Jeśli ten błąd się nie pojawia, znaczy to, że XKB działa
+prawidłowo.</comment>
+# <i>grep Xkb /etc/X11/xorg.conf</i>
+	Option "XkbModel"  "logibik"
+	Option "XkbLayout"  "dvorak"
+	Option "XkbOptions" "ctrl:swapcaps"
+<comment>Po pierwsze, należy zobaczyć co zmieniło się w naszym układzie.
+Znajduje się to w katalogu symbols/pc directory.</comment>
+# <i>cd /usr/share/X11/xkb/symbols/</i>
+<comment>Jeśli zainstalowaliśmy xkbdata zamiast xkeyboard-config, szukamy w
+katalogu pc/.</comment>
+# <i>ls *dvorak*</i>
+<comment>Nic się nie pokazało.</comment>
+# <i>ls *us*</i>
+us
+<comment>Następnie szukamy wiariantu xkb_symbols o nazwie dvorak.</comment>
+# <i>grep xkb_symbols.*dvorak us</i>
+xkb_symbols "dvorak" {
+<comment>To oznacza, że w xorg.conf potrzebujemy Option "XkbLayout"
+"us"</comment> 
+<comment> i Option "XkbVariant" "dvorak".</comment>
+<comment>Jeśli próbujemy sprawdzić te ustawienia przy użyciu setxkbmap i wciąż
+otrzymujemy błąd</comment>
+# <i>setxkbmap -model logibik -layout us -variant dvorak -option "ctrl:swapcaps"</i>
+<comment>Może to oznaczać, że model klawiatury również uległ zmianie</comment>
+# <i>cd /usr/share/X11/xkb/rules/</i>
+# <i>grep logibik xorg.lst</i>
+<comment>Jeśli nic się nie pojawia po wydaniu powyższej komendy, oznacza to, że
+dany model został usunięty. Można sprawdzić inne, jemu podobne:</comment>
+# <i>grep logi* xorg.lst</i>
+ logiaccess      Logitech Access Keyboard
+ logicdit        Logitech Cordless Desktop iTouch
+ logicdp         Logitech Cordless Desktop Pro
+ logicdpa        Logitech Cordless Desktop Pro (alternate option)
+ logicdpa2       Logitech Cordless Desktop Pro (alternate option2)
+ logicdo         Logitech Cordless Desktop Optical
+ logicfn         Logitech Cordless Freedom/Desktop Navigator
+ logicdn         Logitech Cordless Desktop Navigator
+ logidak         Logitech Deluxe Access Keyboard
+ logiitc         Logitech iTouch Cordless Keyboard (model Y-RB6)
+ logiik          Logitech Internet Keyboard
+ logiitc         Logitech iTouch Cordless Keyboard (model Y-RB6)
+ logiik          Logitech Internet Keyboard
+ logiink         Logitech Internet Navigator Keyboard
+ logiultrax      Logitech Ultra-X Keyboard
+<comment>Model "logiik" wygląda podobnie, więc sprawdzamy go przy użyciu
+setxkbmap.</comment>
+# <i>setxkbmap -model logiik -layout us -variant dvorak -option "ctrl:swapcaps"</i>
+<comment>Jeśli powyższe zadziałało, zmieniamy wpis XkbModel.</comment>
+<comment>Po zakończeniu, wszystko powinno działać</comment>
+      </pre>
 
 </body>
 </section>
