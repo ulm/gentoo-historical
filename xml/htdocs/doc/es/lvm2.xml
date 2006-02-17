@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/lvm2.xml,v 1.10 2005/11/09 21:45:05 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/lvm2.xml,v 1.11 2006/02/17 19:57:20 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/es/lvm2.xml" lang="es">
@@ -37,8 +37,8 @@ Administrador de Volúmenes Lógico (Logical Volume Manager), versión 2
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.0.11</version>
-<date>2005-08-17</date>
+<version>2.2</version>
+<date>2006-02-06</date>
 
 <chapter>
 <title>Introducción</title>
@@ -77,7 +77,7 @@ Si va a hacer una instalación desde cero, hará falta usar un CD del
 cual pueda arrancar que soporte LVM2, tal como el CD de Instalación
 Gentoo. Puede encontrar el CD de Instalación para la plataforma x86 en nuestros
 <uri link="/main/en/mirrors.xml">servidores
-espejo</uri> bajo <path>/releases/x86/2005.1/installcd</path>. Tal vez
+espejo</uri> bajo <path>/releases/x86/2005.1-r1/installcd</path>. Tal vez
 estén soportadas otras plataformas también.
 </p>
 
@@ -85,9 +85,9 @@ estén soportadas otras plataformas también.
 Si instala LVM2 en un sistema existente con espacio de sobra en
 disco duro, habrá que activar el módulo LVM2
 (<path>dm-mod</path>). Este módulo está disponible en las fuentes
-<path>gentoo-sources</path>, en <path>development-sources</path> y en
-<path>gentoo-dev-sources</path>. La compilación del núcleo y el hacer
-funcionar a LVM2 serán cubiertos más adelante en esta misma guía.
+<path>gentoo-sources</path> y en <path>vanilla-sources</path>. La compilación
+del núcleo y el hacer funcionar a LVM2 serán cubiertos más adelante en esta
+misma guía.
 </p>
 
 <p>
@@ -114,7 +114,7 @@ particionados de la siguiente manera:
 
 <ul>
   <li>/dev/hda1  --  /boot</li>
-  <li>/dev/hda2  --  (swap)</li>
+  <li>/dev/hda2  --  partición de intercambio (swap)</li>
   <li>/dev/hda3  --  /</li>
   <li>/dev/hda4  --  Será usado por LVM2</li>
   <li>/dev/hdb1  --  Será usado por LVM2</li>
@@ -140,7 +140,7 @@ OK, hora de comenzar ...
 <body>
 
 <p>
-Siga el manual con los siguientes cambios en el capítulo <c>4. 
+Siga el manual con los siguientes cambios en el capítulo <c>4.
 Preparando los discos</c>:
 </p>
 
@@ -151,20 +151,15 @@ particiones antes mencionado como ejemplo. Acuérdese que este es sólo
 </p>
 
 <p>
-Cree una pequeña partición física para /boot (hda1). En este ejemplo,
-/boot no será manejado por LVM2. Esta partición contendrá el gestor de
-arranque y el/los núcleo(s). 64MB deben ser suficientes para varias
-generaciones de núcleos.
+Cree una pequeña partición física para <path>/boot</path> (hda1). En este
+ejemplo, <path>/boot</path> no será gestionado por LVM2. Esta partición
+contendrá el gestor de arranque y el/los núcleo(s). 64MB deben ser suficientes
+para varias generaciones de núcleos.
 </p>
 
 <p>
-Cree una partición de intercambio (hda2) y actívela.
+Cree una partición de intercambio (hda2).
 </p>
-
-<pre caption="Activando la partición de intercambio">
-# <i>mkswap /dev/hda2</i>
-# <i>swapon /dev/hda2</i>
-</pre>
 
 <p>
 Cree una partición raíz / (hda3). Si le interesa intentar colocar su
@@ -178,7 +173,7 @@ este caso, 1GB debería ser suficiente.
 
 <note>
 <b>No</b> recomendamos colocar los siguientes directorios en una
-partición LVM2: <path>/etc</path>, <path>/lib</path>, <path>/mnt</path>, 
+partición LVM2: <path>/etc</path>, <path>/lib</path>, <path>/mnt</path>,
 <path>/proc</path>, <path>/sbin</path>, <path>/dev</path> y
 <path>/root</path>. De esta manera podrá ingresar a su sistema (que
 aunque estuviese incompleto, sería utilizable como root) si ocurriese
@@ -186,8 +181,8 @@ algún desastre.
 </note>
 
 <p>
-Asumiendo que las particiones /boot, swap y root no usan el disco
-físico completo, cree una cuarta partición y asígnele el tipo 8e
+Asumiendo que las particiones <path>/boot</path>, de intercambio y raíz no usan
+el disco físico completo, cree una cuarta partición y asígnele el tipo 8e
 (Linux LVM). Si tiene más de un disco físico que quiera usar con LVM,
 cree una partición en cada uno y asígneles el mismo tipo (8e).
 </p>
@@ -206,25 +201,48 @@ subdividió su disco duro de 160&nbsp;Gb en 8 particiones de
 </note>
 
 <p>
+Cree los sistemas de archivos en <path>/dev/hda1</path> y
+<path>/dev/hda3</path>, además cree y active la partición de intercambio
+en <path>/dev/hda2</path> tal como se describe en el manual.
+</p>
+
+<p>
 Cargue el módulo LVM2 <path>dm-mod</path>.
 </p>
 
-<pre caption="Cargando el módulo LVM2">
+<pre caption="Cargar el módulo LVM2">
 # <i>modprobe dm-mod</i>
 </pre>
 
 <p>
-Barrido y activación del LVM:
+Antes de realizar la exploración y activación del LVM, querrá editar el archivo
+<path>/etc/lvm/lvm.conf</path> para excluir algunos dispositivos. LVM realizará
+de forma predeterminada la exploración de todos los dispositivos, incluso de
+su lector de CD-ROM, lo cual puede generar mensajes de error. En el siguiente
+ejemplo, la línea que permite la exploración de todos los dispositivos es
+reemplazada por una que rechaza todos los dispositivos con excepción de
+nuestros dos discos duros IDE.
 </p>
 
-<pre caption="Activando el LVM">
-<comment>(Evite explorar su cdrom)</comment>
-# <i>mkdir -p /etc/lvm</i>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >/etc/lvm/lvm.conf</i>
+<pre caption="Activar LVM">
+<comment>
+(Evitar explorar todos los dispositivos salvo nuestros discos duros)
+</comment>
+# <i>nano -w /etc/lvm/lvm.conf</i>
+<comment>(Busque la siguiente línea)</comment>
+    filter = [ "a/.*/" ]
+<comment>
+(Reemplácela con la siguiente para explorar /dev/hda y /dev/hdb y
+rechazar cualquier otra cosa)
+</comment>
+    filter = [ "a|/dev/hd[ab]|", "r/.*/" ]
+<comment>(Guarde el archivo y salga de nano)</comment>
 # <i>vgscan</i>
   Reading all physical volumes.  This may take a while...
   No volume groups found
-<comment>(Haga disponible otros grupos de volúmenes previamente configurados)</comment>
+<comment>
+(Haga disponible otros grupos de volúmenes previamente configurados)
+</comment>
 # <i>vgchange -a y</i>
 </pre>
 
@@ -232,7 +250,7 @@ Barrido y activación del LVM:
 Prepare las particiones.
 </p>
 
-<pre caption="Preparando las particiones">
+<pre caption="Preparar las particiones">
 # <i>pvcreate /dev/hda4 /dev/hdb1</i>
   No physical volume label read from /dev/hda4
   Physical volume "/dev/hda4" successfully created
@@ -247,27 +265,27 @@ varias unidades físicas en un único dispositivo lógico.
 
 <p>
 En nuestro ejemplo, <path>/dev/hda1</path>, <path>/dev/hda2</path> y
-<path>/dev/hda3</path> son las particiones <path>/boot</path>, swap y
-root, por lo que necesitamos combinar <path>/dev/hda4</path> y
+<path>/dev/hda3</path> son las particiones <path>/boot</path>, de intercambio y
+raíz, por lo que necesitamos combinar <path>/dev/hda4</path> y
 <path>/dev/hdb1</path>. Esto se puede hacer con un solo comando, pero
 como es un ejemplo didáctico, crearemos un grupo de volúmenes y luego
 lo aumentaremos.
 </p>
 
-<pre caption="Creando y aumentando un grupo de volúmenes">
+<pre caption="Crear y aumentar un grupo de volúmenes">
 <comment>(Cree un grupo de volúmenes llamado vg)</comment>
 # <i>vgcreate vg /dev/hda4</i>
-  /etc/lvm/backup: fsync failed: Invalid argument <comment>(Ignore this warning)</comment>
+  /etc/lvm/backup: fsync failed: Invalid argument <comment>(Ignore esta advertencia)</comment>
   Volume group "vg" successfully created
 <comment>(Aumente el tamaño de un grupo de volúmenes existente)</comment>
 # <i>vgextend vg /dev/hdb1</i>
-  /etc/lvm/backup: fsync failed: Invalid argument <comment>(Ignore
-esta advertencia, ahora y más adelante también)</comment>
+  /etc/lvm/backup: fsync failed: Invalid argument
+<comment>(Ignore esta advertencia nuevamente y más adelante también)</comment>
   Volume group "vg" successfully extended
 </pre>
 
 <p>
-Cree los volúmenes lógicos, los equivalentes a una partición creada
+Cree los volúmenes lógicos. Estos son el equivalente a una partición creada
 con fdisk en un ambiente sin LVM2. En nuestro ejemplo, crearemos las
 siguientes particiones:
 </p>
@@ -307,13 +325,13 @@ tamaños de las particiones, ya que las podemos aumentadar a voluntad.
 <note>
 Como comenta Terje Kvernes, es más fácil aumentar el tamaño de
 una partición que reducirla, de manera que tal vez quiera empezar con
-particiones menores y aumentarlas según lo requerido.
+particiones más pequeñas y aumentarlas según lo requerido.
 </note>
 
-<pre caption="Creando y aumentando volúmenes lógicos">
+<pre caption="Crear y aumentar los volúmenes lógicos">
 # <i>lvcreate -L10G -nusr  vg</i>
   Logical volume "usr" created <comment>(Los mensajes adicionales
-  iguales no los mostramos)</comment>
+  similares no los mostramos)</comment>
 # <i>lvcreate -L5G  -nhome vg</i>
 # <i>lvcreate -L5G  -nopt  vg</i>
 # <i>lvcreate -L10G -nvar  vg</i>
@@ -329,7 +347,7 @@ volúmenes lógicos, pero cualquier sistema de archivos escogido
 servirá:
 </p>
 
-<pre caption="Creando los sistemas de archivos">
+<pre caption="Crear los sistemas de archivos">
 # <i>mke2fs -j /dev/vg/usr</i>
 # <i>mke2fs -j /dev/vg/home</i>
 # <i>mke2fs -j /dev/vg/opt</i>
@@ -344,7 +362,7 @@ lógicos LVM2 como si fuesen particiones. Reemplace el
 <path>/dev/vg/nombre_del_volumen_lógico</path>.
 </p>
 
-<pre caption="Montando sus volúmenes lógicos">
+<pre caption="Montar sus volúmenes lógicos">
 <comment>(Asegúrese de montar primero su partición raíz, tal como
 aparece en el Manual)</comment>
 # <i>mkdir /mnt/gentoo/usr</i>
@@ -361,7 +379,7 @@ aparece en el Manual)</comment>
 
 <note>
 El resto de la instalación es prácticamente igual, así que no la
-repetiremos. Solo le diremos dónde están las diferencias.
+repetiremos. Sólo le diremos dónde están las diferencias.
 </note>
 
 <p>
@@ -370,7 +388,7 @@ de la serie 2.4 lo hacen). Seleccione el módulo LVM2 de la
 siguiente manera:
 </p>
 
-<pre caption="Seleccionando el módulo LVM2 en un núcleo 2.4.x">
+<pre caption="Seleccionar el módulo LVM2 en un núcleo 2.4.x">
 Multi-device support (RAID and LVM)  ---&gt;
   [*] Multiple devices driver support (RAID and LVM)
   &lt; &gt;  RAID support
@@ -380,7 +398,7 @@ Multi-device support (RAID and LVM)  ---&gt;
   &lt; &gt;   Mirror (RAID-1) support
 </pre>
 
-<pre caption="Seleccionando el módulo LVM2 en un núcleo 2.6.x">
+<pre caption="Seleccionar el módulo LVM2 en un núcleo 2.6.x">
 Device Drivers  ---&gt;
  Multi-device support (RAID and LVM)  ---&gt;
    [*] Multiple devices driver support (RAID and LVM)
@@ -400,7 +418,7 @@ representa la versión del núcleo (bien sea 2.4 ó 2.6) para que el
 módulo LVM2 sea cargado al arrancar la máquina:
 </p>
 
-<pre caption="Agregando el módulo LVM2 a /etc/modules.autoload.d/kernel-2.6">
+<pre caption="Agregar el módulo LVM2 a /etc/modules.autoload.d/kernel-2.6">
 # <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
 <comment>(Agregue la siguiente línea)</comment>
 dm-mod
@@ -418,16 +436,17 @@ presencia del archivo de fuentes requerido en
 <path>/usr/src/linux/include/linux</path>.
 </impo>
 
-<pre caption="Haciendo emerge al paquete LVM2">
+<pre caption="Instalar vía emerge el paquete LVM2">
 # <i>emerge lvm2</i>
-<comment>(Al momento de escribir estas líneas, la versión estable es
-la 2.00.08. Con esta versión, evite que lvm2 busque su cdrom haciendo:</comment>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >> /etc/lvm/lvm.conf</i>
-
-<comment>(Las versions 2.00.15 y posteriores vienen con un archivo
-/etc/lvm/lvm.conf. Modifíquelo y siga los comentarios</comment>
-# <i>nano -w /etc/lvm/lvm.conf</i>
 </pre>
+
+<p>
+Edite <path>/etc/lvm/lvm.conf</path> tal como se describe <uri
+link="#doc_chap2_pre2">previamente</uri>. El archivo que editó antes es parte
+de su entorno de instalación y desaparecerá luego del siguiente reinicio del
+sistema. Esta vez, edite el archivo verdadero dentro de su nueva instalación
+de Gentoo.
+</p>
 
 <p>
 Al editar su archivo <path>/etc/fstab</path>, siga el Manual y
@@ -436,15 +455,15 @@ ejemplo:
 </p>
 
 <pre caption="Extracto del /etc/fstab">
-/dev/hda1     /boot   ext3    noauto,noatime 1 1
+/dev/hda1     /boot   ext3    noauto,noatime 1 2
 /dev/hda2     none    swap    sw             0 0
-/dev/hda3     /       ext3    noatime        0 0
-# Logical volumes
-/dev/vg/usr   /usr    ext3    noatime        0 0
-/dev/vg/home  /home   ext3    noatime        0 0
-/dev/vg/opt   /opt    ext3    noatime        0 0
-/dev/vg/var   /var    ext3    noatime        0 0
-/dev/vg/tmp   /tmp    ext3    noatime        0 0
+/dev/hda3     /       ext3    noatime        0 1
+# Volúmenes lógicos
+/dev/vg/usr   /usr    ext3    noatime        0 2
+/dev/vg/home  /home   ext3    noatime        0 2
+/dev/vg/opt   /opt    ext3    noatime        0 2
+/dev/vg/var   /var    ext3    noatime        0 2
+/dev/vg/tmp   /tmp    ext3    noatime        0 2
 </pre>
 
 <p>
@@ -453,7 +472,7 @@ desmontar todos los volúmenes lógicos también y para finalizar, ejecute
 el siguiente comando antes de reiniciar:
 </p>
 
-<pre caption="Cerrando operaciones del LVM2">
+<pre caption="Cerrar operaciones del LVM2">
 # <i>vgchange -a n</i>
 </pre>
 
@@ -467,7 +486,7 @@ visibles.
 </chapter>
 
 <chapter>
-<title>Continuando luego de reiniciar</title>
+<title>Continuar luego de reiniciar</title>
 <section>
 <body>
 
@@ -476,7 +495,7 @@ Si interrumpió la instalación de Gentoo en cierto punto y quiere continuar,
 primero necesita crear los nodos de los dispositivos de vólumen:
 </p>
 
-<pre caption="Reactivando los volúmenes">
+<pre caption="Reactivar los volúmenes">
 # <i>vgscan --mknodes</i>
 </pre>
 
@@ -485,7 +504,7 @@ En cambio en los CDs de Instalación con herramientas no tan actuales puede que
 sea necesario reactivar los volúmenes:
 </p>
 
-<pre caption="Reactivando los volúmenes">
+<pre caption="Reactivar los volúmenes">
 <comment>(Primero desactive todos los volúmenes)</comment>
 # <i>vgchange -a n</i>
 <comment>(Exporte todos los volúmenes)</comment>
@@ -513,9 +532,9 @@ sea necesario reactivar los volúmenes:
     El <uri link="http://tldp.org/HOWTO/LVM-HOWTO">Howto LVM</uri>
   </li>
   <li>
-    Artículos de Daniel Robbins sobre LVM en los DeveloperWorks de IBM:
-    <uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm/?dwzone=linux</uri>
-    y <uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm2.html?dwzone=linux</uri>
+    Artículos de Daniel Robbins sobre LVM para DeveloperWorks de IBM:
+    <uri link="/doc/es/articles/lvm-p1.xml">Parte 1</uri>
+    y <uri link="/doc/es/articles/lvm-p2.xml">Parte 2</uri>
   </li>
   <li>
     ¿Cómo arrancar su sistema de archivos raíz desde LVM1? (How to
@@ -536,7 +555,7 @@ sea necesario reactivar los volúmenes:
 <p>
 Gracias a <mail link="bangert@gentoo.org">Thilo Bangert</mail>
 y <mail link="terjekv@math.uio.no">Terje Kvernes</mail> por su ayuda
-y comentarios sobre de este documento.
+y comentarios sobre este documento.
 </p>
 </body>
 </section>
