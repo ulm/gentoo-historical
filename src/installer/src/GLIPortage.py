@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.41 2006/02/11 18:05:24 agaffney Exp $
+$Id: GLIPortage.py,v 1.42 2006/02/17 17:47:40 agaffney Exp $
 """
 
 import re
@@ -28,6 +28,7 @@ class GLIPortage(object):
 		if isinstance(pkgs, str):
 			pkgs = pkgs.split()
 		for pkg in pkgs:
+			if not pkg: continue
 			if self._debug: self._logger.log("get_deps(): pkg is " + pkg)
 			if not self._grp_install or not self.get_best_version_vdb(pkg):
 				if self._debug: self._logger.log("get_deps(): grabbing compile deps")
@@ -211,6 +212,7 @@ class GLIPortage(object):
 		pkglist = self.get_deps(packages)
 		if self._debug: self._logger.log("install_packages(): pkglist is " + str(pkglist))
 		for i, pkg in enumerate(pkglist):
+			if not pkg: continue
 			if self._debug: self._logger.log("install_packages(): processing package " + pkg)
 			self._cc.addNotification("progress", (float(i) / len(pkglist), "Emerging " + pkg + " (" + str(i+1) + "/" + str(len(pkglist)) + ")"))
 			if not self._grp_install or not self.get_best_version_vdb("=" + pkg):
