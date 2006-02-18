@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/power-management-guide.xml,v 1.7 2005/11/07 21:02:55 mascherpa Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/power-management-guide.xml,v 1.8 2006/02/18 14:02:01 mascherpa Exp $ -->
 <guide link="/doc/it/power-management-guide.xml">
 <title>Guida alla Gestione Energetica</title>
 
 <author title="Autore">
-  <mail link="fragfred@gmx.de">Dennis Nienhüser </mail>
+  <mail link="earthwings@gentoo.org">Dennis Nienhüser </mail>
 </author>
 <author title="Traduzione">
-  <mail link="frgrieco@aliceposta.it">Francesco Grieco</mail>
+  <mail link="frgrieco@alice.it">Francesco Grieco</mail>
 </author>
 
 <abstract>
@@ -20,13 +20,13 @@ sui sistemi mobile come i notebook. Questa guida ne illustra la sua configurazio
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.25</version>
-<date>2005-10-02</date>
+<version>1.27</version>
+<date>2006-02-16</date>
 
 <chapter>
 <title>Introduzione</title>
+
 <section>
-<title>A cosa serve la Gestione Energetica?</title>
 <body>
 
 <p>
@@ -102,10 +102,10 @@ a diverse situazioni può ottenere molto di più.
 <chapter>
 <title>Prerequisiti</title>
 <section>
-<title>Prima di tutto</title>
+	
 <body>
 
-<p>Prima di entrare nei dettagli della gestione energetica per le singole periferiche,
+<p>Prima di trattare i dettagli della gestione energetica per le singole periferiche,
 vi sono alcuni requisiti. Dopo aver controllato i settaggi del BIOS, è necessario 
 attivare alcune opzioni del kernel - in breve ACPI, sleep states e CPU frequency scaling.
 Poichè il risparmio energetico comporta una perdita delle prestazioni o un aumento
@@ -131,6 +131,24 @@ necessario riabilitare tutte le funzioni del BIOS.
 </body>
 </section>
 <section>
+<title>Impostazione delle USE flag</title>	
+<body>	
+
+<p>
+E' importante verificare che la USE flag <c>acpi</c> sia attivata
+in <path>/etc/make.conf</path>. Altre USE flag che potrebbero interessare
+il proprio sistema sono <c>apm</c>, <c>lm_sensors</c>, <c>nforce2</c>, <c>nvidia</c>,	
+<c>pmu</c>. Per informazioni su queste ultime è possibile consultare
+i file <path>/usr/portage/profiles/use*.desc</path>. Se, in qualsiasi momento,
+ci si accorge della mancanza di una qualsiasi di queste flag, è possibile
+ricompilare i pacchetti interessati con l'opzione <c>--newuse</c> di <c>emerge</c>;
+maggiori informazioni con <c>man 1 emerge</c>.
+</p>
+
+</body>	
+</section>	
+<section>
+
 <title>Configurazione del Kernel</title>
 <body>
 
@@ -406,6 +424,20 @@ gestione energetica per ogni singolo componente.
 <chapter>
 <title>Power Management della CPU</title>
 <section>
+	
+<body>	
+
+<p>
+I processori <e>mobile</e> possono operare a frequenze differenti. Alcuni di
+essi permettono il cambio del proprio voltaggio. In molte situazioni, la CPU
+non lavora a pieno carico e quindi abbassandone la frequenza, si otterrà un
+notevole risparmio energetico, spesso senza nemmeno un decremento prestazione.
+</p>	
+
+</body>	
+</section>
+
+<section>
 <title>Terminologia tecnica</title>
 <body>
 
@@ -570,11 +602,13 @@ grafica per una configurazione più semplice.
   <ti><uri link="http://sourceforge.net/projects/cpufreqd/">cpufreqd</uri></ti>
   <ti>Demone</ti>
   <ti>Stato della batteria, Carico della CPU, Temperatura, Programmi in
-  esecuzione</ti>
+  esecuzione e altro</ti>
   <ti>Tutti disponibili</ti>
   <ti>Nessuno</ti>
   <ti>
-    Configurazioni sofisticata (ma anche complesse). 
+    Configurazioni sofisticate (ma anche piuttosto complesse). Estendibile tramite plugin
+	per il monitoraggio sensori (lm_sensors) oppure per schede grafiche NVidia. Cpufreqd 
+	supporta SMP e può essere controllato manualmente durante la propria esecuzione.
   </ti>
 </tr>
 <tr>
@@ -658,65 +692,88 @@ Quale scegliere? Se si è indecisi, un'ottima scelta è <c>cpufreqd</c>:
 La configurazione di <c>cpufreqd</c> avviene attraverso il file <path>/etc/cpufreqd.conf</path>.
 Quella di default fornita con cpufreqd sembra leggermente confusionaria. Si raccomanda
 di sostituirla con quella fornita dallo sviluppatore Gentoo, Henrik Brix Andersen (si guardi di seguito).
+E' necessaria almeno la versione 2.0.0 di cpufreqd. Le versioni precedenti presentano
+una sintassi differente per il file di configurazione.
 </p>
 
-<pre caption="/etc/cpufreqd.conf">
+<pre caption="/etc/cpufreqd.conf (versione 2.0.0 e superiori)">
 [General]
 pidfile=/var/run/cpufreqd.pid
-poll_interval=2
-pm_type=acpi
+poll_interval=3
+enable_plugins=acpi_ac, acpi_battery	
+enable_remote=1	
+remote_group=wheel
 verbosity=5
+[/General]
 	
 [Profile]
 name=ondemand
 minfreq=0%
 maxfreq=100%
 policy=ondemand
+[/Profile]
 
 [Profile]
 name=conservative
 minfreq=0%
 maxfreq=100%
 policy=conservative
+[/Profile]
 
 [Profile]
 name=powersave
 minfreq=0%
 maxfreq=100%
 policy=powersave
+[/Profile]
 
 [Profile]
 name=performance
 minfreq=0%
 maxfreq=100%
 policy=performance
+[/Profile]
 
 [Rule]
 name=battery
 ac=off
 profile=conservative
+[/Rule]
 
 [Rule]
 name=battery_low
 ac=off
 battery_interval=0-10
 profile=powersave
+[/Rule]
 
 [Rule]
 name=ac
 ac=on
 profile=ondemand
+[/Rule]
 </pre>
 
 <p>
-	Ora si può avviare il demone cpufreqd. Lo si aggiunga ai runlevel <e>default</e> e
-	<e>battery</e> come mostrato di seguito.
+Ora si può avviare il demone cpufreqd. Lo si aggiunga ai runlevel <e>default</e> e
+<e>battery</e> come mostrato di seguito.
 </p>
 
 <pre caption="Avvio di cpufreqd">
 # <i>rc-update add cpufreqd default battery</i>
 # <i>rc</i>
 </pre>
+
+<p>	
+Alcune volte può essere opportuno selezionare un'altra politica di gestione rispetto
+a quella scelta dal demone, ad esempio quando la batteria è quasi scarica, ma si
+è certi dell'imminente connessione a rete elettrica. In questo caso è possibile
+attivare la modalità manuale di cpufreqd con il comando <c>cpufreqd-set manual</c>
+selezionando una delle proprie politiche configurate (elencate tramite
+<c>cpufreqd-get</c>). Si può abbandonare la modalità manuale con il comando
+<c>cpufreqd-set dynamic</c>.	
+</p>	
+
 
 <warn>
 Non si esegua più di uno dei programmi sopra citati contemporaneamente. Potrebbero, infatti, esserci problemi come un cambio continuo fra due frequenze.
@@ -763,7 +820,6 @@ nei syslog si otterrano maggiori informarzioni su quello che accade.
 <chapter>
 <title>Power Management del display LCD</title>
 <section>
-<title>Il maggior consumatore di energia</title>
 <body>
 
 <p>
@@ -773,6 +829,12 @@ di CPU non mobile). Per questo non solo è importante spegnere il display quando
 non utilizzato, ma anche ridurre il backlight (retroilluminazione) se possibile.
 Molti notebook offrono la possibilità di regolare il backlight.
 </p>
+
+</body>	
+</section>	
+<section>	
+<title>Configurazione Standby</title>	
+<body>
 
 <p>
 La prima cosa da controllare sono i settaggi di standby/suspend/off del display.
@@ -806,13 +868,20 @@ EndSection
 Vale lo stesso per XFree86 e <path>/etc/X11/XF86Config</path>.
 </p>
 
+</body>	
+</section>	
+<section>	
+<title>Backlight</title>	
+<body>	
+
 <p>
 Probabilmente la gestione del backlight (retroilluminazione) è il punto più importante.
 Se si è in grado di accedere al controllo tramite un tool, bisogna scrivere un piccolo
 script in grado di settare il backlight nella modalità batteria e inserirlo nel
 runlevel <e>battery</e>. Lo script seguente dovrebbe funzionare sulla maggior parte
-dei notebook IBM Thinkpad. Necessita del pacchetto <c>app-laptop/ibm-acpi</c>
-oppure dell'opzione appropriata selezionata nel kernel.
+dei notebook IBM Thinkpad e Toshiba. Per gli IBM Thinkpad bisogna attivare le opzioni
+appropriate nel kernel. Per i notebook Toshiba è sufficiente l'installazione del pacchetto
+<c>app-laptop/acpitool</c> (non sono necessarie le istruzioni seguenti ibm_acpi).
 </p>
 
 <warn>
@@ -828,7 +897,6 @@ caricato con il paramentro sperimentale.
 
 <pre caption="Caricamento automatico del modulo ibm_acpi">
 <comment>(Prima di proseguire si legga l'avviso sopra riportato circa l'instabilità di questa opzione)</comment>
-<i># emerge ibm-acpi</i>
 <i># echo "options ibm_acpi experimental=1" >> /etc/modules.d/ibm_acpi</i>
 <i># /sbin/modules-update</i>
 <i># echo ibm_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
@@ -844,7 +912,7 @@ in base alla sorgente energetica disponibile.
 
 <pre caption="/etc/conf.d/lcd-brightness">
 <comment># Si legga /proc/acpi/ibm/brightness per i valori disponibili</comment>
-<comment># Per altre informazioni /usr/share/doc/ibm-acpi-*/README.gz</comment>
+<comment># Per altre informazioni /usr/src/linux/Documentation/ibm-acpi.txt</comment>
 
 <comment># Livello di lumonisità in modalità corrente. Di default 7.</comment>
 BRIGHTNESS_AC=7
@@ -869,9 +937,15 @@ set_brightness() {
 	    ebegin "Setting LCD brightness"
 	    echo "level ${LEVEL}" > /proc/acpi/ibm/brightness
 	    eend $?
+	elif [[ -e /usr/bin/acpitool &amp;&amp; -n $(acpitool -T | grep "LCD brightness") ]]	
+	then	
+		ebegin "Setting LCD brightness"	
+		acpitool -l $LEVEL >/dev/null || ewarn "Unable to set lcd brightness"	
+ 	    eend $?
 	else
 	    ewarn "Setting LCD brightness is not supported."
-	    ewarn "Check that ibm_acpi is loaded into the kernel"
+		ewarn "For IBM Thinkpads, check that ibm_acpi is loaded into the kernel"	
+ 	    ewarn "For Toshiba laptops, you've got to install app-laptop/acpitool"
 	fi
 }
 	
@@ -903,40 +977,126 @@ aggiungendo lo script al runlevel battery.
 <chapter>
 <title>Power Management dell'Hard Disk</title>
 <section>
-<title>Sleep quando in idle</title>
 <body>
+	
+<p>	
+Gli Hard Disk consumano meno energia in modalità sleep. Quindi ha senso
+attivare la modalità risparmio energetico ogni qual volta l'hard disk non
+viene utilizzato per un certo intervallo di tempo. Ci sono due metodi
+per questo. Il laptop-mode, il primo, permette un risparmio energetico
+grazie ad alcune misure che prevengono o al massimo ritardano gli accessi
+in scrittura. Lo svantaggio è dato dal fatto che uno sbalzo energetico
+o un crash del kernel potrebbero portare a perdite di dati.
+Se si vogliono evitare queste situazioni, sarà bene accertarsi che non
+siano attivi processi che necessitano di scritture frequenti.
+Il secondo metodo è l'attivazione dell'opzione risparmio energetico
+del proprio hard disk tramite hdparm.
+</p>	
+	
+</body>	
+</section>	
+
+<section>	
+<title>Aumento del tempo di idle - laptop-mode</title>	
+<body>	
 
 <p>
-L'obiettivo è portare l'hard disk nello stato di sleep il prima possibile
-quando non viene utilizzato. Verranno analizzate due possibilità. La prima
-è <c>cpudyn</c>. Bisogna decommentare le linee nella sezione "Disk Options" in
-<path>/etc/conf.d/cpudyn</path>. Per portare l'hard disk in sleep dopo 60 secondi
-di inattività si deve agire nel modo seguente:
+Gli ultimi kernel (2.6.6 e maggiori, gli ultimi della serie 2.4 e altri con alcune patch)
+includono il così detto <e>laptop-mode</e>. Quando attivato, i buffer vengono scritti sul
+disco alle chiamate read oppure dopo 10 minuti (invece di 30 secondi). Questo fà si che l'hard disk
+non lavori in maniera continuativa.
 </p>
-
-<pre caption="Uso di cpudyn per lo standby dell'hard disk">
-<comment>################################################
-# DISK OPTIONS
-# (opzioni disabilitate di default)
-################################################
-
-#
-# Tempo dopo il quale porre il disco in modalità standby
-# in mancanza di operazioni IO (in secondi)
-#
-</comment>
-TIMEOUT=60
-<comment>
-#
-# Dischi sui quali effettuare lo spindown (separati da virgole)
-#
-</comment>
-DISKS=/dev/hda
+	
+<pre caption="Avvio automatico del laptop-mode">
+# <i>emerge laptop-mode-tools</i>
+</pre>
+	
+<p>
+I <c>laptop-mode-tools</c> hanno la propria configurazione in 
+<path>/etc/laptop-mode/laptop-mode.conf</path>. E' possibile
+adattarla alle proprie esigenze; la documentazione è presente nel file di configurazione stesso.
+Per rendere automatico l'avvio <c>rc-update add laptop_mode battery</c>.
+</p>
+		
+<p>	
+Le ultime versioni (dalla 1.11 in avanti) dei laptop-mode-tools includono
+<c>lm-profiler</c>. Questo tool effettuerà un monitoraggio dell'utilizzo
+del disco del proprio sistema e dei servizi di rete in esecuzione consigliando
+la disabilitazione di quelli non necessari. Sarà possibile disattivarli
+attraverso il supporto runlevel integrato nei laptop-mode-tools (sostituiti
+da <c>/sbin/rc</c> di Gentoo) o attraverso i propri runlevel
+<e>default</e>/<e>battery</e> (raccomandato).
+</p>	
+		
+<pre caption="Output d'esempio dell'esecuzione di lm-profiler">	
+# lm-profiler	
+Profiling session started.	
+Time remaining: 600 seconds	
+[4296896.602000] amarokapp	
+Time remaining: 599 seconds	
+[4296897.714000] sort	
+[4296897.970000] mv	
+Time remaining: 598 seconds	
+Time remaining: 597 seconds	
+[4296900.482000] reiserfs/0	
 </pre>
 
 <p>
-La seconda possibilità è quella di usare un piccolo script e hdparm.
-Si crei <path>/etc/init.d/pm.hda</path> come riportato di seguito:
+A seguito del monitoraggio di dieci minuti, lm-profiler mostrerà un elenco di servizi
+responsabili di accessi al disco durante il tempo di osservazione.
+</p>
+
+<pre caption="Richiesta di disabilitazione servizi di lm-profiler">
+Program:     "atd"	
+Reason:      standard recommendation (program may not be running)	
+Init script: /etc/init.d/atd (GUESSED)	
+
+Do you want to disable this service in battery mode? [y/N]: n	
+</pre>	
+
+<p>	
+Per disabilitare atd come suggerito dall'esempio sopra riportato, sarà necessario
+il comando <c>rc-update del atd battery</c>. Si presti attenzione a non disabilitare
+servizi essenziali al corretto funzionamento del proprio sistema - lm-profiler genera
+facilmente falsi positivi.
+</p>	
+
+</body>	
+</section>
+<section>
+<title>Limiting write accesses</title>
+<body>
+<p>	
+Se non si vuole utilizzare il laptop-mode, sarà necessario prestare maggiore
+attenzione nel disattivare servizi che accedono frequentemente al disco - 
+<c>syslogd</c> è un buon candidato ad esempio. Probabilmente non lo si vorrà
+bloccare completamente, ma una modifica al suo file di configurazione al fine
+di evitare un logging eccessivo sarà una soluzione migliore. Cups scrive su 
+disco periodicamente, quindi si consideri l'idea di bloccarlo definitivamente
+così da attivarlo solo quando effettivamente necessario.
+</p>	
+	
+<pre caption="Disattivazione di cups nella modalità batteria">	
+# <i>rc-update del cupsd battery</i>
+</pre>
+
+<p>
+E' anche possibile utilizzare <c>lm-profiler</c> dei laptop-mode-tools (si legga
+sopra) per cercare servizi da disabilitare. Una volta eliminati tutti quelli interessati,
+si può passare alla configurazione di hdparm.
+</p>	
+
+</body>	
+</section>	
+
+<section>	
+<title>hdparm</title>	
+<body>	
+
+<p>	
+La seconda possibilità è l'utilizzo di un piccolo script e di hdparm.
+Se si è scelto l'utilizzo del laptop-mode, si salti questa parte.
+Si crei il file <path>/etc/init.d/pmg_hda</path>:
 </p>
 
 <pre caption="Uso di hdparm per lo standby dell'hard disk">
@@ -965,9 +1125,9 @@ Una volta pronto, è necessario aggiungere lo script al runlevel battery.
 </p>
 
 <pre caption="Configurazione per lo standby automatico del disco">
-# <i>chmod +x /etc/init.d/pm.hda</i>
+# <i>chmod +x /etc/init.d/pmg_hda</i>
 # <i>/sbin/depscan.sh</i>
-# <i>rc-update add pm.hda battery</i>
+# <i>rc-update add pmg_hda battery</i>
 </pre>
 
 <impo>
@@ -979,46 +1139,8 @@ la garanzia.
 </body>
 </section>
 <section>
-<title>Aumento del tempo di idle - laptop-mode</title>
-<body>
-
-<p>
-Gli ultimi kernel (2.6.6 e maggiori, gli ultimi della serie 2.4 e altri con alcune patch)
-includono il così detto <e>laptop-mode</e>. Quando attivato, le operazioni 
-di scrittura avvengono ogni 10 minuti (invece di 30 secondi). Questo fà si che l'hard disk
-non lavori in maniera continuativa.
-</p>
-
-<pre caption="Avvio automatico del laptop-mode">
-# <i>emerge laptop-mode-tools</i>
-</pre>
-
-<p>
-I <c>laptop-mode-tools</c> hanno la propria configurazione in 
-<path>/etc/laptop-mode/laptop-mode.conf</path>. E' possibile
-adattarla alle proprie esigenze; la documentazione è presente nel file di configurazione stesso.
-Per rendere automatico l'avvio <c>rc-update add laptop_mode battery</c>.
-</p>
-
-</body>
-</section>
-<section>
 <title>Altri consigli</title>
 <body>
-
-<p>
-Oltre a portare il proprio hard disk nello stato di sleep il prima possibile,
-una buona idea è minimizzare gli accessi al disco. Si osservino i processi che
-scrivono sul disco frequentemente - syslogd è un buon candidato. Non sarà necessario
-fermarlo completamente, ma è possibile modificare il suo file di configurazione in
-modo tale che non tutto venga loggato, riducendo in questo modo gli accessi al disco.
-Cups scrive sul disco periodicamente, quindi fermarlo e attivarlo manualmente
-solo quando necessario è una buona idea.
-</p>
-
-<pre caption="Disattivare cups nella modalità batteria">
-# <i>rc-update del cupsd battery</i>
-</pre>
 
 <p>
 Un'altra possibilità è la disattivazione dello swap nella modalità batteria.
@@ -1087,14 +1209,19 @@ EndSection
 
 <p>
 Le card Wireless LAN consumano poca energia. E' possibile inserirle nella modalità
-risparmio energetico in analogia allo script pm.hda.
+risparmio energetico in analogia allo script pmg_hda.
 </p>
+
+<note>	
+Questo script considera la propria interfaccia wireless come <c>wlan0</c>;
+si sostituisca questo valore con il nome della propria.
+</note>
 
 <pre caption="Power Management automatico per le WLAN">
 #!/sbin/runscript
 start() {
   ebegin "Activating Power Management for Wireless LAN"
-  iwconfig wlan0 power on power max period 3
+  iwconfig wlan0 power on
   eend $?
 }
 
@@ -1106,20 +1233,18 @@ stop () {
 </pre>
 
 <p>
-L'esecuzione di questo script porta la wlan0 in modalità risparmio energetico
-ponendola in stato di sleep dopo tre secondi di assenza di traffico.
-Lo si salvi come <path>/etc/init.d/pm.wlan0</path> e lo si aggiunga al runlevel
-battery come gli altri. Per dettagli e maggiori opzioni <c>man iwconfig</c>.
-
+L'esecuzione di questo script attiverà il risparmio energetico per la wlan0.
+Lo si salvi come <path>/etc/init.d/pmg_wlan0</path> e lo si aggiunga al runlevel
+battery come gli altri. Per dettagli e maggiori opzioni come il periodo di
+wakeup e impostazioni del timeout <c>man iwconfig</c>.
 Se i propri driver oppure l'access point supportano il cambio del beacon time,
 questo può essere un altro modo per risparmiare ancora più energia.
 </p>
 
-
 <pre caption="Power Management for WLAN">
-# <i>chmod +x /etc/init.d/pm.wlan0</i>
+# <i>chmod +x /etc/init.d/pmg_wlan0</i>
 # <i>/sbin/depscan.sh</i>
-# <i>rc-update add pm.wlan0 battery</i>
+# <i>rc-update add pmg_wlan0 battery</i>
 </pre>
 
 </body>
@@ -1154,7 +1279,6 @@ Device Drivers
 <chapter>
 <title>Stati di Sleep: sleep, standby, suspend to disk</title>
 <section>
-<title>Cosa sono</title>
 <body>
 
 <p>
@@ -1433,7 +1557,6 @@ funzionare in maniera corretta.
 <chapter>
 <title>Problemi</title>
 <section>
-<title>Se qualcosa dovesse andare male...</title>
 <body>
 
 <p>
@@ -1524,6 +1647,21 @@ come modulo, assicurati di averlo caricato correttamente.
 </p>
 
 <p>
+<e>D:</e> Nei miei log di sistema leggo cose del tipo "logger: ACPI group battery / action	
+battery is not defined".	
+</p>	
+
+<p>	
+<e>R:</e> Questo messaggio viene generato dallo script /etc/acpi/default.sh incluso con acpid.
+Puoi tranquillamente ignorarlo. Se ti crea fastidio, puoi commentare la riga appropriata in
+/etc/acpi/default.sh come mostrato di seguito:
+</p>	
+
+<pre caption="Disabilitazione dei warning per eventi acpi sconosciuti">	
+	*)      # logger "ACPI action $action is not defined"	
+</pre>	
+
+<p>
 <e>D:</e> Ho un Dell Inspiron 51XX e non riesco ad ottenere eventi ACPI.
 </p>
 
@@ -1588,8 +1726,10 @@ la tua batteria è probabilmente rotta. Usa la garanzia.
 </p>
 
 <p>
-<e>R:</e> Prova a contattarmi direttamente, <mail link="fragfred@gmx.de">Dennis
-Nienhüser</mail>.
+<e>R:</e> Prova a contattarmi direttamente, <mail link="earthwings@gentoo.org">Dennis
+Nienhüser</mail>. I <uri link="http://forums.gentoo.org">forum di Gentoo</uri> sono 
+un ottimo posto in cui chiedere e trovare aiuto. Se preferisci IRC, prova il canale
+<e>#gentoo-laptop</e> su <e>irc.freenode.net</e>.
 </p>
 
 
