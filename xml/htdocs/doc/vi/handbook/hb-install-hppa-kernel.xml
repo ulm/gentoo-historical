@@ -2,15 +2,14 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/vi/handbook/hb-install-hppa-kernel.xml,v 1.5 2005/12/12 13:34:21 neysx Exp $ -->
-<!-- $OldHeader: /var/www/www.gentoo.org/raw_cvs/gentoo/xml/htdocs/doc/en/handbook/hb-install-hppa-kernel.xml,v 1.24 2005/07/04 15:57:32 swift Exp $ -->
+<!-- Rev: 1.30 -->
 
 <sections>
 
-<version>1.17</version>
-<date>2005-07-04</date>
+<version>1.23</version>
+<date>2006-02-17</date>
 
 <section>
 <title>Múi giờ</title>
@@ -19,14 +18,15 @@
 <p>
 Trước hết bạn cần chọn múi giờ để hệ thống của bạn biết nó nằm ở nơi
 nào. Hãy tìm múi giờ của bạn trong <path>/usr/share/zoneinfo</path>,
-sau đó tạo một liên kết biểu tượng đến <path>/etc/localtime</path>
-bằng <c>ln</c>:
+sau đó chép thành <path>/etc/localtime</path>. Tránh dùng
+<path>/usr/share/zoneinfo/Etc/GMT*</path> vì tên của nó không biểu thị
+múi giờ mong đợi. Ví dụ, <path>GMT-8</path> thực chất là GMT+8.
 </p>
 
 <pre caption="Đặt thông tin múi giờ">
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(Giả sử bạn muốn dùng Asia/Saigon)</comment>
-# <i>ln -sf /usr/share/zoneinfo/Asia/Saigon /etc/localtime</i>
+# <i>cp /usr/share/zoneinfo/Asia/Saigon /etc/localtime</i>
 </pre>
 
 </body>
@@ -45,38 +45,35 @@ link="/doc/en/gentoo-kernel.xml">Gentoo Kernel Guide</uri>.
 </p>
 
 <p>
-HPPA không còn hỗ trợ dòng 2.4 nữa. Bạn phải dùng <c>hppa-sources</c>.
+Với HPPA chúng tôi có <c>hppa-sources</c>. Mặc định đây là kernel dựa
+trên kernel 2.6. Nếu bạn muốn dùng kernel 2.4, bạn cần cài đặt Gentoo
+bằng Internet vì chúng tôi không cung cấp kernel source trong CD Cài
+đặt.  Dùng <c>USE="-doc"</c> nếu cần để tránh phụ thuộc vào gói
+xorg-x11 và các phụ thuộc khác lúc này. <c>USE="symlink"</c> không cần
+cho cài đặt mới, nhưng bảo đảm sẽ tạo đúng symlink
+<c>/usr/src/linux</c>.
 </p>
 
 <pre caption="Cài đặt mã nguồn kernel">
-# <i>emerge hppa-sources</i>
+# <i>USE="-doc symlink" emerge hppa-sources</i>
 </pre>
 
 <p>
 Hãy xem trong <path>/usr/src</path>, bạn sẽ thấy một symlink tên là
-<path>linux</path> trỏ đến mã nguồn kernel của bạn:
+<path>linux</path> trỏ đến mã nguồn kernel của bạn. Trong trường hợp
+này, mã nguồn kernel đã cài là <c>hppa-sources-2.6.12.2-pa2</c>. Phiên
+bản của bạn có thể khác, đừng nhầm lẫn.
 </p>
 
 <pre caption="Xem liên kết mã nguồn kernel">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.10_p1
-</pre>
-
-<p>
-Nếu không đúng như vậy (nghĩa là symlink trỏ đến mã nguồn kernel
-khác), hãy đổi lại cho đúng:
-</p>
-
-<pre caption="Thay đổi liên kết mã nguồn kernel">
-# <i>rm /usr/src/linux</i>
-# <i>cd /usr/src</i>
-# <i>ln -s linux-2.6.10_p1 linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.12.2-pa2
 </pre>
 
 <p>
 Giờ là lúc để cấu hình và biên dịch mã nguồn kernel. Bạn có thể dùng
-<c>genkernel</c> để tạo ra một kernel tổng quát như kernel dùng bởi
-CD Cài đặt. Tuy nhiên chúng tôi giải thích cách cấu hình "bằng tay" trước
+<c>genkernel</c> để tạo ra một kernel tổng quát như kernel dùng bởi CD
+Cài đặt. Tuy nhiên chúng tôi giải thích cách cấu hình bằng tay trước
 vì nó là cách tốt nhất để tối ưu hệ thống của bạn.
 </p>
 
@@ -153,16 +150,13 @@ General setup --->
 Giờ vào phần <c>File Systems</c> và chọn những loại hệ tập tin bạn
 dùng. <e>Đừng</e> biên dịch chúng là module, nếu không hệ thống Gentoo
 sẽ không thể mount các phân vùng của bạn. Ngoài ra hãy chọn <c>Virtual
-memory</c>, <c>/proc file system</c>, <c>/dev file system</c> +
-<c>Automatically mount at boot</c>:
+memory</c> và <c>/proc file system</c>:
 </p>
 
 <pre caption="Chọn các hệ tập tin cần thiết">
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
-    [*] /dev file system support (OBSOLETE)
-    [*]   Automatically mount at boot
     [*] Virtual memory file system support (former shm fs)
 
 <comment>(Chọn những tùy chọn sau tùy theo hệ thống của bạn)</comment>
@@ -200,14 +194,11 @@ Nếu bạn cần nó, đừng quên thêm hỗ trợ card mạng vào kernel.
 Nếu bạn có chuột hoặc bàn phím HIL, đừng quên bật tùy chọn hỗ trợ nó.
 </p>
 
-<pre caption="Kích hoạt hỗ trợ bàn phím HIL">
-Input device support ---&gt;
-  [*] Keyboards
-  [*]   HP HIL keyboard support
-</pre>
-<pre caption="Kích hoạt hỗ trợ chuột HIL">
-  [*] Mice
-  [*]   HIL pointers (mice etc).
+<pre caption="Kích hoạt hỗ trợ HIL">
+Input core support ---&gt;
+  [*] Keyboard support
+  [*] Mouse support
+  [*] Event interface support
 </pre>
 
 <p>
@@ -220,7 +211,6 @@ Graphics support ---&gt;
       [*] HP STI frame buffer device support
   Console display driver support ---&gt;
       [*] STI text console
-      [*] Framebuffer Console support
 </pre>
 
 <p>
@@ -244,23 +234,14 @@ Hãy thoát trình cấu hình và bắt đầu biên dịch:
 </pre>
 
 <p>
-Khi đã biên dịch kernel xong, hãy chép nó vào
-<path>/boot</path>. Từ giờ trở đi chúng tôi giả định bạn biên dịch
-<c>hppa-sources-2.6.10_p1</c> (có thể không phải là kernel bạn dùng!):
+Khi đã biên dịch kernel xong, hãy chép nó vào <path>/boot</path>. Dùng
+tên nào là tuỳ ý bạn. Bạn cần nhớ tên mình chọn để cấu bootloader
+trong phần sau. Nhớ thay <path>&lt;kernel-số phiên bản&gt;</path> với
+tên và phiên bản kernel của bạn.
 </p>
 
 <pre caption="Cài đặt kernel">
-# <i>cp vmlinux /boot/vmlinux</i>
-# <i>cp System.map /boot/System.map-2.6.10</i>
-</pre>
-
-<p>
-Tốt nhất bạn nên chép tập tin cấu hình kernel vào <path>/boot</path>,
-để phòng hờ :)
-</p>
-
-<pre caption="Sao lưu cấu hình kernel">
-# <i>cp .config /boot/config-2.6.10</i>
+# <i>cp vmlinux /boot/&lt;kernel-số phiên bản&gt;</i>
 </pre>
 
 <p>
@@ -313,11 +294,6 @@ all</c> và thêm hỗ trợ hệ tập tin của bạn vào <e>trong</e> kernel
 
 <pre caption="Chạy genkernel">
 # <i>genkernel all</i>
-GenKernel v3.0.1_beta10
-* ARCH: HPPA 
-* KERNEL VER: 2.4.24
-* kernel: configuring source
-* kernel: running mrproper
 <comment>(Loại bỏ bớt kết quả để dễ đọc)</comment>
 * Kernel compiled successfully!
 * Required Kernel Params:
@@ -346,7 +322,7 @@ cứng (y như CD Cài đặt) trước khi hệ thống "thật" của bạn đ
 </p>
 
 <pre caption="Kiểm tra kernel image và initrd image đã tạo">
-# <i>ls /boot/kernel* /boot/initrd*</i>
+# <i>ls /boot/kernel* /boot/initramfs*</i>
 </pre>
 
 <p>
@@ -359,7 +335,7 @@ sau:
 
 <pre caption="Cài và bật coldplug">
 # <i>emerge coldplug</i>
-# <i>rc-update add coldplug boot</i>
+# <i>rc-update add coldplug default</i>
 </pre>
 
 </body>

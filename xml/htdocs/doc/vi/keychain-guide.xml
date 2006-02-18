@@ -1,0 +1,369 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- Rev: 1.2 -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/vi/keychain-guide.xml" lang="vi">
+<title>Cẩm nang Keychain cho Gentoo Linux</title>
+
+<author title="Author">
+  <mail link="airuike@gmail.com">Eric Brown</mail>
+</author>
+<author title="Editor">
+  <mail link="vanquirius@gentoo.org">Marcelo Góes</mail>
+</author>
+
+<author title="Translator">
+  <mail link="pclouds@gentoo.org">Nguyễn Thái Ngọc Duy</mail>
+</author>
+
+<abstract>
+Tài liệu này mô tả cách sử dụng khoá ssh chung bằng chương trình
+keychain. Nó giả định bạn đã có kiến thức cơ sở về mã hoá khoá công
+khai.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.2</version>
+<date>2006-02-15</date>
+
+<chapter>
+<title>Thông tin nền</title>
+<section>
+<title>Vấn đề với bàn tay</title>
+<body>
+
+<p>
+Vậy kà bạn đã có các máy Gentoo đang yêu chạy sshd, nhưng hơi bất tiện
+khi cứ phải gõ đi gõ lại mật mã đăng nhập, phải không? Hoặc có thể bạn
+có một script hoặc cron-job cần một kết nối ssh. Cho dù trường hợp
+nào đi nữa, có một cách giải quyết, nó bắt đầu từ xác thực khoá công
+khai.
+</p>
+
+</body>
+</section>
+<section>
+<title>Xác thực khoá công khai hoạt động như thế nào?</title>
+<body>
+
+<p>
+Giả định bạn có một client muốn kết nối đến sshd ở server. Lần đầu
+tiên client sẽ phát sinh một cặp khoá, đưa khoá công khai cho server.
+Sau đó, bất cứ khi nào client muốn kết nối, server sẽ tiến hành xác
+thực, gửi một thông điệp thông qua khoá công khai đó. Chỉ có người giữ
+khoá riêng (client) có thể giải mã thông điệp của server gửi đến, vậy
+bạn có thể đoán ra, câu trả lời đúng sẽ là xác thực thành công.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Dùng xác thực khoá công khai như thế nào</title>
+<section>
+<title>Phát sinh cặp khoá</title>
+<body>
+
+<p>
+Bước đầu tiên là tạo một cặp khoá. Để làm, bạn sẽ dùng lệnh
+<c>ssh-keygen</c> như sau:
+</p>
+
+<pre caption="Phát sinh cặp khoá">
+$ <i>ssh-keygen -t dsa</i>
+<comment>(Chỉ cần chấp nhận giá trị mặc định, và nhớ dùng passphrase
+tốt)</comment>
+</pre>
+
+<warn>
+Nhớ chọn một passphrase tốt, an toàn, đặc biệt nếu khoá này được dùng
+để đăng nhập root!
+</warn>
+
+<p>
+Giờ bạn sẽ có khoá riêng là <path>~/.ssh/id_dsa</path> và khoá công
+khai là <path>~/.ssh/id_dsa.pub</path>.  Khoá công khai này được dùng
+để chép lên máy ở xa.
+</p>
+
+</body>
+</section>
+<section>
+<title>Chuẩn bị server</title>
+<body>
+
+<p>
+Bạn sẽ chép tập tin <path>~/.ssh/id_dsa.pub</path> vào server đang
+chạy sshd. Bạn sẽ cần thêm nội dung tập tin đó vào tập tin
+<path>~/.ssh/authorized_keys</path> của user bạn sẽ kết nối đến. Đây
+là ví dụ cách làm nếu bạn đã có truy cập ssh vào server.
+</p>
+
+<pre caption="Chép khoá công khai lên server">
+$ <i>scp ~/.ssh/id_dsa.pub server_user@server:~/myhost.pub</i>
+$ <i>ssh server_user@server "cat ~/myhost.pub >> ~/.ssh/authorized_keys"</i>
+$ <i>ssh server_user@server "cat ~/.ssh/authorized_keys"</i>
+</pre>
+
+<p>
+Kết quả của dòng cuối là bạn thấy nội dung tập tin 
+<path>~/.ssh/authorized_keys</path>.  Kiểm tra lại để bảo đảm nó chính
+xác.
+</p>
+
+</body>
+</section>
+<section>
+<title>Kiểm tra cài đặt</title>
+<body>
+
+<p>
+Trên lý thuyết, nếu mọi việc đều ổn, ssh daemon trên server sẽ cho
+phép bạn truy cập ssh không mật mã từ bây giờ. Bạn sẽ vẫn cần giải mã
+khoá riêng trên client bằng passphrase bạn nhập lúc tạo cặp khoá trước
+đó, nhưng đừng nhầm nó với passphrase của tài khoản user trên server.
+</p>
+
+<pre caption="Kiểm tra server">
+$ <i>ssh server_user@server</i>
+</pre>
+
+<p>
+Nếu ổn thoả, bạn sẽ được hỏi passphrase của id_dsa và sẽ có thể truy
+cập vào server. Nếu không, bạn sẽ đăng nhập như user trên server như
+bình thường, và xác minh lại nội dung
+<path>~/.ssh/authorized_keys</path> để bảo đảm mỗi mục trong đó chiếm
+một dòng đơn. Bạn có thể muốn kiểm tra cấu hình sshd để bảo đảm nó sẽ
+ưu tiên xác thực khoá công khai nếu có.
+</p>
+
+<p>
+Vào lúc này, có lẽ bạn sẽ nghĩ, "Vậy vấn đề là gì, tôi thay thế một
+mật mã bằng một mật mã khác?!". Hãy thư giãn, phần kế tiếp sẽ cho bạn
+thấy chình xác cách chúng tôi dùng để tiết kiệm thời gian quý báu của
+bạn.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Sử dụng xác thực khoá công khai tiện lợi</title>
+<section>
+<title>Quản lý khoá với ssh-agent</title>
+<body>
+
+<p>
+Bạn có thể đang nghĩ rằng nếu có một cách nào đó để giải mã khoá riêng
+một lần và dùng lại khoá riêng để kết nối không phải gõ mật mã lần
+nữa thì thật tuyệt. Bạn là người may mắn, vì đó chính xác là việc
+chương trình <c>ssh-agent</c> thực hiện.
+</p>
+
+<p>
+Chương trình <c>ssh-agent</c> thường khởi động ở đầu X session, hoặc
+từ shell startup script như <path>~/.bash_profile</path>. Nó hoạt động
+bằng cách tạo unix-socket, đăng ký các biến môi trường thích hợp để
+các ứng dụng sau có thể tận dụng dịch vụ bằng cách kết nối đến socket
+đó. Rõ ràng nó chỉ khi khởi động nó trong tiến trình cha của X session
+thì bạn mới có thể dùng tập các khoá riêng đã giải mã trong các ứng
+dụng X tiếp sau đó.
+</p>
+
+<pre caption="Chuẩn bị ssh-agent">
+$ <i>ssh-agent</i>
+</pre>
+
+<note>
+ssh-agent sẽ giữ các khoá đã giải mã đến khi bạn chấm dứt chương trình
+ssh-agent. Nếu bạn muốn giới hạn thời gian sử dụng khoá, dùng tham số
+<c>-t</c>, mô tả trong <c>man ssh-agent</c>.
+</note>
+
+<p>
+Khi bạn chạy ssh-agent, nó sẽ cho bạn biết PID của chương trình
+ssh-agent vừa chạy, và một vài biến môi trường, tên là
+<c>SSH_AUTH_SOCK</c> và <c>SSH_AGENT_PID</c>.  Nó cũng tự động thêm 
+<path>~/.ssh/id_dsa</path> vào bộ sưu tập khoá của nó và hỏi bạn
+passphrase tương ứng để có thể giải mã khoá. Nếu bạn có những khoá
+riêng khác cần thêm vào chương trình ssh-agent đang chạy, bạn có thể
+dùng <c>ssh-add</c>:
+</p>
+
+<pre caption="Thêm nhiều khoá hơn vào ssh-agent">
+$ <i>ssh-add somekeyfile</i>
+</pre>
+
+<p>
+Vì bạn đã có các khoá riêng đã giải mã, bạn có thể dùng để ssh vào
+server mà không cần nhập mật mã.
+</p>
+
+<pre caption="Ssh không cần mật mã">
+$ <i>ssh server</i>
+</pre>
+
+<p>
+Tốt hơn nên biết cách tắt chương trình ssh-agent nếu cần, phải không?
+</p>
+
+<pre caption="Tắt ssh-agent">
+$ <i>ssh-agent -k</i>
+</pre>
+
+<note>
+Nếu bạn không làm cho ssh-agent hoạt động được, có thể nó đã chạy rồi.
+Bạn có thể buột nó chấm dứt như những chương trình bình thường
+<c>killall ssh-agent</c>.
+</note>
+
+<p>
+Nếu bạn muốn dùng ssh-agent một cách tiện lợi hơn, hãy đọc tiếp phần
+kế về keychain. Nhớ tắt chương trình ssh-agent trong ví dụ trước trước
+khi bạn dùng keychain.
+</p>
+
+</body>
+</section>
+<section>
+<title>Tận dụng tiện lợi cuối cùng của ssh-agent</title>
+<body>
+
+<p>
+Keychain sẽ cho phép bạn tận dùng lại ssh-agent giữa các lần đăng
+nhập, và có thể hỏi passphrase mỗi lần người dùng đăng nhập. Trước khi
+tiếp tục, hãy emerge keychain.
+</p>
+
+<pre caption="Cài đặt keychain">
+# <i>emerge keychain</i>
+</pre>
+
+<p>
+Giả định rằng bạn emerge thành công, chúng ta có thể dùng keychain
+ngay. Hãy thêm dòng sau vào <path>~/.bash_profile</path> để bật nó
+lên:
+</p>
+
+<pre caption="Bật keychain trong .bash_profile">
+keychain ~/.ssh/id_dsa
+. ~/.keychain/$HOSTNAME-sh
+</pre>
+
+<note>
+Bạn có thể thêm nhiều khoá riêng vào dòng lệnh nếu thích. Ngoài ra nếu
+bạn muốn hỏi passphrase mỗi lần khởi động shell, thêm tuỳ chọn
+<c>--clear</c>.
+</note>
+
+<note>
+Nếu bạn không dùng bash, hãy xem phần <b>EXAMPLES</b> trong <c>man
+keychain</c> để biết cách dùng với các shell khác. Ý tưởng là chạy
+lệnh đó mỗi lần bạn dùng shell.
+</note>
+
+<p>
+Giờ hãy kiểm tra nó. Trước hết, bảo đảm bạn đã tắt ssh-agent từ phần
+trước, sau đó khởi động shell mới như thông thường, hoặc khởi động
+terminal mới. Nó sẽ hỏi mật mã cho từng khoá bạn xác định trên dòng
+lệnh. Mọi shell được mở sau đó sẽ dùng lại ssh-agent, cho phép bạn
+dùng kết nối ssh không mật mã.
+</p>
+
+</body>
+</section>
+<section>
+<title>Dùng keychain với KDE</title>
+<body>
+
+<p>
+Nếu bạn là người dùng KDE, thay vì dùng <path>~/.bash_profile</path>,
+bạn có thể để KDE quản lý ssh-agent cho bạn. Để làm thế, bạn sẽ cần
+điều chỉnh 
+<path>/usr/kde/${KDE_VERSION}/env/agent-startup.sh</path>, được đọc
+lúc khởi động KDE, và
+<path>/usr/kde/${KDE_VERSION}/shutdown/agent-shutdown.sh</path>, được
+thực hiện khi thoát KDE, trong đó <c>${KDE_VERSION}</c> tương ứng với
+phiên bản KDE được cài đặt. Ví dụ, nếu bạn dùng KDE 3.5.1, đây là cách
+bạn sửa các tập tin:
+</p>
+
+<pre caption="Điều chỉnh /usr/kde/3.5/env/agent-startup.sh">
+if [ -x /usr/bin/ssh-agent ]; then
+  eval "$(/usr/bin/ssh-agent -s)"
+fi
+</pre>
+
+<pre caption="Điều chỉnh /usr/kde/3.5/shutdown/agent-shutdown.sh">
+if [ -n "${SSH_AGENT_PID}" ]; then
+  eval "$(ssh-agent -k)"
+fi
+</pre>
+
+<p>
+Giờ bạn cần phải khởi động terminal của bạn, như Konsole, và nạp các
+khoá bạn cần dùng. Ví dụ:
+</p>
+
+<pre caption="Nạp khoá ssh">
+keychain ~/.ssh/id_dsa
+<comment>(Nhập mật mã khoá)</comment>
+</pre>
+
+<p>
+Khoá của bạn sẽ được nhớ đến khi bạn thoát KDE hoặc buộc ssh-agent kết
+thúc bằng tay.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Vài nhận xét tổng kết</title>
+<section>
+<title>Về bảo mật</title>
+<body>
+
+<p>
+Dĩ nhiên, dùng ssh-agent sẽ làm cho hệ thống ít an toàn hơn một chút.
+Nếu người dùng khác có thể dùng shell trong khi bạn trong phòng tắm,
+hắn có thể đăng nhập vào mọi server của bạn không cần mật mã. Hậu quả
+là tăng rủi ro cho những server bạn có thể kết nối vào, và bạn nhớ
+kiểm tra lại chính sách an ninh cục bộ trước khi dùng. Nếu bạn dùng
+nó, hãy xem xét cẩn thận để bảo đảm an ninh.
+</p>
+
+</body>
+</section>
+<section>
+<title>Tìm lỗi</title>
+<body>
+
+<p>
+Hầu hết mọi thứ sẽ hoạt động tốt, nhưng nếu bạn gặp vấn đề, bạn cần
+biết vài điều.
+</p>
+
+<ul>
+  <li>
+    Nếu bạn không thể kết nối không có ssh-agent, hãy xem xét dùng ssh
+    với <c>-vvv</c> để tìm hiểu chuyện gì đã xảy ra. Đôi khi server
+    không được cấu hình để dùng xác thực khoá công khai, đôi khi nó
+    chỉ hỏi mật mã cục bộ! Nếu gặp trường hợp này, bạn có thể cần tùy
+    chọn <c>-o</c> với ssh, hoặc thay đổi sshd_config của server.
+  </li>
+  <li>
+    Nếu bạn gặp vấn đề với ssh-agent hoặc keychain, có thể bạn dùng
+    shell không hiểu những lệnh bạn dùng. Hãy xem man page của
+    ssh-agent và keychain để biết cách làm cho nó hoạt động trên các
+    shell khác.
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>

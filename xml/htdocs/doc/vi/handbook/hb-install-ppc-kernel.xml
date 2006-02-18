@@ -2,15 +2,14 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/vi/handbook/hb-install-ppc-kernel.xml,v 1.5 2005/08/10 15:51:41 neysx Exp $ -->
-<!-- $OldHeader: /var/www/www.gentoo.org/raw_cvs/gentoo/xml/htdocs/doc/en/handbook/hb-install-ppc-kernel.xml,v 1.33 2005/07/04 15:57:32 swift Exp $ -->
+<!-- Rev: 1.38 -->
 
 <sections>
 
-<version>2.10</version>
-<date>2005-08-06</date>
+<version>2.15</version>
+<date>2006-02-16</date>
 
 <section>
 <title>Múi giờ</title>
@@ -19,14 +18,15 @@
 <p>
 Trước hết bạn cần chọn múi giờ để hệ thống của bạn biết nó nằm ở nơi
 nào. Hãy tìm múi giờ của bạn trong <path>/usr/share/zoneinfo</path>,
-sau đó tạo một liên kết biểu tượng đến <path>/etc/localtime</path>
-bằng <c>ln</c>:
+sau đó chép vào <path>/etc/localtime</path>. Tránh dùng
+<path>/usr/share/zoneinfo/Etc/GMT*</path> vì tên nó không phản ánh
+đúng múi giờ mong đợi. Ví dụ, <path>GMT-8</path> thực chất là GMT+8.
 </p>
 
 <pre caption="Đặt thông tin múi giờ">
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(Giả sử bạn muốn dùng Asia/Saigon)</comment>
-# <i>ln -sf /usr/share/zoneinfo/Asia/Saigon /etc/localtime</i>
+# <i>cp /usr/share/zoneinfo/Asia/Saigon /etc/localtime</i>
 </pre>
 
 </body>
@@ -45,49 +45,33 @@ link="/doc/en/gentoo-kernel.xml">Gentoo Kernel Guide</uri>.
 </p>
 
 <p>
-PPC có thể chọn <c>vanilla-sources</c> hoặc
-<c>gentoo-sources</c> (cả hai là kernel 2.6). Kernel sau cho phép
-thực hiện cài đặt không mạng. Ngoài ra còn có một bản kernel 2.6 đặc
-biệt cho Pegasos: <c>pegasos-sources</c>.  Vậy hãy <c>emerge</c>
-mã nguồn kernel vào:
+PPC có thể chọn <c>vanilla-sources</c> hoặc <c>gentoo-sources</c> (cả
+hai là kernel 2.6). Kernel sau cho phép thực hiện cài đặt không mạng.
+Giờ hãy <c>emerge</c> kernel source. Dùng <c>USE="-doc"</c> để tránh
+phụ thuộc vào xorg-x11 hoặc những gói khác vào lúc này.
+<c>USE="symlink"</c> không cần thiết với cài đặt mới, nhưng sẽ bảo đảm
+tạo đúng liên kết <path>/usr/src/linux</path>.
 </p>
 
 <pre caption="Cài đặt mã nguồn kernel">
-# <i>emerge gentoo-sources</i>
+# <i>USE="-doc symlink" emerge gentoo-sources</i>
 </pre>
-
-<note>
-Mã nguồn cho PowerPC dựa trên kernel 2.6.10 kèm thêm các patch bảo mật
-từ 2.6.11. Vào thời điểm phát hành, kernel 2.6.11 phát sinh các vấn đề
-với các máy PowerPC khác nhau.
-</note>
 
 <p>
 Hãy xem trong <path>/usr/src</path>, bạn sẽ thấy một symlink tên là
-<path>linux</path> trỏ đến mã nguồn kernel của bạn. Chúng tôi giả định
-rằng mã nguồn cài là <c>gentoo-source-2.6.10-r8</c>:
+<path>linux</path> trỏ đến mã nguồn kernel của bạn. Trong trường hợp
+này là <c>gentoo-source-2.6.12-r4</c>:
 </p>
 
 <pre caption="Xem liên kết mã nguồn kernel">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.10-gentoo-r8
-</pre>
-
-<p>
-Nếu symlink không trỏ đến đúng mã nguồn kernel bạn chọn (chú ý
-<c>linux-2.6.10-gentoo-r8</c> chỉ là ví dụ) bạn nên đổi lại:
-</p>
-
-<pre caption="Thay đổi liên kết mã nguồn kernel">
-# <i>rm /usr/src/linux</i>
-# <i>cd /usr/src</i>
-# <i>ln -s linux-2.6.10-gentoo-r8 linux</i>
+lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.12-gentoo-r4
 </pre>
 
 <p>
 Giờ là lúc để cấu hình và biên dịch mã nguồn kernel. Bạn có thể dùng
 <c>genkernel</c> để tạo ra một kernel tổng quát như kernel dùng bởi
-CD Cài đặt. Tuy nhiên chúng tôi giải thích cách cấu hình "bằng tay" trước
+CD Cài đặt. Tuy nhiên chúng tôi giải thích cách cấu hình bằng tay trước
 vì nó là cách tốt nhất để tối ưu hệ thống của bạn.
 </p>
 
@@ -122,16 +106,21 @@ thể an tâm bỏ qua những cảnh báo <e>pcilib</e> (như pcilib: cannot
 open /sys/bus/pci/devices). Cách khác là chạy <c>lspci</c> từ môi
 trường <e>không chroot</e>. Kết quả như nhau. Bạn có thể chạy
 <c>lsmod</c> để xem CD Cài đặt dùng module nào (một gợi ý tốt cho
-những module cần bật)
+những module cần bật). Một nơi khác có thểm tìm thông tin là kiểm tra
+kernel message log từ lúc khởi động cho đến giờ. Gõ <c>dmesg</c> để
+xem kernel message.
 </p>
 
 <p>
-Giờ hãy chuyển vào thư mục mã nguồn kernel và chạy <c>make
-menuconfig</c>. Nó sẽ khởi động menu cấu hình kernel.
+Giờ hãy chuyển vào thư mục mã nguồn kernel để cấu hình kernel. Trước
+hết bạn nên chạy <c>make defconfig</c>. Sau khi đã phát sinh cấu hình
+mặc định, chạy <c>make menuconfig</c>. Nó sẽ khởi động menu cấu hình
+kernel.
 </p>
 
 <pre caption="Chạy menuconfig">
 # <i>cd /usr/src/linux</i>
+# <i>make defconfig</i>
 # <i>make menuconfig</i>
 </pre>
 
@@ -163,21 +152,19 @@ General setup --->
 Giờ vào phần <c>File Systems</c> và chọn những loại hệ tập tin bạn
 dùng. <e>Đừng</e> biên dịch chúng là module, nếu không hệ thống Gentoo
 sẽ không thể mount các phân vùng của bạn. Ngoài ra hãy chọn <c>Virtual
-memory</c> và <c>/proc filesystem</c>. <e>Đừng</e> chọn <c>/dev file
-system</c>:
+memory</c> và <c>/proc filesystem</c>.
 </p>
 
 <pre caption="Selecting necessary file systems">
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
-    [ ] /dev file system support (OBSOLETE)
     [*] Virtual memory file system support (former shm fs)
 
 <comment>(Chọn những tùy chọn sau tùy theo hệ thống của bạn)</comment>
-  &lt;*&gt; Reiserfs support
-  &lt;*&gt; Ext3 journalling file system support
   &lt;*&gt; Second extended fs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; Reiserfs support
   &lt;*&gt; XFS filesystem support
 </pre>
 
@@ -205,9 +192,9 @@ Nếu bạn cần nó, đừng quên thêm hỗ trợ card mạng vào kernel.
 </p>
 
 <p>
-Người dùng OldWorld sẽ muốn bật hỗ trợ HFS để có thể chép kernel đã
-biên dịch vào phân vùng MacOS. Điều này áp dụng với máy NewWorld vì nó
-cần phân vùng Apple_Bootstrap đặc biệt:
+Người dùng OldWorld và NewWorld sẽ muốn bật hỗ trợ HFS để có thể chép kernel đã
+biên dịch vào phân vùng MacOS. Máy NewWorld yêu cầu người dùng cấu
+hình cho phân vùng đặc biệt Apple_Bootstrap:
 </p>
 
 <pre caption="Kích hoạt hỗ trợ HFS">
@@ -223,6 +210,34 @@ ra lỗi. Bạn <e>không nên</e> dùng tính năng này.
 <pre caption="Bảo đảm Preemptible Kernel là Off">
 Platform options ---&gt;
   [ ] Preemptible Kernel
+</pre>
+
+<p>
+Nếu bạn khởi động từ Firewire, bạn cần bật những tuỳ chọn sau. Nếu bạn
+không muốn đưa thẳng vào kernel, bạn cần đưa những module này và những
+module liên quan vào initrd.
+</p>
+
+<pre caption="Bật hỗ trợ firewire khi khởi động">
+Device Drivers ---&gt;
+  IEEE 1394 (FireWire) support ---&gt;
+    &lt;*&gt; IEEE 1394 (FireWire) support
+    &lt;*&gt;   OHCI-1394 support
+    &lt;*&gt;   SBP-2 support (Harddisks etc.)
+</pre>
+
+<p>
+Nếu bạn khởi động từ USB, bạn sẽ cần bật những tuỳ chọn này. Nếu bạn 
+không muốn đưa thẳng vào kernel, bạn cần đưa những module này và những
+module liên quan vào initrd.
+</p>
+
+<pre caption="Bật hỗ trợ USB khi khởi động">
+Device Drivers ---&gt;
+  USB support ---&gt;
+    &lt;*&gt; Support for Host-side USB
+    &lt;*&gt;   OHCI HCD support
+    &lt;*&gt;   USB Mass Storage support
 </pre>
 
 <p>
@@ -261,7 +276,7 @@ Hãy thoát trình cấu hình và chạy:
 </p>
 
 <pre caption="Biên dịch kernel">
-# <i>make all &amp;&amp; make modules_install</i>
+# <i>make &amp;&amp; make modules_install</i>
 </pre>
 
 <p>
@@ -270,18 +285,9 @@ mount thích hợp trên Pegasos).
 </p>
 
 <pre caption="Cài đặt kernel">
-<comment>thay 2.6.10 bằng phiên bản kernel của bạn</comment>
-(Apple/IBM)  # <i>cp vmlinux /boot/kernel-2.6.10</i>
-(Pegasos)    # <i>cp arch/ppc/boot/images/zImage.chrp /boot/kernel-2.6.10</i>
-</pre>
-
-<p>
-Tốt nhất bạn nên chép tập tin cấu hình kernel vào <path>/boot</path>,
-để phòng hờ :)
-</p>
-
-<pre caption="Sao lưu cấu hình kernel">
-# <i>cp .config /boot/config-2.6.10-gentoo-r8</i>
+<comment>thay &lt;kernel-số phiên bản&gt; bằng phiên bản kernel của bạn</comment>
+(Apple/IBM)  # <i>cp vmlinux /boot/&lt;kernel-số phiên bản&gt;</i>
+(Pegasos)    # <i>cp arch/ppc/boot/images/zImage.chrp /boot/&lt;kernel-số phiên bản&gt;</i>
 </pre>
 
 <p>
@@ -301,7 +307,7 @@ riêng lẻ</uri>.
 <p>
 Bạn nên liệt kê danh sách module bạn muốn nạp tự động trong
 <path>/etc/modules.autoload.d/kernel-2.6</path>.  Bạn có thể thêm các
-tùy chọn bổ sung cho các module bạn muốn luôn.
+tùy chọn bổ sung cho các module bạn cần luôn.
 </p>
 
 <p>
@@ -374,22 +380,36 @@ genkernel tìm cấu hình mặc định:
 </pre>
 
 <p>
-Giờ hãy biên dịch kernel bằng <c>genkernel --udev all</c>.
-Tuy nhiên hãy cẩn thận, vì
-<c>genkernel</c> biên dịch kernel hỗ trợ hầu hết mọi phần cứng, quá
-trình biên dịch sẽ mất nhiều thời gian để hoàn tất!
+Nếu bạn dùng firewire hoặc USB để khởi động, bạn cần thêm module vào
+initrd. Sửa <path>/usr/share/genkernel/ppc/modules_load</path> và đổi
+sang <c>MODULES_FIREWIRE="ieee1394 ohci1394 sbp2"</c> để có hỗ trợ
+firewire hoặc <c>MODULES_USB="usbcore ohci-hcd ehci-hcd
+usb-storage"</c> để hỗ trợ USB.
+</p>
+
+<p>
+Giờ hãy biên dịch kernel bằng <c>genkernel --genzimage all</c>.
+Với máy Pegasos, bạn sẽ cần dùng cấu hình khác và tạo zImage thay vì
+vmlinux như máy Apple.  Tuy nhiên hãy cẩn thận, vì <c>genkernel</c>
+biên dịch kernel hỗ trợ hầu hết mọi phần cứng, quá trình biên dịch sẽ
+mất nhiều thời gian để hoàn tất!
 </p>
 
 <p>
 Chú ý rằng, nếu phân vùng khởi động của bạn không dùng hệ tập tin ext2
-hoặc ext3, bạn có thể cần cấu hình bằng tay với <c>genkernel --menuconfig 
-all</c> và thêm hỗ trợ hệ tập tin của bạn vào <e>trong</e> kernel
-(<e>không</e> biên dịch dạng module). Người dùng EVMS2 hoặc LVM2 sẽ
-muốn thêm tùy chọn <c>--evms2</c> hoặc <c>--lvm2</c> vào.
+hoặc ext3, bạn có thể cần cấu hình bằng tay với <c>genkernel
+--menuconfig --genzimage all</c> và thêm hỗ trợ hệ tập tin của bạn vào
+<e>trong</e> kernel (<e>không</e> biên dịch dạng module). Người dùng
+EVMS2 hoặc LVM2 sẽ muốn thêm tùy chọn <c>--evms2</c> hoặc
+<c>--lvm2</c> vào.
 </p>
 
 <pre caption="Chạy genkernel">
-# <i>genkernel --udev all</i>
+# <i>genkernel all</i>
+</pre>
+
+<pre caption="Chạy genkernel trên Pegasos">
+# <i>genkernel --genzimage --kernel-config=/usr/share/genkernel/ppc/Pegasos all</i>
 </pre>
 
 <p>
@@ -404,7 +424,7 @@ thể khởi động genkernel thành công.
 </p>
 
 <pre caption="Kiểm tra kernel image và initrd image đã tạo">
-# <i>ls /boot/kernel* /boot/initrd*</i>
+# <i>ls /boot/kernel* /boot/initramfs*</i>
 </pre>
 
 <p>
