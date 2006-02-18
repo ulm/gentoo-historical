@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/lvm2.xml,v 1.16 2005/10/12 09:07:31 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/lvm2.xml,v 1.17 2006/02/18 09:33:17 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/lvm2.xml" lang="fr">
@@ -28,8 +28,8 @@ gestionnaire de volumes logiques, version 2 (en anglais
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.0.11</version>
-<date>2005-08-17</date>
+<version>2.2</version>
+<date>2006-02-06</date>
 
 <chapter>
 <title>Introduction</title>
@@ -66,7 +66,7 @@ Si vous faites une nouvelle installation de Gentoo, vous aurez besoin d'un CD
 amorçable avec support pour LVM2 tel que le CD d'installation de Gentoo. Vous
 trouverez le CD pour l'architecture x86 sur nos <uri
 link="/main/en/mirrors.xml">miroirs</uri> dans le répertoire
-<path>/releases/x86/2005.1/installcd</path>. D'autres architectures sont
+<path>/releases/x86/2005.1-r1/installcd</path>. D'autres architectures sont
 peut-être aussi supportées.
 </p>
 
@@ -141,20 +141,16 @@ ci-dessus pour établir votre plan de partitionnement. Ce n'est toutefois
 </p>
 
 <p>
-Créez une petite partition physique (hda1) pour /boot. Dans cet exemple, /boot
-ne sera pas géré par LVM2. Cette partition contiendra votre chargeur de
-démarrage («&nbsp;bootloader&nbsp;») et votre (ou vos) noyau(x). Une partition
-de 64&nbsp;Mo devrait être suffisante pour quelques générations de noyaux.
+Créez une petite partition physique (hda1) pour <path>/boot</path>. Dans cet
+exemple, <path>/boot</path> ne sera pas géré par LVM2. Cette partition
+contiendra votre chargeur de démarrage («&nbsp;bootloader&nbsp;») et votre (ou
+vos) noyau(x). Une partition de 64&nbsp;Mo devrait être suffisante pour
+quelques générations de noyaux.
 </p>
 
 <p>
-Créez une partition (hda2) de mémoire virtuelle et activez-la.
+Créez une partition (hda2) de mémoire virtuelle (swap).
 </p>
-
-<pre caption="Activer la partition de mémoire virtuelle">
-# <i>mkswap /dev/hda2</i>
-# <i>swapon /dev/hda2</i>
-</pre>
 
 <p>
 Créez une partition (hda3) pour / (la racine). Si vous voulez essayer
@@ -177,7 +173,7 @@ que mutilé, il serait à peu près utilisable pour l'utilisateur root.)
 
 <p>
 En supposant que la partition de mémoire virtuelle, la partition racine et la
-partition /boot n'occupent pas l'entièreté de l'espace disque, créez une
+partition <path>/boot</path> n'occupent pas tout l'espace disque, créez une
 quatrième partition sur ce disque. Utilisez le type 8e (Linux LVM). Si vous
 avez d'autres disques durs, créez une partition de type 8e sur chacun.
 </p>
@@ -194,6 +190,12 @@ disque dur de 160&nbsp;Go l'a scindé en 8 partitions de 20&nbsp;Go chacune.
 </note>
 
 <p>
+Créez les systèmes de fichiers sur <path>/dev/hda1</path> et
+<path>/dev/hda3</path>, puis créez et activez la partition swap sur
+<path>/dev/hda2</path>, comme décrit dans le manuel d'installation.
+</p>
+
+<p>
 Chargez le module LVM2 <path>dm-mod</path>&nbsp;:
 </p>
 
@@ -202,18 +204,24 @@ Chargez le module LVM2 <path>dm-mod</path>&nbsp;:
 </pre>
 
 <p>
-Scannez et activez LVM&nbsp;:
+Avant de scanner et d'activer LVM, vous pouvez éventuellement éditer
+<path>/etc/lvm/lvm.conf</path> pour exclure certains périphériques. Par défaut,
+LVM va scanner tous les périphériques, même vos lecteurs de CDROM, ce qui peut
+générer des messages d'erreur. Dans l'exemple suivant, la ligne qui entraîne le
+scan de tous les périphériques est remplacée par une autre qui bloque tous les
+périphériques sauf nos deux disques IDE.
 </p>
 
 <pre caption="Activer LVM">
-<comment>(Empêcher lvm2 d'accéder à votre lecteur de CD-ROM.)</comment>
-# <i>mkdir -p /etc/lvm</i>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >/etc/lvm/lvm.conf</i>
-# <i>vgscan</i>
-  Reading all physical volumes.  This may take a while...
-  No volume groups found
-<comment>(Activer d'éventuels volumes déjà créés.)</comment>
-  # <i>vgchange -a y</i>
+<comment>(Evitez de scanner d'autres périphériques que vos disques)</comment>
+# <i>nano -w /etc/lvm/lvm.conf</i>
+<comment>(Recherchez la ligne suivante)</comment>
+filter = [ "a/.*/" ]
+<comment>(Remplacez là avec la ligne suivante pour scanner
+/dev/hda et /dev/hdb et rejeter tout le reste)</comment>
+filter = [ "a|/dev/hd[ab]|", "r/.*/" ]
+<comment>(Sauvegardez le fichier et quittez nano)</comment>
+# <i>vgchange -a y</i>
 </pre>
 
 <p>
@@ -408,14 +416,15 @@ vérifiera la présence d'un fichier nécessaire situé dans
 
 <pre caption="Installer le paquet lvm2">
 # <i>emerge lvm2</i>
-<comment>(Avec une version 2.00.08, pour empêcher lvm2
-d'accéder à votre lecteur de CD-ROM.)</comment>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >> /etc/lvm/lvm.conf</i>
-
-<comment>(À partir de la version 2.00.15, il suffit d'éditer
-/etc/lvm/lvm.conf et suivre les commentaires.)</comment>
-# <i>nano -w /etc/lvm/lvm.conf</i>
 </pre>
+
+<p>
+Éditez le fichier <path>/etc/lvm/lvm.conf</path> comme décrit <uri
+link="#doc_chap2_pre2">plus haut</uri>. Le fichier que vous avez précédemment
+édité fait partie de l'environnement d'installation et disparaîtra après le
+prochain reboot. Cette fois-ci, vous éditez le vrai fichier dans votre nouvelle
+installation de Gentoo.
+</p>
 
 <p>
 Pour l'édition du fichier <path>/etc/fstab</path>, suivez les directives du
@@ -424,21 +433,21 @@ lignes nécessaires pour notre exemple&nbsp;:
 </p>
 
 <pre caption="Extrait de /etc/fstab">
-/dev/hda1     /boot   ext3    noauto,noatime 1 1
+/dev/hda1     /boot   ext3    noauto,noatime 1 2
 /dev/hda2     none    swap    sw             0 0
-/dev/hda3     /       ext3    noatime        0 0
+/dev/hda3     /       ext3    noatime        0 1
 # Volumes logiques
-/dev/vg/usr   /usr    ext3    noatime        0 0
-/dev/vg/home  /home   ext3    noatime        0 0
-/dev/vg/opt   /opt    ext3    noatime        0 0
-/dev/vg/var   /var    ext3    noatime        0 0
-/dev/vg/tmp   /tmp    ext3    noatime        0 0
+/dev/vg/usr   /usr    ext3    noatime        0 2
+/dev/vg/home  /home   ext3    noatime        0 2
+/dev/vg/opt   /opt    ext3    noatime        0 2
+/dev/vg/var   /var    ext3    noatime        0 2
+/dev/vg/tmp   /tmp    ext3    noatime        0 2
 </pre>
 
 <p>
 Lorsque vous aurez atteint la fin de l'installation telle que décrite dans le
 Manuel, n'oubliez pas de démonter tous vos volumes logiques LVM2 et, pour faire
-bonne mesure, exécutez la commande suivante avant de redémarrer&nbsp;:
+les choses proprement, exécutez la commande suivante avant de redémarrer&nbsp;:
 </p>
 
 <pre caption="Fermer LVM2">
@@ -500,10 +509,9 @@ différemmment&nbsp;:
   <li>Le <uri link="http://tldp.org/HOWTO/LVM-HOWTO">HOWTO LVM</uri>.</li>
   <li>
     Les articles de Daniel Robbins sur LVM, disponibles sur IBM's
-    DeveloperWorks&nbsp;:
-    <uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm/?dwzone=linux</uri>
-    et <uri>
-    http://www-106.ibm.com/developerworks/linux/library/l-lvm2.html?dwzone=linux</uri>.
+    DeveloperWorks&nbsp;: <uri link="/doc/en/articles/lvm-p1.xml">Partie 1</uri>
+    et <uri link="/doc/en/articles/lvm-p2.xml">Partie 2</uri> (en anglais).
+    
   </li>
   <li>
     Comment démarrer votre système de fichiers racine à partir de LVM1&nbsp;:
