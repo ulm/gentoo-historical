@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/guide-localization.xml,v 1.10 2005/10/07 15:21:32 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/guide-localization.xml,v 1.11 2006/02/18 13:50:32 mascherpa Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/it/guide-localization.xml" lang="it">
@@ -26,6 +26,9 @@
 <author title="Traduttore">
   <mail link="grandezot@cheapnet.it">Raffaele Camarda</mail>
 </author>
+<author title="Traduttore">
+  <mail link="cristiano.chiucchiolo@gmail.com">Cristiano Chiucchiolo</mail>
+</author>
 
 <abstract>
 Questa guida dovrebbe aiutare gli utenti a localizzare (adattare alla
@@ -35,8 +38,8 @@ quanto la guida è tradotta da un documento tedesco. Affronteremo anche
 la configurazione del sistema per utilizzare il simbolo dell'Euro.
 </abstract>
 
-<version>1.23</version>
-<date>2005-09-24</date>
+<version>1.25</version>
+<date>2006-01-02</date>
 
 <chapter>
 <title>Timezone</title>
@@ -44,8 +47,7 @@ la configurazione del sistema per utilizzare il simbolo dell'Euro.
 <body>
 
 <p>
-Per impostare l'orario appropriato, <path>/etc/localtime</path> deve puntare al
-file che indica la corretta timezone. Tra quelli disponibili nella directory
+Per impostare l'orario appropriato, <path>/etc/localtime</path> deve contenere i dati della timezone corretta. Tra quelli disponibili nella directory
 <path>/usr/share/zoneinfo/</path> scegliete quello corrispondente alla vostra
 timezone o quello della città più vicina a voi. Evitate di utilizzare i file
 della timezone presenti in <path>/usr/share/zoneinfo/Etc/GMT*</path> poichè
@@ -54,7 +56,7 @@ spesso i loro nomi non corrispondono a ciò che in realtà sono: ad esempio
 </p>
 
 <pre caption="Impostare il timezone">
-# <i>ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime</i>
+# <i>cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime</i>
 # <i>date</i>
 Sun Feb 16 08:26:44 CET 2003
 </pre>
@@ -238,6 +240,26 @@ portage la installerà quando necessaria.
 </p>
 
 <p>
+Una volta impostata la localizzazione corretta, assicurati di aggiornare le variabili d'ambiente per rendere effettive le modifiche:
+</p>
+
+<pre caption="Aggiornare l'ambiente">
+# <i>env-update &amp;&amp; source /etc/profile</i>
+</pre>
+
+<p>
+Fatto ciò, è necessario killare il server X premendo <c>Ctrl+Alt+Backspace</c>, effettuare il logout, e poi di nuovo il login come utente.
+</p>
+
+<p>
+Ora verifica che le modifiche siano state applicate:
+</p>
+
+<pre caption="Verificare le modifiche dell'ambiente">
+$ <i>env | grep -i LC_</i>
+</pre>
+
+<p>
 C'è inoltre una variabile addizionale chiamata LINGUAS, che influisce sui file
 di localizzazione installati con i programmi che supportano gettex, inoltre
 decide la localizzazione per alcuni pacchetti specifici, come
@@ -253,6 +275,18 @@ delle lingue trattati più su. E' consigliato impostare la variabile LINGUAS in
 Finnico e l'Inglese:)</comment>
 LINGUAS="de fi en"
 </pre>
+
+<p>
+Assicurati di aggiornare l'ambiente dopo la modifica:
+</p>
+
+<pre caption="Aggiornare l'ambiente">
+# <i>env-update &amp;&amp; source /etc/profile</i>
+</pre>
+
+<p>
+Fatto ciò, è necessario killare il server X premendo <c>Ctrl+Alt+Backspace</c>, effettuare il logout, e poi di nuovo il login come utente.
+</p>
 
 </body>
 </section>
@@ -360,9 +394,31 @@ Il layout per il server grafico è specificato in
      Identifier  "Keyboard1"
      ...
      Option "XkbLayout"    "de"
-     # Option "XkbVariant"  "nodeadkeys"
+     #Option "XkbModel"     "pc105"    <comment>## questo è per le tastiere internazionali.</comment>
+     # Option "XkbVariant"  "nodeadkeys" <comment>## questo sarebbe usato per l'input xterm.</comment>
      ...
+  </pre>
+  
+<p>
+Se hai un layout di tastiera internazionale, dovresti impostare l'opzione <c>XkbModel</c> a <c>pc102</c> oppure a <c>pc105</c>, dato che questo consentirà la mappatura dei tasti addizionali specifici per la tua tastiera.
+</p>
+
+<p>
+Le deadkeys consentono di premere tasti che non verranno mostrati immediatamente sullo schermo, ma saranno combinati con un'altra lettera per produrre un singolo carattere come é,è,á,à,ecc... Impostare <c>XkbVariant</c> a <c>nodeadkeys</c> consente di immettere questi caratteri speciali all'interno dei terminali X.
+</p>
+
+<pre caption="Passare da un layout di tastiera ad un altro">
+  Section "InputDevice"
+	Identifier  "Keyboard1"
+     ...
+     Option "XkbLayout"    "us,ru"
+     Option "XkbOptions"   
+"grp:alt_shift_toggle,grp_led:scroll"
 </pre>
+
+<p>
+Qui <c>XkbOptions</c> consente di passare da un layout di tastiera ad un altro, semplicemente premendo <c>ALT+Shift</c>. Questo farà anche accendere e spegnere il led Scroll Lock, grazie all'opzione <c>grp_led:scroll</c>. Si tratta di un indicatore visivo a portata di mano, che mostrerà quale layout di tastiera starai usando in un dato momento.
+</p>
 
 </body>
 </section>
@@ -390,7 +446,7 @@ segue le regole descritte poco più su riguardo la variabile
 
 <p>
 Per fare in modo che la vostra console mostri il simbolo dell'euro dovrete
-impostare la variabile <c>CONSOLEFONT</c> in <path>/etc/rc.conf</path>
+impostare la variabile <c>CONSOLEFONT</c> in <path>/etc/conf.d/consolefont</path>
 in modo che punti ad un file presente in
 <path>/usr/share/consolefonts/</path> (senza <c>.psfu.gz</c>).
 <c>lat9w-16</c> possiede il simbolo dell'euro.
@@ -398,6 +454,22 @@ in modo che punti ad un file presente in
 
 <pre caption="impostare i font della console">
 CONSOLEFONT="lat9w-16"
+</pre>
+
+<p>
+Dovresti verificare che <c>CONSOLEFONT</c> sia nel runlevel di boot:
+</p>
+
+<pre caption="Verificare il giusto runlevel">
+# <i>rc-update show | grep -i consolefont</i>
+</pre>
+
+<p>
+Se non viene mostrato alcun runlevel per <c>CONSOLEFONT</c>, aggiungilo al giusto livello:
+</p>
+
+<pre caption="Aggiungere consolefont al runlevel di boot">
+# <i>rc-update add consolefont boot</i>
 </pre>
 
 </body>
@@ -496,4 +568,3 @@ della localizzazione di OpenOffice.Org</uri>.
 </chapter>
 
 </guide>
-
