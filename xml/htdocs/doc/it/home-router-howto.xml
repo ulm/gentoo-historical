@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/home-router-howto.xml,v 1.1 2005/09/06 09:49:02 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/home-router-howto.xml,v 1.2 2006/02/18 14:00:58 mascherpa Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/it/home-router-howto.xml" lang="it">
@@ -14,6 +14,10 @@
   <mail link="alberto@lagnusi.net">Alberto Santini</mail>
 </author>
 
+<author title="Traduzione">
+  <mail link="cristiano.chiucchiolo@gmail.com">Cristiano Chiucchiolo</mail>
+</author>
+
 
 <abstract>
 In questo documento è spiegato come trasformare una vecchia macchina
@@ -25,8 +29,8 @@ Internet
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.11</version>
-<date>2005-08-17</date>
+<version>1.24</version>
+<date>2005-12-20</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -125,10 +129,8 @@ attivando il supporto per le tue schede di rete.
 <p>
 Un'altra cosa che ti servirà è il supporto per iptables, per il NAT e per il
 controllo del traffico (se lo vuoi attivare). Nella lista che segue, le opzioni
-richieste sono segnate come (*), quelle consigliate come (x) e quelle per il
-controllo come (s). Non importa se si sceglie di compilare questi supporti
-direttamente nel kernel o come moduli, perchè questi ultimi saranno comunque
-caricati non appena ce ne sarà bisogno.
+sempre richieste sono segnate come (*), quelle richieste solo per l'ADSL via PPPoE sono segnate come (a), quelle consigliate come (x) e quelle per il controllo come (s). Non importa se si sceglie di compilare questi supporti
+direttamente nel kernel o come moduli, perchè questi ultimi saranno comunque caricati non appena ce ne sarà bisogno.
 </p>
 
 <pre caption="Network Options">
@@ -160,6 +162,14 @@ Networking options  ---&gt;
       [s] QoS and/or fair queueing
          [s] HTB packet scheduler
          [s] Ingress Qdisc
+	 
+      [a] PPP (point-to-point protocol) support
+	 [a] PPP filtering
+	 [a] PPP support for async serial ports
+	 [a] PPP support for sync tty ports
+	 [a] PPP Deflate compression
+	 [a] PPP BSD-Compress compression
+  	 [a] PPP over Ethernet
 </pre>
 
 <note>
@@ -205,24 +215,20 @@ e modificate i parametri in maniera appropriata.
 </p>
 
 <note>
-E` necessario avere installato baselayout-1.10.1 o superiore, per far sì che la
+È necessario avere installato baselayout-1.11.14 o superiore, per far sì che la
 seguente configurazione (di net.eth1) funzioni correttamente.
 </note>
 
 <pre caption="Configurare eth1">
 <comment>(Sostituire 'vla9h924' con il proprio username e 'password' con la propria password)</comment>
 
-# <i>nano /etc/ppp/pppoe.conf</i>
-<comment># Scheda di rete connessa al modem ADSL</comment>
-ETH=eth1
-<comment># Username ADSL</comment>
-USER=vla9h924
 # <i>nano /etc/ppp/pap-secrets</i>
 <comment># client    server  secret</comment>
 "vla9h924" * "password"
 # <i>nano /etc/conf.d/net</i>
-<comment>Aggiungere una riga per config_eth1 ed impostarla ad "adsl"</comment>
+<comment>Dire a baselayout di usare l'adsl per eth0</comment>
 config_eth1=( "adsl" )
+user_eth1=( "vla9h924" )
 # <i>ln -s net.lo /etc/init.d/net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 # <i>/etc/init.d/net.eth1 start</i>
@@ -317,32 +323,27 @@ dovrebbe interessare :)
 <p>
 DHCP,come si può desumere dal nome, è un protocollo che consente di configurare
 dinamicamente gli altri host in maniera del tutto automatica. Basta far girare
-il server DHCP (dhcpd) sul router, passargli tutte le informazioni sulla propria
+il server DHCP sul router, passargli tutte le informazioni sulla propria
 rete (indirizzi IP validi, server DNS, gateway, ecc...) e, quando gli altri host
 si connetteranno alla rete, useranno client DHCP per autoconfigurarsi. Niente
 confusione, nè pasticci. Per maggiori informazioni sul DHCP, potete visitare
 <uri link="http://en.wikipedia.org/wiki/DHCP">Wikipedia</uri>.
 </p>
 
-<pre caption="Configurare dhcpd">
-# <i>emerge dhcp</i>
-# <i>nano /etc/dhcp/dhcpd.conf</i>
-<comment>(Ecco un file di configurazione di esempio:)</comment>
-authoritative;
-ddns-update-style interim;
-subnet 192.168.0.0 netmask 255.255.255.0 {
-    range 192.168.0.100 192.168.0.250;
-    default-lease-time 259200;
-    max-lease-time 518400;
-    option subnet-mask 255.255.255.0;
-    option broadcast-address 192.168.0.255;
-    option routers 192.168.0.1;
-    option domain-name-servers 192.168.0.1;
-}
-# <i>nano /etc/conf.d/dhcp</i>
-<comment>(Impostare IFACE="eth0")</comment>
-# <i>rc-update add dhcp default</i>
-# <i>/etc/init.d/dhcp start</i>
+<p>
+Useremo un pacchetto chiamato dnsmasq, che fornisce servizi sia DHCP che DNS. Per il momento concentriamoci sull'aspetto DHCP. Si noti che se si vuole eseguire un diversio server DHCP, è necessario guardare un altro esempio nel capitolo "Qualcosa di divertente". Inoltre, se desiderate sperimentare le opzioni del server DHCP, leggete i commenti in <path>/etc/dnsmasq.conf</path>. Ad ogni modo, le opzioni di default dovrebbero andare bene.
+</p>
+
+<pre caption="Installare un server DHCP">
+# <i>emerge dnsmasq</i>
+# <i>nano /etc/dnsmasq.conf</i>
+<comment>Dovete solo aggiungere questa riga</comment>
+dhcp-range=192.168.0.100,192.168.0.250,72h
+
+# <i>nano /etc/conf.d/dnsmasq</i>
+<comment>Aggiungere "-i eth0" a DNSMASQ_OPTS</comment>
+# <i>rc-update add dnsmasq default</i>
+# <i>/etc/init.d/dnsmasq start</i>
 </pre>
 
 <p>
@@ -376,23 +377,11 @@ link="http://en.wikipedia.org/wiki/DNS">Wikipedia</uri>.
 </p>
 
 <p>
-Come avrete notato, nella sezione precedente abbiamo impostato DHCP affinchè
-i client usassero 192.168.0.1 come server DNS. E ricorderete anche che
-192.168.0.1 è l`indirizzo IP del router che stiamo costruendo. Io non ricordo
-proprio di aver configurato un server DNS sul router... allora facciamolo ora!
+Visto che stiamo usando dnsmasq per il nostro server DHCP, ed esso include un server DNS, non resta più niente da fare qui! Il vostro piccolo router sta già fornendo il servizio DNS ai suoi clients DHCP. Scommetto che sareste contenti se tutto fosse così facile ;).
 </p>
 
-<pre caption="Configurare dnsmasq">
-# <i>emerge dnsmasq</i>
-# <i>nano /etc/conf.d/dnsmasq</i>
-<comment>Aggiungete "-i eth0" a DNSMASQ_OPTS</comment>
-# <i>rc-update add dnsmasq default</i>
-# <i>/etc/init.d/dnsmasq start</i>
-</pre>
-
 <p>
-Bene, è stato veloce, ma.. cosa abbiamo fatto? La cosa favolosa è che abbiamo
-fatto veramente tanto! Potete benissimo scegliere altri server DNS se vi trovate
+Potete benissimo scegliere altri server DNS se vi trovate
 meglio con quelli, ma il motivo per cui dnsmasq è grandioso è che fa esattamente
 quello che noi vogliamo e niente di più. E` un piccolo server per reti locali
 con funzionalità di caching e forwarding. Noi non vogliamo offrire un DNS per un
@@ -415,12 +404,12 @@ banda per voi), scommetto che loro non lo sono altrettanto.
 </p>
 
 <p>
-Ecco dove entra in scena NAT. NAT è un modo per connettere più computer in una
+Ecco dove entra in scena il Network Address Translation (NAT). NAT è un modo per connettere più computer in una
 LAN ad Internet, quando si hanno a disposizione un numero minore di indirizzi
 IP. Tipicamente, la compagnia telefonica offre ad ogni utente un solo IP, ma
 noi vogliamo che tutta la casa sia connessa ad internet. NAT è la magia che
 rende possibile tutto ciò. Anche in questo caso, maggiori informazioni circa
-NAT possono essere trovate su <uri link="http://en.wikipedia.org/wiki/NAT">
+NAT possono essere trovate su <uri link="http://it.wikipedia.org/wiki/Network_address_translation">
 Wikipedia</uri>
 </p>
 
@@ -434,6 +423,11 @@ Se è così, basterà eseguire il comando <c>emerge iptables</c>.
 <comment>Prima di tutto eliminiamo le regole attualmente in uso</comment>
 # <i>iptables -F</i>
 # <i>iptables -t nat -F</i>
+
+<comment>Configurare regole di default per gestire il traffico</comment>
+# <i>iptables -P INPUT ACCEPT</i>
+# <i>iptables -P OUTPUT ACCEPT</i>
+# <i>iptables -P FORWARD DROP</i>
 
 <comment>Potete semplicemente copiare ed incollare questi esempi</comment>
 # <i>export LAN=eth0</i>
@@ -515,7 +509,7 @@ altri dovranno ascoltare, per esempio, sulle porte 123 e 567.
 <p>
 Tutte le regole di port forwarding hanno questa forma: <c>iptables -t nat -A
 PREROUTING [-p protocollo] --dport [porta del router] -i ${WAN} -j DNAT --to
-[ip/porta del pc nella LAN]</c>. iptables non accetta hostname nelle regole
+[ip/porta del pc nella LAN]</c>. Sfortunatamente, iptables non accetta hostname nelle regole
 di port forwarding. Se state effettuando il forwarding da una porta esterna
 (quella del router) uguale a quella interna (quella del pc nella LAN), potrete
 omettere la porta di destinazione. Per ulteriori informazioni si può consultare
@@ -543,17 +537,25 @@ la pagina di manuale di iptables: iptables(8).
 <comment>Reindirizzare il range di porte 6881-6889 (bittorrent) ad un host della LAN</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i ${WAN} -j DNAT --to 192.168.0.2</i>
 
+<comment>Forwarding eDonkey/eMule</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 4662 -i ${WAN} -j DNAT --to 192.168.0.55</i>
+
 <comment>Aggiungiamo il supporto al "Game Cube Warp"</comment>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
 <comment>Aggiungiamo il supporto a "Playstation2 OnLine"</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
+
+<comment>Xbox Live</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 3074 -i ${WAN} -j DNAT --to 192.168.0.69</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 3074 -i ${WAN} -j DNAT --to 192.168.0.69</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 88 -i ${WAN} -j DNAT --to 192.168.0.69</i>
 </pre>
 
 <note>
-Se avete altri esempi frequenti, <uri link="mailto:vapier@gentoo.org">
-scrivetemi una mail.</uri>.
+Se avete altri esempi frequenti, <mail link="vapier@gentoo.org">
+scrivetemi una mail.</mail>
 </note>
 
 </body>
@@ -587,7 +589,7 @@ vostri bisogni, potete dare anche un`occhiata ad <c>oidentd</c> e
 
 
 <!--***********************************************************************************************
-     La parte commentata non è stata tradotta. Mandate una mail al traduttore (alberto@lagnusi.net)
+     La parte commentata non è stata tradotta. Mandate una mail al traduttore (cristiano.chiucchiolo@gmail.com)
      se avete assoluta necessità di una traduzione di questa parte
 ************************************************************************************************-->
 
@@ -831,7 +833,7 @@ l`homepage di qmail</uri>.
 </section>
 
 <!--***********************************************************************************************
-     La parte commentata non è stata tradotta. Mandate una mail al traduttore (alberto@lagnusi.net)
+     La parte commentata non è stata tradotta. Mandate una mail al traduttore (cristiano.chiucchiolo@gmail.com)
      se avete assoluta necessità di una traduzione di questa parte
 ************************************************************************************************-->
 
@@ -853,6 +855,65 @@ TODO
 </body>
 </section>
 -->
+
+<section>
+<title>Server DHCP Completo</title>
+<body>
+	
+<p>
+Prima abbiamo usato dnsmasq per fornire il servizio DHCP a tutti i nostri client. Per la maggiorparte delle persone con una semplice, piccola LAN, questa soluzione è perfetta. Tuttavia, potreste anche avere bisogno di qualcosa con più funzioni. Per questo ci spostiamo a un server DHCP completo in tutto, fornito dal team <uri link="http://www.isc.org/products/DHCP">ISC</uri>.
+</p>
+
+<pre caption="Installare dhcpd">
+	# <i>emerge dhcp</i>
+	# <i>nano /etc/dhcp/dhcpd.conf</i>
+	<comment>(Ecco un esempio di file di configurazione:)</comment>
+	authoritative;
+	ddns-update-style interim;
+	subnet 192.168.0.0 netmask 255.255.255.0 {
+	range 192.168.0.100 192.168.0.250;
+	default-lease-time 259200;
+	max-lease-time 518400;
+	option subnet-mask 255.255.255.0;
+	option broadcast-address 192.168.0.255;
+	option routers 192.168.0.1;
+	option domain-name-servers 192.168.0.1;
+	}
+	# <i>nano /etc/conf.d/dhcp</i>
+	<comment>(Impostare IFACE="eth0")</comment>
+	# <i>rc-update add dhcp default</i>
+	# <i>/etc/init.d/dhcp start</i>
+  	 </pre>
+	 
+<p>
+Questa è la configurazione minima richiesta per rimpiazzare le funzioni DHCP di dnsmasq che abbiamo usato prima. A proposito, vi siete ricordati di disattivare le funzioni DHCP in dnsmasq, vero? Se non lo avete fatto, dovreste farlo ora (basta commentare l'impostazone <c>dhcp-range</c> in <path>/etc/dnsmasq.conf</path> e riavviare il servizio).
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Connettere un'altra LAN (o due, tre,...)</title>
+<body>
+	
+<p>
+A volte potreste avere la necessità di connettere il vostro router ad un'altra LAN. Potreste volervi collegare temporaneamente ad un gruppo di amici, oppure potreste essere degli smanettoni che vogliono sezionare gruppi diversi di computer, o forse siete solo molto annoiati. Qualunque siano le ragioni, estendere il router ad un'altra LAN dovrebbe essere abbastanza semplice. Negli esempi seguenti, daremo per scontato che questa nuova rete sia collegata attraverso una terza scheda ethernet, che chiameremo <c>eth2</c>.
+</p>
+
+<p>
+Per prima cosa, dovete configurare l'interfaccia. Usate le istrizioni nel<uri link="#doc_chap4_pre1">listato di codice 4.1</uri>, sostituendo <c>eth0</c> con <c>eth2</c> e <c>192.168.0</c> con <c>192.168.1</c>.
+</p>
+
+<p>
+Fatto ciò, dovete configurare dnsmasq affinché fornisca i suoi servizi alla nuova interfaccia. Editate di nuovo il file <path>/etc/conf.d/dnsmasq</path>, aggiungendo <c>-i eth2</c> a DNSMASQ_OPTS; si può usare -i più volte. Poi editate <path>/etc/dnsmasq.conf</path> e aggiungete un'altra riga come quella del dhcp-range nel <uri link="#doc_chap5_pre1">listato di codice 5.1</uri>, sostituendo <c>192.168.0</c> con <c>192.168.1</c>. Si possiono avere anche più righe dhcp-range.
+</p>
+
+<p>
+Per finire, guardate le regole nel <uri link="#doc_chap5_pre2">listato di codice 5.2</uri>, e duplicate le regole che contengono <c>-i ${LAN}</c>. Per rendere le cose più semplici potreste creare un'altra variabile, chiamandola ad esempio <c>LAN2</c>.
+</p>
+
+</body>
+</section>
 
 </chapter>
 
@@ -959,7 +1020,7 @@ Control HOWTO</uri>.
 <body>
 
 <p>
-Non ci sono note finali che una. Se avete qualsiasi problema con la guida, per
+Non ci sono note finali, tranne una. Se avete qualsiasi problema con la guida, per
 favore contattate <mail link="vapier@gentoo.org">me</mail> o segnalate un bug
 <uri link="http://bugs.gentoo.org/">qui</uri>. Se avete qualche pezzo
 interessante che credete possa migliorare questa guida, mandatemelo per vederlo
