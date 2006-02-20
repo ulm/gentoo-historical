@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.44 2006/02/20 17:11:41 agaffney Exp $
+$Id: GLIPortage.py,v 1.45 2006/02/20 17:20:57 agaffney Exp $
 """
 
 import re
@@ -293,6 +293,7 @@ if __name__ == "__main__":
 		syspkglen = len(systempkgs)
 		for i, pkg in enumerate(systempkgs):
 			pkg = pkg.strip()
+			sys.stdout.write("Copying " + pkg + " (" + str(i+1) + "/" + str(syspkglen) + ")\r")
 			gliportage.copy_pkg_to_chroot(pkg, True, ignore_missing=True)
 		GLIUtility.spawn("cp /etc/make.conf " + chroot_dir + "/etc/make.conf")
 		GLIUtility.spawn("ln -s `readlink /etc/make.profile` " + chroot_dir + "/etc/make.profile")
