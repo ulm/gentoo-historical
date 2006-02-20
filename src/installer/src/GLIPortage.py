@@ -5,11 +5,12 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.42 2006/02/17 17:47:40 agaffney Exp $
+$Id: GLIPortage.py,v 1.43 2006/02/20 16:48:15 agaffney Exp $
 """
 
 import re
 import os
+import sys
 import GLIUtility
 from GLIException import GLIException
 
@@ -229,3 +230,113 @@ class GLIPortage(object):
 		if add_to_world:
 			for package in packages:
 				self.add_pkg_to_world(package)
+
+
+def usage():
+	print """
+Usage: GLIPortage.py [-c|--chroot-dir <chroot directory>] [-g|--grp] [-s|--stage3] [-h|--help]
+
+Options:
+
+  -c|--chroot-dir   Specifies the directory where your chroot is. This is
+                    "/mnt/gentoo" by default.
+
+  -g|--grp          Install specified packages and dependencies into chroot
+                    by using files from the LiveCD.
+
+  -s|--stage3       Create a stage3 equivelant in the chroot directory by using
+                    files from the LiveCD.
+
+  -h|--help         Display this help
+"""
+
+if __name__ == "__main__":
+	chroot_dir = "/mnt/gentoo"
+	mode = None
+	grp_packages = []
+	while sys.argv.length:
+		arg = sys.argv.pop(0)
+		if arg == "-c" or arg == "--chroot-dir":
+			chroot_dir = sys.argv.pop(0)
+		elif arg == "-g" or arg == "--grp":
+			mode = "grp"
+		elif arg == "-s" or arg == "--stage3":
+			mode = "stage3"
+		elif arg == "-h" or arg == "--help":
+			usage()
+			sys.exit(0)
+		elif arg[0] == "-":
+			usage()
+			sys.exit(1)
+		else:
+			grp_packages.append(arg)
+
+	gliportage = GLIPortage(chroot_dir, True, None, False, None, None)
+	if mode == "stage3":
+		if not GLIUtility.is_file("/usr/livecd/systempkgs.txt"):
+			print "Required file /usr/livecd/systempkgs.txt does not exist!"
+			sys.exit(1)
+		try:
+			syspkgs = open("/usr/livecd/systempkgs.txt", "r")
+			systempkgs = syspkgs.readlines()
+			syspkgs.close()
+		except:
+			print "Could not open /usr/livecd/systempkgs.txt!"
+			sys.exit(1)
+
+		# Pre-create /lib (and possible /lib32 and /lib64)
+		if os.path.islink("/lib") and os.readlink("/lib") == "lib64":
+			if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir " + chroot_dir + "/lib64 && ln -s lib64 " + chroot_dir + "/lib")):
+				print "Could not precreate /lib64 dir and /lib -> /lib64 symlink"
+				sys.exit(1)
+
+		syspkglen = len(systempkgs)
+		for i, pkg in enumerate(systempkgs):
+			pkg = pkg.strip()
+			gliportage.copy_pkg_to_chroot(pkg, True, ignore_missing=True)
+		GLIUtility.spawn("cp /etc/make.conf " + chroot_dir + "/etc/make.conf")
+		GLIUtility.spawn("ln -s `readlink /etc/make.profile` " + chroot_dir + "/etc/make.profile")
+		GLIUtility.spawn("cp -f /etc/inittab.old " + chroot_dir + "/etc/inittab")
+
+		# Nasty, nasty, nasty hack because vapier is a tool
+		for tmpfile in ("/etc/passwd", "/etc/group", "/etc/shadow"):
+			GLIUtility.spawn("grep -ve '^gentoo' " + tmpfile + " > " + chroot_dir + tmpfile)
+
+		chrootscript = r"""
+		#!/bin/bash
+
+		source /etc/make.conf
+		export LDPATH="/usr/lib/gcc-lib/${CHOST}/$(cd /usr/lib/gcc-lib/${CHOST} && ls -1 | head -n 1)"
+
+		ldconfig $LDPATH
+		gcc-config 1
+		env-update
+		source /etc/profile
+		modules-update
+		[ -f /usr/bin/binutils-config ] && binutils-config 1
+		source /etc/profile
+		#mount -t proc none /proc
+		#cd /dev
+		#/sbin/MAKEDEV generic-i386
+		#umount /proc
+		[ -f /lib/udev-state/devices.tar.bz2 ] && tar -C /dev -xjf /lib/udev-state/devices.tar.bz2
+		"""
+		script = open(chroot_dir + "/tmp/extrastuff.sh", "w")
+		script.write(chrootscript)
+		script.close()
+		GLIUtility.spawn("chmod 755 /tmp/extrastuff.sh && /tmp/extrastuff.sh", chroot=chroot_dir)
+		GLIUtility.spawn("rm -rf /var/tmp/portage/* /usr/portage /tmp/*", chroot=chroot_dir)
+		print "Stage3 equivelant generation complete!"
+	elif mode == "grp":
+		for pkg in grp_packages:
+			if not gliportage.get_best_version_vdb(pkg):
+				print "Package " + pkg + " is not available for install from the LiveCD"
+			pkglist = gliportage.get_deps(pkg)
+			for tmppkg in pkglist:
+				gliportage.copy_pkg_to_chroot(tmppkg)
+			gliportage.add_pkg_to_world(pkg)
+		print "GRP install complete!"
+	else:
+		print "You must specify an operating mode (-g or -s)!"
+		usage()
+		sys.exit(1)
