@@ -7,28 +7,28 @@
 "User-Mode Linux"</title>
 
 <author title="Editor">
-   <mail link="g2boojum@gentoo.org">Grant Goodyear</mail>
+  <mail link="g2boojum@gentoo.org">Grant Goodyear</mail>
 </author>
 <author title="Editor"><!-- zhen@gentoo.org -->
   John Davis
 </author>
 <author title="Editor">
-    <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
 <author title="Editor">
   <mail link="bennyc@gentoo.org">Benny Chuang</mail>
 </author>
-<author title="Editor Es">
+<author title="Traductor">
   <mail link="bass@gentoo.org">José Alberto Suárez López</mail>
 </author>
-<author title="Editor Es">
+<author title="Traductor">
   <mail link="chiguire@gentoo.org">John Christian Stoddart</mail>
 </author>
-<author title="Editor Es">
+<author title="Traductor">
   <mail link="yoswink@gentoo.org">José Luis Rivero</mail>
 </author>
 <author title="Traductor">
-  <mail link="ferdy@ferdyx.org">Fernando J. Pereda Garcimartín</mail>
+  <mail link="ferdy@gentoo.org">Fernando J. Pereda Garcimartín</mail>
 </author>
 
 <abstract>
@@ -37,17 +37,21 @@ y usar user-mode linux para probar cambios que tengan el potencial de
 reventar el sistema.
 </abstract>
 
-<version>0.10</version>
-<date>2005-02-05</date>
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>0.13</version>
+<date>2005-12-16</date>
 
 <chapter>
-<title>Obteniendo User-Mode Linux</title>
+<title>Obtener User-Mode Linux</title>
 <section>
 <body>
 
 <p>Tal como dice la página de user-mode linux
 (<uri>http://user-mode-linux.sourceforge.net</uri>), user-mode linux
-permite al usuario "correr Linux dentro de sí mismo". Específicamente,
+permite al usuario "ejecutar Linux dentro de si mismo". Específicamente,
 proporciona una máquina virtual donde el usuario puede "correr software
 con fallos, experimentar con un kernel o una distribución nueva de
 Linux o meterse con lo más íntimo de Linux, sin arriesgar la
@@ -55,23 +59,33 @@ instalación principal de Linux." Los cambios experimentales en
 algunos paquetes fundamentales de Gentoo como los son
 <e>sys-apps/baselayout</e> o <e>sys-libs/glibc</e> tienen el potencial
 de romper el sistema y hacer que no arranque; con user-mode linux
-podemos probar estos cambios preocuparnos en romper nuestro sistema
+podemos probar estos cambios sin preocuparnos de romper nuestro sistema
 Linux.
 </p>
 
 <p>
-Instalar user-mode linux es esencialmente igual a instalar un nuevo
-kernel. Primero instale las fuentes del kernel (parcheadas
-apropiadamente para user-mode linux) y después configure el kernel
-user-mode linux de la forma habitual. A partir del kernel versión
-2.6.9, UML está integrado en el kernel vanilla.
+La mayoría de los núcleos 2.6 tienen soporte de UML. Aunque puede usar sus
+fuentes actuales del núcleo, puede ser más sensato mantener separadas la(s)
+fuentes del núcleo UML. Después de todo, estará compilando un nuevo núcleo
+con una configuración diferente y puede que quiera tener sistemas heterogéneos
+en su principal sistema Linux (varios núcleos UML distintos).
 </p>
 
-<pre caption="Instalando las fuentes del kernel UML">
-<comment>(Instalaremos el kernel 2.6 vanilla, puede usar también las
-fuentes usermode-sources)</comment>
-# <i>emerge sys-kernel/development-sources</i>
-# <i>cd /usr/src/uml/linux</i>
+<p>
+Así que descargue las fuentes del núcleo (por ejemplo, la serie vanilla desde
+<uri link="http://www.kernel.org">kernel.org</uri>) y extráigala en alguna
+ubicación local con fines de desarrollo.
+</p>
+
+<p>
+A continuación, configure este núcleo UML como lo haría para cualquier otro
+sistema, pero añada <e>ARCH=um</e> para que el software de compilación
+sepa que este núcleo está destinado a ejecutarse como un proceso invitado
+(guest process) en el sistema principal.
+</p>
+
+<pre caption="Compilar el núcleo UML">
+# <i>cd /srv/aegis/src/uml-linux</i>
 # <i>make menuconfig <comment>ARCH=um</comment></i>
 # <i>make linux <comment>ARCH=um</comment></i>
 # <i>cp linux /usr/local/bin/linux</i>
@@ -88,7 +102,7 @@ de entorno PATH contenga <path>/usr/local/bin</path> y vuelva a
 ejecutar <c>env-update</c>:
 </p>
 
-<pre caption="Modificando 00basic">
+<pre caption="Modificar 00basic">
 # <i>nano -w /etc/env.d/00basic</i>
 # <i>env-update</i>
 # <i>source /etc/profile</i>
@@ -107,60 +121,60 @@ para tmpfs compilado, así que ni se moleste en probarlos).
 </p>
 
 <p>
-Yo recomiendo altamente leer la documentación de user-mode linux, pero
+Recomiendo altamente leer la documentación de user-mode linux, pero
 la idea básica es que el ejecutar <path>/usr/local/bin/linux</path>
-arranca el kernel user-mode linux e intenta levantar el sistema
+arranca el kernel user-mode e intenta levantar el sistema
 guardado en el fichero <path>root_fs</path>, que debe estar ubicado en
-el actual directorio de trabajo.
+el directorio de trabajo actual.
 </p>
 
 <p>
 Tampoco hará mal instalar las herramientas de user-mode linux.
 </p>
 
-<pre caption="Instalando las herramientas UML">
+<pre caption="Instalar las herramientas UML">
 # <i>emerge sys-apps/usermode-utilities</i>
 </pre>
 
 <p>
-Estos programas facilitan la configuración de la red (entre otras
-cosas) entre el sistema user-mode linux y el sistema base.
+Estos programas facilitan la configuración de la red (y otras
+cosas) entre el sistema virtual user-mode linux y el sistema base.
 </p>
 </body>
 </section>
 </chapter>
 
 <chapter>
-<title>Creando el root_fs</title>
+<title>Crear el root_fs</title>
 <section>
-<title>Haciendo el Gentoo chroot</title>
+<title>Hacer la jaula Gentoo (Gentoo chroot)</title>
 <body>
 
 <p>
 El <path>root_fs</path> es un fichero requerido por user-mode linux
-que contiene un sistema completo de ficheros Gentoo Linux. Para
+que contiene un sistema de ficheros completo Gentoo Linux. Para
 generarlo necesitará soporte para el dispositivo Loopback en el kernel
 del sistema base (no en el de user-mode linux).
 </p>
 
 <p>
 Generar el <path>root_fs</path> será nuestro último paso. Antes
-crearemos un sistema de ficheros Gentoo en una raíz virtual (chroot)
-normal. Necesitamos el fichero stage que puede descargarse de la red o
+crearemos un sistema de ficheros Gentoo en una jaula (chroot) normal.
+Necesitamos el fichero stage que puede descargarse de la red o
 ser extraído de un CD de Instalación, o de una .iso de un CD de Instalación.
 </p>
 
-<pre caption="Montando una imagen .iso de un CD de Instalación">
+<pre caption="Montar una imagen .iso de un CD de Instalación">
 # <i>mkdir /mnt/loop</i>
 # <i>mount -o loop /trayectoria/al/install-&lt;TAB&gt;.iso /mnt/loop</i>
 </pre>
 
 <p>
-Configurar el chroot es prácticamente igual que para una instalación
+Configurar la jaula es prácticamente igual que para una instalación
 normal de Gentoo Linux.
 </p>
 
-<pre caption="Creando el punto de montaje para el chroot Gentoo">
+<pre caption="Crear el punto de montaje para el chroot Gentoo">
 # <i>mkdir /mnt/gentoo</i>
 # <i>cd /mnt/gentoo</i>
 # <i>tar xvjpf /trayectoria/al/stage-&lt;TAB&gt;.tar.bz2</i>
@@ -171,16 +185,16 @@ Adelante, desmonte la .iso. Ya no la necesita.
 </p>
 
 <p>
-Haga el bootstrap y construya el sistema como siempre, siguiendo
-las instrucciones de instalación :)
+Construya el sistema como siempre: entre a la jaula en <path>/mnt/gentoo</path>
+y siga las instrucciones de instalación de Gentoo.
 </p>
 
 <p>
 Agregue cualquier paquete adicional que desee. Siéntase en la libertad
 de nombrar su sistema virtual Gentoo, si lo desea. En
 <path>/etc/fstab</path> querrá que <path>/dev/ROOT</path> sea
-<path>/dev/ubd/0</path>, con un sistema de archivos tipo ext2, ext3, o
-reiserfs. Cambie <path>/dev/SWAP</path> a <path>/dev/ubd/1</path> y
+<path>/dev/ubda</path>, con un sistema de archivos tipo ext2, ext3, o
+reiserfs. Cambie <path>/dev/SWAP</path> a <path>/dev/ubdb</path> y
 comente la línea con <path>/dev/BOOT</path>.
 </p>
 
@@ -198,17 +212,17 @@ Ahora debemos hacer algunos cambios a los guiones de inicio. Elimine
 consolefont y keymaps del nivel de ejecución boot:
 </p>
 
-<pre caption="Eliminando guiones de inicio innecesarios">
+<pre caption="Eliminar guiones de inicio innecesarios">
 # <i>rc-update del consolefont boot</i>
 # <i>rc-update del keymaps boot</i>
 </pre>
 
 <p>
-Sálgase del chroot, desmonte lo montado con bind, haga un
+Salga de la jaula, desmonte lo montado con bind, haga un
 paquete con tar de la nueva instalación Gentoo y eche una limpiadita.
 </p>
 
-<pre caption="Finalizando la instalación">
+<pre caption="Finalizar la instalación">
 # <i>cd /mnt/gentoo</i>
 # <i>tar cvjpf ~/gentoo.tbz2 *</i>
 # <i>cd</i>
@@ -218,16 +232,16 @@ paquete con tar de la nueva instalación Gentoo y eche una limpiadita.
 </section>
 
 <section>
-<title>Haciendo el root_fs</title>
+<title>Hacer el root_fs</title>
 <body>
 
 <p>
-Nuestro Gentoo virtual (chroot) está cerca de los 300 MB, por lo que
-el <path>root_fs</path> necesita ser al menos de ese
-tamaño. Escogeremos 0.5 GB como un tamaño razonable.
+Nuestro Gentoo virtual (jaula) tiene cerca de 300 MB de tamaño, por lo que
+el <path>root_fs</path> necesita ser al menos de ese tamaño. Escogeremos
+0,5 GB como un tamaño razonable.
 </p>
 
-<pre caption="Creando los archivos UML">
+<pre caption="Crear los archivos UML">
 # <i>dd if=/dev/zero of=root_fs seek=500 count=1 bs=1M</i>
 # <i>mke2fs -F root_fs</i>
 # <i>mount -o loop root_fs /mnt/loop</i>
@@ -236,10 +250,10 @@ tamaño. Escogeremos 0.5 GB como un tamaño razonable.
 </pre>
 
 <p>
-Sería bueno tener una partición de intercambio de 0.5 GB.
+Sería bueno tener una partición de intercambio de 0,5 GB.
 </p>
 
-<pre caption="Creando una partición de intercambio">
+<pre caption="Crear una partición de intercambio">
 # <i>dd if=/dev/zero of=swap_fs seek=500 count=1 bs=1M</i>
 # <i>mkswap -f swap_fs</i>
 </pre>
@@ -273,11 +287,12 @@ a la máquina base.
 <chapter>
 <title>La red</title>
 <section>
+<title>Usar una red existente</title>
 <body>
 
 <p>
-Asegúrese que el kernel base tiene la siguiente configuración,
-compilados como módulos:
+Asegúrese que el kernel de la máquina base tiene las siguiente opciones
+compiladas como módulos:
 </p>
 
 <pre caption="Configuración del kernel de la máquina base">
@@ -285,9 +300,9 @@ Networking --&gt;
   IP: Netfilter Configuration --&gt;
     IP tables support --&gt;
       Full NAT --&gt;
-        &lt;M&gt; MASQUERADE target support 
-    
-    Network Device Support --&gt; 
+        &lt;M&gt; MASQUERADE target support
+   
+    Network Device Support --&gt;
       &lt;M&gt; TUN/TAP Support
 </pre>
 
@@ -297,7 +312,7 @@ Ejecute los siguientes comandos en la máquina <e>base</e>:
 
 <pre caption="Configuración de la red">
 # <i>modprobe tun</i>
-<comment>(Si reciber un error FATAL aquí, intente borrar /dev/net/tun
+<comment>(Si recibe un error FATAL aquí, intente borrar /dev/net/tun
 e inténtelo de nuevo)</comment>
 # <i>modprobe iptable_nat</i>
 # <i>iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</i>
@@ -307,7 +322,7 @@ e inténtelo de nuevo)</comment>
 <p>
 La línea de iptables configura el enmascarado de red entre la red
 privada de nuestro sistema user-mode e internet (en nuestro caso, a
-través de <c>eth0</c>). La línea echo activa el encaminamiento de
+través de <c>eth0</c>). La línea "echo" activa el encaminamiento de
 paquetes IP (packet forwarding) entre la red privada y el interfaz de
 la pasarela (eth0 para nosotros).
 </p>
@@ -316,7 +331,7 @@ la pasarela (eth0 para nosotros).
 Ahora podemos correr el sistema user-mode y ver si la red funciona.
 </p>
 
-<pre caption="Poniendo a funcionar UML">
+<pre caption="Poner a funcionar UML">
 # <i>linux ubd0=root_fs ubd1=swap_fs eth0=tuntap,,,192.168.0.254</i>
 <comment>(haga login en el sistema user-mode)</comment>
 # <i>ifconfig eth0 192.168.0.1 up</i>
@@ -347,7 +362,7 @@ round-trip min/avg/max = 92.0/105.8/119.6 ms
 </pre>
 
 <p>
-En el sistema user-mode linux, le asignamos al eth0 user-mode la
+En el sistema user-mode linux, le asignamos a la interfaz eth0 user-mode la
 dirección IP privada 192.168.0.1 y la activamos. El sistema base tiene
 la dirección IP privada 192.168.0.254 y le hacemos ping para
 comprobar que la red funciona. La línea de route añade una pasarela
@@ -360,22 +375,71 @@ desde el user-mode linux. ¡Ahora el sistema user-mode puede ejecutar
 </p>
 </body>
 </section>
+
+<section>
+<title>Usar una red virtual</title>
+<body>
+
+<p>
+Antes de que se emocione, este no se refiere a una red privada virtual. Es una
+red que es sólo asequible por las instancias de UML. El paquete
+<c>usermode-utilities</c> proporciona una herramienta denominada
+<c>uml_switch</c> que define los puntos terminales del switch.
+(NdT: El demonio switch, uml_switch, provee un mecanismo para crear
+una red virtual).
+</p>
+
+<pre caption="Activar los puntos terminales del switch UML">
+<comment>(Si la información del switch debiera permanecer en primer plano:)</comment>
+$ <i>uml_switch -unix ~/tmp/switch.sock</i>
+
+<comment>(Si esta debiera estar en segundo plano:)</comment>
+$ <i>uml_switch -unix ~/tmp/switch.sock &amp;&gt; ~/tmp/switch.log &amp;</i>
+</pre>
+
+<p>
+Para iniciar las instancias de UML en el switch, ejecute el siguiente comando.
+Su interfaz de red (virtual) estará conectada al proceso <c>uml_switch</c> y
+estará usando la dirección MAC dada.
+</p>
+
+<pre caption="Ejecutar la primera instancia de UML">
+$ <i>linux ubd0=first_rootfs ubd1=first_swapfs eth0=daemon,10:00:01:02:00:00,,~/tmp/switch.sock</i>
+</pre>
+
+<p>
+Todavía puede conectar el sistema a la red existente, o tener un segundo
+proceso adjunto tanto al virtual como al real:
+</p>
+
+<pre caption="Ejecutar la segunda instancia de UML">
+$ <i>linux ubd0=second_rootfs ubd1=second_swapfs eth0=daemon,10:00:01:02:00:01,,~/tmp/switch.sock \
+  eth1=tuntap,,,192.168.1.43</i>
+</pre>
+
+<p>
+Se puede encontrar más información acerca de los ajustes de tuntap en la sección
+anterior.
+</p>
+
+</body>
+</section>
 </chapter>
 
 <chapter>
-<title>Comprobando el archivo .iso</title>
+<title>Comprobar el archivo .iso</title>
 <section>
 <body>
 
 <p>
-Quizás la manera ideal de someter Gento Linux a prueba sería arrancar
+Quizás la manera ideal de someter Gentoo Linux a prueba sería arrancar
 el .iso con user-mode linux y hacer la instalación completa de Gentoo
 desde el propio sistema virtual user-mode linux.
 </p>
 
 <p>
 Arrancar la .iso, o de hecho, el initrd del .iso, es
-relativamente sencillo.
+bastante sencillo.
 </p>
 
 <pre caption="Arrancando el ISO">
@@ -388,9 +452,9 @@ relativamente sencillo.
 
 <p>
 Ahora puede seguir la documentación de instalación de Gentoo al pie de
-la letra, aunque también necesitará saber que el sistema raíz será el
-<path>/dev/ubd/1</path>, la de intercambio será la
-<path>/dev/ubd/1</path> y el CD rom será el <path>/dev/ubd/2</path>.
+la letra, aunque también necesitará saber que el sistema de archivos raíz será
+<path>/dev/ubd/0</path>, la partición de intercambio será
+<path>/dev/ubd/1</path> y el CD-ROM será el <path>/dev/ubd/2</path>.
 </p>
 </body>
 </section>
@@ -403,18 +467,20 @@ la letra, aunque también necesitará saber que el sistema raíz será el
 
 <ul>
   <li>
-    <uri link="http://edeca.net/articles/bridging/index.html">Bridging with
+    <uri link="http://edeca.net/articles/bridging/index.html">Bridging con
     UML</uri>
   </li>
   <li>
-    <uri link="http://user-mode-linux.sourceforge.net/">UML Homepage</uri>
+    <uri link="http://user-mode-linux.sourceforge.net/">Sitio web de UML</uri>
   </li>
   <li>
-    <uri link="http://www.theshore.net/~caker/uml/">Caker's UML Notes</uri>
+    <uri link="http://www.theshore.net/~caker/uml/">Notas de Caker sobre
+    UML</uri>
   </li>
   <li>
-    <uri link="http://sourceforge.net/mailarchive/forum.php?forum_id=3647">UML
-    Mailinglist archives</uri>
+    <uri
+    link="http://sourceforge.net/mailarchive/forum.php?forum_id=3647">Archivos
+    de la lista de correos de UML</uri>
   </li>
 </ul>
 </body>
