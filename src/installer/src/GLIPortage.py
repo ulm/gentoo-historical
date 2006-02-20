@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.46 2006/02/20 17:26:24 agaffney Exp $
+$Id: GLIPortage.py,v 1.47 2006/02/20 18:15:17 agaffney Exp $
 """
 
 import re
@@ -232,9 +232,9 @@ class GLIPortage(object):
 				self.add_pkg_to_world(package)
 
 
-def usage():
+def usage(progname):
 	print """
-Usage: GLIPortage.py [-c|--chroot-dir <chroot directory>] [-g|--grp] [-s|--stage3] [-h|--help]
+Usage: %s [-c|--chroot-dir <chroot directory>] [-g|--grp] [-s|--stage3] [-h|--help]
 
 Options:
 
@@ -248,12 +248,13 @@ Options:
                     files from the LiveCD.
 
   -h|--help         Display this help
-"""
+""" % (progname)
 
 if __name__ == "__main__":
 	chroot_dir = "/mnt/gentoo"
 	mode = None
 	grp_packages = []
+	progname = sys.argv.pop(0)
 	while len(sys.argv):
 		arg = sys.argv.pop(0)
 		if arg == "-c" or arg == "--chroot-dir":
@@ -263,10 +264,10 @@ if __name__ == "__main__":
 		elif arg == "-s" or arg == "--stage3":
 			mode = "stage3"
 		elif arg == "-h" or arg == "--help":
-			usage()
+			usage(progname)
 			sys.exit(0)
 		elif arg[0] == "-":
-			usage()
+			usage(progname)
 			sys.exit(1)
 		else:
 			grp_packages.append(arg)
@@ -332,12 +333,14 @@ if __name__ == "__main__":
 		for pkg in grp_packages:
 			if not gliportage.get_best_version_vdb(pkg):
 				print "Package " + pkg + " is not available for install from the LiveCD"
+				continue
 			pkglist = gliportage.get_deps(pkg)
-			for tmppkg in pkglist:
+			for i, tmppkg in enumerate(pkglist):
+				print "Copying " + tmppkg + " (" + str(i+1) + "/" + str(len(pkglist)) + ")"
 				gliportage.copy_pkg_to_chroot(tmppkg)
 			gliportage.add_pkg_to_world(pkg)
 		print "GRP install complete!"
 	else:
 		print "You must specify an operating mode (-g or -s)!"
-		usage()
+		usage(progname)
 		sys.exit(1)
