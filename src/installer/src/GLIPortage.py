@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.43 2006/02/20 16:48:15 agaffney Exp $
+$Id: GLIPortage.py,v 1.44 2006/02/20 17:11:41 agaffney Exp $
 """
 
 import re
@@ -254,7 +254,7 @@ if __name__ == "__main__":
 	chroot_dir = "/mnt/gentoo"
 	mode = None
 	grp_packages = []
-	while sys.argv.length:
+	while len(sys.argv):
 		arg = sys.argv.pop(0)
 		if arg == "-c" or arg == "--chroot-dir":
 			chroot_dir = sys.argv.pop(0)
