@@ -114,7 +114,7 @@
   </xsl:if>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <link title="new" rel="stylesheet" href="/css/main.css?d=20051010" type="text/css"/>
+  <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
   <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
     <!-- Just remove this bit if http refresh is too annoying -->
       <xsl:if test="/*[1][@redirect]">
@@ -189,14 +189,14 @@
 </xsl:template>
 
 <!-- {Mainpage, News, Email} template -->
-<xsl:template match="/mainpage | /news | /email">
+<xsl:template match="/mainpage | /news"> <!-- Removed " | /email" can't find any use -->
 <html>
   <xsl:if test="string-length($glang)>1">
     <xsl:attribute name="lang"><xsl:value-of select="translate($glang,'_','-')"/></xsl:attribute>
   </xsl:if>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <link title="new" rel="stylesheet" href="/css/main.css?d=20050605" type="text/css"/>
+  <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
   <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
   
   <xsl:if test="/mainpage/@id='news'">
@@ -206,9 +206,11 @@
     <xsl:when test="/mainpage | /news">
       <title>Gentoo Linux -- <xsl:value-of select="title"/></title>
     </xsl:when>
+    <!-- Can't find any use for this. Will be deleted.
     <xsl:when test="/email">
       <title><xsl:value-of select="subject"/></title>
     </xsl:when>
+    -->
   </xsl:choose>
 </head>
 <body style="margin:0px;" bgcolor="#000000">
@@ -675,15 +677,34 @@
 
 <!-- Regular comment -->
 <xsl:template match="comment">
-<span class="comment">
-  <xsl:apply-templates/>
-</span>
+<span class="code-comment"><xsl:apply-templates/></span>
 </xsl:template>
 
-<!-- User input -->
+<!-- Colour coding inside <pre> -->
 <xsl:template match="i">
-<span class="input"><xsl:apply-templates/></span>
+<span class="code-input"><xsl:apply-templates/></span>
 </xsl:template>
+
+<xsl:template match="var">
+<span class="code-variable"><xsl:apply-templates/></span>
+</xsl:template>
+
+<xsl:template match="ident">
+<span class="code-identifier"><xsl:apply-templates/></span>
+</xsl:template>
+
+<xsl:template match="keyword">
+<span class="code-keyword"><xsl:apply-templates/></span>
+</xsl:template>
+
+<xsl:template match="stmt">
+<span class="code-statement"><xsl:apply-templates/></span>
+</xsl:template>
+
+<xsl:template match="const">
+<span class="code-constant"><xsl:apply-templates/></span>
+</xsl:template>
+
 
 <!-- Bold -->
 <xsl:template match="b">
@@ -708,6 +729,7 @@
 </xsl:template>
 
 <!-- Body inside email -->
+<!-- Can't find any use for this, will be deleted
 <xsl:template match="/email/body">
 <table border="0">
   <tr>
@@ -760,6 +782,7 @@
   </tr>
 </table>
 </xsl:template>
+-->
 
 <!-- Body -->
 <xsl:template match="body">
@@ -775,9 +798,11 @@
 </xsl:template>
 
 <!-- Box with small text -->
+<!-- Is this really used?
 <xsl:template match="box">
 <p class="infotext"><xsl:apply-templates/></p>
 </xsl:template>
+-->
 
 <!-- Preserve whitespace, aka Code Listing -->
 <xsl:template match="pre">
@@ -797,7 +822,7 @@
     </td>
   </tr>
   <tr>
-    <td bgcolor="#ddddff">
+    <td bgcolor="#eeeeff">
       <pre>
         <xsl:apply-templates/>
       </pre>
