@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/lvm2.xml,v 1.5 2005/10/06 21:54:49 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/lvm2.xml,v 1.6 2006/02/21 23:28:57 rane Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/pl/lvm2.xml" lang="pl">
@@ -27,8 +27,8 @@ Manager" w wersji drugiej (LVM2).
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.0.11</version>
-<date>2005-08-17</date>
+<version>2.2</version>
+<date>2006-02-06</date>
 
 <chapter>
 <title>Wstęp</title>
@@ -65,7 +65,7 @@ Jeżeli przeprowadzamy nową instalację Gentoo, konieczne będzie użycie dysku
 rozruchowego z obsługą LVM2 takiego jak np. płyta instalacyjna Gentoo. Wersję
 dla architektury x86 można odnaleźć na <uri
 link="/main/en/mirrors.xml">serwerach lustrzanych Gentoo</uri> w katalogu
-<path>/releases/x86/2005.1/installcd</path>. Pozostałe architektury także powinny
+<path>/releases/x86/2005.1-r1/installcd</path>. Pozostałe architektury także powinny
 być obsługiwane.
 </p>
 
@@ -140,19 +140,15 @@ potrzeb.
 </p>
 
 <p>
-Stwórzmy małą fizyczną partycję /boot (hda1). W tym przykładzie, /boot nie będzie
+Stwórzmy małą fizyczną partycję <path>/boot</path> (hda1). W tym przykładzie,
+<path>/boot</path> nie będzie
 partycją zarządzaną przez LVM2. Partycja ta będzie zawierała bootloader oraz
 jądro systemu. 64MB powinny w zupełności wystarczyć nawet dla kilku jąder.
 </p>
 
 <p>
-Stwórzmy teraz partycję swap (hda2) i ustawmy ją jako aktywną.
+Stwórzmy teraz partycję swap (hda2).
 </p>
-
-<pre caption="Tworzenie partycji swap">
-# <i>mkswap /dev/hda2</i>
-# <i>swapon /dev/hda2</i>
-</pre>
 
 <p>
 Pora teraz na partycję / (hda3). Jeżeli będziemy chcieli zarządzać partycją
@@ -173,7 +169,7 @@ dostępnego dla użytkownika root).
 </note>
 
 <p>
-W tym momencie partycje /boot, swap oraz root nie używają całego dysku, stwórzmy
+W tym momencie partycje <path>/boot</path>, swap oraz root nie używają całego dysku, stwórzmy
 więc czwartą partycję na tym dysku i ustawmy jej typ na 8e (Linux LVM).
 Posiadając więcej fizycznych dysków przeznaczonych na LVM, należy stworzyć
 jedną partycję na każdym i ustawić dla nich ten sam typ (8e).
@@ -191,6 +187,12 @@ swój 160 Gb dysk na 8 partycji po 20 Gb każda.
 </note>
 
 <p>
+Nadszedł czas na utworzenie systemu plików na <path>/dev/hda1</path> i
+<path>/dev/hda3</path> oraz utworzenie i aktywację parycji swap na
+<path>/dev/hda2</path> tak jak zostało to opisane w podręczniku.
+</p>
+
+<p>
 Ładowanie modułu LVM2 <path>dm-mod</path>.
 </p>
 
@@ -199,17 +201,22 @@ swój 160 Gb dysk na 8 partycji po 20 Gb każda.
 </pre>
 
 <p>
-Skanowanie i aktywacja LVM:
+Przed skanowaniem i aktywacją LVM może zajść potrzeba edytowania
+<path>/etc/lvm/lvm.conf</path> w celu wykluczenia jakichś urządzeń. Domyślnie LVM2
+skanuje wszystkie urządzenia, nawet napędy CDROM, przez które mogą pojawiać się
+niechciane błędy. W poniższym przykładzie linia zezwalająca na skanowanie
+wszystkich urządzeń została zastąpiona przez taką, która wyklucza ze skanowania
+wszystkie urządzenia poza naszymi dwoma dyskami IDE.
 </p>
 
 <pre caption="Aktywacja LVM">
-<comment>(Zapobiegamy skanowaniu cdromu)</comment>
-# <i>mkdir -p /etc/lvm</i>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >/etc/lvm/lvm.conf</i>
-# <i>vgscan</i>
-  Reading all physical volumes.  This may take a while...
-  No volume groups found
-<comment>(Pozwalamy na dostęp do wszystkich stworzonych wolumenów grup)</comment>
+<comment>(Zapobiegamy skanowaniu wszystkich urządzeń poza dwoma dyskami IDE)</comment>
+# <i>nano -w /etc/lvm/lvm.conf</i>
+<comment>(Zwróćmy uwagę na poniższą linię)</comment>
+   filter = [ "a/.*/" ]
+<comment>(Zezwolenie na skanowanie /dev/hda i /dev/hdb oraz wykluczenie innych urządzeń)</comment>
+    filter = [ "a|/dev/hd[ab]|", "r/.*/" ]
+<comment>(Zapisanie pliku i wyjście z nano)</comment>
 # <i>vgchange -a y</i>
 </pre>
 
@@ -399,14 +406,15 @@ katalogu <path>/usr/src/linux/include/linux</path>.
 
 <pre caption="Instalujemy LVM2">
 # <i>emerge lvm2</i>
-<comment>(W czasie pisania tego dokumentu, najnowszą stabilną wersją jest wersja 2.00.08.
-Pracując z wersją 2.00.08, należy zapobiec wykrywaniu cdromu przez lvm2 poprzez:</comment>
-# <i>echo 'devices { filter=["r/cdrom/"] }' >> /etc/lvm/lvm.conf</i>
-
-<comment>(Wersja 2.00.15 i późniejsze udostępniają nam plik /etc/lvm/lvm.conf
-Należy go otworzyć w dowolnym edytorze i podążać za komentarzami</comment>
-# <i>nano -w /etc/lvm/lvm.conf</i>
 </pre>
+
+<p>
+Wyedytujmy teraz <path>/etc/lvm/lvm.conf</path> tak jak zostało to już opisane
+<uri link="#doc_chap2_pre2">wcześniej</uri>. Poprzednim razem edytowaliśmy plik
+będący częścią środowiska instalacyjnego, który zniknie po najlbiższym ponownym
+uruchomieniu. Tym razem musimy zmienić prawdziwy plik, znajdujący się wewnątrz
+naszego świeżo zainstalowanego Gentoo.
+</p>
 
 <p>
 Podczas edycji pliku <path>/etc/fstab</path>, postępujemy według instrukcji
@@ -415,15 +423,15 @@ wierszy stosownych do naszego przykładu:
 </p>
 
 <pre caption="Zawartość pliku /etc/fstab">
-/dev/hda1     /boot   ext3    noauto,noatime 1 1
+/dev/hda1     /boot   ext3    noauto,noatime 1 2
 /dev/hda2     none    swap    sw             0 0
-/dev/hda3     /       ext3    noatime        0 0
+/dev/hda3     /       ext3    noatime        0 1
 # Logiczne wolumeny
-/dev/vg/usr   /usr    ext3    noatime        0 0
-/dev/vg/home  /home   ext3    noatime        0 0
-/dev/vg/opt   /opt    ext3    noatime        0 0
-/dev/vg/var   /var    ext3    noatime        0 0
-/dev/vg/tmp   /tmp    ext3    noatime        0 0
+/dev/vg/usr   /usr    ext3    noatime        0 2
+/dev/vg/home  /home   ext3    noatime        0 2
+/dev/vg/opt   /opt    ext3    noatime        0 2
+/dev/vg/var   /var    ext3    noatime        0 2
+/dev/vg/tmp   /tmp    ext3    noatime        0 2
 </pre>
 
 <p>
@@ -494,9 +502,9 @@ reaktywacji wolumenów:
   </li>
   <li>
     Artykuły Daniela Robbins'a na temat LVM:
-    <uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm/?dwzone=linux</uri>
+    <uri link="/doc/en/articles/lvm-p1.xml">Część Pierwsza</uri>
     oraz 
-    <uri>http://www-106.ibm.com/developerworks/linux/library/l-lvm2.html?dwzone=linux</uri>
+    <uri link="/doc/en/articles/lvm-p2.xml">Część Druga</uri>
   </li>
   <li>
     Jak umieścić partycje /boot i root pod kontrolą LVM1:
