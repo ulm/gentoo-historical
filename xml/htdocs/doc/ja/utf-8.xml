@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/utf-8.xml,v 1.2 2005/05/01 04:32:18 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/utf-8.xml,v 1.3 2006/02/22 16:53:48 idani Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/ja/utf-8.xml">
@@ -11,8 +11,14 @@
 <author title="Contributor">
   <mail link="devil@gentoo.org.ua">Alexander Simonov</mail>
 </author>
+<author title="Editor">
+  <mail link="fox2mike@gentoo.org">Shyam Mani</mail>
+</author>
 <author title="翻訳">
   <mail link="nakano@gentoo.org">中野 正智</mail>
+</author>
+<author title="翻訳">
+  <mail link="solidsneak@hyper.cx">小林弘樹</mail>
 </author>
 
 <abstract>
@@ -20,11 +26,13 @@
 Gentoo LinuxシステムでのUTF-8 Unicodeの設定方法と使い方について説明します。
 </abstract>
 
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license />
 
-<version>1.9</version>
-<date>2005-04-24</date>
-<!-- Original revision: 1.13 -->
+<version>2.17</version>
+<date>2006-02-11</date>
+<!-- Original revision: 1.37 -->
 
 <chapter>
 <title>文字コード</title>
@@ -217,9 +225,11 @@ en_GB.UTF-8/UTF-8
 <body>
 
 <p>
-UTF-8ロケールを使用するためには、<c>LANG</c>と<c>LC_ALL</c>の二つの環境変数を設定する必要があります。
-この値をセットする方法は色々ありますが、特定のユーザーにだけUTF-8環境変数を適用したい場合には、
-それらのユーザーの<path>~/.profile</path>または<path>~/.bashrc</path>にセットします。
+UTF-8ロケールを使用するためには、<c>LC_ALL</c>(これは<c>LANG</c>設定を上書きします)の一つの環境変数を設定する必要があります。
+この値をセットする方法は色々ありますが、特定のユーザーにだけUTF-8環境変数を適用したい場合には、それらのユーザーの<path>~/.profile</path>(<c>/bin/sh</c>を使用している場合)、<path>~/.bash_profile</path>または<path>~/.bashrc</path> (<c>/bin/bash</c>を使用している場合)にセットします。
+</p>
+
+<p>
 またはシステム全体にセットしたい場合もあります。
 筆者が特に推奨する一つの方法は、<path>/etc/init.d/xdm</path>の中で設定する方法です。
 なぜならこの初期起動スクリプトは、上述のスクリプトを読み込む前、
@@ -227,14 +237,13 @@ UTF-8ロケールを使用するためには、<c>LANG</c>と<c>LC_ALL</c>の二
 </p>
 
 <p>
-ロケールをグローバルに設定するには<path>/etc/env.d/02local</path>を使用するべきです。
+ロケールをグローバルに設定するには<path>/etc/env.d/02locale</path>を使用するべきです。
 このファイルは、次のようになります。
 </p>
 
 <pre caption="/etc/env.d/02localeの例">
 <comment>("en_GB.UTF-8"をあなたのロケールに変更してください。) </comment>
 LC_ALL="en_GB.UTF-8"
-LANG="en_GB.UTF-8"
 </pre>
 
 <p>
@@ -254,7 +263,7 @@ LANG="en_GB.UTF-8"
 
 <pre caption="環境変数にロケールが設定されたかどうかの確認">
 # <i>locale</i>
-LANG=en_GB.UTF-8
+LANG=
 LC_CTYPE="en_GB.UTF-8"
 LC_NUMERIC="en_GB.UTF-8"
 LC_TIME="en_GB.UTF-8"
@@ -313,7 +322,21 @@ File Systems --&gt;
 
 <p>
 NTFSパーティションをマウントする予定があるなら、<c>nls=</c>オプションをマウント時に指定する必要があります。
-詳しくは<c>man mount</c>を見てください。
+FATパーティションをマウントする予定があるなら、<c>codepage=</c>オプションをマウント時に指定する必要があります。
+任意で、カーネル設定でFAT用のデフォルトcodepageを設定することも出来ます。
+mountの<c>codepage</c>オプションはカーネル設定を上書きすると言うことに注意してください。
+</p>
+
+<pre caption="カーネル設定でのFATの設定">
+File Systems --&gt;
+  DOS/FAT/NT Filesystems  --&gt;
+    (437) Default codepage for fat
+</pre>
+
+<p>
+<c>Default iocharset for fat</c>をUTF-8に設定することは避けるべきです。これは推奨されていません。
+その代わり、FATパーティションをマウントする際にutf8=trueオプションを渡すことが出来ます。
+これ以上の情報は、<c>man mount</c>や<path>/usr/src/linux/Documentation/filesystems/vfat.txt</path>にあるカーネルドキュメントを読んでください。
 </p>
 
 <p>
@@ -322,7 +345,10 @@ NTFSパーティションをマウントする予定があるなら、<c>nls=</c
 
 <pre caption="convmvの使用例">
 # <i>emerge --ask app-text/convmv</i>
-# <i>convmv -f current-encoding -t utf-8 filename</i>
+<comment>(コマンド形式)</comment>
+# <i>convmv -f &lt;現在のエンコード&gt; -t utf-8 &lt;ファイル名&gt;</i>
+<comment>(iso-8859-1を変更したい文字コードに置き換える)</comment>
+# <i>convmv -f iso-8859-1 -t utf-8 filename</i>
 </pre>
 
 <p>
@@ -359,12 +385,11 @@ Unicodeをできるだけ利用する計画があるなら、十分な文字コ�
 
 <p>
 <path>/etc/conf.d/keymaps</path>ファイルの中で定義されている<c>KEYMAP</c>変数にUnicodeキーマップを指定する必要があります。
-これをするためには、単純に既に指定されているキーマップの先頭に-uを追加してください。 
 </p>
 
 <pre caption="/etc/conf.d/keymapsの設定例">
 <comment>(ukをあなたのロケールに変更してください。)</comment>
-KEYMAP="-u uk"
+KEYMAP="uk"
 </pre>
 
 </body>
@@ -380,11 +405,11 @@ Slangをインストールしていない、または使用していない方は
 <p>
 <c>unicode</c>を<path>/etc/make.conf</path>にグローバルUSEフラグとして追加するのはよい方法です。
 そして、<c>sys-libs/ncurses</c>と<c>sys-libs/slang</c>を必要なら再度mergeしてください。
+これは、システムの更新時にPortageが自動で行います。
 </p>
 
-<pre caption="ncursesとslangのemerge">
-<comment>(worldファイルにこのライブラリが追加されるのを避けるために--oneshotオプションを使用します)</comment>
-# <i>emerge --oneshot --verbose --ask sys-libs/ncurses sys-libs/slang</i>
+<pre caption="システムの更新">
+# <i>emerge --update --deep --newuse world</i>
 </pre>
 
 <p>
@@ -480,9 +505,9 @@ Unicodeを非常にうまく使うことができます。
 Xftを使用し、Unicodeをサポートしているターミナルエミュレータを見つけるのはもっと大変です。
 Konsoleとgnome-terminalは別として、Portageでの最良の選択肢は、
 <c>x11-terms/rxvt-unicode</c>、 <c>xfce-extra/terminal</c>、
-<c>gnustep-apps/terminal</c>、 <c>x11-terms/mlterm</c>、 <c>x11-terms/mrxvt</c>、
+<c>gnustep-apps/terminal</c>、 <c>x11-terms/mlterm</c>、 
 または、<c>unicode</c> USEフラグ付きでビルドされ、<c>uxterm</c>として起動された<c>x11-terms/xterm</c>があります。
-また、<c>app-misc/screen</c>もUTF-8をサポートしてますが、<c>screen -u</c>で起動するか、または以下の行を<path>~/.screenrc</path>に追加する必要があります。
+また、<c>app-misc/screen</c>もUTF-8をサポートしてますが、<c>screen -U</c>で起動するか、または以下の行を<path>~/.screenrc</path>に追加する必要があります。
 </p>
 
 <pre caption="UTF-8のための~/.screenrc">
@@ -496,10 +521,27 @@ defutf8 on
 <body>
 
 <p>
-Vim、Emacs、Xemacsは完全にUTF-8をサポートしています。
+Vimは完全にUTF-8をサポートしています。
 また、UTF-8ファイルの自動認識機能も組み込まれています。
 Vimでの、さらに詳しい情報は<c>:help mbyte.txt</c>を使用してください。
 </p>
+
+<p>
+Emacs 22.x以降は完全にUTF-8をサポートしています。
+Xemacs 22.xはまだ文字コードの統合をサポートしていません。
+</p>
+
+<p>
+古いバージョンのEmacsやXemacsは<c>app-emacs/mule-ucs</c>や<c>app-xemacs/mule-ucs</c>をインストールし、UTF-8でCJKサポートを行うために以下のコードを<path>~/.emacs</path>に追加する必要があります。
+</p>
+
+<pre caption="EmacsのCJK UTF-8サポート">
+(require 'un-define)
+(require 'jisx0213)
+(set-language-environment "Japanese")
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+</pre>
 
 <p>
 Nanoは現在のところUTF-8をサポートしていませんが、長い間計画はあがっています。
@@ -530,11 +572,11 @@ csh、<c>tcsh</c>、<c>ksh</c>ではまったくUTF-8をサポートしていま
 <body>
 
 <p>
-バージョン0.8.10から完全なUTF-8サポートがありますが、オプションをユーザーがセットする必要があります。
+完全なUTF-8サポートがありますが、オプションをユーザーがセットする必要があります。
 </p>
 
 <pre caption="IrssiでUTF-8を使用する">
-/set term_charset UTF-8
+/set term_type UTF-8
 </pre>
 
 <p>
@@ -551,13 +593,9 @@ ASCII文字以外のチャンネルではしばしばUTF-8以外の文字が使�
 
 <p>
 MuttメールエージェントはUnicodeをサポートしています。
-UTF-8をMuttで使用するためには、以下の行を<path>~/.muttrc</path>に追加してください。
+UTF-8をMuttで使用するために、設定ファイルに何かする必要ありません。
+すべての設定ファイル(署名も含む)がUTF-8エンコードであれば、Muttは修正を行うことなくUnicode環境で動作します。
 </p>
-
-<pre caption="UTF-8のための~/.muttrc">
-set send_charset="utf8" <comment>(outgoing character set)</comment>
-set charset="utf8"      <comment>(display character set)</comment>
-</pre>
 
 <note>
 それでもまだ'?'がMuttにてメールの中に現れるかもしれません。
@@ -566,9 +604,68 @@ set charset="utf8"      <comment>(display character set)</comment>
 </note>
 
 <p>
-さらなる情報は<uri
-link="http://wiki.mutt.org/index.cgi?MuttFaq/Charset">Mutt WikiWiki</uri>にあります。
+さらなる情報は<uri link="http://wiki.mutt.org/index.cgi?MuttFaq/Charset">Mutt WikiWiki</uri>にあります。
 </p>
+
+</body>
+</section>
+<section>
+<title>Less</title>
+<body>
+
+<p>
+私たちは皆、コマンドの出力を正しく見ることが出来るよう、<c>dmesg | less</c>のように、<c>|</c>とともに<c>more</c>や<c>less</c>を多用します。
+<c>more</c>はシェルをUTF-8にするだけですが、<c>less</c>は環境変数を設定する必要があります。
+<c>LESSCHARSET</c>は、unicode文字が正しく表示されるようにします。
+これは、<path>/etc/profile</path>や<path>~/.bash_profile</path>で設定します。
+エディタを起動し、上で述べたファイルの1つに以下の行を追加します。
+</p>
+
+<pre caption="less用に環境変数を設定">
+LESSCHARSET=utf-8
+</pre>
+
+</body>
+</section>
+<section>
+<title>Man</title>
+<body>
+
+<p>
+manページはすべてのLinuxマシンの必要不可欠な部分です。
+manページでunicodeが正しく表示されるために、<path>/etc/man.conf</path>を編集して以下の行を置き換えます。
+</p>
+
+<pre caption="Unicodeサポートのためにman.confを変更">
+<comment>(これは古い行です)</comment>
+NROFF           /usr/bin/nroff -Tascii -c -mandoc
+<comment>(上をこのように置き換えます)</comment>
+NROFF           /usr/bin/nroff -mandoc -c
+</pre>
+
+</body>
+</section>
+<section>
+<title>elinksとlinks</title>
+<body>
+
+<p>
+これらは一般にテキストブラウザとして使用されるので、これらでUTF-8サポートを有効にする方法を説明します。
+<c>elinks</c>と<c>links</c>では、これを行うための2つの方法があります。
+1つはブラウザのSetupオプションを使用することで、もう1つは設定ファイルを編集することです。
+ブラウザにオプションを設定するために、サイトを<c>elinks</c>や<c>links</c>で開き、<c>Alt+S</c>で設定メニューに入り、ターミナルオプションを選択するか、<c>T</c>を押します。
+そして保存し、メニューを終了します。
+<c>links</c>では<c>Alt+S</c>を繰り返し、保存するために<c>S</c>を押す必要があるかもしれません。
+設定ファイルオプションは以下に示します。
+</p>
+
+<pre caption="UTF-8をelinks/linksで有効にする">
+<comment>(elinksでは、/etc/elinks/elinks.confまたは~/.elinks/elinks.confを編集し、以下の行を追加します)</comment>
+set terminal.linux.utf_8_io = 1
+
+<comment>(linksでは、~/.links/links.cfgを編集し、以下の行を追加します)</comment>
+terminal "xterm" 0 1 0 us-ascii utf-8
+</pre>
 
 </body>
 </section>
@@ -675,7 +772,7 @@ AltGrは、アルファベットキーだけと使用することもできます
 例えば、AltGrとmは、ギリシア文字の小文字muである'µ' を生成します。
 
 AltGrとsキーで、scharfes sまたはesszet 'ß'を生成します。
-多くのヨーロッパのユーザーが期待するように(なぜならキーボードに刻印されているので)、AltGrと4はユーロ記号である'€'を生成します。
+多くのヨーロッパのユーザーが期待するように(なぜならキーボードに刻印されているので)、AltGrと4(キーボードレイアウトによってはE)はユーロ記号である'€'を生成します。
 </p>
 
 </body>
@@ -686,10 +783,10 @@ AltGrとsキーで、scharfes sまたはesszet 'ß'を生成します。
 
 <ul>
   <li>
-    <uri link="http://www.wikipedia.com/wiki/Unicode">WikipediaのUnicodeの項</uri>
+    <uri link="http://en.wikipedia.org/wiki/Unicode">WikipediaのUnicodeの項</uri>
   </li>
   <li>
-    <uri link="http://www.wikipedia.com/wiki/UTF-8">WikipediaのUTF-8の項</uri>
+    <uri link="http://en.wikipedia.org/wiki/UTF-8">WikipediaのUTF-8の項</uri>
   </li>
   <li><uri link="http://www.unicode.org">Unicode.org</uri></li>
   <li><uri link="http://www.utf-8.com">UTF-8.com</uri></li>
