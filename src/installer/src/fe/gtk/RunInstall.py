@@ -22,6 +22,8 @@ class RunInstall(gtk.Window):
 	install_fail = False
 	output_log_is_link = False
 	pulsing = False
+	outputfile_contents = []
+	logfile_contents = []
 
 	def __init__(self, controller):
 		gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
@@ -168,11 +170,16 @@ class RunInstall(gtk.Window):
 					self.output_log_is_link = True
 					continue
 				break
+			if len(self.outputfile_contents) >= 1000:
+				self.outputfile_contents.pop(0)
+			self.outputfile_contents.append(line)
+		self.textbuffer.set_text("".join(self.outputfile_contents))
+		self.textview.scroll_to_iter(self.textbuffer.get_iter_at_offset(-1), 0.0)
 #			vadj = self.textviewscroll.get_vadjustment()
-			iter_end = self.textbuffer.get_iter_at_offset(-1)
-			self.textbuffer.insert(iter_end, line, -1)
-			iter_end = self.textbuffer.get_iter_at_offset(-1)
-			self.textview.scroll_to_iter(iter_end, 0.0)
+#			iter_end = self.textbuffer.get_iter_at_offset(-1)
+#			self.textbuffer.insert(iter_end, line, -1)
+#			iter_end = self.textbuffer.get_iter_at_offset(-1)
+#			self.textview.scroll_to_iter(iter_end, 0.0)
 #			if vadj.value == vadj.upper:
 #				vadj = self.textviewscroll.get_vadjustment()
 #				vadj.value = vadj.upper
@@ -191,14 +198,19 @@ class RunInstall(gtk.Window):
 		while 1:
 			line = self.install_log.readline()
 			if not line: break
+			if len(self.logfile_contents) >= 1000:
+				self.logfile_contents.pop(0)
+			self.logfile_contents.append(line)
+		self.logtextbuff.set_text("".join(self.logfile_contents))
+		self.logtextview.scroll_to_iter(self.logtextbuff.get_iter_at_offset(-1), 0.0)
 #			vadj = self.logtextviewscroll.get_vadjustment()
 #			vvalue = vadj.value
 #			vmax = vadj.upper - vadj.page_size
 #			print "vadj before adding text: upper - " + str(vadj.upper) + ", lower - " + str(vadj.lower) + ", max - " + str(vadj.upper - vadj.page_size) + ", value - " + str(vadj.value)
-			iter_end = self.logtextbuff.get_iter_at_offset(-1)
-			self.logtextbuff.insert(iter_end, line, -1)
-			iter_end = self.logtextbuff.get_iter_at_offset(-1)
-			self.logtextview.scroll_to_iter(iter_end, 0.0)
+#			iter_end = self.logtextbuff.get_iter_at_offset(-1)
+#			self.logtextbuff.insert(iter_end, line, -1)
+#			iter_end = self.logtextbuff.get_iter_at_offset(-1)
+#			self.logtextview.scroll_to_iter(iter_end, 0.0)
 #			if vvalue == vmax:
 #				print "vadj after adding text: upper - " + str(vadj.upper) + ", lower - " + str(vadj.lower) + ", max - " + str(vadj.upper - vadj.page_size) + ", value - " + str(vadj.value)
 #				vadj.value = vadj.upper - vadj.page_size
