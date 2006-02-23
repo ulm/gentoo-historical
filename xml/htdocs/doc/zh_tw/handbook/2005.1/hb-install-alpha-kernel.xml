@@ -1,0 +1,467 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/2005.1/hb-install-alpha-kernel.xml,v 1.1 2006/02/23 03:02:11 ccpz Exp $ -->
+
+<!-- rev 1.7 by ccpz -->
+
+<sections>
+
+<version>5.5</version>
+<date>2006-01-06</date>
+
+<section>
+<title>時區</title>
+<body>
+
+<p>
+為了讓您的系統知道它的位置在那裡，您將需要設定您的系統時區。到
+<path>/usr/share/zoneinfo</path> 尋找您的時區，然後把他複製到
+<path>/etc/localtime</path>。請避免使用
+<path>/usr/share/zoneinfo/Etc/GMT*</path> 下的檔案，因為他們並不代表你預期的時
+區。例如說 <path>GMT-8</path> 實際上是 GMT+8。
+</p>
+
+<pre caption="設定時區資訊">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>（假設您要使用 GMT）</comment>
+# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>安裝核心原始碼</title>
+<subsection>
+<title>選擇一個核心</title>
+<body>
+
+<p>
+Linux 的核心是所有版本的最中心，也是最重要的。他位於使用者程式和系統硬體之間。
+Gentoo 提供使用者很多可用的核心原始碼。您可以到 <uri
+link="/doc/tw/gentoo-kernel.xml">Gentoo 核心 指南</uri> 查看我們所提供的核心。
+</p>
+
+<p>
+使用 alpha 系統的使用者，我們提供 <c>vanilla-source</c> （預設的 2.6 核心原始碼）
+</p>
+
+<p>
+選擇適合您的核心原始檔然後使用 <c>emerge</c> 安裝。為了避免安裝 xorg-x11 或其他
+相依軟體，需要加上 <c>USE="-doc"</c>。第一次安裝時不一定需要
+<c>USE="symlink"</c>，但是確定你有正確建立 <path>/usr/src/linux</path> 符號連結。
+</p>
+
+<p>
+下面的例子我們將安裝 <c>vanilla-sources</c>（因為這個核心原始碼適合無網路
+狀態的安裝）。當然，請更換為您想要安裝的核心：
+</p>
+
+<pre caption="安裝核心原始碼">
+# <i>USE="-doc symlink" emerge vanilla-sources</i>
+</pre>
+
+<p>
+當您查看 <path>/usr/src</path> 您將會看到一個 <path>linux</path> 的連接連到
+您所選的核心，在我們的範例中，核心是 <c>vanilla-sources-2.6.11.2</c>，你的版本
+可能不同，所以記得你用的版本。
+</p>
+
+<pre caption="觀看核心原始碼目錄連接">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt;linux-2.6.11.2
+</pre>
+
+<p>
+現在我們該設定以及編譯您的核心了。您可以使用 <c>genkernel</c> 完
+成此項步驟，並且將會以和 Installation CD 一樣的通用的方式進行編譯。我們將先解釋如何手動編
+譯因為這是自訂您的環境的最佳方法。
+</p>
+
+<p>
+如果您想要手動編譯您的核心，請從 <uri link="#manual">預設：手動設定</uri> 
+繼續。如果您想要使用 <c>genkernel</c> 請從 <uri 
+link="#genkernel">其他選擇：使用 genkernel</uri> 繼續。
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>預設：手動設定</title>
+<subsection>
+<title>介紹</title>
+<body>
+
+<p>
+手動設定核心常常被 Linux 使用者認為最難完成的步驟。雖然不假 -- 但是當您手動編譯
+幾次核心後，您應該不會覺得它有多難 ;)
+</p>
+
+<p>
+但是，<e>唯一</e> 的重點就是：您必須要了解您的系統才可以開始手動編譯。您可以執行
+<c>lsmod</c> 看看 Installation CD 使用那些核心模組（這是一個不錯的暗示，教您該開
+啟那個選項）。
+</p>
+
+<p>
+現在到您的核心原始碼目錄然後執行 <c>make menuconfig</c>。這將會啟動一個
+ncurses 的設定選單。
+</p>
+
+<pre caption="開始 menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+您將會看到一大串的設定部份。我們將列出一些您一定要啟用的選項（不然 Gentoo 無法
+完善地工作）。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>必須開啟的選項</title>
+<body>
+
+<p>
+首先，開啟 development and experimental code/drivers。您將需要這個，不然
+您將無法看見一些其他重要的程式碼或是驅動程式。
+</p>
+
+<pre caption="選擇 experimental code/drivers, General setup">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+General setup ---&gt;
+  [*] Support for hot-pluggable devices
+</pre>
+
+<p>
+現在到 <c>File Systems</c> 然後選擇要支援的檔案系統。記得<e>不要</e>將它們編成模
+組(Module)，否則您的 Gentoo 系統將無法掛載您的分割區，另外也要勾選 
+<c>Virtual memory</c> 和 <c>/proc file system</c> (<c>/dev file system</c> 和
+<c>Automatically munt at boot</c> 只適用 2.4 核心)：
+</p>
+
+<pre caption="選擇相關檔案系統">
+<comment>(適用 2.4.x 核心)</comment>
+File systems ---&gt;
+  [*] Virtual memory file system support (former shm fs)
+  [*] /proc file system support
+  [*] /dev file system support (EXPERIMENTAL)
+  [*]   Automatically mount at boot
+  [ ] /dev/pts file system for Unix98 PTYs
+
+<comment>(適用 2.6.x 核心)</comment>
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>（按照您系統所需要的檔案系統開啟以下選項）</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<p>
+如果您需要透過 PPPoE 連線到網路或是數據機撥接，您將需要以下的核心選項：
+</p>
+
+<pre caption="選擇 PPPoE 相關驅動程式">
+<comment>(適用 2.4.x 核心)</comment>
+Network device support ---&gt;
+  &lt;*&gt; PPP (point-to-point protocol) support
+  &lt;*&gt;   PPP support for async serial ports
+  &lt;*&gt;   PPP support for sync tty ports
+
+<comment>(適用 2.6.x 核心)</comment>
+Device Drivers ---&gt;
+  Networking support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+雖然 <c>PPP over Ethernet</c> 選項只有在 <c>rp-pppoe</c> 設定為核心 PPPoE
+時需要，但是這兩個壓縮的選項不會造成錯誤。
+</p>
+
+<p>
+如果您需要，不要忘了為您的網路卡加入核心的支援。
+</p>
+
+<p>
+以下為我們建議的選項：
+</p>
+
+<pre caption="Alpha 建議選項">
+General setup ---&gt;
+  &lt;*&gt; SRM environment through procfs
+  &lt;*&gt; Configure uac policy via sysctl
+
+Plug and Play configuration ---&gt;
+  &lt;*&gt; Plug and Play support
+  &lt;M&gt;   ISA Plug and Play support
+
+SCSI support ---&gt;
+  SCSI low-level drivers ---&gt;
+    &lt;*&gt; SYM53C8XX Version 2 SCSI support (NEW)
+    &lt;*&gt; Qlogic ISP SCSI support
+
+Network device support ---&gt;
+  Ethernet (10 or 100 Mbit) ---&gt;
+    &lt;M&gt; DECchip Tulip (dc21x4x) PCI support
+    &lt;M&gt; Generic DECchip &amp; DIGITAL EtherWORKS PCI/EISA
+    &lt;M&gt; EtherExpressPro/100 support (eepro100)
+    &lt;M&gt; EtherExpressPro/100 support (e100)
+  Ethernet (1000 Mbit) ---&gt;
+    &lt;M&gt; Alteon AceNIC
+      [*] Omit support for old Tigon I
+    &lt;M&gt; Broadcom Tigon3
+  [*] FDDI driver support
+  &lt;M&gt; Digital DEFEA and DEFPA
+  &lt;*&gt; PPP support
+    &lt;*&gt; PPP Deflate compression
+
+Character devices ---&gt;
+  [*] Support for console on serial port
+  [*] Direct Rendering Manager
+
+File systems ---&gt;
+  &lt;*&gt; Kernel automounter version 4 support
+  Network File Systems ---&gt;
+    &lt;*&gt; NFS
+      [*] NFSv3 client
+      &lt;*&gt; NFS server
+      [*] NFSv3 server
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+    [*] Alpha OSF partition support
+  Native Language Support
+    &lt;*&gt; NLS ISO 8859-1
+
+Sound ---&gt;
+  &lt;M&gt; Sound card support
+    &lt;M&gt; OSS sound modules
+      [*] Verbose initialisation
+      [*] Persistent DMA buffers
+      &lt;M&gt; 100% Sound Blaster compatibles
+</pre>
+
+<p>
+當您完成核心設定時，請從 <uri link="#compiling">編譯和安裝</uri> 繼續。
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>編譯和安裝</title>
+<body>
+
+<p>
+現在您的核心已經設定完成了，我們該來編譯然後安裝它。離開核心設定，然後開始編譯程序：
+</p>
+
+<pre caption="編譯核心">
+# <i>make dep &amp;&amp; make vmlinux modules modules_install</i>
+
+<comment>（2.6 核心）</comment>
+# <i>make &amp;&amp; make modules_install</i>
+
+<comment>(所有的核心)</comment>
+# <i>make boot</i>
+</pre>
+
+<p>
+當核心完成編譯時，將核心映像檔複製到 <path>/boot</path>。近期的核心可能會建立
+<path>vmlinux</path>而非 <path>vmlinux.gz</path>：
+</p>
+
+<pre caption="安裝核心">
+# <i>cp arch/alpha/boot/vmlinux.gz /boot/</i>
+</pre>
+
+<p>
+現在請從 <uri link="#kernel_modules">安裝分開的核心模組</uri> 繼續。
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="genkernel">
+<title>其他選擇：使用 genkernel</title>
+<body>
+
+<p>
+如果您正在讀這個部份，那您應該是選擇使用我們的 <c>genkernel</c> 程序來為您設定
+核心。
+</p>
+
+<p>
+現在您的核心原始碼已經安裝了，我們該使用 <c>genkernel</c> 程序來自動幫您編譯
+核心。<c>genkernel</c> 是利用類似 Installation CD 的核心設定來進行工作的。這代表著當您
+使用 <c>genkernel</c> 編譯您的核心，您的系統大致上會在開機時偵測所有的硬體，
+就和我們的 Installation CD 一樣。因為 genkernel 不需要手動核心設定，所以適合不會編譯
+核心的使用者。
+</p>
+
+<p>
+現在讓我們來看看如何使用 genkernel。首先，安裝 genkernel：
+</p>
+
+<pre caption="安裝 genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+現在，編譯您的核心原始碼。如果您是透過 grp 安裝 <c>genkerenl</c>，直接執行
+<c>genkernel all</c>。請注意，當 <c>genkernel</c> 正在編譯所有硬體支援時，等待的
+時間會有點久！
+</p>
+
+<p>
+如果您的開機分割區沒有使用 ext2 或是 ext3 為檔案系統，您將需要使用 <c>genkernel
+--menuconfig all</c> 手動設定，然後在核心內加入您所使用的檔案系統支援（
+<e>不能</e> 編成模組）。
+</p>
+
+<pre caption="執行 genkernel">
+# <i>genkernel all</i>
+GenKernel v3.0.1_beta10
+* ARCH: Alpha
+* KERNEL VER: 2.6.11.2
+* kernel: configuring source
+* kernel: running mrproper
+<comment>(Output removed to increase readability)</comment>
+* Kernel compiled successfully!
+* Required Kernel Params:
+*   : root=/dev/ram0 init=/linuxrc real_root=/dev/$ROOT
+*     where $ROOT is the devicenode for your root partition as
+*     you should have specified in /etc/fstab
+*     d initrd
+*              
+* Recommended Kernel Params:
+*   : vga=0x317 splash=verbose
+*              
+* Do NOT report kernel bugs (configs included) as genkernel bugs.
+* Make sure you have the latest genkernel before reporting bugs
+*              
+* For more info see /usr/share/genkernel/README
+</pre>
+
+<p>
+當 <c>genkernel</c> 完成的時候，一個核心映像檔，一套模組和一個 <e>initial root
+disk</e> （initrd）將會被建立。我們將在稍後設定開機程式時使用核心映像檔和
+initrd。寫下核心和 initrd 的檔名方便您稍後設定開機程式。initrd 將會在開起到"真正
+的"系統之前馬上偵測硬體支援（就和 Installation CD 一樣）。
+</p>
+
+<pre caption="查看已建立的核心映像檔名和 initrd">
+# <i>ls /boot/kernel* /boot/initramfs*</i>
+</pre>
+
+<p>
+現在，為了要讓我們的系統更像 Installation CD，我們需要安裝 <c>coldplug</c>。當 initrd 自動
+偵測硬體時，<c>coldplug</c>將會自動偵測其他的硬體。要安裝然後開啟 <c>coldplug</c>
+，請按照以下輸入：
+</p>
+
+<pre caption="安裝和開啟 coldplug">
+# <i>emerge coldplug</i>
+# <i>rc-update add coldplug default</i>
+# <i>rc-update add coldplug boot</i>
+</pre>
+  	 
+</body>
+</section>
+<section id="kernel_modules">
+<title>安裝分開的核心映像檔和模組</title>
+<subsection>
+<title>安裝多個模組</title>
+<body>
+
+<p>
+如果適當，您應該要安裝系統上的硬體所需要的安裝程序。以下為一些您有可能用到的核心
+相關的安裝程序：
+</p>
+
+<table>
+<tcolumn width="1in"/>
+<tcolumn width="4in"/>
+<tcolumn width="2in"/>
+<tr>
+  <th>安裝程序（Ebuild）</th>
+  <th>用意</th>
+  <th>指令</th>
+</tr>
+<tr>
+  <ti>x11-drm</ti>
+  <ti>
+    xorg-x11 支援的 ATI Radeon 到 9200，Rage128，Matrox，Voodoo和其他顯示卡。請查
+    看 <path>/usr/portage/x11-base/x11-drm</path> 內的 <c>ISUE_VIDEO_CARDS</c> 
+    變數查看您需要填入那種 <c>適用於您的顯示卡</c>。
+  </ti>
+  <ti><c>VIDEO_CARDS="適用於您的顯示卡" emerge x11-drm</c></ti>
+</tr>
+</table>
+
+<p>
+請注意，有些安裝程序會碰到很多相依性的問題。要確定您會安裝到那些套件，使用
+<c>emerge --pretend</c>。舉例來說，<c>x11-drm</c> 套件：
+</p>
+
+<pre caption="查看完整的安裝套件列表">
+# <i>emerge --pretend x11-drm</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>設定模組</title>
+<body>
+
+<p>
+您將需要將想要開機時自動載入的模組放到
+<path>/etc/modules.autoload.d/kernel-2.4</path> （或是
+<path>kernel-2.6</path>）。您也可以加上模組的選項。
+</p>
+
+<p>
+要查看所有可用的模組，執行 <c>find</c> 指令。不要忘了將 "&lt;kernel
+version&gt;"更改為您剛剛編譯的版本：
+</p>
+
+<pre caption="查看所有可用的版本">
+# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+</pre>
+
+<p>
+舉例來說，要自動載入 <c>3c59x.o</c> 模組，編輯 <path>kernel-2.4</path> 或是 
+<path>kernel-2.6</path>：
+</p>
+
+<pre caption="編輯 /etc/modules.autoload.d/kernel-2.4">
+<comment>（2.4核心的範例）</comment>
+# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.4 或是 kernel-2.6">
+3c59x
+</pre>
+
+<p>
+現在請從 <uri link="?part=1&amp;chap=8">設定您的系統</uri> 繼續安裝。
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>

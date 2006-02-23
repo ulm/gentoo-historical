@@ -1,0 +1,496 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/2005.1/hb-install-ppc-bootloader.xml,v 1.1 2006/02/23 03:02:11 ccpz Exp $ -->
+
+<!-- rev 1.5 by ccpz -->
+
+<sections>
+
+<version>5.3</version>
+<date>2006-01-19</date>
+
+<section>
+<title>選擇開機程式</title>
+<subsection>
+<title>介紹</title>
+<body>
+
+<p>
+現在您的核心已經設定和已經編譯好相關的系統設定檔了，你現在需要 <e>開機程式</e>
+來啟動 Linux。你需要使用的 <e>開機程式</e> 決定於你使用那一種的 PPC 機器。
+</p>
+
+<p>
+如果你使用 NewWorld 或 IBM 的機器，你需要用 <uri link="#yaboot">yaboot</uri>。
+OldWorld Apple 機器有兩個選擇，<uri link="#bootx">BootX</uri> (建議使用) 以及
+<uri link="#quik">quik</uri>。Pegasos 不需要開機程式，但是你需要安裝
+<uri link="#bootcreator">BootCreator</uri> 建立 SmartFirmware 開機選單。
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="yaboot">
+<title>預設：使用 yaboot</title>
+<subsection>
+<title>介紹</title>
+<body>
+
+<impo>
+yaboot 只適用於 NewWorld 的 PPC 和 IBM 的系統！
+</impo>
+
+<p>
+為了讓 yaboot 可以尋找開機裝置，他需要讀取 <path>/dev</path> 檔案系統。這可以用
+"bind"-mapping 將安裝光碟中的 <path>/dev</path> 檔案系統映射到 chroot 內的
+<path>/dev</path>
+</p>
+
+<pre caption="Bind-mounting /dev 檔案系統">
+# <i>exit </i> # 這會離開 chroot 環境
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>/usr/sbin/env-update &amp;&amp; source /etc/profile </i>
+</pre>
+
+<p>
+要設定 yaboot，您可以使用包含在內的 <c>yabootconfig</c> 然後自動設定 
+yaboot。如果您是在 G5 上安裝 Gentoo（<c>yabootconfig</c> 常常無法正確設定），或
+你打算用 firewire 或 USB 開機，您需要手動設定設定檔。
+直接設定。
+</p>
+
+<note>
+如果你使用 genkernel 的話，可能需要去編輯 yaboot.conf 檔案。就算用 yabootconfig
+設定，yaboot.conf 核心部份要改成下面這樣：
+</note>
+  	 
+<pre caption="在 yaboot.conf 之中加入開機參數">
+<comment>#################
+## 如果你有多於一個核心或是不同的開機參數。你可以直接複製這個部份 -
+## 用你的核心版本取代 kernel-2.6.12
+#################</comment>
+image=/boot/kernel-2.6.12
+label=Linux
+root=/dev/ram0    <comment># 如果用 genkernel 的話這設成 /dev/ram0</comment>
+partition=3
+append="real_root=/dev/hda3 init=/linuxrc"
+<comment>
+# 你可以在這裡加入額外的參數，像是 USB/Firewire 開機用的 rootdelay=10
+</comment>
+read-only
+<comment>##########################################################</comment>
+</pre>
+
+<ul>
+  <li><uri link="#yabootconfig">預設：使用 yabootconfig</uri></li>
+  <li>
+    <uri link="#manual_yaboot">其他選擇：手動 yaboot 設定</uri>
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection id="yabootconfig">
+<title>預設：使用 yabootconfig</title>
+<body>
+
+<p>
+<c>yabootconfig</c> 將會自動偵測您的系統上的分割區然後設定 Linux, Mac OS 和 
+Mac OS X 3的組合。
+</p>
+
+<p>
+要使用 <c>yabootconfig</c>，您的磁碟一定要有一個 Apple_Bootstrap 的分割區。
+<path>/etc/fstab</path> 一定要依照您的 Linux 分割區設定。這兩個步驟一定要在少面
+的步驟完成。要開始前，請確認您有最新版本的 yaboot。
+</p>
+
+<pre caption = "安裝 GRP yaboot">
+# <i>emerge --usepkg --update yaboot</i>
+</pre>
+
+<p>
+現在離開 chroot 執行 <c>yabootconfig  --chroot /mnt/gentoo</c>。這個程式將會確認
+bootstrap 分割區。如果正確，輸入 <c>Y</c>。如果錯誤，請檢查您的
+<path>/etc/fstab</path>。yabootconfig 將會掃描您的系統設定然後建立
+<path>/etc/yaboot.conf</path>，然後自動執行 <c>mkofboot</c>。<c>mkofboot</c> 格
+式化您的 Apple_Bootstrap 分割區，然後將 yaboot 設定檔安裝到裡面。接下來再進入
+chroot：
+</p>
+
+<pre caption="進入 chroot">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>/usr/sbin/env-update &amp;&amp; source /etc/profile</i>
+</pre>
+
+<p>
+您應該要確定 <path>/etc/yaboot.conf</path> 的內容。如果您更改 
+<path>/etc/yaboot.conf</path> 的設定（像是更改預設開機），完成時確定要執行
+<c>ybin -v</c> 套用相關更變到 Apple_Bootstrap 分割區上。
+</p>
+
+<p>
+接下來請到 <uri link="#reboot">重開機系統</uri>。
+</p>
+
+</body>
+</subsection>
+<subsection id="manual_yaboot">
+<title>其他選擇：手動設定 yaboot</title>
+<body>
+
+<p>
+請先確認您有最新版本的 <c>yaboot</c>：
+</p>
+
+<pre caption = "安裝 yaboot">
+# <i>emerge --usepkg --update yaboot</i>
+</pre>
+
+<p>
+以下您將可以看到完整的 <path>yaboot.conf</path> 檔案。但你需要修改他符合你的需
+要。G5 以及用 firewire/USB 開機的使用者應該要注意您們的 Serial ATA 磁碟，因為這
+將會被 Linux 核心判斷成 SCSI 磁碟（所以將 <path>/dev/hda</path> 換成
+<path>/dev/sda</path>）。
+</p>
+
+<pre caption = "/etc/yaboot.conf">
+<comment>## /etc/yaboot.conf
+##
+## run: "man yaboot.conf" for details. Do not make changes until you have!!
+## see also: /usr/share/doc/yaboot/examples for example configurations.
+##
+## For a dual-boot menu, add one or more of:
+## bsd=/dev/hdaX, macos=/dev/hdaY, macosx=/dev/hdaZ
+
+## our bootstrap partition:</comment>
+
+boot=/dev/hda2
+
+<comment>## ofboot is the openfirmware way to specify the bootstrap partition.
+## If this isn't defined, yaboot fails on the G5 and some G4s (unless you pass the necessary
+## arguments to the mkofboot/ybin program).
+## hd:X means /dev/sdaX (or /dev/hdaX).
+## 
+## G5 users should uncomment this line!!
+
+#ofboot=hd:2
+
+## Users booting from firewire should use something like this line:
+# ofboot=fw/node/sbp-2/disk@0:
+  	 
+## Users booting from USB should use something like this line:
+# ofboot=usb/disk@0:
+  	 
+## hd: is shorthand for the first hard drive OpenFirmware sees</comment>
+device=hd:
+
+<comment>## Firewire and USB users will need to specify the whole OF device name
+## This can be found using ofpath, which is included with yaboot.
+  	 
+# device=fw/node@0001d200e00d0207/sbp-2@c000/disk@0:
+</comment>
+
+delay=5
+defaultos=macosx
+timeout=30
+install=/usr/lib/yaboot/yaboot
+magicboot=/usr/lib/yaboot/ofboot
+
+<comment>#################
+## This section can be duplicated if you have more than one kernel or set of
+## boot options - replace 2.6.9 with your kernel-version
+#################</comment>
+image=/boot/kernel-2.6.9
+  label=Linux
+  root=/dev/hda3
+  <comment>#  append="rootdelay=10"  # Required for booting USB/Firewire</comment>
+  read-only
+<comment>##################
+
+## G5 users should set 
+##   macos=hd:13
+##   macosx=hd:12
+## instead of the example values.</comment>
+macos=/dev/hda13
+macosx=/dev/hda12
+enablecdboot
+enableofboot
+</pre>
+
+<p>
+當您完成 <path>yaboot.conf</path> 的設定時，執行 <c>mkofboot -v</c> 來格式化
+Apple_bootstrap 分割區，並安裝設定。如果你在 Apple_bootstrap 分割區建立好後改變
+yaboot.conf 的設定，你可以執行 <c>ybin -v</c> 更新設定。
+</p>
+
+<p>
+關於更多相關 yaboot 的資料，請參考 <uri 
+link="http://penguinppc.org/bootloaders/yaboot">yaboot 計畫</uri>。
+接下來請到 <uri link="#reboot">重開機系統</uri>。
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="bootx">
+<title>其他選擇：BootX</title>
+<body>
+
+<impo>
+BootX 只適用於 OldWorld Apple 系統架構！
+</impo>
+
+<p>
+因為 BootX 從 MacOS 之內啟動 Linux，核心需要從 Linux 的分割區複製到 MacOS 的分
+割區。首先，在 chroot 之外掛載 MacOS 分割區。使用 <c>mac-fdisk -l</c> 找出 MacOS
+分割區的編號，這裡用 sda6 做範例。在分割區掛載以後，我們把核心複製到系統資料夾讓
+BootX 可以找到。
+</p>
+
+<pre caption="複製核心到 MacOS 分割區">
+# <i>exit</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux Kernels"</i>
+</pre>
+
+<p>
+如果你使用 genkernel 的話，kernel 和 initrd 都需要複製到 MacOS 分割區。
+</p>
+
+<pre caption="複製 Genkernel 產生的核心及 initrd 到 MacOS 分割區">
+# <i>exit</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/kernel-* "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/initramfs-* "/mnt/mac/System Folder"</i>
+</pre>
+  	 
+<p>
+現在核心已經複製好了，我們需要重新開機設定 BootX。
+</p>
+  	 
+<pre caption="卸載所有分割區然後重開機">
+cdimage ~# <i>cd /</i>
+cdimage ~# <i>umount /mnt/gentoo/proc /mnt/gentoo/dev /mnt/gentoo /mnt/mac</i>
+cdimage ~# <i>reboot</i>
+</pre>
+  	 
+<p>
+當然，不要忘了移除可開機媒體，我們需要用 MacOS 開機。
+</p>
+  	 
+<p>
+現在你的電腦在 MacOS，開啟 BootX 控制台。如果你不是使用 genkernel，選擇
+<c>Options</c> 然後取消 <c>Used specified RAM disk</c>。如果你是用 genkernel，
+確定你是選 genkernel 的 initrd 而不是安裝光碟上的 initrd。當你回到 BootX 主視窗後
+，你可以看到一個選項指定根磁碟機及分割區，填入適當的設定。根據你的核心設定，你或
+許要加上一些額外的核心參數。
+</p>
+  	 
+<p>
+BootX 可以設定開機時啟動 Linux，如果你選擇這樣做的話，電腦會開機到
+MacOS ，然後在啟動時，BootX 會載入並啟動 Linux。參閱
+<uri link="http://penguinppc.org/bootloaders/bootx/">BootX 首頁</uri> 取得更多資訊。
+</p>
+  	 
+<p>
+現在重開機後進入 Linux，接著繼續 <uri
+link="?part=1&amp;chap=11">最終化 Gentoo 安裝</uri>
+</p>
+  	 
+</body>
+</section>
+
+<section id="quik">
+<title>另一選擇：quik</title>
+<body>
+
+
+<p>
+quik 允許 OldWorld Macs 不透過 MacOS 開機。但是他並沒有完整的支援。如果可以選擇
+的話，建議你使用 BootX，因為他比較穩定，而且比 quik 容易設定。
+</p>
+  	 
+<p>
+第一步先安裝他：
+</p>
+  	 
+<pre caption="Emerge quik">
+# <i>emerge quik</i>
+</pre>
+  	 
+<p>
+接著要做一些設定，編輯 /etc/quik.conf 並且把 image 設成我們之前複製到開機分割區
+的核心。
+</p>
+  	 
+<pre caption="Configuring quik.conf">
+# Example of quik.conf
+init-message = "Gentoo 2005.1\n"
+partition = 2           <comment># This is the boot partition</comment>
+root = /dev/hda4
+timeout = 30
+default = gentoo
+image = /vmlinux-2.6.12
+label = gentoo
+</pre>
+  	 
+<p>
+quik.conf 檔案<e>一定要</e>和 quik 開機映像檔在同一個磁碟，不過可以在不同的分割區，
+雖然如此，建議你把他移到開機分割區中。
+</p>
+  	 
+<pre caption="將 quik.conf 移到 /boot">
+# <i>mv /etc/quik.conf /boot/quik.conf</i>
+</pre>
+  	 
+<p>
+現在要設定一些開機變數讓 quik 在開機時載入。我們用一個叫作 <c>nvsetenv</c> 的程
+式來做設定。你要設定的變數會因為不同的機器有所差異，建議你在開始前找到你機器的
+<uri link="http://penguinppc.org/bootloaders/quik/quirks.php">quirks</uri>。
+</p>
+  	 
+<pre caption="設定開機變數">
+# <i>nvsetenv auto-boot true</i> <comment># Set to false if you want to boot into OF, not all models can display the OF output</comment>
+# <i>nvsetenv output-device video</i> <comment># Check the quirks page, there are many variations here</comment>
+# <i>nvsetenv input-device kbd</i>
+# <i>nvsetenv boot-device scsi/sd@1:0</i> <comment># For SCSI</comment>
+# <i>nvsetenv boot-device ata/ata-disk@0:0</i> <comment># For ATA</comment>
+# <i>nvsetenv boot-file /boot/vmlinux-2.6.12 root=/dev/hda4</i> <comment>First item is the path to the kernel, the second is the root partition.  You may append any kernel options to the end of this line.</comment>
+# <i>nvsetenv boot-command boot</i> <comment># Set this to bye for MacOS and boot for Linux</comment>
+</pre>
+  	 
+<note>
+你也可能可以在 MacOS 改變開機變數。根據你的機種，可以用
+<uri link="http://penguinppc.org/bootloaders/quik/BootVars.sit.hqx">
+bootvars</uri>或
+<uri link="ftp://ftp.apple.com/developer/macosxserver/utilities/SystemDisk2.3.1.smi.bin">
+Apple System Disk</uri> 設定。參閱上面的 quik quirks 取得更多資訊。
+</note>
+  	 
+<p>
+現在開機相關的設定都做好了，你需要確定開機映像檔有正確安裝。執行
+<c>quik -v -C /boot/quik.conf</c>。他應該會告訴你他已經安裝在
+first stage QUIK boot block。
+</p>
+  	 
+<note>
+如果有地方出問題了，你可以在開機前按著 <c>command + option + p + r</c> 讓 PRAM
+回到預設值。他會清除掉 nvsetenv 做的設定，並且讓你可以從 MacOS 或 Linux 開機片
+開機。
+</note>
+  	 
+<p>
+接著繼續 <uri link="#reboot">重新開機</uri>。
+</p>
+  	 
+</body>
+</section>
+<section id="bootcreator">
+<title>其他選擇：BootCreator</title>
+<body>
+
+<impo>
+BootCreator 會用 Forth 為 Pegasos 建立一個 SmartFirmware bootmenu。
+</impo>
+
+<p>
+首先請確定您的系統上有安裝 <c>bootcreator</c>：
+</p>
+
+<pre caption = "安裝 bootcreator">
+# <i>emerge --usepkg --update bootcreator</i>
+</pre>
+
+<p>
+然後將檔案 <path>/etc/bootmenu.example</path> 複製到 <path>/etc/bootmenu</path>
+，並按照您的需求作適當的編輯：
+</p>
+
+<pre caption = "編輯 bootcreator config 檔案">
+# <i>cp /etc/bootmenu.example /etc/bootmenu</i>
+# <i>nano -w /etc/bootmenu</i>
+</pre>
+
+<p>
+下面是一個 <path>/etc/bootmenu</path> 設定範例。
+</p>
+
+<pre caption = "bootcreator config 檔案">
+<comment>#
+# Example description file for bootcreator 1.1
+#</comment>
+
+[VERSION]
+1
+
+[TITLE]
+Boot Menu
+
+[SETTINGS]
+AbortOnKey = false
+Timeout    = 9
+Default    = 1
+
+[SECTION]
+Local HD -> Morphos      (Normal)
+ide:0 boot2.img ramdebug edebugflags="logkprintf"
+
+[SECTION]
+Local HD -> Linux 2.6.12 (Normal)
+ide:0 linux-2.6.12 video=radeonfb:1024x768@70 root=/dev/hda3
+ 
+[SECTION]
+Local HD -> Genkernel (Normal)
+ide:0 kernelz-2.6.12 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
+</pre>
+
+<p>
+最後，<path>bootmenu</path> 必須要傳送給 Forth 然後複製到您的開機分割區，這樣
+SmartFirmware 才可以讀到它。所以您要呼叫 <c>bootcreator</c>：
+</p>
+
+<pre caption = "安裝 bootmenu">
+# <i>bootcreator /etc/bootmenu /boot/menu</i>
+</pre>
+
+<note>
+在您重開機的時候，請記得要檢查 SmartFirmware 的設定中，<path>menu</path> 是預設載入的檔案。
+</note>
+
+<p>
+現在，到 <uri link="#reboot">重開機系統</uri> 繼續安裝程序。
+</p>
+
+
+</body>
+</section>
+<section id="reboot">
+<title>重開機系統</title>
+<subsection>
+<body>
+<p>
+離開 chrooted 的環境然後卸載所有掛載的分割區。接著輸入 <c>reboot</c>。
+</p>
+
+<pre caption="離開 chroot，卸載所有分割區然後重開機">
+# <i>exit</i>
+livecd ~# <i>umount /mnt/gentoo/proc /mnt/gentoo/dev /mnt/gentoo</i>
+livecd ~# <i>reboot</i>
+</pre>
+
+<p>
+重開機之後，接下來請到 <uri link="?part=1&amp;chap=11">完成您的 Gentoo 安裝</uri> 進行最後的步驟。
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>

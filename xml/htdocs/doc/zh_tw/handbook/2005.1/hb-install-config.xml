@@ -1,0 +1,510 @@
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/2005.1/hb-install-config.xml,v 1.1 2006/02/23 03:02:11 ccpz Exp $ -->
+
+<!-- rev 1.5 by ccpz -->
+
+<sections>
+
+<version>5.3</version>
+<date>2005-11-19</date>
+
+<section>
+<title>檔案系統資訊</title>
+<subsection>
+<title>什麼是 fstab？</title>
+<body>
+
+<p>
+在 Linux 中，所有在系統中被使用的分割區要被列在 <path>/etc/fstab</path> 之中。在
+這個檔案之中包含了這些分割區的掛載點(他們在檔案系統中哪裡被存取)，他們如何掛載(
+一些特別的參數)，以及何時掛載(要不要自動掛載，一般使用者可不可以掛載等)。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>建立 /etc/fstab</title>
+<body>
+
+<p>
+<path>/etc/fstab</path> 
+使用特別的語法。每一列包含六個欄位，以空格(一個以上)、tab或兩者同時用來分隔。每
+一個欄位有他自己的定義：
+</p>
+
+<ul>
+<li>
+  第一個欄位設定<b>分割區</b>的位置(裝置的路徑)
+</li>
+<li>
+  第二個欄位設定分割區要在哪個<b>掛載點</b>被掛載
+</li>
+<li>
+  第三個欄位設定分割區的<b>檔案系統</b>
+</li>
+<li>
+  第四個欄位設定 <c>mount</c> 要掛載時所使用的<b>掛載參數</b>。
+  因為不同的檔案系統有不同的參數，您要去查詢 manpage (<c>man mount</c>) 來取得完
+  整的參數列表。這些參數之間以逗號分隔。
+</li>
+<li>
+  第五個欄位被 <c>dump</c> 用來決定這個分割區需不需要被傾印。一般而言您可以設成
+  <c>0</c>(零)
+</li>
+<li>
+  第六個欄位讓 <c>fsck</c> 決定當系統不正常的關機時，檔案系統<b>檢查</b>的順序。
+  根目錄要被設成 <c>1</c> 而其他則要設成 <c>2</c>，如果檔案系統不需要被檢查的
+  話，則設成 <c>0</c>。 
+</li>
+</ul>
+
+<p>
+Gentoo 提供的預設 <path>/etc/fstab</path> 檔案 <e>不是一個有效的 fstab 檔</e>
+，接下來啟動 <c>nano</c> (或您慣用的編輯器)來建立<path>/etc/fstab</path>：
+</p>
+
+<pre caption="開啟 /etc/fstab">
+# <i>nano -w /etc/fstab</i>
+</pre>
+
+<p>
+接著來看看我們如何設定 <path>/boot</path> 分割區。這只是一個範例，所以如果您的
+系統不需要 <path>/boot</path> 分割區（如：<b>PPC</b>），不要直接複製它。
+</p>
+
+<p>
+在我們的 x86 分割範例中 <path>/boot</path> 是位於 <path>/dev/hda1</path> 分割區
+中，而且使用 <c>ext2</c> 檔案系統。他不應該在開機時自動掛載 (<c>noauto</c>)，但
+是需要被檢查，所以我們應該記下來：
+</p>
+
+<pre caption="/etc/fstab 中 /boot 設定範例">
+/dev/hda1   /boot     ext2    defaults        1 2
+</pre>
+
+<p>
+如果您不需要自動掛載 <path>/boot</path> 分割區，來增加您的系統安全性，您將需要將
+<c>defaults</c> 更換成 <c>noauto</c>。這代表著您將需要在使用時手動掛載。
+</p>
+
+<p>
+為了增進效能，大部分使用者都會在要掛載的分割區掛載參數中設定 <c>noatime</c>，
+因為這會讓系統不更新上次檔案的存取時間(一般來說您並不需要這個功能)，因此可以加快
+速度：
+</p>
+
+<pre caption=" etc/fstab 中改進過的 /boot 設定範例">
+/dev/hda1   /boot     ext2    default,noatime    1 2
+</pre>
+
+<p>
+接下來，我們繼續完成下面這幾行，包括 <path>/boot</path>，<path>/</path> 還有置換
+區：
+</p>
+
+<pre caption="/etc/fstab 中三行設定">
+/dev/hda1   /boot     ext2    default,noatime    1 2
+/dev/hda2   none      swap    sw                0 0
+/dev/hda3   /         ext3    noatime           0 1
+</pre>
+
+<p>
+最後，您要加入 <path>/proc</path>，<c>tmpfs</c> (必要)，以及CD-ROM。如果您還有其
+他的裝置，也加到檔案中：
+</p>
+
+<pre caption="完整的 /etc/fstab">
+/dev/hda1   /boot     ext2    defaults,noatime     1 2
+/dev/hda2   none      swap    sw                0 0
+/dev/hda3   /         ext3    noatime           0 1
+
+none        /proc     proc    defaults          0 0
+none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+</pre>
+
+<p>
+檔案系統設定 <c>auto</c> 讓 <c>mount</c> 猜測使用哪個檔案系統(建議在可卸除的裝置
+使用，因為他們可能有多種檔案系統)，而 <c>user</c> 參數讓一般使用者也能掛載 CD。
+</p>
+
+<p>
+如果您使用 <b>SPARC</b> 的話,您也要將下面這一行加入 <path>/etc/fstab</path> 中：
+</p>
+
+<pre caption="在 /etc/fstab 加入 openprom 檔案系統">
+none        /proc/openprom  openpromfs    defaults      0 0
+</pre>
+
+<p>
+重新檢查一次 <path>/etc/fstab</path>，儲存離開後進行下面的步驟。
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>網路資訊</title>
+<subsection>
+<title>主機名稱，領域名稱等</title>
+<body>
+
+<p>
+接下來的步驟其中之一就是給您的電腦一個名稱。這步驟相當簡單，但是<e>許多</e>人很
+難找到一個合適的名稱，記得您設定的名字在之後還是可以改變的，這可以讓您快一點完成
+。一般而言，您可以設定電腦名稱為 <c>tux</c> 而領域名稱為 <c>homenetwork</c>。
+</p>
+
+<p>
+我們會使用這些設定來當做範例。首先設定主機名稱：
+</p>
+
+<pre caption="設定主機名稱">
+# <i>nano -w /etc/conf.d/hostname</i>
+  	 
+<comment>(將 HOSTNAME 變數設為你的主機名稱)</comment>
+HOSTNAME="<i>tux</i>"
+</pre>
+
+<p>
+其次設定領域名稱：
+</p>
+
+<pre caption="設定領域名稱">
+# <i>nano -w /etc/conf.d/domainname</i>
+   	 
+<comment>(將 DNSDOMAIN 變數設為你的領域名稱)</comment>
+DNSDOMAIN="<i>homenetwork</i>"
+</pre>
+
+<p>
+如果您有 NIS 領域名稱的話(您不知道這是什麼的話，那您就不用設定它)，您也需要去設
+定它：
+</p>
+
+<pre caption="設定 NIS 領域名稱">
+# <i>nano -w /etc/conf.d/domainname</i>
+  	 
+<comment>(將 NISDOMAIN 變數設為你的領域名稱)</comment>
+NISDOMAIN="<i>my-nisdomain</i>"
+</pre>
+
+<p>
+現在加入 <c>domainname</c> script 到預設的 runlevel 中：
+</p>
+
+<pre caption="將 domainname 加到預設 runlevel">
+# <i>rc-update add domainname default</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>設定網路</title>
+<body>
+
+<p>
+在您覺得 "嗯，我現在已經弄好了" 之前，您要記得在您剛開始安裝 Gentoo 時設定的網路
+只是在安裝過程中使用。現在您要為您的 Gentoo 系統設定網路。
+</p>
+
+<note>
+更詳細的網路資訊，包括進階的主題如頻寬合併，橋接， 802.11Q VLAN 及無線網路等包
+含在 <uri link="?part=4">Gentoo 網路設定</uri> 部份。
+</note>
+
+<p>
+所有的網路設定都集合在 <path>/etc/conf.d/net</path>。如果您不知道如何設定的話，您
+會覺得這些語法相當不熟悉或是不了解，但不用擔心，我們會解釋每件您該需要的訊息 :)
+包含許多不同設定的指令範例可以在 <path>/etc/conf.d/net.example</path> 找到。
+</p>
+
+<p>
+預設是使用 DHCP，他並不需要做任何設定。
+</p>
+
+<p>
+如果你因為要指定 DHCP 選項或是你沒有使用 DHCP 而要設定網路，用你習慣的瀏覽器開
+啟 <path>/etc/conf.d/net</path>(範例中使用 <c>nano</c>)。
+</p>
+
+<pre caption="開啟 /etc/conf.d/net 來編輯">
+# <i>nano -w /etc/conf.d/net</i>
+</pre>
+
+<p>
+你會看到底下這些：
+</p>
+
+<pre caption="預設 /etc/conf.d/net">
+# This blank configuration will automatically use DHCP for any net.*
+# scripts in /etc/init.d.  To create a more complete configuration,
+# please review /etc/conf.d/net.example and save your configuration
+# in /etc/conf.d/net (this file :]!).
+</pre>
+
+<p>
+要自己輸入 IP，子網路遮罩以及閘道器的話，你需要設定
+<c>config_eth0</c> 及 <c>routes_eth0</c>：
+</p>
+
+<pre caption="手動設定 eth0 IP 資訊">
+config_eth0=( "192.168.0.2 netmask 255.255.255.0 brd 192.168.0.255" )
+routes_eth0=( "default gw 192.168.0.1" )
+</pre>
+
+<p>
+要使用 DHCP 並且指定 DHCP 選項，設定 <c>config_eth0</c> 及 <c>dhcp_eth0</c>：
+</p>
+  	 
+<pre caption="自動取得 eth0 的 IP">
+config_eth0=( "dhcp" )
+dhcp_eth0="nodns nontp nonis"
+</pre>
+  	 
+<p>
+請參閱 <path>/etc/conf.d/net.example</path> 中完整的選項列表。
+</p>
+  	 
+<p>
+如果您有數個網路介面，對 <c>iface_eth1</c>，<c>iface_eth2</c> 等變數重複上面的
+步驟。
+</p>
+
+<p>
+現在儲存設定然後離開，繼續下面的步驟。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>開機時自動啟動網路</title>
+<body>
+
+<p>
+讓您的網路介面開機時自動啟動，您要把底下這些加入預設的 runlevel 中。如果您使用
+ PCMCIA 介面則跳過這一步驟，PCMCIA 是由 PCMCIA 啟動 script 來啟動。
+</p>
+
+<pre caption="加入 net.eth0 到預設的 runlevel">
+# <i>rc-update add net.eth0 default</i>
+</pre>
+
+<p>
+如果您有數個網路介面，您要建立對應的 <path>net.eth1</path>，<path>net.eth2</path> 等。
+您可以使用 <c>ln</c> 來完成：
+</p>
+
+<pre caption="建立額外的 initscripts">
+# <i>cd /etc/init.d</i>
+# <i>ln -s net.eth0 net.eth1</i>
+# <i>rc-update add net.eth1 default</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>寫入網路資訊</title>
+<body>
+
+<p>
+您需要告訴 Linux 關於您的網路的資訊。這在 <path>/etc/hosts</path> 中定義幫助您將
+名稱伺服器上查不到的主機名稱反解為 IP。例如您的網路中有三台電腦，分別叫做 
+<c>jenny</c> (192.168.0.5)，<c>benny</c> (192.168.0.6) 和 <c>tux</c> 
+(192.168.0.7 - 這台電腦)，您要開啟 <path>/etc/hosts</path> 然後填入這些設定：
+</p>
+
+<pre caption="開啟 /etc/hosts">
+# <i>nano -w /etc/hosts</i>
+</pre>
+
+<pre caption="填入網路資訊">
+127.0.0.1     localhost
+192.168.0.5   jenny.homenetwork jenny
+192.168.0.6   benny.homenetwork benny
+192.168.0.7   tux.homenetwork tux
+</pre>
+
+<p>
+如果您的電腦是唯一的一部，或是名稱伺服器有全部的反解，底下這一行已經足夠了，例
+如說，你想要你的電腦叫做 <c>tux</c>：
+</p>
+
+<pre caption="適合單一電腦或是有完整反解的電腦的 /etc/hosts">
+127.0.0.1     localhost tux
+</pre>
+
+<p>
+儲存設定然後離開，繼續下面的步驟。
+</p>
+
+<p>
+如果您沒有 PCMCIA，您可以繼續進行 <uri link="#doc_chap3">系統資訊</uri>。
+PCMCIA 使用者繼續下面的主題。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>非必要：讓 PCMCIA 工作</title>
+<body>
+
+<note>
+pcmcia-cs 只可以在 x86, amd64 和 ppc 平台上使用。
+</note>
+
+<p>
+PCMCIA 使用者首先要安裝 <c>pcmcia-cs</c> 套件，包含打算使用 2.6 核心的使用者(雖
+然他們將不會使用套件內的驅動程式)。然後使用 <c>USE="-X"</c> 來避免現階段的
+XFree86 安裝：
+</p>
+
+<pre caption="安裝 pcmcia-cs">
+# <i>USE="-X" emerge pcmcia-cs</i>
+</pre>
+
+<p>
+當 <c>pcmcia-cs</c> 安奘好以後，新增 <c>pcmcia</c> 到<e>預設</e> runlevel：
+</p>
+
+<pre caption="新增 pcmcia 到預設 runlevel">
+# <i>rc-update add pcmcia default</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>系統資訊</title>
+<subsection>
+<title>Root密碼</title>
+<body>
+
+<p>
+我們藉由輸入以下指令來更改Root密碼 
+</p>
+
+<pre caption="設定Root密碼">
+ # <i>passwd</i>
+</pre>
+
+<p>
+如果您希望讓Root能夠從文字介面登入，請增加<c>tts/0</c>到<path>/etc/securetty</path>:
+</p>
+
+<pre caption="增加 tts/0 to /etc/securetty">
+ # <i>echo "tts/0" &gt;&gt; /etc/securetty</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>系統資訊</title>
+<body>
+
+<p>
+Gentoo 使用 <path>/etc/rc.conf</path> 來設定整個系統的一般設定。
+開啟 <path>/etc/rc.conf</path> 然後享受裡面完善的注解 :)
+</p>
+
+<pre caption="開啟 /etc/rc.conf">
+# <i>nano -w /etc/rc.conf</i>
+</pre>
+
+<p>
+當你設定 <path>/etc/rc.conf</path> 好以後，存檔然後離開。
+</p>
+  	 
+<p>
+就如同您所看到的，這個檔案有完善的注解讓您設定必要的參數。你可以設定系統使用
+unicode 及定義預設的編輯器還有顯示管理員(像 kdm 和 gdm)。
+</p>
+
+<p>
+Gentoo 使用 <path>/etc/conf.d/keymaps</path> 來處理鍵盤設定。編輯他設定你的鍵盤。
+</p>
+  	 
+<pre caption="開啟 /etc/conf.d/keymaps">
+# <i>nano -w /etc/conf.d/keymaps</i>
+</pre>
+  	 
+<p>
+特別要注意 
+<c>KEYMAP</c> 變數，如果您設定錯誤的 <c>KEYMAP</c> 當您再用鍵盤輸入時會得到錯誤
+的結果。
+</p>
+
+<note>
+以 USB 為主的 <b>SPARC</b> 系統或相容的系統可能要選擇 i386 keymap (例如 "us") 而不是 
+"sunkeymap"。大部份的 <b>PPC</b> 系統都是用 x86 的設定。想要在開機時可以使用
+ADB keymaps 的使用者需要啟動核心中的 ADB keycode sendings，並且在
+<path>/etc/conf.d/keymaps</path> 中設定 mac/ppc keymap。
+</note>
+
+<p>
+當你設定 <path>/etc/conf.d/keymaps</path> 好以後，存檔然後離開。
+</p>
+  	 
+<p>
+Gentoo 使用 <path>/etc/conf.d/clock</path> 設定系統時鐘，根據你的需求編輯他。
+</p>
+  	 
+<pre caption="開啟 /etc/conf.d/clock">
+# <i>nano -w /etc/conf.d/clock</i>
+</pre>
+  	 
+<p>
+如果你的硬體時鐘是使用 UTC，你需要在檔案中加入 <c>CLOCK="local"</c>，不然你會發
+現時間偏移了。
+</p>
+  	 
+<p>
+當你設定好 <path>/etc/conf.d/clock</path> 後，存檔然後離開。
+</p>
+  	 
+<p>
+如果你不是在 IBM PPC64 系統上安裝 Gentoo，接著繼續
+<uri link="?part=1&amp;chap=9">安裝必需的系統工具</uri>。
+</p>
+</body>
+</subsection>
+
+<subsection>
+<title>設定 Console</title>
+<body>
+  	 
+<note>
+下面這一部分適用 IBM PPC64 硬體平台。
+</note>
+  	 
+<p>
+如果你打算在 IBM PPC64 系統上安裝 Gentoo 並且使用虛擬 Console，你需要取消
+<path>/etc/inittab</path> 中 hvc 那幾行的注解，讓虛擬 Console 可以產生登入提示
+符號。
+</p>
+  	 
+<pre caption="在 /etc/inittab 中啟動 hvc 或 hvsi 支援">
+hvc0:12345:respawn:/sbin/agetty -L 9600 hvc0
+hvsi:12345:respawn:/sbin/agetty -L 19200 hvsi0
+</pre>
+  	 
+<p>
+這時你也要順便檢查 <path>/etc/securetty</path> 中是不是有把合適的 console 列上
+去。
+</p>
+
+<p>
+接著繼續 <uri link="?part=1&amp;chap=9">安裝必需的系統工具</uri>。
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
