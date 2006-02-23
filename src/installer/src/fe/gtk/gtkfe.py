@@ -255,6 +255,10 @@ class Installer:
 			self.exit()
 
 	def finish(self, widget, data=None):
+		# Remove screens
+		while len(self.panels):
+			self.right_pane_box.remove_page(-1)
+			del self.panels[-1]
 		self.make_invisible()
 		self.install_window = RunInstall.RunInstall(self)
 
