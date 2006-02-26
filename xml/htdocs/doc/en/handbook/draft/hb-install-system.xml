@@ -1,0 +1,385 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/draft/Attic/hb-install-system.xml,v 1.24 2006/02/26 17:38:31 josejx Exp $ -->
+
+<sections>
+
+<version>2.16</version>
+<date>2006-02-18</date>
+
+<section>
+<title>Chrooting</title>
+<subsection>
+<title>Optional: Selecting Mirrors</title>
+<body>
+
+<p>
+In order to download source code quickly it is recommended to select a fast
+mirror. Portage will look in your <path>make.conf</path> file for the
+GENTOO_MIRRORS variable and use the mirrors listed therein. You can surf to
+our <uri link="/main/en/mirrors.xml">mirror list</uri> and search
+for a mirror (or mirrors) close to you (as those are most frequently the 
+fastest ones), but we provide a nice tool called <c>mirrorselect</c> which
+provides you with a nice interface to select the mirrors you want.
+</p>
+  
+<pre caption="Using mirrorselect for the GENTOO_MIRRORS variable">
+# <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+</pre>
+
+<warn>
+Do not select any IPv6 mirrors. Our stages currently do not support IPv6.
+</warn>
+
+<p>
+A second important setting is the SYNC setting in <path>make.conf</path>. This
+variable contains the rsync server you want to use when updating your Portage
+tree (the collection of ebuilds, scripts containing all the information Portage
+needs to download and install software). Although you can manually enter a SYNC
+server for yourself, <c>mirrorselect</c> can ease that operation for you:
+</p>
+
+<pre caption="Selecting an rsync mirror using mirrorselect">
+# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+</pre>
+
+<p>
+After running <c>mirrorselect</c> it is adviseable to double-check the settings
+in <path>/mnt/gentoo/etc/make.conf</path> !
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Copy DNS Info</title>
+<body>
+
+<p>
+One thing still remains to be done before we enter the new environment and that
+is copying over the DNS information in <path>/etc/resolv.conf</path>. You need
+to do this to ensure that networking still works even after entering the new
+environment. <path>/etc/resolv.conf</path> contains the nameservers for your
+network.
+</p>
+
+<pre caption="Copy over DNS information">
+<comment>(The "-L" option is needed to make sure we don't copy a symbolic link)</comment>
+# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Mounting the /proc and /dev Filesystems</title>
+<body>
+
+<p>
+Mount the <path>/proc</path> filesystem on <path>/mnt/gentoo/proc</path> to
+allow the installation to use the kernel-provided information within the
+chrooted environment, and then mount-bind the <path>/dev</path> filesystem.
+</p>
+
+<pre caption="Mounting /proc and /dev">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Entering the new Environment</title>
+<body>
+
+<p>
+Now that all partitions are initialized and the base environment
+installed, it is time to enter our new installation environment by
+<e>chrooting</e> into it. This means that we change from the current
+installation environment (Installation CD or other installation medium) to your
+installation system (namely the initialized partitions).
+</p>
+
+<p>
+This chrooting is done in three steps. First we will change the root
+from <path>/</path> (on the installation medium) to <path>/mnt/gentoo</path> 
+(on your partitions) using <c>chroot</c>. Then we will create a new environment
+using <c>env-update</c>, which essentially creates environment variables.
+Finally, we load those variables into memory using <c>source</c>.
+</p>
+
+<pre caption = "Chrooting into the new environment">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+ * Caching service dependencies...
+# <i>source /etc/profile</i>
+# <i>export PS1="(chroot) $PS1"</i>
+</pre>
+
+<p>
+Congratulations! You are now inside your own Gentoo Linux environment.
+Of course it is far from finished, which is why the installation still
+has some sections left :-)
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Configuring Portage</title>
+<subsection>
+<title>Updating the Portage tree</title>
+<body>
+
+<p>
+You should now update your Portage tree to the latest version. <c>emerge 
+--sync</c> does this for you.
+</p>
+
+<pre caption="Updating the Portage tree">
+# <i>emerge --sync</i>
+<comment>(If you're using a slow terminal like some framebuffers or a serial
+console, you can add the --quiet option to speed up this process:)</comment>
+# <i>emerge --sync --quiet</i>
+</pre>
+
+<p>
+If you are behind a firewall that blocks rsync traffic, you can use
+<c>emerge-webrsync</c> which will download and install a portage snapshot for
+you.
+</p>
+
+<p>
+If you are warned that a new Portage version is available and that you should
+update Portage, you should ignore it. Portage will be updated for you later
+on during the installation.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Choosing the Right Profile</title>
+<body>
+
+<p>
+First, a small definition is in place.
+</p>
+
+<p>
+A profile is a building block for any Gentoo system. Not only does it specify
+default values for CHOST, CFLAGS and other important variables, it also locks
+the system to a certain range of package versions. This is all maintained by the
+Gentoo developers.
+</p>
+
+<p>
+Previously, such a profile was barely touched by the user. However, x86, hppa
+and alpha users can choose between two profiles, one for a 2.4 kernel and one
+for a 2.6 kernel. This requirement has been imposed to improve the integration
+of the 2.6 kernels. The ppc and ppc64 architectures have several profiles
+available as well. We will talk about those later.
+</p>
+
+<p>
+You can see what profile you are currently using with the following command:
+</p>
+
+<pre caption="Verifying system profile">
+# <i>ls -FGg /etc/make.profile</i>
+lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2006.0/
+</pre>
+
+<p>
+If you are using one of the aforementioned three architectures, the default
+profile will provide you with a Linux 2.6-based system. This is the recommended
+default, but you have the option of choosing another profile too.
+</p>
+
+<p>
+Some users may wish to install a system based on the older Linux 2.4 profile.
+If you have good reason to do this, then you should first check that an
+additional profile exists. On x86, we can do this with the following command:
+</p>
+
+<pre caption="Finding out if an additional profile exists">
+# <i>ls -d /usr/portage/profiles/default-linux/x86/no-nptl/2.4</i>
+/usr/portage/profiles/default-linux/x86/no-nptl/2.4
+</pre>
+
+<p>
+The above example shows that the additional 2.4 profile exists (i.e. it didn't
+complain about missing file or directory). It is recommended that you stay with
+the default, but if you wish to switch, you can do so with as follows:
+</p>
+
+<pre caption="Switching to a 2.4 profile">
+<comment>(Make sure you use the right architecture, the example below is for x86)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/x86/no-nptl/2.4 /etc/make.profile</i>
+<comment>(List the files in the 2.4 profile)</comment>
+# <i>ls -FGg /etc/make.profile/</i>
+total 12
+-rw-r--r--  1 939 Dec 10 14:06 packages
+-rw-r--r--  1 347 Dec  3  2004 parent
+-rw-r--r--  1 573 Dec  3  2004 virtuals
+</pre>
+
+<p>
+For ppc, there are a number of new profiles provided with 2006.0
+</p>
+
+<pre caption="PPC Profiles">
+<comment>(Generic PPC profile, for all PPC machines)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc32 /etc/make.profile</i>
+<comment>(G3 profile)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc32/G3 /etc/make.profile</i>
+<comment>(G3 Pegasos profile)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc32/G3/Pegasos/ /etc/make.profile</i>
+<comment>(G4 (Altivec) profile)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc32/G4 /etc/make.profile</i>
+<comment>(G4 (Altivec) Pegasos profile)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc32/G4/Pegasos/ /etc/make.profile</i>
+</pre>
+
+<p>
+For ppc64, there are a number of new profiles provided with 2006.0.
+</p>
+
+<pre caption="PPC64 Profiles">
+<comment>(Generic 64bit userland PPC64 profile, for all PPC64 machines)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc64/64bit-userland /etc/make.profile</i>
+<comment>(Generic 32bit userland PPC64 profile, for all PPC64 machines)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc64/32bit-userland /etc/make.profile</i>
+<comment>(Each type of userland has sub profiles as follows, with (userland) replaced with the chosen userland from above)</comment>
+<comment>(970 profile for JS20)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc64/(userland)/970 /etc/make.profile</i>
+<comment>(G5 profile)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc64/(userland)/970/pmac /etc/make.profile</i>
+<comment>(POWER3 profile)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc64/(userland)/power3 /etc/make.profile</i>
+<comment>(POWER4 profile)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc64/(userland)/power4 /etc/make.profile</i>
+<comment>(POWER5 profile)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/2006.0/ppc64/(userland)/power5 /etc/make.profile</i>
+<comment>(The multilib profile is not stable as of this release.)</comment>
+</pre>
+
+</body>
+</subsection>
+<subsection id="configure_USE">
+<title>Configuring the USE variable</title>
+<body>
+
+<p>
+<c>USE</c> is one of the most powerful variables Gentoo provides to its users.
+Several programs can be compiled with or without optional support for certain
+items. For instance, some programs can be compiled with gtk-support, or with
+qt-support. Others can be compiled with or without SSL support. Some programs
+can even be compiled with framebuffer support (svgalib) instead of X11 support
+(X-server).
+</p>
+
+<p>
+Most distributions compile their packages with support for as much as possible,
+increasing the size of the programs and startup time, not to mention an enormous
+amount of dependencies. With Gentoo you can define what options a package 
+should be compiled with. This is where <c>USE</c> comes into play.
+</p>
+
+<p>
+In the <c>USE</c> variable you define keywords which are mapped onto
+compile-options. For instance, <e>ssl</e> will compile ssl-support in the
+programs that support it. <e>-X</e> will remove X-server support (note the minus
+sign in front). <e>gnome gtk -kde -qt</e> will compile your programs with gnome
+(and gtk) support, and not with kde (and qt) support, making your system fully
+tweaked for GNOME.
+</p>
+
+<p>
+The default <c>USE</c> settings are placed in the <path>make.defaults</path> 
+files of your profile. You will find <path>make.defaults</path> files in the
+directory which <path>/etc/make.profile</path> points to and all parent 
+directories as well. The default <c>USE</c> setting is the sum of all <c>USE</c>
+settings in all <path>make.defaults</path> files. What you place in
+<path>/etc/make.conf</path> is calculated against these defaults settings. If
+you add something to the <c>USE</c> setting, it is added to the default list. If
+you remove something from the <c>USE</c> setting (by placing a minus sign in
+front of it) it is removed from the default list (if it was in the default list
+at all). <e>Never</e> alter anything inside the <path>/etc/make.profile</path>
+directory; it gets overwritten when you update Portage!
+</p>
+
+<p>
+A full description on <c>USE</c> can be found in the second part of the Gentoo
+Handbook, <uri link="?part=2&amp;chap=2">USE flags</uri>. A full description on
+the available USE flags can be found on your system in
+<path>/usr/portage/profiles/use.desc</path>. 
+</p>
+
+<pre caption="Viewing available USE flags">
+# <i>less /usr/portage/profiles/use.desc</i>
+<comment>(You can scroll using your arrow keys, exit by pressing 'q')</comment>
+</pre>
+
+<p>
+As an example we show a <c>USE</c> setting for a KDE-based system with DVD, ALSA
+and CD Recording support:
+</p>
+
+<pre caption="Opening /etc/make.conf">
+# <i>nano -w /etc/make.conf</i>
+</pre>
+
+<pre caption="USE setting">
+USE="-gtk -gnome qt kde dvd alsa cdr"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Optional: GLIBC Locales</title>
+<body>
+
+<p>
+You will probably only use one or maybe two locales on your system. Up until now
+after compiling <c>glibc</c> a full set of all available locales will be
+created. As of now you can activate the <c>userlocales</c> USE flag and specify
+only the locales you will need in <path>/etc/locales.build</path>. Only do this
+if you know what locales to choose. 
+</p>
+
+<pre caption="Activate the userlocales USE flag especially for glibc">
+# <i>mkdir -p /etc/portage</i>
+# <i>echo "sys-libs/glibc userlocales" >> /etc/portage/package.use</i>
+</pre>
+
+<p>
+Now specify the locales you want to be able to use:
+</p>
+
+<pre caption="Opening /etc/locales.build">
+# <i>nano -w /etc/locales.build</i>
+</pre>
+
+<p>
+The following locales are an example to get both English (United States) and
+German (Germany) with the accompanying character formats (like UTF-8).
+</p>
+
+<pre caption="Specify your locales">
+en_US/ISO-8859-1
+en_US.UTF-8/UTF-8
+de_DE/ISO-8859-1
+de_DE@euro/ISO-8859-15
+</pre>
+
+<p>
+Now continue with <uri link="?part=1&amp;chap=7">Configuring the Kernel</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
