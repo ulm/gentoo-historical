@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2006.0/hb-install-ppc-bootloader.xml,v 1.1 2006/02/27 00:11:36 fox2mike Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2006.0/hb-install-ppc-bootloader.xml,v 1.2 2006/02/27 00:37:17 fox2mike Exp $ -->
 
 <sections>
 
-<version>5.3</version>
-<date>2006-01-19</date>
+<version>6.0</version>
+<date>2006-02-27</date>
 
 <section>
 <title>Choosing a Bootloader</title>
@@ -45,14 +45,19 @@ yaboot can only be used on NewWorld Apple and IBM systems!
 </impo>
 
 <p>
-In order to find the boot devices, yaboot needs access to the <path>/dev</path>
-filesystem.  To do this, you will need to "bind-map" the <path>/dev</path> 
-filesystem from the Installation CD to <path>/dev</path> inside of the chroot.
+In order to find the boot devices, yaboot needs access to the device nodes
+created by udev on startup and the sysfs filesystem.  These two filesystems
+are found at <path>/dev</path> and <path>sys</path> respectively.  To do this,
+you will need to "bind mount" these filesystems from the Installation CD's root
+to the <path>/dev</path> and <path>/sys</path> mount points inside the chroot.
+If you have already bind mounted these filesystems, there is no need to do it
+again.
 </p>
 
-<pre caption="Bind-mounting the /dev-filesystem">
+<pre caption="Bind-mounting the device and sysfs filesystems">
 # <i>exit </i> # this will exit the chroot
 # <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount -o bind /sys /mnt/gentoo/sys</i>
 # <i>chroot /mnt/gentoo /bin/bash</i>
 # <i>/usr/sbin/env-update &amp;&amp; source /etc/profile </i>
 </pre>
@@ -73,10 +78,10 @@ modified as follows:
 <pre caption="Adding genkernel boot arguments to yaboot.conf">
 <comment>###########################################################
 ## This section can be duplicated if you have more than one
-## kernel or set of boot options - replace kernel-2.6.12
+## kernel or set of boot options - replace kernel-2.6.15
 ## with the exact filename of your kernel.
 ###########################################################</comment>
-image=/boot/kernel-2.6.12
+image=/boot/kernel-2.6.15
   label=Linux
   root=/dev/ram0    <comment># If using genkernel this is /dev/ram0</comment>
   partition=3
@@ -107,25 +112,28 @@ set up dual and triple boot combinations with Linux, Mac OS, and Mac OS X.
 
 <p>
 To use <c>yabootconfig</c>, your drive must have an Apple_Bootstrap partition,
-and <path>/etc/fstab</path> must be configured with your Linux partitions. Both
-of these should have been done already in the steps above. To start, ensure that
-you have the latest <c>yaboot</c> installed.
+and <path>/etc/fstab</path> must be configured to reflect your Linux 
+partitions. These steps should have already been completed before, but check
+<path>/etc/fstab</path> before proceeding.  Now, ensure that you have 
+<c>yaboot</c> installed.
 </p>
 
 <pre caption = "Installing yaboot with GRP">
-# <i>emerge --usepkg --update yaboot</i>
+# <i>emerge --usepkg yaboot</i>
 </pre>
 
 <p>
-Now exit the chroot and run <c>yabootconfig --chroot /mnt/gentoo</c>. The
-program will run and it will confirm the location of the bootstrap partition.
-Type <c>Y</c> if it is correct. If not, double check <path>/etc/fstab</path>.
-yabootconfig will then scan your system setup, create
-<path>/etc/yaboot.conf</path> and run <c>mkofboot</c> for you. <c>mkofboot</c>
-is used to format the Apple_Bootstrap partition, and install the yaboot
-configuration file into it.  After this enter the chroot again.
+Now exit the chroot and run <c>yabootconfig --chroot /mnt/gentoo</c>. First,
+the program will confirm the location of the bootstrap partition.  If you are
+using the suggested disk partitioning scheme, your bootstrap partition should
+be /dev/hda2. Type <c>Y</c> if the output is correct. If not, double check your
+<path>/etc/fstab</path>. <c>yabootconfig</c> will then scan your system setup, 
+create <path>/etc/yaboot.conf</path> and run <c>mkofboot</c> for you. 
+<c>mkofboot</c> is used to format the Apple_Bootstrap partition, and install 
+the yaboot configuration file into it.  After this enter the chroot again.
 </p>
-<pre caption="enter chroot">
+
+<pre caption="Re-enter the chroot">
 # <i>chroot /mnt/gentoo /bin/bash</i>
 # <i>/usr/sbin/env-update &amp;&amp; source /etc/profile</i>
 </pre>
@@ -148,12 +156,11 @@ Now continue with <uri link="#reboot">Rebooting the System</uri>.
 <body>
 
 <p>
-First make sure you have the latest <c>yaboot</c> installed on your
-system:
+First make sure you have <c>yaboot</c> installed on your system:
 </p>
 
-<pre caption = "Installing yaboot">
-# <i>emerge --usepkg --update yaboot</i>
+<pre caption = "Installing yaboot with GRP">
+# <i>emerge --usepkg yaboot</i>
 </pre>
 
 <p>
@@ -313,6 +320,12 @@ Linux. See the <uri link="http://penguinppc.org/bootloaders/bootx/">BootX home
 page</uri> for more information.
 </p>
 
+<impo>
+Make sure that you have support for HFS and HFS+ filesystems in your kernel,
+otherwise you will not be able to upgrade or change the kernel on your MacOS 
+partition.
+</impo>
+
 <p>
 Now reboot again and boot into Linux, then continue with <uri
 link="?part=1&amp;chap=11">Finalizing your Gentoo Installation</uri>.
@@ -346,12 +359,12 @@ kernel that we copied to your boot partition.
 
 <pre caption="Configuring quik.conf">
 # Example of quik.conf
-init-message = "Gentoo 2005.1\n"
+init-message = "Gentoo 2006.0\n"
 partition = 2		<comment># This is the boot partition</comment>
 root = /dev/hda4
 timeout = 30
 default = gentoo
-image = /vmlinux-2.6.12
+image = /vmlinux-2.6.15
 	label = gentoo
 </pre>
 
@@ -379,7 +392,7 @@ before attempting this.
 # <i>nvsetenv input-device kbd</i>
 # <i>nvsetenv boot-device scsi/sd@1:0</i> <comment># For SCSI</comment>
 # <i>nvsetenv boot-device ata/ata-disk@0:0</i> <comment># For ATA</comment>
-# <i>nvsetenv boot-file /boot/vmlinux-2.6.12 root=/dev/hda4</i> <comment>First item is the path to the kernel, the second is the root partition.  You may append any kernel options to the end of this line.</comment>
+# <i>nvsetenv boot-file /boot/vmlinux-2.6.15 root=/dev/hda4</i> <comment>First item is the path to the kernel, the second is the root partition.  You may append any kernel options to the end of this line.</comment>
 # <i>nvsetenv boot-command boot</i> <comment># Set this to bye for MacOS and boot for Linux</comment>
 </pre>
 
@@ -422,12 +435,11 @@ Pegasos.
 </impo>
 
 <p>
-First make sure you have the latest <c>bootcreator</c> installed on your
-system:
+First make sure you have <c>bootcreator</c> installed on your system:
 </p>
 
 <pre caption = "Installing bootcreator">
-# <i>emerge --usepkg --update bootcreator</i>
+# <i>emerge --usepkg bootcreator</i>
 </pre>
 
 <p>
@@ -466,12 +478,12 @@ Local HD -> Morphos      (Normal)
 ide:0 boot2.img ramdebug edebugflags="logkprintf"
 
 [SECTION]
-Local HD -> Linux 2.6.12 (Normal)
-ide:0 linux-2.6.12 video=radeonfb:1024x768@70 root=/dev/hda3
+Local HD -> Linux 2.6.15 (Normal)
+ide:0 linux-2.6.15 video=radeonfb:1024x768@70 root=/dev/hda3
 
 [SECTION]
 Local HD -> Genkernel (Normal)
-ide:0 kernelz-2.6.12 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
+ide:0 kernelz-2.6.15 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
 </pre>
 
 <p>
@@ -493,7 +505,6 @@ Be sure to have a look into the SmartFirmware's settings when you reboot, that
 For now, continue the installation with <uri link="#reboot">Rebooting the
 System</uri>.
 </p>
-
 
 </body>
 </section>
