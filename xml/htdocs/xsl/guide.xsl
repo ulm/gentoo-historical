@@ -342,7 +342,7 @@
                     <br/>
                     <a class="altlink" href="http://forums.gentoo.org">Discussion Forums</a>
                     <br/>
-                    <a class="altlink" href="http://tracker.netdomination.org/">Gentoo BitTorrents</a>
+                    <a class="altlink" href="http://torrents.gentoo.org/">Gentoo BitTorrents</a>
                     <br/>
                     <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
                     <br/>
