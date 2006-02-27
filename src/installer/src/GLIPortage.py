@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.47 2006/02/20 18:15:17 agaffney Exp $
+$Id: GLIPortage.py,v 1.48 2006/02/27 20:35:34 agaffney Exp $
 """
 
 import re
@@ -98,12 +98,12 @@ class GLIPortage(object):
 
 		# Copy the vdb entry for the package from the LiveCD to the chroot
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying vdb entry for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir -p " + self._chroot_dir + "/var/db/pkg/" + package + " && cp -a /var/db/pkg/" + package + "/* " + self._chroot_dir + "/var/db/pkg/" + package)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir -p " + self._chroot_dir + "/var/db/pkg/" + package + " && cp -a /var/db/pkg/" + package + "/* " + self._chroot_dir + "/var/db/pkg/" + package, logfile=self._compile_logfile, append_log=True)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy vdb entry for " + package)
 
 		# Create the image dir in the chroot
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'mkdir -p " + self._chroot_dir + image_dir + "'")
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir -p " + self._chroot_dir + image_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir -p " + self._chroot_dir + image_dir, logfile=self._compile_logfile, append_log=True)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not create image dir for " + package)
 
 		# Create list of files for tar to work with from CONTENTS file in vdb entry
@@ -127,7 +127,7 @@ class GLIPortage(object):
 
 			# Use tar to transfer files into IMAGE directory
 			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running 'tar -cp --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -xp'")
-			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -cp --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -xp")):
+			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -cp --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -xp", logfile=self._compile_logfile, append_log=True)):
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute tar for " + package)
 
 #			# More symlink crappiness hacks
@@ -141,12 +141,12 @@ class GLIPortage(object):
 
 		# Run pkg_setup
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running pkg_setup for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + portage_tmpdir + " ebuild " + vdb_dir + package + "/*.ebuild setup", chroot=tmp_chroot_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + portage_tmpdir + " ebuild " + vdb_dir + package + "/*.ebuild setup", chroot=tmp_chroot_dir, logfile=self._compile_logfile, append_log=True)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute pkg_setup for " + package)
 
 		# Run pkg_preinst
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running preinst for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + portage_tmpdir + " ebuild " + vdb_dir + package + "/*.ebuild preinst", chroot=tmp_chroot_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + portage_tmpdir + " ebuild " + vdb_dir + package + "/*.ebuild preinst", chroot=tmp_chroot_dir, logfile=self._compile_logfile, append_log=True)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute preinst for " + package)
 
 		# Copy files from image_dir to chroot
@@ -155,23 +155,23 @@ class GLIPortage(object):
 		else:
 			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying files from " + image_dir + " to / for " + package)
 #			if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a " + self._chroot_dir + image_dir + "/* " + self._chroot_dir)):
-			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -C " + self._chroot_dir + image_dir + "/ -c . | tar -C " + self._chroot_dir + "/ -x")):
+			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -C " + self._chroot_dir + image_dir + "/ -c . | tar -C " + self._chroot_dir + "/ -x", logfile=self._compile_logfile, append_log=True)):
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy files from " + image_dir + " to / for " + package)
 
 		# Run pkg_postinst
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running postinst for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + portage_tmpdir + " ebuild " + vdb_dir + package + "/*.ebuild postinst", chroot=tmp_chroot_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("env " + root_cmd + " PORTAGE_TMPDIR=" + portage_tmpdir + " ebuild " + vdb_dir + package + "/*.ebuild postinst", chroot=tmp_chroot_dir, logfile=self._compile_logfile, append_log=True)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute postinst for " + package)
 
 		# Remove image_dir
 		if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): removing " + image_dir + " for " + package)
-		if not GLIUtility.exitsuccess(GLIUtility.spawn("rm -rf " + self._chroot_dir + image_dir)):
+		if not GLIUtility.exitsuccess(GLIUtility.spawn("rm -rf " + self._chroot_dir + image_dir, logfile=self._compile_logfile, append_log=True)):
 			raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not remove + " + image_dir + " for " + package)
 
 		# Run env-update
 		if not use_root:
 			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running env-update inside chroot")
-			if not GLIUtility.exitsuccess(GLIUtility.spawn("env-update", chroot=self._chroot_dir)):
+			if not GLIUtility.exitsuccess(GLIUtility.spawn("env-update", chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)):
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not run env-update for " + package)
 
 	def add_pkg_to_world(self, package):
