@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.101 2006/02/13 00:24:49 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.102 2006/02/28 19:47:47 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -118,8 +118,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				parted_disk = parted.PedDisk.new(parted_dev)
 			except:
 				parted_disk = parted_dev.disk_new_fresh(parted.disk_type_get((tmp_parts_new[device].get_disklabel() or GLIStorageDevice.archinfo[self._architecture_name]['disklabel'])))
-			new_part_list = parts_new[device].keys()
-			new_part_list.sort()
+#			new_part_list = parts_new[device].keys()
+#			new_part_list.sort()
+			new_part_list = parts_new[device].get_ordered_partition_list()
 			device_sectors = parted_dev.length
 
 			# Iterate through new partitions and check for 'origminor' and 'format' == False
@@ -304,6 +305,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					start = newpart['start']
 				else:
 					self._logger.log("    Start sector calculated to be " + str(start))
+				if (newpart['minor'] < 5 or not GLIStorageDevice.archinfo['x86']['extended']) and start < extended_end:
+					self._logger.log("    Start sector for primary is less than the end sector for previous extended")
+					start = extended_end + 1
 				if newpart['end']:
 					self._logger.log("    Old end sector " + str(newpart['end']) + " retrieved")
 					end = newpart['end']
