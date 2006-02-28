@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.84 2006/02/10 02:01:58 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.85 2006/02/28 13:04:00 agaffney Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -591,7 +591,8 @@ class InstallProfile:
 				"mplayer": "Media Player for Linux",
 				"openoffice": "OpenOffice.org, a full office productivity suite.",
 				"openoffice-bin": "Same as OpenOffice but a binary package (no compiling!)",
-				"realplayer": "Real Media Player",
+# Removed because fetch-restriction would cause install to fail
+#				"realplayer": "Real Media Player",
 				"rhythmbox": "Music management and playback software for GNOME",
 				"vlc": "VLC media player - Video player and streamer",
 				"xchat": "Graphical IRC Client",
