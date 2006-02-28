@@ -418,7 +418,9 @@ and will not leave you with a bootable system.
 
 	def deactivate(self):
 		self.controller.client_profile.set_network_interface(None, self.interface_combo.get_child().get_text(), None)
-		if not self.already_setup_check.get_active():
+		if self.already_setup_check.get_active():
+			self.controller.client_profile.set_network_type(None, "none", None)
+		else:
 			if self.basic_dhcp_radio.get_active():
 				self.controller.client_profile.set_network_type(None, "dhcp", None)
 				self.controller.client_profile.set_network_dhcp_options(None, self.dhcp_options_entry.get_text(), None)
