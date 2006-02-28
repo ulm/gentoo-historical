@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-ppc-bootloader.xml,v 1.11 2006/01/27 13:23:29 ccpz Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-ppc-bootloader.xml,v 1.12 2006/02/28 12:34:54 ccpz Exp $ -->
 
-<!-- rev 1.32 by ccpz -->
+<!-- rev 1.33 by ccpz -->
 
 <sections>
 
-<version>2.8</version>
-<date>2006-01-19</date>
+<version>2.9</version>
+<date>2006-02-27</date>
 
 <section>
 <title>選擇開機程式</title>
@@ -45,14 +45,16 @@ yaboot 只適用於 NewWorld 的 PPC 和 IBM 的機器！
 </impo>
 
 <p>
-為了讓 yaboot 可以尋找開機裝置，他需要讀取 <path>/dev</path> 檔案系統。這可以用
-"bind"-mapping 將安裝光碟中的 <path>/dev</path> 檔案系統映射到 chroot 內的
-<path>/dev</path>
+為了讓 yaboot 可以尋找開機裝置，他需要讀取 udev 建立的裝置結點，以及 sysfs 檔案
+系統。這兩種檔案系統分別在 <path>/dev</path>。這可以用 "bind mount" 將安裝光碟
+中的 <path>/dev</path> 和 <path>/sys</path> 檔案系統映射到 chroot 內。如果你已
+經掛載，那你就不需要去做了。
 </p>
 
-<pre caption="Bind-mounting /dev 檔案系統">
+<pre caption="Bind-mounting 裝置和 sysfs 檔案系統">
 # <i>exit </i> # 這會離開 chroot 環境
 # <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount -o bind /sys /mnt/gentoo/sys</i>
 # <i>chroot /mnt/gentoo /bin/bash</i>
 # <i>/usr/sbin/env-update &amp;&amp; source /etc/profile </i>
 </pre>
@@ -72,9 +74,9 @@ yaboot。如果您是在 G5 上安裝 Gentoo（<c>yabootconfig</c> 常常無法�
 <pre caption="在 yaboot.conf 之中加入開機參數">
 <comment>#################
 ## 如果你有多於一個核心或是不同的開機參數。你可以直接複製這個部份 -
-## 用你的核心版本取代 kernel-2.6.12
+## kernel or set of boot options - replace kernel-2.6.15
 #################</comment>
-image=/boot/kernel-2.6.12
+image=/boot/kernel-2.6.15
 label=Linux
 root=/dev/ram0    <comment># 如果用 genkernel 的話這設成 /dev/ram0</comment>
 partition=3
@@ -107,20 +109,21 @@ Mac OS X 3的組合。
 <p>
 要使用 <c>yabootconfig</c>，您的磁碟一定要有一個 Apple_Bootstrap 的分割區。
 <path>/etc/fstab</path> 一定要依照您的 Linux 分割區設定。這兩個步驟一定要在少面
-的步驟完成。要開始前，請確認您有最新版本的 yaboot。
+的步驟完成。先確認 <path>/etc/fstab</path> 有沒有正確設定。要開始前，請確認您有
+最新版本的 yaboot。
 </p>
 
-<pre caption = "安裝 GRP yaboot">
-# <i>emerge --usepkg --update yaboot</i>
+<pre caption = "安裝 yaboot">
+# <i>emerge yaboot</i>
 </pre>
 
 <p>
-現在離開 chroot 執行 <c>yabootconfig  --chroot /mnt/gentoo</c>。這個程式將會確認
-bootstrap 分割區。如果正確，輸入 <c>Y</c>。如果錯誤，請檢查您的
-<path>/etc/fstab</path>。yabootconfig 將會掃描您的系統設定然後建立
-<path>/etc/yaboot.conf</path>，然後自動執行 <c>mkofboot</c>。<c>mkofboot</c> 格
-式化您的 Apple_Bootstrap 分割區，然後將 yaboot 設定檔安裝到裡面。接下來再進入
-chroot：
+現在離開 chroot 執行 <c>yabootconfig  --chroot /mnt/gentoo</c>。首先，這個程式
+將會確認 bootstrap 分割區。如果你用我們建議的分割方式，他會在 /dev/hda2。如果正
+確，輸入 <c>Y</c>。如果錯誤，請檢查您的 <path>/etc/fstab</path>。yabootconfig
+將會掃描您的系統設定然後建立 <path>/etc/yaboot.conf</path>，然後自動執行
+<c>mkofboot</c>。<c>mkofboot</c> 格式化您的 Apple_Bootstrap 分割區，接下來將
+yaboot 設定檔安裝到裡面。接下來再進入 chroot：
 </p>
 
 <pre caption="再進入 chroot">
@@ -145,11 +148,11 @@ chroot：
 <body>
 
 <p>
-請先確認您有最新版本的 <c>yaboot</c>：
+請先確認您有安裝 <c>yaboot</c>：
 </p>
 
-<pre caption = "安裝 yaboot">
-# <i>emerge --usepkg --update yaboot</i>
+<pre caption="安裝 yaboot">
+# <i>emerge yaboot</i>
 </pre>
 
 <p>
@@ -299,7 +302,11 @@ BootX 可以設定開機時啟動 Linux，如果你選擇這樣做的話，電�
 MacOS ，然後在啟動時，BootX 會載入並啟動 Linux。參閱
 <uri link="http://penguinppc.org/bootloaders/bootx/">BootX 首頁</uri> 取得更多資訊。
 </p>
-  	 
+  	
+<impo>
+確定有將 HFS 和 HFS+ 檔案系統支援加入核心，否擇你不能在改變 MacOS 分割區中的核心。
+</impo>
+
 <p>
 現在重開機後進入 Linux，接著繼續 <uri
 link="?part=1&amp;chap=11">最終化 Gentoo 安裝</uri>
@@ -333,12 +340,12 @@ quik 允許 OldWorld Macs 不透過 MacOS 開機。但是他並沒有完整的�
   	 
 <pre caption="Configuring quik.conf">
 # Example of quik.conf
-init-message = "Gentoo 2005.1\n"
+init-message = "Gentoo 2006.0\n"
 partition = 2           <comment># This is the boot partition</comment>
 root = /dev/hda4
 timeout = 30
 default = gentoo
-image = /vmlinux-2.6.12
+image = /vmlinux-2.6.15
 label = gentoo
 </pre>
   	 
@@ -363,7 +370,7 @@ quik.conf 檔案<e>一定要</e>和 quik 開機映像檔在同一個磁碟，不
 # <i>nvsetenv input-device kbd</i>
 # <i>nvsetenv boot-device scsi/sd@1:0</i> <comment># For SCSI</comment>
 # <i>nvsetenv boot-device ata/ata-disk@0:0</i> <comment># For ATA</comment>
-# <i>nvsetenv boot-file /boot/vmlinux-2.6.12 root=/dev/hda4</i> <comment>First item is the path to the kernel, the second is the root partition.  You may append any kernel options to the end of this line.</comment>
+# <i>nvsetenv boot-file /boot/vmlinux-2.6.15 root=/dev/hda4</i> <comment>First item is the path to the kernel, the second is the root partition.  You may append any kernel options to the end of this line.</comment>
 # <i>nvsetenv boot-command boot</i> <comment># Set this to bye for MacOS and boot for Linux</comment>
 </pre>
   	 
@@ -444,12 +451,12 @@ Local HD -> Morphos      (Normal)
 ide:0 boot2.img ramdebug edebugflags="logkprintf"
 
 [SECTION]
-Local HD -> Linux 2.6.12 (Normal)
-ide:0 linux-2.6.12 video=radeonfb:1024x768@70 root=/dev/hda3
+Local HD -> Linux 2.6.15 (Normal)
+ide:0 linux-2.6.15 video=radeonfb:1024x768@70 root=/dev/hda3
  
 [SECTION]
 Local HD -> Genkernel (Normal)
-ide:0 kernelz-2.6.12 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
+ide:0 kernelz-2.6.15 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
 </pre>
 
 <p>
@@ -468,7 +475,6 @@ SmartFirmware 才可以讀到它。所以您要呼叫 <c>bootcreator</c>：
 <p>
 現在，到 <uri link="#reboot">重開機系統</uri> 繼續安裝程序。
 </p>
-
 
 </body>
 </section>
