@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.262 2006/02/10 04:00:20 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.263 2006/02/28 15:31:57 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -369,7 +369,8 @@ class ArchitectureTemplate:
 	def set_services(self):
 		services = self._install_profile.get_services()
 		for service in services:
-			self._add_to_runlevel(service)
+			if service:
+				self._add_to_runlevel(service)
 				
 	##
 	# Will grab partition info from the profile and mount all partitions with a specified mountpoint (and swap too)
