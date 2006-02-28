@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.263 2006/02/28 15:31:57 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.264 2006/02/28 16:12:30 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -375,18 +375,13 @@ class ArchitectureTemplate:
 	##
 	# Will grab partition info from the profile and mount all partitions with a specified mountpoint (and swap too)
 	def mount_local_partitions(self):
-		#{   1: {   'end': 1999871,          'format': False,            'mb': 0,
-		#'mountopts': '',   'mountpoint': '',   'start': 63,    'type': 'linux-swap'},
-		#2: {   'end': 240121727, 'format': False,  'mb': 0, 'mountopts': '',  
-		#'mountpoint': '',  'start': 1999872,  'type': 'ext3'}}
-		
 		parts = self._install_profile.get_partition_tables()
 		parts_to_mount = {}
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
 			tmp_minor = -1
 			for minor in tmp_partitions:
-				if not tmp_partitions[minor]['type'] == "free":
+				if not tmp_partitions[minor]['type'] in ("free", "extended"):
 					tmp_minor = minor
 					break
 			time.sleep(1)
