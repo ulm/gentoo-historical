@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.265 2006/03/01 12:55:22 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.266 2006/03/01 15:38:17 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -116,7 +116,7 @@ class ArchitectureTemplate:
 		if not GLIUtility.is_file(self._chroot_dir + '/etc/init.d/' + script_name):
 			#raise GLIException("RunlevelAddError", 'fatal', '_add_to_runlevel', "Failure adding " + script_name + " to runlevel " + runlevel + "!")
 			#This is not a fatal error.  If the init script is important it will exist.
-			self._logger.log("ERROR! Failure adding" + script_name + " to runlevel " + runlevel + " because it was not found!")
+			self._logger.log("ERROR! Failure adding " + script_name + " to runlevel " + runlevel + " because it was not found!")
 			if self._debug:	self._logger.log("DEBUG: running rc-update add " + script_name + " " + runlevel + " in chroot.")
 		status = GLIUtility.spawn("rc-update add " + script_name + " " + runlevel, display_on_tty8=True, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 		if not GLIUtility.exitsuccess(status):
@@ -1249,7 +1249,7 @@ class ArchitectureTemplate:
 				self._logger.log("ERROR! : Failure to add user " + username)
 			#	raise GLIException("AddUserError", 'warning', 'set_users', "Failure to add user " + username)
 			else:
-				self._logger.log("User "+username+"was added.")
+				self._logger.log("User " + username + " was added.")
 			
 	##
 	# This function will handle the various cleanup tasks as well as unmounting the filesystems for reboot.
