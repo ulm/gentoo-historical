@@ -250,7 +250,7 @@ Don't forget to set a hostname and domain name in the
 		wireless_entry_table.set_row_spacings(5)
 		# create the ESSID box
 		essid_entry = gtk.Entry()
-		essid_entry.set_max_length(15)
+		essid_entry.set_max_length(30)
 		# pack it all into a box
 		essid_and_label = gtk.HBox(False,0)
 		label = gtk.Label(" _ESSID: ")
