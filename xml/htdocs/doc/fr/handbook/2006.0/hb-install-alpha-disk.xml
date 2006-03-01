@@ -1,0 +1,842 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/2006.0/hb-install-alpha-disk.xml,v 1.1 2006/03/01 12:48:16 neysx Exp $ -->
+
+<sections>
+
+<version>5.1</version>
+<date>2005-08-25</date>
+
+<section>
+<title>Introduction aux périphériques de bloc</title>
+<subsection>
+<title>Les périphériques de bloc</title>
+<body>
+
+<p>
+Nous allons regarder de manière approfondie la question des disques sous Gentoo
+Linux et sous Linux en général, y compris les systèmes de fichiers de Linux,
+les partitions et les périphériques de bloc.  Ensuite, une fois que vous serez
+familiarisé avec les entrées et sorties des disques et des systèmes de
+fichiers, vous serez guidé pour réaliser la mise en place des partitions et des
+systèmes de fichiers pour votre installation de Gentoo Linux.
+</p>
+
+<p>
+Pour commencer, nous allons présenter les <e>périphériques de bloc</e>.  Le
+plus célèbre étant certainement celui qui représente le premier disque dur SCSI
+connu sous le nom de <path>/dev/sda</path>.
+</p>
+
+<p>
+Les périphériques de bloc cités ci-dessus représentent une interface abstraite
+vers les disques. Les programmes utilisateur peuvent les utiliser pour
+interagir avec votre disque sans devoir se tracasser si vos périphériques sont
+IDE, SCSI ou autres.  Le programme peut simplement utiliser l'espace sur le
+disque comme un groupe de blocs continus de 512 octets accessibles
+aléatoirement.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>« Slices »</title>
+<body>
+
+<p>
+Bien qu'il soit théoriquement possible d'utiliser un disque complet pour
+héberger votre système Linux, ceci n'est pratiquement jamais fait.  À la place,
+les périphériques de bloc sont divisés pour être plus petits et plus facilement
+gérables.  Sur les systèmes Alpha, ces subdivisions sont appelées <e>slices</e>
+(tranches).
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Concevoir un plan de partitionnement</title>
+<subsection>
+<title>Plan de partitionnement par défaut</title>
+<body>
+
+<p>
+À titre d'exemple, nous utilisons le plan de partitionnement suivant dans ce
+manuel&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>«&nbsp;Slice&nbsp;»</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Partition de mémoire virtuelle</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Racine (root)</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Tout le disque (nécessaire)</ti>
+</tr>
+</table>
+
+<p>
+Si vous êtes intéressé de savoir la taille qu'une partition doit avoir, ou même
+de combien de partitions vous avez besoin, poursuivez la lecture de ce
+chapitre. Sinon, poursuivez avec le chapitre <uri link="#fdisk_SRM">Partitionner
+votre disque avec fdisk (uniquement SRM)</uri> ou avec le chapitre
+<uri link="#fdisk_ARC">Partitionner votre disque avec fdisk (uniquement
+ARC/AlphaBIOS</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Combien et de quelle taille&nbsp;?</title>
+<body>
+
+<p>
+Le nombre de partitions dépend beaucoup de votre environnement.  Par exemple,
+si vous avez beaucoup d'utilisateurs, vous désirerez certainement avoir
+votre <path>/home</path> séparé afin d'améliorer la sécurité et de simplifier
+les sauvegardes.  Si vous installez Gentoo comme serveur de courrier, votre
+<path>/var</path> devrait être séparé étant donné que tous les courriels sont
+stockés dans <path>/var</path>.  Un bon choix de système de fichiers va vous
+permettre d'améliorer les performances.  Les serveurs de jeu auront un
+<path>/opt</path> séparé étant donné que la plupart des serveurs de jeux sont
+installés à cet endroit. La raison est la même que pour
+<path>/home</path>&nbsp;: sécurité et sauvegarde.
+Vous devriez consacrer suffisamment de place au répertoire <path>/usr</path>,
+car il contient non seulement vos applications, mais aussi l'arbre Portage qui
+prend 500&nbsp;Mo à lui seul et les sources des programmes que vous allez
+installer.
+</p>
+
+<p>
+Comme vous pouvez le voir, cela dépend beaucoup de ce que vous souhaitez faire.
+Séparer les partitions ou volumes procure les avantages suivants&nbsp;:
+</p>
+
+<ul>
+<li>
+  Vous pouvez choisir le système de fichiers le plus performant pour chaque
+  partition ou volume&nbsp;;
+</li>
+<li>
+  Votre système entier ne risque pas d'arriver à court d'espace disque libre si
+  un outil défectueux sature l'espace disque d'une partition ou d'un
+  volume&nbsp;;
+</li>
+<li>
+  Si nécessaire, les vérifications des systèmes de fichiers durent moins
+  longtemps, vu que de multiples vérifications peuvent être faites en parallèle
+  (quoique cet avantage est plus important avec plusieurs disques qu'avec
+  plusieurs partitions)&nbsp;;
+</li>
+<li>
+  La sécurité peut être améliorée en montant certaines partitions ou volumes
+  en lecture seulement, en utilisant nosuid (les bits suid sont ignorés) et
+  noexec (les bits exécutables sont ignorés), etc.
+</li>
+</ul>
+
+<p>
+Cependant, de multiples partitions ont un gros désavantage&nbsp;: si elles ne
+sont pas configurées correctement, vous risquez d'obtenir un système avec
+beaucoup d'espace libre sur une partition et plus du tout sur une autre.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="fdisk_SRM">
+<title>Partitionner votre disque avec fdisk (uniquement SRM)</title>
+<subsection>
+<body>
+
+<p>
+Les parties suivantes expliquent comment créer l'exemple de plan de
+«&nbsp;slices&nbsp;» décrit précédemment&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>«&nbsp;Slice&nbsp;»</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>«&nbsp;Slice&nbsp;» de mémoire virtuelle</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>«&nbsp;Slice&nbsp;» principal</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Disque complet (nécessaire)</ti>
+</tr>
+</table>
+
+<p>
+Changez votre plan de «&nbsp;slice&nbsp;» comme vous le souhaitez.
+</p>
+
+
+</body>
+</subsection>
+<subsection>
+<title>Identifier les disques disponibles</title>
+<body>
+
+<p>
+Pour trouver quels disques vous utilisez, utilisez les commandes suivantes&nbsp;:
+</p>
+
+<pre caption="Identifier les disques disponibles">
+# <i>dmesg | grep 'drive$'</i>    <comment>(Pour des disques IDE)</comment>
+# <i>dmesg | grep 'scsi'</i>      <comment>(Pour des disques SCSI)</comment>
+</pre>
+
+<p>
+À partir de cet affichage, vous devriez voir quels disques sont détectés
+et leurs entrées <path>/dev</path> respectives.  Dans les parties suivantes, nous
+supposons que le disque est un disque SCSI sur <path>/dev/sda</path>.
+</p>
+
+<p>
+À présent, lancez <c>fdisk</c>&nbsp;:
+</p>
+
+<pre caption="Lancement de fdisk">
+# <i>fdisk /dev/sda</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Supprimer tous les «&nbsp;slices&nbsp;»</title>
+<body>
+
+
+<p>
+Si votre disque dur est totalement vierge, vous devez d'abord créer le
+«&nbsp;label&nbsp;» disque de type BSD.
+</p>
+
+<pre caption="Créer le « label » disque de type BSD">
+Command (m for help): <i>b</i>
+/dev/sda contains no disklabel.
+Do you want to create a disklabel? (y/n) <i>y</i>
+<comment>Des infos relatives au disque vont défiler.</comment>
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  c:        1      5290*     5289*    unused        0     0
+</pre>
+
+<p>
+Nous allons commencer par supprimer tous les «&nbsp;slices&nbsp;»
+<e>excepté</e> le «&nbsp;slice&nbsp;» c (requis par l'utilisation de
+«&nbsp;label&nbsp;» disque de type BSD).  La suite montre comment supprimer un
+«&nbsp;slice&nbsp;» (dans l'exemple, nous utilisons a). Répétez la procédure
+pour supprimer tous les autres «&nbsp;slices&nbsp;» (de nouveau, excepté le
+«&nbsp;slice&nbsp;» c).
+</p>
+
+<p>
+Utilisez <c>p</c> pour voir tous les «&nbsp;slices&nbsp;» existants. <c>d</c>
+est utilisé pour supprimer un «&nbsp;slice&nbsp;».
+</p>
+
+<pre caption="Suppression d'un « slice »">
+BSD disklabel command (m for help): <i>p</i>
+
+8 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  a:        1       235*      234*    4.2BSD     1024  8192    16
+  b:      235*      469*      234*      swap
+  c:        1      5290*     5289*    unused        0     0
+  d:      469*     2076*     1607*    unused        0     0
+  e:     2076*     3683*     1607*    unused        0     0
+  f:     3683*     5290*     1607*    unused        0     0
+  g:      469*     1749*     1280     4.2BSD     1024  8192    16
+  h:     1749*     5290*     3541*    unused        0     0
+
+BSD disklabel command (m for help): <i>d</i>
+Partition (a-h): <i>a</i>
+</pre>
+
+<p>
+Après avoir répété ce processus pour tous les «&nbsp;slices&nbsp;», un affichage
+devrait vous montrer quelque chose de similaire à ceci&nbsp;:
+</p>
+
+<pre caption="Affichage d'un plan vide">
+BSD disklabel command (m for help): <i>p</i>
+
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  c:        1      5290*     5289*    unused        0     0
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Création du «&nbsp;slice&nbsp;» de mémoire virtuelle</title>
+<body>
+
+<p>
+Sur un système Alpha, vous n'avez pas besoin d'une partition de démarrage
+séparée.  Cependant, le premier cylindre ne peut pas être utilisé vu que l'image
+<c>aboot</c> y sera placée.
+</p>
+
+<p>
+Nous allons créer un «&nbsp;slice&nbsp;» de mémoire virtuelle qui commence au
+troisième cylindre, avec une taille totale de 1&nbsp;Go.  Utilisez <c>n</c>
+pour créer un nouveau «&nbsp;slice&nbsp;».  Après avoir créé le
+«&nbsp;slice&nbsp;», nous allons changer son type à <c>1</c> (chiffre un) pour
+indiquer <e>swap</e>.
+</p>
+
+<pre caption="Création du « slice » de mémoire virtuelle">
+BSD disklabel command (m for help): <i>n</i>
+Partition (a-p): <i>a</i>
+First cylinder (1-5290, default 1): <i>3</i>
+Last cylinder or +size or +sizeM or +sizeK (3-5290, default 5290): <i>+1024M</i>
+
+BSD disklabel command (m for help): <i>t</i>
+Partition (a-c): <i>a</i>
+Hex code (type L to list codes): <i>1</i>
+</pre>
+
+<p>
+Après ces étapes, vous devriez avoir un plan similaire au suivant&nbsp;:
+</p>
+
+<pre caption="Schéma de « slice » après la création du « slice » de mémoire virtuelle">
+BSD disklabel command (m for help): <i>p</i>
+
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  a:        3      1003      1001       swap
+  c:        1      5290*     5289*    unused        0     0
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Création du «&nbsp;slice&nbsp;» principal</title>
+<body>
+
+<p>
+A présent, nous allons créer le «&nbsp;slice&nbsp;» principal qui commencera au
+premier cylindre <e>après</e> le «&nbsp;slice&nbsp;» de mémoire virtuelle.
+Utilisez la commande <c>p</c> pour voir où se termine le «&nbsp;slice&nbsp;» de
+mémoire virtuelle.  Dans notre exemple, c'est à 1003, de sorte que la partition
+principale commence à 1004.
+</p>
+
+<p>
+Un autre problème est qu'il y a actuellement un bogue dans <c>fdisk</c> qui lui
+fait croire que le nombre de cylindres disponibles est un au dessus du vrai
+nombre de cylindres.  En d'autres termes, quand on vous demande le dernier
+cylindre, diminuez le nombre de cylindres (dans cet exemple&nbsp;: 5290) de un.
+</p>
+
+<p>
+Quand la partition est créée, nous changeons le type à <c>8</c> pour <e>ext2</e>.
+</p>
+
+<pre caption="Création du « slice » principal">
+D disklabel command (m for help): <i>n</i>
+Partition (a-p): <i>b</i>
+First cylinder (1-5290, default 1): <i>1004</i>
+Last cylinder or +size or +sizeM or +sizeK (1004-5290, default 5290): <i>5289</i>
+
+BSD disklabel command (m for help): <i>t</i>
+Partition (a-c): <i>b</i>
+Hex code (type L to list codes): <i>8</i>
+</pre>
+
+<p>
+Votre plan de «&nbsp;slice&nbsp;» devrait maintenant ressembler à ceci&nbsp;:
+</p>
+
+<pre caption="Affichage du schéma de « slice »">
+BSD disklabel command (m for help): <i>p</i>
+
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  a:        3      1003      1001       swap
+  b:     1004      5289      4286       ext2
+  c:        1      5290*     5289*    unused        0     0
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Sauvegarder le schéma de «&nbsp;slice&nbsp;» et quitter</title>
+<body>
+
+<p>
+Quittez <c>fdisk</c> en tapant <c>w</c>.  Ceci va également sauvez votre plan
+de «&nbsp;slice&nbsp;».
+</p>
+
+<pre caption="Sauver et quitter fdisk">
+Command (m for help): <i>w</i>
+</pre>
+
+<p>
+Maintenant que vos «&nbsp;slice&nbsp;» sont créés, vous pouvez continuer avec la
+<uri link="#filesystems">création des systèmes de fichiers</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="fdisk_ARC">
+<title>Utiliser fdisk pour partitionner votre disque (uniquement ARC/AlphaBIOS)</title>
+<subsection>
+<body>
+
+<p>
+Cette section décrit comment partitionner votre disque selon le plan
+précédemment indiqué, c'est-à-dire&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Partition de démarrage («&nbsp;boot&nbsp;»)</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Partition de mémore virtuelle («&nbsp;swap&nbsp;»)</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Partition principale</ti>
+</tr>
+</table>
+
+<p>
+Vous pouvez utiliser un autre plan de partitionnement si vous le désirez.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Identifier les disques disponibles</title>
+<body>
+
+<p>
+Pour déterminer quels disques sont disponibles sur votre système, utilisez les
+commandes suivantes&nbsp;:
+</p>
+
+<pre caption="Identifier les disques disponibles">
+# <i>dmesg | grep 'drive$'</i>        <comment>(Disques IDE.)</comment>
+# <i>dmesg | grep 'scsi'</i>          <comment>(Disques SCSI.)</comment>
+</pre>
+
+<p>
+Le résultat de ces commandes devrait vous permettre de voir quels disques sont
+installés ainsi que leur chemin d'accès dans <path>/dev</path>. La suite de ce
+texte utilise un disque SCSI <path>/dev/sda</path> à titre d'exemple.
+</p>
+
+<p>
+Lancez <c>fdisk</c> :
+</p>
+
+<pre caption="Lancer fdisk">
+# <i>fdisk /dev/sda</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Supprimer toutes les partitions</title>
+<body>
+
+<p>
+Si votre disque est complètement vierge, vous devez d'abord créer un label de
+disque DOS.
+</p>
+
+<pre caption="Créer un label de disque DOS">
+Command (m for help): <i>o</i>
+Building a new DOS disklabel.
+</pre>
+
+<p>
+Si le disque contient déjà des partitions, commenez par toutes les supprimer.
+L'exemple suivant utilise <c>1</c> pour supprimer la première partition,
+répétez l'opération pour les autres partitions.
+</p>
+
+<p>
+Utilisez <c>p</c> pour afficher la liste des partitions et <c>d</c> pour
+supprimer une partition.
+</p>
+
+<pre caption="Supprimer une partition">
+command (m for help): <i>p</i>
+
+Disk /dev/sda: 9150 MB, 9150996480 bytes
+64 heads, 32 sectors/track, 8727 cylinders
+Units = cylinders of 2048 * 512 = 1048576 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1         478      489456   83  Linux
+/dev/sda2             479        8727     8446976    5  Extended
+/dev/sda5             479        1433      977904   83  Linux Swap
+/dev/sda6            1434        8727     7469040   83  Linux
+
+command (m for help): <i>d</i>
+Partition number (1-6): <i>1</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Créer la partition de démarrage («&nbsp;boot&nbsp;»)</title>
+<body>
+
+<p>
+Sur un système Alpha qui utilise MILO pour démarrer, il faut créer une petite
+partition vfat.
+</p>
+
+<pre caption="Créer la partition de démarrage">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+First cylinder (1-8727, default 1): <i>1</i>
+Last cylinder or +size or +sizeM or +sizeK (1-8727, default 8727): <i>+16M</i>
+
+Command (m for help): <i>t</i>
+Selected partition 1
+Hex code (type L to list codes): <i>6</i>
+Changed system type of partition 1 to 6 (FAT16)
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Créer la partition de mémoire virtuelle</title>
+<body>
+
+<p>
+Nous allons créer une partition de mémoire virtuelle de 1&nbsp;Go qui commence
+au troisième cylindre. Utilisez <c>n</c> pour créer une nouvelle partition.
+</p>
+
+<pre caption="Créer la partition de mémoire virtuelle">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>2</i>
+First cylinder (17-8727, default 17): <i>17</i>
+Last cylinder or +size or +sizeM or +sizeK (17-8727, default 8727): <i>+1000M</i>
+
+Command (m for help): <i>t</i>
+Partition number (1-4): <i>1</i>
+Hex code (type L to list codes): <i>82</i>
+Changed system type of partition 2 to 82 (Linux swap)
+</pre>
+
+<p>
+Votre table de partitions devrait maintenant ressembler à&nbsp;:
+</p>
+
+<pre caption="Table de partition après la création du swap">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 9150 MB, 9150996480 bytes
+64 heads, 32 sectors/track, 8727 cylinders
+Units = cylinders of 2048 * 512 = 1048576 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1          16       16368    6  FAT16
+/dev/sda2              17         971      977920   82  Linux swap
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Créer la partition principale</title>
+<body>
+
+<p>
+Il nous reste à créer la partition principale. Utilisez <c>n</c> une nouvelle
+fois.
+</p>
+
+<pre caption="Créer la partition principale">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>3</i>
+First cylinder (972-8727, default 972): <i>972</i>
+Last cylinder or +size or +sizeM or +sizeK (972-8727, default 8727): <i>8727</i>
+</pre>
+
+<p>
+Votre table de partitions devrait maintenant ressembler à&nbsp;:
+</p>
+
+<pre caption="Table de partition après la création de la partition principale">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 9150 MB, 9150996480 bytes
+64 heads, 32 sectors/track, 8727 cylinders
+Units = cylinders of 2048 * 512 = 1048576 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1          16       16368    6  FAT16
+/dev/sda2              17         971      977920   82  Linux swap
+/dev/sda3             972        8727     7942144   83  Linux
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Sauver la table des partitions et quitter</title>
+<body>
+
+<p>
+Tapez <c>w</c> pour enregistrer votre table de partitions et quitter fdisk.
+</p>
+
+<pre caption="Sauver et quitter fdisk">
+Command (m for help): <i>w</i>
+</pre>
+
+<p>
+Maintenant que vos «&nbsp;slice&nbsp;» sont créés, vous pouvez continuer avec la
+<uri link="#filesystems">création des systèmes de fichiers</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="filesystems">
+<title>Création des systèmes de fichiers</title>
+<subsection>
+<title>Introduction</title>
+<body>
+
+<p>
+Maintenant que vos partitions sont créées, il est temps d'y installer un
+système de fichiers. Si vous ne vous souciez pas de quel système de fichiers
+choisir et êtes satisfait de ceux que nous utilisons par défaut dans ce manuel,
+continuez avec <uri link="#filesystems-apply">Application d'un système de
+fichiers à une partition</uri>.  Sinon, continuez à lire pour en apprendre plus
+sur les systèmes de fichiers disponibles.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Systèmes de fichiers&nbsp;?</title>
+<body>
+
+<p>
+De nombreux systèmes de fichiers sont disponibles. La plupart d'entre eux sont
+stables sur l'architecture Alpha.
+</p>
+
+<p>
+<b>ext2</b> est le système de fichiers original de Linux mais n'a pas de
+metadonnées journalisées, ce qui signifie que la routine de vérification du
+système de fichiers ext2 au démarrage peut prendre beaucoup de temps. À
+présent, vous avez le choix entre plusieurs systèmes de fichiers journalisés
+qui peuvent être vérifiés très rapidement et sont généralement préférés à leurs
+homologues non journalisés.  Les systèmes de fichiers journalisés évitent de
+devoir attendre longtemps quand vous démarrez votre système et que vos systèmes
+de fichiers sont dans un état instable.
+</p>
+
+<p>
+<b>ext3</b> est la version journalisée du système de fichiers ext2, qui fournit
+des metadonnées journalisées pour une récupération rapide en plus d'autres
+modes journalisés comme la journalisation de données complètes et ordonnées.
+ext3 est un très bon système de fichiers fiable. Il offre généralement des
+performances décentes dans la plupart des conditions. Il offre de bonnes
+performances dans la plupart des cas grâce à un arbre balancé indexé par clé de
+hachage. Pour activer cet arbre, vous devez ajouter l'option <c>-O
+dir_index</c> sur la commande <c>mke2fs</c>. En résumé, ext3 est un excellent
+système de fichiers.
+</p>
+
+<p>
+<b>ReiserFS</b> est un système de fichiers basé sur les B*-tree qui a de très
+bonnes performances et qui surpasse ext2 et ext3 dans le cas de l'utilisation
+de petits fichiers (fichiers de moins de 4 ko), souvent avec un facteur allant
+de 10 à 15.  ReiserFS résiste aussi très bien à la montée en charge et a des
+metadonnées journalisées.  Depuis le noyau 2.4.18, ReiserFS est stable et peut
+être utilisé aussi bien dans un système de fichiers destiné à une utilisation
+générale que pour des cas extrêmes comme la création de grands systèmes de
+fichiers et l'utilisation de nombreux petits fichiers ou de grands fichiers et
+répertoires qui contiennent des dizaines de milliers de fichiers.
+</p>
+
+<p>
+<b>XFS</b> est un système de fichiers avec des métadonnées journalisées qui
+possède un ensemble de fonctionnalités robustes et qui est optimisé pour la mise
+à l'échelle. Nous ne recommandons ce système de fichiers que pour des systèmes
+équipés d'unités de stockage SCSI haut de gamme ou connectés à des serveurs de
+stockage «&nbsp;Fibre Channel&nbsp;», et munis d'un onduleur. Puisque XFS
+utilise énormément le cache pour des données transitoires en mémoire vive, les
+programmes mal conçus (ceux qui ne prennent pas les précautions suffisantes
+quand ils écrivent les fichiers sur disque, et il y en a quelques uns) peuvent
+perdre beaucoup de données si le système s'interrompt de manière inattendue.
+</p>
+
+<p>
+<b>JFS</b> est un système de fichiers journalisé à hautes performances d'IBM.
+Il a été récemment déclaré prêt pour un usage en production, mais il n'y a pas
+encore suffisamment d'information pour commenter sa stabilité générale de
+manière positive ou négative.
+</p>
+</body>
+</subsection>
+<subsection id="filesystems-apply">
+<title>Application d'un système de fichiers à une partition</title>
+<body>
+
+<p>
+Pour créer un système de fichiers sur une partition ou un volume, chaque
+système de fichiers fournit ses propres outils&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>Système de fichiers</th>
+  <th>Commande de création</th>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mkfs.ext2</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkreiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+
+<p>
+Par exemple, pour formater la partition racine (<path>/dev/sda2</path>
+dans notre exemple) en ext3, nous utiliserons&nbsp;:
+</p>
+
+<pre caption="Application d'un système de fichiers sur une partition">
+# <i>mkfs.ext3 /dev/sda2</i>
+</pre>
+
+<p>
+À présent, créons les systèmes de fichiers sur nos partitions (ou volumes logiques)
+fraîchement créées.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Activation de la partition de mémoire virtuelle</title>
+<body>
+
+<p>
+<c>mkswap</c> est la commande utilisée pour initialiser la partition de mémoire
+virtuelle&nbsp;:
+</p>
+
+<pre caption="Création d'une signature de mémoire virtuelle">
+# <i>mkswap /dev/sda1</i>
+</pre>
+
+<p>
+Pour activer la partition de mémoire virtuelle, utilisez <c>swapon</c>&nbsp;:
+</p>
+
+<pre caption="Activation de la partition de mémoire virtuelle">
+# <i>swapon /dev/sda1</i>
+</pre>
+
+<p>
+Créez et activez la partition de mémoire virtuelle maintenant.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Monter les partitions</title>
+<body>
+
+<p>
+Maintenant que nos partitions sont initialisées et contiennent un système de
+fichiers, il est temps de les monter avec la commande <c>mount</c>.  N'oubliez
+pas de créer les points de montage nécessaires pour toutes les partitions que
+vous avez créées. Par exemple, pour monter les partitions de démarrage et
+racine&nbsp;:
+</p>
+
+<pre caption="Monter les partitions">
+# <i>mount /dev/sda2 /mnt/gentoo</i>
+</pre>
+
+<note>
+Si vous installez <path>/tmp</path> sur une partition séparée, n'oubliez pas de
+définir les permissions nécessaires après avoir monté la partition. Utilisez la
+commande <c>chmod 1777 /mnt/gentoo/tmp</c>. La même remarque s'applique à
+<path>/var/tmp</path>.
+</note>
+
+<p>
+Nous devrons également monter le système de fichiers proc (une interface
+virtuelle avec le noyau) sur <path>/proc</path>, mais nous devons d'abord placer
+nos fichiers sur les partitions.
+</p>
+
+<p>
+Continuez avec <uri link="?part=1&amp;chap=5">Installer les fichiers
+d'installation de Gentoo</uri>.
+</p>
+
+</body>
+</section>
+</sections>
