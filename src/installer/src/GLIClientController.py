@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.77 2006/02/28 13:30:03 agaffney Exp $
+$Id: GLIClientController.py,v 1.78 2006/03/01 02:27:51 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -335,6 +335,17 @@ class GLIClientController(Thread):
 				route = self._configuration.get_network_gateway()
 				if not GLIUtility.set_default_route(route):
 					raise GLIException("DefaultRouteError", 'fatal','configure_networking', "Could not set the default route!")
+
+				dns_servers = self._configuration.get_dns_servers()
+				if dns_servers:
+					try:
+						resolv_conf = open("/etc/resolv.conf", "w")
+						for dns_server in dns_servers:
+							resolv_conf.writeline("nameserver " + dns_server + "\n")
+						resolv_conf.close()
+					except:
+						raise GLIException("DNSServerError", 'fatal','configure_networking', "Could not set the DNS servers!")
+
 				if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): done setting static IP")
 
 	##
