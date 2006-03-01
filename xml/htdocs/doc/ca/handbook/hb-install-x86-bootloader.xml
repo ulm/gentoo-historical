@@ -2,14 +2,14 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ca/handbook/hb-install-x86-bootloader.xml,v 1.1 2005/10/28 13:37:24 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ca/handbook/hb-install-x86-bootloader.xml,v 1.2 2006/03/01 09:15:09 neysx Exp $ -->
 
 <sections>
 
-<version>2.6</version>
-<date>2005-09-17</date>
+<version>2.11</version>
+<date>2006-02-02</date>
 
 <section>
 <title>Fent la seva Tria</title>
@@ -250,12 +250,12 @@ default 0
 timeout 30
 <comment># Bonic, imatge per fer-ho més bonic :)
 # Comentar-ho si no té una tarja gràfica instal·lada</comment>
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-r3
+title=Gentoo Linux 2.6.12-r10
 <comment># Partició on hi ha la imatge del kernel (o el sistema operatiu)</comment>
 root (hd0,0)
-kernel /kernel-2.6.11-gentoo-r3 root=/dev/hda3
+kernel /boot/kernel-2.6.12-gentoo-r10 root=/dev/hda3
 
 <comment># Les següent 4 línies són només si arrenca simultàniament amb un sistema Windows.</comment>
 <comment># En aquest cas, Windows es troba a /dev/hda6.</comment>
@@ -265,20 +265,19 @@ makeactive
 chainloader +1
 </pre>
 
-
 <pre caption="grub.conf per a usuaris de genkernel">
 default 0
 timeout 30
-splashimage=(hd0,0)/grub/splash.xpm.gz
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
 
-title=Gentoo Linux 2.6.11-r3
+title=Gentoo Linux 2.6.12-r10
 root (hd0,0)
-kernel /kernel-genkernel-x86-2.6.11-gentoo-r3 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
-initrd /initramfs-genkernel-x86-2.6.11-gentoo-r3
+kernel /boot/kernel-genkernel-x86-2.6.12-gentoo-r10 root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev
+initrd /boot/initramfs-genkernel-x86-2.6.12-gentoo-r10
 
 <comment># Només en cas de arrencada dual</comment>
 title=Windows XP
-root (hd0,5)
+rootnoverify (hd0,5)
 makeactive
 chainloader +1
 </pre>
@@ -289,14 +288,24 @@ un error en algunes versions de genkernel <e>si</e> fa servir udev en primer llo
 (que és l'opció per defecte).
 </note>
 
-<note>
-Si empra un esquema de particionat diferent i/o imatge de kernel, ajusti-ho
-d'acord amb això. Tot i així, asseguris que que tot el que segueix al
+<p>
+Si ha emprat un esquema de particionat diferent i/o imatge de kernel, ajusti-ho
+en conseqüència. Tot i així, asseguris que que tot el que segueix al
 dispositiu GRUB (tal com <path>(hd0,0)</path>) és relatiu al punt de muntatge,
 no l'arrel. En altres paraules,, <path>(hd0,0)/grub/splash.xpm.gz</path> és en
 realitat <path>/boot/grub/splash.xpm.gz</path> ja que <path>(hd0,0)</path> és 
 <path>/boot</path>.
-</note>
+</p>
+
+<p>
+Per contra, si tria un esquema de particionat diferent i no posa el seu
+<path>/boot</path> en una partició a part, el prefix <path>/boot</path> emprat
+en els exemples de codi de sobre és relament <e>requerit</e>. Si ha seguit el
+nostre particionat suggerit, el prefix<path>/boot</path> no és requerit, un
+enllaç simbòlic a <path>boot</path> ho fa funcionar. En breu, els exemples de
+sobre funcionarant tant si defineix <path>/boot</path> en una partició separada
+o no.
+</p>
 
 <p>
 Si necessita passar cap opció addicional al kernel, senzillament afegeixi'ls al
@@ -344,14 +353,15 @@ GRUB emprant el manual d'instruccions</uri>.
 <p>
 Per instal·lar GRUB necessitarà emprar la comanda <c>grub-install</c> .Tot i
 així, <c>grub-install</c> no funciona correctament ja que estem en un entorn
-sota chroot. Necessitem actualitzar <path>/etc/mtab</path> (el fitser amb la
-informació de tots els sistemes de fitxers montats) primer: sortosament hi ha
+sota chroot. Necessitem crear <path>/etc/mtab</path> que llista els sistemes
+de fitxers montats. Afortunadament, hi ha
 una manera fàcil d'acomplir això - només copiï <path>/proc/mounts</path> a
-<path>/etc/mtab</path>:
+<path>/etc/mtab</path> excloent la línia <c>rootfs</c> si no ha creat la
+partició de boot a part. La següent comanda funcionarà en ambdos casos:
 </p>
 
-<pre caption="Actualitzant /etc/mtab">
-# <i>cp /proc/mounts /etc/mtab</i>
+<pre caption="Creant /etc/mtab">
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
 
 <p>
@@ -523,18 +533,18 @@ timeout=50                <comment># Esperar 5 (cinc) segons abans d'arrencar l'
 default=gentoo            <comment># Quan el temps d'espera s'acabi, arrencar l'opció "gentoo"</comment>
 
 <comment># Per a no usuaris de genkernel</comment>
-image=/boot/kernel-2.6.11-gentoo-r3
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo            <comment># Nom que donem a aquesta secció</comment>
   read-only               <comment># Comença amb només lectura. No canviar!</comment>
   root=/dev/hda3          <comment># Localització del sistema de fitxers root</comment>
 
 <comment># Per a usuaris de genkernel</comment>
-image=/boot/kernel-genkernel-x86-2.6.11-gentoo-r3
+image=/boot/kernel-genkernel-x86-2.6.12-gentoo-r10
   label=gentoo
   read-only
   root=/dev/ram0
   append="init=/linuxrc ramdisk=8192 real_root=/dev/hda3 udev"
-  initrd=/boot/initramfs-genkernel-2.6.11-gentoo-r3
+  initrd=/boot/initramfs-genkernel-2.6.12-gentoo-r10
 
 <comment># Les següents dues línies són només si vol una arrencada dual amb un sistema Windows.</comment>
 <comment># En aquest cas, Windows es troba a /dev/hda6.</comment>
@@ -560,7 +570,7 @@ per activar el framebuffer:
 </p>
 
 <pre caption="Emprant append per afegir opcions del kernel">
-image=/boot/kernel-2.6.11-gentoo-r3
+image=/boot/kernel-2.6.12-gentoo-r10
   label=gentoo
   read-only
   root=/dev/hda3
@@ -618,7 +628,7 @@ escrigui aquesta comanda màgica que ha estat esperant: <c>reboot</c>.
 <pre caption="Desmontant totes les particions i reiniciant">
 # <i>exit</i>
 cdimage ~# <i>cd</i>
-cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo</i>
+cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo</i>
 cdimage ~# <i>reboot</i>
 </pre>
 
