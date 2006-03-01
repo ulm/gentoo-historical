@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.102 2006/02/28 19:47:47 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.103 2006/03/01 19:43:48 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -265,7 +265,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							total_sectors = end - start + 1
 							total_bytes = long(total_sectors) * 512
 							ret = GLIUtility.spawn("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
-							if ret: # Resize error
+							if not GLIUtility.exitsuccess(ret): # Resize error
 								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
 						elif type == "linux-swap" or type == "fat32" or type == "fat16":
 							parted_fs = parted_disk.get_partition(part).geom.file_system_open()
