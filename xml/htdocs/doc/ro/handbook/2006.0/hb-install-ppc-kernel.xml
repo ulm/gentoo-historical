@@ -1,0 +1,507 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/handbook/2006.0/hb-install-ppc-kernel.xml,v 1.1 2006/03/01 21:25:49 alin Exp $ -->
+
+<sections>
+
+<version>6.0</version>
+<date>2006-02-27</date>
+
+<section>
+<title>Zona de Fus Orar</title>
+<body>
+
+<p>
+Trebuie, mai întâi să setaţi fusul orar, astfel încât sistemul
+dumneavoastră să ştie unde se află. Uitaţi-vă după fusul orar
+potrivit în <path>/usr/share/zoneinfo</path>, apoi copiaţi-l ca
+<path>/etc/localtime</path>. Vă rugăm să evitaţi zonele de fus din
+<path>/usr/share/zoneinfo/Etc/GMT*</path> deoarece numele acestora nu indică
+zonele presupuse. Spre exemplu <path>GMT-8</path> este, de fapt, GMT+8.
+</p>
+
+<pre caption="Setarea informaţiilor referitoare la fusul orar">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Presupunănd că doriţi să utilizaţi ora Bucureştiului)</comment>
+# <i>cp /usr/share/zoneinfo/Europe/Bucharest /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Instalarea Surselor</title>
+<subsection>
+<title>Alegerea unui Kernel</title>
+<body>
+
+<p>
+Nucleul în jurul carora sunt construite toate distributiile, este kernelul
+Linux. Este nivelul dintre programe şi componentele hardware ale sistemului
+dumneavoastră. Gentoo pune la dispoziţia utilizatorilor, mai multe surse de
+kernel. O listă completă alături de descrierea lor, este accesibilă la
+<uri link="/doc/ro/gentoo-kernel.xml">Ghidul Gentoo pentru Kernel</uri>. 
+</p>
+
+<p>
+Vă sugerăm, fie <c>vanilla-sources</c>, fie <c>gentoo-sources</c> pe
+arhitectura PPC, amândouă fiind din generaţia 2.6. Cel din urmă este
+disponibil când alegeţi o instalare fără reţea. Aşa că să continuăm cu
+instalarea surselor de kernel, utilizând <c>emerge</c>. <c>USE="-doc"</c> este
+necesar pentru a evita instalarea xorg-x11 sau a altor dependenţe, în acest
+moment. <c>USE="symlink"</c> nu este necesar pentru o instalare nouă, dar
+asigură crearea corectă a link-ului simbolic <path>/usr/src/linux</path>.
+</p>
+
+<pre caption="Instalarea unor surse de kernel">
+# <i>USE="-doc symlink" emerge gentoo-sources</i>
+</pre>
+
+<p>
+Dacă vă uitaţi în <path>/usr/src</path> ar trebui să vedeţi un
+symlink numit <path>linux</path>. În acest caz, sursele de kernel instalate
+indică către <c>gentoo-sources-2.6.15</c>. Versiunea dvs. ar putea fi
+diferită, deci reţineţi acest aspect.
+</p>
+
+<pre caption="Vizualizare symlink sursă kernel">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.15
+</pre>
+
+<p>
+Acum este timpul să configurăm şi să compilăm sursa kernel. Puteţi utiliza
+<c>genkernel</c> pentru asta, care vă va construi un kernel generic aşa cum
+este folosit pe mediul Installation CD. Vom explica configurarea manuală,
+totuşi, fiind cea mai bună cale de a vă optimiza sistemul.
+</p>
+
+<p>
+Dacă doriţi să configuraţi kernel-ul manual, continuaţi cu secţiunea <uri
+link="#manual">Implicit: Configurarea Manuală</uri>. Dacă doriţi să utilizaţi
+<c>genkernel</c>, trebuie să consultaţi secţiunea <uri
+link="#genkernel">Alternativ: Utilizarea genkernel</uri>, în loc.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>Implicit: Configurarea Manuală</title>
+<subsection>
+<title>Introducere</title>
+<body>
+
+<p>
+Configurarea manuală a kernel-ului este des percepută ca cea mai grea
+incercare, pe care fiecare user Linux trebuie să o treacă. Nimic mai fals
+-- după ce veţi configura câteva kernel-uri, nici nu vă veţi mai aminti
+că a fost greu ;)
+</p>
+
+<p>
+Totuşi, un lucru <e>este</e> adevărat: trebuie să vă cunoaşteţi
+sistemul înainte de a începe configurarea manuală a kernel-ului. Cele mai
+multe informaţii le puteţi obţine prin instalarea pciutils (<c>emerge
+pciutils</c>) ce conţine <c>lspci</c>. Acum veţi putea să utilizaţi
+comanda <c>lspci</c> în interiorul mediului chroot. Puteţi ignora cu
+încredere orice avertismente <e>pcilib</e> (cum ar fi: pcilib: cannot open
+/sys/bus/pci/devices) afişate de <c>lspci</c>. Alternativ, puteţi rula
+<c>lspci</c> dintr-un mediu <e>non-chroot</e>. Rezultatele sunt aceleaşi. De
+asemenea, puteţi rula <c>lsmod</c> pentru a vizualiza modulele kernel-ului
+folosit de mediul Installation CD (ar putea să vă formeze o idee despre ce
+anume să activaţi). O altă modalitate de a căuta indicii, cum ar fi
+componentele pe care să le activaţi, este să căutaţi mesajele de log ale
+kernel-ului din procesul de boot efectuat cu succes până acum. Tastaţi
+<c>dmesg</c> pentru a vi se afişa mesajele de kernel.
+</p>
+
+<p>
+Acum mergeţi in directorul ce conţine sursa kernel-ului, este timpul să
+vă configuraţi kernel-ul. Este recomandat să adăugaţi setările
+implicite în configuraţia dvs. prin rularea, mai întâi, a comenzii <c>make
+defconfig</c>. După ce configuraţia implicită a fost generată, rulaţi
+<c>make menuconfig</c>, ce va porni un meniu de configurare bazat pe ncurses.
+</p>
+
+<pre caption="Invocarea menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make defconfig</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Veţi fi întâmpinat cu mai multe secţiuni de configurare. Mai întăi vom
+enumera cateva opţiuni pe care trebuie să le activaţi (altfel Gentoo nu va
+funcţiona deloc sau nu va funcţiona corect fară anumite trucuri
+suplimentare).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Activarea Opţiunilor Necesare</title>
+<body>
+
+<p>
+Mai întâi de toate, activaţi utilizarea codului/driverelor în dezvoltare
+sau experimentale. Aveţi nevoie de acesta, altfel anumite drivere foarte
+importante nu vor fi afişate:
+</p>
+
+<pre caption="Selectarea codului/driverelor experimentale, General Setup">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+General setup ---&gt;
+  [*] Support for hot-pluggable devices
+</pre>
+
+<p>
+Acum mergeţi la <c>File Systems</c> şi selectaţi suportul pentru sistemul
+de fişiere pe care îl folosiţi. <e>Nu</e> le compilaţi ca module, altfel
+Gentoo nu va putea să mount-eze partiţiile. De asemenea, selectaţi
+<c>Virtual memory</c> şi <c>proc file system</c>.
+</p>
+
+<pre caption="Selectarea sistemelor de fişiere necesare">
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>(Selectaţi una sau mai multe dintre opţiunile următoare, după necesităţile sistemului)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<p>
+Dacă folosiţi PPPoE pentru conectarea la Internet sau daca folosiţi un
+modem tip dial-up, va trebui să activaţi următoarele opţiuni in kernel:
+</p>
+
+<pre caption="Selectarea driverelor PPPoE necesare">
+Device Drivers ---&gt;
+  Networking support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+Cele două opţiuni de compresie nu vor afecta, dar nu sunt întru totul
+necesare, la fel ca şi opţiunea <c>PPP over Ethernet</c>, care ar putea fi
+folosită doar de <c>rp-pppoe</c>, când este configurat să folosească
+modul PPPoE.
+</p>
+
+<p>
+Dacă o doriţi, nu uitaţi să includeţi suport in kernel pentru placa de
+reţea.
+</p>
+
+<p>
+Utilizatorii de maşini OldWorld vor dori suport pentru HFS pentru a copia
+imagini de kernel compilate pe partiţia MacOS. Aceasta este aplicabilă şi în
+cazul maşinilor NewWorld, deoarece acestea necesită partiţia specială
+Apple_Bootstrap:
+</p>
+
+<pre caption="Activarea suportului HFS">
+File Systems ---&gt;
+  [*] HFS Support
+</pre>
+
+<p>
+Momentan, preemtivitatea kernel-ului este încă instabilă pe arhitectura PPC
+şi poate cauza erori de compilare sau încetări ale funcţionării kernel-ului
+aleatore. Este <e>puternic</e> sugerat să nu utilizaţi această opţiune.
+</p>
+
+<pre caption="Asiguraţi-vă că opţiunea Preemptible Kernel este dezactivată">
+Platform options ---&gt;
+  [ ] Preemptible Kernel
+</pre>
+
+<p>
+Dacă boot-aţi de pe un dispozitiv Firewire, va trebui să activaţi aceste
+opţiuni. Dacă nu doriţi să compilaţi suportul în kernel, va trebui să
+includeţi aceste module, precum şi dependenţele acestora într-o imagine
+initrd.
+</p>
+
+<pre caption="Activarea suportului pentru dispozitive firewire la boot">
+Device Drivers ---&gt;
+  IEEE 1394 (FireWire) support ---&gt;
+    &lt;*&gt; IEEE 1394 (FireWire) support
+    &lt;*&gt;   OHCI-1394 support
+    &lt;*&gt;   SBP-2 support (Harddisks etc.)
+</pre>
+
+<p>
+Dacă boot-aţi de pe un dispozitiv USB, va trebui să activaţi aceste
+opţiuni. Dacă nu doriţi să compilaţi suportul în kernel, va trebui să
+includeţi aceste module, precum şi dependenţele acestora într-o imagine
+initrd.
+</p>
+
+<pre caption="Activarea suportului pentru dispozitive USB la boot">
+Device Drivers ---&gt;
+  USB support ---&gt;
+    &lt;*&gt; Support for Host-side USB
+    &lt;*&gt;   OHCI HCD support
+    &lt;*&gt;   USB Mass Storage support
+</pre>
+
+<p>
+Nu dezactivaţi suportul framebuffer din kernel, deoarece este necesar pentru
+un proces de boot cu succes. Dacă utilizaţi un cipset bazat pe NVIDIA, ar
+trebui să utilizaţi dispozitivul framebuffer OpenFirmware. Dacă utilizaţi
+un cipset bazat pe ATI, ar trebui să selectaţi driver-ul framebuffer bazat
+pe chipset-ul dvs. (Mach64, Rage128 or Radeon).
+</p>
+
+<pre caption="Alegerea unui Driver Framebuffer">
+Device Drivers ---&gt;
+  Graphics support ---&gt;
+    &lt;*&gt; Support for frame buffer devices
+    [*] Open Firmware frame buffer device support
+    &lt;*&gt; ATI Radeon display support
+    &lt;*&gt; ATI Rage128 display support
+    &lt;*&gt; ATI Mach64 display support
+    Console display driver support ---&gt;
+      &lt;*&gt; Framebuffer Console support
+</pre>
+
+<note>
+Dacă selectaţi mai mult de un dispozitiv framebuffer, este posibil să fie ales
+implicit un driver mai puţin optimal. Fie utilizaţi un dispozitiv framebuffer,
+fie specificaţi pe care să-l utilizaţi prin adăugarea driver-ului care să fie
+utilizat între parametrii de boot ai kernel-ului, cum ar fi
+<c>video=radeonfb</c>.
+</note>
+
+<p>
+Când terminaţi de configurat kernel-ul, continuaţi cu <uri
+link="#compiling">Compilare şi Instalare</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Compilare şi Instalare</title>
+<body>
+
+<p>
+Acum, că kernelul este configurat, este timpul să îl compilaţi şi să-l
+instalaţi. Ieşiţi din meniul de configurare şi să începeţi procesul de
+compilare:
+</p>
+
+<pre caption="Compilarea kernel-ului">
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+Când compilarea s-a terminat, copiaţi imaginea de kernel în directorul
+<path>/boot</path> (asiguraţi-vă că este mount-ată corect pe sistemele
+Pegasos). Dacă utilizaţi BootX pentru boot, vom copia imaginea de kernel
+ulterior.
+</p>
+
+<p>
+Yaboot şi BootX aşteaptă utilizarea unui kernel decompresat, spre
+deosebire de multe alte aplicaţii bootloader. Imaginea de kernel
+decompresată este generată în <path>/usr/src/linux</path> după ce
+kernel-ul s-a terminat de compilat. Dacă utilizaţi o maşină Pegasos,
+componenta firmware Pegasos necesită o imagine de kernel compresată,
+denumită zImage.chrp ce poate fi găsită în
+<path>/usr/src/linux/arch/ppc/boot/images</path>.
+</p>
+
+<pre caption="Instalarea kernel-ului">
+# <i>cd /usr/src/linux</i>
+<comment>înlocuiţi &lt;kernel-versiune&gt; cu versiunea dvs. de kernel</comment>
+<comment>(Apple/IBM)</comment>
+# <i>cp vmlinux /boot/&lt;kernel-version&gt;</i> 
+<comment>(Pegasos)</comment>
+# <i>cp arch/ppc/boot/images/zImage.chrp /boot/&lt;kernel-version&gt;</i> 
+</pre>
+
+<p>
+Acum, continuaţi cu <uri link="#kernel_modules">Instalarea de Module Separate
+de Kernel</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="kernel_modules">
+<title>Instalarea de Module Separate de Kernel</title>
+<subsection>
+<title>Configurarea Modulelor</title>
+<body>
+
+<p>
+Va trebui să enumeraţi toate modulele, care vreţi să fie încărcate
+automat, în <path>/etc/modules.autoload.d/kernel-2.6</path>. Puteţi, de
+asemenea, să adaugaţi extra opţiuni modulelelor dacă doriţi.
+</p>
+
+<p>
+Pentru a vizualiza toate modulele disponibile, folosiţi următoarea comandă
+<c>find</c>. Nu uitaţi să înlocuiţi "&lt;versiune kernel&gt;" cu versiunea
+efectivă de kernel pe care tocmai aţi compilat-o:
+</p>
+
+<pre caption="Vizualizarea tuturor modulelor disponibile">
+# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+</pre>
+
+<p>
+De exemplu, pentru a încarca automat modulul <c>3c59x</c>, editaţi fişierul
+<path>kernel-2.6</path> şi scrieţi numele modulului în el.
+</p>
+
+<pre caption="Editarea /etc/modules.autoload.d/kernel-2.6">
+# <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.6">
+3c59x
+</pre>
+
+<p>
+Continuaţi instalarea cu <uri link="?part=1&amp;chap=8">Configurarea
+Sistemului</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="genkernel">
+<title>Alternativ: Utilizarea genkernel</title>
+<body>
+
+<p>
+Dacă citiţi această secţiune, înseamnă că aţi ales script-ul nostru
+<c>genkernel</c> pentru a vă configura kernel-ul.
+</p>
+
+<p>
+Acum că sursele kernel-ului sunt instalate, este timpul să compilăm
+kernel-ul folosind scriptul <c>genkernel</c>, pentru o compilarea automată a
+kernel-ului. <c>genkernel</c> funcţionează prin a configura un kernel
+aproape identic cu  cel al mediului Installation CD. Asta înseamnă că atunci
+când folosiţi <c>genkernel</c> pentru a vă construi un kernel, sistemul va
+detecta, la modul general, toate componentele hardware, in timpul procesului de
+boot, aşa cum o face mediul Installation CD. Deoarece  genkernel nu necesită
+vreo configurare manuală a kernel-ului, este ideal pentru cei carora nu le este
+la îndemână să-şi compileze propriile kernel-uri.
+</p>
+
+<p>
+Acum să vedem cum se foloseşte genkernel. Mai întăi, instalaţi pachetul
+genkernel:
+</p>
+
+<pre caption="Instalarea genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+Apoi, copiaţi configuraţia kernel-ului utilizată de mediul Installation CD în
+locaţia unde genkernel caută configuraţia implicită de kernel:
+</p>
+
+<pre caption="Copierea configuraţiei de kernel de pe Installation CD">
+# <i>zcat /proc/config.gz > /usr/share/genkernel/ppc/kernel-config-2.6</i>
+</pre>
+
+<p>
+Dacă utilizaţi dispozitive firewire sau USB la boot, va trebui să
+adăugaţi modulele în imaginea initrd. Editaţi
+<path>/usr/share/genkernel/ppc/modules_load</path> şi modificaţi
+<c>MODULES_FIREWIRE="ieee1394 ohci1394 sbp2"</c> pentru suportul firewire sau
+<c>MODULES_USB="usbcore ohci-hcd ehci-hcd usb-storage"</c> pentru suportul USB.
+</p>
+
+<p>
+Acum, compilaţi sursa kernel-ului rulând <c>genkernel --genzimage all</c>.
+Pentru Pegasos, va trebui să utilizăm o configuraţie diferită şi să
+creăm o imagine zImage în locul kernel-ului vmlinux utilizat pe maşinile
+Apple. Fiţi atenţi, totuşi, că <c>genkernel</c> compilează un  kernel
+care suportă aproape toate componentele hardware, compilarea durând ceva
+timp pentru a se termina.
+</p>
+
+<p>
+Trebuie să ştiţi că daca partiţia de boot nu foloseşte ext2 sau ext3
+ca sistem de fişiere, va trebui să configuraţi manual kernel-ul, folosind
+<c>genkernel --menuconfig --genzimage all</c> şi să adăugaţi suport
+pentru sistemul respectiv de fişiere <e>în</e> kernel (<e>nu</e> ca modul).
+Utilizatorii de EVMS2 sau LVM2, vor trebui, probabil, să adauge
+<c>--evms2</c> sau <c>--lvm2</c> ca argumente, de asemenea.
+</p>
+
+<pre caption="Rularea genkernel">
+# <i>genkernel --genzimage all</i>
+</pre>
+
+<pre caption="Rularea genkernel pe o maşină Pegasos">
+# <i>genkernel --genzimage --kernel-config=/usr/share/genkernel/ppc/Pegasos all</i>
+</pre>
+
+<p>
+Odată ce <c>genkernel</c> îşi încheie execuţia, vor fi create un set
+întreg de module şi <e>initial root disk</e> (initrd). Vom folosi kernel-ul
+şi initrd cănd vom configura aplicaţia bootloader. Notaţi undeva numele
+imaginii de kernel şi a fişierului initrd pentru că vă va trebui cănd veţi
+configura aplicaţia bootloader. Initrd-ul va porni imediat după boot, pentru
+a iniţia autodetecţia hardware (la fel ca şi la mediul Installation CD) înainte
+ca "adevăratul" sistem să pornească. Asiguraţ-vă că notaţi şi argumentele de
+boot necesare pentru un efectuarea unui cu succes a unui proces de boot cu
+genkernel.
+</p>
+
+<pre caption="Verificarea numelor imaginii de kernel creată şi a initrd-ului">
+# <i>ls /boot/kernel* /boot/initramfs*</i>
+</pre>
+
+<p>
+Acum să parcurgem încă un pas spre a face sistemul să semene mai mult cu
+mediul Installation CD -- să instalăm <c>coldplug</c>. În timp ce initrd
+autodetectează componentele hardware necesare procesului de boot,
+<c>coldplug</c> detectează tot ceea ce rămâne. <c>coldplug</c> este disponibil
+ca pachet pe mediul Package CD
+</p>
+
+<pre caption="Instalarea şi activarea coldplug">
+<comment>(Efectuaţi acest pas după instalare, în timpul instrucţiunilor de instalare pentru GRP</comment>
+# <i>emerge coldplug</i>
+# <i>rc-update add coldplug boot</i>
+</pre>
+
+<p>
+Dacă doriţi ca sistemul dvs. să reacţioneze la evenimente hotplugging, va
+trebui să instalaţi şi să setaţi <c>hotplug</c>, de asemenea:
+</p>
+
+<pre caption="Instalarea şi activarea hotplug">
+# <i>emerge hotplug</i>
+# <i>rc-update add hotplug default</i>
+</pre>
+
+<p>
+Acum continuaţi consultând capitolul <uri link="?part=1&amp;chap=8">Configurarea
+Sistemului</uri>.
+</p>
+
+</body>
+</section>
+
+</sections>
