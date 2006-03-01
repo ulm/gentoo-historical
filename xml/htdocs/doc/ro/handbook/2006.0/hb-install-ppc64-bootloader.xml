@@ -1,0 +1,348 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/handbook/2006.0/hb-install-ppc64-bootloader.xml,v 1.1 2006/03/01 20:28:47 alin Exp $ -->
+
+<sections>
+
+<version>6.0</version>
+<date>2006-02-27</date>
+
+<section>
+<title>Alegerea</title>
+<subsection>
+<title>Introducere</title>
+<body>
+
+<p>
+Acum, că kernel-ul este configurat şi compilat şi fişierele de configurare
+a sistemului sunt completate corect, este timpul să instalăm un program ce
+va încărca kernel-ul când porniţi sistemul. Un astfel de program se
+numeşte <e>bootloader</e>.
+</p>
+
+<p>
+Pe Linux/PPC64 avem doar yaBoot ca aplicaţie bootloader până când grub2 va
+fi terminat.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="yaboot">
+<title>Utilizarea Yaboot</title>
+<subsection>
+<title>Introducere</title>
+<body>
+
+<impo>
+Va trebui să utilizaţi yaboot-static în locul yaboot, pentru că yaboot nu
+se va compila pe PPC64.
+</impo>
+
+<p>
+Există 2 moduri de configurare a Yaboot pentru sistemul dvs. Puteţi noua
+şi îmbunătăţita aplicaţie <c>yabootconfig</c> inclusă în
+<path>yaboot-1.3.8-r1</path> şi apoi să setaţi automat yaboot. Dacă, din
+anumite motive, nu doriţi să rulaţi <c>yabootconfig</c> pentru a seta
+automat <path>/etc/yaboot.conf</path> sau instalaţi Gentoo pe un G5 (pe care
+<c>yabootconfig</c> nu funcţionează întotdeauna), puteţi să editaţi
+exemplul de fişier deja instalat pe sistemul dvs.
+</p>
+
+<impo>
+Dacă instalaţi pe o maşină G5 utilizând o aplicaţie de instalare
+online şi nu aţi utilizat fişierele stage optimizate pentru G5, trebuie
+să modificaţi profilul utilizat acum. În caz contrat, nu veţi avea
+dependenţele necesare pentru ca yaboot să ruleze pe echipamentul Apple. În
+comanda următoare, înlocuiţi <c>(userland)</c> cu nivelul de bit pentru
+userland. Dacă instalaţi pe o maşină G5 utilizând o aplicaţie de
+instalare offline, va trebui să instalaţi aceste pachete manual.
+</impo>
+
+<pre caption = "(INSTALARE ONLINE NUMAI PENTRU UTILIZATORII G5) Modificarea profilului">
+# <i>rm /etc/make.profile</i>
+# <i>ln -sf /usr/portage/profiles/default-linux/ppc/2006.0/ppc64/(userland)/970/pmac /etc/make.profile</i>
+</pre>
+
+<pre caption = "(INSTALARE OFFLINE NUMAI PENTRU UTILIZATORII G5) Instalarea
+Utilitarelor pentru Sistemele de Fişiere Necesare">
+# <i>emerge hfsutils hfsplusutils</i>
+</pre>
+
+<pre caption = "Instalarea aplicaţiei bootloader">
+<comment>(userland pe 64 de biţi)</comment>
+# <i>emerge --update yaboot-static</i>
+<comment>(userland pe 32 de biţi)</comment>
+# <i>emerge --update yaboot</i>
+</pre>
+
+<impo>
+yabootconfig/ybin nu va funcţiona pe maşinile IBM. Va trebui să instalaţi
+yaboot altfel: <uri link="#yaboot-ibm">Utilizarea yaboot pe sistemele hardware
+IBM</uri>
+</impo>
+
+<note>
+Dacă sistemul de fişiere al partiţiei dvs. rădăcină este JFS, <e>trebuie</e>
+să adăugaţi " ro" în linia de <c>kernel</c>, deoarece JFS trebuie să-şi
+restaureze log-ul înainte de a permite mount-area în modul read-write
+(citire-scriere).
+</note>
+
+<ul>
+  <li>
+    <uri link="#yabootconfig">Implicit: Utilizarea yabootconfig</uri>
+  </li>
+  <li>
+    <uri link="#manual_yaboot">Alternativ: Configurarea Manuală a yaBoot
+    </uri>
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection id="yabootconfig">
+<title>Implicit: Utilizarea yabootconfig</title>
+<body>
+
+<p>
+<c>yabootconfig</c> va autodetecta partiţiile de pe maşina dvs. şi va seta
+combinaţii duble sau triple cu Linux, Mac OS şi Mac OS X.
+</p>
+
+<p>
+Pentru a utiliza <c>yabootconfig</c>, drive-ul dvs. trebuie să conţină o
+partiţie bootstrap şi <path>/etc/fstab</path> trebuie să fie configurat
+conform partiţiilor Linux. Amândouă condiţiile trebuie să se fi
+îndeplinit deja în paşii anteriori. Pentru a începe, asiguraţi-vă că
+aveţi ultima versiune de yaboot instalată prin rularea <c>emerge --update
+yaboot-static</c>. Aceasta este necesară, deoarece ultima versiune va fi
+disponibilă în Portage, dar este posibil să nu fi fost instalată în
+arhivele tar stage.
+</p>
+
+<pre caption = "Instalarea yaboot-static">
+# <i>emerge --update yaboot-static</i>
+</pre>
+
+<p>
+Acum, rulaţi <c>yabootconfig</c>. Programul va rula şi va confirma locaţia
+partiţiei bootstrap. Apăsaţi <c>Y</c> dacă aceasta este corectă. Dacă
+nu, verificaţi încă o dată <path>/etc/fstab</path>. Apoi, yabootconfig va
+scana setările sistemului, va crea <path>/etc/yaboot.conf</path> şi va rula
+<c>mkofboot</c>. <c>mkofboot</c> este utilizat pentru a formata partiţia
+bootstrap şi a instala fişierul de configurare yaboot în aceasta.
+</p>
+
+<p>
+Puteţi verifica conţinutul fişierului <path>/etc/yaboot.conf</path>. Dacă
+modificaţi <path>/etc/yaboot.conf</path> (cum ar fi setarea sistemului de
+operare implicit), trebuie să rulaţi din nou <c>ybin -v</c> pentru a aplica
+modificările în partiţia bootstrap.
+</p>
+
+<p>
+Acum, puteţi continua cu secţiunea <uri link="#reboot">Repornirea
+Sistemului</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="manual_yaboot">
+<title>Alternativ: Configurarea Manuală a yaBoot</title>
+<body>
+
+<p>
+Mai jos veţi găsi un fişier <path>yaboot.conf</path> complet.
+Modificaţi-l în voie.
+</p>
+
+<pre caption = "/etc/yaboot.conf">
+<comment>## /etc/yaboot.conf
+##
+## rulaţi: "man yaboot.conf" pentru detalii. Nu modificaţi până nu aţi consultat manualul!!
+## consultaţi de asemenea: /usr/share/doc/yaboot/examples pentru exemple de configuraţii.
+##
+## Pentru un meniu dual-boot, adăugaţi una sau mai multe intrări dintre următoarele:
+## bsd=/dev/hdaX, macos=/dev/hdaY, macosx=/dev/hdaZ
+
+## partiţia bootstrap:</comment>
+
+boot=/dev/hda2
+
+<comment>## ofboot este modul openfirmware de a specifica partiţia bootstrap.
+## Dacă nu este definit, yaboot nu va funcţiona pe G5 sau G4 (decât dacă
+## introduceţi argumentele necesare programului mkofboot/ybin).
+## hd:X înseamnă /dev/sdaX (sau /dev/hdaX).</comment>
+
+ofboot=hd:2
+
+<comment>## hd: este reprezentarea open firmware pentru hda</comment>
+device=hd:
+
+delay=5
+defaultos=macosx
+timeout=30
+install=/usr/lib/yaboot/yaboot
+magicboot=/usr/lib/yaboot/ofboot
+
+<comment>#################
+## Această secţiune poate fi duplicat dacă aveţi mai mult de un kernel sau
+## opţiuni de boot - înlocuiţi 2.6.12-gentoo-r10 cu versiunea dvs. de kernel
+#################</comment>
+image=/boot/kernel-2.6.12-gentoo-r10
+  label=Linux
+  root=/dev/hda3
+  partition=3
+  read-only
+
+macos=hd:13
+macosx=hd:12
+enablecdboot
+enableofboot
+</pre>
+
+<p>
+Odată setat <path>yaboot.conf</path> corect, rulaţi <c>mkofboot -v</c>
+pentru a instala setările în partiţia bootstrap. <e>Nu uitaţi acest
+lucru!</e> Confirmaţi când <c>mkofboot</c> vă va cere crearea unui sistem
+de fişiere.
+</p>
+
+<p>
+Dacă totul se desfăşoară corect, şi aveţi aceleaşi opţiuni ca în
+exemplul de mai sus, următoarea acţiune de restart vă va afişa un meniu
+simplu, format din 5 intrări. Dacă modificaţi configurarea yaboot
+ulterior, va trebui să rulaţi doar <c>ybin -v</c> pentru a actualiza
+partiţia bootstrap - <c>mkofboot</c> este utilizat doar pentru setarea
+iniţială.
+</p>
+
+<p>
+Pentru mai multe informaţii despre yaBoot, vizitaţi <uri
+link="http://penguinppc.org/projects/yaboot">proiectul yaboot</uri>.
+Deocamdată, continuaţi cu secţiunea <uri link="#reboot">Repornirea
+Sistemului</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="yaboot-ibm">
+<title>Utilizarea yaboot pe sistemele hardware IBM</title>
+<body>
+
+<p>
+Pe maşinile IBM nu puteţi rula yabootconfig sau ybin. Trebuie să
+efectuaţi următorii paşi:
+</p>
+
+<ul>
+  <li>
+    Instalaţi yaboot-static
+  </li>
+  <li>
+    Rulaţi 'dd if=/usr/lib/yaboot/yaboot.chrp of=/dev/sdXX' (completaţi XX
+    cu discul şi partiţia pentru partiţia PReP; aceasta era în exemplul
+    nostru, /dev/sda1)
+  </li>
+  <li>
+    Apoi, construiţi-vă fişierul propriu yaboot.conf şi copiaţi-l în
+    /etc. (analizaţi fişierul de configurare exemplificat anterior, citiţi
+    pagina de manual pentru yaboot.conf sau luaţi ca exemplu fişierul
+    yaboot.conf de mai jos)
+  </li>
+  <li>
+    Presupunând că dispozitivul dvs. de boot în OF indică discul pe
+    care lucraţi curent şi partiţia de boot este activă, atunci va
+    funcţiona, altfel, în momentul IPL, intraţi în meniul multiboot şi
+    setaţi dispozitivul de boot cu cel căruia îi aparţine partiţia de boot,
+    dorită.
+  </li>
+  <li>
+    Asta este tot!
+  </li>
+</ul>
+
+<pre caption = "yaboot.conf pentru sistemele hardware IBM">
+device=disk:
+partition=2
+root=/dev/sda2
+default=2.6.12-gentoo-r10
+timeout=50
+
+image=/boot/vmlinux-2.6.12-gentoo-r10
+      label=Linux
+      append="console=ttyS0,9600"
+      read-only
+</pre>
+
+<p>
+Pentru POWER4, POWER5 şi sistemele hardware bazate pe blade unde partiţia
+discului PReP şi partiţia discului ce conţine imaginea dvs. de kernel sunt pe
+acelaşi disc fizic, puteţi utiliza un fişier yahoot.conf simplificat.
+Următorul conţinut ar trebui să fie suficient:
+</p>
+
+<pre caption="yaboot.conf pentru sistemele hardware PReP">
+default = linux
+timeout = 100
+image=/boot/kernel-2.6.12-gentoo-r10
+        label=linux
+        read-only
+        root = /dev/sda2
+        append="root=/dev/sda2"
+</pre>
+
+<p>
+Pentru a verifica dacă yaboot a fost copiat pe partiţia PReP:
+</p>
+
+<pre caption="Verificarea instalării yaboot pe PReP">
+# <i>dd if=/dev/sda1 count=10 | grep ELF</i>
+Binary file (standard input) matches
+10+0 records in
+10+0 records out
+</pre>
+
+<p>
+O potrivire a rezultatelor semnifică faptul că yaboot a fost instalat corect.
+</p>
+
+</body>
+</section>
+<section id="reboot">
+<title>Repornirea Sistemului</title>
+<subsection>
+<body>
+
+<p>
+Ieşiţi din mediul chroot şi demount-aţi toate partiţiile mount-ate. Apoi
+tastaţi comanda magică pe care aţi aşteptat-o: <c>reboot</c>.
+</p>
+
+<pre caption="Ieşirea din chroot, demount-area tuturor partiţiilor şi repornirea">
+# <i>exit</i>
+~# <i>cd</i>
+~# <i>umount /mnt/gentoo/boot /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo</i>
+~# <i>reboot</i>
+</pre>
+
+<p>
+Desigur, nu uitaţi să îndepărtaţi CD-ul boot-abil, altfel CD-ul va
+boot-a din nou în locul noului sistem Gentoo.
+</p>
+
+<p>
+Odată repornită instalarea Gentoo, terminaţi-o cu <uri
+link="?part=1&amp;chap=11">Finalizarea Instalării Gentoo</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
