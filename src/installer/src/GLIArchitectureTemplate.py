@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.264 2006/02/28 16:12:30 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.265 2006/03/01 12:55:22 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1089,7 +1089,7 @@ class ArchitectureTemplate:
 				resolv_output.append("search " + domainname + "\n")
 				
 			# Output to file
-			if self._debug: self._logger.log("DEBUG: setup_network_post(): writing resolv.conf with contents: "+resolv_output)
+			if self._debug: self._logger.log("DEBUG: setup_network_post(): writing resolv.conf with contents: " + str(resolv_output))
 			resolve_conf = open(self._chroot_dir + "/etc/resolv.conf", "w")
 			resolve_conf.writelines(resolv_output)
 			resolve_conf.close()
