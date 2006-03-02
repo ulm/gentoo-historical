@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-bootloader.xml,v 1.5 2006/01/26 11:18:34 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-bootloader.xml,v 1.6 2006/03/02 23:05:15 chiguire Exp $ -->
 
 <sections>
 
-<version>2.8</version>
-<date>2005-01-19</date>
+<version>2.9</version>
+<date>2006-02-27</date>
   
 <section>
 <title>Elegir un gestor de arranque</title>
@@ -48,14 +48,20 @@ un menú de inicio SmartFirmware.
 
 <p>
 Para poder encontrar los dispositivos de arranque yaboot necesita acceder
-al sistema de ficheros <path>/dev</path>. Para ello, necesitará hacer
-"bind-mapping" del sistema de ficheros <path>/dev</path> del CD de 
-instalación en el <path>/dev</path> del entorno de chroot.
+a los nodos de dispositivo creados por udev durante el arranque y al
+sistema de ficheros sysfs. Esos dos sistemas de ficheros se encuentran
+respectivamente en <path>/dev</path> y <path>sys</path>. Para hacer esto,
+necesitaremos hacer un "bind mount" de esos sistemas de ficheros en el
+directorio root del CD de instalación a los puntos de montaje
+<path>/dev</path> y <path>/sys</path> dentro del entorno de chroot. Si
+ya lo hemos hecho no es necesario volver a hacerlo
 </p>
 
-<pre caption="Montando y enlazando el sistema de ficheros /dev" >
+<pre caption="Montando y enlazando los sistemas de ficheros de
+dispositivos y sysfs" >
 # <i>exit</i>   # para salir del chroot
 # <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount -o bind /sys /mnt/gentoo/sys</i>
 # <i>chroot /mnt/gentoo /bin/bash</i>
 # <i>/usr/sbin/env-update &amp;&amp; source /etc/profile </i>
 </pre>
@@ -76,10 +82,10 @@ yaboot.conf deberá ser modificada así:
 <pre caption="Añadiendo opciones de arranque de genkernel a yaboot.conf" >
 <comment>###########################################################
 ## Esta sección se puede duplicar si tenemos más de un 
-## núcleo o conjunto de opciones de arranque - reemplazaremos 2.6.12
+## núcleo o conjunto de opciones de arranque - reemplazaremos 2.6.15
 ## con el nombre exacto del fichero del núcleo
 ###########################################################</comment>
-image=/boot/kernel-2.6.9
+image=/boot/kernel-2.6.15
 label=Linux
 root=/dev/ram0		<comment># es /dev/ram0 si se usa genkernel</comment>
 partition=3
@@ -110,27 +116,28 @@ configurará un arranque múltiple con Linux, Mac OS y Mac OS X.
 
 <p>
 Para usar <c>yabootconfig</c>, el disco debe tener una partición
-Apple_Bootstrap, y <path>/etc/fstab</path> debe estar configurado con
-las particiones Linux. Ambos requisitos deben de haberse satisfecho ya.
-Para empezar,nos aseguraremos tener instalada la versión más reciente 
-de <c>yaboot</c>. 
+Apple_Bootstrap, y <path>/etc/fstab</path> debe estar configurado
+reflejando nuestras particiones Linux. Estos pasos deben haberse
+satisfecho ya anteriormente, pero deberíamos revisar
+<path>/etc/fstab</path> antes de continuar. Luego, nos aseguraremos tener
+instalado <c>yaboot</c>. 
 </p>
 
-<pre caption="Instalación de yaboot con GRP" >
-# <i>emerge --usepkg --update yaboot</i>
+<pre caption="Instalación de yaboot" >
+# <i>emerge yaboot</i>
 </pre>
 
 <p>
 Ahora saldremos del chroot y ejecutaremos <c>yabootconfig --chroot
-/mnt/gentoo</c>. Pedirá confirmación de la ubicación de la partición
-Apple_Bootstrap. Pulsaremos <c>Y</c> si es correcta. Si no lo
-es, comprobaremos <path>/etc/fstab</path> para asegurarnos que las rutas 
-de los dispositivos son correctas. Una vez que la partición de bootstrap
-ha sido seleccionada, <c>yabootconfig</c> revisará la configuración del
-sistema, creará <path>/etc/yaboot.conf</path> y ejecutará <c>mkofboot</c>.
-<c>mkofboot</c> se utiliza para formatear la partición Apple_Bootstrap, e
-instalar el fichero de configuración de yaboot en ella. Después de esto,
-entraremos en el chroot nuevamente.
+/mnt/gentoo</c>. Primero, el programa pedirá confirmación de la
+ubicación de la partición de bootstrap.Si estamos utilizando el esquema
+de particionamiento sugerido, la partición de arranque será /dev/hda2.
+Pulsaremos <c>Y</c> si lo mostrado es correcto. Si no lo es, comprobaremos
+nuestro <path>/etc/fstab</path>. <c>yabootconfig</c> revisará entonces la
+configuración del sistema, creará <path>/etc/yaboot.conf</path> y
+ejecutará <c>mkofboot</c>. <c>mkofboot</c> se utiliza para formatear la
+partición Apple_Bootstrap, e instalar el fichero de configuración de
+yaboot en ella. Después de esto, entraremos en el chroot nuevamente.
 </p>
 
 <pre caption="Volver a entrar en el chroot" >
@@ -156,12 +163,11 @@ Ahora, continuaremos en <uri link="#reboot" >Reiniciando el sistema</uri>.
 <body>
 
 <p>
-En primer lugar, nos aseguraremos que se ha instalado versión más
-reciente de <c>yaboot</c>.
+En primer lugar, nos aseguraremos que hemos instalado <c>yaboot</c>.
 </p>
 
 <pre caption="Instalación de yaboot" >
-# <i>emerge --usepkg --update yaboot</i>
+# <i>emerge yaboot</i>
 </pre>
 
 <p>
@@ -331,6 +337,12 @@ disponible en <uri link="http://penguinppc.org/bootloaders/bootx/" >Boot X
 home page</uri>.
 </p>
 
+<impo>
+Debemos asegurarnos de tener soporte para los sistemas de fichero HFS y
+HFS+ en el núcleo, en caso contrario, no podremos actualizar o cambiar el
+núcleo en la partición MacOS.
+</impo>
+
 <p>
 Ahora reiniciaremos otra vez cargando Linux, y luego continuaremos con <uri link="?part=1&amp;chap=11" >Finalizando la instalación de Gentoo</uri>.
 </p>
@@ -364,12 +376,12 @@ arranque.
 
 <pre caption="Configuración de quik.conf" >
 # Ejemplo de quik.conf
-init-message = &quot;Gentoo 2005.1\n&quot;
+init-message = &quot;Gentoo 2006.0\n&quot;
 partition = 2           <comment># Esta es la partición de boot</comment>
 root = /dev/hda4
 timeout = 30
 default = gentoo
-image = /vmlinux-2.6.12
+image = /vmlinux-2.6.15
     label = gentoo
 </pre>
 
@@ -398,7 +410,7 @@ intentar esto.
 # <i>nvsetenv input-device kbd</i>
 # <i>nvsetenv boot-device scsi/sd@1:0</i> <comment># Para SCSI</comment>
 # <i>nvsetenv boot-device ata/ata-disk@0:0</i> <comment># Para ATA</comment>
-# <i>nvsetenv boot-file /boot/vmlinux-2.6.12 root=/dev/hda4</i> <comment> # El primer ítem es la ruta al núcleo, el segundo es la partición root. Se pueden añadir las opciones del núcleo al final de esta línea.</comment>
+# <i>nvsetenv boot-file /boot/vmlinux-2.6.15 root=/dev/hda4</i> <comment> # El primer ítem es la ruta al núcleo, el segundo es la partición root. Se pueden añadir las opciones del núcleo al final de esta línea.</comment>
 # <i>nvsetenv boot-command boot</i> <comment># Establezca esta opción para arrancar desde Linux</comment>
 </pre>
 
@@ -484,12 +496,12 @@ Local HD -> Morphos      (Normal)
 ide:0 boot2.img ramdebug edebugflags=&quot;logkprintf&quot;
 
 [SECTION]
-Local HD -> Linux 2.6.12 (Normal)
-ide:0 linux-2.6.12 video=radeonfb:1024x768@70 root=/dev/hda3
+Local HD -> Linux 2.6.15 (Normal)
+ide:0 linux-2.6.15 video=radeonfb:1024x768@70 root=/dev/hda3
 
 [SECTION]
 Local HD -> Genkernel (Normal)
-ide:0 kernelz-2.6.12 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
+ide:0 kernelz-2.6.15 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
 </pre>
 
 <p>
