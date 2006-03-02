@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.103 2006/03/01 19:43:48 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.104 2006/03/02 21:37:58 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -249,6 +249,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						start = tmppart['start']
 						# Replace 512 with code to retrieve bytes per sector for device
 						end = start + (long(tmppart['mb']) * MEGABYTE / 512)
+						tmppart['end'] = end
 						for i in new_part_list:
 							if i <= new_part: continue
 							if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
@@ -259,7 +260,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						if type == "ext2" or type == "ext3":
 							total_sectors = end - start + 1
 							ret = GLIUtility.spawn("resize2fs " + device + str(minor) + " " + str(total_sectors) + "s")
-							if ret: # Resize error
+							if not GLIUtility.exitsuccess(ret): # Resize error
 								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
 						elif type == "ntfs":
 							total_sectors = end - start + 1
