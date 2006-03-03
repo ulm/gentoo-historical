@@ -1,0 +1,202 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- English CVS Version: 1.2 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/2006.0/hb-install-alpha-bootloader.xml,v 1.1 2006/03/03 05:11:24 grahl Exp $ -->
+
+<sections>
+
+<version>6.0</version>
+<date>2006-02-27</date>
+
+<section>
+<title>Eine Wahl treffen</title>
+<subsection>
+<title>Einleitung</title>
+<body>
+
+<p>
+Nun, da Ihr Kernel konfiguriert und kompiliert ist und die notwendigen
+Systemkonfigurationsdateien korrekt ergänzt sind, ist es Zeit ein Programm
+zu installieren, dass Ihren Kernel lädt wenn Sie Ihr System starten. Solch ein
+Programm nennt man einen <e>Bootloader</e>.
+</p>
+
+<p>
+Für Linux/Alpha existieren verschiedene Bootloader. Sie müssen einen der
+unterstützten Bootloader wählen, nicht alle. Sie haben die Wahl zwischen <uri
+link="#aboot">aBoot</uri> und <uri link="#milo">MILO</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="aboot">
+<title>Standard: Benutzung von aboot</title>
+<body>
+
+<p>
+Zunächst installieren wir aboot auf unserem System. Natürlich benutzen wir
+<c>emerge</c> dazu:
+</p>
+
+<pre caption = "Installieren von aboot">
+# <i>emerge --usepkg aboot</i>
+</pre>
+
+<p>
+Im nächsten Schritt machen wir unsere Bootdiskette bootbar. Diese wird
+<c>aboot</c> starten, wenn Sie Ihr System booten. Wir machen unsere
+Bootdiskette bootbar durch das Schreiben des <c>aboot</c> Bootloaders auf den
+Anfang der Diskette.
+</p>
+
+<pre caption = "Die Bootdiskette bootbar machen">
+# <i>swriteboot -f3 /dev/sda /boot/bootlx</i>
+# <i>abootconf /dev/sda 2</i>
+</pre>
+
+<note>
+Wenn Sie ein anderes Partitionierungschema verwenden als das, welches wir in
+diesem Kapitel verwendet haben, müssen Sie ihre Befehle dementsprechend ändern.
+Bitte lesen Sie die entsprechenden man-Seiten (<c>man 8 swriteboot</c> und
+<c>man 8 abootconf</c>). Sofern Sie JFS als Root Dateisystem verwenden, 
+sollten Sie außerdem sicherstellen, dass <c>ro</c> als Kerneloption übergeben
+wird, damit es das Protokoll sichten kann, bevor es als beschreibbar gemountet
+wird.
+</note>
+
+<p>
+Zusätzlich können Sie dafür dafür sorgen, dass Gentoo automatisch bootet, indem
+Sie die aboot Konfigurationsdatei und einige SRM Variablen einrichten. Sie
+können diese Variablen aus Linux heraus setzen, es ist aber vermutlicher
+einfacher dies in der SRM Konsole selbst zu tun.
+</p>
+
+<pre caption = "Gentoo automatisch starten">
+# <i>echo '0:2/boot/vmlinux.gz root=/dev/sda2' &gt; /etc/aboot.conf</i>
+# <i>cd /proc/srm_environment/named_variables</i>
+# <i>echo -n 0 &gt; boot_osflags</i>
+# <i>echo -n '' &gt; boot_file</i>
+# <i>echo -n 'BOOT' &gt; auto_action</i>
+# <i>echo -n 'dkc100' &gt; bootdef_dev</i>
+<comment>(Ersetzen Sie dkc100 mit Ihrem Boot Device)</comment>
+</pre>
+
+<p>
+Wenn Sie in Zukunft wieder in die SRM Konsole müssen (um Ihre Gentoo
+Installation wiederherzustellen, mit Variablen spielen oder was auch immer)
+drücken Sie einfach CTRL+C um den automatischen Ladevorgang abzubrechen.
+</p>
+
+<p>
+Wenn Sie unter Benutzung einer seriellen Konsole installieren, vergessen Sie
+nicht das Flag für das Booten serieller Konsolen (serial console boot flag) in
+<path>aboot.conf</path> einzubinden.  In <path>/etc/aboot.conf.example</path>
+finden Sie weitere Informationen.
+</p>
+
+<p>
+Fahren Sie nun mit dem <uri link="#reboot">Rebooten des Systems</uri> fort.
+</p>
+
+</body>
+</section>
+<section id="milo">
+<title>Alternativ: Benutzung von MILO</title>
+<body>
+
+<p>
+Bevor Sie fortfahren, sollten Sie sich entscheiden, wie Sie MILO benutzen
+wollen. In diesem Abschnitt werden wir annehmen, dass Sie eine MILO
+Bootdiskette erstellen wollen. Wenn Sie von einer MS-DOS Partition auf Ihrer
+Festplatte starten wollen, sollten sie die Befehle entsprechend erweitern.
+</p>
+
+<p>
+Um MILO zu installieren benutzen wir <c>emerge</c>.
+</p>
+
+<pre caption = "Installieren von MILO">
+# <i>emerge --usepkg milo</i>
+</pre>
+
+<p>
+Nachdem MILO installiert wurde, sollten die MILO-Images in
+<path>/opt/milo</path> sein. Die untenstehenden Befehle erstellen eine
+Bootdiskette zur Benutzung für MILO. Denken Sie daran das richtige Image für
+Ihr Alpha-System zu verwenden.
+</p>
+
+<pre caption = "MILO auf einer Diskette installieren">
+<comment>(Schieben Sie zunächst eine leere Diskette ein)</comment>
+# <i>fdformat /dev/fd0</i>
+# <i>mformat a:</i>
+# <i>mcopy /opt/milo/milo-2.2-18-gentoo-ruffian a:\milo</i>
+# <i>mcopy /opt/milo/linload.exe a:\lilnload.exe</i>
+<comment>(Nur wenn sie Ruffian haben:</comment>
+  # <i>mcopy /opt/milo/ldmilo.exe a:\ldmilo.exe</i>
+<comment>)</comment>
+# <i>echo -ne '\125\252' | dd of=/dev/fd0 bs=1 seek=510 count=2</i>
+</pre>
+
+<p>
+Ihre MILO Bootdiskette ist nun bereit um Gentoo Linux zu booten. Sie müssen
+vielleicht noch Umgebungsvariablen in Ihrem ARCS-Firmware setzen um MILO zum
+starten zu kriegen; dies wird alles im <uri
+link="http://tldp.org/HOWTO/MILO-HOWTO/">MILO-HOWTO</uri> erklärt; mit einigen
+Beispielen für gängige Systeme und Beispielen der Befehle für die Arbeit im
+interaktiven Modus.
+</p>
+
+<p>
+Das <uri link="http://tldp.org/HOWTO/MILO-HOWTO/">MILO-HOWTO</uri> nicht zu
+lesen ist eine <e>schlechte</e> Idee.
+</p>
+
+<p>
+Fahren Sie nun mit dem <uri
+link="#reboot">Rebooten des Systems</uri>
+fort.
+</p>
+
+</body>
+</section>
+<section id="reboot">
+<title>Rebooten des Systems</title>
+<subsection>
+<body>
+
+<p>
+Verlassen Sie die chroot-Umgebung und unmounten Sie alle gemounteten Partitionen.
+Geben Sie nun den magischen Befehl ein, auf welchen Sie schon so lange gewartet
+haben: <c>reboot</c>.
+</p>
+
+
+<pre caption="Verlassen der chroot-Umgebung, unmounten aller Partitionen und Neustart">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<p>
+Vergessen Sie natürlich nicht die bootbare CD aus dem Laufwerk zu nehmen, wenn
+nicht wird wieder die CD und nicht Ihr neues Gentoo System gestartet.
+</p>
+
+<p>
+Nach dem Reboot befinden Sie sich innerhalb Ihrer neuen Gentoo Installation, die
+Sie nun noch <uri link="?part=1&amp;chap=11">abschließen</uri> müssen.
+</p>
+
+</body>
+</subsection>
+</section>
+
+</sections>
