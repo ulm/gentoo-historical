@@ -93,9 +93,9 @@ class RunInstall(gtk.Window):
 
 		self.output_log = None
 		self.install_log = None
-		gobject.timeout_add(500, self.poll_notifications)
 		gobject.timeout_add(500, self.tail_outputfile)
 		gobject.timeout_add(500, self.tail_logfile)
+		gobject.timeout_add(500, self.poll_notifications)
 
 	def poll_notifications(self):
 		if self.install_done: return False
