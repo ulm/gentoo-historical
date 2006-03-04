@@ -15,9 +15,11 @@ class Panel(GLIScreen.GLIScreen):
 <b><u>Pre-install Config - aka Client Configuration</u></b>
 
 If your network is already set up and you can ping www.gentoo.org, then the
-checkbox labeled "My network is already set up and running" will be checked.
-In that case you do not need to set up any pre-install networking.  If it is
-not, you need to set up your networking.
+checkbox labeled "My network is already set up and running (or no network)"
+will be checked. In that case you do not need to set up any pre-install
+networking.  If it is not, you need to set up your networking. If you are not
+connected to a network, you should check that box, so the installer does not try
+to find a DHCP server.
 
 Note: If you intend to use wireless to connect to the Internet from the Livecd,
 you will need to set up your connection before starting the installer.  See the
@@ -84,7 +86,7 @@ and will not leave you with a bootable system.
 		self.already_setup_check.set_active(False)
 		self.already_setup_check.connect("toggled", self.already_setup_toggled)
 		hbox.pack_start(self.already_setup_check, expand=False, fill=False, padding=0)
-		hbox.pack_start(gtk.Label("My network is already setup and running"), expand=False, fill=False, padding=10)
+		hbox.pack_start(gtk.Label("My network is already setup and running (or no network)"), expand=False, fill=False, padding=10)
 		basicbox.pack_start(hbox, expand=False, fill=False, padding=3)
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(gtk.Label(_("Interface:")), expand=False, fill=False, padding=0)
