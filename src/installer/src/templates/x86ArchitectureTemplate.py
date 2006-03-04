@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.105 2006/03/04 02:08:58 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.106 2006/03/04 22:39:11 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -124,7 +124,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			device_sectors = parted_dev.length
 
 			# Iterate through new partitions and check for 'origminor' and 'format' == False
-			for part in parts_new[device].keys():
+			for part in new_part_list:
 				tmppart_new = parts_new[device][part]
 				if not tmppart_new['origminor'] or tmppart_new['format']: continue
 				tmppart_old = parts_old[device][tmppart_new['origminor']]

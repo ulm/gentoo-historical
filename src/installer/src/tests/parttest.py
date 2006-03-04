@@ -21,6 +21,7 @@ while partition:
 		print "Start: " + str(partition.geom.start)
 		print "End: " + str(partition.geom.end)
 		print "FS type: " + partition.fs_type.name
+		print "Name: " + partition.get_name()
 	except:
 		pass
 	if partition.num > 0:
