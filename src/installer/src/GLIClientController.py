@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.79 2006/03/01 03:11:06 agaffney Exp $
+$Id: GLIClientController.py,v 1.80 2006/03/04 00:01:56 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -101,11 +101,31 @@ class GLIClientController(Thread):
 				if not self._pretend:
 					step()
 			except GLIException, error:
-				if error.get_error_level() != 'fatal':
-					self._logger.log("Error: "+ error.get_function_name() + ": " + error.get_error_msg())
-					self.output("Non-fatal error... continuing...")
-				else:
-					raise error
+				etype, value, tb = sys.exc_info()
+				s = traceback.format_exception(etype, value, tb)
+				self._logger.log("Exception received during '" + self._install_steps[self._install_step]['name'] + "': " + str(error))
+				for line in s:
+					line = line.strip()
+					self._logger.log(line)
+				self.addNotification("exception", error)
+				self._install_event.clear()
+			except Exception, error:
+				# Something very bad happened
+				etype, value, tb = sys.exc_info()
+				s = traceback.format_exception(etype, value, tb)
+				self._logger.log("This is a bad thing. An exception occured outside of the normal install errors. The error was: '" + str(error) + "'")
+				for line in s:
+					line = line.strip()
+					self._logger.log(line)
+				self.addNotification("exception", error)
+				self._install_event.clear()
+#			except GLIException, error:
+#					self.output("Non-fatal error... continuing...")
+#				if error.get_error_level() != 'fatal':
+#					self._logger.log("Error: "+ error.get_function_name() + ": " + error.get_error_msg())
+#				else:
+#					self._logger.log("Pre-install step error: "+ error.get_function_name() + ": " + error.get_error_msg())
+#					raise error
 		self._logger.log("Completed pre_install steps")
 
 		# Wait for the self._install_event to be set before starting the installation.
@@ -302,13 +322,13 @@ class GLIClientController(Thread):
 
 				if interface and not dhcp_options:
 					if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): running '/sbin/dhcpcd -n " + interface + "'")
-					status = GLIUtility.spawn("/sbin/dhcpcd -n " + interface)
+					status = GLIUtility.spawn("/sbin/dhcpcd -t 15 -n " + interface)
 				elif interface and dhcp_options:
 					if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): running '/sbin/dhcpcd " + dhcp_options + " " + interface + "'")
-					status = GLIUtility.spawn("/sbin/dhcpcd " + dhcp_options + " " + interface)
+					status = GLIUtility.spawn("/sbin/dhcpcd -t 15 " + dhcp_options + " " + interface)
 				else:
 					if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): running '/sbin/dhcpcd -n'")
-					status = GLIUtility.spawn("/sbin/dhcpcd -n")
+					status = GLIUtility.spawn("/sbin/dhcpcd -t 15 -n")
 				if self._configuration.get_verbose(): self._logger.log("DEBUG: configure_networking(): call to /sbin/dhcpcd complete")
 
 				if not GLIUtility.exitsuccess(status):
