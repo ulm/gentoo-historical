@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.80 2006/03/04 00:01:56 agaffney Exp $
+$Id: GLIClientController.py,v 1.81 2006/03/04 00:14:46 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -103,7 +103,7 @@ class GLIClientController(Thread):
 			except GLIException, error:
 				etype, value, tb = sys.exc_info()
 				s = traceback.format_exception(etype, value, tb)
-				self._logger.log("Exception received during '" + self._install_steps[self._install_step]['name'] + "': " + str(error))
+				self._logger.log("Exception received during pre-install function '" + repr(step) + "': " + str(error))
 				for line in s:
 					line = line.strip()
 					self._logger.log(line)
