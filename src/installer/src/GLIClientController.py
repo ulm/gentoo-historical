@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.81 2006/03/04 00:14:46 agaffney Exp $
+$Id: GLIClientController.py,v 1.82 2006/03/04 00:20:20 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -109,6 +109,7 @@ class GLIClientController(Thread):
 					self._logger.log(line)
 				self.addNotification("exception", error)
 				self._install_event.clear()
+				break
 			except Exception, error:
 				# Something very bad happened
 				etype, value, tb = sys.exc_info()
@@ -119,6 +120,7 @@ class GLIClientController(Thread):
 					self._logger.log(line)
 				self.addNotification("exception", error)
 				self._install_event.clear()
+				break
 #			except GLIException, error:
 #					self.output("Non-fatal error... continuing...")
 #				if error.get_error_level() != 'fatal':
@@ -126,7 +128,8 @@ class GLIClientController(Thread):
 #				else:
 #					self._logger.log("Pre-install step error: "+ error.get_function_name() + ": " + error.get_error_msg())
 #					raise error
-		self._logger.log("Completed pre_install steps")
+		else:
+			self._logger.log("Completed pre_install steps")
 
 		# Wait for the self._install_event to be set before starting the installation.
 		# start_install() is called to pass here
@@ -148,7 +151,7 @@ class GLIClientController(Thread):
 				'ppc':		'ppcArchitectureTemplate',
 				'ppc64':	'ppc64ArchitectureTemplate'
 			}
-				
+
 		if self._configuration.get_architecture_template() not in templates.keys():
 			self.addNotification("exception", GLIException("UnsupportedArchitectureError", "fatal", "run", self._configuration.get_architecture_template() + ' is not supported by the Gentoo Linux Installer!'))
 
