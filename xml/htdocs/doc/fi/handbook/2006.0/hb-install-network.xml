@@ -1,0 +1,711 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/2006.0/hb-install-network.xml,v 1.1 2006/03/05 09:49:00 flammie Exp $ -->
+
+<sections>
+
+<version>6.0</version>
+<date>2006-02-27</date>
+
+<section>
+<title>Tarvitaanko verkkoa?</title>
+<subsection>
+<title>Missä tapauksessa pärjää ilman?</title>
+<body>
+
+<p>
+Normaalisti asennus-CD:ltä tai asentimella asennettaessa ei tarvitse 
+verkkoyhteyttä. On kuitenkin joitain tapauksia, joissa Internet-yhteys on hyvä 
+olla:
+</p>
+
+<ul>
+  <li>
+    stage3-tiedostot, jotka ovat asennus-CD:llä eivät toimi ja täytyy
+    noutaa oikeampi stage3-tiedosto verkosta
+  </li>
+  <li>
+    stage3, jonka asennin tekee ei sovi arkkitehtuurille, ja täytyy noutaa
+    oikea stage3 verkosta
+  </li>
+  <li>
+    täytyy asentaa erityisiä verkkosovelluksia, joita ilman ei pääse nettiin,
+    eikä asennus-CD:llä ei ole sopivia lähteitä (siten, että Internetiin
+    kuitenkin pääsee asennus-CD:n avulla)
+  </li>
+  <li>
+    tarvitaan etäavustusta asennuksen aikana (joki SSH:n läpi tai irkitse).
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection>
+<title>Tarvitseeko verkkoyhteyttä?</title>
+<body>
+
+<p>
+Stage3:n sopivuuden omalle laitteistolle voi tarkastaa katselemalla hakemistosta
+<path>/mnt/cdrom/stages/</path> josko siellä olisi sopivaa tiedostoa. Jollei,
+voi yrittää lähintä yhteensopivaa arkkitehtuuria.
+</p>
+
+<p>
+X86-Asentimen tekemä stage3 on i686-arkkitehtuurille optimoitu ja käyttää 
+NPTL:ää. AMD64-asentimen stage3 on optimoitu amd64:llä ja käyttää NPTL:ää.
+</p>
+
+<p>
+Toisaalta jollei optimoitua stage3:a löydy, ja halutaan kuitenkin asentaa
+sellainen, pitää sekin hakea verkosta asennuksessa.
+</p>
+
+<p>
+Siis, jollet tarvitse verkkoyhteyttä, sivuuta loppuosa tästä kappaleesta ja mene
+<uri link="?part=1&amp;chap=4">valmistelemaan kovalevyjäsi</uri>.
+Muutoin jatka verkkoasetustan kanssa alla.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Automaattinen verkontunnistus</title>
+<subsection>
+<title>Jospa se toimisi itsestään?</title>
+<body>
+
+<p>
+Jos järjestelmäsi on kytketty Ethernetillä verkkoon, jossa on DHCP-palvelin,
+verkkoasetuksesi on todennäköisesti jo tunnistettu valmiiksi. Tässä tapauksessa
+pystyt jo hyödyntämään asennus-CD:n verkkoa käyttäviä ohjelmia kuten <c>ssh</c>:ta,
+<c>scp</c>:tä, <c>ping</c>iä, <c>irssi</c>ä, <c>wget</c>iä ja <c>links</c>iä,
+sekä monia muitakin.
+</p>
+
+<p>
+Jos verkkoasetukset ovat valmiina, <c>/sbin/ifconfig</c>-komennon
+pitäisi kertoa käytössä olevista verkkorajapinnoista kuten lo:sta ja
+eth0:sta:
+</p>
+
+<pre caption="/sbin/ifconfig toimivassa ympäristössä">
+# <i>/sbin/ifconfig</i>
+<comment>(...)</comment>
+eth0      Link encap:Ethernet  HWaddr 00:50:BA:8F:61:7A
+          inet addr:192.168.0.2  Bcast:192.168.0.255  Mask:255.255.255.0
+          inet6 addr: fe80::50:ba8f:617a/10 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:1498792 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:1284980 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:1984 txqueuelen:100
+          RX bytes:485691215 (463.1 Mb)  TX bytes:123951388 (118.2 Mb)
+          Interrupt:11 Base address:0xe800
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Verkkoyhteyden testaaminen</title>
+<body>
+
+<p>
+Kannattanee aloittaa pingaamalla palveluntarjoajan nimipalvelinta (osoitteen
+löydät tiedostosta <path>/etc/resolv.conf</path>) ja sitten jotain satunnaista
+webbisivustoa. Tällä varmistetaan että verkkopaketit pääsevät Internetiin ja
+DNS-palvelin toimii moitteettomasti.
+</p>
+
+<pre caption="Tarkempaa verkon testausta">
+# <i>ping -c 3 www.yahoo.com</i>
+</pre>
+
+<p>
+Jos verkkoyhteytesi toimii, voit ohittaa loput tästä kappaleesta ja
+jatkaa matkaasi <uri link="?part=1&amp;chap=4">kovalevyjen valmisteluun</uri>.
+Jollei toimi, niin ei voi mitään; pitänee jatkaa säätämistä :)
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Valinnainen: Välipalvelimien asetusten teko</title>
+<body>
+
+<p>
+Jos käytät välipalvelinta Internet-yhteydessäsi, sinun kannattanee laittaa
+sen asetukset kohdalleen asennuksen ajaksi. Välipalvelimen asetukset ovat
+erittäin yksinkertaisia säädettäviä: tarvitsee vain luoda ympäristömuuttuja,
+joka
+sisältää välipalvelimen asetukset.
+</p>
+
+<p>
+Useimmissa tapauksissa välipalvelimen määritys onnistuu pelkkää palvelinnimeä
+käyttämällä. Esimerkiksi jos käyttäisimme palvelimen
+<c>proxy.gentoo.org</c> porttia <c>8080</c>, määritys tapahtuisi näin:
+</p>
+
+<pre caption="Välipalvelinten määrittely">
+<comment>(Jos välipalvelin käsittelee HTTP-yhteyksiä)</comment>
+# <i>export http_proxy="http://proxy.gentoo.org:8080"</i>
+<comment>(Jos välipalvelin käsittelee FTP-yhteyksiä)</comment>
+# <i>export ftp_proxy="ftp://proxy.gentoo.org:8080"</i>
+<comment>(Jos välipalvelin käsittelee RSYNC-yhteyksiä)</comment>
+# <i>export RSYNC_PROXY="proxy.gentoo.org:8080"</i>
+</pre>
+
+<p>
+Jos välipalvelin vaatii käyttäjätunnuksen ja salasanan käyttämistä, voit antaa
+ne seuraavasti:
+</p>
+
+<pre caption="Käyttäjänimen ja salasanan lisääminen välipalvelinmuuttujaan">
+http://username:password@server
+</pre>
+
+<p>
+Jos esimerkiksi siis HTTP-välipalvelimellamme käytämme tunnusta pekka ja
+salasanaa f00b_r, sanomme:
+</p>
+
+<pre caption="Autentikoitu välipalvelin">
+# <i>export http_proxy="http://pekka:f00b_r@proxy.gentoo.org:8080"</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Verkon automaattiasetukset</title>
+<subsection>
+<body>
+
+<p>
+Jollei verkkoyhteytesi toimi suoraan käynnistyksestä, jotkin asennusvälineet
+sisältävät
+<c>net-setup</c>-komennon (tavallisille ja langattomille verkkoyhteyksille),
+<c>adsl-setup</c>-komennon (ADSL-korteille) tai
+<c>pptp</c>-toiminnon (PPTP-käyttäjille, vain x86-järjestelmissä).
+</p>
+
+<p>
+Jos asennusvälineelläsi ei ole näitä työkaluja, eikä verkkosi vieläkään
+toimi, jatka <uri link="#doc_chap3">Verkkoasetusten käsisäädöllä</uri>.
+</p>
+
+<ul>
+  <li>
+    Jos käytät tavallista ethernet-verkkoa, suuntaa kohti <uri
+    link="#net-setup">Oletusta: net-setupin käyttöä</uri>.
+  </li>
+  <li>
+    Jos taas käytät ADSL:ää, suuntaa kohti <uri link="#rp-pppoe">Vaihtoehtoa:
+    RP-PPPoE:n asettamista</uri>.
+  </li>
+  <li>
+    PPTP-käyttäjät taas jatkavat kohdasta <uri link="#pptp">Vaihtoehto:
+    PPTP:n käyttäminen</uri>.
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection id="net-setup">
+<title>Oletus: net-setupin käyttö</title>
+<body>
+
+<p>
+Yksinkertaisin tapa asentaa verkkoyhteys,
+joka ei lähtenyt suoraan käynnistyksestä
+toimimaan, on käyttää <c>net-setup</c>-komentoa:
+</p>
+
+<pre caption="net-setupin ajaminen">
+# <i>net-setup eth0</i>
+</pre>
+
+<p>
+<c>net-setup</c> kysyy seuraavaksi kysymyksiä verkkoympäristöstäsi. Vastattuasi
+kaikkiin kysymyksiin sinulla pitäisi olla toimiva verkkoyhteys. Testaa yhteyden
+toimintaa aiemmin kuvatulla tavalla. Jos testit toimivat, onneksi olkoon!
+Olet valmis asentamaan Gentoon ja voit ohittaa loput kappaleesta jatkaen <uri
+link="?part=1&amp;chap=4">Kovalevyjen valmisteluun</uri>.
+</p>
+
+<p>
+Jos verkkoyhteytesi ei vieläkään toimi, jatka <uri
+link="#doc_chap3">Verkkoasetusten
+käsisäätöön</uri>.
+</p>
+
+
+</body>
+</subsection>
+<subsection id="rp-pppoe">
+<title>Vaihtoehto: RP-PPPoE:n säätäminen</title>
+<body>
+
+<p>
+Jos internetyhteytesi käyttää PPPoE:tä, asennus-CD:illä (kaikilla niistä) on
+asioiden helpottamiseksi toiminto <c>rp-pppoe</c>. Komennolla <c>adsl-setup</c>
+pystyt asettamaan yhteytesi. Adsl-setup kysyy sinulta ethernet-laitetiedostoa,
+joka
+on kiinni adsl-modeemissasi, sen käyttäjätunnusta ja salasanaa, DNS-palvelinten
+IP-osoitteita ja palomuuriasetuksia.
+</p>
+
+<pre caption="rp-pppoe:n käyttö">
+# <i>adsl-setup</i>
+# <i>adsl-start</i>
+</pre>
+
+<p>
+Jos jokin menee pieleen, tarkista käyttämäsi käyttäjätunnus ja salasana
+tiedostosta  <path>/etc/ppp/pap-secrets</path> tai
+<path>/etc/ppp/chap-secrets</path>, ja varmista että käyttämäsi ethernet-laite
+on oikea. Jos ethernet-laitetiedostoa ei ole, sinun tulee ladata
+sen tarvitsemat moduulit. Tähän ohjeet löydät
+<uri link="#doc_chap3">Verkkoasetusten käsisäädöstä</uri>.
+</p>
+
+<p>
+Jos kaikki toimii nyt, jatka kohti
+ <uri link="?part=1&amp;chap=4">Kovalevyjen valmistelua</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="pptp">
+<title>Vaihtoehto: PPTP:n käyttö</title>
+<body>
+
+<note>
+PPTP on vain x86-alustoille.
+</note>
+
+<p>
+Jos tarvitset PPTP-tuen, voit käyttää asennus-CD:iltä löytyvää <c>pptpclient</c>iä.
+Ensin täytyy kuitenkin tarkistaa asetukset. Muokkaa tiedosto
+<path>/etc/ppp/pap-secrets</path> tai <path>/etc/ppp/chap-secrets</path>
+sellaiseen muotoon että siinä on oikea käyttäjätunnus ja salasana:
+</p>
+
+<pre caption="/etc/ppp/chap-secretsin muokkaus">
+# <i>nano -w /etc/ppp/chap-secrets</i>
+</pre>
+
+<p>
+Tarvittaessa muokkaa tiedostoa <path>/etc/ppp/options.pptp</path>:
+</p>
+
+<pre caption="/etc/ppp/options.pptp:n muokkaus">
+# <i>nano -w /etc/ppp/options.pptp</i>
+</pre>
+
+<p>
+Sen jälkeen suorita komento <c>pptp</c> (niillä komennoilla, jotka eivät
+sisältyneet tiedostoon <path>options.pptp</path>) palvelimelle yhdistämiseksi:
+</p>
+
+<pre caption="Dial-in-palvelimeen yhdistäminen">
+# <i>pptp &lt;palvelimen ip&gt;</i>
+</pre>
+
+<p>
+Seuraavaksi jatka <uri link="?part=1&amp;chap=4">Kovalevyjä valmistellen</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Verkkoasetusten käsisäätö</title>
+<subsection>
+<title>Sopivien moduulien lataaminen</title>
+<body>
+
+<p>
+Käynnistyessään asennus-CD yrittää tunnistaa kaiken laitteistosi ja ladata
+sopivat ydinmoduulit (ajurit) niitä varten. Valtaosassa tapauksia se onnistunee
+hyvin, mutta toisinaan se saattaa jättää lataamatta tarvittuja ydinmoduuleja.
+</p>
+
+<p>
+<c>Net-setup</c>in tai <c>adsl-setup</c>in epäonnistuminen johtui
+todennäköisesti siitä, ettei verkkokorttiasi löydetty. Näin voi käydä jollei
+sopivaa ydinmoduulia ole ladattu.
+</p>
+
+<p>
+Nähdäksesi mitä verkkokortin ajureita ydinmoduuleissa on, käytä
+<c>ls</c>:ää:
+</p>
+
+<pre caption="Moduulien etsiminen">
+# <i>ls /lib/modules/`uname -r`/kernel/drivers/net</i>
+</pre>
+
+<p>
+Jos näet sopivan ajurin verkkokortillesi, käytä <c>modprobe</c>a sen
+lataamiseen:
+</p>
+
+<pre caption="Ydinmoduulin lataaminen modprobella">
+<comment>(Esimerkkinä käytämme pcnet32-moduulia)</comment>
+# <i>modprobe pcnet32</i>
+</pre>
+
+<p>
+Tarkastaaksesi onko verkkokortti nyt toiminnassa, käytä <c>ifconfig</c>ia.
+Toimiva verkkokortti näkyy tulosteessa jokseenkin tällaisena:
+</p>
+
+<pre caption="Onnistunut verkkokortin saatavuuden testaus">
+# <i>ifconfig eth0</i>
+eth0      Link encap:Ethernet  HWaddr FE:FD:00:00:00:00
+          BROADCAST NOARP MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
+</pre>
+
+<p>
+Jos törmäät seuraavaan virheilmoitukseen, verkkokorttia ei löydetty:
+</p>
+
+<pre caption="Epäonnistunut verkkokortin saatavuuden testaus">
+# <i>ifconfig eth0</i>
+eth0: error fetching interface information: Device not found
+</pre>
+
+<p>
+Jos järjestelmässäsi on useampia verkkokortteja, ne nimetään eth0:ksi, eth1:ksi
+ja niin edelleen. Varmista tällöin että käsittelet sitä verkkokorttia jota
+on tarkoituskin; dokumentoinnin esimerkeissä käytämme kuitenkin säännöllisesti
+nimeä eth0.
+</p>
+
+<p>
+Jos verkkokortti on nyt onnistuneesti löydetty, voit koettaa uudelleen
+<c>net-setup</c>ia tai <c>adsl-setup</c>ia (jonka pitäisi nyt toimia).
+Tehokäyttäjille selvitämme kuitenkin verkkokortin käsin asentamisenloppuun asti.
+</p>
+
+<p>
+Etene johonkin seuraavista osioista asentaaksesi verkkosi:
+</p>
+
+<ul>
+  <li><uri link="#dhcp">DHCP:n käyttö</uri> IP-osoitteen automaattiseen
+  hakemiseen</li>
+  <li>
+    <uri link="#wireless">langattoman yhteyden asettaminen</uri> niille, joilla
+    on langaton verkkokortti
+  </li>
+  <li>
+    <uri link="#network_term">verkkoterminologian ymmärtäminen</uri> selvittää,
+    mitä sinun tulee tietää verkoista
+  </li>
+  <li>
+    <uri link="#ifconfig_route">ifconfigin ja routen käyttö</uri> selvittää,
+    kuinka asennat verkkoyhteytesi käsin.
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection id="dhcp">
+<title>DHCP:n käyttö</title>
+<body>
+
+<p>
+DHCP:llä (Dynamic Host Configuration Protocol) pystyt automaattisesti
+selvittämään verkkosi asetustiedot (IP-osoitteen, verkon peitteen,
+broadcast-osoitteen, gatewayn, nimipalvelimet jne.).
+Tämä toimii vain, jos lähiverkossasi on DHCP-palvelin (tai palveluntarjoajallasi
+on DHCP-palvelu). <c>dhcpcd</c>-komennolla palautat tämän tiedon
+automaattisesti:
+</p>
+
+<pre caption="dhcpcd:n käyttö">
+# <i>dhcpcd eth0</i>
+<comment>Jotkin verkkojen ylläpitäjät vaativat</comment>
+<comment>DHCP-palvelimen tarjoaman palvelin- ja verkonimen käyttöä.</comment>
+<comment>Tässä tapauksessa komento on:</comment>
+# <i>dhcpcd -HD eth0</i>
+</pre>
+
+<p>
+Jos verkko nyt toimii (koeta pingittää jotain Internet-palvelinta, kuten <uri
+link="http://www.google.fi">Googlea</uri>), niin voit jatkaa asennusta
+kappaleesta <uri
+link="?part=1&amp;chap=4">Kovalevyjen valmistelu</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="wireless">
+<title>Langattoman verkon asetus</title>
+<body>
+
+<note>
+<c>Iwconfig</c>-komentoa löytyy vain x86-, amd64- ja ppc-asennus-CD:iltä.
+Muissa tapauksissa voit
+kuitenkin saada laajennukset toimimaan <uri
+link="ftp://ftp.linux-wlan.org/pub/linux-wlan-ng/README">linux-wlan-ng-projektin
+ohjeilla</uri>.
+</note>
+
+<p>
+Langattoman (802.11) verkkokortin käyttäjän saattaa olla tarpeellista tarkistaa
+langattoman asetukset ennen jatkamista. Komennolla <c>iwconfig</c> saat näkyviin
+nykyiset asetuksesi. Lopputulos voi näyttää vaikka tältä:
+</p>
+
+<pre caption="Langattoman asetuksien näyttäminen">
+# <i>iwconfig eth0</i>
+eth0      IEEE 802.11-DS  ESSID:"GentooNode"
+          Mode:Managed  Frequency:2.442GHz  Access Point: 00:09:5B:11:CC:F2
+          Bit Rate:11Mb/s   Tx-Power=20 dBm   Sensitivity=0/65535
+          Retry limit:16   RTS thr:off   Fragment thr:off
+          Power Management:off
+          Link Quality:25/10  Signal level:-51 dBm  Noise level:-102 dBm
+          Rx invalid nwid:5901 Rx invalid crypt:0 Rx invalid frag:0 Tx
+          excessive retries:237 Invalid misc:350282 Missed beacon:84
+</pre>
+
+<note>
+Joidenkin langattomien verkkokorttien laitenimi saattaa olla vaikkapa
+<c>wlan0</c> tai <c>ra0</c>, eikä suinkaan <c>eth0</c>. Komento <c>iwconfig</c>
+paljastaa oikean laitenimen.
+</note>
+
+<p>
+Useimpien käyttäjien tarvinnee tarkastella vain kahta asetusta, ESSID:tä (eli
+langattoman verkon nimeä) tai WEP-avainta. Jos ESSID ja Access Point -osoite
+ovat jo oikein etkä käytä WEP:iä, on langattomasi jo toimintakunnossa.
+ESSID:n muuttaminen tai WEP-avaimen lisääminen hoituu seuraavilla komennoilla:
+</p>
+
+<pre caption="ESSID:n muuttaminen ja WEP-avaimen lisäys">
+<comment>(Näin asetat ESSID:n GentooNoodiksi)</comment>
+# <i>iwconfig eth0 essid GentooNoodi</i>
+
+<comment>(Näin asetat WEP-avaimen)</comment>
+# <i>iwconfig eth0 key 1234123412341234abcd</i>
+
+<comment>(Näin asetat ASCII-avaimen, s:-etuliite on pakollinen)</comment>
+# <i>iwconfig eth0 key s:jokin-salasana</i>
+</pre>
+
+<p>
+Komennolla <c>iwconfig</c> voi varmistaa langattomien asetusten
+toiminnallisuuden. Kun olet saanut langattoman yhteyden toimimaan, voit seurata
+seuraavan kappaleen (<uri
+link="#network_term">Verkkoterminologian ymmärtäminen</uri>) ohjeita
+saadaksesi sen käyttökuntoon tai käyttää komentoa
+<c>net-setup</c> kuten aiempana kuvattiin.
+</p>
+
+</body>
+</subsection>
+<subsection id="network_term">
+<title>Verkkoterminologian ymmärtäminen</title>
+<body>
+
+<note>
+Jos tunnet IP-osoitteen, broadcastin, verkon peitteen ja nimipalvelimet, voit
+ohittaa tämän osion ja jatkaa <uri
+link="#ifconfig_route">ifconfigilla ja routella</uri>.
+</note>
+
+<p>
+Kaiken edellä mainitun epäonnistuttua ei ole muuta mahdollisuutta kuin
+asettaa verkko käsin, mutta pelko pois! Se ei ole ollenkaan vaikeaa. Aiomme
+tosin selvittää perustietoutta verkoista, mikä auttaa asetusten tekemisessä.
+Luettuasi tämän toivottavasti tiedät mikä on <e>gateway</e>, mitä
+<e>verkon peitteellä</e> tehdään, miksi <e>broadcast</e>-osoite on olemassa ja
+mihin <e>nimipalvelimia</e> käytetään.
+</p>
+
+<p>
+Verkkopalvelimet tunnistetaan <e>IP-osoitteiden</e> (Internet Protocol)
+perusteella. Tällaisen esitystapa on yleensä neljä lukua väliltä 0 - 255.
+Käytännössä osoite kuitenkin koostuu vain 32 bitistä (nollista ja ykkösistä).
+Tässä eräs esimerkki:
+</p>
+
+<pre caption="IP-osoitteen esimerkki">
+IP-osoite (desimaaleina):   192.168.0.2
+IP-osoite (bitteinä):       11000000 10101000 00000000 00000010
+                            -------- -------- -------- --------
+                                 192      168       0        2
+</pre>
+
+<p>
+Kaikissa tavoitettavissa verkoissa jokaisen laitteen IP-osoite on ainutlaatuinen
+(ts. jokaiseen koneeseen, johon voi saada Internetissä yhteyden liittyy
+ainutlaatuinen IP-osoite). Paikallisverkon koneiden ja ulkoverkon koneiden
+erottamiseksi IP-osoitteessa on kaksi osaa: verkon osa ja isännän osa.
+</p>
+
+<p>
+Erotuksen merkinnässä käytetään <e>verkon peitettä</e>: joukko ykkösiä,
+jota seuraa joukko nollia. Se osa osoitteesta, jonka voi yhdistää ykkösiin
+kuuluu verkko-osaan. Toinen osa on isännän. Kuten tavallista, verkon
+peitteen voi esittää IP-osoitteena.
+</p>
+
+<pre caption="Esimerkki verkon ja laitteen erottelusta">
+IP-osoite:         192      168      0         2
+                 11000000 10101000 00000000 00000010
+Verkon peite:    11111111 11111111 11111111 00000000
+                   255      255     255        0
+                 +--------------------------+--------+
+                         Verkko              Isäntä
+</pre>
+
+<p>
+Eli tässä tapauksessa 192.168.0.14 olisi vielä samassa verkossa, mutta
+192.168.1.2 ei olisi.
+</p>
+
+<p>
+<e>broadcast</e> on IP-osoite, jossa verkko-osa on sama kuin isännällä, mutta
+laiteosa onkin pelkkiä ykkösiä. Verkon jokainen laite tarkkailee tätä osoitetta,
+ja se on tosiaan tarkoitettu tiedon kuuluttamiseen.
+</p>
+
+<pre caption="Broadcast-osoite">
+IP-osoite:     192      168      0         2
+            11000000 10101000 00000000 00000010
+Broadcast:  11000000 10101000 00000000 11111111
+               192      168      0        255
+           +--------------------------+--------+
+                     Verkko             Isäntä
+</pre>
+
+<p>
+Pystyäksesi surfaamaan verkossa, sinun täytyy tietää, mikä laite
+jakaa Internet-yhteyksiä. Tätä laitetta kutsutaan <e>gatewayksi</e>.
+Koska gateway on tavallinen isäntä, on sillä myös IP-osoite, esimerkiksi
+192.168.0.1.
+</p>
+
+<p>
+Aiempana huomasimme, että jokaisella laitteella on IP-osoitteensa. Käyttääksesi
+nimiä (IP-osoitteiden asemesta) on paikannettava palvelu, joka osaa muuntaa
+nimet (tyyppiä <e>dev.gentoo.org</e>) IP-osoitteiksi (kuten <e>64.5.62.82</e>).
+Tällaista toimintoa kutsutaan nimipalveluksi. <e>Nimipalvelimien osoitteet</e>
+Täytyy kirjoittaa <path>/etc/resolv.conf</path>-tiedostoon.
+</p>
+
+<p>
+Joskus gatewayän sisältyy myös nimipalvelimen
+toiminnallisuus, muissa tapauksissa sinun on käytettävä palveluntarjoajasi
+antamia nimipalvelimia.
+</p>
+
+<p>
+Siis, seuraavat asiat pitää olla tiedossa ennen jatkamista:
+</p>
+
+<table>
+<tr>
+  <th>Verkkokäsite</th>
+  <th>Esimerkki</th>
+</tr>
+<tr>
+  <ti>Ip-osoitteesi</ti>
+  <ti>192.168.0.2</ti>
+</tr>
+<tr>
+  <ti>Verkon peite</ti>
+  <ti>255.255.255.0</ti>
+</tr>
+<tr>
+  <ti>Broadcast</ti>
+  <ti>192.168.0.255</ti>
+</tr>
+<tr>
+  <ti>Gateway</ti>
+  <ti>192.168.0.1</ti>
+</tr>
+<tr>
+  <ti>Nimipalvelimia</ti>
+  <ti>195.130.130.5, 195.130.130.133</ti>
+</tr>
+</table>
+
+</body>
+</subsection>
+<subsection id="ifconfig_route">
+<title>Ifconfigin ja routen käyttö</title>
+<body>
+
+<p>
+Verkon asetusten tekemisessä on kolme kohtaa. Ensin täytyy asettaa oma
+IP-osoite komennolla <c>ifconfig</c>. Sitten käskyllä <c>route</c> määritetään
+gateway. Työ viimeistellään asettamalla nimipalvelimien IP-osoitteet
+tiedostoon <path>/etc/resolv.conf</path>.
+</p>
+
+<p>
+IP-osoitteen asennuksessa tarvitaan itse osoitteen lisäksi myös
+broadcast-osoitetta ja verkon peitetettä. Korvaa seuraavissa komennoissa
+<c>${IP_ADDR}</c> IP-osoitteellasi, <c>${BROADCAST}</c> broadcast-osoitteella
+ja <c>${NETMASK}</c> verkon peitteellä:
+</p>
+
+<pre caption="ifconfigin käyttö">
+# <i>ifconfig eth0 ${IP_ADDR} broadcast ${BROADCAST} netmask ${NETMASK} up</i>
+</pre>
+
+<p>
+Reitityksen asettamisessa käytetään <c>route</c>-komentoa. <c>${GATEWAY}</c>
+korvataan gatewayn IP-osoitteella:
+</p>
+
+<pre caption="routen käyttö">
+# <i>route add default gw ${GATEWAY}</i>
+</pre>
+
+<p>
+Sitten avaat tiedoston <path>/etc/resolv.conf</path>
+suosikkieditorillasi (esimerkissä käytämme <c>nano</c>a):
+</p>
+
+<pre caption="/etc/resolv.confin luonti">
+# <i>nano -w /etc/resolv.conf</i>
+</pre>
+
+<p>
+Syötä nyt nimipalvelimia tiedostoon seuraavan mallin mukaisesti. Muista
+tietenkin korvata <c>${NAMESERVER1}</c> ja <c>${NAMESERVER2}</c> sopivilla
+nimipalvelinten osoitteilla:
+</p>
+
+<pre caption="/etc/resolv.conf malli">
+nameserver ${NAMESERVER1}
+nameserver ${NAMESERVER2}
+</pre>
+
+<p>
+Siinäpä se nyt sitten olisi. Nyt voit testata verkkoa pingaamalla jotain
+Internet-palvelinta (kuten
+<uri link="http://www.google.com">Googlea</uri>).
+Jos tämä toimii, onneksi olkoon! Olet nyt valmis asentamaan Gentoon.
+Jatka matkaasi <uri
+link="?part=1&amp;chap=4">Kovalevyjen valmistamiseen</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
