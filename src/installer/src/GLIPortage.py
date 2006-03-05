@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.48 2006/02/27 20:35:34 agaffney Exp $
+$Id: GLIPortage.py,v 1.49 2006/03/05 03:06:44 agaffney Exp $
 """
 
 import re
@@ -130,6 +130,16 @@ class GLIPortage(object):
 			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -cp --files-from=/tmp/tarfilelist --no-recursion 2>/dev/null | tar -C " + self._chroot_dir + image_dir + " -xp", logfile=self._compile_logfile, append_log=True)):
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute tar for " + package)
 
+			# Fix mode, uid, and gid of directories
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running find " + self._chroot_dir + image_dir + " -type d 2>/dev/null | sed -e 's:^" + self._chroot_dir + image_dir + "::' | grep -v '^$'")
+			dirlist = GLIUtility.spawn("find " + self._chroot_dir + image_dir + " -type d 2>/dev/null | sed -e 's:^" + self._chroot_dir + image_dir + "::' | grep -v '^$'", return_output=True)[1].strip().split("\n")
+			if not dirlist or dirlist[0] == "":
+				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "directory list entry for " + package + "...this shouldn't happen!")
+			for dir in dirlist:
+				dirstat = os.stat(dir)
+				os.chown(self._chroot_dir + image_dir + dir, dirstat[4], dirstat[5])
+				os.chmod(self._chroot_dir + image_dir + dir, dirstat[0])
+
 #			# More symlink crappiness hacks
 #			for symlink in symlinks:
 ##				if GLIUtility.is_file(self._chroot_dir + image_dir + symlinks[symlink]):
@@ -155,7 +165,7 @@ class GLIPortage(object):
 		else:
 			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): copying files from " + image_dir + " to / for " + package)
 #			if not GLIUtility.exitsuccess(GLIUtility.spawn("cp -a " + self._chroot_dir + image_dir + "/* " + self._chroot_dir)):
-			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -C " + self._chroot_dir + image_dir + "/ -c . | tar -C " + self._chroot_dir + "/ -x", logfile=self._compile_logfile, append_log=True)):
+			if not GLIUtility.exitsuccess(GLIUtility.spawn("tar -C " + self._chroot_dir + image_dir + "/ -cp . | tar -C " + self._chroot_dir + "/ -xp", logfile=self._compile_logfile, append_log=True)):
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not copy files from " + image_dir + " to / for " + package)
 
 		# Run pkg_postinst
