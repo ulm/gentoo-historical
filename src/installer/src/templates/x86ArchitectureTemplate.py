@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.106 2006/03/04 22:39:11 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.107 2006/03/05 04:25:04 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -204,7 +204,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							if new_part < 5: continue
 							tmppart = parts_new[device][new_part]
 							# This partition is unchanged in the new layout
-							if tmppart['origminor'] == part_log and tmppart['start'] and tmppart['end']:
+							if tmppart['origminor'] == part_log and not tmppart['resized']:
 								self._logger.log("  Deleting old minor " + str(part_log) + " to be recreated later")
 								try:
 									parted_disk.delete_partition(parted_disk.get_partition(part_log))
@@ -212,7 +212,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 									self._logger.log("    Could not delete partition...ignoring")
 								break
 							# This partition is resized with the data preserved in the new layout
-							if tmppart['origminor'] == part_log and tmppart['resized'] and tmppart['start'] and not tmppart['end']:
+							if tmppart['origminor'] == part_log and tmppart['resized']:
 								self._logger.log("  Ignoring old minor " + str(part_log) + " to resize later")
 								logical_to_resize = 1
 								break
@@ -222,14 +222,14 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					continue
 				for new_part in parts_new[device]:
 					tmppart = parts_new[device][new_part]
-					if tmppart['origminor'] == part and tmppart['start'] and tmppart['end']:
+					if tmppart['origminor'] == part and not tmppart['resized']:
 						self._logger.log("  Deleting old minor " + str(part) + " to be recreated later")
 						try:
 							parted_disk.delete_partition(parted_disk.get_partition(part))
 						except:
 							self._logger.log("    Could not delete partition...ignoring")
 						break
-					if tmppart['origminor'] == part and tmppart['start'] and not tmppart['end']:
+					if tmppart['origminor'] == part and tmppart['resized']:
 						self._logger.log("  Ignoring old minor " + str(part) + " to resize later")
 						break
 			parted_disk.commit()
