@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.50 2006/03/05 04:16:04 agaffney Exp $
+$Id: GLIPortage.py,v 1.51 2006/03/05 06:21:21 agaffney Exp $
 """
 
 import re
@@ -141,7 +141,7 @@ class GLIPortage(object):
 		if not entries:
 			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): no files for " + package + "...skipping tar and symlink fixup")
 		else:
-			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot: files for " + package + ": " + str(entries))
+#			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot: files for " + package + ": " + str(entries))
 			try:
 				tarfiles = open("/tmp/tarfilelist", "w")
 				for entry in entries:
