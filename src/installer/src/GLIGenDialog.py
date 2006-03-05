@@ -224,7 +224,7 @@ Enter the new LIVECD root password:	""")
 		code = 0
 		filename = xmlfilename
 		if askforfilename:
-			code, filename = self._d.inputbox(_(u"Enter a filename for the XML file"), init=xmlfilename)
+			code, filename = self._d.inputbox(_(u"Enter a filename for the XML file.  Use the full path!"), init=xmlfilename)
 			if code != self._DLG_OK or not filename: 
 				return
 		if GLIUtility.is_file(filename):
@@ -233,9 +233,12 @@ Enter the new LIVECD root password:	""")
 			self._d.add_persistent_args(["--no-label", _(u"No")])
 			if not self._d.yesno(_(u"The file %s already exists. Do you want to overwrite it?") % filename) == self._DLG_YES:
 				return
-		configuration = open(filename ,"w")
-		configuration.write(self._client_profile.serialize())
-		configuration.close()
+		try:
+			configuration = open(filename ,"w")
+			configuration.write(self._client_profile.serialize())
+			configuration.close()
+		except:
+			self._d.msgbox(_(u"Error.  File couldn't be saved.  It will be saved automatically to /tmp before the install."))
 
 class GLIGenIP(GLIGen):
 	def __init__(self, client_profile, install_profile, local_install=True, advanced_mode=True):
@@ -1669,15 +1672,18 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		code = 0
 		filename = xmlfilename
 		if askforfilename:
-			code, filename = self._d.inputbox(_(u"Enter a filename for the XML file"), init=xmlfilename)
+			code, filename = self._d.inputbox(_(u"Enter a filename for the XML file. Use full path!"), init=xmlfilename)
 			if code != self._DLG_OK or not filename: 
 				return None
 		if GLIUtility.is_file(filename):
 			if not self._d.yesno(_(u"The file %s already exists. Do you want to overwrite it?") % filename) == self._DLG_YES:
 				return None
-		configuration = open(filename ,"w")
-		configuration.write(self._install_profile.serialize())
-		configuration.close()
+		try:
+			configuration = open(filename ,"w")
+			configuration.write(self._install_profile.serialize())
+			configuration.close()
+		except:
+			self._d.msgbox(_(u"Error.  File couldn't be saved.  It will be saved automatically to /tmp before the install."))
 		return filename
 	def show_settings(self):
 		settings = _(u"Look carefully at the following settings to check for mistakes.\nThese are the installation settings you have chosen:\n\n")
