@@ -256,8 +256,11 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 		self.treeview.set_model(self.treedata)
 		if self.controller.install_profile.get_grp_install():
 			self.treeview.set_sensitive(False)
+			self.unstable_packages_check.set_sensitive(False)
+			self.unstable_packages_check.set_active(False)
 		else:
 			self.treeview.set_sensitive(True)
+			self.unstable_packages_check.set_sensitive(True)
 		# Parsing CFLAGS
 		if not self.make_conf_values.has_key('CFLAGS') or not self.make_conf_values['CFLAGS']:
 			self.make_conf_values['CFLAGS'] = self.system_cflags
