@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/cron-guide.xml,v 1.5 2005/08/13 16:35:40 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/cron-guide.xml,v 1.6 2006/03/05 08:22:30 idani Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/ja/cron-guide.xml">
@@ -23,10 +23,10 @@
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.4</version>
-<date>2005-07-25</date>
+<version>1.7</version>
+<date>2006-02-20</date>
 
-<!-- Original revision: 1.5 -->
+<!-- Original revision: 1.13 -->
 
 <chapter>
 <title>cronの基礎概念</title>
@@ -52,7 +52,12 @@ cronは<c>crontab</c>コマンドからの入力に基づいて、定期作業�
 <p> 
 Portageには選択することができるcronの実装が、少なくとも3つあります。
 これらは同じようなインターフェースを提供し、すなわち<c>crontab</c>かそれに似たコマンドを使います。
-連続運用されないシステムでcronと共に動作するanacronという関連したユーティリティもあります。
+連続運用されないシステムでcronと共に動作するAnacronという関連したユーティリティもあります。
+</p>
+
+<p>
+これら利用可能なcronパッケージの3つすべてが<c>sys-process/cronbase</c>に依存していると知っておくべきです。
+このパッケージは厳密にはどのcronパッケージからも依存されていませんが、多くのユーザがありがたく感じるcronに似た機能を提供します。
 </p>
 
 <p>
@@ -183,8 +188,8 @@ anacronはたいていいつも動作しているcronデーモンと連携しま
 
 <pre caption="cronのインストール">
 # <i>emerge dcron</i>
-# <i>rc-update add dcron default</i>
 # <i>/etc/init.d/dcron start</i>
+# <i>rc-update add dcron default</i>
 </pre>
 
 <p>
@@ -193,21 +198,21 @@ anacronはたいていいつも動作しているcronデーモンと連携しま
 
 <pre caption="anacronのインストール">
 # <i>emerge anacron</i>
-# <i>rc-update add anacron default</i>
 # <i>/etc/init.d/anacron start</i>
+# <i>rc-update add anacron default</i>
 </pre>
 
 </body>
 </section>
-<section>
+<section id="systemtab">
 <title>システムcrontab</title>
 <body>
 
 <p>
 これらcronパッケージをインストールした後に、<c>crontab /etc/crontab</c>を実行するように指示されます。
 <path>/etc/crontab</path>ファイルがあなたの<e>システムcrontab</e>です。
-Gentooの標準設定は、<path>/etc/cron.{daily,hourly,weekly,monthly}</path>でスクリプトを実行するために、システムcronを使います。
-vixie-cronは、<path>/etc/crontab</path>に記述されている内容を、変更後すぐに反映することに注意してください。
+cronのインストールは、<path>/etc/cron.{daily,hourly,weekly,monthly}</path>でスクリプトを実行するために、<c>sys-process/cronbase</c>とともにシステムcronを使います。
+vixie-cronのみ、<path>/etc/crontab</path>に記述されている内容を、変更後すぐに反映することに注意してください。
 dcronとfcronユーザは<path>/etc/crontab</path>を変更するたびに、<c>crontab /etc/crontab</c>を実行する必要があります。
 </p>
 
@@ -239,6 +244,7 @@ root以外のユーザをcronデーモンにアクセスできるようにした
 <note>
 他のユーザにcrontabの利用を許可するということは、cronジョブをrootとして実行できるようにすることではありません。
 ユーザがrootのcrontabを編集できるようにしたいなら、<c>sudo</c>を検討すべきです。
+詳細は<uri link="/doc/en/sudo-guide.xml">Gentoo Sudo(ers) Guide</uri><uri link="/doc/ja/sudo-guide.xml">(日本語訳)</uri>を参照してください。
 </note>
 
 <p>
@@ -249,6 +255,10 @@ root以外のユーザをcronデーモンにアクセスできるようにした
 <pre caption="cronグループにユーザを追加">
 #<i>gpasswd -a wepy cron</i>
 </pre>
+
+<note>
+ユーザをcronグループに追加するときには、ユーザは確実にログアウトしておき、グループの変更が行われたら戻ってきてください。
+</note>
 
 <p>
 <b>dcron</b>を使っているなら、ユーザにcrontabへのアクセス権を与えるだけです。
@@ -313,36 +323,40 @@ crontabを編集する方法はそれぞれのパッケージによって異な�
 <table>
 <tr>
   <th>パッケージの種類</th>
-  <th>編集コマンド</th>
-  <th>削除コマンド</th>
-  <th>新規コマンド</th>
-  <th>表示コマンド</th>
+  <th>crontabの編集</th>
+  <th>crontabの削除</th>
+  <th>新規crontab</th>
+  <th>crontabの表示</th>
 </tr>
 <tr>
   <ti>dcron</ti>
   <ti><c>crontab -e</c></ti>
-  <ti><c>crontab -d</c></ti>
+  <ti><c>crontab -d <e>[user]</e></c></ti>
   <ti><c>crontab <e>file</e></c></ti>
   <ti><c>crontab -l</c></ti>
 </tr>
 <tr>
   <ti>fcron</ti>
   <ti><c>fcrontab -e</c></ti>
-  <ti><c>fcrontab -r</c></ti>
+  <ti><c>fcrontab -r <e>[user]</e></c></ti>
   <ti><c>fcrontab <e>file</e></c></ti>
   <ti><c>fcrontab -l</c></ti>
 </tr>
 <tr>
   <ti>vixie-cron</ti>
   <ti><c>crontab -e</c></ti>
-  <ti><c>crontab -r</c></ti>
+  <ti><c>crontab -r <e>-u [user]</e></c></ti>
   <ti><c>crontab <e>file</e></c></ti>
   <ti><c>crontab -l</c></ti>
 </tr>
 </table>
 
 <note>
-fcronは<c>crontab</c>へのシンボリックリンクも作成します。
+削除コマンドを使用する際に引数がなければ、現在のユーザのcrontabを削除します。
+</note>
+
+<note>
+fcronは<c>crontab</c>から<c>fcrontab</c>へのシンボリックリンクも作成します。
 </note>
 
 <p>
@@ -384,9 +398,9 @@ crontabのそれぞれの行は以下の5つの時間フィールドを指定す
 <pre caption="crons.cronの編集">
 $ <i>nano crons.cron</i>
 <comment>#分  時  日   月  曜日</comment>
-10     3      1      1       *       /bin/echo "i don't really like cron"
-30     16     *      1,2     *       /bin/echo "i like cron a little"
-*      *      *      1-12/2  *       /bin/echo "i really like cron"
+10     3      1      1       *       /bin/echo "I don't really like cron"
+30     16     *      1,2     *       /bin/echo "I like cron a little"
+*      *      *      1-12/2  *       /bin/echo "I really like cron"
 </pre>
 
 <p>
@@ -415,9 +429,9 @@ $ <i>nano crons.cron</i>
 </p>
 
 <p>
-このcrontabは1ヶ月おきの毎日毎時毎分に"i really like cron"と表示します。
+このcrontabは1ヶ月おきの毎日毎時毎分に"I really like cron"と表示します。
 cronがすごく好きなら、当然この出力だけでいいですね。
-crontabは1月と2月の毎日16:30に"i like cron a little"とも表示し、1月1日の3:10に"i don't really like cron"とも表示します。
+crontabは1月と2月の毎日16:30に"I like cron a little"とも表示し、1月1日の3:10に"I don't really like cron"とも表示します。
 </p>
 
 <p>
@@ -432,11 +446,11 @@ anacronユーザは<path>/etc/anacrontab</path>を編集します。
 </p>
 
 <p>
-例えば、<c>echo "i like anacron"</c>を5日に1度、anacronの起動10分後に実行するなら、以下のようにします。
+例えば、<c>echo "I like anacron"</c>を5日に1度、anacronの起動10分後に実行するなら、以下のようにします。
 </p>
 
 <pre caption="/etc/anacrontab">
-5 10 wasting-time /bin/echo "i like anacron"
+5 10 wasting-time /bin/echo "I like anacron"
 </pre>
 
 <p>
@@ -520,6 +534,51 @@ cronパッケージに合わせた正しい<e>削除コマンド</e>を実行し
 </chapter>
 
 <chapter>
+<title>cronbaseの使用</title>
+<section>
+<body>
+
+<p>
+前述の通り、3つの利用可能なcronパッケージすべてが<c>sys-process/cronbase</c>に依存しています。
+cronbaseパッケージは<path>/etc/cron.{hourly,daily,weekly,monthly}</path>と、<c>run-crons</c>というスクリプトを作成します。
+デフォルトの<path>/etc/crontab</path>には以下のようなものが含まれていると気づくでしょう。
+</p>
+
+<pre caption="デフォルトのシステムcrontab">
+*/15 * * * *     test -x /usr/sbin/run-crons &amp;&amp; /usr/sbin/run-crons
+0  *  * * *      rm -f /var/spool/cron/lastrun/cron.hourly
+0  3  * * *      rm -f /var/spool/cron/lastrun/cron.daily
+15 4  * * 6      rm -f /var/spool/cron/lastrun/cron.weekly
+30 5  1 * *      rm -f /var/spool/cron/lastrun/cron.monthly
+</pre>
+
+<p>
+細部にはいるのを避けるために、これらのコマンドは毎時、毎日、毎週、そして毎月のスクリプトを実行すると仮定します。
+cronジョブのスケジューリングを行うこの方法は、いくつかの重要な利点があります。
+</p>
+
+<ul>
+  <li>
+    たとえスケジュールされた実行時間にコンピュータの電源が切れていたとしても実行されます
+  </li>
+  <li>
+    パッケージメンテナがスクリプトを定義された場所へ設置しやすくなります
+  </li>
+  <li>
+    cronジョブとcrontabがどこに保存されているかを正確に知ることが出来るため、バックアップとリストアを容易に行うことが出来ます
+  </li>
+</ul>
+
+<note>
+繰り返しますが、Vixie cronは<path>/etc/crontab</path>を自動的に読み込むのに対し、dcronとfcronは行いません。
+詳しくは<uri link="#systemtab">System crontab</uri>の章を参照してください。
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
 <title>最後に</title>
 <section>
 <title>トラブルシューティング</title>
@@ -548,7 +607,7 @@ cronを正しく動作させるのに問題が発生しているなら、この�
 </li>
 <li>
   <b>dead.letterはありますか?</b><br/>
-    cronは問題があるとたいていメールを送信するので、メールを確認し、~/dead.letterファイルも確認してください。
+    cronは問題があるとたいていメールを送信するので、メールを確認し、<path>~/dead.letter</path>ファイルも確認してください。
 </li>
 </ul>
 
