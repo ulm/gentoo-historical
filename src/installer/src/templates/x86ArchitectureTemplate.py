@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.107 2006/03/05 04:25:04 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.108 2006/03/05 06:14:04 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -633,7 +633,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		file_name = self._chroot_dir + "/boot/grub/glidevice.map"
 		#If we can't find it, make it.  If we STILL can't find it. die.
 		if not GLIUtility.is_file(file_name):
-			exitstatus1 = GLIUtility.spawn("echo quit | "+ self._chroot_dir+"/sbin/grub --no-floppy --device-map="+file_name)
+			exitstatus1 = GLIUtility.spawn("echo quit | "+ self._chroot_dir+"/sbin/grub --batch --no-floppy --device-map="+file_name)
 		if not GLIUtility.is_file(file_name):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error making the new device map.")
 		"""
