@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.49 2006/03/05 03:06:44 agaffney Exp $
+$Id: GLIPortage.py,v 1.50 2006/03/05 04:16:04 agaffney Exp $
 """
 
 import re
@@ -87,6 +87,36 @@ class GLIPortage(object):
 			portage_tmpdir = self._chroot_dir + "/var/tmp/portage"
 			vdb_dir = self._chroot_dir + "/var/db/pkg/"
 
+		# Create /tmp, /var/tmp, and /var/lib/portage with proper permissions
+		oldumask = os.umask(0)
+		if not os.path.exists(self._chroot_dir + "/tmp"):
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): /tmp doesn't exist in chroot...creating with proper permissions")
+			try:
+				os.mkdir(self._chroot_dir + "/tmp", 01777)
+			except:
+				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Failed to create /tmp in chroot")
+		if not os.path.exists(self._chroot_dir + "/var/tmp"):
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): /var/tmp doesn't exist in chroot...creating with proper permissions")
+			try:
+				os.mkdir(self._chroot_dir + "/var", 0755)
+			except:
+				pass
+			try:
+				os.mkdir(self._chroot_dir + "/var/tmp", 01777)
+			except:
+				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Failed to create /var/tmp in chroot")
+		if not os.path.exists(self._chroot_dir + "/var/lib/portage"):
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): /var/lib/portage doesn't exist in chroot...creating with proper permissions")
+			try:
+				os.mkdir(self._chroot_dir + "/var/lib", 0755)
+			except:
+				pass
+			try:
+				os.mkdir(self._chroot_dir + "/var/lib/portage", 02750)
+			except:
+				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Failed to create /var/lib/portage in chroot")
+		os.umask(oldumask)
+
 		# Check to see if package is actually in vdb
 		if not GLIUtility.is_file("/var/db/pkg/" + package):
 			if ignore_missing:
@@ -133,10 +163,12 @@ class GLIPortage(object):
 			# Fix mode, uid, and gid of directories
 			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running find " + self._chroot_dir + image_dir + " -type d 2>/dev/null | sed -e 's:^" + self._chroot_dir + image_dir + "::' | grep -v '^$'")
 			dirlist = GLIUtility.spawn("find " + self._chroot_dir + image_dir + " -type d 2>/dev/null | sed -e 's:^" + self._chroot_dir + image_dir + "::' | grep -v '^$'", return_output=True)[1].strip().split("\n")
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): found the following directories: " + str(dirlist))
 			if not dirlist or dirlist[0] == "":
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "directory list entry for " + package + "...this shouldn't happen!")
 			for dir in dirlist:
 				dirstat = os.stat(dir)
+				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): setting mode " + str(dirstat[0]) + " and uid/gid " + str(dirstat[4]) + "/" + str(dirstat[5]) + " for directory " + self._chroot_dir + image_dir + dir)
 				os.chown(self._chroot_dir + image_dir + dir, dirstat[4], dirstat[5])
 				os.chmod(self._chroot_dir + image_dir + dir, dirstat[0])
 
