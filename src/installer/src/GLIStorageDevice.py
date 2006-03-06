@@ -330,7 +330,7 @@ class Device:
 		devdic = {}
 		for part in self._partitions:
 			tmppart = self._partitions[part]
-			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format(), 'mkfsopts': tmppart.get_mkfsopts(), 'start': 0, 'end': 0, 'resized': tmppart.get_resized() }
+			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format(), 'mkfsopts': tmppart.get_mkfsopts(), 'start': tmppart._start, 'end': tmppart._end, 'resized': tmppart.get_resized() }
 		return devdic
 
 	##
@@ -476,7 +476,7 @@ class Partition:
 					self._resizeable = True
 				elif type == "ntfs":
 					min_bytes = long(commands.getoutput("ntfsresize -f --info " + dev_node + " | grep -e '^You might resize' | sed -e 's/You might resize at //' -e 's/ bytes or .\+//'"))
-					self._min_mb_for_resize = long(min_bytes / MEGABYTE) + 1
+					self._min_mb_for_resize = long(min_bytes / MEGABYTE) + 50
 					self._resizeable = True
 				else:
 					parted_part = self._device._parted_disk.get_partition(int(self._orig_minor))

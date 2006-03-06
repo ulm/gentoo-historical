@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.110 2006/03/06 21:37:06 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.111 2006/03/06 21:59:23 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -137,13 +137,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						if not "flags" in tmppart_new: tmppart_new['flags'] = []
 						tmppart_new['flags'].append(flag)
 				if tmppart_new['resized']:
-					self._logger.log("  Partition " + str(part) + " has origminor " + str(tmppart_new['origminor']) + " and it being resized...saving start sector " + str(parted_part.geom.start))
-					tmppart_new['start'] = parted_part.geom.start
+					self._logger.log("  Partition " + str(part) + " has origminor " + str(tmppart_new['origminor']) + " and it being resized...saving start sector " + str(tmppart_old['start']))
+					tmppart_new['start'] = tmppart_old['start']
 					tmppart_new['end'] = 0
 				else:
-					self._logger.log("  Partition " + str(part) + " has origminor " + str(tmppart_new['origminor']) + "...saving start sector " + str(parted_part.geom.start) + " and end sector " + str(parted_part.geom.end))
-					tmppart_new['start'] = parted_part.geom.start
-					tmppart_new['end'] = parted_part.geom.end
+					self._logger.log("  Partition " + str(part) + " has origminor " + str(tmppart_new['origminor']) + "...saving start sector " + str(tmppart_old['start']) + " and end sector " + str(tmppart_old['end']))
+					tmppart_new['start'] = tmppart_old['start']
+					tmppart_new['end'] = tmppart_old['end']
 
 #			if parts_new[dev][parts_new[dev].keys()[0]]['mb']:
 #				# Change MB/%/* into sectors
@@ -242,14 +242,14 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				oldpart = parts_old[device][part]
 				for new_part in parts_new[device]:
 					tmppart = parts_new[device][new_part]
-					if tmppart['origminor'] == part and tmppart['resized'] and tmppart['start'] and not tmppart['end']:
-						self._logger.log("  Resizing old minor " + str(part) + " from " + str(oldpart['start']) + "-" + str(oldpart['end'])+  " to " + str(tmppart['start']) + "-" + str(tmppart['end']))
+					if tmppart['origminor'] == part and tmppart['resized']:
 						type = tmppart['type']
 						minor = part
 						start = tmppart['start']
 						# Replace 512 with code to retrieve bytes per sector for device
 						end = start + (long(tmppart['mb']) * MEGABYTE / 512)
 						tmppart['end'] = end
+						self._logger.log("  Resizing old minor " + str(part) + " from " + str(oldpart['start']) + "-" + str(oldpart['end'])+  " to " + str(tmppart['start']) + "-" + str(tmppart['end']))
 						for i in new_part_list:
 							if i <= new_part: continue
 							if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
@@ -257,6 +257,14 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							elif end >= device_sectors:
 								end = device_sectors - 1
 							break
+						# sleep a bit first
+						time.sleep(3)
+						# now sleep until it exists
+						while not GLIUtility.is_file(device + str(minor)):
+							self._logger.log("Waiting for device node " + device + str(minor) + " to exist...")
+							time.sleep(1)
+						# one bit of extra sleep is needed, as there is a blip still
+						time.sleep(3)
 						if type == "ext2" or type == "ext3":
 							total_sectors = end - start + 1
 							ret = GLIUtility.spawn("resize2fs " + device + str(minor) + " " + str(total_sectors) + "s", logfile=self._compile_logfile, append_log=True)
@@ -265,7 +273,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						elif type == "ntfs":
 							total_sectors = end - start + 1
 							total_bytes = long(total_sectors) * 512
-							ret = GLIUtility.spawn("ntfsresize --size " + str(total_bytes) + " " + device + str(minor), logfile=self._compile_logfile, append_log=True)
+							ret = GLIUtility.spawn("ntfsresize -v --size " + str(total_bytes) + " " + device + str(minor), logfile=self._compile_logfile, append_log=True)
 							if not GLIUtility.exitsuccess(ret): # Resize error
 								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
 						elif type == "linux-swap" or type == "fat32" or type == "fat16":
