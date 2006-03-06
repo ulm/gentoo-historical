@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/devrel/handbook/Attic/hb-guide-ebuild.xml,v 1.5 2006/02/05 22:48:31 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/devrel/handbook/Attic/hb-guide-ebuild.xml,v 1.6 2006/03/06 14:52:03 so Exp $ -->
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
@@ -76,10 +76,10 @@ configurazione. Questi tipi di files devono andare nella directory
 directory <path>categoria/pacchetto</path>. Le eccezioni a questa regola sono
 per grandi patch (patch più grandi di 20KB) che dovrebbero essere messe nei
 Gentoo mirrors in modo che la gente non sprechi eccessivamente la larghezza
-di banda e lo spazio dell'hard drive. Non è una buona idea da parte degli
-sviluppatori aggiungere file binari (non-ASCII) al CVS. Comunque, se è
-necessario (ad esempio, se dovete aggiungere una piccola PNG per qualsiasi
-ragione), accertatevi di aggiungerla a CVS usando l'opzione <c>-kb</c> nel
+di banda e lo spazio dell'hard drive. Inoltre non dovete aggiungere files binari
+(non ASCII) al CVS del Portage Tree. Se dovete farlo fallo in un altro ramo del
+CVS, per esempio se dovete aggiungere una piccola PNG per qualsiasi
+ragione, accertatevi di aggiungerla a CVS usando l'opzione <c>-kb</c> nel
 modo seguente:
 </p>
 
@@ -493,7 +493,7 @@ vostro pacchetto usa automake, potete fare questo semplicemente con <c>make
 DESTDIR=${D} install</c>. <e>Assicuratevi che il vostro pacchetto installi i
 suoi file utilizzando <c>D</c> come root!</e> La directory di partenza è
 <c>S</c>.  </ti> </tr> <tr> <ti><c>src_test</c></ti> <ti> Eseguito solo quando
-<c>FEATURES="maketest"</c> è impostato e <c>RESTRICT="maketest"</c> non è
+<c>FEATURES="test"</c> è impostato e <c>RESTRICT="test"</c> non è
 impostato, di default questa funzione esegue una funzione di testing disponibile
 da ogni Makefiles nella directory <c>${S}</c>, eseguendo "make test" o "make
 check", dipende da cosa è fornito. Può essere sovrascritto per generare un
@@ -610,13 +610,7 @@ combinare l'architettura che si esegue, avere "_all_" nel nome, o
 <ti><c>gen_usr_ldscript</c></ti> <ti> Questa funzione genera script linker in
 /usr/lib per librerie dinamiche in /lib. Questo corregge problemi di link quando
 un .so è in /lib mentre un .a è in /usr/lib.  </ti> </tr> <tr>
-<ti><c>have_NPTL</c></ti> <ti> Ritorna 0 se il sistema sta usando la
-implementazione NPTL PThreads.  </ti> </tr> <tr>
-<ti><c>get_number_of_jobs</c></ti> <ti> Questa funzione controlla quante CPU
-sono presenti e poi imposta la opzione corretta -jX in <c>MAKEOPTS</c>.  </ti>
-</tr> <tr> <ti><c>mymktemp</c></ti> <ti> Questa funzione agisce come wrapper a
-mktemp se questo è presente, altrimenti agisce come un rimontaggio.  </ti> </tr>
-<tr> <ti><c>edos2unix</c></ti> <ti> Questa funzione effettua la stessa azione
+<ti><c>edos2unix</c></ti> <ti> Questa funzione effettua la stessa azione
 del binario <c>dos2unix</c>.  </ti> </tr> <tr> <ti><c>egetent</c></ti> <ti>
 egetent agisce come wrapper per <c>getent</c> per Linux o <c>nidump</c> per Mac
 OS X (R).  </ti> </tr> <tr> <ti><c>enewuser</c></ti> <ti> Crea un nuovo utente.
@@ -681,8 +675,6 @@ variabili presenti <c>C[XX]FLAGS</c>.  </ti> </tr> <tr>
 argomento con quella nel secondo argomento nel <c>C[XX]FLAGS</c> attuale.  </ti>
 </tr> <tr> <ti><c>replace-cpu-flags</c></ti> <ti> Rimette ogni flag -march=... o
 -mcpu=... che contengono il secondo argomento con il primo.  </ti> </tr> <tr>
-<ti><c>replace-sparc64-flags</c></ti> <ti> Imposta -mcpu=... su una v8 SPARC e
-usa il valore originale come -mtune se non è già specificato.  </ti> </tr> <tr>
 <ti><c>strip-flags</c></ti> <ti> Fa uno strip di tutte le flag, tranne quelle
 specificate in <c>ALLOWED_FLAGS</c>.  </ti> </tr> <tr>
 <ti><c>strip-unsupported-flags</c></ti> <ti> Fa uno strip a <c>C[XX]FLAGS</c> di
@@ -883,20 +875,23 @@ leggibilità :).
 </p>
 
 <p>
-A volte, gli ebuild hanno conflitti di funzionalità con le <c>USE</c> flags.
+A volte, gli ebuild hanno conflitti con le caratteristiche opzionali.
 Controlla questo, ritornare un errore <e>non</e> è una possibile soluzione.
-Piuttosto, devi scegliere una <c>USE</c> da favorire. Un esempio è l'ebuild di
-msmtp. Il pacchetto può usare SSL con GnuTLS, SSL con OpenSSL, o nessun SSL.
-Siccome GnuTLS ha più funzionalità di OpenSSL, allora sarà quello scelto:
+Piuttosto, devi scegliere una caratteristica da favorire rispetto ad
+un'altra. Allo stesso modo consulta gli upstream (cosa usano generalmente per
+default), o considera quale opzione fornisce maggiori funzionalità, oppure
+tira soltanto una moneta. Un esempio è l'ebuild di msmtp. Il pacchetto può
+usare SSL con GnuTLS, SSL con OpenSSL, o nessun SSL.  Siccome GnuTLS ha più
+funzionalità di OpenSSL, allora sarà quello scelto:
 </p>
   	 
-<pre caption="Scegliere le USE flags che creano conflitti">
+<pre caption="Gestire i conflitti di funzionalità">
    src_compile() {
        local myconf
   	 
-       if use ssl &quot;&quot; use gnutls ; then
+       if use gnutls ; then
            myconf="${myconf} --enable-ssl --with-ssl=gnutls"
-       elif use ssl &quot;&quot; ! use gnutls ; then
+       elif use ssl ; then
            myconf="${myconf} --enable-ssl --with-ssl=openssl"
        else
            myconf="${myconf} --disable-ssl"
@@ -1450,7 +1445,7 @@ Portage.
 Si vede come si testerà se il pacchetto funziona. A volte gli sviluppatori
 includono una routine <c>make test</c> o una <c>make check</c> che testeranno
 le funzionalità di base del pacchetto. Se è così allora, eseguite <c>env
-FEATURES=maketest ebuild <path>foo-x.y.z.ebuild</path> test</c>. Se è rotto
+FEATURES=test ebuild <path>foo-x.y.z.ebuild</path> test</c>. Se è rotto
 cercate di aggiustarlo così che funzioni (e mandare la patch ai sviluppatori
 principali).
 </p>
@@ -1466,7 +1461,7 @@ così non richiede la conoscenza della funzionalità del pacchetto.
 <p>
 Tenete in mente le richieste generali di un ebuild qui. La routine
 <c>src_test</c> non deve essere interattiva. Se il test routine dipende su
-altri pacchetti usare la flag USE <c>maketest</c> per specificare l'opzionale
+altri pacchetti usare la flag USE <c>test</c> per specificare l'opzionale
 tempo di compilazione delle <c>DEPEND</c>ancies. Le routines <c>src_test</c>
 non sono raccomandate per applicazioni grafiche X poichè l'utente che esegue
 portage spesso non può eseguirle successivamente.
@@ -1505,5 +1500,6 @@ aggiungere una voce in uno già esistente.</ti> </tr> </table>
 </section>
 
 </sections>
+
 
 
