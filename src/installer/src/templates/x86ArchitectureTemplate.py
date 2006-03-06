@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.108 2006/03/05 06:14:04 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.109 2006/03/06 15:33:42 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -259,13 +259,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 							break
 						if type == "ext2" or type == "ext3":
 							total_sectors = end - start + 1
-							ret = GLIUtility.spawn("resize2fs " + device + str(minor) + " " + str(total_sectors) + "s")
+							ret = GLIUtility.spawn("resize2fs " + device + str(minor) + " " + str(total_sectors) + "s", logfile=self._compile_logfile, append_log=True)
 							if not GLIUtility.exitsuccess(ret): # Resize error
 								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
 						elif type == "ntfs":
 							total_sectors = end - start + 1
 							total_bytes = long(total_sectors) * 512
-							ret = GLIUtility.spawn("ntfsresize --size " + str(total_bytes) + " " + device + str(minor))
+							ret = GLIUtility.spawn("ntfsresize --size " + str(total_bytes) + " " + device + str(minor), logfile=self._compile_logfile, append_log=True)
 							if not GLIUtility.exitsuccess(ret): # Resize error
 								raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
 						elif type == "linux-swap" or type == "fat32" or type == "fat16":
@@ -633,7 +633,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		file_name = self._chroot_dir + "/boot/grub/glidevice.map"
 		#If we can't find it, make it.  If we STILL can't find it. die.
 		if not GLIUtility.is_file(file_name):
-			exitstatus1 = GLIUtility.spawn("echo quit | "+ self._chroot_dir+"/sbin/grub --batch --no-floppy --device-map="+file_name)
+			exitstatus1 = GLIUtility.spawn("echo quit | "+ self._chroot_dir+"/sbin/grub --batch --no-floppy --device-map="+file_name, logfile=self._compile_logfile, append_log=True)
 		if not GLIUtility.is_file(file_name):
 			raise GLIException("BootloaderError", 'fatal', '_configure_grub', "Error making the new device map.")
 		"""
@@ -688,7 +688,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _setup_lilo(self):
 		#-------------------------------------------------------------
 		#OK, now that the file is built.  Install lilo.
-		exitstatus = GLIUtility.spawn("/sbin/lilo",chroot=self._chroot_dir)
+		exitstatus = GLIUtility.spawn("/sbin/lilo",chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True)
 		if exitstatus != 0:
 			raise GLIException("LiloInstallError", 'fatal', '_setup_lilo', "Running lilo failed!")
 		self._logger.log("Bootloader: lilo has been run/installed!")
