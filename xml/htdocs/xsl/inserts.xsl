@@ -28,13 +28,13 @@
 
   <xsl:choose>
     <xsl:when test="contains('|ca|cs|da|de|el|en|es|fi|fr|id|it|ko|lt|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_tw|',concat('|', $LANG,'|'))">
-      <xsl:variable name="insert" select="document(concat('/doc/', $LANG, '/inserts-', $LANG, '.xml'))/inserts/insert[@name=$str]"/>
+      <xsl:variable name="insert" select="document(concat('/doc/', $LANG, '/inserts.xml'))/inserts/insert[@name=$str]"/>
       <xsl:choose>
         <xsl:when test="$insert">
           <func:result select="$insert"/>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:variable name="insert-en" select="document('/doc/en/inserts-en.xml')/inserts/insert[@name=$str]"/>
+          <xsl:variable name="insert-en" select="document('/doc/en/inserts.xml')/inserts/insert[@name=$str]"/>
           <xsl:choose>
             <xsl:when test="$insert-en">
               <func:result select="$insert-en"/>
@@ -47,7 +47,7 @@
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:variable name="insert-en" select="document('/doc/en/inserts-en.xml')/inserts/insert[@name=$str]"/>
+      <xsl:variable name="insert-en" select="document('/doc/en/inserts.xml')/inserts/insert[@name=$str]"/>
       <xsl:choose>
         <xsl:when test="$insert-en">
           <func:result select="$insert-en" />
