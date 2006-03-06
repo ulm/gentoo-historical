@@ -1,0 +1,299 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/lt/handbook/Attic/hb-portage-ebuild.xml,v 1.1 2006/03/06 13:27:31 neysx Exp $ -->
+
+<sections>
+
+<version>1.3</version>
+<date>2004-10-24</date>
+
+<section>
+<title>Emerge ir ebuild</title>
+<body>
+
+<p>
+Programa <c>ebuild</c> yra žemesnio lygio Portage sistemos sąsaja. Naudodami
+šią programą jūs galite įvykdyti specifinius veiksmus su norima ebuild
+rinkmena. Pavyzdžiui, jūs patys galite įvykdyti atskirus programinės įrangos
+diegimo žingsnius.
+</p>
+
+<p>
+Programa <c>ebuild</c> yra skirta daugiau plėtojimo tikslams; todėl daugiau
+informacijos apie <c>ebuild</c> galima rasti <uri
+link="/proj/en/devrel/handbook/handbook.xml">Plėtotojo Vadove</uri>. Tačiau
+mes paaiškinsime, kokias ebuild komandas iškviečia Portage, kai ji diegia kokią
+nors programinę įrangą, ir kaip reikia įvykdyti post-konfigravimo žingsnius,
+kuriuos leidžia kai kurios ebuild rinkmenos.
+</p>
+
+</body>
+</section>
+<section>
+<title>Programinės įrangos įdiegimas rankiniu būdu</title>
+<subsection>
+<title>Pirminių tekstų parsiuntimas ir kontrolinės sumos patikrinimas</title>
+<body>
+
+<p>
+Kai jūs įvykdysite komandą <c>ebuild</c> pateikdami jai ebuild rinkmeną, ji
+patikrins, ar visų dalyvaujančių rinkmenų kontrolinės sumos yra lygios duotoms
+rinkmenose <path>Manifest</path> arba
+<path>files/digest-&lt;pavadinimas&gt;-&lt;versija&gt;</path>. Tai atliekama
+po pirminių tekstų atsiuntimo.
+</p>
+
+<p>
+Norėdami parsisiųsti pirminius tekstus naudodami komandą <c>ebuild</c>,
+įvykdykite:
+</p>
+
+<pre caption="Pirminių tekstų parsiuntimas">
+# <i>ebuild kelias/iki/ebuild fetch</i>
+</pre>
+
+<p>
+Jeigu ebuild rinkmenos md5sum vertė neatitinka duotos rinkmenoje
+<path>Manifest</path>, arba vienas iš pirminių tekstų neatitinka išvardintų
+rinkmenoje <path>files/digest-&lt;paketas&gt;</path>, jūs gausite pranešimą
+apie klaidą, panašų į šį:
+</p>
+
+<pre caption="Ebuild kontrolinės sumos klaida">
+!!! File is corrupt or incomplete. (Digests do not match)
+>>> our recorded digest: db20421ce35e8e54346e3ef19e60e4ee
+>>>  your file's digest: f10392b7c0b2bbc463ad09642606a7d6
+</pre>
+
+<p>
+Kitoje eilutėje bus paminėta klaidą sukėlusi rinkmena. 
+</p>
+
+<p>
+Jeigu jūs esate įsitikinęs, kad jūsu parsisiųstos rinkmenos yra geros, jūs
+galite regeneruoti rinkmenas <path>Manifest</path> ir
+<path>digest-&lt;paketas&gt;</path> pasinaudodami <c>ebuild</c> savybe digest:
+</p>
+
+<pre caption="Manifest ir digest regenaravimas">
+# <i>ebuild kelias/iki/ebuild digest</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Pirminių tekstų išpakavimas</title>
+<body>
+
+<p>
+Norint išpakuoti pirminius tekstus į <path>/var/tmp/portage</path> (ar bet
+kurį kitą katalogą, kurį jūs esate nurodę rinkmenoje
+<path>/etc/make.conf</path>), reikia pasinaudoti programos <c>ebuild</c>
+išpakavimo savybe:
+</p>
+
+<pre caption="Pirminių tekstų išpakavimas">
+# <i>ebuild kelias/iki/ebuild unpack</i>
+</pre>
+
+<p>
+Bus įvykdyta komandos ebuild funkcija src_unpack() (kuri pagal nutylėjimą yra
+paprastas išpakavimas, jeigu funkcija src_unpack() nėra apibrėžta). Šiame
+žingsnyje taip pat įvykdomos visos reikiamos pataisos.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Pirminių tekstų kompiliavimas</title>
+<body>
+
+<p>
+Kitas žingsnis įrašymo procese yra pirminių tekstų kompiliavimas. Programos
+<c>ebuild</c> kompiliavimo savybė atlieka šį žingsnį įvykdydama
+funkciją src_compile(). Į ją taip pat įtrauktas ir reikalingas konfigūravimas.
+</p>
+
+<pre caption="Pirminių tekstų kompiliavimas">
+# <i>ebuild kelias/iki/ebuild compile</i>
+</pre>
+
+<p>
+Jums yra patariama redaguoti ebuild rinkmenos funkciją src_compile(), jeigu jūs
+norite pakeisti kompiliavimo instrukcijas. Taip pat jūs galite priversti
+Portage laikyti, kad programa <c>ebuild</c> jau užbaigė kompiliavimą. Patys
+įvykdykite visas norimas komandas ir sukurkite tuščią rinkmeną, pavadintą
+<path>.compiled</path> darbo kataloge:
+</p>
+
+<pre caption="Portage informavimas apie užbaigtą kompiliavimą">
+# <i>touch .compiled</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Rinkmenų įdiegimas laikinajame kataloge</title>
+<body>
+
+<p>
+Kitame žigsnyje Portage įdiegs visas reikiamas rinkmenas laikinoje vietoje.
+Šiame kataloge tada bus visos rinkmenos, kurias reikia įrašyti į veikiančią
+rinkmenų išdėstymo sistemą. Tai galima įvykdyti pasinaudojant programos
+<c>ebuild</c> savybe install, kuri įvykdo ebuild rinkmenos funkciją
+src_install():
+</p>
+
+<pre caption="Rinkmenų įdiegimas">
+# <i>ebuild kelias/iki/ebuild install</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Rinkmen įrašymas į veikiančią rinkmenų išdėstymo sistemą</title>
+<body>
+
+<p>
+Paskutinis žingsnis yra visų rinkmenų įrašymas į veikiančią rinkmenų išdėstymo
+sistemą ir jų įregistravimas Portage vidinėje pusėje. <c>ebuild</c> vadina
+šią dalį "qmerge" ir į ją įtraukia šiuos žingsnius:
+</p>
+
+<ul>
+  <li>Įvykdo funkciją pkg_preinst(), jeigu reikalaujama</li>
+  <li>Nukopijuoja visas rinkmenas į veikiančią rinkmenų išdėstymo sistemą</li>
+  <li>Įregistruoja rinkmenas Portage vidinėje pusėje</li>
+  <li>Įvykdo funkciją pkg_postinst(), jeigu reikalaujama</li>
+</ul>
+
+<p>
+Kad įvykdytumėte šiuos žingsnius, pasinaudokite programos <c>ebuild</c> savybe
+qmerge:
+</p>
+
+<pre caption="Rinkmenų įrašymas į veikiančią rinkmenų išdėstymo sistemą">
+# <i>ebuild kelias/iki/ebuild qmerge</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Laikinojo katalogo išvalymas</title>
+<body>
+
+<p>
+Galiausiai js galite išvalyti laikinąjį katalogą pasinaudodami programos
+<c>ebuild</c> savybe clean:
+</p>
+
+<pre caption="Laikinojo katalogo išvalymas">
+# <i>ebuild kelias/iki/ebuild clean</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Papildomos ebuild savybės</title>
+<subsection>
+<title>Visų su įrašymu susijusių komandų vykdymas</title>
+<body>
+
+<p>
+Pasinaudodami programos <c>ebuild</c> savybe merge jūs galite įvykdyti komandas
+fetch, unpack, compile, install ir qmerge iš karto:
+</p>
+
+<pre caption="Programinės įrangos įdiegimas">
+# <i>ebuild kelias/iki/ebuild merge</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Konfigūravimo veiksmų atlikimas</title>
+<body>
+
+<p>
+Kai kurios programos turi instrukcijas, kurios konfiguruoja paketus įrašius
+juos į jūsų sistemą. Šios instrukcijos gali būti interaktyvios ir todėl
+nevykdomos automatiškai. Norėdami įvykdyti šiuos konfigūravimo žingsnius, kurie
+yra išvardinti ebuild rinkmenos (nebūtinoje) funkcijoje config(), panaudokite
+programos <c>ebuild</c> savybę config:
+</p>
+
+<pre caption="Paketo konfigūravimas">
+# <i>ebuild kelias/iki/ebuild config</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>(RPM) Paketo kūrimas</title>
+<body>
+
+<p>
+Jūs galite nurodyti, kad Portage sukurtų dvejetainį ebuild'o paketą ar netgi
+RPM rinkmeną. Naudokite komandos <c>ebuild</c> savybes package arba rpm, kad
+sukurtumėte šiuos archyvus. Tačiau tarp šių savybių yra keletas skirtumų:
+</p>
+
+<ul>
+  <li>
+    Savybė package yra labai panaši į savybę merge, įvykdanti visus būtinus
+    žingsnius (fetch, unpack, compile, install) prieš sukuriant paketą
+  </li>
+  <li>
+    Savybė rpm sukuria RPM paketą iš rinkmenų sukurtų <e>po to</e>, kai
+    įvykdoma programos <c>ebuild</c> savybė install.
+  </li>
+</ul>
+
+<pre caption="Paketų kūrimas">
+<comment>(Suderinamui su Portage dvejetainiui paketui)</comment>
+# <i>ebuild kelias/iki/ebuild package</i>
+
+<comment>(RPM paketui)</comment>
+# <i>ebuild kelias/iki/ebuild rpm</i>
+</pre>
+
+<p>
+Tačau sukurtoje RPM rinkmenoje nebus informacijos apie ebuild rinkmenos
+priklausomybes.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Daugiau informacijos</title>
+<subsection>
+<body>
+
+<p>
+Šiuose žinyno puslapiuose galite rasti daugiau informacijos apie Portage,
+ebuild programą ir ebuild rinkmenas:
+</p>
+
+<pre caption="Žinyno puslapiai">
+$ <i>man portage</i>    <comment>(pati Portage)</comment>
+$ <i>man emerge</i>     <comment>(komanda emerge)</comment>
+$ <i>man ebuild</i>     <comment>(komanda ebuild)</comment>
+$ <i>man 5 ebuild</i>   <comment>(ebuild rinkmenų sintaksė</comment>
+</pre>
+
+<p>
+Jūs taip pat galite rasti daugiau su plėtojimu susijusios informacijos
+<uri link="/proj/en/devrel/handbook/handbook.xml">Plėtotoja Vadove</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
+
