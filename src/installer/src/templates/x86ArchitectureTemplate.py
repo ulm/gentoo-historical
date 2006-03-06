@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.109 2006/03/06 15:33:42 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.110 2006/03/06 21:37:06 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -137,7 +137,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						if not "flags" in tmppart_new: tmppart_new['flags'] = []
 						tmppart_new['flags'].append(flag)
 				if tmppart_new['resized']:
-					self._logger.log("  Partition " + str(part) + " has oldminor " + str(tmppart_new['oldminor']) + " and it being resized...saving start sector " + str(parted_part.geom.start))
+					self._logger.log("  Partition " + str(part) + " has origminor " + str(tmppart_new['origminor']) + " and it being resized...saving start sector " + str(parted_part.geom.start))
 					tmppart_new['start'] = parted_part.geom.start
 					tmppart_new['end'] = 0
 				else:
