@@ -171,13 +171,13 @@ Each option has a brief description beside it.
 	def deactivate(self):
 		if not self.check_dynamic.get_active():
 			if not self.entry_stage_tarball_uri.get_text():
-				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="You did not enter a stage tarball URI. Continue?")
+				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="You did not enter a stage tarball URI. You cannot complete an installation until you set this value. Continue?")
 				resp = msgdlg.run()
 				msgdlg.destroy()
 				if resp == gtk.RESPONSE_NO:
 					return False
 			elif not GLIUtility.validate_uri(self.entry_stage_tarball_uri.get_text()):
-				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="The stage tarball URI you entered does not exist. Continue?")
+				msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format="The stage tarball URI you entered does not exist. You cannot complete an installation until this value is a valid. Continue?")
 				resp = msgdlg.run()
 				msgdlg.destroy()
 				if resp == gtk.RESPONSE_NO:
