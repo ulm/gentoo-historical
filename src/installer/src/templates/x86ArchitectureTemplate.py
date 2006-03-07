@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.112 2006/03/06 22:16:09 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.113 2006/03/07 04:26:34 codeman Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -481,7 +481,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				newgrubconf += "kernel /boot" + grub_kernel_name[5:] + " root=/dev/ram0 init=/linuxrc ramdisk=8192 real_root="
 				newgrubconf += self.root_device + self.root_minor + " " + bootloader_kernel_args + "\n"
 				newgrubconf += "initrd /boot" + grub_initrd_name[5:] + "\n"
-		
+		newgrubconf = self._grub_add_windows(newgrubconf)
 		#now make the grub.conf file
 		file_name = root + "/boot/grub/grub.conf"	
 		try:
@@ -538,6 +538,18 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		
 		if (not self.grub_root_drive) or (not self.grub_boot_drive):
 			raise GLIException("BootloaderError", 'fatal', '_gather_grub_drive_info',"Couldn't find the drive num in the list from the device.map")
+
+	def _grub_add_windows(self, newgrubconf):
+		parts = self._install_profile.get_partition_tables()
+		for device in parts:
+			tmp_partitions = parts[device].get_install_profile_structure()
+			for partition in tmp_partitions:
+				if (tmp_partitions[partition]['type'] == "vfat") or (tmp_partitions[partition]['type'] == "ntfs"):
+					grub_dev = self._map_device_to_grub_device(device)
+					newgrubconf += "\ntitle=Possible Windows P"+str(int(tmp_partitions[partition]['minor']))+"\n"
+					newgrubconf += "rootnoverify ("+grub_dev+","+str(int(tmp_partitions[partition]['minor'] -1))+")\n"
+					newgrubconf += "makeactive\nchainloader +1\n\n"
+		return newgrubconf
 
 	def _configure_lilo(self):
 		self.build_mode = self._install_profile.get_kernel_build_method()
