@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.267 2006/03/07 00:40:18 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.268 2006/03/07 13:18:01 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1326,7 +1326,7 @@ class ArchitectureTemplate:
 				self._logger.log("ERROR! : Could not deactivate swap ("+swap_device+")!")
 		
 		if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): running: cp /tmp/compile_output.log /tmp/compile_output.log.failed then removing /tmp/compile_output.log")
-		GLIUtility.spawn("cp /tmp/compile_output.log /tmp/compile_output.log.failed")
-		GLIUtility.spawn("rm /tmp/compile_output.log")
-		GLIUtility.spawn("cp /var/log/installer.log /var/log/installer.log.failed")
-		GLIUtility.spawn("rm /var/log/installer.log")
+		GLIUtility.spawn("mv " + self._compile_logfile + " " + self._compile_logfile + ".failed")
+#		GLIUtility.spawn("rm /tmp/compile_output.log")
+		GLIUtility.spawn("mv " + self._client_configuration.get_log_file() + " " + self._client_configuration.get_log_file() + ".failed")
+#		GLIUtility.spawn("rm /var/log/installer.log")
