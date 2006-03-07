@@ -4,18 +4,73 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-mips-bootloader.xml,v 1.9 2006/01/27 01:45:55 ccpz Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-mips-bootloader.xml,v 1.10 2006/03/07 13:14:12 ccpz Exp $ -->
 
-<!-- rev 1.12 by ccpz -->
+<!-- rev 1.13 by ccpz -->
 
 <sections>
 
-<version>1.8</version>
-<date>2006-01-19</date>
+<version>1.10</version>
+<date>2006-02-27</date>
 
 <section id="sgi">
-<title>Silicon Graphics Machines -- 設定Arcboot</title>
+<title>Silicon Graphics Machines -- 設定 arcboot/arcload</title>
 <subsection>
+<title>那一種？</title>
+<body>
+
+<p>
+SGI 機器上你有兩種開機管理原可以用。<c>arcboot</c> 還有 <c>arcload</c>。底下的
+表格列出他們各自的優點和缺點。
+</p>
+
+<table>
+<tr>
+  <th> </th>
+  <th>arcboot</th>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>
+    可以從 EXT2 或 EXT3 分割區載入，所以你不用存放在 volume header。
+  </ti>
+</tr>
+<tr>
+  <th>-</th>
+  <ti>
+    不能在 Octane/Octane2， Origin 200/2000 或 Indigo2 Impact (R10000) 機器運作。
+  </ti>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th> </th>
+  <th>arcload</th>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>
+    可以在任何相容 Linux 的 SGI 系統運作。
+  </ti>
+</tr>
+<tr>
+  <th>-</th>
+  <ti>
+    目前他還不能讀取 EXT2/EXT3 分割區，因此需要將核心及設定檔放在 volume header。
+  </ti>
+</tr>
+</table>
+
+<note>
+SGI volume header 檔案名稱不能超過 8 個字元，而且在一個 volume header 中最多只能
+有 16 個檔案。
+</note>
+
+</body>
+</subsection>
+<subsection>
+<title>安裝 arcboot</title>
 <body>
 
 <p>
@@ -45,10 +100,18 @@ header。目前這個系統仍有兩個主要的缺點：
 </p>
 
 <p>
-我們需要的神奇執行檔躲在<path>/usr/lib/arcboot</path>--在IP22系統(Indy,Indigo 2
-,Challenge S)，他將會命名為<path>arcboot.ip22</path>。其他的系統應該都差不多。
-我們先把這檔案複製到volume header。
+<c>arcboot</c> 執行檔放在 <path>/usr/lib/arcboot</path>。執行檔的名稱隨編譯的機
+器而有所不同。
 </p>
+
+<ul>
+  <li>
+    <c>arcboot.ip22</c>：Indy, Indigo2 (R4k) and Challenge S 系統使用的執行檔。
+  </li>
+  <li>
+    <c>arcboot.ip32</c>：O2 系統使用的執行檔。
+  </li>
+</ul>
 
 <pre caption="安裝arcboot到Volume Header">
 # <i>dvhtool --unix-to-vh /usr/lib/arcboot/arcboot.ip?? arcboot</i>
@@ -68,26 +131,22 @@ Entry #3, name "arcboot", start 21260, bytes 51448
 </pre>
 
 <note>
-您將會注意到在我的例子中，我已經有兩個舊的核心在裡面。<path>linux</path>
+您將會注意到上面的例子中，已經有兩個舊的核心在裡面。<path>linux</path>
 和<path>newlinux</path>。這是在我們開始使用<c>arcboot</c>之前的殘留物。
 目前不需要理他--只要<c>arcboot</c>一使用，一切都會正常。
 </note>
-
-</body>
-</subsection>
-
-<subsection>
-<title>設定arcboot</title>
-
-<body>
 
 <p>
 如果您之前曾經設定過Linux Loader(<c>lilo</c>)，您將會發現<c>arcboot</c>設定檔
 使用相似的語法。請記住;<c>arcboot</c>會去尋找他在EXT2/3磁區上的設定檔如：
 <path>/etc/arcboot.conf</path>。最簡單的方式就是確定<path>/boot</path>是
 一個EXT2/3的磁區並且在<path>/boot/etc</path>資料夾中有一個叫<path>arcboot.conf</path>
-的檔案。範例設定檔可以在<path>/etc/arcboot.conf.example</path>中找到。
+的檔案。範例設定檔可以在<path>/etc/arcboot.conf.sample</path>中找到。
 </p>
+
+<note>
+如果你不是用獨立的 <path>/boot</path> 分割區，依實際狀況調整路徑。
+</note>
 
 <pre caption="把arcboot.conf放到他該在的位置">
 <comment>(建立/boot/etc資料夾)</comment>
@@ -104,20 +163,21 @@ Entry #3, name "arcboot", start 21260, bytes 51448
 </pre>
 
 <p>
-然後您可以開始編輯適合您的<path>/etc/arcboot.conf</path>。個人建議，我比較
-喜歡建立兩個kernel image：<path>new</path>一個最新的可能可以用或可能不能用的
-核心。和<path>working</path>一個確定可以使用的核心。我的<path>arcboot.conf</path>
+然後您可以開始編輯適合您的<path>/etc/arcboot.conf</path>。一個可行的方式是建立
+兩個 kernel image：<path>new</path>一個最新的可能可以用，但可能不能用的核心。和
+<path>working</path>一個確定可以使用的核心。我的<path>arcboot.conf</path>
 看起來像這樣
 </p>
 
 <pre caption="範例arcboot.cong">
 <comment>#arcboot.conf</comment>
 <comment>#</comment>
+<comment># 確定可以使用的核心</comment>
 label=working
     image=/vmlinux
     append="root=/dev/sda3"
 
-<comment>#backup version</comment>
+<comment># 最新，尚未測試的核心</comment>
 label=new
     image=/vmlinux-new
     append="root=/dev/sda3"
@@ -131,6 +191,122 @@ label=new
 
 </body>
 </subsection>
+<subsection>
+<title>安裝 arcload</title>
+<body>
+
+<p>
+<c>arcload</c> 是為需要用 64-bit 核心的機器寫的，因為那些機器不能用
+<c>arcboot</c> (不能簡單的編譯成 64-bit 執行檔)。他也解決直接從 volume header
+在入核心時會出現的鬼問題。因此，你現在知道他是做什麼用的了。我們開始安裝：
+</p>
+
+<pre caption="安裝 arcload 和 dvhtool">
+# <i>emerge arcload dvhtool</i>
+</pre>
+
+<p>
+安裝好以後，你可以在 <path>/usr/lib/arcload</path> 找到 <c>arcload</c> 的執行檔
+。現在有兩個檔案可以用：
+</p>
+
+<ul>
+  <li>
+    <c>sashARCS</c>：Indy, Indigo2 (R4k), Challenge S 和 O2 系統用的 32-bit 執
+	行檔。
+  </li>
+  <li>
+    <c>sash64</c>：Octane/Octane2, Origin 200/2000 和 Indigo2 Impact 系統用的
+	64-bit 執行檔。
+  </li>
+</ul>
+
+<p>
+用 <c>dvhtool</c> 把適合你系統的執行檔安裝到 volume header：
+</p>
+
+<pre caption="將 arcload 放到 volume header">
+<comment>(Indy/Indigo2/Challenge S/O2 使用者)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sashARCS sashARCS</i>
+
+<comment>(Indigo2 Impact/Octane/Octane2/Origin 200/Origin 2000 使用者)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sash64 sash64</i>
+</pre>
+
+<note>
+除非你是安裝到可開機光碟的 volume header，你不一定要用 <c>sashARCS</c> 或
+<c>sash64</c> 命名。一般從硬碟開機時，你可以依你的喜好命名。
+</note>
+
+<p>
+現在用 <c>dvhtool</c> 檢查是不是正確複製到volume header。
+</p>
+
+<pre caption="檢查 volume header 中有沒有 arcload">
+# <i>dvhtool --print-volume-directory</i>
+----- directory entries -----
+Entry #0, name "sash64", start 4, bytes 55859
+#
+</pre>
+
+<p>
+目前 <c>arc.cf</c> 使用類似 C 語言的設定語法。詳細的設定說明請參閱 <uri
+link="http://www.linux-mips.org/wiki/Arcload">arcload page on the
+Linux/MIPS wiki</uri>。簡單來說，你定義許多選項，然後在開機時用
+<c>OSLoadFilename</c> 啟動或關閉。
+</p>
+
+<pre caption="An example arc.cf">
+<comment># ARCLoad Configuration</comment>
+
+<comment># Some default settings...</comment>
+append  "root=/dev/sda3";
+append  "ro";
+append  "console=ttyS0,9600";
+
+<comment># Our main definition.  ip28 may be changed if you wish.</comment>
+ip28 {
+        <comment># Definition for a "working" kernel</comment>
+        <comment># Select this by setting OSLoadFilename="ip28(working)"</comment>
+        working {
+                description     "SGI Indigo2 Impact R10000\n\r";
+                image system    "/working";
+        }
+
+        <comment># Definition for a "new" kernel</comment>
+        <comment># Select this by setting OSLoadFilename="ip28(new)"</comment>
+        new {
+                description     "SGI Indigo2 Impact R10000 - Testing Kernel\n\r";
+                image system    "/new";
+        }
+
+        <comment># For debugging a kernel</comment>
+        <comment># Select this by setting OSLoadFilename="ip28(working,debug)"</comment>
+        <comment># or OSLoadFilename="ip28(new,debug)"</comment>
+        debug {
+                description     "Debug console";
+                append          "init=/bin/bash";
+        }
+}
+</pre>
+
+<p>
+接下來是如底下將 <c>sash64</c> (或 <c>sashARCS</c>) 放到 volume header。核心也
+要放進去。
+</p>
+
+<pre caption="將 arc.cf 和核心放到 volume header">
+# <i>dvhtool --unix-to-vh arc.cf arc.cf</i>
+# <i>dvhtool --unix-to-vh /usr/src/linux/vmlinux new</i>
+</pre>
+
+<p>
+完成後，剩下的就是設定 PROM 的選項。參閱  <uri link="#reboot">重新開機</uri>。
+</p>
+
+</body>
+</subsection>
+
 </section>
 
 <section id="cobalt">
@@ -146,7 +322,7 @@ label=new
 
 <ul>
   <li>
-    有675kB的kernel限制。這使得目前Linux 2.4核心的的容量幾乎不可能裝進去。
+    核心大小限制是 675kB (估計)。這使得目前Linux 2.4核心的的容量幾乎不可能裝進去。
     Linux 2.6 更不可能了。
   </li>
   <li>
@@ -229,34 +405,35 @@ CoLo將會拒絕載入不是從<c>#:CoLo:#</c>那行開始的Script。您可以�
 
 <p>
 您也許會問一個問題，就像是我想要利用那一個kernel&amp;設定來啟動，當預設
-時間已經到了。以下是我用在我的Cobalt server 的設定檔：
+時間已經到了。底下設定檔會詢問使用者要用哪個核心，然後執行所選的核心。
+<path>vmlinux.gz.new</path> 和 <path>vmlinux.gz.working</path> 可能是實際的核心
+映像檔，或是連到其他檔案的符號連結。參數 <c>50</c> 指定 50/10 秒以後<e>選擇</e>
+第一個選項("Working")。
 </p>
-
-<impo>
-請注意您需要使用 CoLo v1.12 或 v1.13 才能使用 <c>menu</c> 指令。下面的範例無法在 v1.11 上使用。
-</impo>
-
-<impo>
-<c>menu</c> 指令在 CoLo v1.14 中將被 <c>select</c> 取代，如果您已經手動安裝了較新的版本，請查看 CoLo 的 <path>examples</path> 子目錄中的 <path>menu.colo</path>
-</impo>
 
 <pre caption="選單的設定檔">
 <comment>#:CoLo:#</comment>
 
 lcd "Mounting hda1"
 mount hda1
-menu "Which Kernel?" 50 Working working New new
-lcd "Loading Linux" {menu-option}
-load /kernel.gz.{menu-option}
+select "Which Kernel?" 50 Working New
+
+goto {menu-option}
+var image-name vmlinux.gz.working
+goto 3f
+@var image-name vmlinux.gz.working
+goto 2f
+@var image-name vmlinux.gz.new
+  	 
+@lcd "Loading Linux" {image-name}
+load /{image-name}i
 lcd "Booting..."
 execute root=/dev/hda5 ro console=ttyS0,115200
 boot
 </pre>
 
 <p>
-上述的script會問使用者想用那一個核心啟動(New或是Working)，然後載入
-<path>vmlinux.gz.new</path>或是<path>vmlinux.gz.working</path>。
-如果在5秒內沒有完成選擇，他將會用第一個選項來啟動。
+請查閱 <path>/usr/share/doc/colo-VERSION</path> 取得更多資訊。
 </p>
 </body>
 
@@ -275,7 +452,7 @@ boot
 </p>
 
 <note>
-對於那些有支援frambuffer的幸運使用者可以跳過這節如果您希望的話。
+使用被支援的顯示晶片幸運使用者，如果您希望的話，可以跳過這節。
 </note>
 
 <p>
@@ -355,10 +532,10 @@ cdimage ~# <i>reboot</i>
 </pre>
 
 <note>
-<e>Cobalt使用者：</e>剩餘的內容包含設定SGI PROM 讓他可以啟動<c>arcboot</c>
-然後載入Linux。這不是適當的設定Cobalt伺服器。事實上您要作的工作已經完成--
-對於第一次啟動已經沒有任何設定需要被設定，您可以略過下一節<uri
-link="?part=1&amp;chap=11">最終化您的Gentoo安裝</uri>
+<e>Cobalt使用者：</e>剩餘的內容包含設定SGI PROM 讓他可以啟動 
+<c>arcboot</c>/<c>arcload</c> 然後載入Linux。這不是適當的設定Cobalt伺服器。事實
+上您要作的工作已經完成--對於第一次啟動已經沒有任何設定需要被設定，您可以略過下
+一節<uri link="?part=1&amp;chap=11">最終化您的Gentoo安裝</uri>
 </note>
 
 </body>
@@ -367,14 +544,30 @@ link="?part=1&amp;chap=11">最終化您的Gentoo安裝</uri>
 <section>
 <title>調整 SGI PROM</title>
 <subsection>
+<title>設定一般 PROM 設定值</title>
 <body>
-  	 
+
 <p>
-當你重開機以後，進入 <e>System Maintenance Menu</e> 然後選擇
-<e>Enter Command Monitor</e> (<c>5</c>)。如果你想要測試剛剛安裝好的 Gentoo，你
-可以執行 <c>boot -f &lt;kernel name&gt;</c>。要讓你的系統每次都執行 Gentoo，你
-要設定一些 SGI PROM 的變數。
+現在開機管理原已經安裝好了，你可以重新啟動機器。
 </p>
+
+<pre caption="重開機">
+<comment>(離開 chroot 環境)</comment>
+# <i>exit</i>
+
+<comment>(卸載裝置)</comment>
+# <i>umount /gentoo/boot</i>
+# <i>umount /gentoo</i>
+
+<comment>(重開機)</comment>
+# <i>reboot</i>
+</pre>
+
+<p>
+當你重開機以後，進入 <e>System Maintenance Menu</e> 然後和網路開機時一樣，選擇
+<e>Enter Command Monitor</e> (<c>5</c>)。
+</p>
+	 
   	 
 <pre caption="設定 PROM 啟動 Gentoo">
 1) Start System
@@ -385,7 +578,47 @@ link="?part=1&amp;chap=11">最終化您的Gentoo安裝</uri>
   	 
 Option? <i>5</i>
 Command Monitor.  Type "exit" to return to the menu.
-  	 
+
+<comment>(設定一些 arcload 和 arcboot 都要用的選項)</comment>
+
+<comment>(設定 Volume Header 的位置)</comment>
+&gt;&gt; <i>setenv SystemPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
+
+<comment>(自動用 Gentoo 開機)</comment>
+&gt;&gt; <i>setenv AutoLoad Yes</i>
+
+<comment>(設定時區)</comment>
+&gt;&gt; <i>setenv TimeZone EST5EDT</i>
+
+<comment>(使用序列阜主控台 - 圖形介面使用者要用 "g" 而不是 "d1" (一))</comment>
+&gt;&gt; <i>setenv console d1</i>
+
+<comment>(設定序列阜速率。這是非必要的，預設值是 9600          )
+(但是許多使用者比較喜歡用 38400。)</comment>
+&gt;&gt; <i>setenv dbaud 9600</i>
+</pre>
+
+<p>
+下一步設定系統如何開機。
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>直接從 volume-header 開機的設定</title>
+<body>
+
+<p>
+這部份只是為了完整性而撰寫。建議使用者使用 <c>arcboot</c> 或 <c>arcload</c> 開
+機。
+</p>
+
+<note>
+這只在 Indy, Indigo2 (R4k) 及 Challenge S 可以用。
+</note>
+
+<pre caption=" volume-header 開機的 PROM 設定">
 <comment>(&lt;root device&gt; = Gentoo 的跟目錄，例如說 /dev/sda3)</comment>
 &gt;&gt; <i>setenv OSLoadPartition &lt;root device&gt;</i>
   	 
@@ -395,20 +628,85 @@ Command Monitor.  Type "exit" to return to the menu.
   	 
 <comment>(加入你要傳送的核心參數)</comment>
 &gt;&gt; <i>setenv OSLoadOptions &lt;kernel parameters&gt;</i>
-  	 
-<comment>(提供 Volume Header 的位置)</comment>
-&gt;&gt; <i>setenv SystemPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
-  	 
-<comment>(自動開啟 Gentoo)</comment>
-&gt;&gt; <i>setenv AutoLoad Yes</i>
-  	 
-<comment>(設定時區)</comment>
-&gt;&gt; <i>setenv TimeZone EST5EDT</i>
-  	 
-<comment>(使用序列終端機 - graphic 卡的使用者應該用 "g" 取代 "d1" (一))</comment>
-&gt;&gt; <i>setenv console d1</i>
 </pre>
-  	 
+
+<p>
+如果你想在測試核心時加上參數，你可以用 PROM 的 <c>boot -f</c> 指令：
+</p>
+
+<pre caption="不改變環境變數開機">
+<comment>(用 "new" 核心開機，加上額外的參數)</comment>
+# <i>boot -f new root=/dev/sda3 ro</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>arcload 設定</title>
+<body>
+
+<p>
+<c>arcload</c> 使用 <c>OSLoadFilename</c> 選項指定使用 <path>arc.cf</path> 的哪
+一個設定。他的設定檔基本上來說就是 script，最上層定義不同系統的開機映象檔，而裡
+面是非必要的設定。因此，設定 <c>OSLoadFilename=mysys(serial)</c> 代表說使用
+<c>mysys</c> 區域的設定，更進階的設定由 <c>serial</c> 覆寫。
+</p>
+
+<p>
+在上面的設定檔中，我們定義一個系統區塊 <c>ip28</c>，他有 <c>working</c>，
+<c>new</c> 和 <c>debug</c> 選項可以用。因此像這樣定義 PROM 變數：
+</p>
+
+<pre caption="使用 arcload 的 prom 設定">
+<comment>(用 arcload 作為開機管理員 - sash64 或 sashARCS)</comment>
+&gt;&gt; setenv OSLoader sash64
+
+<comment>(使用 "working" 核心映象檔，在 arc.cf 的 "ip28" 區塊定義)</comment>
+&gt;&gt; setenv OSLoadFilename ip28(working)
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>arcboot 設定</title>
+<body>
+
+<p>
+<c>arcboot</c> 從 <path>/boot</path> 分割區載入核心和設定檔，分割區需要是 EXT2
+或 EXT3 格式。用 <c>OSLoadPartition</c> 指向這個分割區。<c>OSLoader</c> 則是
+volume header 中的 <c>arcboot</c> 執行檔，而 <c>OSLoadFilename</c> 是你要用的核
+心映象檔名稱。
+</p>
+
+<pre caption="使用 arcboot 的 PROM 設定">
+<comment>(從SCSI ID# 1，分割區0 (sda1) 讀取設定檔及核心)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(0)</i>
+
+<comment>(使用 arcboot 為開機管理員)</comment>
+&gt;&gt; <i>setenv OSLoader arcload</i>
+
+<comment>(載入 arcboot.conf 中的那個核心)</comment>
+&gt;&gt; <i>setenv OSLoadFilename working</i>
+</pre>
+
+<p>
+當你用 <c>arcboot</c> 測試新核心時可以像這樣指定另一個核心(<c>new</c> 是另一個
+核心)：
+</p>
+
+<pre caption="指定另一個核心">
+# <i>boot new</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>一切就緒</title>
+<body>
+
 <p>
 現在你已經準備好享受 Gentoo!開機到 Gentoo 然後繼續
 <uri link="?part=1&amp;chap=11">最終化 Gentoo 安裝</uri>.

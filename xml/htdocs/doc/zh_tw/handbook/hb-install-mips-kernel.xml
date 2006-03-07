@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-mips-kernel.xml,v 1.12 2006/01/27 01:45:55 ccpz Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/hb-install-mips-kernel.xml,v 1.13 2006/03/07 13:14:12 ccpz Exp $ -->
 
-<!-- rev 1.19 by ccpz -->
+<!-- rev 1.20 by ccpz -->
 
 <sections>
 
-<version>1.15</version>
-<date>2006-01-06</date>
+<version>1.16</version>
+<date>2006-02-27</date>
 
 <section>
 <title>時區</title>
@@ -44,29 +44,70 @@ link="/doc/tw/gentoo-kernel.xml">Gentoo 核心 指南</uri> 查看我們所提�
 </p>
 
 <p>
-MIPS 系統的使用者可以選擇 <c>mips-sources</c> （適用於 MIPS 架構的預設核心
-）和 <c>mips-prepatch-sources</c> （prerelease kernel tree）。
+MIPS 系統的使用者只有 <c>mips-sources</c> 可以選擇。在某些系統需要特殊的修正才
+能正常工作。底下的表格列出加上修正需要的 USE 設定。Indy，Indigo2 (R4k) 和
+Challenge S 系統不需要任何額外的修正。
 </p>
 
-<p>
-選擇適合您的核心原始檔然後使用 <c>emerge</c> 安裝。當然，請安裝您想要的的核心，
-為了避免安裝 xorg-x11 或其他相依軟體，需要加上 <c>USE="-doc"</c>。第一次安裝時
-不一定需要 <c>USE="symlink"</c>，但是確定你有正確建立
-<path>/usr/src/linux</path> 符號連結。
-</p>
+<table>
+<tr>
+  <th>USE 設定</th>
+  <th>系統</th>
+</tr>
+<tr>
+  <ti><c>cobalt</c></ti>
+  <ti>Cobalt Qube/RaQ support</ti>
+</tr>
+<tr>
+  <ti><c>ip27</c></ti>
+  <ti>SGI Origin 200/2000 support (1)</ti>
+</tr>
+<tr>
+  <ti><c>ip28</c></ti>
+  <ti>SGI Indigo2 Impact (R10000) support (1,2)</ti>
+</tr>
+<tr>
+  <ti><c>ip30</c></ti>
+  <ti>SGI Octane/Octane2 support (1)</ti>
+</tr>
+</table>
 
 <note>
-Cobalt 伺服器需要特殊的 patch 才能讓核心在上面運作。為了取得並套用必要的 patch，
-需要設定 <c>cobalt</c> USE 旗標。
+<c>USE="-doc"</c> 不建立核心 API 的文件，建立這些文件會加上許多這一步用不到的相
+依軟體。
 </note>
 
-<pre caption="安裝核心原始碼">
-<comment>(適用 SGI 機器)</comment>
-# <i>USE="-doc symlink" emerge mips-sources</i>
-<comment>(適用 Cobalt 機器)</comment>
-# <i>mkdir -p /etc/portage</i>
+<pre caption="設定 USE 然後安裝核心...">
+<comment>(如果你的系統需要設定，將 cobalt 用合適的設定取代)</comment>
+# <i>mkdir /etc/portage</i>
 # <i>echo "sys-kernel/mips-sources cobalt" &gt;&gt; /etc/portage/package.use</i>
-# <i>USE="-doc symlink" emerge mips-sources</i>
+
+<comment>(解壓縮 &amp; 安裝核心原始碼)</comment>
+# <i>USE="-doc" emerge mips-sources</i>
+</pre>
+
+<impo>
+(1) 在 Origin 200/2000，Indigo2 Impact (R10000)，Octane/Octane2 和 O2 系統需要
+64 位元核心開機。在這些機器上，你需要把 <path>/etc/make.profile</path> profile
+符號連結指到 <path>default-linux/mips/mips64/RELEASE</path>。然後安裝
+<c>emerge gcc-mips64</c> 建立 cross-compiler 編譯 64 位元核心。
+</impo>
+
+<impo>
+(2)Indigo2 Impact 需要特殊的處理，要給 <c>gcc</c> 加上特殊的修正才能正確編譯
+IP28 核心。這個修正會加上 <c>-mip28-cache-barriers</c> CFLAG 的支援，在編譯核
+心時用來解決由於投機執行引起的硬體錯誤。這在你把 profile 設為
+<path>default-linux/mips/mips64/ip28/RELEASE</path> 時就會解決，同時也會幫你處
+理好 (1)。
+</impo>
+
+<pre caption="改變 Profile 然後安裝 gcc-mips64...">
+<comment>(假設 PORTDIR 在預設的位置 /usr/portage)</comment>
+# <i>rm /etc/make.profile</i>
+# <i>ln -s /usr/portage/profiles/default-linux/mips/mips64/2005.0</i> <comment>(or .../mips64/ip28/2005.0)</comment>
+
+<comment>(安裝 64 位元核心 toolchain)</comment>
+# <i>emerge gcc-mips64</i>
 </pre>
 
 <p>
@@ -77,7 +118,17 @@ Cobalt 伺服器需要特殊的 patch 才能讓核心在上面運作。為了取
 
 <pre caption="觀看核心原始碼目錄連接">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt;linux-2.4.24
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.13.4
+</pre>
+
+<p>
+如果不是這樣的話(例如連到不同的核心)，在繼續前改變符號連結：
+</p>
+
+<pre caption="改變核心原始碼目錄連接">
+# <i>rm /usr/src/linux</i>
+# <i>cd /usr/src</i>
+# <i>ln -s linux-2.6.13.4 linux</i>
 </pre>
 
 <p>
@@ -94,50 +145,98 @@ lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt;linu
 <body>
 
 <p>
-以前我們使用手動設定來設定核心。不過現在我們上傳許多的設定範例，嚷你可以根據這
-些來設定。只要按下和你的機器及核心版本最類似的連結。你也可以在底下的網址看到其他
-的設定範例。
+以前我們使用手動設定來設定核心。但是隨著我們支援的系統增加，這種作法已經不實用
+。這一段詳細介紹不同的核心設定範例來源。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>使用核心原始碼的設定範例</title>
+<body>
+
+<p>
+許多支援的系統在核心原始碼中都有設定範例。但不是所有的系統都有。如果支援的話，
+可以用底下表格列出的指令來設定。
 </p>
 
 <table>
-  <tr>
-    <th>系統</th>
-    <th>核心版本</th>
-  </tr>
-  <tr>
-    <ti>SGI IP22 (Indy, Indigo 2, Challenge S)</ti>
-    <ti>
-      <uri link="http://www.longlandclan.hopto.org/~stuartl/mips-linux/sgi/ip22/config/2.4.29-mipscvs-20050130.gz">2.4.29</uri>
-    </ti>
-  </tr>
-  <tr>
-    <ti>Cobalt Qube/Raq 2800</ti>
-	<ti>
-	  <uri link="http://dev.gentoo.org/~kumba/mips/cobalt/kernel/cobalt-2605.config">2.6.5</uri>
-	  <uri link="http://dev.gentoo.org/~kumba/mips/cobalt/kernel/cobalt-2606.config">2.6.6</uri>
-	  <uri link="http://dev.gentoo.org/~kumba/mips/cobalt/kernel/cobalt-config-2609">2.6.9</uri>
-	</ti>
-  </tr>
+<tr>
+  <th>系統</th>
+  <th>設定指令</th>
+</tr>
+<tr>
+  <ti>Cobalt Servers</ti>
+  <ti><c>make cobalt_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indy, Indigo2 (R4k), Challenge S</ti>
+  <ti><c>make ip22_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Origin 200/2000</ti>
+  <ti><c>make ip27_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indigo2 Impact (R10k)</ti>
+  <ti>
+    <c>make ip28_defconfig</c> (requires <c>mips-sources-2.6.14.5</c> or
+    later)
+  </ti>
+</tr>
+<tr>
+  <ti>O2</ti>
+  <ti><c>make ip32_defconfig</c></ti>
+</tr>
 </table>
 
-<ul>
-  <li>
-    IP22 (Indy, Indigo2, Challenge S) 設定：
-    <uri link="http://www.longlandclan.hopto.org/~stuartl/mips-linux/sgi/ip22/config">
-    http://www.longlandclan.hopto.org/~stuartl/mips-linux/sgi/ip22/config
-    </uri>
-  </li>
-  <li>
-    Cobalt 伺服器設定：
-	<uri link="http://dev.gentoo.org/~kumba/mips">
-	 http://dev.gentoo.org/~kumba/mips
-	</uri>
-  </li>
-</ul>
+</body>
+</subsection>
 
-<note>
-在 Gentoo/MIPS 硬體支援資料庫，位於 <uri>http://stuartl.longlandclan.hpto.org/gentoo/mips</uri>，可以找到更多核心設定範例。
-</note>
+<subsection>
+<title>使用安裝媒體上的核心設定</title>
+<body>
+
+<p>
+所有的 Gentoo 安裝映象檔其中都有核心設定檔，可以在 <path>/proc/config.gz</path>
+取得。這在許多狀況都可以用。如果你的核心和目前執行的大致符合，這是最佳選擇。透
+過底下的 <c>zcat</c> 指令就可以解壓縮：
+</p>
+
+<pre caption="從 /proc/config.gz 解壓縮 .config">
+# <i>zcat /proc/config.gz > .config</i>
+</pre>
+
+<impo>
+這個核心是為網路開機的映象檔設定的。也就是說，他會從這幾個地方尋找根目錄，可能
+是 initramfs 的目錄，或 initrd 的 loopback 裝置。當你執行底下的 <c>make
+menuconfig</c>，別忘記關閉 General Setup 中的 initramfs 選項。
+</impo>
+
+</body>
+</subsection>
+
+<subsection>
+<title>硬體相容性資料庫</title>
+<body>
+
+<p>
+為了幫助使用者找到可用的設定，建立了硬體相容性資料庫。這資料庫列出不同 MIPS 裝
+置的支援，並且讓使用者提供可以運作的核心設定。這網站的位址是：
+<uri>http://stuartl.longlandclan.hopto.org/gentoo/mips</uri>.
+</p>
+
+<p>
+如果你覺得這服務很有用，歡迎你提供你的意見，及可以給其他人幫助的 .config 檔。然
+而並不保證任何從這個網站下載的設定檔可以運作。
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>依需求自訂設定</title>
+<body>
 
 <p>
 一旦你找到合適的設定後，把它下載到核心原始碼的目錄，然後更名成
@@ -153,6 +252,13 @@ lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt;linu
 # <i>make menuconfig</i>
 </pre>
 
+<impo>
+在 Kernel Hacking 區域中，有一個 "Are You Using A Cross Compiler?" 選項。這告訴
+核心 Makefiles 要不要在 <c>gcc</c> 和 <c>as</c> 指令前加上 "<c>mips-linux-</c>"
+(或 <c>mipsel-linux</c> ... 等)。但是即使是 cross-compile，也要關閉這選項。如果
+你需要呼叫 cross-compiler，使用下一段的 <c>CROSS_COMPILE</c> 變數設定字首。
+</impo>
+
 </body>
 </subsection>
 <subsection id="compiling">
@@ -163,12 +269,37 @@ lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt;linu
 現在您的核心已經設定完成了，我們該來編譯然後安裝它。離開核心設定，然後開始編譯程序：
 </p>
 
-<pre caption="編譯核心">
-<comment>（核心 2.4）</comment>
-# <i>make dep &amp;&amp; make vmlinux modules modules_install</i>
+<note>
+在 64 位元的機器，你需要指定 <c>CROSS_COMPILE=mips64-unknown-linux-gnu-</c> (或
+little-endian 系統用 <c>mips64el-...</c>)來使用 64 位元編譯器。
+</note>
 
-<comment>（其他核心 2.6）</comment>
-# <i>make &amp;&amp; make modules_install</i>
+<pre caption="編譯核心">
+<comment>(只適用 2.4 核心)</comment>
+# <i>make dep</i>
+
+<comment>(2.4 和 2.6 核心 -- 原生編譯)</comment>
+# <i>make vmlinux modules modules_install</i>
+
+<comment>(2.4 和 2.6 核心 -- 在目的機器 cross compile)</comment>
+<comment>(依需求改變 mips64-unknown-linux-gnu-       )</comment>
+# <i>make vmlinux modules modules_install CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+
+<comment>(在像是 x86 機器編譯時，使用底下的指令編譯核心 &amp; 安裝模組)</comment>
+<comment>(到指定的目錄然後傳送到目的機器。                            )</comment>
+# <i>make vmlinux modules CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+# <i>make modules_install INSTALL_MOD_PATH=/somewhere</i>
+</pre>
+
+<impo>
+當編譯 Indy，Indigo2 (R4k)，Challenge S 和 O2 的 64 位元核心，使用
+<c>vmlinux.32</c> 而不要用 <c>vmlinux</c>。否則你的機器不能開機。這是 PROM 不支
+援 ELF64 格式的解決方法。
+</impo>
+
+<pre caption="使用 vmlinux.32">
+# <i>make vmlinux.32</i>
+<comment>(這會建立 vmlinux.32 -- 就是你的最終核心)</comment>
 </pre>
 
 <p>
@@ -177,14 +308,13 @@ lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt;linu
 
 <note>
 在 Cobalr 伺服器上，bootloader 會預期有個壓縮過的核心影像，請記得在把檔案複製到
-<path>/boot</path> 之後，要 <c>gzip -9</c> 該檔案。記得把
-<path>&lt;kernel-version&gt;</path> 取代成你用的核心名稱及版本。
+<path>/boot</path> 之後，要 <c>gzip -9</c> 該檔案。
 </note>
 
 <pre caption="安裝核心">
-# <i>cp vmlinux /boot/&lt;kernel-version&lt;</i>
+# <i>cp vmlinux /boot/kernel-2.6.13.4</i>
 <comment>(Cobalt 伺服器--壓縮核心影像)</comment>
-# <i>gzip -9v /boot/&lt;kernel-version&lt;</i>
+# <i>gzip -9v /boot/kernel-2.6.13.4</i>
 </pre>
 
 <!--
