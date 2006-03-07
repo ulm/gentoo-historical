@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.266 2006/03/01 15:38:17 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.267 2006/03/07 00:40:18 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -895,16 +895,16 @@ class ArchitectureTemplate:
 		# Get the list of file system tools to be installed
 		parts = self._install_profile.get_partition_tables()
 		# don't use an array, use a set instead
-		filesystem_types = {}
+		filesystem_types = []
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
 			for partition in tmp_partitions:
 				partition_type = tmp_partitions[partition]['type'].lower()
-				if partition_type not in filesystem_types:
-					filesystem_types[partition_type] = None
+				if tmp_partitions[partition]['mountpoint'] and partition_type not in filesystem_types:
+					filesystem_types.append(partition_type)
 
 		package_list = []
-		for filesystem in filesystem_types.keys():
+		for filesystem in filesystem_types:
 			if filesystem == 'xfs':
 				package_list.append('sys-fs/xfsprogs')
 			elif filesystem == 'reiserfs':
