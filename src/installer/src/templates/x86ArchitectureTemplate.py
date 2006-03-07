@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.113 2006/03/07 04:26:34 codeman Exp $
+$Id: x86ArchitectureTemplate.py,v 1.114 2006/03/07 12:33:47 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -544,7 +544,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
 			for partition in tmp_partitions:
-				if (tmp_partitions[partition]['type'] == "vfat") or (tmp_partitions[partition]['type'] == "ntfs"):
+				if (tmp_partitions[partition]['type'] == "fat32") or (tmp_partitions[partition]['type'] == "ntfs"):
 					grub_dev = self._map_device_to_grub_device(device)
 					newgrubconf += "\ntitle=Possible Windows P"+str(int(tmp_partitions[partition]['minor']))+"\n"
 					newgrubconf += "rootnoverify ("+grub_dev+","+str(int(tmp_partitions[partition]['minor'] -1))+")\n"
@@ -644,7 +644,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		for device in parts:
 			tmp_partitions = parts[device].get_install_profile_structure()
 			for partition in tmp_partitions:
-				if (tmp_partitions[partition]['type'] == "vfat") or (tmp_partitions[partition]['type'] == "ntfs"):
+				if (tmp_partitions[partition]['type'] == "fat32") or (tmp_partitions[partition]['type'] == "ntfs"):
 					newliloconf += "other="+device+str(int(tmp_partitions[partition]['minor']))+"\n"
 					newliloconf += "label=Windows_P"+str(int(tmp_partitions[partition]['minor']))+"\n\n"
 		return newliloconf
