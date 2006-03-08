@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-ppc-bootloader.xml,v 1.4 2006/01/23 21:37:40 achumakov Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-ppc-bootloader.xml,v 1.5 2006/03/08 12:51:37 achumakov Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>2.8</version>
-<date>2006-01-19</date>
+<version>2.9</version>
+<date>2006-02-27</date>
 
 <section>
 <title>Делаем выбор</title>
@@ -50,17 +50,20 @@ link="#yaboot">yaboot</uri>. Для компьютеров OldWorld Apple ест
 yaboot можно использовать только на компьютерах NewWorld Apple или IBM!
 </impo>
 
-    
 <p>
-yaboot для поиска загрузочных устройств нужен доступ к файловой системе
-<path>/dev</path>. Чтобы осуществить это, вам потребуется
-&laquo;привязать&raquo; <path>/dev</path> из установочного диска к 
-<path>/dev</path> внутри chroot.
+Чтобы найти загрузочные устройства, yaboot необходим доступ к файлам устройств, 
+создаваемым udev при запуске, и файловой системе sysfs. Эти две файловые 
+системы находятся в <path>/dev</path> и <path>sys</path>, соответственно.
+Для этого вам потребуется &laquo;привязать&raquo; эти файловые системы с корня 
+установочного диска на точки монтирования <path>/dev</path> и <path>/sys</path>
+внутри среды измененного корня (chroot). Если файловые системы уже привязаны, 
+делать это повторно не требуется.
 </p>
 
-<pre caption="Монтирование файловой системы /dev">
+<pre caption="Монтирование файловых систем устройств и системной">
 # <i>exit </i> # выйдем из chroot
 # <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount -o bind /sys /mnt/gentoo/sys</i>
 # <i>chroot /mnt/gentoo /bin/bash</i>
 # <i>/usr/sbin/env-update &amp;&amp; source /etc/profile </i>
 </pre>
@@ -81,10 +84,10 @@ yaboot.conf, даже если вы запускали yabootconfig. Разде�
 <pre caption="Добавление параметров загрузки genkernel yaboot.conf">
 <comment>###########################################################
 ## Этот раздел может быть повторен, если у вас несколько ядер или вы хотите
-## установить параметры загрузки. Замените kernel-2.6.12 точным именем вашего 
+## установить параметры загрузки. Замените kernel-2.6.15 точным именем вашего 
 ## ядра.
 ###########################################################</comment>
-image=/boot/kernel-2.6.12
+image=/boot/kernel-2.6.15
   label=Linux
   root=/dev/ram0    <comment># Если вы использовали genkernel, то это /dev/ram0</comment>
   partition=3
@@ -118,23 +121,27 @@ image=/boot/kernel-2.6.12
 </p>
 
 <p>
-Все эти шаги должны должны быть уже выполнены. Сначала проверьте, что
-установлена последняя версия <c>yaboot</c>.
+Чтобы использовать <c>yabootconfig</c>, на вынем диске должен быть раздел
+Apple_Bootstrap, а в <path>/etc/fstab</path> должны быть отражены ваши разделы 
+Linux. Эти шаги должны были быть выполнены ранее, но все же проверьте
+<path>/etc/fstab</path>, прежде чем продолжить. Убедимся, что у вас установлен
+<c>yaboot</c>.
 </p>
 
-<pre caption = "Установка yaboot с GRP">
-# <i>emerge --usepkg --update yaboot</i>
+<pre caption = "Установка yaboot">
+# <i>emerge yaboot</i>
 </pre>
 
 <p>
 Теперь выйдем из chroot и запустим <c>yabootconfig --chroot /mnt/gentoo</c>.
-После запуска программа попросит подтвердить путь к разделу Apple_Bootstrap.
-Нажмите <c>Y</c>, если раздел выбран правильно. Если нет &mdash; проверьте в
-файле <path>/etc/fstab</path> правильность путей устройств. Как только
-раздел bootstrap будет выбран, yabootconfig проверит вашу систему, создаст
-файл <path>/etc/yaboot.conf</path> и запустит <c>mkofboot</c>. <c>mkofboot</c>
-отформатирует раздел Apple_Bootstrap и установит в него конфигурационные
-файлы. После этого войдите в chroot снова.
+После запуска программа попросит подтвердить путь к загрузочному разделу.
+Если вы использовали предложенную схему разбивки диска, заргузочным разделом 
+будет /dev/hda2. Нажмите <c>Y</c>, если раздел указан правильно. Если нет,
+перепроверьте файл <path>/etc/fstab</path>. Затем yabootconfig просмотрит 
+настройку вашей системы, создаст <path>/etc/yaboot.conf</path> и запустит 
+<c>mkofboot</c>. <c>mkofboot</c> используется для форматирования раздела 
+Apple_Bootstrap и установки в него конфигурационных файлов. После этого войдите 
+в chroot снова. 
 </p>
 <pre caption="Возвращение в chroot">
 # <i>chroot /mnt/gentoo /bin/bash</i>
@@ -154,15 +161,15 @@ image=/boot/kernel-2.6.12
 </body>
 </subsection>
 <subsection id="manual_yaboot">
-<title>Альтернатива: конфигурирование Yaboot вручную</title>
+<title>Альтернатива: настройка Yaboot вручную</title>
 <body>
 
 <p>
-Для начала убедитесь что у вас установлен <c>yaboot</c> последней версии.
+Для начала убедитесь что у вас установлен <c>yaboot</c>.
 </p>
 
 <pre caption = "Установка yaboot">
-# <i>emerge --usepkg --update yaboot</i>
+# <i>emerge yaboot</i>
 </pre>
 
 <p>
@@ -324,6 +331,11 @@ BootX можно настроить для запуска Linux во время 
 link="http://penguinppc.org/bootloaders/bootx/">домашняя страница BootX</uri>.
 </p>
 
+<impo>
+Убедитесь, что в вашем ядре есть поддержка файловых систем HFS и HFS+, а то вы 
+не сможете обновлять или изменять ядро на своем разделе MacOS.
+</impo>
+
 <p>
 Теперь снова перезагрузитесь и загрузитесь в Linux, затем продолжите с 
 <uri link="?part=1&amp;chap=11">Окончание установки Gentoo</uri>.
@@ -358,12 +370,12 @@ quik позволяет загружаться компьютерам OldWorld �
 
 <pre caption="Настройка quik.conf">
 # Пример quik.conf
-init-message = "Gentoo 2005.1\n"
+init-message = "Gentoo 2006.0\n"
 partition = 2           <comment># Загрузочный раздел</comment>
 root = /dev/hda4
 timeout = 30
 default = gentoo
-image = /vmlinux-2.6.12
+image = /vmlinux-2.6.15
         label = gentoo
 </pre>
 
@@ -394,7 +406,7 @@ link="http://penguinppc.org/bootloaders/quik/quirks.php">quirk'и</uri> для
 # <i>nvsetenv input-device kbd</i>
 # <i>nvsetenv boot-device scsi/sd@1:0</i> <comment># Для SCSI</comment>
 # <i>nvsetenv boot-device ata/ata-disk@0:0</i> <comment># Для ATA</comment>
-# <i>nvsetenv boot-file /boot/vmlinux-2.6.12 root=/dev/hda4</i>
+# <i>nvsetenv boot-file /boot/vmlinux-2.6.15 root=/dev/hda4</i>
 <comment># Первый параметр - путь к ядру, второй - корневой раздел. Вы можете добавить
 любые параметры ядра в конец этой строки.</comment>
 # <i>nvsetenv boot-command boot</i>
@@ -485,12 +497,12 @@ Local HD -> Morphos      (Normal)
 ide:0 boot2.img ramdebug edebugflags="logkprintf"
 
 [SECTION]
-Local HD -> Linux 2.6.12 (Normal)
-ide:0 linux-2.6.12 video=radeonfb:1024x768@70 root=/dev/hda3
+Local HD -> Linux 2.6.15 (Normal)
+ide:0 linux-2.6.15 video=radeonfb:1024x768@70 root=/dev/hda3
 
 [SECTION]
 Local HD -> Genkernel (Normal)
-ide:0 kernelz-2.6.12 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
+ide:0 kernelz-2.6.15 root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc
 
 </pre>
 
@@ -543,9 +555,9 @@ cdimage ~# <i>reboot</i>
 
 <!-- *$Localization:
 target-language: Russian
-target-version: 2.8-r1
-target-date: 2006-01-24
-source-cvs-revision: 1.32
+target-version: 2.9-r1
+target-date: 2006-03-08
+source-cvs-revision: 1.33
 translated-by: Aleksandr Zelinski <delph@ultranet.ru>, Sergey Kuleshov
 <svyatogor@gentoo.org>, Azamat H. Hackimov <azazello1984@mail.ru>
 edited-by: Sergey Kuleshov <svyatogor@gentoo.org>, Azamat H. Hackimov <azazello1984@mail.ru>
