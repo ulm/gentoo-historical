@@ -15,8 +15,8 @@ import gettext
 _ = gettext.gettext
 
 class Setup_CConfig(GLIGenCF):
-	def __init__(self, client_profile, local_install, advanced_mode):
-		GLIGenCF.__init__(self, client_profile, local_install, advanced_mode)
+	def __init__(self, client_profile, local_install, advanced_mode, networkless):
+		GLIGenCF.__init__(self, client_profile, local_install, advanced_mode, networkless)
 		self.set_arch_template()
 		self.set_verbose()
 		self.set_logfile()
@@ -31,8 +31,8 @@ class Setup_CConfig(GLIGenCF):
 				self.client_config_xml_file = self.save_client_profile()
 
 class Setup_InstallProfile(GLIGenIP):
-	def __init__(self, client_profile, install_profile, local_install, advanced_mode, skip_wizard_question):
-		GLIGenIP.__init__(self, client_profile, install_profile, local_install, advanced_mode)
+	def __init__(self, client_profile, install_profile, local_install, advanced_mode, skip_wizard_question, networkless):
+		GLIGenIP.__init__(self, client_profile, install_profile, local_install, advanced_mode, networkless)
 		show_review_menu = True
 		if not skip_wizard_question:
 			#Change the Yes/No buttons to new labels for this question.
@@ -120,6 +120,7 @@ if __name__ == '__main__':
 	install_done = False
 	local_install = True
 	advanced_mode = False
+	networkless = False
 
 	DLG_OK = 0
 	DLG_YES = 0
@@ -161,15 +162,24 @@ Press OK to continue""")
 		advanced_mode = True
 		local_install = True
 		
-	#Reset the Yes/No labels.
+	networkless_string = _(u"Do you want to do a networkless installation?  This will limit the customizability of your install due to the limitations of the LiveCD.  For example, choosing networkless will set your installation stage, portage snapshot, and limit your extra packages selections.  NOTE: It is easily possible to do a networkless installation on a machine with an active Internet connection; in fact this may result in the fastest installations for many users.")
+	#Change the Yes/No buttons
+	d.add_persistent_args(["--yes-label", _(u"Networkless")])
+	d.add_persistent_args(["--no-label", _(u"Internet enabled")])
+	if d.yesno(networkless_string, width=65, height=20) == DLG_YES:
+		networkless = True
+	else:
+		networkless = False
+
+
+#Reset the Yes/No labels.
 	d.add_persistent_args(["--yes-label", "Yes"])
 	d.add_persistent_args(["--no-label","No"])
 	if advanced_mode:
 		#Local install affects the pre-selection of partitions on the local hard drives, amongst other things.
 		if d.yesno(_(u"Are the profiles being generated to be used for an install on the current computer?")) == DLG_NO:
 			local_install = False
-	
-		#Ask 
+	#Ask 
 		while 1:
 			string = _(u"""
 The first profile needed for an advanced install includes all the 
@@ -196,7 +206,7 @@ Do you have a previously generated XML file for the ClientConfiguration?
 	# code to actually run the client_controller functions
 	else:
 		#This line does all the work.
-		gen_client_conf = Setup_CConfig(client_profile, local_install, advanced_mode)
+		gen_client_conf = Setup_CConfig(client_profile, local_install, advanced_mode, networkless)
 		client_profile = gen_client_conf.client_profile()
 			
 	client_profile.set_interactive(None, True, None)
@@ -226,7 +236,7 @@ Do you have a previously generated XML file for the ClientConfiguration?
 	
 	#These are always done
 	
-	gen_install_profile = Setup_InstallProfile(client_profile, install_profile, local_install, advanced_mode, skip_wizard_question)
+	gen_install_profile = Setup_InstallProfile(client_profile, install_profile, local_install, advanced_mode, skip_wizard_question, networkless)
 	install_profile = gen_install_profile.install_profile()
 	
 

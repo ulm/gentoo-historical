@@ -39,11 +39,12 @@ class GLIGen(object):
 
 #This class will generate a client config and return it as a xml string
 class GLIGenCF(GLIGen):
-	def __init__(self, client_profile, local_install=True, advanced_mode=True):
+	def __init__(self, client_profile, local_install=True, advanced_mode=True, networkless=False):
 		GLIGen.__init__(self)
 		self._client_profile = client_profile
 		self.local_install = local_install
 		self.advanced_mode = advanced_mode
+		self._networkless = networkless
 		
 	def serialize(self):
 		return self._client_profile.serialize()
@@ -102,6 +103,7 @@ Enter the desired filename and path for the install log (the default is recommen
 				self._client_profile.set_root_mount_point(None, rootmountpoint, None)
 
 	def set_client_networking(self):
+		if self._networkless: return
 		if GLIUtility.ping("www.gentoo.org") and self.local_install:	#If an active connection exists, ignore this step if doing a local install.
 			return
 		if self.local_install:
@@ -172,7 +174,7 @@ Enter the desired filename and path for the install log (the default is recommen
 		#Change the Yes/No buttons back.
 		self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 		self._d.add_persistent_args(["--no-label", _(u"No")])
-		if self.advanced_mode:
+		if self.advanced_mode and not self._networkless:
 			if self._d.yesno(_(u"Do you want SSH enabled during the install?  This will allow you to login remotely during the installation process.  If choosing Yes, be sure you select a new LiveCD root password!"), width=60) == self._DLG_YES:
 				self._client_profile.set_enable_ssh(None, True, None)
 			else:
@@ -241,14 +243,27 @@ Enter the new LIVECD root password:	""")
 			self._d.msgbox(_(u"Error.  File couldn't be saved.  It will be saved automatically to /tmp before the install."))
 
 class GLIGenIP(GLIGen):
-	def __init__(self, client_profile, install_profile, local_install=True, advanced_mode=True):
+	def __init__(self, client_profile, install_profile, local_install=True, advanced_mode=True, networkless=False):
 		GLIGen.__init__(self)
 		self._client_profile = client_profile
 		self._install_profile = install_profile
+		self._networkless = networkless
 		self.local_install = local_install
 		self.advanced_mode = advanced_mode
-
-	
+		if self._networkless:
+			try:
+				self._install_profile.set_grp_install(None, True, None)
+				self._install_profile.set_install_stage(None, "3", None)
+				self._install_profile.set_dynamic_stage3(None, True, None)
+				self._install_profile.set_portage_tree_sync_type(None,"snapshot", None)
+				cd_snapshot_uri = GLIUtility.get_cd_snapshot_uri()
+				self._install_profile.set_portage_tree_snapshot_uri(None, cd_snapshot_uri, None)
+				self._install_profile.set_kernel_source_pkg(None, "livecd-kernel", None)
+				self._install_profile.set_cron_daemon_pkg(None, "vixie-cron", None)
+				self._install_profile.set_logging_daemon_pkg(None,"syslog-ng", None)
+			except:
+				self._d.msgbox("ERROR: Could not set networkless information in the profile")
+				
 	def serialize(self):
 		return self._install_profile.serialize()
 	#---------------------------------------
@@ -487,6 +502,7 @@ on partitioning and the various filesystem types available in Linux.""")
 				network_mounts[int(menuitemidx)-1] = tmpmount
 
 	def set_install_stage(self):
+		if self._networkless: return
 	# The install stage and stage tarball will be selected here
 		install_stages = (("1",_(u"Stage1 is used when you want to bootstrap&build from scratch.")),
 						("2",_(u"Stage2 is used for building from a bootstrapped semi-compiled state.")),
@@ -610,7 +626,7 @@ on partitioning and the various filesystem types available in Linux.""")
 	def set_make_conf(self):
 	# This section will be for setting things like CFLAGS, ACCEPT_KEYWORDS, and USE
 		#special case for dynamic stage3
-		if self._install_profile.get_dynamic_stage3() and not self.advanced_mode:
+		if self._install_profile.get_dynamic_stage3() or not self.advanced_mode:
 			return
 		
 		etc_files = self._install_profile.get_etc_files()
@@ -845,6 +861,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				self._d.msgbox(_(u"ERROR! Could not set the make_conf correctly!"))	
 
 	def set_etc_portage(self):
+		if self._networkless: return
 	#This section will be for editing the /etc/portage/* files and other /etc/* files.  This should be for advanced users only.
 		etc_files = self._install_profile.get_etc_files()
 		while self.advanced_mode:
@@ -878,6 +895,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		
 
 	def set_kernel(self):
+		if self._networkless: return
 	# This section will be for choosing kernel sources, choosing (and specifying) a custom config or genkernel, modules to load at startup, etc.
 		kernel_sources = [("livecd-kernel", _(u"Copy over the current running kernel (fastest)")),
 		("vanilla-sources", _(u"The Unaltered Linux Kernel ver 2.6+ (safest)")),
@@ -1271,6 +1289,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 
 
 	def set_cron_daemon(self):
+		if self._networkless: return
 		cron_daemons = (("vixie-cron", _(u"Paul Vixie's cron daemon, fully featured, RECOMMENDED.")),
 		("dcron",_(u"A cute little cron from Matt Dillon.")), 
 		("fcron", _(u"A scheduler with extended capabilities over cron & anacron")), 
@@ -1283,6 +1302,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			self._install_profile.set_cron_daemon_pkg(None, menuitem, None)
 
 	def set_logger(self):
+		if self._networkless: return
 		loggers = (("syslog-ng", _(u"An advanced system logger.")), 
 		("metalog", _(u"A Highly-configurable system logger.")), 
 		("syslogkd", _(u"The traditional set of system logging daemons.")))
@@ -1334,7 +1354,9 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				if pkg in grp_list:
 					choices_list.append((pkg, "(GRP) "+pkgs[pkg], int(pkg in install_packages)))
 				else:
-					choices_list.append((pkg, pkgs[pkg], int(pkg in install_packages)))
+					if not self._networkless:
+						choices_list.append((pkg, pkgs[pkg], int(pkg in install_packages)))
+			if not choices_list: continue
 			code, choices = self._d.checklist(_(u"Choose from the listed packages.  If doing a networkless install, only choose (GRP) packages."), choices=choices_list, height=19, list_height=10, width=77)
 			if code != self._DLG_OK: 
 				continue
