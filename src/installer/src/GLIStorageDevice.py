@@ -80,6 +80,8 @@ class Device:
 	def set_partitions_from_disk(self):
 		last_part = 0
 		last_log_part = 4
+		last_end = 0
+		last_log_end = 0
 		parted_part = self._parted_disk.next_partition()
 		while parted_part:
 			part_mb = long((parted_part.geom.end - parted_part.geom.start + 1) * self._sector_bytes / MEGABYTE)
@@ -89,8 +91,14 @@ class Device:
 				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
 				if parted_part.type == 2: fs_type = "extended"
 				if archinfo[self._arch]['extended'] and parted_part.num > 4:
+					if parted_part.geom.start < last_log_end:
+						raise GLIException("PartitionsOutOfOrderError", "fatal", "set_partitions_from_disk", "Your partitions are not in physical disk order.")
+					last_log_end = parted_part.geom.end
 					last_log_part = parted_part.num
 				else:
+					if parted_part.geom.start < last_end:
+						raise GLIException("PartitionsOutOfOrderError", "fatal", "set_partitions_from_disk", "Your partitions are not in physical disk order.")
+					last_end = parted_part.geom.end
 					last_part = parted_part.num
 				self._partitions[int(parted_part.num)] = Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True)
 			elif parted_part.type_name == "free":
