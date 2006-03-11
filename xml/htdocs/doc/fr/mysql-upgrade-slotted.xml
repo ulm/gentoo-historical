@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/mysql-upgrade-slotted.xml,v 1.2 2006/02/18 08:57:25 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/mysql-upgrade-slotted.xml,v 1.3 2006/03/11 16:34:10 neysx Exp $ -->
 
 <guide link="/doc/fr/mysql-upgrade-slotted.xml" lang="fr">
 <title>Guide de migration et de mise à jour vers MySQL en Slot</title>
@@ -8,310 +8,91 @@
 <author title="Auteur">
   <mail link="vivo@gentoo.org">Francesco Riosa</mail>
 </author>
-<author title="Correcteur">
-  <mail link="chriswhite@gentoo.org">Chris White</mail>
-</author>
-<author title="Correcteur">
-  <mail link="jkt@gentoo.org">Jan Kundrát</mail>
-</author>
-<author title="Correcteur">
-  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
-</author>
-<author title="Traducteur">
-  <mail link="koppatroopa@yahoo.fr">Bertrand Coppa</mail>
+<author title="Correcteur, traducteur">
+  <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
 
 <abstract>
-Ce document décrit la procédure à suivre pour mettre à jour MySQL vers les
-versions slottées. Son objectif est de rendre la mise à jour le plus agréable
-possible.
+Ce document décrit la procédure à suivre pour mettre à jour MySQL d'une version
+slottée vers une version normale.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>5</version>
-<date>2006-02-17</date>
+<version>6</version>
+<date>2006-03-11</date>
 
 <chapter>
-<title>Mettre à jour une ancienne installation de MySQL</title>
+<title>Mettre à jour une installation de MySQL slottée vers une version normale</title>
 <section>
+<title>Introduction</title>
 <body>
 
 <p>
-Ce document couvre la dernière version de MySQL disponible. Il y a actuellement
-trois versions supportées de MySQL dans Portage&nbsp;:
+Suite aux réactions négatives de nos utilisateurs, l'équipe Gentoo qui s'occupe
+de MySQL a décidé de revenir à une installation non slottée de MySQL. Autrement
+dit, utiliser des versions différentes de MySQL sur le même ordinateur n'est
+plus supporté.
 </p>
 
-<ul>
-  <li>
-    5.0 qui suit les sorties officielles dans l'arbre stable et qui est
-    activement maintenue.
-  </li>
-  <li>
-    4.1 qui suit les sorties officielles en implémentant les correctifs majeurs
-    de bogues et de sécurité, mais rien de nouveau n'est ajouté.
-  </li>
-  <li>4.0 qui contient seulement des corrections de sécurité.</li>
-</ul>
-
 <p>
-Il y en a deux autres, mais elles ne sont pas supportées. Cela signifie qu'il
-peut leur manquer des fonctionnalités et que les rapports de bogues ont une
-priorité très faible. Ce document n'a aucune garantie de fonctionnement avec
-les versions suivantes&nbsp;:
-</p>
-
-<ul>
-  <li>3.23 qui n'est plus maintenue.</li>
-  <li>5.1 qui est actuellement en développement très actif.</li>
-</ul>
-
-<note>
-<c>mysql-4.0.26</c> sera utilisé comme point de départ et
-<c>mysql-5.0.18-r30</c> comme version cible. Remplacez-les par vos versions.
-</note>
-
-</body>
-</section>
-</chapter>
-
-<chapter id="install_the_new_version">
-<title>Installer la nouvelle version</title>
-<section>
-<body>
-
-<p>
-Cette étape demandera de déplacer ou d'effacer certains fichiers de de
-l'environnement en cours. La première chose à faire est de sauvegarder les
-serveurs de base de données, pas les données. Ensuite, il est possible
-d'effacer les fichiers en conflit avec le MySQL slotté et d'installer la
-nouvelle version en parallèle de celle déjà présente.
-</p>
-
-<pre caption="Sauvegarder l'ancienne version et préparer l'installation">
-# <i>quickpkg dev-db/mysql</i>
-# <i>rm -rf /usr/include/mysql /usr/bin/mysql_config</i>
-# <i>for tmpfile in  /usr/lib/*mysql* 
-  do
-      mv "${tmpfile}" "${tmpfile}.TMP"
-      ln -s "${tmpfile}.TMP" "${tmpfile}"
-  done</i>
-# <i>emerge -av =dev-db/mysql-5.0.18-r30</i>
-</pre>
-
-<p>
-Assurez-vous de bien lancer <c>etc-update</c> ou <c>dispatch-conf</c> afin de
-mettre à jour le script de démarrage <path>/etc/init.d/mysql</path>.
+Si vous aviez réalisé une mise à jour vers une version slottée, ce guide
+devrait vous aider à revenir à une version normale.
 </p>
 
 </body>
 </section>
-</chapter>
-
-<chapter>
-<title>Copier les données vers le nouveau serveur</title>
 <section>
+<title>« Déslottage »</title>
 <body>
 
 <p>
-Ensuite,, nous allons transférer les données. Elles seront importées dans la
-nouvelle version de MySQL. <c>mysqldump</c> sera utilisé depuis la version
-<b>slottée</b> de MySQL. Remarquez le suffixe <c>-500</c> au nom du programme
-de <c>mysqldump</c>. Cela signifie qu'il vient de la version <b>5.0</b>.x.
+Le script qui suite devrait réaliser le plus gros du travail&nbsp;:
 </p>
 
-<impo>
-Si vous effectuez une mise à jour de révision (par exemple, de
-<c>dev-db/mysql-5.0.18</c> à <c>dev-db/mysql-5.0.18-r30</c>), vous pouvez
-simplement arrêter la base de données, changer de répertoire de données et
-relancer le serveur. Vous pouvez donc sauter toute cette partie.
-</impo>
+<pre caption='Script de « Déslottage »'>
+<i>echo " Compiler une version non slottée de MySQL "
+emerge --buildpkgonly '=dev-db/mysql-5.0.18-r60'
 
-<pre caption="Transfert de toutes les bases de données">
-# <i>mysqldump-500 \
-  --defaults-file=/etc/mysql/my.cnf \
-  --user=root \</i>
-  <comment>(Remplacez 'your_password' avec votre mot de passe administrateur de MySQL)</comment>
-  <i>--password='your_password' \
-  --host=localhost \
-  --all-databases \
-  --opt \
-  --allow-keywords \
-  --flush-logs \
-  --hex-blob \
-  --master-data \ <comment>(Si les « binary logs » sont activés, utilisez --master-data=0)</comment>
-  --max_allowed_packet=16M \
-  --quote-names \
-  --result-file=BACKUP_MYSQL_4.0.SQL</i>
+echo " Arrêter le serveur  "
+/etc/init.d/mysql stop
+
+echo " Supprimer les symlinks "
+eselect mysql remove
+
+echo " Déplacer les fichiers de config "
+mv /etc/mysql /etc/mysql.old
+mv /etc/mysql-500 /etc/mysql
+
+echo " Enlever les symlinks qui restent et les fichiers d'eselect "
+rm /usr/lib/mysql /usr/include/mysql /usr/bin/mysql_config /usr/lib/libmysql*
+rm -rf /var/lib/eselect/mysql/ /usr/lib/mysql-[45]0[01]
+
+echo " Supprimer les versions slottées de MySQL "
+emerge -C \
+=dev-db/mysql-4.0.26-r30 \
+=dev-db/mysql-4.1.15-r30 \
+=dev-db/mysql-4.1.16-r30 \
+=dev-db/mysql-4.1.18-r30 \
+=dev-db/mysql-5.0.15-r30 \
+=dev-db/mysql-5.0.16-r30 \
+=dev-db/mysql-5.0.17-r30 \
+=dev-db/mysql-5.0.18-r30 \
+=dev-db/mysql-5.1.3_alpha-r30 \
+=dev-db/mysql-5.1.4_alpha-r30 \
+=dev-db/mysql-5.1.6_alpha-r30 \
+app-admin/eselect-mysql
+
+echo " Installer la dernière version non slottée "
+emerge --usepkgonly '=dev-db/mysql-5.0.18-r60'</i>
 </pre>
 
 <p>
-Un fichier nommé <path>BACKUP_MYSQL_4.0.SQL</path> sera créé. Il pourra servir
-à recréer les données qui sont stockées dans le langage SQL de MySQL, le
-Structured Query Language.
-</p>
-
-<p>
-Lancez le serveur sans réseau ni gestion des utilisateurs et lancez le script
-SQL&nbsp;:
-</p>
-
-<pre caption="Recharger les données">
-# <i>mv /etc/conf.d/mysql /etc/conf.d/mysql.orig</i>
-# <i>cat &lt;&lt;- EOF &gt; /etc/conf.d/mysql
-  NOCHECK=1
-  DEBUG=3
-  mysql_slot_500=(
-    "skip-networking"
-    "skip-grant-tables"
-    "socket=/tmp/mysqld.sock"
-  )
-  EOF</i>
-# <i>/etc/init.d/mysql start</i>
-# <i>mysql-500 --defaults-file=/etc/mysql-500/my.cnf --socket=/tmp/mysqld.sock &lt; BACKUP_MYSQL_4.0.SQL</i>
-# <i>/etc/init.d/mysql stop</i>
-# <i>mv /etc/conf.d/mysql.orig /etc/conf.d/mysql</i>
-</pre>
-
-<note>
-Pour convertir les données en UTF-8 au passage, il <e>faut</e> enlever l'option
-<c>--hex-blob</c> de la commande <c>mysqldump</c> puis filtrer les données à
-l'aide d'un convertisseur comme <c>iconv</c>. Dans la plupart des cas, cela se
-fait simplement en faisant un «&nbsp;pipe&nbsp;»&nbsp;: <c>iconv -f ISO_8859-1
--t UTF8 BACKUP_MYSQL_4.0.SQL | mysql-500
---defaults-file=/etc/mysql-500/my.cnf</c>. Des ajustements manuels au fichier
-SQL peuvent être nécessaires selon la structure et les données contenues.
-</note>
-
-<p>
-Si des applications travaillent toujours avec l'ancienne base de données, il
-est possible de créer une relation de «&nbsp;réplication&nbsp;» entre les deux
-bases. Cependant, ce document ne couvre pas cette procédure.
-</p>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Migrer vers le nouveau serveur</title>
-<section>
-<body>
-
-<p>
-Veuillez tester vos applications avec le serveur fraîchement installé pour vous
-assurer qu'elles fonctionnent. Souvent, ces applications ont une
-option de configuration pour choisir quel port ou socket utiliser lors de la
-connexion au serveur de base de données. Lancez le serveur sur un autre port
-(3307 par exemple) et dites à vos applications (ou une copie d'essai) de se
-connecter avec ces paramètres. Veuillez remarquer que la plupart des
-applications essaieront d'utiliser les paramètres spécifiés dans la section
-<c>[client]</c> du fichier de configuration <path>/etc/mysql/my.cnf</path>.
-</p>
-
-<p>
-Avant de basculer vers le nouveau serveur MySQL, il faut ajuster la variable
-suivante dans <path>/etc/conf.d/mysql</path>. Sa valeur peut être vide&nbsp;:
-</p>
-
-<pre caption="Ajuster la variable mysql_slot_500">
-# <i>nano -w /etc/conf.d/mysql</i>
-<comment>(Ajoutez la ligne suivante&nbsp;:)</comment>
-<i>mysql_slot_500=( )</i>
-</pre>
-
-<p>
-Une fois que vous êtes satisfait des résultats, effacez tous les paramètres
-d'essai, arrêtez l'ancien serveur et lancez le nouveau&nbsp;:
-</p>
-
-<pre caption="Utiliser le nouveau serveur">
-# <i>killall mysqld</i>
-# <i>/etc/init.d/mysql stop zap start</i>
-</pre>
-
-<p>
-Ensuite, désinstallez l'ancienne version et faites de la nouvelle celle par
-défaut. La commande de désinstallation ne pourra pas effacer certains fichiers
-tels que ceux que nous avons déplacés dans la <uri
-link="#install_the_new_version">liste de commandes 2.1</uri>.  Ceci est voulu
-et a pour but de protéger les applications directement liées à l'ancienne
-version de MySQL.
-</p>
-
-<pre caption="Nettoyer l'ancienne version">
-# <i>emerge --unmerge --pretend mysql</i>
-# <i>emerge --unmerge =dev-db/mysql-4.0.26</i>
-# <i>cd /etc</i>
-# <i>mv mysql mysql.$(date +%F_%H-%M)</i>
-# <i>rm -rf /usr/lib/*.TMP</i>
-# <i>for i in /usr/lib/*mysql* 
-  do
-    [[ -z "$( readlink -f $i )" ]] &amp;&amp; [[ -L $i ]] &amp;&amp; rm $i
-  done</i>
-
-<comment>(Installez app-admin/eselect-mysql si ce n'est pas déjà fait)</comment>
-# <i>eselect mysql list</i>
-# <i>eselect mysql set 1</i>
-# <i>eselect mysql show</i>
-</pre>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Recompiler les applications</title>
-<section>
-<body>
-
-<p>
-Une fois l'ancienne version de MySQL retirée, vous pouvez installer la
-nouvelle. Notez que l'outil <c>revdep-rebuild</c> du paquet
-<c>app-portage/gentoolkit</c> est nécessaire pour recompiler les paquets qui
-sont liés avec MySQL.
-</p>
-
-<pre caption="Recompiler les dépendances inverses">
-# <i>revdep-rebuild --soname libmysqlclient.so.12 -- -p -v</i>
-# <i>revdep-rebuild --soname libmysqlclient.so.12</i>
-</pre>
-
-<note>
-Selon l'ancienne version de MySQL, la version de <path>libmysqlclient.so</path>
-peut être <c>10</c>, <c>12</c>, <c>14</c> ou <c>15</c>. Choisissez celle qui
-correspond à votre version du <e>vieux</e> paquet.
-</note>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Touches finales</title>
-<section>
-<body>
-
-<pre caption="Mettre à jour la base de données des utilisateurs">
-<comment>(Remplacez toutes les occurrences de 'your_password' avec votre mot
-de passe administrateur de MySQL)</comment>
-# <i>mysql_fix_privilege_tables-500 \
-     --defaults-file=/etc/mysql-500/my.cnf \
-     --user=root \
-     --password='your_password'</i>
-# <i>mysql -uroot -p'your_password' mysql -e "FLUSH PRIVILEGES;"</i>
-# <i>for tbl in $( mysql --silent -uroot -p'your_password' -e 'USE mysql ; SHOW TABLES LIKE "help%";' )
-  do
-    mysql -uroot -p'your_password' -e "use mysql ; TRUNCATE TABLE ${tbl};"
-  done</i>
-# <i>mysql -uroot -p'your_password' mysql &lt; /usr/share/mysql/fill_help_tables.sql</i>
-</pre>
-
-<p>
-Si vous rencontrez des problèmes lors du processus de mise à jour, veuillez
-remplir <uri link="https://bugs.gentoo.org">rapport de bogue</uri>. Merci.
+Il est également recommandé de déplacer les répertoires de données de MySQL.
+Ils sont mentionnés dans le fichier <path>/etc/mysql/my.cnf</path>. N'oubliez
+évidemment pas de modifier ce fichier en conséquence.
 </p>
 
 </body>
@@ -319,3 +100,4 @@ remplir <uri link="https://bugs.gentoo.org">rapport de bogue</uri>. Merci.
 </chapter>
 
 </guide>
+
