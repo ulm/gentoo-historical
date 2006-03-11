@@ -12,9 +12,8 @@ rm -f net-tools-${nver}-*.tar.bz2
 
 mkdir -p tmp/patch/excluded
 cp -r ../README* *.patch tmp/patch/
-bzip2 tmp/patch/*.patch
 cp -r extra tmp/
-find tmp -type d -name CVS -print0 | xargs rm -r
+find tmp -type d -name CVS -print0 | xargs -0 rm -r
 
 tar -jcf net-tools-${nver}-patches-${pver}.tar.bz2 \
 	-C tmp patch extra || exit 1
