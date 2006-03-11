@@ -1,5 +1,4 @@
 /* ether-wake.c: Send a magic packet to wake up sleeping machines. */
-/* http://www.scyld.com/wakeonlan.html */
 
 static char version_msg[] =
 "ether-wake.c: v1.09 11/12/2003 Donald Becker, http://www.scyld.com/";
