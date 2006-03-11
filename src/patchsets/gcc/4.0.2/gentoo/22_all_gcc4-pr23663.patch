@@ -1,0 +1,61 @@
+2005-09-13  Jakub Jelinek  <jakub@redhat.com>
+
+	PR fortran/23663
+	* primary.c (match_actual_arg): Handle ENTRY the same way
+	as FUNCTION.
+
+	* gfortran.fortran-torture/execute/entry_11.f90: New test.
+
+--- gcc/fortran/primary.c.jj	2005-09-09 09:49:39.000000000 +0200
++++ gcc/fortran/primary.c	2005-09-13 12:40:29.000000000 +0200
+@@ -1308,11 +1308,27 @@ match_actual_arg (gfc_expr ** result)
+ 
+ 	  /* If the symbol is a function with itself as the result and
+ 	     is being defined, then we have a variable.  */
+-	  if (sym->result == sym
+-	      && (gfc_current_ns->proc_name == sym
++	  if (sym->attr.function && sym->result == sym)
++	    {
++	      if (gfc_current_ns->proc_name == sym
+ 		  || (gfc_current_ns->parent != NULL
+-		      && gfc_current_ns->parent->proc_name == sym)))
+-	    break;
++		      && gfc_current_ns->parent->proc_name == sym))
++		break;
++
++	      if (sym->attr.entry
++		  && (sym->ns == gfc_current_ns
++		      || sym->ns == gfc_current_ns->parent))
++		{
++		  gfc_entry_list *el = NULL;
++
++		  for (el = sym->ns->entries; el; el = el->next)
++		    if (sym == el->sym)
++		      break;
++
++		  if (el)
++		    break;
++		}
++	    }
+ 	}
+ 
+       e = gfc_get_expr ();	/* Leave it unknown for now */
+--- gcc/testsuite/gfortran.fortran-torture/execute/entry_11.f90.jj	2005-09-13 12:02:50.000000000 +0200
++++ gcc/testsuite/gfortran.fortran-torture/execute/entry_11.f90	2005-09-13 12:02:14.000000000 +0200
+@@ -0,0 +1,16 @@
++! PR fortran/23663
++      function i (n)
++      i = n
++      i = max (i, 6)
++      return
++      entry j (n)
++      j = n
++      j = max (j, 3)
++      end
++
++      program entrytest
++      if (i (8).ne.8) call abort
++      if (i (4).ne.6) call abort
++      if (j (0).ne.3) call abort
++      if (j (7).ne.7) call abort
++      end
