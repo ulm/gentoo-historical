@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/power-management-guide.xml,v 1.6 2006/03/10 14:09:55 neysx Exp $ -->
-<guide link="/doc/ja/power-management-guide.xml" lang="ja">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/power-management-guide.xml,v 1.7 2006/03/13 17:25:05 idani Exp $ -->
+<guide link="power-management-guide.xml" lang="ja">
 <title>電力管理ガイド</title>
 
 <author title="Author">
-  <mail link="fragfred@gmx.de">Dennis Nienh&#252;ser</mail>
+  <mail link="earthwings@gentoo.org">Dennis Nienh&#252;ser</mail>
 </author>
 <author title="翻訳">
   <mail link="solidsneak@hyper.cx">小林弘樹</mail>
@@ -17,19 +17,18 @@
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.21</version>
-<date>2005-04-18</date>
+<version>1.27</version>
+<date>2006-02-16</date>
 
-<!-- Original revision: 1.11 -->
+<!-- Original revision: 1.18 -->
 
 <chapter>
 <title>初めに</title>
 
 <section>
-<title>なぜ電力管理？</title>
 
 <body>
 
@@ -92,11 +91,10 @@
 <chapter>
 <title>必要条件</title>
 <section>
-<title>まず何をするべきか</title>
 <body>
 
 <p>
-個々の装置の電力管理に関する詳細を意識する前に、確かに必要条件が満たされているか確認してください。
+個々の装置のパワーマネージメント機能を意識した詳細について議論する前に、確かに必要条件が満たされているか確認してください。
 BIOS設定を制御した後に、いくつかのカーネルオプションを有効にします。
 これらは、要するにACPIと、スリープ状態とCPU周波数調整です。
 節電はたいてい性能の損失か待ち時間の増加をもたらすので、バッテリーで作動するときだけ、それらを有効にするべきです。
@@ -119,6 +117,20 @@ BIOS設定を制御した後に、いくつかのカーネルオプションを�
 </body>
 </section>
 <section>
+<title>USEフラグの設定</title>
+<body>
+
+<p>
+<path>/etc/make.conf</path>で<c>acpi</c> USEフラグが設定されているかを確認してください。
+あなたのシステムに関係すると思われる他のUSEフラグには、<c>apm</c>、<c>lm_sensors</c>、<c>nforce2</c>、<c>nvidia</c>、<c>pmu</c>があります。
+詳しくは<path>/usr/portage/profiles/use*.desc</path>を参照してください。
+これらのフラグの1つを設定し忘れたのなら、<c>emerge</c>の<c>--newuse</c>フラグを使って影響するパッケージを再コンパイルすることが出来ます。
+<c>man 1 emerge</c>を参照してください。
+</p>
+
+</body>
+</section>
+<section>
 <title>カーネルの設定</title>
 <body>
 
@@ -128,42 +140,56 @@ BIOS設定を制御した後に、いくつかのカーネルオプションを�
 </p>
 
 <p>
-カーネルの設定で、少なくともこれらのオプションを有効にします。
+Portageには異なるカーネルソースが存在します。
+<c>gentoo-sources</c>もしくは<c>suspend2-sources</c>の使用を推奨します。
+後者はSoftware Suspend 2のパッチを含んでいます。
+詳しくはスリープ状態に関する章を参照してください。
+カーネルを設定する際には、少なくともこれらのオプションを有効にします。
 </p>
 
 <pre caption="電力管理の最小カーネル設定(Kernel 2.6)">
 Power Management Options ---&gt;
   [*] Power Management Support
   [ ] Software Suspend
-  [ ] Suspend-to-Disk Support
 
   ACPI( Advanced Configuration and Power Interface ) Support ---&gt;
     [*] ACPI Support
     [ ]   Sleep States
-    &lt;M&gt;   AC Adapter
-    &lt;M&gt;   Battery
+    [ ]     /proc/acpi/sleep (deprecated)
+    [*]   AC Adapter
+    [*]   Battery
     &lt;M&gt;   Button
+    &lt;M&gt;   Video
+    [ ]   Generic Hotkey
     &lt;M&gt;   Fan
     &lt;M&gt;   Processor
     &lt;M&gt;     Thermal Zone
     &lt; &gt;   ASUS/Medion Laptop Extras
+    &lt; &gt;   IBM ThinkPad Laptop Extras
     &lt; &gt;   Toshiba Laptop Extras
+    (0)   Disable ACPI for systems before Jan 1st this year
     [ ]   Debug Statements
+    [*]   Power Management Timer Support
+    &lt; &gt;   ACPI0004,PNP0A05 and PNP0A06 Container Driver (EXPERIMENTAL)
     
   CPU Frequency Scaling ---&gt;
     [*] CPU Frequency scaling
+    [ ]   Enable CPUfreq debugging
+    &lt; &gt;   CPU frequency translation statistics
+    [ ]     CPU frequency translation statistics details
           Default CPUFreq governor (userspace)
     &lt;*&gt;   'performance' governor
     &lt;*&gt;   'powersave' governor
     &lt;*&gt;   'ondemand' cpufreq policy governor
+    &lt;*&gt;   'conservative' cpufreq governor
     &lt;*&gt;   CPU frequency table helpers
     &lt;M&gt; ACPI Processor P-States driver
     &lt;*&gt; <i>CPUFreq driver for your processor</i>
 </pre>
 
 <p>
-ソフトウェアサスペンド、ディスクサスペンド、スリープ状態(以下を参照)を有効にするかはあなた自身で決めてください。
-ASUS、Medion、Toshibaのラップトップを持っているなら適当な部分を有効にしてください。最近のカーネルバージョン(2.6.9以降)はCPU周波数調整用の<e>'ondemand' governor</e>が含まれているので、そのようなカーネルを使用する時には有効にしてください。
+ソフトウェアサスペンド、スリープ状態(以下を参照)を有効にするかはあなた自身で決めてください。
+ASUS、Medion、IBM Thinkpad、Toshibaのラップトップを持っているなら適当な部分を有効にしてください。
 </p>
 
 <p>
@@ -178,14 +204,13 @@ ASUS、Medion、Toshibaのラップトップを持っているなら適当な部
 カーネルをコンパイルし、正しいモジュールが起動時に読み込まれるようにし、新しいACPIが有効なカーネルで起動します。
 次に<c>emerge sys-power/acpid</c>を実行してacpiデーモンを入手します。
 これはACからバッテリーに切り替えたりふたを閉じたりと言った出来事を知らせる物です。
-<e>button</e>モジュールをカーネル内部にコンパイルしなかった場合には、そのモジュールがロードされていることを確認してください。また、acpidを<c>/etc/init.d/acpid start</c>で起動させてください。
+モジュールをカーネル内部にコンパイルしなかった場合には、そのモジュールがロードされていることを確認してください。また、<c>/etc/init.d/acpid start</c>を実行してacpidを起動させてください。
 <c>rc-update add acpid default</c>を実行して起動時に読み込まれるようにします。
 すぐにどのようにして使われるか分かるでしょう。
 </p>
 
 <pre caption="acpidのインストール">
 # <i>emerge sys-power/acpid</i>
-# <i>modprobe button</i>
 # <i>/etc/init.d/acpid start</i>
 # <i>rc-update add acpid default</i>
 </pre>
@@ -227,86 +252,109 @@ ACとバッテリーを切り替えるためには、電力管理の全てのス
 <p>
 典型的なACPIイベントはふたを閉じたり、電源供給源の変更、そしてスリープボタンを押したと言うことでしょう。
 重要なイベントは、ランレベルを変更する電源の変更です。
-以下のファイルを作成して、電源によって<e>default</e>と<e>battery</e>ランレベルを変更するようにします。
+小さなスクリプトがこのお世話をします。
 </p>
 
-<pre caption="/etc/acpi/switch_runlevel.sh">
-#!/bin/bash
+<p>
+まず、電源供給源によってランレベルを<c>default</c>と<c>battery</c>のそれぞれに切り替えるスクリプトが必要です。
+スクリプトは<c>sys-power/powermgmt-base</c>が提供する<c>on_ac_power</c>コマンドを使用します。
+システムにパッケージがインストールされているかを確認してください。
+</p>
 
-RUNLEVEL_AC="default"
-RUNLEVEL_BATTERY="battery"
-
-function on_ac () {
-    if which on_ac_power &amp;> /dev/null
-    then
-        on_ac_power
-    else
-        grep --quiet on-line /proc/acpi/ac_adapter/*/state
-    fi
-}
-
-function SwitchRunlevel () {
-
-    if [ ! -d "/etc/runlevels/${RUNLEVEL_AC}" ]
-    then
-        logger "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
-        exit 1
-    fi
-
-
-    if [ ! -d "/etc/runlevels/${RUNLEVEL_BATTERY}" ]
-    then
-        logger "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
-        exit 1
-    fi
-
-    if on_ac
-    then if [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_AC}" ]]
-  then
-            logger "Switching to ${RUNLEVEL_AC} runlevel"
-            /sbin/rc ${RUNLEVEL_AC}
-        fi
-    elif [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_BATTERY}" ]]
-  then
-        logger "Switching to ${RUNLEVEL_BATTERY} runlevel"
-        /sbin/rc ${RUNLEVEL_BATTERY}
-  fi
-}
-</pre>
-
-<pre caption="/etc/acpi/events/pmg_ac_adapter">
-event=ac_adapter.*
-action=/etc/acpi/actions/pmg_ac_adapter.sh %e
-</pre>
-
-<pre caption="/etc/acpi/events/pmg_battery">
-event=battery.*
-action=/etc/acpi/actions/pmg_battery.sh %e
-</pre>
-
-<pre caption="/etc/acpi/actions/pmg_ac_adapter.sh">
-#!/bin/bash
-
-source /etc/acpi/switch_runlevel.sh
-SwitchRunlevel
-</pre>
-
-<pre caption="/etc/acpi/actions/pmg_battery.sh">
-#!/bin/bash
-
-source /etc/acpi/switch_runlevel.sh
-SwitchRunlevel
+<pre caption="powermgt-baseのインストール">
+<i># emerge powermgmt-base</i>
 </pre>
 
 <p>
-これらのファイルの内いくつかには、実行権を与える必要があります。
+これで、シェル上で<c>on_ac_power &amp;&amp; echo AC available || echo Running on batteries</c>を実行することにより、電源供給源を決定することが出来るようになりました。
+以下のスクリプトはランレベルの変更を行います。
+<path>/etc/acpi/actions/pmg_switch_runlevel.sh</path>と言うファイル名で保存します。
+</p>
+
+<pre caption="/etc/acpi/actions/pmg_switch_runlevel.sh">
+#!/bin/bash
+
+<comment># ここから設定</comment>
+RUNLEVEL_AC="default"
+RUNLEVEL_BATTERY="battery"
+<comment># 設定ここまで</comment>
+
+
+
+if [ ! -d "/etc/runlevels/${RUNLEVEL_AC}" ]
+then
+    logger "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
+    exit 1
+fi
+
+if [ ! -d "/etc/runlevels/${RUNLEVEL_BATTERY}" ]
+then
+    logger "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
+    exit 1
+fi
+
+if on_ac_power
+then
+    if [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_AC}" ]]
+    then
+        logger "Switching to ${RUNLEVEL_AC} runlevel"
+         /sbin/rc ${RUNLEVEL_AC}
+    fi
+elif [[ "$(cat /var/lib/init.d/softlevel)" != "${RUNLEVEL_BATTERY}" ]]
+then
+    logger "Switching to ${RUNLEVEL_BATTERY} runlevel"
+    /sbin/rc ${RUNLEVEL_BATTERY}
+fi
+</pre>
+
+<p>
+スクリプトを実行可能にするために<c>chmod +x /etc/acpi/actions/pmg_switch_runlevel.sh</c>を忘れずに実行してください。
+最後に行う必要があることは、電源供給源が変更される度にスクリプトを呼び出すことです。
+これは、<c>acpid</c>の助けを借りてACPIイベントをとらえることで行えます。
+まず、電源供給源が変更されるときに、どのイベントが作成されるかを知る必要があります。
+多くのラップトップでは<e>ac_adapter</e>と<e>battery</e>が呼ばれますが、あなたのでは異なるかもしれません。
+</p>
+
+<pre caption="電源供給源変更のACPIイベントを知る">
+<i># tail -f /var/log/acpid | grep "received event"</i>
+</pre>
+
+<p>
+上記のコマンドを実行し、電源ケーブルを抜いてください。
+以下のような表示が出力されるでしょう。
+</p>
+
+<pre caption="電源供給源変更の出力例">
+[Tue Sep 20 17:39:06 2005] received event "ac_adapter AC 00000080 00000000"
+[Tue Sep 20 17:39:06 2005] received event "battery BAT0 00000080 00000001"
+</pre>
+
+<p>
+重要な部分は<e>received event</e>の後の引用部分です。
+これはこれから作成するファイルのイベント行と一致します。
+システムが複数のイベントを作成したりいつも同じであってもあわてないでください。
+イベントが作成される限りは、ランレベルの変更は動作します。
+</p>
+
+<pre caption="/etc/acpi/events/pmg_ac_adapter">
+<comment># "ac_adapter"をラップトップが作成したイベントに変更します</comment>
+<comment># たとえば、ac_adapter.*はac_adapter AC 00000080 00000000と一致します</comment>
+event=ac_adapter.*
+action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
+</pre>
+
+<pre caption="/etc/acpi/events/pmg_battery">
+<comment># "battery"をラップトップが作成したイベントに変更します</comment>
+<comment># たとえば、battery.*はbattery BAT0 00000080 00000001と一致します</comment>
+event=battery.*
+action=/etc/acpi/actions/pmg_switch_runlevel.sh %e
+</pre>
+
+<p>
 最後に、変更を認識できるようにacpidを再起動します。
 </p>
 
-<pre caption="acpidを使ったランレベル切替の完了">
-<i># emerge powermgmt-base</i>
-<i># chmod +x /etc/acpi/switch_runlevel.sh</i>
-<i># chmod +x /etc/acpi/actions/pmg_*</i>
+<pre caption="acpidを用いたランレベル切り替えの終了">
 <i># /etc/init.d/acpid restart</i>
 </pre>
 
@@ -317,14 +365,15 @@ ACプラグを抜き差しして"Switching to AC mode"や"Switching to battery m
 
 <p>
 イベントメカニズムの特性のために、ACまたはバッテリーの状態にかかわらず<e>default</e>ランレベルで起動するでしょう。
-ブートローダーに<c>softlevel=battery</c>を含む別のエントリーを追加できますが、それを選ぶことを忘れてしまうことがありそうです。
-良い方法は起動過程の最後でACPIイベントをだまし、<path>/etc/acpi/default.sh</path>スクリプトにランレベルの変更が必要か決めさせることです。
+これはACで稼働する際にはよいですが、そうでなければbatteryランレベルで起動したいです。
+解決方法の1つはブートローダーに<c>softlevel=battery</c>変数を含む別のエントリーを追加することですが、それを選ぶことを忘れてしまうことがありそうです。
+良い方法は起動過程の最後でACPIイベントをだまし、<path>pmg_switch_runlevel.sh</path>スクリプトにランレベルの変更が必要か決めさせることです。
 お気に入りのエディターで<path>/etc/conf.d/local.start</path>を開き、これらの行を追加します。
 </p>
 
-<pre caption="local.startを編集し起動時にランレベルを切り替える">
+<pre caption="local.startを編集し起動時にランレベルを調整する">
 <comment># バッテリーで起動中にacpiイベントをだましランレベルを切り替える</comment>
-/etc/acpi/actions/pmg_battery.sh "battery/battery"
+/etc/acpi/actions/pmg_switch_runlevel.sh "battery/battery"
 </pre>
 
 <p>
@@ -337,6 +386,18 @@ ACプラグを抜き差しして"Switching to AC mode"や"Switching to battery m
 
 <chapter>
 <title>CPU電力管理</title>
+<section>
+<body>
+
+<p>
+モバイルプロセッサは異なる周波数で稼働することが出来ます。
+電圧の変更も行える物もあります。
+多くの場合、CPUは全速力で稼働する必要はなく、速度を抑えることはしばしばパフォーマンスを減少させることなく多くの電力を節約することになります。
+</p>
+
+</body>
+</section>
+
 <section>
 <title>いくつかの専門用語</title>
 <body>
@@ -364,7 +425,7 @@ governorは、最小と最大周波数の間にある有効な周波数のうち
 これは動的な周波数の変更のようではありませんし、事実、それはそうではありません。
 しかしながら、様々なアプローチで動的な変更を行うことができます。
 例えば、<e>ondemand governor</e>は現在のCPU負荷によって決定します。
-同じことが<c>cpudyn</c>、<c>speedfreq</c>、<c>powernowd</c>、そしてその他たくさんのツールによって行うことができます。
+同じことが<c>cpudyn</c>、<c>cpufreqd</c>、<c>powernowd</c>、そしてその他たくさんのツールによって行うことができます。
 ACPIイベントを、電源に関連した動的周波数変更を有効にするか無効にするかといったことに使用することができます。
 </p>
 
@@ -388,39 +449,39 @@ CPU速度と電力の減少には２つの利点があります。
 
 <p>
 ではCPU周波数の変更が動作するかを試してみましょう。
-カーネルのインターフェースに慣れるために、まずは手動でスピードの調整をしましょう。
-CPU速度を別の物に設定するには以下のようにします。
+デバッグにとても便利な別のツールをインストールします。
+<c>sys-power/cpufrequtils</c>がそれです。
 </p>
 
-<pre caption="CPU速度を手動設定">
-<comment>(現在の周波数を取得)</comment>
-# <i>grep "cpu MHz" /proc/cpuinfo</i>
-
-<comment>(サポートされている周波数の一覧。これは失敗するかもしれない。)</comment>
-# <i>cd /sys/devices/system/cpu/cpu0/cpufreq/</i>
-# <i>cat scaling_available_frequencies</i>
-
-<comment>(周波数を1 GHz (1000000 KHz)に変更)</comment>
-# <i>echo -n userspace > scaling_governor</i>
-# <i>echo -n 1000000 > scaling_setspeed</i>
-
-<comment>(周波数の変更を確認)</comment>
-# <i>grep "cpu MHz" /proc/cpuinfo</i>
+<pre caption="CPU周波数の確認">
+<i>emerge cpufrequtils</i>
+<i>cpufreq-info</i>
 </pre>
 
 <p>
-エラーメッセージが表示されたら、このガイドの終わりにある<e>トラブルシューティング</e>を参照してください。
+以下が出力例です。
 </p>
+
+<pre caption="cpufreq-infoからの出力例">
+cpufrequtils 0.3: cpufreq-info (C) Dominik Brodowski 2004
+Report errors and bugs to linux@brodo.de, please.
+analyzing CPU 0:
+  driver: centrino
+  CPUs which need to switch frequency at the same time: 0
+  hardware limits: 600 MHz - 1.40 GHz
+  available frequency steps: 600 MHz, 800 MHz, 1000 MHz, 1.20 GHz, 1.40 GHz
+  available cpufreq governors: conservative, ondemand, powersave, userspace, performance
+  current policy: frequency should be within 924 MHz and 1.40 GHz.
+    The governor "performance" may decide which speed to use
+    within this range.
+  current CPU frequency is 1.40 GHz.
+</pre>
 
 <p>
-<path>scaling_max_freq</path>と<path>scaling_min_freq</path>を書いて周波数の限界値を定めることもできます。
+では<c>cpufreq-set</c>で周波数の変更が動作するか確認しましょう。
+例えば、<c>cpufreq-set -g ondemand</c>を実行してondemand governorを有効にし、<c>cpufreq-info</c>で変更を確認します。
+期待通りの動作をしなければ、このガイドの最後にあるトラブルシューティングの章で手がかりを見つけられるかもしれません。
 </p>
-
-<note>
-いくらかのカーネルでは<path>/proc/cpuinfo</path>の更新に関するバグがあります。
-これが変更されてないとしても、必ずしもCPUの周波数が変更されていないことを意味しているわけではありません。
-もしこれが起きたなら、<c>emerge x86info</c>を実行し、現在の周波数を<c>x86info -mhz</c>で確認するようにカーネルを更新します。
-</note>
 
 </body>
 </section>
@@ -453,6 +514,19 @@ CPU速度を別の物に設定するには以下のようにします。
   <ti>N.A.</ti>
   <ti>N.A.</ti>
   <ti>
+    CPUが高負荷時には最高周波数を選択し、CPUがアイドル時には段階的に速度を落とす。
+    <path>/sys/devices/system/cpu/cpu0/cpufreq/ondemand/</path>にあるファイルで更に調整する。
+    governorによる変更や同様の機能が必要なら、ユーザーランドツール(プログラム、スクリプト)が必要。
+  </ti>
+</tr>
+<tr>
+  <ti>'conservative' governor</ti>
+  <ti>Kernel</ti>
+  <ti>CPU負荷</ti>
+  <ti>N.A.</ti>
+  <ti>N.A.</ti>
+  <ti>
+    ondemand governorと違い、conversativeはCPUが高負荷時に最高周波数まで一気に行かず、段階的に周波数を上げていきます。
     <path>/sys/devices/system/cpu/cpu0/cpufreq/ondemand/</path>にあるファイルで更に調整する。
     governorによる変更や同じようなものが必要なら、ユーザーランドツール(プログラム、スクリプト)が必要。
   </ti>
@@ -461,7 +535,7 @@ CPU速度を別の物に設定するには以下のようにします。
   <ti><uri link="http://mnm.uib.es/~gallir/cpudyn/">cpudyn</uri></ti>
   <ti>Daemon</ti>
   <ti>CPU負荷</ti>
-  <ti>無し</ti>
+  <ti>Performance、powersave</ti>
   <ti>Dynamic</ti>
   <ti>
     ディスクスタンバイもサポート。ほとんどの場合<e>laptop mode</e>がより良く動作することに注意。
@@ -470,11 +544,13 @@ CPU速度を別の物に設定するには以下のようにします。
 <tr>
   <ti><uri link="http://sourceforge.net/projects/cpufreqd/">cpufreqd</uri></ti>
   <ti>Daemon</ti>
-  <ti>バッテリー状態、CPU負荷、実行中のプログラム</ti>
+  <ti>バッテリー状態、CPU負荷、温度、実行中のプログラム、その他</ti>
   <ti>全て利用可能</ti>
-  <ti>Dynamic</ti>
+  <ti>None</ti>
   <ti>
-    洗練された(だが複雑でもある)セットアップ。最適の構成はシステムに関する詳細な知識を必要。
+    洗練された(だがやや複雑な)セットアップ。
+    センサーモニタ(lm_sensors)やNVidiaベースのグラフィックカードメモリとコアとの調和のようなプラグインを使った拡張。
+    cpufreqdはSMPに対応しており、稼働中でも状況に応じて手動で制御することが可能。
   </ti>
 </tr>
 <tr>
@@ -490,13 +566,28 @@ CPU速度を別の物に設定するには以下のようにします。
   </ti>
 </tr>
 <tr>
+  <ti>
+    <uri link="http://fatcat.ftj.agh.edu.pl/~nelchael/index.php?cat=projs&amp;subcat=ncpufreqd&amp;language=en">ncpufreqd</uri>
+  </ti>
+  <ti>Daemon</ti>
+  <ti>温度</ti>
+  <ti>無し</ti>
+  <ti>Powersave、performance</ti>
+  <ti>
+    システム温度により、使用されるgovernorをperformanceとpowersaveの間で切り替える。
+    熱問題で有名なラップトップにはとても便利。
+  </ti>
+</tr>
+<tr>
   <ti><uri link="http://www.goop.org/~jeremy/speedfreq/">speedfreq</uri></ti>
   <ti>Daemon</ti>
   <ti>CPU負荷</ti>
   <ti>無し</ti>
   <ti>Dynamic、powersave、performance、fixed speed</ti>
   <ti>
-    小さいが、役に立つクライアント・サーバ情報を持ち強力。2.6カーネルが必要。
+    すばらしいクライアント/サーバのインタフェースを持つことによる設定の簡便さ。2.6カーネルが必要。
+    メンテされておらず、壊れているためPortageから除去。
+    まだ使用しているのならcpufreqdへ乗り換えてください。
   </ti>
 </tr>
 <tr>
@@ -507,7 +598,7 @@ CPU速度を別の物に設定するには以下のようにします。
   <ti>無し</ti>
   <ti>
     CPU周波数を手動で設定するグラフィカルツールであるGnomeアプリケーション。
-    これは少しの自動化も提供しませんし、完全を期すために主に記載されています。
+    これは少しの自動化も提供しません。
   </ti>
 </tr>
 <tr>
@@ -528,112 +619,100 @@ CPU速度を別の物に設定するには以下のようにします。
 </p>
 
 <p>
-どれを選ぶべきでしょうか？もし何も考えがなければ、まず<c>speedfreq</c>を試してください。
+どれを選ぶべきでしょうか？もし何も考えがなければ、まず<c>cpufreqd</c>を試してください。
 </p>
-
-<pre caption="speedfreqのインストール">
-# <i>emerge speedfreq</i>
-# <i>rc-update add speedfreq battery</i>
-</pre>
-
-<p>
-<c>speedfreq</c>は<path>/etc/conf.d/speedfreq</path>を編集することで設定できます。
-例えば、ユーザーがポリシーを変更できるようにしたいなら、<c>SPEEDFREQ_OPTS=""</c>を<c>SPEEDFREQ_OPTS="-u"</c>に修正します。
-変更が完了したら、デーモンを起動します。
-</p>
-
-<pre caption="speedfreqを起動">
-# <i>/etc/init.d/speedfreq start</i>
-</pre>
-
-<p>
-cpufreqdの設定はちょっと複雑です。
-</p>
-
-<warn>
-上記のプログラムを同時に２つ以上起動しないでください。
-常時２つの周波数を切り替えるといった混乱を引き起こします。
-speedfreqをインストールしたのなら、今はcpufreqdを飛ばしてください。
-</warn>
 
 <pre caption="cpufreqdのインストール">
 # <i>emerge cpufreqd</i>
-# <i>rc-update add cpufreqd battery</i>
 </pre>
 
 <p>
-<c>cpufreqd</c>はデフォルト設定を<path>/etc/cpufreqd.conf</path>に置きます。
-必要に応じて設定を変更します。
-以下の例ではデフォルトの物よりも省電力になります。もちろんパフォーマンスはより低下しますが。
+<c>cpufreqd</c>は<path>/etc/cpufreqd.conf</path>を編集することで設定できます。
+cpufreqdとともにインストールされるデフォルトの物はやや紛らわしいです。
+Gentoo開発者であるHenrik Brix Andersen(以下を参照)のものに置き換えることを推奨します。
+cpufreqd-2.0.0以降が必要だと言うことに注意してください。
+以前のバージョンは設定ファイルに異なる構文を使用します。
 </p>
 
-<pre caption="cpufreqd設定ファイルの例">
+<pre caption="/etc/cpufreqd.conf (cpufreqd-2.0.0以降)">
 [General]
 pidfile=/var/run/cpufreqd.pid
-poll_interval=2
-pm_type=acpi
-<comment># ACPI代替手段(cpufreqd.conf(5)を参照)を有効にするには以下の行のコメントを解除
-# acpi_workaround=1</comment>
-verbosity=4 <comment>#(最小のロギングにしたい時には5に設定)</comment>
+poll_interval=3
+enable_plugins=acpi_ac, acpi_battery
+enable_remote=1
+remote_group=wheel
+verbosity=5
+[/General]
 
-<comment># 完全なパフォーマンス</comment>
 [Profile]
-name=ac
-minfreq=600000
-maxfreq=1400000
+name=ondemand
+minfreq=0%
+maxfreq=100%
+policy=ondemand
+[/Profile]
+
+[Profile]
+name=conservative
+minfreq=0%
+maxfreq=100%
+policy=conservative
+[/Profile]
+
+[Profile]
+name=powersave
+minfreq=0%
+maxfreq=100%
+policy=powersave
+[/Profile]
+
+[Profile]
+name=performance
+minfreq=0%
+maxfreq=100%
 policy=performance
+[/Profile]
 
-<comment># 最大省電力</comment>
-[Profile]
+[Rule]
 name=battery
-minfreq=600000
-maxfreq=900000
-policy=powersave
+ac=off
+profile=conservative
+[/Rule]
 
-<comment># 一定の周波数</comment>
-[Profile]
-name=dvd
-minfreq=900000
-maxfreq=1100000
-policy=powersave
-
-<comment># ACで実行中には最高パフォーマンス</comment>
 [Rule]
-name=ac_on
+name=battery_low
+ac=off
+battery_interval=0-10
+profile=powersave
+[/Rule]
+
+[Rule]
+name=ac
 ac=on
-profile=ac
-
-<comment># バッテリー状態が大丈夫ならコンパイルをより高速に</comment>
-[Rule]
-name=compiling
-ac=off
-battery_interval=30-100
-programs=emerge,make,gcc,cpp
-cpu_interval=0-100
-profile=ac
-
-<comment># DVD鑑賞中は低いCPU周波数で
-# ゲームなどにも利用可能</comment>
-[Rule]
-name=dvd_watching
-ac=off
-battery_interval=15-100
-programs=xine,mplayer,avidemux,kaffeine,kmplayer
-cpu_interval=0-100
-profile=dvd
-
-<comment># 上が当てはまらないなら、最大省電力</comment>
-[Rule]
-name=battery_on
-ac=off
-battery_interval=0-100
-cpu_interval=0-100
-profile=battery
+profile=ondemand
+[/Rule]
 </pre>
 
 <p>
-<c>cpudyn</c>と<c>powernowd</c>は<c>speedfreq</c>と同じようにインストールされます。
+ではcpufreqdデーモンを起動しましょう。
+<e>default</e>と<e>battery</e>ランレベルに追加してください。
 </p>
+
+<pre caption="cpufreqdの起動">
+# <i>rc-update add cpufreqd default battery</i>
+# <i>rc</i>
+</pre>
+
+<p>
+時々、デーモンが選ぶのとは別のポリシーを選択することが望ましいことがあります。
+例えば、バッテリー電力が少ないが、ACがすぐに利用可能になると知っているときなどです。
+この場合、<c>cpufreqd-set manual</c>でcpufreqdの手動モードを起動し、設定済みのポリシー(<c>cpufreqd-get</c>で表示されます)の1つを選択します。
+<c>cpufreqd-set dynamic</c>を実行することで手動モードを終了することが出来ます。
+</p>
+
+<warn>
+上記プログラムを同時に複数起動しないでください。
+2つの周波数を常時切り替え続けるといった混乱が発生します。
+</warn>
 
 </body>
 </section>
@@ -649,19 +728,20 @@ profile=battery
 </p>
 
 <pre caption="CPU速度を監視">
-# <i>watch -n 1 'grep "cpu MHz" /proc/cpuinfo'</i>
+# <i>watch grep "cpu MHz" /proc/cpuinfo</i>
 </pre>
 
 <p>
-もし<path>/proc/cpuinfo</path>が更新されない(上を参照)なら、以下のようにCPU周波数を監視します。
+もし<path>/proc/cpuinfo</path>が更新されない(トラブルシューティングを参照)なら、以下のようにCPU周波数を監視します。
 </p>
 
 <pre caption="CPU速度監視の代替手段">
-# <i>watch -n 1 x86info -mhz</i>
+# <i>watch x86info -mhz</i>
 </pre>
 
 <p>
-設定に応じて、CPU速度は重い読み込み時には増加し、アクティブでなければ減少するはずです。
+設定に応じて、CPU速度は高負荷時には増加し、アクティブでなければ減少し、もしくは単に同レベルを維持するはずです。
+cpufreqdを使用していて<path>cpufreqd.conf</path>でverbosityを5以上に設定していれば、何が起こったのかに関する追加情報がsyslogに報告されます。
 </p>
 
 </body>
@@ -671,7 +751,6 @@ profile=battery
 <chapter>
 <title>LCD電力管理</title>
 <section>
-<title>電力消費 No. 1</title>
 <body>
 
 <p>
@@ -680,14 +759,20 @@ profile=battery
 ほとんどのラップトップではバックライトの明るさを調整できます。
 </p>
 
+</body>
+</section>
+<section>
+<title>スタンバイ設定</title>
+<body>
+
 <p>
 最初に確認することはディスプレイのスタンバイ/サスペンド/オフのタイミングです。
 これはあなたのウィンドウマネージャーと深く関わっているので、自分自身で設定できるように説明していきます。
 ２つの一般的な方法があります: <c>setterm -blank &lt;number-of-minutesM&gt;</c>、<c>setterm -powersave on</c>、そして<c>setterm -powerdown &lt;number-of-minutesM&gt;</c>でターミナルをオフにできます。
-Xorgでは、<path>/etc/X11/xorg.conf</path>を以下のように編集します。
+X.orgでは、<path>/etc/X11/xorg.conf</path>を以下のように編集します。
 </p>
 
-<pre caption="XorgとXFree86でのLCDサスペンド設定">
+<pre caption="X.orgとXFree86でのLCDサスペンド設定">
 Section "ServerLayout"
   Identifier  [...]
   [...]
@@ -711,83 +796,119 @@ EndSection
 XFree86と<path>/etc/X11/XF86Config</path>でも同じです。
 </p>
 
+</body>
+</section>
+
+<section>
+<title>バックライトの輝度を落とす</title>
+<body>
+
 <p>
-もしかするとより重要なのはバックライトの明るさかもしれません。
-ツールから明るさを調整できるのなら、バッテリーモードの時には薄暗くさせる簡単なスクリプトを書いて<e>battery</e>ランレベルに置いてください。
+もしかするとより重要なことはバックライトの輝度を落とすことかもしれません。
+ツールを使って輝度を落とす設定を行える権限をもっているのなら、batteryモードでバックライトを輝度を落とす小さなスクリプトを書き、<e>battery</e>ランレベルにおいてください。
+以下のスクリプトは多くのIBM ThinkpadとToshibaのラップトップで動作します。
+カーネルで適切なオプションを有効にしてください(IBM Thinkpadsのみ)。
+Toshibaのラップトップでは、<c>app-laptop/acpitool</c>をインストールし、以下に記されているibm_acpiの設定をとばして下さい。
 </p>
+
+<warn>
+ibm-acpiでは、明るさの設定のサポートは実験と記されています。
+これはハードウェアに直接アクセスするので、システムに甚大な損傷を引き起こすかもしれません。
+<uri link="http://ibm-acpi.sourceforge.net/">ibm-acpi website</uri>を読んでください。
+</warn>
+
+<p>
+明るさレベルを設定するために、ibm_acpiモジュールをexperimental引数をつけて読み込まなければなりません。
+</p>
+
+<pre caption="ibm_acpiモジュールの自動読み込み">
+<comment>(実行前に、上記の警告を読んでください！)</comment>
+<i># echo "options ibm_acpi experimental=1" >> /etc/modules.d/ibm_acpi</i>
+<i># /sbin/modules-update</i>
+<i># echo ibm_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
+<i># modprobe ibm_acpi</i>
+</pre>
+
+<p>
+これは問題なく動作し、モジュールの読み込み後に<path>/proc/acpi/ibm/brightness</path>と言うファイルが作成されるでしょう。
+initスクリプトが電源供給源によって明るさを変更します。
+</p>
+
+<pre caption="/etc/conf.d/lcd-brightness">
+<comment># 利用可能な値は/proc/acpi/ibm/brightnessを見てください</comment>
+<comment># /usr/src/linux/Documentation/ibm-acpi.txtを読んでください</comment>
+
+<comment># ACモードでの明るさレベルです。デフォルトでは7です。</comment>
+BRIGHTNESS_AC=7
+
+<comment># バッテリーモードでの明るさレベルです。デフォルトでは4です。</comment>
+BRIGHTNESS_BATTERY=4
+</pre>
+
+<pre caption="/etc/init.d/lcd-brightness">
+#!/sbin/runscript
+
+set_brightness() {
+    if on_ac_power
+    then
+        LEVEL=${BRIGHTNESS_AC:-7}
+    else
+        LEVEL=${BRIGHTNESS_BATTERY:-4}
+    fi
+
+    if [ -f /proc/acpi/ibm/brightness ]
+    then
+        ebegin "Setting LCD brightness"
+        echo "level ${LEVEL}" > /proc/acpi/ibm/brightness
+        eend $?
+    elif [[ -e /usr/bin/acpitool &amp;&amp; -n $(acpitool -T | grep "LCD brightness") ]]
+    then
+        ebegin "Setting LCD brightness"
+        acpitool -l $LEVEL >/dev/null || ewarn "Unable to set lcd brightness"
+        eend $?
+    else
+        ewarn "Setting LCD brightness is not supported."
+        ewarn "For IBM Thinkpads, check that ibm_acpi is loaded into the kernel"
+        ewarn "For Toshiba laptops, you've got to install app-laptop/acpitool"
+    fi
+}
+
+start() {
+    set_brightness
+}
+
+stop () {
+    set_brightness
+}
+</pre>
+
+<p>
+完了したら、明るさが自動で調整されるように、batteryランレベルへ追加します。
+</p>
+
+<pre caption="明るさ自動調節の有効化">
+<i># chmod +x /etc/init.d/lcd-brightness</i>
+<i># rc-update add lcd-brightness battery</i>
+<i># rc</i>
+</pre>
 
 </body>
 </section>
 </chapter>
 
 <chapter>
-<title>ディスク電力管理</title>
+<title>ディスク電源管理</title>
 <section>
-<title>アイドル時にスリープ</title>
 <body>
-
 <p>
-必要でない時には、ハードディスクをできるだけすぐにスリープさせるようにしましょう。
-これを行うには２つの方法があります。
-１つめは<c>cpudyn</c>がディスク電力管理をサポートしていることです。
-<path>/etc/conf.d/cpudyn</path>の"Disk Options"セクションをコメント解除します。
-１番目のディスクを60秒間アクティブでなければスリープさせるようにするには、以下のように編集します。
+ハードディスクはスリープモードではほとんど電力を消費しません。
+そのため、一定時間ハードディスクが使用されていないときにはいつでも、節電機能を有効にすることは意味があります。
+これを行うための2つの異なる方法を紹介します。
+まず、laptop-modeモードは、いくつかの方法を使って多くの電力を節約しますが、その方法は、書き込み抑制や、最低でも書き込み遅延があります。
+欠点は、書き込みの遅延による電力停止やカーネルクラッシュによるデータの消失です。
+これを回避したいなら、ハードディスクに頻繁に書き込む処理を無くしてください。
+その後、2つめの方法として、hdparmを使ったハードディスクの節電機能を有効にすることが出来ます。
 </p>
-
-<pre caption="cpudynをディスクのスタンバイに使う">
-<comment>################################################
-# DISK OPTIONS
-# (disabled by default)
-################################################
-
-#
-# ディスクをスタンバイモードにするまでの時間(秒で)
-#
-</comment>
-TIMEOUT=60
-<comment>
-#
-# 回転を落とすディスクを指定 (コンマで区切る)
-#
-</comment>
-DISKS=/dev/hda
-</pre>
-
-<p>
-２つめの方法は小さなスクリプトとhdparmを使うことです。
-<path>/etc/init.d/pm.hda</path>をこの様に作成します。
-</p>
-
-<pre caption="hdparmをディスクのスタンバイに使う">
-#!/sbin/runscript
-start() {
-  ebegin "Activating Power Management for Hard Drives"
-  hdparm -q -S12 /dev/hda
-  eend $?
-}
-
-stop () {
-  ebegin "Deactivating Power Management for Hard Drives"
-  hdparm -q -S253 /dev/hda
-  eend $?
-}
-</pre>
-
-<p>
-オプションは<c>man hdparm</c>を見てください。
-スクリプトができたら、batteryランレベルに追加します。
-</p>
-
-<pre caption="自動ディスクスタンバイ設定">
-# <i>chmod +x /etc/init.d/pm.hda</i>
-# <i>/sbin/depscan.sh</i>
-# <i>rc-update add pm.hda battery</i>
-</pre>
-
-<impo>
-ハードディスクのスリープ/スピンダウンの設定には注意してください。
-小さな値に設定するとドライブをすり減らし、保証をなくすでしょう。
-</impo>
 
 </body>
 </section>
@@ -801,53 +922,131 @@ stop () {
 これはハードディスクがスピンアップに要する時間を最小限にします。
 </p>
 
-<p>
-<!-- TODO: bug #45593 -->
-また、カーネルのサポート以外に、ラップトップモードの開始と停止を制御するスクリプトが必要です。
-<path>/usr/src/linux/Documentation/laptop-mode.txt</path>にあるカーネルドキュメントは<c>laptop-mode-tools</c>パッケージと同様のスクリプトを1つ含んでいます。
-もっとも、それらのいずれもインストールしにくいです。
-</p>
-
-<p>
-開発がまだ完了していないとGentoo開発者達が考えるため、laptop-mode-toolsのebuildはPortageにはありません。
-<uri link="http://bugs.gentoo.org/show_bug.cgi?id=45593">Bugzilla</uri>にあるebuildを使用する前にそのことを考慮してください。
-これらをどこに置いて良いか分からなければ、Gentooハンドブックに外部ebuildの使用法が書かれています。
-PORTDIR_OVERLAYにebuildが含まれたなら、スクリプトをインストールします。
-</p>
-
-<warn>
-このパッケージは開発の準備が整っておらず、Bugzillaから入手したカスタムebuildのインストールは推奨されません。
-よく分からなければ、laptop-mode-toolsを使用しないでください。
-</warn>
-
-<pre caption="laptop-modeの起動の自動化">
+<pre caption="laptop-modeの自動起動">
 # <i>emerge laptop-mode-tools</i>
 </pre>
 
 <p>
 <c>laptop-mode-tools</c>の設定ファイルは<path>/etc/laptop-mode/laptop-mode.conf</path>にあります。
-豊富なコメントにしたがって、好きなように修正してください。
-USEフラグに<e>apm</e>か<e>acpi</e>があるなら、laptop-modeは自動的にバッテリーモードで起動します。
-そうでなければ<c>rc-update add laptop-mode battery</c>を実行することでこれを自動化することができます。
+豊富なコメントに従い、好みに調整してください。
+<c>rc-update add laptop_mode battery</c>を実行して自動起動します。
 </p>
+
+<p>
+1.11以降の最近のバージョンのlaptop-mode-toolsには、<c>lm-profiler</c>という新しいツールが含まれています。
+これはシステムのディスク使用率と実行中のネットワークサービスを監視し、不要な物を無効にすることを提案します。
+組み込みのランレベルをサポートしているlaptop-mode-toolsを使って無効にする(Gentooの<c>/sbin/rc</c>が実行されることで元に戻りますが)か、<e>default</e>や<e>battery</e>というランレベルを使用して無効にすることが出来ます(後者を推奨)。
+</p>
+
+<pre caption="実行中のlm-profilerからの出力例">
+# lm-profiler
+Profiling session started.
+Time remaining: 600 seconds
+[4296896.602000] amarokapp
+Time remaining: 599 seconds
+[4296897.714000] sort
+[4296897.970000] mv
+Time remaining: 598 seconds
+Time remaining: 597 seconds
+[4296900.482000] reiserfs/0
+</pre>
+
+<p>
+システムを10分間観察した後、lm-profilerは時間内にディスクアクセスを行ったサービスの一覧を表示します。
+</p>
+
+<pre caption="lm-profilerがいくつかのサービスの無効化を提案">
+Program:     "atd"
+Reason:      standard recommendation (program may not be running)
+Init script: /etc/init.d/atd (GUESSED)
+
+Do you want to disable this service in battery mode? [y/N]: n
+</pre>
+
+<p>
+上記の例でatdを提案通り無効にするために、<c>rc-update del atd battery</c>を実行します。
+システムの正常動作に必要なサービスを無効にしないよう注意してください。
+lm-profilerはいくつか明らかに間違った物を作成する可能性があります。
+必要かどうか不確かなサービスを無効にしないで下さい。
+</p>
+
+</body>
+</section>
+
+<section>
+<title>書き込みアクセスを制限する</title>
+<body>
+
+<p>
+laptop-modeを使用したくないのなら、ディスクに頻繁に書き込むサービスを無効にするために特別な措置を執らなければなりません。
+例えば、<c>syslogd</c>は良い候補です。
+もしかすると完全に終了したくないのかもしれませんが、「不要な」ものが記録されないように設定ファイルを修正することができ、そうすることでディスクトラフィックを減らします。
+cupsはディスクに定期的に書き込むので、終了して必要なときにのみ手動で有効にすることを考慮してください。
+</p>
+
+<pre caption="cupsをバッテリーモードで無効化">
+# <i>rc-update del cupsd battery</i>
+</pre>
+
+<p>
+laptop-mode-toolsの<c>lm-profiler</c>(上記参照)を使って無効にするサービスを探すことも出来ます。
+それらすべてを取り除いたら、hdparmの設定に進みます。
+</p>
+
+</body>
+</section>
+
+<section>
+<title>hdparm</title>
+<body>
+
+<p>
+2つめの方法は小さなスクリプトとhdparmを使用することです。
+laptop-modeを使用しているのならこれをとばしてください。
+そうでなければ、<path>/etc/init.d/pmg_hda</path>を作成します。
+</p>
+
+<pre caption="ディスクスタンバイにhdparmを使用する">
+#!/sbin/runscript
+
+depend() {
+after hdparm
+}
+
+start() {
+ebegin "Activating Power Management for Hard Drives"
+hdparm -q -S12 /dev/hda
+eend $?
+}
+
+stop () {
+ebegin "Deactivating Power Management for Hard Drives"
+hdparm -q -S253 /dev/hda
+eend $?
+}
+</pre>
+
+<p>
+オプションについては<c>man hdparm</c>を見てください。
+スクリプトの準備が整ったら、batteryランレベルに追加します。
+</p>
+
+<pre caption="自動ディスクスタンバイ設定">
+# <i>chmod +x /etc/init.d/pmg_hda</i>
+# <i>/sbin/depscan.sh</i>
+# <i>rc-update add pmg_hda battery</i>
+</pre>
+
+<impo>
+ハードディスクのスリープ/スピンダウン設定は注意してください。
+小さな値に設定すると、ドライブを酷使することで消耗させたり、保証の対象外になったりするかもしれません。
+</impo>
 
 </body>
 </section>
 <section>
 <title>その他の技</title>
 <body>
-
-<p>
-できるだけ早くディスクをスリープ状態にすること以外に、ディスクアクセスを最小にするのは良い考えです。
-頻繁にディスクに書く処理を見ていきましょう。syslogdは良い候補です。
-たぶん完全にそれを止めたいと言うわけではないでしょうが、「不要な」もののログを取らないようにするために設定ファイルを変更することができます。
-またその結果、ディスクへのトラフィックを引き起こさなくなります。
-cupsは定期的にディスクに書くので、それを停止して、必要な時だけ手動で有効にすることも考慮してください。
-</p>
-
-<pre caption="バッテリーモードではcupsを無効に">
-# <i>rc-update del cupsd battery</i>
-</pre>
 
 <p>
 他の方法はバッテリーモードではスワップの利用をやめることです。
@@ -885,19 +1084,43 @@ Portageがコンパイルのために使うからです。
 <chapter>
 <title>その他のデバイスの電力管理</title>
 <section>
+<title>グラフィックカード</title>
+<body>
+
+<p>
+PowerPlay(GPU(グラフィックプロセッサユニット)の動作クロックの動的変更機能)をサポートするATIグラフィックカードを使用している場合、X.orgでこの機能を有効にすることが出来ます。
+<path>/etc/X11/xorg.conf</path>を開き、Deviceセクションで<c>DynamicClocks</c>を追加(または有効)します。
+この機能はいくつかのシステムでクラッシュを引き起こす可能性があると言うことに注意してください。
+</p>
+
+<pre caption="X.orgでATI PowerPlayサポートを有効にする">
+Section "Device"
+[...]
+Option      "DynamicClocks" "on"
+EndSection
+</pre>
+
+</body>
+</section>
+<section>
 <title>無線電力管理</title>
 <body>
 
 <p>
 無線LANカードはかなり多くの電力を消費します。
-pm.hdaスクリプトの用に電力管理モードに置きましょう。
+pmg_hdaスクリプトの用に電力管理モードに置きましょう。
 </p>
+
+<note>
+このスクリプトは無線インタフェースが<c>wlan0</c>であると仮定します。
+これを実際のインタフェースに置き換えてください。
+</note>
 
 <pre caption="無線LAN電力管理の自動化">
 #!/sbin/runscript
 start() {
   ebegin "Activating Power Management for Wireless LAN"
-  iwconfig wlan0 power on power max period 3
+  iwconfig wlan0 power on
   eend $?
 }
 
@@ -909,16 +1132,16 @@ stop () {
 </pre>
 
 <p>
-スクリプトを開始するとwlan0が電力管理モードに置かれ、トラフィックが3秒間無ければスリープ状態になります。
-<path>/etc/init.d/pm.wlan0</path>に保存し、ディスクスクリプトと同じようにbatteryランレベルに追加します。
-詳細とオプションは<c>man iwconfig</c>を参照してください。
+スクリプトを開始するとwlan0で省電力機能が有効になります。
+<path>/etc/init.d/pmg_wlan0</path>に保存し、ディスクスクリプトと同じようにbatteryランレベルに追加します。
+詳細やwakeupの感覚やタイムアウト設定と言ったオプションは<c>man iwconfig</c>を参照してください。
 ドライバーとアクセスポイントがビーコン時間の変更をサポートしているなら、これはより多くの電力を削減する良いきっかけです。
 </p>
 
 <pre caption="無線LAN用の電力管理">
-# <i>chmod +x /etc/init.d/pm.wlan0</i>
+# <i>chmod +x /etc/init.d/pmg_wlan0</i>
 # <i>/sbin/depscan.sh</i>
-# <i>rc-update add pm.wlan0 battery</i>
+# <i>rc-update add pmg_wlan0 battery</i>
 </pre>
 
 </body>
@@ -930,13 +1153,17 @@ stop () {
 <p>
 電力消費に関してUSB装置に関する2つの問題があります。
 まず最初に、USBマウス、デジタルカメラまたはUSBスティックのようなデバイスはプラグに差し込まれている間、電力を消費します。
-これは避けることができません(それにもかかわらず、必要とない場合にはそれらを取り除いてください)。
-２つめに、プラグを差し込まれたUSBデバイスがあるとき、USBホストコントローラはCPUがC3/4スリープモードに入るのを妨げるように順番にバスに定期的にアクセスします。
-この問題の答えがいわゆる「USB選択サスペンド」ですが、それはカーネルでまだ実装されていません。
-USB選択サスペンドはデバイスが使用中であるといけないので、バスアクセスを許可するだけです。
-それが実装されるまでの次善策は次のような物です。
-モジュールとしてUSBサポートと装置をコンパイルし、それらが使用中でない間(例えば、ふたを閉じるとき)、スクリプトでそれらを取り除いてください。
+これは避けることができません(ですが、必要とない場合にはそれらを取り除いてください)。
+２つめに、プラグを差し込まれたUSBデバイスがあるとき、USBホストコントローラはCPUがスリープモードに入るのを妨げるように順番にバスに定期的にアクセスします。
+カーネルは、ドライバの呼び出しや<path>/sys</path>にある<path>power/state</path>ファイルを通して、USBデバイスのサスペンドを有効にする実験的なオプションを提供します。
 </p>
+
+<pre caption="カーネルでUSBサスペンドサポートを有効にする">
+Device Drivers
+  USB support
+    [*]   Support for Host-side USB
+      [*]   USB suspend/resume (EXPERIMENTAL)
+</pre>
 
 </body>
 </section>
@@ -945,7 +1172,6 @@ USB選択サスペンドはデバイスが使用中であるといけないの�
 <chapter>
 <title>スリープ状態: ディスクのスリープ、スタンバイ、サスペンド</title>
 <section>
-<title>概略</title>
 <body>
 
 <p>
@@ -966,89 +1192,127 @@ ACPIは異なったスリープ状態を定義します。
 </body>
 </section>
 <section>
-<title>スリープ、スタンバイそしてハイバネーション</title>
+<title>Sleep (S3)</title>
 <body>
 
 <p>
-ACPIはこれらスリープ状態を実験的としてサポートしています。
-APMスリープ状態はstableの様に見えますが、APMとACPIを一緒には利用できません。
+ACPIはこれらスリープ状態をそれ相応の理由によって実験的としてサポートしています。
+APMスリープ状態はより安定していますが、APMとACPIを一緒には利用できません。
+</p>
+
+<pre caption="様々なサスペンドタイプのためのカーネル設定">
+  Power Management Options ---&gt;
+    [*]  Power Management support
+      ACPI (Advanced Configuration and Power Interface) Support ---&gt;
+        [*]  ACPI Support
+          [*]   Sleep States
+</pre>
+
+<p>
+カーネルが適切に設定されたら、サスペンドやスリープモードを有効にするために<c>hibernate-script</c>を使用します。
+まずはインストールしましょう。
+</p>
+
+<pre caption="hibernate-scriptのインストール">
+<i># emerge hibernate-script</i>
+</pre>
+
+<p>
+いくつかの設定を<path>/etc/hibernate</path>で行う必要があります。
+初期設定で、パッケージは<path>hibernate.conf</path>と<path>ram.conf</path>という2つの設定ファイルをインストールします。
+</p>
+
+<p>
+スリープの設定をするために、<path>/etc/hibernate</path>の<path>ram.conf</path>を編集します。
+<c>UseSysfsPowerState mem</c>がすでに正しく設定されていますが、設定ファイルの残りへ進み、システムにあわせて設定しなければなりません。
+コメントとオプション名が道しるべとなるでしょう。
+ネットワーク上でnfsやsamba共有を使用しているのなら、タイムアウトを避けるために適切なinitスクリプトを終了してください。
+</p>
+
+<p>
+準備は良いですか？
+これがコマンドを実行する前にデータをバックアップしておく最後のチャンスです。
+スリープ状態から復帰するために、<e>Fn</e>といった特殊キーを押す必要があるかもしれないと言うことに注意してください。
+</p>
+
+<pre caption="スリープの呼び出し">
+<i># hibernate-ram</i>
+</pre>
+
+<p>
+これを読み続けているのなら、動作しているようです。
+<path>ram.conf</path>を<path>standby.conf</path>にコピーし、<path>/usr/sbin/hibernate</path>を指す<path>/usr/sbin/hibernate-standby</path>というシンボリックリンクを作成することで、スタンバイ(S1)を設定することも出来ます。
+S3とS4は、より多くの電力を節約するという、より興味深いスリープ状態です。
+</p>
+
+</body>
+</section>
+<section>
+<title>ハイバネーション (S4)</title>
+<body>
+
+<p>
+この章ではハイバネーションを紹介します。
+これは、電源を切る前に実行中のシステムのスナップショットをディスクに保存する物です。
+復帰時には、スナップショットが読み込まれ、ハイバネーションを呼び出すまさに直前から作業を行うことが出来ます。
 </p>
 
 <warn>
-スリープ状態のサポートはより改良されていますが、それは未だ実験段階です。
-swsusp2を入手しRAMをサスペンドするようにした時、警告されました。
-これは、たぶん働いていませんが、あなたのデータ/システムを破損するでしょう。
+サスペンド中にホットプラグ出来ないハードウェアを交換しないでください。
+スナップショットを、作成したカーネル以外のカーネルで読み込もうとしないでください。
+ハイバネーションを行う前に、すべてのNFSまたはsambaサーバ/クライアントを終了してください。
 </warn>
 
 <p>
-現在、S4のための3つの実装があります。
+S4のための2つの実装があります。
 オリジナルのものがswsuspです。
-そして、最も良いインタフェース(bootsplashサポートを含んでいる)を持っていますが、手動のカーネル修正を必要とするswsusp2があります。
-最後に、swsuspからフォークしたSuspend-to-Diskがあります。
+そして、より良いインタフェース(fbsplashサポートを含んでいる)を持っているsuspend2があります。
+<uri link="http://suspend2.net">suspend2 Homepage</uri>に<uri link="http://suspend2.net/features.html#compare">機能比較</uri>があります。
+これらはswsuspから分岐したSuspend-to-Disk (pmdisk)で使用されますが、これは統合されました。
 </p>
 
 <p>
-もし混乱したのなら、<uri link="http://softwaresuspend.berlios.de/features.html#compare">機能比較</uri>を見てください。
-それでも混乱していて何を使っていいか分からなければ、まず最も見込みがあるswsusp2を使ってみてください。
+suspend2はまだ主流のカーネルに含まれていないので、<uri link="http://suspend2.net">suspend2.net</uri>が提供するパッチをカーネルソースに適用するか、<c>sys-kernel/suspend2-sources</c>を使用する必要があります。
 </p>
 
 <p>
-カーネルのこの部分を以下のようにします。
+カーネルのswuspとsuspend2の部分を以下のようにします。
 </p>
 
 <pre caption="様々なサスペンドタイプのためのカーネル設定">
 Power Management Options ---&gt;
-
-  <comment>(sleep and standby)</comment>
-  ACPI( Advanced Configuration and Power Interface ) Support --->
-    [*] ACPI Support
-       [*]   Sleep States
-
   <comment>(swsuspを使ったハイバネーション)</comment>
-  [*] Software Suspend (EXPERIMENTAL)
+  [*] Software Suspend
+      <comment>(/dev/SWAPをswapパーティションに置き換える)</comment>
+      (/dev/SWAP)      Default resume partition
   
-  <comment>(swsusp2を使ったハイバネーション)</comment>
+  <comment>(suspend2を使ったハイバネーション)</comment>
   Software Suspend 2
     --- Image Storage (you need at least one writer)
+    [*]     File Writer
     [*]    Swap Writer
-    --- Page Transformers
+    ---   General Options
     [*]    LZF image compression
-    (/dev/"your-swap-here")    Default resume device name
-
-  <comment>(Suspend-to-Diskを使ったハイバネーション)</comment>
-  [*] Suspend-to-Disk Suport
-  (/dev/"your-swap-here") Default resume partition
+    <comment>(/dev/SWAPをswapパーティションに置き換える)</comment>
+    (swap:/dev/SWAP)   Default resume device name
+    [ ]     Allow Keep Image Mode
 </pre>
 
 <p>
-適当なオプションを付けてカーネルをコンパイルし、2.4シリーズなら<c>cat /proc/acpi/sleep</c>を、2.6なら<c>cat /sys/power/state</c>を見て何がサポートされているかを確認してください。
-後者の場合、<c>standby mem disk</c>が出力されます。
-swsuspでは、カーネルパラメータに<c>resume=/dev/"your-swap-here"</c>を追加する必要があります。
-イメージの破損により起動しなければ、swsuspでは<c>noresume</c>を、Suspend-to-Diskでは<c>pmdisk=off</c>を、swsusp2では<c>noresume2</c>を使います。
+swsuspの設定はかなり簡単です。
+カーネル設定でswapパーティションの場所を設定していなければ、<c>resume=/dev/SWAP</c>という変数で渡すことも出来ます。
+イメージの破損により起動が出来なければ、<c>noresume</c>というカーネル変数を使用します。
+<c>hibernate-cleanup</c> initスクリプトは起動中にswsuspイメージを無効にします。
 </p>
+
+<pre caption="起動中にswsuspイメージを無効にする">
+<i># rc-update add hibernate-cleanup boot</i>
+</pre>
 
 <p>
-システムをスリープ状態にするには以下のようにします。
+swsuspを使ったハイバネーションを有効にするために、ハイバネーションスクリプトを使用します。
+そして、<path>/etc/hibernate/hibernate.conf</path>に<c>UseSysfsPowerState disk</c>を設定します。
 </p>
-
-<pre caption="スリープ状態を有効化">
-<comment>(カーネル2.4シリーズ)</comment>
-# <i>echo 1 &gt; /proc/acpi/sleep</i>          <comment>(スタンバイ)</comment>
-# <i>echo 3 &gt; /proc/acpi/sleep</i>          <comment>(スリープ)</comment>
-
-<comment>(カーネル2.6シリーズ)</comment>
-# <i>echo -n standby &gt; /sys/power/state</i> <comment>(スタンバイ)</comment>
-# <i>echo -n mem &gt; /sys/power/state</i>     <comment>(スリープ)</comment>
-
-<comment>(swsusp)</comment>
-# <i>echo 4 &gt; /proc/acpi/sleep</i>          <comment>(hibernate)</comment>
-
-<comment>(Suspend-to-Disk)</comment>
-# <i>echo -n disk &gt; /sys/power/state</i>    <comment>(hibernate)</comment>
-
-<comment>(swsusp2)</comment>
-# <i>/usr/sbin/hibernate</i>                   <comment>(hibernate、以下を参照)</comment>
-</pre>
 
 <warn>
 これを行う前にデータをバックアップしてください。
@@ -1058,21 +1322,91 @@ swsuspでは、カーネルパラメータに<c>resume=/dev/"your-swap-here"</c>
  
 <p>
 uhciまたは類似するものが原因でカーネルパニックを経験したなら、モジュールとしてUSBサポートをコンパイルして、あなたのラップトップをスリープモードにする前に、モジュールを解除するようにしてください。
+<path>hibernate.conf</path>に、このための設定オプションがあります。
+</p>
+
+<pre caption="swsuspを使ったハイバネーション">
+<i># nano -w /etc/hibernate.conf</i>
+<comment>(データのバックアップを取ってください)</comment>
+<i># hibernate</i>
+</pre>
+
+<p>
+以下の部分では、サスペンドや復帰中の素晴らしいグラフィカルプログレスバーであるfbsplashのサポートを含んだ、suspend2の設定について説明します。
 </p>
 
 <p>
-上記はswsuspとSuspend-to-Diskの実行(私は動かないと言いましたが)には事足りますが、swsusp2には特別な配慮が必要です。
-最初にすることは<uri link="http://softwaresuspend.berlios.de/">http://softwaresuspend.berlios.de/</uri>で提供されるパッチをカーネルに当てることです。
-さらに、<c>hibernate-script</c>をemergeしなければなりません。
-インストールされたなら、<path>/etc/hibernate/hibernate.conf</path>を設定し、それが動くかどうか試します。
+設定の最初の部分は、swsuspの設定と似ています。
+カーネル設定でswapパーティションの場所を設定していなければ、<c>resume2=swap:/dev/SWAP</c>という変数で渡すことも出来ます。
+イメージの破損により起動が出来なければ、<c>noresume2</c>という変数を追加します。
+<c>hibernate-cleanup</c> initスクリプトは起動中にsuspend2イメージを無効にします。
 </p>
 
-<pre caption="">
-<i># emerge hibernate-script</i>
-<i># $EDITOR /etc/hibernate/hibernate.conf</i>
-<comment>(全てのデータのバックアップを取る最後のチャンスです)</comment>
+<pre caption="起動中にsuspend2イメージを無効にする">
+<i># rc-update add hibernate-cleanup boot</i>
+</pre>
+
+<p>
+では<path>/etc/hibernate/hibernate.conf</path>を編集し、<e>suspend2</e>の部分を有効にし、<e>sysfs_power_state</e>と<e>acpi_sleep</e>の部分をすべてコメントアウトします。
+グローバルオプションのfbsplash部分はまだ有効にしないで下さい。
+</p>
+
+<pre caption="suspend2を使ったハイバネーション">
+<i># nano -w /etc/hibernate.conf</i>
+<comment>(データのバックアップを取ってください)</comment>
 <i># hibernate</i>
 </pre>
+
+<p>
+まだ行っていないのであれば、fbsplashの設定を今行ってください。
+ハイバネーション中にfbsplashサポートを有効にするために、<c>sys-apps/suspend2-userui</c>パッケージが必要です。
+それに加え、<e>fbsplash</e> USEフラグを有効にする必要があります。
+</p>
+
+<pre caption="suspend2-useruiのインストール">
+<i># mkdir -p /etc/portage</i>
+<i># echo sys-apps/suspend2-userui fbsplash >> /etc/portage/package.use</i>
+<i># emerge suspend2-userui</i>
+</pre>
+
+<p>
+ebuildは、使用したいテーマへのシンボリックリンクを作成するよう伝えます。
+例えば、<c>livecd-2005.1</c>テーマを使用するには、以下のコマンドを実行します。
+</p>
+
+<pre caption="ハイバネーション中にlivecd-2005.1テーマを使用する">
+<i># ln -sfn /etc/splash/livecd-2005.1 /etc/splash/suspend2</i>
+</pre>
+
+<p>
+復帰過程の最初の部分で暗い画面にしたくないのなら、initrdイメージに<c>suspend2ui_fbsplash</c>ツールを追加する必要があります。
+<c>splash_geninitramfs</c>でinitrdイメージを作成し、<path>/boot/fbsplash-emergence-1024x768</path>と保存したと、仮定すると、以下が行うべき事です。
+</p>
+
+<pre caption="initrdイメージにsuspend2ui_fbsplashを追加">
+<i># mount /boot</i>
+<i># mkdir ~/initrd.d</i>
+<i># cp /boot/fbsplash-emergence-1024x768 ~/initrd.d/</i>
+<i># cd ~/initrd.d</i>
+<i># gunzip -c fbsplash-emergence-1024x768 | cpio -idm --quiet -H newc</i>
+<i># rm fbsplash-emergence-1024x768</i>
+<i># cp /usr/sbin/suspend2ui_fbsplash sbin/</i>
+<i># find . | cpio --quiet --dereference -o -H newc | gzip -9 > /boot/fbsplash-suspend2-emergence-1024x768</i>
+</pre>
+
+<p>
+その後、suspend2カーネルが<path>/boot/fbsplash-suspend2-emergence-1024x768</path>をinitrdイメージとして使用するように、<path>grub.conf</path>や<path>lilo.conf</path>を調整します。
+すべてが正しく設定されたかを確認するために、予行演習を行うことが出来ます。
+</p>
+
+<pre caption="fbsplashハイバネーションの試験運用">
+<i># suspend2ui_fbsplash -t</i>
+</pre>
+
+<p>
+その後、<path>/etc/hibernate/hibernate.conf</path>を再び開き、fbsplashオプションを有効にします。
+<c>hibernate</c>を実行して楽しんでください。
+</p>
 
 </body>
 </section>
@@ -1081,7 +1415,6 @@ uhciまたは類似するものが原因でカーネルパニックを経験し�
 <chapter>
 <title>トラブルシューティング</title>
 <section>
-<title>もし何かがおかしければ・・・</title>
 <body>
 
 <p>
@@ -1159,11 +1492,44 @@ xは<path>/proc/acpi/processor/CPU/throttling</path>に載っているTx状態�
 </p>
 
 <p>
+<e>Q:</e> システムロガーが以下のような報告を行いました。"logger: ACPI group battery / action 
+battery is not defined"
+</p>
+
+<p>
+<e>A:</e> このメッセージは、acpidとともにインストールされる/etc/acpi/default.shスクリプトによって作成されます。
+無視してもかまいません。
+取り除きたいのなら、以下に示されているように/etc/acpi/default.shの適切な行をコメントアウトすることが出来ます。
+</p>
+
+<pre caption="不明なacpiイベントに関する警告を無効化">
+        *)      # logger "ACPI action $action is not defined"
+</pre>
+
+<p>
 <e>Q:</e> Dell Inspiron 51XXを使っていますが何のACPIイベントも起きません。
 </p>
 
 <p>
 <e>A:</e> カーネルのバグの様です。<uri link="http://bugme.osdl.org/show_bug.cgi?id=1752">これ</uri>を読んでください。
+</p>
+
+<p>
+<e>Q:</e> <path>xorg.conf</path>でDynamicClocksを有効にし、X.orgがクラッシュ/スクリーンが黒いまま/ラップトップが正常終了しません。
+</p>
+
+<p>
+<e>A:</e> これはいくつかのシステムで発生します。DynamicClocksを無効にしてください。
+</p>
+
+<p>
+<e>Q:</e> suspend2を使いたいのですが、swapパーティションが小さすぎると言われます。リサイズは選択肢にありません。
+</p>
+
+<p>
+<e>A:</e> システムに十分な空き容量があるのなら、swapwriterの代わりにfilewriterを使用することが出来ます。
+<c>hibernate-script</c>はこれに対応しています。
+より詳しい情報は<path>/usr/src/linux/Documentation/power/suspend2.txt</path>にあります。
 </p>
 
 <p>
@@ -1198,7 +1564,9 @@ last full capacity:  41830 mWh
 </p>
 
 <p>
-<e>A:</e> おそれずに私<mail link="fragfred@gmx.de">Dennis Nienh&#252;ser</mail>まで直接連絡してください。
+<e>A:</e> おそれずに私<mail link="earthwings@gentoo.org">Dennis Nienh&#252;ser</mail>まで直接連絡してください。
+<uri link="http://forums.gentoo.org">Gentoo Forums</uri>は助けを得るための良い場所です。
+IRCが好きなら、<e>irc.freenode.net</e>の<e>#gentoo-laptop</e>チャンネルを試してください。
 </p>
 
 </body>
