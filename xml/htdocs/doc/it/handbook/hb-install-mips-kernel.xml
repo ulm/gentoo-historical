@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-mips-kernel.xml,v 1.9 2006/01/09 22:20:12 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-mips-kernel.xml,v 1.10 2006/03/13 21:34:49 so Exp $ -->
 
 <sections>
 
-<version>1.15</version>
-<date>2006-01-06</date>
+<version>1.16</version>
+<date>2006-02-27</date>
 
 <section>
 <title>Timezone</title>
@@ -47,34 +47,74 @@ Gentoo</uri>.
 </p>
 
 <p>
-Sistemi basati su MIPS possono scegliere tra <c>mips-sources</c> (il sorgente
-del kernel di default per l'architettura MIPS) e <c>mips-prepatch-sources</c>
-(versione prerilascio del kernel).
+Sistemi basati su MIPS devono scegliere i <c>mips-sources</c>. Sono
+necessarie patch speciali per renderli funzionanti su alcuni sistemi. La
+tabella sotto visualizza le flag USE richieste per abilitare i patchset.
+Sistemi Indy, Indigo2 (R4k) e Challenge S non richiedono nessun patchset.
 </p>
 
-<p>
-Dopo la scelta del kernel, è necessario installarlo con <c>emerge</c>.
-Sostituire il kernel con quello scelto, il seguente è solo un esempio. E'
-necessario <c>USE="-doc"</c> per evitare di installare xorg-x11 o altre
-dipendenze. <c>USE="symlink"</c> non è necessario per una
-nuova installazione, ma assicura la creazione del symlink
-<path>/usr/src/linux</path>.
-</p>
+<table>
+<tr>
+  <th>Flag USE</th>
+  <th>Sistema</th>
+</tr>
+<tr>
+  <ti><c>cobalt</c></ti>
+  <ti>Supporto Cobalt Qube/RaQ</ti>
+</tr>
+<tr>
+  <ti><c>ip27</c></ti>
+  <ti>Supporto SGI Origin 200/2000 (1)</ti>
+</tr>
+<tr>
+  <ti><c>ip28</c></ti>
+  <ti>Supporto SGI Indigo2 Impact (R10000) (1,2)</ti>
+</tr>
+<tr>
+  <ti><c>ip30</c></ti>
+  <ti>Supporto SGI Octane/Octane2 (1)</ti>
+</tr>
+</table>
 
 <note>
-Sono necessarie patch speciali per far funzionare un kernel su server Cobalt.
-La flag USE <c>cobalt</c> deve essere definita per ottenere e applicare le
-patch.
+La <c>USE="-doc"</c> disabilita la generazione della documentazione kernel
+API, che entrerebbe in numerose dipendenze non richieste per questo passo.
 </note>
 
-<pre caption="Installare un sorgente del kernel">
-<comment>(Per macchine SGI)</comment>
-# <i>USE="-doc symlink" emerge mips-sources</i>
-
-<comment>(Per macchine Cobalt)</comment>
-# <i>mkdir -p /etc/portage</i>
+<pre caption="Impostare le flag USE e emergere i sorgenti del kernel">
+<comment>(Sostituire cobalt con l'appropriata flag USE per il proprio sistema
+se richiesto)</comment>
+# <i>mkdir /etc/portage</i>
 # <i>echo "sys-kernel/mips-sources cobalt" &gt;&gt; /etc/portage/package.use</i>
-# <i>USE="-doc symlink" emerge mips-sources</i>
+
+<comment>(Scompattare e installare i sorgenti del kernel)</comment>
+# <i>USE="-doc" emerge mips-sources</i>
+</pre>
+
+<impo>
+(1) Su Origin 200/2000, Indigo2 Impact (R10000), Octane/Octane2 e O2, è
+richiesto un kernel 64 bit per avviare il sistema. Per questi, si dovrebbe
+passare al profilo <path>default-linux/mips/mips64/RELEASE</path> cambiando
+il symlink <path>/etc/make.profile</path>. Poi si può fare <c>emerge
+gcc-mips64</c> per creare un cross compiler per compilare i kernel 64 bit.
+</impo>
+
+<impo>
+(2) Indigo2 Impact è un caso speciale che richiede una patch speciale da
+essere applicata a <c>gcc</c> prima di compilare un kernel IP28. La patch
+aggiunge supporto per la CFLAG <c>-mip28-cache-barriers</c>, usata nella
+compilazione del kernel. Questa flag USE può essere impostata in
+<path>/etc/make.conf</path>. Questo viene già fatto, impostando il proprio
+profilo a <path>default-linux/mips/mips64/ip28/RELEASE</path>.
+</impo>
+
+<pre caption="Cambiare profilo e installare gcc-mips64">
+<comment>(Si assume che PORTDIR sia nella solita posizione, /usr/portage)</comment>
+# <i>rm /etc/make.profile</i>
+# <i>ln -s /usr/portage/profiles/default-linux/mips/mips64/2005.0</i> <comment>(o .../mips64/ip28/2005.0)</comment>
+
+<comment>(Installare il kernel toolchain 64 bit)</comment>
+# <i>emerge gcc-mips64</i>
 </pre>
 
 <p>
@@ -86,7 +126,18 @@ questo caso il sorgente del kernel installato punta a
 
 <pre caption="Il link simbolico al sorgente del kernel">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.4.24
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.13.4
+</pre>
+
+<p>
+Se non è così (il symlink punta a un sorgente del kernel differente),
+cambiare il symlink prima di continuare:
+</p>
+
+<pre caption="Cambiare il symlink al sorgente del kernel">
+# <i>rm /usr/src/linux</i>
+# <i>cd /usr/src</i>
+# <i>ln -s linux-2.6.13.4 linux</i>
 </pre>
 
 <p>
@@ -104,53 +155,110 @@ Ora si procede a configurare e compilare il sorgente del kernel.
 
 <p>
 Di solito si è vista la configurazione manuale del sorgente del kernel.
-Adesso invece si vedranno alcuni esempi di configurazione, sui quali si può
-basare la propria. Si deve scegliere tra le opzioni che più si avvicinano
-alla combinazione tra il proprio sistema e il kernel che si usa.  Si possono
-trovare altri esempi di configurazione nei link qui sotto.
+Questa è divenuta impraticabile dato il numero di sistemi che sono
+supportati. Questa sezione esamina vari sorgenti per configurazioni di
+esempio del kernel.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Usare esempi di configurazione nei sorgenti del kernel</title>
+<body>
+
+<p>
+Molti sistemi supportati hanno esempi di .config nascosti nel kernel
+sorgente. Non tutti hanno le configurazioni distribuite in questo modo.
+Quelli che li hanno, possono essere configurati con i comandi menzionati
+nella tabella sotto.
 </p>
 
 <table>
-  <tr>
-    <th>Sistema</th>
-    <th>Versione del kernel</th>
-  </tr>
-  <tr>
-    <ti>SGI IP22 (Indy, Indigo 2, Challenge S)</ti>
-    <ti>
-      <uri link="http://www.longlandclan.hopto.org/~stuartl/mips-linux/sgi/ip22/config/2.4.29-mipscvs-20050130.gz">2.4.29</uri>
-    </ti>
-  </tr>
-  <tr>
-    <ti>Cobalt Qube/Raq 2800</ti>
-    <ti>
-      <uri link="http://dev.gentoo.org/~kumba/mips/cobalt/kernel/cobalt-2605.config">2.6.5</uri>
-      <uri link="http://dev.gentoo.org/~kumba/mips/cobalt/kernel/cobalt-2606.config">2.6.6</uri>
-      <uri link="http://dev.gentoo.org/~kumba/mips/cobalt/kernel/cobalt-config-2609">2.6.9</uri>
-    </ti>
-  </tr>
+<tr>
+  <th>Sistema</th>
+  <th>Comando di configurazione</th>
+</tr>
+<tr>
+  <ti>Cobalt Servers</ti>
+  <ti><c>make cobalt_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indy, Indigo2 (R4k), Challenge S</ti>
+  <ti><c>make ip22_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Origin 200/2000</ti>
+  <ti><c>make ip27_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indigo2 Impact (R10k)</ti>
+  <ti>
+    <c>make ip28_defconfig</c> (richiede <c>mips-sources-2.6.14.5</c> o
+    successivo)
+  </ti>
+</tr>
+<tr>
+  <ti>O2</ti>
+  <ti><c>make ip32_defconfig</c></ti>
+</tr>
 </table>
 
-<ul>
-  <li>
-    Configurazioni IP22 (Indy, Indigo2, Challenge S)
-    <uri link="http://www.longlandclan.hopto.org/~stuartl/mips-linux/sgi/ip22/config">
-      http://www.longlandclan.hopto.org/~stuartl/mips-linux/sgi/ip22/config
-    </uri>
-  </li>
-  <li>
-    Configurazioni Cobalt Server
-    <uri link="http://dev.gentoo.org/~kumba/mips">
-      http://dev.gentoo.org/~kumba/mips
-    </uri>
-  </li>
-</ul>
+</body>
+</subsection>
 
-<note>
-Ulteriori esempi di configurazioni del kernel possono essere trovati sul
-Gentoo/MIPS Hardware Support Database, che si trova in
+<subsection>
+<title>Usare la configurazione del kernel già in esecuzione dal media di
+installazione</title>
+<body>
+
+<p>
+Tutte le immagini di installazione Gentoo forniscono una opzione di
+configurazione del kernel come parte dell'immagine stessa, accessibile in
+<path>/proc/config.gz</path>. Può essere usata in molti casi. E' meglio però
+che il proprio sorgente del kernel corrisponda al kernel che è attualmente in
+esecuzione. Per estrarlo, eseguire <c>zcat</c> come mostrato sotto.
+</p>
+
+<pre caption="Estrarre .config da /proc/config.gz">
+# <i>zcat /proc/config.gz > .config</i>
+</pre>
+
+<impo>
+La configurazione del kernel è impostata per una immagine netboot. Si aspetta
+di trovare una immagine del filesystem root, sia come una directory per
+initramfs, sia come in device loopback per initrd. Quando si esegue <c>make
+menuconfig</c>, non dimenticarsi di andare in General Setup e disabilitare le
+opzioni per initramfs.
+</impo>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Database per le compatibilità hardware</title>
+<body>
+
+<p>
+Come aiuto agli utenti nel trovare impostazioni funzionanti, è stato avviato
+un database per le compatibilità hardware. Questo database elenca il supporto
+per vari dispositivi MIPS, e permette agli utenti di contribuire alle
+configurazioni del kernel funzionanti. L'indirizzo per questo sito è
 <uri>http://stuartl.longlandclan.hopto.org/gentoo/mips</uri>.
-</note>
+</p>
+
+<p>
+Se si trova questo servizio utile, si può contribuire con note e file .config
+così che altri utenti ne possano beneficiare. Dovrebbe essere chiaro che non
+c'è nessuna garanzia affinchè ogni file di configurazione scaricato da questo
+sito funzioni.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Adattare la configurazione in base alle proprie necessità</title>
+<body>
 
 <p>
 Una volta trovata una configurazione, si deve scaricarla nella directory del
@@ -163,9 +271,20 @@ configurazione prima della compilazione.
 # <i>cd /usr/src/linux</i>
 # <i>cp /path/to/example-config .config</i>
 # <i>make oldconfig</i>
-<comment>(Premere invio ad ogni prompt per accettare il default, cambiamenti sono fatti più avanti)</comment>
+<comment>(Premere invio ad ogni prompt per accettare il default, cambiamenti
+sono fatti più avanti)</comment>
 # <i>make menuconfig</i>
 </pre>
+
+<impo>
+Nella sezione Kernel Hacking, c'è una opzione chiamata "Are You Using A Cross
+Compiler?". Dice ai Makefiles del kernel di aggiungere all'inizio
+"<c>mips-linux-</c>" (o <c>mipsel-linux</c> ... etc) ai comandi <c>gcc</c> e
+<c>as</c> quando si compila il kernel. Questo dovrebbe non essere fatto,
+anche se si sta usando un cross compiler. Se si ha bisogno di un cross
+compiler, specificare il prefisso usando la variabile <c>CROSS_COMPILE</c>
+come mostrato nella prossima sezione.
+</impo>
 
 </body>
 </subsection>
@@ -179,12 +298,40 @@ la sua installazione. Uscire dal menu di configurazione e avviare il processo
 di compilazione:
 </p>
 
-<pre caption="Compilare il kernel">
-<comment>(Per kernel 2.4)</comment>
-# <i>make dep &amp;&amp; make vmlinux modules modules_install</i>
+<note>
+Su sistemi 64 bit, si deve specificare
+<c>CROSS_COMPILE=mips64-unknown-linux-gnu-</c> (o <c>mips64el-...</c> su
+un sistema little-endian) per usare il compiler 64 bit.
+</note>
 
-<comment>(Per kernel 2.6)</comment>
-# <i>make &amp;&amp; make modules_install</i>
+<pre caption="Compilare il kernel">
+<comment>(Solo per kernel 2.4)</comment>
+# <i>make dep</i>
+
+<comment>(kernel 2.4 e 2.6 -- compilazione nativa)</comment>
+# <i>make vmlinux modules modules_install</i>
+
+<comment>(kernel 2.4 e 2.6 -- cross compiling)</comment>
+<comment>(sostituire mips64-unknown-linux-gnu- di conseguenza)</comment>
+# <i>make vmlinux modules modules_install CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+
+<comment>(Quando si compila su un'altra macchina, come una x86...usare)</comment>
+<comment>(i seguenti comandi per compilare il kernel &amp; installare)</comment>
+<comment>(i moduli in una directory specifica affinchè vengano trasferiti
+nella macchina principale.)</comment>
+# <i>make vmlinux modules CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+# <i>make modules_install INSTALL_MOD_PATH=/somewhere</i>
+</pre>
+
+<impo>
+Quando si compila un kernel 64 bit per Indy, Indigo2 (R4k), Challenge S e O2,
+usare <c>vmlinux.32</c> invece di <c>vmlinux</c>. Altrimenti la macchina non
+potrà avviarsi. Questo aggira il fatto che PROM non capisca il formato ELF64.
+</impo>
+
+<pre caption="Usare vmlinux.32">
+# <i>make vmlinux.32</i>
+<comment>(Questo crea vmlinux.32 -- il kernel finale)</comment>
 </pre>
 
 <p>
@@ -195,15 +342,14 @@ in <path>/boot</path>.
 <note>
 I server Cobalt, si aspettano di vedere una immagine del kernel compressa.
 Ricordarsi di fare <c>gzip -9</c> al file dopo che si è entrati in
-<path>/boot</path>. Nell'esempio seguente sostituire
-<path>&lt;kernel-version&gt;</path> con la versione del kernel che si è
-scelta.
+<path>/boot</path>.
 </note>
 
 <pre caption="Installare il kernel">
-# <i>cp vmlinux /boot/&lt;kernel-version&lt;</i>
+# <i>cp vmlinux /boot/kernel-2.6.13.4</i>
+
 <comment>(Cobalt Servers -- Comprimere la immagine del kernel)</comment>
-# <i>gzip -9v /boot/&lt;kernel-version&lt;</i>
+# <i>gzip -9v /boot/kernel-2.6.13.4</i>
 </pre>
 
 <!--
