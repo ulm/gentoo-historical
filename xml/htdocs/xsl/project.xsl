@@ -67,9 +67,9 @@
 			       <xsl:apply-templates select='dev[not(@role)]'/>
 			       <xsl:call-template name="inheritdev"/>
 			</table>
-                        <p>
-                               All developers can be reached by e-mail using <c>Nickname@gentoo.org</c>.
-                        </p>
+      <p>
+       All developers can be reached by e-mail using <c>nickname@gentoo.org</c>.
+      </p>
       
                         </body></section>
 		</chapter>
