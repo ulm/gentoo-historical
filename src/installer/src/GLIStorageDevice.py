@@ -299,6 +299,9 @@ class Device:
 			free_minor = int(minor-1)+FREE_MINOR_FRAC_LOG
 		else:
 			free_minor = int(minor-1)+FREE_MINOR_FRAC_PRI
+		if part.get_type() == "extended":
+			# Remove free partition inside extended
+			self._partitions.pop(part_pos+1)
 		self._partitions[part_pos] = Partition(self, free_minor, part.get_mb(), 0, 0, "free", format=False, existing=False)
 		self.tidy_partitions()
 
