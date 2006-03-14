@@ -9,6 +9,7 @@ if len(sys.argv) <= 1:
 	sys.exit(1)
 
 device = GLIStorageDevice.Device(sys.argv[1])
+device.set_partitions_from_disk()
 print "Device: " + sys.argv[1]
 print "Disklabel: " + device.get_disklabel()
 print "Length (MB): " + str(device.get_total_mb())
