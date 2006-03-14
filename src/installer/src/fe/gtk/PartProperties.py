@@ -175,7 +175,7 @@ class PartProperties(gtk.Window):
 			self.resize_part_space.set_division(0)
 			self.resize_part_space.set_colors(self.controller.colors['ext3'], self.controller.colors['ext3'])
 			if self.controller.devices[self.device].get_extended_partition():
-				if self.controller.devices[self.device].get_partitions()[self.minor].is_logical():
+				if self.controller.devices[self.device].get_partition(self.minor).is_logical():
 					self.resize_info_part_type.set_active(1)
 				else:
 					self.resize_info_part_type.set_active(0)
@@ -186,7 +186,7 @@ class PartProperties(gtk.Window):
 			self.resize_info_part_filesystem.set_active(0)
 			self.resize_info_part_filesystem.set_sensitive(True)
 		else:
-			tmppart = self.controller.devices[self.device].get_partitions()[self.minor]
+			tmppart = self.controller.devices[self.device].get_partition(self.minor)
 			self.info_partition.set_text(self.device + str(self.minor))
 			if self.minor < 5:
 				self.resize_info_part_type.set_active(0)
@@ -248,11 +248,11 @@ class PartProperties(gtk.Window):
 				self.controller.devices[self.device].add_partition(self.minor, self.max_size, 0, 0, "extended")
 				self.minor = 4 + FREE_MINOR_FRAC_LOG
 			fstype = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
-			self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, fstype, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
+			new_minor = self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, fstype, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
 			self.controller.draw_part_box()
-			self.controller.part_selected(None, self.device, int(self.minor)+1)
+			self.controller.part_selected(None, self.device, new_minor)
 		else:
-			tmppart = self.controller.devices[self.device].get_partitions()[self.minor]
+			tmppart = self.controller.devices[self.device].get_partition(self.minor)
 			tmppart.set_mountpoint(self.part_mount_point_entry.get_text())
 			tmppart.set_mountopts(self.part_mount_opts_entry.get_text())
 			tmppart.set_format(self.resize_info_part_format_yes.get_active())

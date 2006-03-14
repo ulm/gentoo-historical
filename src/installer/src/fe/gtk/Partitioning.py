@@ -240,15 +240,14 @@ your existing partitions will very likely be destroyed.
 
 	def part_selected(self, button, dev=None, minor=None):
 		minor = int(minor)
-		tmppart = self.devices[dev].get_partitions()[minor]
+		tmppart = self.devices[dev].get_partition(minor)
 		self.info_partition.set_text(dev + str(minor))
-		if int(minor) < 5:
-			if tmppart.get_type() == "extended":
-				self.info_type.set_text(_("Extended"))
-			else:
-				self.info_type.set_text(_("Primary"))
-		else:
+		if self.devices[dev]._labelinfo['extended'] and minor > 4:
 			self.info_type.set_text(_("Logical"))
+		elif tmppart.get_type() == "extended":
+			self.info_type.set_text(_("Extended"))
+		else:
+			self.info_type.set_text(_("Primary"))
 		fstype = tmppart.get_type()
 		if fstype == "extended":
 			self.info_filesystem.set_text(_("N/A"))
@@ -277,9 +276,9 @@ your existing partitions will very likely be destroyed.
 		msgdlg.destroy()
 		if resp == gtk.RESPONSE_YES:
 			self.devices[self.active_device].remove_partition(self.active_part_minor)
-			if self.active_part_minor > 4:
+			if self.devices[self.active_device]._labelinfo['extended'] and self.active_part_minor > 4:
 				ext_part = self.devices[self.active_device].get_extended_partition()
-				if len(self.devices[self.active_device].get_partitions()[ext_part].get_logicals()) == 0:
+				if not len(self.devices[self.active_device].get_partition(ext_part).get_logicals()):
 					self.devices[self.active_device].remove_partition(ext_part)
 			self.drive_changed(None)
 
@@ -299,11 +298,9 @@ your existing partitions will very likely be destroyed.
 		if resp == gtk.RESPONSE_YES:
 			self.devices[self.active_device].clear_partitions()
 			self.drive_changed(self.detected_dev_combo)
-#			self.draw_part_box()
 
 	def draw_part_box(self):
-		partlist = self.devices[self.active_device].get_ordered_partition_list()
-		tmpparts = self.devices[self.active_device].get_partitions()
+#		partlist = self.devices[self.active_device].get_ordered_partition_list()
 		cylinders = self.devices[self.active_device].get_num_cylinders()
 		sectors = self.devices[self.active_device].get_num_sectors()
 		total_mb = self.devices[self.active_device].get_total_mb()
@@ -315,8 +312,8 @@ your existing partitions will very likely be destroyed.
 		last_log_percent = 0
 		extended_part = 0
 		extended_table = None
-		for part in partlist:
-			tmppart = tmpparts[part]
+		for tmppart in self.devices[self.active_device].get_partitions():
+#			tmppart = tmpparts[part]
 			if tmppart.get_type() == "free":
 				partsize = tmppart.get_mb()
 				percent = (float(partsize) / float(total_mb)) * 100
@@ -325,16 +322,16 @@ your existing partitions will very likely be destroyed.
 #				print "minor: " + str(part) + ", mb: " + str(partsize) + ", percent: " + str(percent) + ", last_percent: " + str(last_percent)
 				if tmppart.is_logical():
 					tmpbutton = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
-					tmpbutton.connect("clicked", self.unalloc_selected, self.active_device, False, partsize, part)
+					tmpbutton.connect("clicked", self.unalloc_selected, self.active_device, False, partsize, tmppart.get_minor())
 					extended_table.attach(tmpbutton, last_log_percent, (last_log_percent + percent), 0, 1)
 					last_log_percent = last_log_percent + percent
 				else:
-					self.part_buttons['free_' + str(part)] = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
-					if self.devices[self.active_device].get_partitions().has_key(1) and self.devices[self.active_device].get_partitions().has_key(2) and self.devices[self.active_device].get_partitions().has_key(3) and self.devices[self.active_device].get_partitions().has_key(4):
-						self.part_buttons['free_' + str(part)].connect("clicked", self.show_no_more_primary_message)
+					self.part_buttons['free_' + str(tmppart.get_minor())] = PartitionButton.Partition(color1=self.colors['unalloc'], color2=self.colors['unalloc'], label="", division=0)
+					if self.devices[self.active_device]._labelinfo['extended'] and self.devices[self.active_device].get_partition(1) and self.devices[self.active_device].get_partition(2) and self.devices[self.active_device].get_partition(3) and self.devices[self.active_device].get_partition(4):
+						self.part_buttons['free_' + str(tmppart.get_minor())].connect("clicked", self.show_no_more_primary_message)
 					else:
-						self.part_buttons['free_' + str(part)].connect("clicked", self.unalloc_selected, self.active_device, False, partsize, part)
-					self.part_table.attach(self.part_buttons['free_' + str(part)], last_percent, (last_percent + percent), 0, 1)
+						self.part_buttons['free_' + str(tmppart.get_minor())].connect("clicked", self.unalloc_selected, self.active_device, False, partsize, tmppart.get_minor())
+					self.part_table.attach(self.part_buttons['free_' + str(tmppart.get_minor())], last_percent, (last_percent + percent), 0, 1)
 					last_percent = last_percent + percent
 			else:
 				partsize = tmppart.get_mb()
@@ -378,7 +375,7 @@ your existing partitions will very likely be destroyed.
 		pp.pprint(self.devices[self.active_device].get_install_profile_structure())
 
 	def part_button_properties_clicked(self, widget, data=None):
-		tmppart = self.devices[self.active_device].get_partitions()[self.active_part_minor]
+		tmppart = self.devices[self.active_device].get_partition(self.active_part_minor)
 		props = PartProperties.PartProperties(self, self.active_device, self.active_part_minor, tmppart.get_mb(), tmppart.get_min_mb_for_resize(), tmppart.get_max_mb_for_resize(), tmppart.get_type(), self.active_device_bytes_in_sector, format=tmppart.get_format())
 		props.run()
 
@@ -396,7 +393,7 @@ your existing partitions will very likely be destroyed.
 			tmp_drives.sort()
 			for drive in tmp_drives:
 				try:
-					self.devices[drive] = GLIStorageDevice.Device(drive)
+					self.devices[drive] = GLIStorageDevice.Device(drive, arch=self.controller.client_profile.get_architecture_template())
 					self.devices[drive].set_partitions_from_disk()
 					self.detected_dev_combo.append_text(drive)
 					self.drives.append(drive)
@@ -423,9 +420,8 @@ your existing partitions will very likely be destroyed.
 			self.drive_changed(None)
 
 		for device in self.devices:
-			tmpparts = self.devices[device].get_partitions()
-			for part in tmpparts:
-				if tmpparts[part].get_type() == "unknown":
+			for tmppart in self.devices[device].get_partitions():
+				if tmppart.get_type() == "unknown":
 					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format="One of your disks contains a partition of a type that the installer cannot currently handle. If you continue, you risk damaging your partition table. You have been warned!")
 					msgdlg.run()
 					msgdlg.destroy()

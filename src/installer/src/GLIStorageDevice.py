@@ -14,11 +14,17 @@ MEGABYTE = 1024 * 1024
 FREE_MINOR_FRAC_PRI = 1.0/32.0
 FREE_MINOR_FRAC_LOG = 1.0/8.0
 
-archinfo = { 'sparc': { 'fixedparts': [ { 'minor': 3, 'type': "wholedisk" } ], 'disklabel': 'sun', 'extended': False },
-             'hppa': { 'fixedparts': [ { 'minor': 1, 'type': "palo" } ], 'disklabel': 'msdos', 'extended': True },
-             'x86': { 'fixedparts': [], 'disklabel': 'msdos', 'extended': True },
-             'amd64': { 'fixedparts': [], 'disklabel': 'msdos', 'extended': True },
-             'ppc': { 'fixedparts': [ { 'minor': 1, 'type': "metadata" } ], 'disklabel': 'mac', 'extended': False }
+
+labelinfo = { 'msdos': { 'fixedparts': [], 'extended': True },
+              'mac':   { 'fixedparts': [ { 'minor': 1, 'type': 'partition_map' } ], 'extended': False },
+              'sun':   { 'fixedparts': [ { 'minor': 3, 'type': 'wholedisk' } ], 'extended': False }
+            }
+
+archinfo = { 'sparc': 'sun',
+             'hppa': 'msdos',
+             'x86': 'msdos',
+             'amd64': 'msdos',
+             'ppc': 'mac'
            }
 
 ##
@@ -46,7 +52,7 @@ class Device:
 	# @param arch="x86" Architecture that we're partition for (defaults to 'x86' for now)
 	def __init__(self, device, arch="x86", set_geometry=True, local_device=True):
 		self._device = device
-		self._partitions = {}
+		self._partitions = []
 		self._geometry = {'cylinders': 0, 'heads': 0, 'sectors': 0, 'sectorsize': 512}
 		self._total_bytes = 0
 		self._cylinder_bytes = 0
@@ -61,6 +67,7 @@ class Device:
 			self._disklabel = self._parted_disk.type.name
 		else:
 			self._disklabel = archinfo[self._arch]['disklabel']
+		self._labelinfo = labelinfo[self._disklabel]
 		if set_geometry:
 			self.set_disk_geometry_from_disk()
 
@@ -78,10 +85,6 @@ class Device:
 	##
 	# Sets partition info from disk.
 	def set_partitions_from_disk(self):
-		last_part = 0
-		last_log_part = 4
-		last_end = 0
-		last_log_end = 0
 		parted_part = self._parted_disk.next_partition()
 		while parted_part:
 			part_mb = long((parted_part.geom.end - parted_part.geom.start + 1) * self._sector_bytes / MEGABYTE)
@@ -90,28 +93,21 @@ class Device:
 				fs_type = ""
 				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
 				if parted_part.type == 2: fs_type = "extended"
-				if archinfo[self._arch]['extended'] and parted_part.num > 4:
-#					print str(parted_part.num) + ": last_log_end=" + str(last_log_end) + ", start=" + str(parted_part.geom.start)
-					if parted_part.geom.start < last_log_end or parted_part.num < last_log_part:
-						raise GLIException("PartitionsOutOfOrderError", "fatal", "set_partitions_from_disk", "Your partitions are not in physical disk order.")
-					last_log_end = parted_part.geom.end
-					last_log_part = parted_part.num
-#					print "new last_log_end=" + str(last_log_end)
-				else:
-#					print str(parted_part.num) + ": last_end=" + str(last_end) + ", start=" + str(parted_part.geom.start)
-					if parted_part.geom.start < last_end or parted_part.num < last_part:
-						raise GLIException("PartitionsOutOfOrderError", "fatal", "set_partitions_from_disk", "Your partitions are not in physical disk order.")
-					last_end = parted_part.geom.end
-					last_part = parted_part.num
-#					print "new last_end=" + str(last_end)
-				self._partitions[int(parted_part.num)] = Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True)
+				self._partitions.append(Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True))
 			elif parted_part.type_name == "free":
-				if self.get_extended_partition() and parted_part.geom.start >= self._partitions[self.get_extended_partition()].get_start() and parted_part.geom.end <= self._partitions[self.get_extended_partition()].get_end():
-					self._partitions[last_log_part+FREE_MINOR_FRAC_LOG] = Partition(self, last_log_part+FREE_MINOR_FRAC_LOG, part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
-					last_log_part += 1
+				if self._disklabel == "mac":
+					free_minor = int(GLIUtility.spawn("mac-fdisk -l %s | grep '@ %s' | cut -d ' ' -f 1" % (self._device, str(parted_part.geom.start)), return_output=True)[1].strip()[-1])
+				elif self.get_extended_partition() and parted_part.geom.start >= self.get_partition(self.get_extended_partition()).get_start() and parted_part.geom.end <= self.get_partition(self.get_extended_partition()).get_end():
+					if self._partitions[-1].get_minor() > 4:
+						free_minor = self._partitions[-1].get_minor() + FREE_MINOR_FRAC_LOG
+					else:
+						free_minor = 4 + FREE_MINOR_FRAC_LOG
 				else:
-					self._partitions[last_part+FREE_MINOR_FRAC_PRI] = Partition(self, last_part+FREE_MINOR_FRAC_PRI, part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False)
-					last_part += 1
+					try:
+						free_minor = self._partitions[-1].get_minor() + FREE_MINOR_FRAC_PRI
+					except IndexError:
+						free_minor = FREE_MINOR_FRAC_PRI
+				self._partitions.append(Partition(self, free_minor, part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False))
 			parted_part = self._parted_disk.next_partition(parted_part)
 
 	##
@@ -124,6 +120,21 @@ class Device:
 			if tmppart['origminor'] and not tmppart['format']:
 				existing = True
 			self._partitions[tmppart['minor']] = Partition(self, tmppart['minor'], tmppart['mb'], tmppart['start'], tmppart['end'], tmppart['type'], format=tmppart['format'], origminor=tmppart['origminor'], existing=existing, mountpoint=tmppart['mountpoint'], mountopts=tmppart['mountopts'], mkfsopts=tmppart['mkfsopts'], resized=(existing and tmppart['resized']))
+
+	##
+	# Returns the partition object with the specified minor
+	# @param minor Minor number of partition object to get
+	def get_partition(self, minor):
+		for part in self._partitions:
+			if part.get_minor() == minor:
+				return part
+		return None
+
+	def get_partition_position(self, minor):
+		for i, part in enumerate(self._partitions):
+			if part.get_minor() == minor:
+				return i
+		return -1
 
 	##
 	# Returns name of device (e.g. /dev/hda) being represented
@@ -144,18 +155,18 @@ class Device:
                               { 'type': "ext3", 'size': "*", 'mountpoint': "/" } ]
 		to_create = []
 		physical_memory = int(GLIUtility.spawn(r"free -m | egrep '^Mem:' | sed -e 's/^Mem: \+//' -e 's/ \+.\+$//'", return_output=True)[1].strip())
-		parts = self.get_ordered_partition_list()
+#		parts = self.get_ordered_partition_list()
 		# Search for concurrent unallocated space >=4GB
-		for part in parts:
-			if self._partitions[part].get_type() == "free" and self._partitions[part].get_mb() >= 4096:
-				free_minor = part
+		for part in self._partitions:
+			if part.get_type() == "free" and part.get_mb() >= 4096:
+				free_minor = part.get_minor()
 				break
 		if not free_minor:
 			raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "You do not have atleast 4GB of concurrent unallocated space. Please remove some partitions and try again.")
-		remaining_free = self._partitions[free_minor].get_mb()
+		remaining_free = self.get_partition(free_minor).get_mb()
 		for newpart in recommended_parts:
 			# extended/logical partitions suck like a hoover
-			if archinfo[self._arch]['extended'] and free_minor == (3 + FREE_MINOR_FRAC_PRI) and not newpart == recommended_parts[-1]:
+			if self._labelinfo['extended'] and free_minor == (3 + FREE_MINOR_FRAC_PRI) and not newpart == recommended_parts[-1]:
 				if self.get_extended_partition():
 					raise GLIException("RecommendedPartitionLayoutError", "notice", "do_recommended", "This code is not yet robust enough to handle automatic partitioning with your current layout.")
 				to_create.append({ 'type': "extended", 'size': remaining_free, 'mountpoint': "", 'free_minor': free_minor })
@@ -171,65 +182,48 @@ class Device:
 		for newpart in to_create:
 			if newpart['size'] == "*":
 				# This doesn't seem quite right...it should probably be set to remaining_free
-				newpart['size'] = self._partitions[newpart['free_minor']].get_mb()
+#				newpart['size'] = self.get_partition(newpart['free_minor']).get_mb()
+				newpart['size'] = remaining_free
 			self.add_partition(newpart['free_minor'], newpart['size'], 0, 0, newpart['type'], mountpoint=newpart['mountpoint'])
+
+	def find_free_minor(self, min, max):
+		good_minor = max
+		for i in range(int(max) - 1, int(min) - 1, -1):
+			if not self.get_partition(i):
+				good_minor = i
+#		print "min = %s, max = %s, good_minor = %s" % (str(min), str(max), str(good_minor))
+		return good_minor
 
 	##
 	# Combines free space and closes gaps in minor numbers. This is used internally
 	def tidy_partitions(self):
-		last_minor = 0
-		last_log_minor = 4
-		last_free = 0
-		last_log_free = 0
-		parts = self._partitions.keys()
-		parts.sort()
-		for part in parts:
-			if archinfo[self._arch]['extended'] and part > (4 + FREE_MINOR_FRAC_PRI): break
-			tmppart = self._partitions[part]
-			if tmppart.get_type() == "extended":
-				for part_log in parts:
-					if part_log < (4 + FREE_MINOR_FRAC_LOG): continue
-					tmppart_log = self._partitions[part_log]
-					if tmppart_log.get_type() == "free":
-						if last_log_minor < last_log_free:
-							self._partitions[last_log_free].set_mb(self._partitions[last_log_free].get_mb()+tmppart_log.get_mb())
-							del self._partitions[part_log]
-						else:
-							if not last_log_free:
-								last_log_free = last_log_minor + FREE_MINOR_FRAC_LOG
-							else:
-								last_log_free = part_log
-							tmppart_log.set_minor(last_log_free)
-							self._partitions[last_log_free] = tmppart_log
-							if part_log != last_log_free: del self._partitions[part_log]
-					else:
-						if part_log > (last_log_minor + 1):
-							tmppart_log.set_minor(last_log_minor + 1)
-							last_log_minor = last_log_minor + 1
-							self._partitions[last_log_minor] = tmppart_log
-							del self._partitions[part_log]
-						else:
-							last_log_minor = part_log
-			elif tmppart.get_type() == "free":
-				if last_minor < last_free:
-					self._partitions[last_free].set_mb(self._partitions[last_free].get_mb()+tmppart.get_mb())
-					del self._partitions[part]
+		newparts = []
+		for i, part in enumerate(self._partitions):
+			if part.get_type() == "free":
+				if i and newparts[-1].get_type() == "free":
+					newparts[-1].set_mb(newparts[-1].get_mb()+part.get_mb())
+#					self._partitions.pop(i)
+					continue
 				else:
-					if not last_free:
-						last_free = last_minor + FREE_MINOR_FRAC_PRI
+					if self._disklabel == "mac":
+						part.set_minor(self.find_free_minor(newparts[-1].get_minor() + 1, part.get_minor()))
+					elif self._labelinfo['extended'] and part.get_minor() > 4:
+						last_minor = newparts[-1].get_minor()
+						if last_minor <= 4: last_minor = 4
+						part.set_minor(last_minor + FREE_MINOR_FRAC_LOG)
 					else:
-						last_free = part
-					tmppart.set_minor(last_free)
-					self._partitions[last_free] = tmppart
-					if part != last_free: del self._partitions[part]
+						if i:
+							free_minor = newparts[-1].get_minor() + FREE_MINOR_FRAC_PRI
+						else:
+							free_minor = FREE_MINOR_FRAC_PRI
+						part.set_minor(free_minor)
 			else:
-				if part > (last_minor + 1):
-					tmppart.set_minor(last_minor + 1)
-					last_minor = last_minor + 1
-					self._partitions[last_minor] = tmppart
-					del self._partitions[part]
+				if self._labelinfo['extended'] and part.get_minor() > 4:
+					part.set_minor(self.find_free_minor(5, part.get_minor()))
 				else:
-					last_minor = part
+					part.set_minor(self.find_free_minor(1, part.get_minor()))
+			newparts.append(part)
+		self._partitions = newparts
 
 	##
 	# Adds a new partition to the partition info
@@ -244,114 +238,98 @@ class Device:
 	def add_partition(self, free_minor, mb, start, end, type, mountpoint='', mountopts='',mkfsopts=''):
 		# Automatically pick the first unused minor if not a local device
 		if not self._local_device or free_minor == -1:
-			tmpparts = self._partitions.keys()
-			tmpparts.sort()
-			tmpminor = 0
-			if len(tmpparts):
-				tmpminor = tmpparts[-1]
-			if archinfo[self._arch]['extended'] and tmpminor >= 5:
+			tmpminor = self._partitions[-1].get_minor()
+			if self._disklabel == "mac":
+				free_minor = tmpminor + 1
+			elif self._labelinfo['extended'] and tmpminor > 4:
 				free_minor = tmpminor + FREE_MINOR_FRAC_LOG
 			else:
 				free_minor = tmpminor + FREE_MINOR_FRAC_PRI
-			self._partitions[free_minor] = Partition(self, free_minor, mb, 0, 0, "free")
-		new_minor = int(free_minor) + 1
+			self._partitions.append(Partition(self, free_minor, mb, 0, 0, "free"))
+		if self._disklabel == "mac":
+			new_minor = free_minor
+		else:
+			new_minor = int(free_minor) + 1
+		free_minor_pos = self.get_partition_position(free_minor)
 		if self._local_device:
 			# Check to see if the new minor we picked already exists. If it does, scoot all partitions from
 			# that one on down a minor
-			if self._partitions.has_key(new_minor):
-				parts = self._partitions.keys()
-				parts.sort()
-				parts.reverse()
-				hole_at = 0
-				for i in range(1, parts[0]+1):
-					if i <= new_minor: continue
-					if not self._partitions.has_key(i):
-						hole_at = i
-						break
-				stopscooting = 0
-				for i in parts:
-					if stopscooting: break
-					if i >= hole_at and hole_at: continue
-					if i >= new_minor:
-						self._partitions[i].set_minor(i+1)
-						self._partitions[i+1] = self._partitions[i]
-						if i == new_minor: stopscooting = 1
+			if self.get_partition(new_minor):
+				for i, part in enumerate(self._partitions):
+					if i <= free_minor_pos or new_minor > part.get_minor(): continue
+					part.set_minor(part.get_minor() + 1)
 			# If the size specified for the new partition is less than the size of the unallocated space that it
 			# is getting placed into, a new partition to represent the remaining unallocated space needs to be
 			# created.
-			if mb != self._partitions[free_minor].get_mb():
-				old_free_mb = self._partitions[free_minor].get_mb()
-				del self._partitions[free_minor]
-				if archinfo[self._arch]['extended'] and new_minor >= 5:
+			if mb != self.get_partition(free_minor).get_mb():
+				old_free_mb = self.get_partition(free_minor).get_mb()
+				self._partitions.pop(free_minor_pos)
+				if self._disklabel == "mac":
+					free_minor = new_minor + 1
+					if self.get_partition(free_minor):
+						for i, part in enumerate(self._partitions):
+							if i < self.get_partition_position(new_minor+1) or free_minor > part.get_minor(): continue
+							part.set_minor(part.get_minor() + 1)
+				if self._labelinfo['extended'] and new_minor > 4:
 					free_minor = new_minor + FREE_MINOR_FRAC_LOG
 				else:
 					free_minor = new_minor + FREE_MINOR_FRAC_PRI
-				self._partitions[free_minor] = Partition(self, free_minor, old_free_mb-mb, 0, 0, "free")
+				self._partitions.insert(free_minor_pos, Partition(self, free_minor, old_free_mb-mb, 0, 0, "free"))
 			else:
-				del self._partitions[free_minor]
-		self._partitions[new_minor] = Partition(self, new_minor, mb, start, end, type, mountpoint=mountpoint, mountopts=mountopts,mkfsopts=mkfsopts)
+				self._partitions.pop(free_minor_pos)
+		self._partitions.insert(free_minor_pos, Partition(self, new_minor, mb, start, end, type, mountpoint=mountpoint, mountopts=mountopts,mkfsopts=mkfsopts))
 		# When we create an extended partition, we have to create the partition to represent the unallocated
 		# space inside of the extended partition
 		if type == "extended":
-			self._partitions[4 + FREE_MINOR_FRAC_LOG] = Partition(self, (4 + FREE_MINOR_FRAC_LOG), mb, 0, 0, "free")
+			self._partitions.insert(self.get_partition_position(self.get_extended_partition()) + 1, Partition(self, (4 + FREE_MINOR_FRAC_LOG), mb, 0, 0, "free"))
+		new_minor_pos = self.get_partition_position(new_minor)
 		self.tidy_partitions()
-		return new_minor
+		return self._partitions[new_minor_pos].get_minor()
 
 	##
 	# Removes partition from partition info
 	# @param minor Minor of partition to remove
 	def remove_partition(self, minor):
-		tmppart = self._partitions[int(minor)]
+		part = self.get_partition(minor)
+		part_pos = self.get_partition_position(minor)
 		free_minor = 0
-		if tmppart.is_logical():
+		if self._disklabel == "mac":
+			free_minor = minor
+		elif part.is_logical():
 			free_minor = int(minor-1)+FREE_MINOR_FRAC_LOG
 		else:
 			free_minor = int(minor-1)+FREE_MINOR_FRAC_PRI
-		if free_minor in self._partitions:
-			self._partitions[free_minor].set_mb(self._partitions[free_minor].get_mb() + tmppart.get_mb())
-		else:
-			self._partitions[free_minor] = Partition(self, free_minor, tmppart.get_mb(), 0, 0, "free", format=False, existing=False)
-		del self._partitions[int(minor)]
+		self._partitions[part_pos] = Partition(self, free_minor, part.get_mb(), 0, 0, "free", format=False, existing=False)
 		self.tidy_partitions()
 
 	##
 	# This function clears the partition table
 	def clear_partitions(self):
-		self._partitions = { (0 + FREE_MINOR_FRAC_PRI): Partition(self, (0 + FREE_MINOR_FRAC_PRI), self.get_total_mb(), 0, 0, "free", format=False, existing=False) }
+		self._partitions = [ Partition(self, (0 + FREE_MINOR_FRAC_PRI), self.get_total_mb(), 0, 0, "free", format=False, existing=False) ]
 
 	##
 	# Returns an ordered list (disk order) of partition minors
 	def get_ordered_partition_list(self):
-		parts = self._partitions.keys()
-		parts.sort()
 		partlist = []
-		tmppart = None
-		for part in parts:
-			if archinfo[self._arch]['extended'] and part > (4 + FREE_MINOR_FRAC_PRI): break
-			tmppart = self._partitions[part]
-			partlist.append(part)
-			if tmppart.is_extended():
-				for part_log in parts:
-					if part_log < (4 + FREE_MINOR_FRAC_LOG): continue
-					partlist.append(part_log)
+		for part in self._partitions:
+			partlist.append(part.get_minor())
 		return partlist
 
 	##
 	# Returns partition info in a format suitable for passing to install_profile.set_partition_tables()
 	def get_install_profile_structure(self):
-		devdic = {}
-		for part in self._partitions:
-			tmppart = self._partitions[part]
-			devdic[part] = { 'mb': tmppart.get_mb(), 'minor': float(part), 'origminor': tmppart.get_orig_minor(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format(), 'mkfsopts': tmppart.get_mkfsopts(), 'start': tmppart._start, 'end': tmppart._end, 'resized': tmppart.get_resized() }
-		return devdic
+		devlist = []
+		for tmppart in self._partitions:
+#			tmppart = self._partitions[part]
+			devlist.append({ 'mb': tmppart.get_mb(), 'minor': float(tmppart.get_minor()), 'origminor': tmppart.get_orig_minor(), 'type': tmppart.get_type(), 'mountpoint': tmppart.get_mountpoint(), 'mountopts': tmppart.get_mountopts(), 'format': tmppart.get_format(), 'mkfsopts': tmppart.get_mkfsopts(), 'start': tmppart._start, 'end': tmppart._end, 'resized': tmppart.get_resized() })
+		return devlist
 
 	##
 	# Returns the minor of the extended partition, if any
 	def get_extended_partition(self):
 		for part in self._partitions:
-			tmppart = self._partitions[part]
-			if tmppart.is_extended():
-				return part
+			if part.is_extended():
+				return part.get_minor()
 		return 0
 
 	##
@@ -405,18 +383,13 @@ class Device:
 		else:
 			total_mb = 0
 			for tmppart in self._partitions:
-				total_mb += self._partitions[tmppart].get_mb()
+				total_mb += tmppart.get_mb()
 			return total_mb
 
 	##
 	# Returns partition info dictionary
 	def get_partitions(self):
 		return self._partitions
-
-	##
-	# Prints disk geometry to STDOUT (no longer used)
-	def print_geometry(self):
-		print self._total_bytes, self._geometry
 
 ##
 # This class represents a partition within a GLIStorageDevice object
@@ -516,7 +489,7 @@ class Partition:
 				return True
 			else:
 				return False
-		elif archinfo[self._device._arch]['extended'] and self._minor > 4:
+		elif self._device._labelinfo['extended'] and self._minor > 4:
 			return True
 		else:
 			return False
@@ -527,12 +500,9 @@ class Partition:
 		if not self.is_extended():
 			return None
 		logicals = []
-		parts = self._device._partitions.keys()
-		parts.sort()
-		for part in parts:
-			if part < 5: continue
-			logicals.append(part)
-		logicals.sort()
+		for part in self._device._partitions:
+			if part.get_minor() > 4 and not part.get_type() == "free":
+				logicals.append(part.get_minor())
 		return logicals
 
 	##
@@ -687,15 +657,19 @@ class Partition:
 	# Returns maximum MB for resize
 	def get_max_mb_for_resize(self):
 		if self._resizeable:
-			free_minor = 0
-			if self.is_logical():
-				free_minor = self._minor + FREE_MINOR_FRAC_LOG
+			minor_pos = self._device.get_partition_position(self._minor)
+			try:
+				free_minor = self._device._partitions[minor_pos+1].get_minor()
+			except:
+				free_minor = 0
+			if not free_minor or not self._device.get_partition(free_minor).get_type() == "free": return self._mb
+			if self._device.get_partition(free_minor).is_logical():
+				if self.is_logical():
+					return self._mb + self._device.get_partition(free_minor).get_mb()
+				else:
+					return self._mb
 			else:
-				free_minor = self._minor + FREE_MINOR_FRAC_PRI
-			if free_minor in self._device._partitions:
-				return self._mb + self._device._partitions[free_minor]._mb
-			else:
-				return self._mb
+				return self._mb + self._device.get_partition(free_minor).get_mb()
 		else:
 			return -1
 
@@ -703,26 +677,39 @@ class Partition:
 	# Resizes the partition
 	# @param mb New size in MB
 	def resize(self, mb):
-		free_minor = self._minor
-		if self.is_logical():
-			free_minor += FREE_MINOR_FRAC_LOG
-		else:
-			free_minor += FREE_MINOR_FRAC_PRI
+		minor_pos = self._device.get_partition_position(self._minor)
+		try:
+			free_minor = self._device._partitions[minor_pos+1].get_minor()
+		except:
+			free_minor = 0
 		if mb < self._mb:
 			# Shrinking
-			if not free_minor in self._device._partitions:
-				self._device._partitions[free_minor] = Partition(self._device, free_minor, 0, 0, 0, "free", format=False, existing=False)
-			self._device._partitions[free_minor]._mb += self._mb - mb
+			if not free_minor or not self._device.get_partition(free_minor).get_type() == "free":
+				if self._device._disklabel == "mac":
+					free_minor = self._minor + 1
+				elif self.is_logical():
+					free_minor = self._minor + FREE_MINOR_FRAC_LOG
+				else:
+					free_minor = self._minor + FREE_MINOR_FRAC_PRI
+				if self._device.get_partition(free_minor):
+					for i, part in enumerate(self._device._partitions):
+						if i <= minor_pos or free_minor > part.get_minor(): continue
+						part.set_minor(part.get_minor() + 1)
+				self._device._partitions.insert(minor_pos+1, Partition(self._device, free_minor, self._mb - mb, 0, 0, "free", format=False, existing=False))
+			else:
+				self._device.get_partition(free_minor).set_mb(self._device.get_partition(free_minor).get_mb() + (self._mb - mb))
 			self._mb = mb
-		elif mb == self._mb + self._device._partitions[free_minor]._mb:
-			# Using all available unallocated space
-			del self._device._partitions[free_minor]
-			self._mb = mb
-		elif mb > self._mb:
-			# Growing
-			self._device._partitions[free_minor]._mb = mb - self._mb
-			self._mb = mb
+		else:
+			if mb == self._mb + self._device.get_partition(free_minor).get_mb():
+				# Using all available unallocated space
+				self._device._partitions.pop(self._device.get_partition_position(free_minor))
+				self._mb = mb
+			else:
+				# Growing
+				self._device.get_partition(free_minor).set_mb(self._device.get_partition(free_minor).get_mb() - (mb - self._mb))
+				self._mb = mb
 		self._resized = True
+		self._device.tidy_partitions()
 
 ##
 # Returns a list of detected partitionable devices
