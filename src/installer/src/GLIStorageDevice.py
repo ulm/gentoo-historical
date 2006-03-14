@@ -47,9 +47,9 @@ class Device:
 	_disklabel = None
 
 	##
-	# Initialization function for GLIStorageDevice class
+	# Initialization function for Device class
 	# @param device Device node (e.g. /dev/hda) of device being represented
-	# @param arch="x86" Architecture that we're partition for (defaults to 'x86' for now)
+	# @param arch Architecture that we're partition for (defaults to 'x86' for now)
 	def __init__(self, device, arch="x86", set_geometry=True, local_device=True):
 		self._device = device
 		self._partitions = []
@@ -109,6 +109,33 @@ class Device:
 						free_minor = FREE_MINOR_FRAC_PRI
 				self._partitions.append(Partition(self, free_minor, part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False))
 			parted_part = self._parted_disk.next_partition(parted_part)
+		# Juggle minor numbers so they match physical disk order. People may complain, but we're actually doing them a favor
+		self.reorder_minors()
+
+	##
+	# Reorders partition minors so that they match physical disk order
+	def reorder_minors(self):
+		for i, part in enumerate(self._partitions):
+			if not i:
+				last_minor = 0
+			else:
+				last_minor = self._partitions[i-1].get_minor()
+			if part.get_type() == "free":
+				if self._disklabel == "mac":
+					new_minor = last_minor + 1
+				elif last_minor and part.is_logical():
+					if self.get_partition(last_minor).is_extended():
+						last_minor = 4
+					new_minor = last_minor + FREE_MINOR_FRAC_LOG
+				else:
+					new_minor = last_minor + FREE_MINOR_FRAC_PRI
+				part.set_minor(new_minor)
+			else:
+				if not last_minor:
+					new_minor = 1
+				else:
+					new_minor = int(last_minor) + 1
+				part.set_minor(new_minor)
 
 	##
 	# Imports partition info from the install profile partition structure

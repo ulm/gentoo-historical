@@ -81,11 +81,9 @@ ext2, ext3, reiserfs, jfs, or xfs. Ext3 is the recommended type.
 
 Keep in mind that none of the changes to your partition table and filesystems
 will be committed until you click the 'Install' button on the last screen of the
-installer. Also, if your existing partitions are out of disk order, you should
-<b>not</b> use the installer to manipulate them. The installer's partitioning
-code cannot handle this. The visual representation of the partition will
-probably look very weird in this situation. If you continue with the install,
-your existing partitions will very likely be destroyed.
+installer. Also, if your existing partitions are out of disk order, the 
+installer will reorder the partition numbers so that they match the physical
+disk order.
 """
 
 	def __init__(self, controller):
