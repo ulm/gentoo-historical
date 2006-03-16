@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.114 2006/03/07 12:33:47 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.115 2006/03/16 19:10:55 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -76,12 +76,12 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		tmp_parts_new = self._install_profile.get_partition_tables()
 		parts_new = {}
 		for device in tmp_parts_new:
-			parts_new[device] = tmp_parts_new[device].get_install_profile_structure()
+			parts_new[device] = tmp_parts_new[device] #.get_install_profile_structure()
 		detected_devices = GLIStorageDevice.detect_devices()
 		for device in detected_devices:
-			tmpdevice = GLIStorageDevice.Device(device)
+			tmpdevice = GLIStorageDevice.Device(device, arch=self._client_configuration.get_architecture_template())
 			tmpdevice.set_partitions_from_disk()
-			parts_old[device] = tmpdevice.get_install_profile_structure()
+			parts_old[device] = tmpdevice #.get_install_profile_structure()
 
 		self.notify_frontend("progress", (0, "Examining partitioning data"))
 		total_steps = float(len(parts_new) * 3)
@@ -98,9 +98,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if not part in parts_old[device]:
 					table_changed = 1
 					break
-				oldpart = parts_old[device][part]
-				newpart = parts_new[device][part]
-				if oldpart['type'] == newpart['type'] and oldpart['start'] == newpart['start'] and oldpart['end'] == newpart['end'] and newpart['format'] == False:
+				oldpart = parts_old[device].get_partition(part)
+				newpart = parts_new[device].get_partition(part)
+				if oldpart.get_type() == newpart.get_type() and oldpart.get_mb() == newpart.get_mb() and newpart.is_resized() and not newpart.get_format():
 					continue
 				else:
 					table_changed = 1

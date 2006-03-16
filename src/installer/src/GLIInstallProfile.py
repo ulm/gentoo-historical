@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.85 2006/02/28 13:04:00 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.86 2006/03/16 19:10:55 agaffney Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -1183,9 +1183,8 @@ class InstallProfile:
 		self._partition_current_device = devnode
 		self._partition_tables[devnode] = GLIStorageDevice.Device(devnode)
 		self._partition_tables[devnode].set_disklabel(disklabel)
-		# Add code to import self._temp_partition_table into the Device object
 		self._partition_tables[devnode].set_partitions_from_install_profile_structure(self._temp_partition_table)
-		self._temp_partition_table = {}
+		self._temp_partition_table = []
 			
 
 	##
@@ -1220,7 +1219,7 @@ class InstallProfile:
 			else:
 				part_entry['minor'] = int(part_entry['minor'])
 		if GLIUtility.is_numeric(part_entry['origminor']): part_entry['origminor'] = int(part_entry['origminor'])
-		self._temp_partition_table[part_entry['minor']] = part_entry
+		self._temp_partition_table.append(part_entry)
 
 	############################################################################
 	#### Partition Tables

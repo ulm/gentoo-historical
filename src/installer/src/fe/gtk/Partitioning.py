@@ -431,7 +431,7 @@ disk order.
 			parts_tmp[device] = self.devices[device].get_install_profile_structure()
 		for device in parts_tmp:
 			for part in parts_tmp[device]:
-				if parts_tmp[device][part]['mountpoint'] == "/":
+				if part['mountpoint'] == "/":
 					self.controller.install_profile.set_partition_tables(self.devices)
 					return True
 		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("You have not specified a partition to mount as /. Do you want to continue?"))

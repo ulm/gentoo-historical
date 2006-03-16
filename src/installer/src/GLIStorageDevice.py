@@ -141,12 +141,11 @@ class Device:
 	# Imports partition info from the install profile partition structure
 	# @param ips Parameter structure returned from install_profile.get_partition_tables()
 	def set_partitions_from_install_profile_structure(self, ips):
-		for part in ips:
-			tmppart = ips[part]
+		for tmppart in ips:
 			existing = False
 			if tmppart['origminor'] and not tmppart['format']:
 				existing = True
-			self._partitions[tmppart['minor']] = Partition(self, tmppart['minor'], tmppart['mb'], tmppart['start'], tmppart['end'], tmppart['type'], format=tmppart['format'], origminor=tmppart['origminor'], existing=existing, mountpoint=tmppart['mountpoint'], mountopts=tmppart['mountopts'], mkfsopts=tmppart['mkfsopts'], resized=(existing and tmppart['resized']))
+			self._partitions.append(Partition(self, tmppart['minor'], tmppart['mb'], tmppart['start'], tmppart['end'], tmppart['type'], format=tmppart['format'], origminor=tmppart['origminor'], existing=existing, mountpoint=tmppart['mountpoint'], mountopts=tmppart['mountopts'], mkfsopts=tmppart['mkfsopts'], resized=(existing and tmppart['resized'])))
 
 	##
 	# Returns the partition object with the specified minor
