@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.115 2006/03/16 19:10:55 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.116 2006/03/16 19:24:37 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -111,6 +111,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				continue
 
 			self._logger.log("partitioning: Processing " + device + "...")
+
+			if GLIUtility.spawn("mount | grep '^" + device + "'", return_output=True)[1].strip():
+				raise GLIException("PartitionsMountedError", 'fatal', 'partition', "Cannot partition " + device + " due to filesystems being mounted")
 
 			# Create pyparted objects for this device
 			parted_dev = parted.PedDevice.get(device)
