@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/vserver-howto.xml,v 1.6 2006/03/13 18:55:37 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/vserver-howto.xml,v 1.7 2006/03/17 10:26:33 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/vserver-howto.xml">
@@ -21,8 +21,8 @@ Linux-VServer Technology
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.4</version>
-<date>2006-03-13</date>
+<version>1.5</version>
+<date>2006-03-17</date>
 
 <chapter>
 <title>Introduction</title>
@@ -70,7 +70,7 @@ contained within.
   </ti>
 </tr>
 <tr>
-  <th>util-vserver, vserver utils</th>
+  <th>util-vserver</th>
   <ti>
     The <c>util-vserver</c> package contains all programs necessary for
     maintaining your virtual servers
@@ -103,8 +103,7 @@ After the vserver-sources are installed it's time to configure them using
 
 Linux VServer ---&gt;
   [ ] Enable Legacy Kernel API
-<comment>(Do not set!)</comment>
-  [ ] Disable Legacy Networking Kernel API
+  [*] Disable Legacy Networking Kernel API
 <comment>(Highly recommended)</comment>
   [*] Enable Proc Security
   [*] Enable Hard CPU Limits
@@ -114,8 +113,10 @@ Linux VServer ---&gt;
 </pre>
 
 <note>
-If you are using reiserfs as your filesystem, you will need to enable extended
-attributes for reiserfs in your kernel config.
+If you are using reiserfs as filesystem on the partition where guest images are
+stored, you will need to enable extended attributes for reiserfs in your
+kernel config and additionally add the <c>attrs</c> option in
+<path>/etc/fstab</path>.
 </note>
 
 <pre caption="Configure reiserfs options">
@@ -124,13 +125,8 @@ File systems  --->
   [*]   ReiserFS extended attributes
 </pre>
 
-<p>
-Additionally, you will need to specify the <c>attrs</c> option in
-<path>/etc/fstab</path> for your vserver partition:
-</p>
-
 <pre caption="Example fstab with extended attributes">
-/dev/hdb /vserver reiserfs noatime,attrs 0 0
+/dev/hdb /vservers reiserfs noatime,attrs 0 0
 </pre>
 
 <p>
@@ -143,7 +139,7 @@ finally reboot to see if the kernel boots correctly.
 # <i>make</i>
 <comment>(Installing)</comment>
 # <i>make modules_install</i>
-# <i>cp arch/i386/boot/bzImage /boot/kernel-&lt;KERNELVERSION&gt;-vserver-&lt;VSERVERVERSION&gt;</i>
+# <i>cp arch/&lt;arch&gt;/boot/bzImage /boot/kernel-&lt;KERNELVERSION&gt;-vserver-&lt;VSERVERVERSION&gt;</i>
 <comment>(Edit bootloader config file as required and)</comment>
 # <i>reboot</i>
 </pre>
@@ -156,23 +152,26 @@ finally reboot to see if the kernel boots correctly.
 
 <p>
 To maintain your virtual servers you need the util-vserver package which
-contains all necessary programs and many usefull features.
+contains all necessary programs and many useful features. Be aware that there
+is also a package called <c>vserver-utils</c>. It is a new incarnation of the
+user-space implementation of the VServer kernel API, but not yet usable for
+production use.
 </p>
 
 <note>
-The tools and features used in this HowTo require
-<c>&gt;=sys-apps/util-vserver-0.30.208-r3</c>. You may have to keyword it first.
+This version of the howto requires features only available in
+<c>&gt;=sys-apps/util-vserver-0.30.210-r6</c>. You may have to keyword/upgrade
+it first.
 </note>
 
-<pre caption="Install vserver utils">
+<pre caption="Install util-vserver">
 # <i>emerge util-vserver</i>
 </pre>
 
 <p>
 You have to run the <c>vprocunhide</c> command after every reboot in order to
-setup <path>/proc</path> permissions correctly for vserver use. An init script has
-been installed by util-vserver. To use it you should add it to a
-runlevel:
+setup <path>/proc</path> permissions correctly for vserver use. An init script
+has been installed by util-vserver. To use it you should add it to a runlevel:
 </p>
 
 <pre caption="vserver init script">
@@ -180,8 +179,13 @@ runlevel:
 # <i>/etc/init.d/vservers start</i>
 </pre>
 
+<note>
+This init script will also start your default vservers. Read below for more
+information.
+</note>
+
 <p>
-The vshelper script is used to correctly stop and restart virtual servers. You
+The vshelper script is used to restart virtual servers correctly. You
 have to tell the kernel where the vshelper script is located:
 </p>
 
@@ -219,7 +223,7 @@ equivalent to the last two parts of the virtual servers IP).
   <i>--hostname gentoo \</i>
   <i>--context 1253 \</i>
   <i>--interface eth0:192.168.1.253/24 \</i>
-  <i>stage3 /path/to/stage3-tarball.tar.bz2</i>
+  <i>stage3 /path/to/stage3-&lt;arch&gt;-&lt;date&gt;.tar.bz2 &lt;arch&gt;</i>
 </pre>
 
 <note>
@@ -247,7 +251,7 @@ your vserver installation:
 
 <pre caption="Create template tarball">
 # <i>cd /vservers/gentoo-template</i>
-# <i>tar cjvpf ../gentoo-template.tar.bz2 ./</i>
+# <i>tar cjvpf ../gentoo-template-&lt;arch&gt;-&lt;date&gt;.tar.bz2 ./</i>
 </pre>
 
 <p>
@@ -260,12 +264,12 @@ To create a new guest using this tarball just use <c>vserver-new</c>:
   <i>--hostname myguest \</i>
   <i>--context 1252 \</i>
   <i>--interface eth0:192.168.1.252/24 \</i>
-  <i>template ./gentoo-template.tar.bz2</i>
+  <i>template ./gentoo-template-&lt;arch&gt;-&lt;date&gt;.tar.bz2 &lt;arch&gt;</i>
 </pre>
 
 <note>
-You should use a shared portage tree for your guests to keep guests small in
-size. Edit <path>/etc/vservers/myguest/fstab</path> and uncomment the entries
+You should use a shared portage tree to keep guests small in size. Edit
+<path>/etc/vservers/myguest/fstab</path> and uncomment the entries
 for <path>/usr/portage</path> and <path>/usr/portage/distfiles</path>. Guests
 will have read-only access to <path>/usr/portage</path> and read-write access
 to <path>/usr/portage/distfiles</path>.
@@ -302,13 +306,140 @@ PID   TTY      STAT   TIME COMMAND
 
 </body>
 </section>
+</chapter>
+
+<chapter>
+<title>Maintenance made easy</title>
+<section>
+<title>Start guests on boot</title>
+<body>
+
+<p>
+You can start certain guests during boot. Each guest can be assigned a MARK.
+Now everything you have to do is configure these MARKs in the guests
+configuration and tell the init script to run all MARKed guests.
+</p>
+
+<pre caption="Configure MARKs for each guest">
+<comment>(Do this for every guest you want to start)</comment>
+# <i>mkdir -p /etc/vservers/myguest/apps/init</i>
+# <i>echo "default" > /etc/vservers/myguest/apps/init/mark</i>
+</pre>
+
+<note>
+Since all guests marked with "default" are started by default, nothing more has
+to be done. If you have different marks you should also update
+<path>/etc/conf.d/vservers</path>.
+</note>
+
+</body>
+</section>
+<section>
+<title>Gentoo goodies</title>
+<body>
+
+<p>
+The util-vserver ebuild has installed some goodies for Gentoo guests. You know
+<c>vserver-new</c> from the previous chapter. In this chapter, you will learn
+how to use <c>vesync</c> and <c>vemerge</c> to keep portage in sync as well as
+<c>vupdateworld</c> and <c>vdispatch-conf</c> to update guests.
+</p>
+
+</body>
+</section>
+<section>
+<title>Keep portage in sync</title>
+<body>
+
+<p>
+The script <c>vesync</c> will help you to keep the metadata cache and overlays
+in sync. <c>vemerge</c> is a simple wrapper for <c>emerge</c> in guests.
+</p>
+
+<pre caption="Examples">
+<comment>(Sync metadata for 'myguest')</comment>
+# <i>vesync myguest</i>
+<comment>(Sync metadata for all guests)</comment>
+# <i>vesync -a</i>
+<comment>(Sync metadata for all guests except 'myguest')</comment>
+# <i>vesync -a -e myguest</i>
+<comment>(Sync 'myoverlay' for all guests)</comment>
+# <i>vesync -a \</i>
+  <i>--overlay /usr/local/overlays/myoverlay \</i>
+  <i>--overlay-host rsync://rsync.myhost.com/myoverlay \</i>
+  <i>--overlay-only</i>
+<comment>(emerge app-editors/vim in 'myguest')</comment>
+# <i>vemerge myguest app-editors/vim -va</i>
+</pre>
+
+<note>
+This script requires you to have a shared portage tree.
+</note>
+
+</body>
+</section>
+<section>
+<title>Update guests</title>
+<body>
+
+<p>
+Gentoo guests can share packages to save compilation time. In order to use
+shared packages, you have to create a central directory for packages on the
+host.  We will use <path>/var/cache/vpackages</path> on the host and mount it
+to <path>/usr/portage/packages</path> in every guest.
+</p>
+
+<pre caption="Add bind mount to guest configuration">
+# <i>mkdir -p /var/cache/vpackages</i>
+# <i>$EDITOR /etc/vservers/myguest/fstab</i>
+<comment>(Add this line at the end)</comment>
+/var/cache/vpackages /usr/portage/packages none bind,rw 0 0
+</pre>
+
+<p>
+Now you can use <c>vupdateworld</c> to update every guest. The command is
+equivalent to something like <c>emerge --deep --update --newuse world</c>
+depending on command line options.
+</p>
+
+<pre caption="vupdateworld examples">
+<comment>(Pretend update for 'myguest')</comment>
+# <i>vupdateworld -p myguest</i>
+<comment>(Update 'myguest' using binary packages)</comment>
+# <i>vupdateworld -k myguest</i>
+<comment>(Update all guests using binary packages)</comment>
+# <i>vupdateworld -ka</i>
+</pre>
+
+<note>
+In order to get binary packages you can either use PORTAGE_BINHOST (see <c>man
+make.conf</c>) or set FEATURES="buildpkg" in one or more guests.
+</note>
+
+<p>
+After a successful update you can easily update all configuration files with
+<c>vdispatch-conf</c>. It is a simple wrapper for <c>dispatch-conf</c> and
+behaves exactly the same.
+</p>
+
+<pre caption="vdispatch-conf examples">
+<comment>(Update configuration files for 'myguest')</comment>
+# <i>vdispatch-conf myguest</i>
+<comment>(Update configuration files for all guests)</comment>
+# <i>vdispatch-conf -a</i>
+</pre>
+
+</body>
+</section>
+
 <section>
 <title>Contact</title>
 <body>
 
 <p>
-Please feel free to contact the author or file a bug on <uri
-link="http://bugs.gentoo.org">Bugzilla</uri> in case of any problems.
+Please feel free to contact the <mail link="hollow@gentoo.org">author</mail> or
+file a bug on <uri link="http://bugs.gentoo.org">Bugzilla</uri> in case of any
+problems.
 </p>
 
 </body>
