@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.116 2006/03/16 19:24:37 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.117 2006/03/20 12:51:17 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -123,11 +123,11 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				parted_disk = parted_dev.disk_new_fresh(parted.disk_type_get((tmp_parts_new[device].get_disklabel() or GLIStorageDevice.archinfo[self._architecture_name]['disklabel'])))
 #			new_part_list = parts_new[device].keys()
 #			new_part_list.sort()
-			new_part_list = tmp_parts_new[device].get_ordered_partition_list()
+			new_part_list = parts_new[device].get_ordered_partition_list()
 			device_sectors = parted_dev.length
 
 			# Iterate through new partitions and check for 'origminor' and 'format' == False
-			for part in new_part_list:
+			for part in parts_new[device].get_partitions():
 				tmppart_new = parts_new[device][part]
 				if not tmppart_new['origminor'] or tmppart_new['format']: continue
 				tmppart_old = parts_old[device][tmppart_new['origminor']]
