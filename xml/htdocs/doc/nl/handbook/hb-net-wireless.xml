@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/nl/handbook/hb-net-wireless.xml,v 1.1 2006/03/21 13:38:35 neysx Exp $ -->
+
+<!-- SYNC: 1.11 -->
+
+<sections>
+
+<version>1.4</version>
+<date>2005-12-22</date>
+
+<section>
+<title>Inleiding</title>
+<body>
+
+<p>
+Op dit moment wordt het instellen van een wireless netwerk ondersteunt voor
+<c>wireless-tools</c> en <c>wpa_supplicant</c>. Het belangrijkste om te
+onthouden is dat een wireless netwerk niet ingesteld wordt op basis van de
+interface, maar globaal.
+</p>
+
+<p>
+<c>wpa_supplicant</c> is de beste keus voor uw netwerk, maar niet alle drivers
+worden ondersteund. Voor een lijst van ondersteunde drivers kijkt u op <uri
+link="http://hostap.epitest.fi/wpa_supplicant">wpa_supplicant site</uri>. Ook
+kan <c>wpa_supplicant</c> op dit moment alleen ingestelde SSID's aan.
+</p>
+
+<p>
+<c>wireless-tools</c> ondersteund praktisch elke netwerkkaart, maar het kan
+geen verbinding maken met Acces Points die alleen WPA gebruiken.
+</p>
+
+<warn>
+De driver van <c>linux-wlan-ng</c> wordt op dit moment niet ondersteund door 
+baselayout. Dit komt omdat <c>linux-wlan-ng</c> een geheel eigen manier heeft
+om de netwerkkaart in te stellen. Er gaan geruchten dat de ontwikkelaars van
+<c>linux-wlan-ng</c> een soort gelijke instelling willen gaan gebruiken als de
+<c>wireless-tools</c>. Als dit gebeurt kunt u <c>linux-wlan-ng</c> gebruiken
+met baselayout.
+</warn>
+
+</body>
+</section>
+<section>
+<title>WPA Supplicant</title>
+<body>
+
+<p>
+<uri link="http://hostap.epitest.fi/wpa_supplicant">WPA Supplicant</uri> is een
+pakket waarmee u verbinding kunt maken met WPA Access Points. Het is redelijk
+eenvoudig in te stellen en hoewel het nog in de beta fase is werkt bijna alles
+zoals het moet.
+</p>
+
+<pre caption="Het installern wpa_supplicant">
+# <i>emerge net-wireless/wpa_supplicant</i>
+</pre>
+
+<impo>
+U moet <c>CONFIG_PACKET</c> aan hebben staan in uw kernel om
+<c>wpa_supplicant</c> te kunnen gebruiken.
+</impo>
+
+<p>
+We moeten nu <path>/etc/conf.d/net</path> instellen, zodat we
+<c>wpa_supplicant</c> gebruiken in plaats van <c>wireless-tools</c> 
+(als beiden geïnstalleerd zijn, is <c>wireless-tools</c> eerste keus).
+</p>
+
+<pre caption="/etc/conf.d/net instellen voor wpa_supplicant">
+<comment># wpa_supplicant gebruiken in plaats van wireless-tools</comment>
+modules=( "wpa_supplicant" )
+
+<comment># Het is belangrijk wpa_supplicant aan te geven welke driver te
+# gebruiken, omdat de automatische herkenning nog niet zo goed is</comment>
+wpa_supplicant_eth0="-Dmadwifi"
+</pre>
+
+<note>
+Als u de host-ap driver gebruikt moet u de kaart in <e>Managed mode</e> zetten,
+voordat deze gebruikt kan worden met <c>wpa_supplicant</c>. U doet dit door
+de variabee <c>iwconfig_eth0="mode managed"</c> toe te voegen in
+<path>/etc/conf.d/net</path>.
+</note>
+
+<p>
+Dit was eenvoudig, niet? We moeten <c>wpa_supplicant</c> echter nog in stellen,
+en dat is wat moeilijker, al is dit afhankelijk van de beveiliging van het
+Access Point waarmee u de verbinding wilt maken. Het onderstaande voorbeeld komt
+rechtstreeks uit <path>/etc/wpa_supplicant.conf.example</path>. Dit bestand
+komt met <c>wpa_supplicant</c> mee wanneer u het installeert.
+</p>
+
+<pre caption="Een voorbeeld /etc/wpa_supplicant.conf">
+<comment># De onderstaande regel mag niet aangepast</comment>
+ctrl_interface=/var/run/wpa_supplicant
+
+<comment># Zorg er voor dat alleen de root de WPA instelling kan lezen</comment>
+ctrl_interface_group=0
+
+<comment># Laat wpa_supplicant het scannen en kiezen van het AP doen</comment>
+ap_scan=1
+
+<comment># Eenvoudig: WPA-PSK, PSK als een ASCII wachtwoord, sta alle beveiligingen toe</comment>
+network={
+  ssid="simple"
+  psk="very secret passphrase"
+  <comment># Hoe hoger de prioriteit, hoe sneller dit netwerk wordt gekozen</comment>
+  priority=5
+}
+
+<comment># Hetzelfde, maar nu met SSID-specifieke scan (voor AP's die geen
+# broadcast SSID toestaan)</comment>
+network={
+  ssid="second ssid"
+  scan_ssid=1
+  psk="very secret passphrase"
+  priority=2
+}
+
+<comment># Alleen WPA-PSK gebruiken. Elke beveiliging is goed</comment>
+network={
+  ssid="example"
+  proto=WPA
+  key_mgmt=WPA-PSK
+  pairwise=CCMP TKIP
+  group=CCMP TKIP WEP104 WEP40
+  psk=06b4be19da289f475aa46a33cb793029d4ab3db7a23ee92382eb0106c72ac7bb
+  priority=2
+}
+
+<comment># Platte tekst verbinding (Geen WPA, geen IEEE 802.1X)</comment>
+network={
+  ssid="plaintext-test"
+  key_mgmt=NONE
+}
+
+<comment># Gedeelde WEP sleutel (geen WPA, geen IEEE 802.1X)</comment>
+network={
+  ssid="static-wep-test"
+  key_mgmt=NONE
+  wep_key0="abcde"
+  wep_key1=0102030405
+  wep_key2="1234567890123"
+  wep_tx_keyidx=0
+  priority=5
+}
+
+<comment># Gedeelde WEP sleutel (geen WPA, geen IEEE 802.1X) met Shared Key
+# IEEE 802.11 authenticatie</comment>
+network={
+  ssid="static-wep-test2"
+  key_mgmt=NONE
+  wep_key0="abcde"
+  wep_key1=0102030405
+  wep_key2="1234567890123"
+  wep_tx_keyidx=0
+  priority=5
+  auth_alg=SHARED
+}
+
+<comment># IBSS/ad-hoc netwerk met WPA-None/TKIP</comment>
+network={
+  ssid="test adhoc"
+  mode=1
+  proto=WPA
+  key_mgmt=WPA-NONE
+  pairwise=NONE
+  group=TKIP
+  psk="secret passphrase"
+}
+</pre>                  
+
+</body>
+</section>
+<section>
+<title>Wireless Tools</title>
+
+<subsection>
+<title>Basis instelling en Managed Mode</title>
+<body>
+
+<p>
+<uri
+link="http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/Tools.html">Wireless
+Tools</uri> geeft een eenvoudige methode om een eenvoudig wireless netwerk via
+WEP op te zetten. Hoewel WEP een zwakke beveiliging is, is het wel de meest
+gebruikte.
+</p>
+
+<p>
+Het instellen van wireless tools gebeurd via enkele variabelen. Het onderstaande
+voorbeeld beschrijft alles wat u nodig heeft. Wat u moet onthouden is dat
+geen configuratie betekent dat u verbinding zoekt met het sterkste onbeveiligde
+netwerk in de buurt - er wordt altijd geprobeerd u ergens mee te verbinden.
+</p>
+
+<pre caption="Installeren van wireless-tools">
+# <i>emerge net-wireless/wireless-tools</i>
+</pre>
+
+<note>
+U kunt de instellingen voor uw draadloos netwerk in 
+<path>/etc/conf.d/wireless</path> opslaan, maar we raden aan om
+<path>/etc/conf.d/net</path> te gebruiken.
+</note>
+
+<impo>
+U <e>moet</e> kijken in het hoofdstuk <uri
+link="?part=4&amp;chap=2#variable_name">benoemen van variabelen</uri> voor
+meer informatie.
+</impo>
+
+<pre caption="Voorbeeld van een iwconfig setup in /etc/conf.d/net">
+<comment># Prefer iwconfig over wpa_supplicant</comment>
+modules=( "iwconfig" )
+
+<comment># Stel WEP sleutels in voor Access Points ESSID1 en ESSID2</comment>
+<comment># U kunt maximaal 4 WEP sleutels instellen, maar slechts 1 kan actief zijn
+# op elk moment. Daarom stellen we standaard [1] in als sleutel en zetten [1] ook
+# weer aan, na het veranderen van de actieve sleutel.
+# We doen dit voor het geval u ander ESSID's instelt met een andere WEP sleutel
+#
+# Als er een s voor de sleutel staat is het een ASCII sleutel, anders is het HEX
+#
+# enc open geeft open security (beste beveiliging)
+# enc restricted geeft restricted security (minder veilig)</comment>
+key_ESSID1="[1] s:yourkeyhere key [1] enc open"
+key_ESSID2="[1] aaaa-bbbb-cccc-dd key [1] enc restricted"
+
+<comment># Het onderstaande werkt allen als we scannen naar AP's</comment>
+
+<comment># Soms zijn er meerdere Access Points beschikbaar, dus geven we een
+# voorkeurslijst met de volgorde waarin verbinding wordt gezocht</comment>
+preferred_aps=( "ESSID1" "ESSID2" )
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Verdere instellingen voor de keuze van een Access Point</title>
+<body>
+
+<p>
+U kunt extra optie toevoegen om een Acces Point te kiezen, maar meestal is
+dit niet nodig.
+</p>
+
+<p>
+U kunt zelf beslissen of u alleen verbindingen wilt met door u gekozen Access
+Points of niet. Standaard zal altijd geprobeerd worden om een verbinding te 
+maken met een onbeveiligd Access Point, indien alle ingestelde opties werkten.
+U kunt dit instellen met de variabele <c>associate_order</c>. De onderstaande
+tabel laat de mogelijkheden zien.
+</p>
+
+<table>
+<tr>
+  <th>Waarde</th>
+  <th>Beschrijving</th>
+</tr>
+<tr>
+  <ti><c>any</c></ti>
+  <ti>Standaard instelling</ti>
+</tr>
+<tr>
+  <ti><c>preferredonly</c></ti>
+  <ti>Alleen verbinding maken met zichtbare AP's uit de voorkeurslijst</ti>
+</tr>
+<tr>
+  <ti><c>forcepreferred</c></ti>
+  <ti>
+    Probeer toch een verbinding te maken met de AP's uit de voorkeurslijst,
+    ook als ze niet worden gevonden tijdens een scan
+  </ti>
+</tr>
+<tr>
+  <ti><c>forcepreferredonly</c></ti>
+  <ti>
+    Scan niet naar AP's - probeer de AP's in de voorkeurslijst één voor één
+    </ti>
+</tr>
+<tr>
+  <ti><c>forceany</c></ti>
+  <ti>
+    Hetzelfde als <c>forcepreferred</c> + verbinden met elk ander beschikbaar
+    AP
+  </ti>
+</tr>
+</table>
+
+<p>
+Tot slot hebben we een de lijsten van de <c>blacklist_aps</c> en 
+<c>unique_ap</c>. <c>blacklist_aps</c> werkt op eenzelfde manier als
+<c>preferred_aps</c>. <c>unique_ap</c> is altijd <c>ja</c> of <c>nee</c> en
+bepaald of een tweede wireless interface een verbinding mag leggen met
+hetzelfde Access Point als de eerste interface.
+</p>
+
+<pre caption="Voorbeeld met blacklist_aps en unique_ap">
+<comment># Soms wilt u een Access Point nooit gebruiken</comment>
+blacklist_aps=( "ESSID3" "ESSID4" )
+
+<comment># Als u meer dan één wireless kaart hebt, kunt u aangeven
+# of er meer dan één verbinding met één Access Point gemaakt mag worden
+# De waarde kan "yes" of "no" zijn
+# Standaard is "yes"</comment>
+unique_ap="yes"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Ad-Hoc en Master Modes</title>
+<body>
+
+<p>
+Als u een Ad-Hoc knooppunt wilt opzetten als u geen Access Point kunt
+bereiken in managed mode, dan kan dat.
+</p>
+
+<pre caption="Terugvallen op ad-hoc mode">
+adhoc_essid_eth0="This Adhoc Node"
+</pre>
+
+<p>
+U wilt verbinding maken met Ad-Hoc netwerken of als in Master mode draaien om
+zelf een Access Point te worden? De instelling om dat te doen staan hieronder.
+U kunt WEP sleutels instellen zoals hierboven is beschreven.
+</p>
+
+<pre caption="Voorbeeld van een ad-hoc/master instelling">
+<comment># Stel de mode in - dit kan managed (standaard), ad-hoc of master zijn
+# Niet alle drivers ondersteunen alle modes</comment>
+mode_eth0="ad-hoc"
+
+<comment># Stell de ESSID van de interface in
+# In managed mode, zorgt dit er voor dat de interface alleen één specifieke
+# ingestelde ESSID probeert te vinden en geen enkele andere</comment>
+essid_eth0="This Adhoc Node"
+
+<comment># Indien we niets opgeven gebruiken we kanaal 3</comment>
+channel_eth0="9"
+</pre>
+
+<impo>
+Het onderstaande tekst is letterlijk overgenomen uit de <uri 
+link="http://www.netbsd.org/Documentation/network/wavelan.html">BSD wavelan 
+documentatie</uri>. Er zijn 14 kanalen mogelijk. In Noord Amerika is het
+gebruik van de kanalen 1-11 toegestaan, in het grootste gedeelte van Europa
+de kanalen 1-13, in Frankrijk de kanalen 10-13 en in Japan alleen kanaal 14.
+Als u twijfelt, kijk dan in de documentatie van uw netwerkkaart of Acces Point.
+Zorg er in ieder geval voor dat u hetzelfde kanaal gebruik als uw Acces Point.
+Voor de meeste in Noord Amerika en Europa verkochte kaarten is dit kanaal 3;
+In Frankrijk is de standaard 11 en in Japan uiteraard kanaal 14.
+</impo>
+
+</body>
+</subsection>
+<subsection>
+<title>Problemen met Wireless Tools</title>
+<body>
+
+<p>
+Er zijn nog enkele variabelen die u kunnen helpen wanneer u wireless kaart
+niet naar behoren werkt. In de onderstaande tabel staan mogelijke
+oplossingen.
+</p>
+
+<table>
+<tr>
+  <th>Variabele</th>
+  <th>Standaard Instelling</th>
+  <th>Beschrijving</th>
+</tr>
+<tr>
+  <ti><c>iwconfig_eth0</c></ti>
+  <ti/>
+  <ti>Kijk in de iwconfig handleiding voor de mogelijke opties voor <c>iwconfig</c></ti>
+</tr>
+<tr>
+  <ti><c>iwpriv_eth0</c></ti>
+  <ti/>
+  <ti>Kijk in de iwpriv handleiding voor de mogelijke opties voor <c>iwpriv</c></ti>
+</tr>
+<tr>
+  <ti><c>sleep_scan_eth0</c></ti>
+  <ti><c>0</c></ti>
+  <ti>
+    Het aantal seconden dat gewacht wordt voor een scan. Dit is nodig wanneer
+    de driver/firmware meer tijd nodig om te activeren.
+  </ti>
+</tr>
+<tr>
+  <ti><c>sleep_associate_eth0</c></ti>
+  <ti><c>5</c></ti>
+  <ti>
+    Het aantal seconden dat gewacht wordt op een verbinding voordat wordt
+    gezocht naar een volgend Access Point
+  </ti>
+</tr>
+<tr>
+  <ti><c>associate_test_eth0</c></ti>
+  <ti><c>MAC</c></ti>
+  <ti>
+    Sommige drivers resetten het MAC adres niet naar een geldig alternatief
+    wanneer er iets fout gaat. Andere drivers resetten de kwaliteit van de
+    verbinding niet wanneer ze de verbinding verliezen. Mogelijke instellingen
+    zijn <c>MAC</c>, <c>quality</c> en <c>all</c>.
+  </ti>
+</tr>
+<tr>
+  <ti><c>scan_mode_eth0</c></ti>
+  <ti/>
+  <ti>
+    Sommige drivers moeten scannen in ad-hoc mode, dus als het fout gaat
+    bij het scannen, stel hier dan <c>ad-hoc</c> in.
+  </ti>
+</tr>
+<tr>
+  <ti><c>iwpriv_scan_pre_eth0</c></ti>
+  <ti/>
+  <ti>
+    Stuur <c>iwpriv</c> commando's naar de interface voor het scannen.
+    Kijk in de iwpriv handleiding voor de mogelijkheden.
+  </ti>
+</tr>
+<tr>
+  <ti><c>iwpriv_scan_post_eth0</c></ti>
+  <ti/>
+  <ti>
+    Stuur <c>iwpriv</c> commando's naar de interface na het scannen.
+    Kijk in de iwpriv handleiding voor de mogelijkheden.
+  </ti>
+</tr>
+</table>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Instellen van de netwerk instellingen per ESSID</title>
+<body>
+
+<p>
+Het kan zijn dat u met een vast IP adres werkt als u verbinding heeft met
+<e>ESSID1</e> en dat u DHCP wilt gebruiken bij <e>ESSID2</e>. De meeste
+module variabelen kunt u dan ook instellen per ESSID. Dat doen we als volgt.
+</p>
+
+<note>
+Dit werkt indien u wpa_supplicant of Wireless Tools gebruikt.
+</note>
+
+<impo>
+U kunt ook moeten kijken in de<uri
+link="?part=4&amp;chap=2#variable_name">Benoemen van variabelen</uri> documentatie.
+</impo>
+
+<pre caption="Instelling per ESSID instellen">
+config_ESSID1=( "192.168.0.3/24 brd 192.168.0.255" )
+routes_ESSID1=( "default via 192.168.0.1" )
+
+config_ESSID2=( "dhcp" )
+fallback_ESSID2=( "192.168.3.4/24" )
+fallback_route_ESSID2=( "default via 192.168.3.1" )
+
+<comment># We kunnen naam servers en dergelijke definiëren</comment>
+<comment># LET OP: DHCP past alles aan, tenzij ingesteld om dat niet te doen</comment>
+dns_servers_ESSID1=( "192.168.0.1" "192.168.0.2" )
+dns_domain_ESSID1="some.domain"
+dns_search_domains_ESSID1="search.this.domain search.that.domain"
+
+<comment># Instellen per MAC adres of Access Point
+# Dit is handig als u op meerdere plaatsen dezelfde ESSID gebruikt</comment>
+config_001122334455=( "dhcp" )
+dhcpcd_001122334455="-t 10"
+dns_servers_001122334455=( "192.168.0.1" "192.168.0.2" )
+</pre>
+
+</body>
+</section>
+</sections>

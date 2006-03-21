@@ -1,0 +1,730 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/nl/handbook/hb-working-rcscripts.xml,v 1.1 2006/03/21 13:38:35 neysx Exp $ -->
+
+<!-- Sync: 1.25 -->
+
+<sections>
+
+<version>1.21</version>
+<date>2005-05-29</date>
+
+<section>
+<title>Runlevels</title>
+<subsection>
+<title>Het starten van het Systeem</title>
+<body>
+
+<p>
+Als uw systeem opstart, ziet u steeds regels tekst voorbij schieten.
+Wanneer u heel goed kijkt, zult u zien dat deze tekst steeds dezelfde zijn.
+De volgorde waarin alles voorbij komt wordt de <e>boot sequence</e> genoemd,
+is ligt (min of meer) vast.
+</p>
+
+<p>
+Allereerst laadt uw bootloader de kernel image die u hebt aangegeven in het
+configuratie bestand in het geheugen. Daarna vertelt het de processor om de
+kernel uit te voeren. Wanneer de kernel is geladen en uitgevoerd, worden alle
+kernel specifieke onderdelen en taken geïnitialiseerd en wordt het <c>init</c>
+proces gestart.
+</p>
+
+<p>
+Dit proces zorgt ervoor dat alle bestandssystemen (als gedefinieerd in
+<path>/etc/fstab</path>) aangekoppeld en klaar gemaakt worden. Daarna
+voert het verschillende scripts uit die terug te vinden zijn in
+<path>/etc/init.d</path>. Deze scripts starten de hulpmiddelen die nodig
+zijn om uw systeem volledig te starten.
+</p>
+
+<p>
+Als alle scripts zijn uitgevoerd, activeert <c>init</c> de terminals
+(in de meeste gevallen alleen de consoles die achter <c>Alt-F1</c>,
+<c>Alt-F2</c>, etc zijn verborgen) met <c>agetty</c> dat als toepassing
+wordt mee gestart, zodat u kunt inloggen via <c>login</c>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Init Scripts</title>
+<body>
+
+<p>
+Echter, <c>init</c> voert de scripts in <path>/etc/init.d</path> niet in 
+willekeurige volgorde uit. Sterker nog, het voert alleen de scripts in 
+<path>/etc/init.d</path> uit die uitgevoerd moeten worden. Het bepaalt welke
+scripts dat zijn door te kijken naar <path>/etc/runlevels</path>.
+</p>
+
+<p>
+Als eerste voert <c>init</c> de scripts uit in <path>/etc/init.d</path> met
+een symlink naar <path>/etc/runlevels/boo</path>. Meestal worden de scripts
+in alfabetische volgorde gestart, maar sommige scripts hebben informatie
+bijgevoegd waarin staat dat een ander script gestart moet zijn voordat
+zijzelf kunnen starten.
+</p>
+
+<p>
+Wanneer alles met een link naar <path>/etc/runlevels/boot</path> is gestart,
+gaat <c>init</c> verder met de scripts met een symlink naar 
+<path>/etc/runlevels/default</path>. Ook deze worden in alfabetische volgorde
+gestart, tenzij een script vraagt om een ander script eerder te starten, waarna
+de volgorde wordt verandert.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Hoe Init Werkt</title>
+<body>
+
+<p>
+Natuurlijk kan <c>init</c> dit niet allemaal zelf. Het heeft een configuratie
+bestand nodig waarin staat wat er moet gebeuren. Dit configuratie bestand is
+<path>/etc/inittab</path>.
+</p>
+
+<p>
+Als u zich de boot volgorde nog kunt herinneren, dan weet u dat <c>init</c>
+eerst alle bestandssystemen aankoppelt. Dit wordt bepaald door de volgende
+regel in <path>/etc/inittab</path>:
+</p>
+
+<pre caption="De initialisatie regel in /etc/inittab">
+si::sysinit:/sbin/rc sysinit
+</pre>
+
+<p>
+Deze regel laat <c>init</c> <c>sbin/rc sysinit</c> draaien om het systeem te
+initialiseren. Het <path>/sbin/rc</path> script zorgt voor de initialisatie,
+dus eigenlijk doet <c>init</c> zelf niet zo veel -- het besteed de taak
+van het initialiseren uit aan een andere toepassing.
+</p>
+
+<p>
+Hierna voert <c>init</c> dus de scripts met symlinks naar
+<path>/etc/runlevels/boot</path> uit. Dit wordt bepaald door de volgende regel:
+</p>
+
+<pre caption="Verder met het systeem initialiseren">
+rc::bootwait:/sbin/rc boot
+</pre>
+
+<p>
+Hier voert eigenlijk <c>rc</c> de benodigde taken uit. Het valt misschien op
+dat de optie bij <c>rc</c> (<e>boot</e>) hetzelfde is als de submap van
+<path>/etc/runlevels</path>.
+</p>
+
+<p>
+Nu checkt <c>init</c> het configuratie bestand om te bepalen welke 
+<e>runlevel</e> het moet draaien. Hiervoor lijst het de volgende regel in
+<path>/etc/inittab</path>:
+</p>
+
+<pre caption="De initdefault regel">
+id:3:initdefault:
+</pre>
+
+<p>
+In de meeste gevallen (dus voor het overgrote deel van de Gentoo gebruikers) zal
+het <e>runlevel</e> hier het nummer 3 zijn. Daarom zal <c>init</c> nu
+kijken wat er gestart moet worden in <e>runlevel 3</e>:
+</p>
+
+<pre caption="De definities voor de runlevels">
+l0:0:wait:/sbin/rc shutdown
+l1:S1:wait:/sbin/rc single
+l2:2:wait:/sbin/rc nonetwork
+l3:3:wait:/sbin/rc default
+l4:4:wait:/sbin/rc default
+l5:5:wait:/sbin/rc default
+l6:6:wait:/sbin/rc reboot
+</pre>
+
+<p>
+De regel die runlevel 3 definieert, roept opnieuw het <c>rc</c> script aan om
+toepassingen te starten (nu met het argument <e>default</e>). Ook hier is het
+argument bij <c>rc</c> gelijk aan de naam van de submap van 
+<path>/etc/runlevels</path>.
+</p>
+
+<p>
+Wanneer <c>rc</c> klaar is, bepaalt <c>init</c> welke consoles geactiveerd 
+worden en welke commando's gegeven moeten worden in die consoles:
+</p>
+
+<pre caption="De definities voor de consoles">
+c1:12345:respawn:/sbin/agetty 38400 tty1 linux
+c2:12345:respawn:/sbin/agetty 38400 tty2 linux
+c3:12345:respawn:/sbin/agetty 38400 tty3 linux
+c4:12345:respawn:/sbin/agetty 38400 tty4 linux
+c5:12345:respawn:/sbin/agetty 38400 tty5 linux
+c6:12345:respawn:/sbin/agetty 38400 tty6 linux
+</pre>
+
+
+</body>
+</subsection>
+<subsection>
+<title>Wat is een runlevel?</title>
+<body>
+
+<p>
+U hebt nu kunnen zien dat <c>init</c> een genummerde lijst gebruikt om te
+bepalen welk <e>runlevel</e> als eerste wordt geactiveerd. Een <e>runlevel</e>
+is een vooraf ingestelde staat waarin uw systeem draait en bevat enkele scripts
+(runlevel scripts of <e>initscripts</e>) die moeten worden uitgevoerd wanneer
+u het runlevel start of beëindigt.
+</p>
+
+<p>
+Binnen Gentoo zijn zeven runlevels gedefinieerd: drie interne runlevels, en 
+vier gebruikersrunlevels. De interne runlevels zijn <e>sysinit</e>,
+<e>shutdown</e> en <e>reboot</e> en doen wat hun name impliceert:
+respectievelijk het systeem initialiseren, afsluiten en herstarten.
+</p>
+
+<p>
+De gebruikersrunlevels hebben een <path>/etc/runlevels</path> submap:
+<path>boot</path>, <path>default</path>, <path>nonetwork</path> en
+<path>single</path>. Het <path>boot</path> runlevel start alle systeem
+toepassingen, die door de andere runlevels gebruikt worden. De drie andere
+runlevels verschillen door welke toepassingen ze starten: <path>default</path>
+wordt gebruikt voor dagelijkse toepassingen, <path>nonetwork</path> indien
+er geen netwerk wordt gebruikt, en <path>single</path> wanneer het systeem
+gerepareerd moet worden.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Werken met de Init Scripts</title>
+<body>
+
+<p>
+De scripts die door <c>rc</c> worden gestart noemen we <e>init scripts</e>.
+Elk script in <path>/etc/init.d</path> kan worden uitgevoerd met de argumenten
+<e>start</e>, <e>stop</e>, <e>restart</e>, <e>pause</e>, <e>zap</e>,
+<e>status</e>, <e>ineed</e>, <e>iuse</e>, <e>needsme</e>, <e>usesme</e> of
+<e>broken</e>.
+</p>
+
+<p>
+Om een toepassing te starten, stoppen or herstarten (inclusief afhankelijke
+toepassingen), kunt u <c>start</c>, <c>stop</c> en <c>restart</c> gebruiken:
+</p>
+
+<pre caption="Start Postfix">
+# <i>/etc/init.d/postfix start</i>
+</pre>
+
+<note>
+Alleen wanneer een toepassing een andere toepassing <e>nodig</e> heeft, wordt
+deze opnieuw gestart of gestopt. Toepassingen die een andere toepassing blijven
+gewoon draaien.
+</note>
+
+<p>
+Wanneer u een toepassing wilt stoppen, maar de toepassingen die er op steunen
+niet, dan kunt u het <c>pause</c> argument gebruiken:
+</p>
+
+<pre caption="Postfix stoppen, maar de afhankelijke toepassingen laten door draaien">
+# <i>/etc/init.d/postfix pause</i>
+</pre>
+
+<p>
+Wanneer u wilt zien wat de status van een toepassing is (gestart, gestopt,
+gepauzeerd, ...), kunt u <c>status</c> gebruiken:
+</p>
+
+<pre caption="Status van postfix opvragen">
+# <i>/etc/init.d/postfix status</i>
+</pre>
+
+<p>
+Als de informatie aangeeft dat de toepassing draait, maar u weet zeker dat het
+niet zo is, dan kunt u de status informatie resetten met behulp van het
+<c>zap</c> argument:
+</p>
+
+<pre caption="Resetten van de  status voor postfix">
+# <i>/etc/init.d/postfix zap</i>
+</pre>
+
+<p>
+Om te kunnen zien welke afhankelijkheden een toepassing heeft, kunt u 
+<c>iuse</c> of <c>ineed</c> gebruiken. Met <c>ineed</c> kunt u zien welke
+toepassing nodig zijn om correct te kunnen functioneren. <c>iuse</c> geeft
+aan welke toepassing gebruikt kunnen worden, maar niet nodig zijn voor 
+het correct functioneren.
+</p>
+
+<pre caption="Een lijst met benodigde toepassing opvragen voor postfix">
+# <i>/etc/init.d/postfix ineed</i>
+</pre>
+
+<p>
+Op dezelfde manier kunt u opvragen welke toepassing een bepaalde toepassing
+gebruiken (<c>needsme</c>) of kunnen gebruiken (<c>usesme</c>):
+</p>
+
+<pre caption="Een lijst met toepassing opvragen die postfix nodig hebben">
+# <i>/etc/init.d/postfix needsme</i>
+</pre>
+
+<p>
+Als laatste kunt u opvragen welke afhankelijkheden een toepassing nodig heeft
+en mist:
+</p>
+
+<pre caption="Een lijst met missende afhankelijkheden opvragen voor postfix">
+# <i>/etc/init.d/postfix broken</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Werken met rc-update</title>
+<subsection>
+<title>Wat is rc-update?</title>
+<body>
+
+<p>
+Gentoo's init systeem gebruikt een lijst met afhankelijkheden om te bepalen
+welke toepassing als eerste moet worden gestart. Aangezien dit een 
+arbeidsintensieve taak is, willen we u als gebruiker dit niet handmatig laten
+doen. Daarom hebben we hulpprogramma's ontwikkeld die het beheer van runlevels
+en init scripts vergemakkelijken.
+</p>
+
+<p>
+Met <c>rc-update</c> kunt u init scripts toevoegen en verwijderen bij een 
+runlevel. Het <c>rc-update</c> programma zal steeds automatisch het
+<c>depscan.sh</c> script de lijst met afhankelijkheden laten updaten.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Het toevoegen en verwijderen van toepassingen</title>
+<body>
+
+<p>
+Tijdens de installatie hebt u al init scripts toegevoegd aan het "default"
+runlevel. Toen wist u misschien nog niet waar "default" voor stond, maar dat
+zou u nu moeten weten. Het <c>rc-update</c> script heeft een tweede argument
+nodig, dat de actie definieert: <e>add</e>, <e>del</e> of <e>show</e>.
+</p>
+
+<p>
+Om een init script toe te voegen of te verwijderen, voegt u gewoon <c>add</c>
+of <c>del</c> als optie toe aan <c>rc-update</c>. Dit wordt gevolgd door het
+te gebruike init script en het aan te passen runlevel. Bijvoorbeeld:
+</p>
+
+<pre caption="Postfix verwijderen uit het default runlevel">
+# <i>rc-update del postfix default</i>
+</pre>
+
+<p>
+Het <c>rc-update show</c> commando geeft u alle beschikbare init scripts en een
+lijst van de runlevels waarin zij draaien:
+</p>
+
+<pre caption="Init script informatie opvragen">
+# <i>rc-update show</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Toepassingen configureren</title>
+<subsection>
+<title>Waarom extra configuraties?</title>
+<body>
+
+<p>
+Init scripts kunnen redelijk complex zijn. Daarom is het niet echt wenselijk
+dat gebruikers de scripts direct moeten aanpassen, de kans op fouten is
+gewoonweg te groot. Het is echter wel belangrijk om een toepassing te kunnen
+configureren. U kunt bijvoorbeeld extra opties aan een toepassing willen
+toevoegen.
+</p>
+
+<p>
+Een tweede reden voor configuratie buiten het init script om, is om de
+mogelijkheid te hebben init scripts te updaten zonder uw configuratie
+kwijt te raken.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>De /etc/conf.d map</title>
+<body>
+
+<p>
+Gentoo heeft een simpele manier om toepassingen te configureren: elk init script
+heeft een configuratiebestand in <path>/etc/conf.d</path>. Het apache2 init
+script (<path>/etc/init.d/apach2</path> heeft bijvoorbeeld een 
+configuratiebestand <path>/etc/conf.d/apache2</path>, waarmee u verschillende
+opties aan de Apache2 server kunt meegeven, als deze wordt gestart:
+</p>
+
+<pre caption="Variabele in /etc/conf.d/apache2">
+APACHE2_OPTS="-D PHP4"
+</pre>
+
+<p>
+Deze configuratiebestanden bevatten alleen variabelen (net als
+<path>/etc/make.conf</path>, waardoor het gemakkelijk is om toepassingen te
+configureren. Het geeft ons ook de mogelijkheid om meer informatie te geven
+over de variabelen (als commentaar).
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Init Scripts scrhijven</title>
+<subsection>
+<title>Moet ik dat doen?</title>
+<body>
+
+<p>
+Nee, het schrijven van een init script is normaal niet nodig, omdat Gentoo
+voor alle toepassingen init scripts mee levert. Wanneer u echter een toepassing
+installeert zonder Portage te gebruiken, is het heel goed waarschijnlijk dat u 
+wel zelf een init script moet schrijven.
+</p>
+
+<p>
+Let op dat u niet het init script gebruikt dat door een toepassing zelf wordt
+meegeleverd, indien dit niet speciaal voor Gentoo is geschreven: Gentoo's init
+scripts zijn namelijk niet compatible met init scripts voor andere linux 
+distributies.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Indeling</title>
+<body>
+
+<p>
+De basis indeling van een init script wordt hieronder gegeven.
+</p>
+
+<pre caption="Basis indeling van een init script">
+#!/sbin/runscript
+
+depend() {
+  <comment>(informatie over afhankelijkheden)</comment>
+}
+
+start() {
+  <comment>(Commando's voor het starten van de toepassing)</comment>
+}
+
+stop() {
+  <comment>(Commando's voor het stoppen van de toepassing)</comment>
+}
+
+restart() {
+  <comment>(Commando's voor het herstarten van de toepassing)</comment>
+}
+</pre>
+
+<p>
+Elk init script <e>moet</e> een <c>start()</c> functie hebben. De andere delen
+zijn niet verplicht.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Afhankelijkheden</title>
+<body>
+
+<p>
+Er zijn twee soorten afhankelijkheden die u kunt definiëren: <c>use</c> en
+<c>need</c>. Zoals eerder uitgelegd, <c>need</c> is stricter dan <c>use</c>.
+Met behulp van deze afhankelijkheden voert u de toepassing toe waar u van
+afhankelijk bent, of de <e>virtuele</e> afhankelijkheid.
+</p>
+
+<p>
+Een <e>virtuele</e> afhankelijkheid is een afhankelijkheid die door
+verschillende toepassingen kan worden geleverd. Uw init script kan bijvoorbeeld
+een systeem logger nodig hebben, maar er zijn meerdere systeem loggers
+beschikbaar (metalogd, syslog-ng, sysklogd, ...). Aangezien u niet elke logger
+afzonderlijk <e>moet</e> hebben (het is niet echt logisch om drie systeem 
+loggers te installeren), zorgen we er voor dat deze toepassingen een virtuele
+afhankelijkheid leveren (<c>provide</c>).
+</p>
+
+<p>
+We kijken naar de afhankelijkheden voor de postfix toepassing.
+</p>
+
+<pre caption="Afhankelijkheden voor Postfix">
+depend() {
+  need net
+  use logger dns
+  provide mta
+}
+</pre>
+
+<p>
+Zoals u kunt zien, geldt dat postfix:
+</p>
+
+<ul>
+  <li>
+    de (virtuele) <c>net</c> afhankelijkheid nodig heeft (bijvoorbeeld 
+    geleverd door <path>/etc/init.d/net.eth0</path>
+  </li>
+  <li>
+    de (virtuele) <c>logger</c> gebruikt (bijvoorbeeld geleverd door
+    <path>/etc/init.d/syslog-ng</path>)
+  </li>
+  <li>
+    de (virtuele) <c>dns</c> afhankelijkheid gebruikt (bijvoorbeeld geleverd
+    door <path>/etc/init.d/named</path>)
+  </li>
+  <li>
+    een (virtuele) <c>mta</c> afhankelijkheid levert (wat alle mail servers
+    doen)
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection>
+<title>De volgorde instellen</title>
+<body>
+
+<p>
+In sommige gevallen hebt u een toepassing niet direct nodig, maar wilt u de
+toepassing starten <c>voor</c> (of <c>na</c>) een andere toepassing 
+<e>indien</e> de toepassing op het systeem aanwezig is (let op de voorwaarde 
+- dit is geen afhankelijkheid meer) <e>en</e> laten draaien in dezelfde 
+runlevel (let weer op de voorwaarde - er zijn alleen toepassingen in hetzelfde
+runlevel bij betrokken). U kunt dit doen met <c>before</c> en <c>after</c>.
+</p>
+
+<p>
+Als voorbeeld kijken we naar de instellingen van portmap:
+</p>
+
+<pre caption="De depend() functie in de Portmap toepassing">
+depend() {
+  need net
+  before inetd
+  before xinetd
+}
+</pre>
+
+<p>
+U kunt ook het sterretje "*" gebruiken om uw toepassing voor alle andere
+toepassingen in hetzelfde runlevel te plaatsen, maar dit is niet aan te raden.
+</p>
+
+<pre caption="Het draaien van een init script als eerste in een runlevel">
+depend() {
+  before *
+}
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Standaard functies</title>
+<body>
+
+<p>
+Naast de <c>depend</c> functie moet u ook de <c>start</c> functie definiëren.
+Deze functie bevat alle commando's die nodig zijn om de toepassing te starten.
+Het is verder aan te raden om de <c>ebegin</c> en <c>eend</c> functies te
+gebruiken om te laten weten wat er gebeurt tijdens het uitvoeren van de 
+toepassing.
+</p>
+
+<pre caption="Voorbeeld start() functie">
+start() {
+  ebegin "Starting my_service"
+  start-stop-daemon --start --quiet --exec /path/to/my_service
+  eend $?
+}
+</pre>
+
+<p>
+Indien u meer voorbeelden nodig hebt van de <c>start()</c> functie, kunt u de
+init scripts uit de map <path>/etc/init.d</path> er op na slaan. En voor de
+<c>start-stop-daemon</c> is een goede handleiding beschikbaar, die u op elk
+moment kunt bekijken voor meer informatie:
+</p>
+
+<pre caption="De handleiding voor de start-stop-daemon bekijken">
+# <i>man start-stop-daemon</i>
+</pre>
+
+<p>
+Andere functies die u kunt gebruiken zijn: <c>stop()</c> en <c>restart()</c>.
+U bent echter niet verplicht deze functies aan te roepen! Het init systeem kan
+zelf deze functies aanvullen wanneer u de <c>start-stop-daemon</c> gebruikt.
+</p>
+
+<p>
+De Gentoo init script programmeertaal is gebaseerd op de Bourne Again Shell
+(bash). U kunt daarom zonder meer bash commando's gebruiken in uw init script.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Eigen functies toevoegen</title>
+<body>
+
+<p>
+Wanneer u in uw init script andere functies wilt gebruiken dan de eerder 
+genoemde, kunt u die functie toevoegen via de variabele <c>opts</c>. U kunt
+dan een functie maken met dezelfde naam, bijvoorbeeld om een functie
+<c>restartdelay</c> te gebruiken:
+</p>
+
+<pre caption="De restartdelay functie aanmaken">
+opts="${opts} restartdelay"
+
+restartdelay() {
+  stop
+  sleep 3    <comment># Wacht drie seconden voor opnieuw te starten</comment>
+  start
+}
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Configuratie variabelen voor uw toepassing</title>
+<body>
+
+<p>
+U hoeft niets extra te doen om een configuratie bestand in de map
+<path>/etc/conf.d</path> te kunnen gebruiken: wanneer uw init script wordt
+gestart worden de volgende bestanden automatisch ingelezen:
+</p>
+
+<ul>
+  <li><path>/etc/conf.d/&lt;Uw init script&gt;</path></li>
+  <li><path>/etc/conf.d/basic</path></li>
+  <li><path>/etc/rc.conf</path></li>
+</ul>
+
+<p>
+Wanneer uw init script een virtuele afhankelijkheid bevat (zoals <c>net</c>)
+zal het bestand dat hierbij hoort (in dit geval <path>/etc/conf.d/net</path>)
+ook ingelezen worden.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Het gedrag van het runlevel veranderen</title>
+<subsection>
+<title>Wie hebben hier iets aan?</title>
+<body>
+
+<p>
+Veel laptop gebruikers zullen de volgende situatie herkennen: thuis wilt u
+<c>net.eth0</c> starten, maar onderweg wilt u het netwerk juist niet starten
+(omdat er toch geen netwerk beschikbaar is). Binnen Gentoo kunt u het gedrag
+van het runlevel daarom aanpassen naar uw eigen wensen.
+</p>
+
+<p>
+U kunt bijvoorbeeld een tweede "default" runlevel aanmaken, met daarin andere
+init scripts. U kunt dan tijdens het opstarten kiezen welk default runlevel u
+wilt gebruiken.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Softlevel gebruiken</title>
+<body>
+
+<p>
+Allereerst maakt u een map aan voor uw tweede "default" runlevel. Hier maken
+we als voorbeeld het runlevel <path>offline</path> aan:
+</p>
+
+<pre caption="Een map maken voor een runlevel">
+# <i>mkdir /etc/runlevels/offline</i>
+</pre>
+
+<p>
+Nu kunt u de init scripts toevoegen die u wilt gebruiken in het nieuwe 
+runlevel. Een exacte kopie van uw huidige <c>default</c> runlevel, maar dan
+zonder <c>net.eth0</c> maakt u zo:
+</p>
+
+<pre caption="Het toevoegen van de juiste init scripts">
+<comment>(Kopieer alle toepassing van "default" naar "offline")</comment>
+# <i>cd /etc/runlevels/default</i>
+# <i>for service in *; do rc-update add $service offline; done</i>
+<comment>(Verwijder de toepassingen die u niet wilt gebruiken in "offline")</comment>
+# <i>rc-update del net.eth0 offline</i>
+<comment>(Laat de toepassingen voor "offline" zien)</comment>
+# <i>rc-update show offline</i>
+<comment>(Een gedeelte van de resultaten)</comment>
+               acpid | offline
+          domainname | offline
+               local | offline
+            net.eth0 |
+</pre>
+
+<p>
+Nu kunt u het configuratie bestand van uw bootloader aanpassen en het runlevel
+<c>offline</c> toevoegen. Voor Grub past u <path>/boot/grub/grub.conf</path>
+aan:
+</p>
+
+<pre caption="Het runlevel offline toevoegen voor Grub">
+title Gentoo Linux Offline Usage
+  root (hd0,0)
+  kernel (hd0,0)/kernel-2.4.25 root=/dev/hda3 <i>softlevel=offline</i>
+</pre>
+
+<p>
+En voilà, u bent klaar. U kunt nu tijdens het opstarten kiezen voor uw nieuwe
+<c>offline</c> runlevel. Dit wordt dan gestart in plaats van <c>default</c>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Bootlevel gebruiken</title>
+<body>
+
+<p>
+Het gebruik van <c>bootlevel</c> is gelijk aan <c>softlevel</c>. Het enige 
+verschil is dat u nu geen tweede runlevel "default" aanmaakt, maar een tweede
+runlevel "boot".
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
