@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.118 2006/03/22 02:50:44 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.119 2006/03/22 02:53:20 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -95,7 +95,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			# Check to see if the old and new partition table structures are the same
 			table_changed = 0
 			for part in parts_new[device].get_partitions():
-				if not part in parts_old[device]:
+				if not parts_old[device].get_partition(part):
 					table_changed = 1
 					break
 				oldpart = parts_old[device].get_partition(part)
@@ -193,14 +193,14 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			# First pass to delete old partitions that aren't resized
 			self.notify_frontend("progress", (cur_progress / total_steps, "Deleting partitioning that aren't being resized for " + device))
 			cur_progress += 1
-			for part in parts_old[device]:
+			for part in parts_old[device].get_partitions():
 				oldpart = parts_old[device][part]
 				# Replace 'x86' with call function to get arch from CC
 				if (GLIStorageDevice.archinfo['x86']['extended'] and part > 4) or oldpart['type'] == "free": continue
 				delete = 0
 				if oldpart['type'] == "extended":
 					logical_to_resize = 0
-					for part_log in parts_old[device]:
+					for part_log in parts_old[device].get_partitions():
 						if part_log < 5 or parts_old[device][part_log]['type'] == "free": continue
 						delete_log = 0
 						for new_part in parts_new[device].get_partitions():
@@ -241,7 +241,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			self._logger.log("Partitioning: Second pass...")
 			self.notify_frontend("progress", (cur_progress / total_steps, "Resizing remaining partitions for " + device))
 			cur_progress += 1
-			for part in parts_old[device]:
+			for part in parts_old[device].get_partitions():
 				oldpart = parts_old[device][part]
 				for new_part in parts_new[device].get_partitions():
 					tmppart = parts_new[device][new_part]
