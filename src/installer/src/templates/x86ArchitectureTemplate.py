@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.119 2006/03/22 02:53:20 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.120 2006/03/22 03:06:08 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -94,7 +94,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 			# Check to see if the old and new partition table structures are the same
 			table_changed = 0
-			for part in parts_new[device].get_partitions():
+			for part in parts_new[device].get_ordered_partition_list():
 				if not parts_old[device].get_partition(part):
 					table_changed = 1
 					break
@@ -127,7 +127,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			device_sectors = parted_dev.length
 
 			# Iterate through new partitions and check for 'origminor' and 'format' == False
-			for part in parts_new[device].get_partitions():
+			for part in new_part_list:
 				tmppart_new = parts_new[device][part]
 				if not tmppart_new['origminor'] or tmppart_new['format']: continue
 				tmppart_old = parts_old[device][tmppart_new['origminor']]
@@ -193,17 +193,17 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			# First pass to delete old partitions that aren't resized
 			self.notify_frontend("progress", (cur_progress / total_steps, "Deleting partitioning that aren't being resized for " + device))
 			cur_progress += 1
-			for part in parts_old[device].get_partitions():
-				oldpart = parts_old[device][part]
+			for oldpart in parts_old[device].get_partitions():
+#				oldpart = parts_old[device][part]
 				# Replace 'x86' with call function to get arch from CC
 				if (GLIStorageDevice.archinfo['x86']['extended'] and part > 4) or oldpart['type'] == "free": continue
 				delete = 0
 				if oldpart['type'] == "extended":
 					logical_to_resize = 0
-					for part_log in parts_old[device].get_partitions():
+					for part_log in parts_old[device].get_ordered_partition_list():
 						if part_log < 5 or parts_old[device][part_log]['type'] == "free": continue
 						delete_log = 0
-						for new_part in parts_new[device].get_partitions():
+						for new_part in new_part_list:
 							if new_part < 5: continue
 							tmppart = parts_new[device][new_part]
 							# This partition is unchanged in the new layout
@@ -223,7 +223,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						self._logger.log("  Deleting extended partition with minor " + str(part))
 						parted_disk.delete_partition(parted_disk.get_partition(part))
 					continue
-				for new_part in parts_new[device].get_partitions():
+				for new_part in new_part_list:
 					tmppart = parts_new[device][new_part]
 					if tmppart['origminor'] == part and not tmppart['resized']:
 						self._logger.log("  Deleting old minor " + str(part) + " to be recreated later")
@@ -243,7 +243,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			cur_progress += 1
 			for part in parts_old[device].get_partitions():
 				oldpart = parts_old[device][part]
-				for new_part in parts_new[device].get_partitions():
+				for new_part in new_part_list:
 					tmppart = parts_new[device][new_part]
 					if tmppart['origminor'] == part and tmppart['resized']:
 						type = tmppart['type']
