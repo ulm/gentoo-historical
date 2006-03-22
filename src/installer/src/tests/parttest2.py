@@ -14,7 +14,11 @@ print "Device: " + sys.argv[1]
 print "Disklabel: " + device.get_disklabel()
 print "Length (MB): " + str(device.get_total_mb())
 print "Length (sectors): " + str(device.get_num_sectors())
-for partition in device.get_partitions():
+for partition in device.get_ordered_partition_list():
+	print str(partition)
+	print repr(device)
+	print str(device[partition])
+	partition = device[partition]
 	print "--------------------"
 	print "Minor: " + str(partition.get_minor())
 	print "Type: " + str(partition.get_type())

@@ -420,7 +420,7 @@ class Device:
 	def get_partitions(self):
 		return self._partitions
 
-	def __getattr__(self, name):
+	def __getitem__(self, name):
 		return self.get_partition(name)
 
 ##
@@ -833,7 +833,7 @@ def detect_devices():
 	# We have assembled the list of devices, so return it
 	return devices
 
-	def __getattr__(self, name):
+	def __getitem__(self, name):
 		tmpdict = { 'start': self.get_start,
                     'end': self.get_end,
                     'format': self.get_format,
@@ -852,7 +852,7 @@ def detect_devices():
 			return self._extra_dict[name]
 		return None
 
-	def __setattr__(self, name, value):
+	def __setitem__(self, name, value):
 		tmpdict = { 'start': self.set_start,
                     'end': self.set_end,
                     'format': self.set_format,
