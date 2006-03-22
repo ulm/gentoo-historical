@@ -512,7 +512,7 @@ class Partition:
                     'end': self.get_end,
                     'format': self.get_format,
                     'type': self.get_type,
-                    'resized': self.get_resized
+                    'resized': self.get_resized,
                     'minor': self.get_minor,
                     'mb': self.get_mb,
                     'origminor': self.get_origminor,
@@ -531,7 +531,7 @@ class Partition:
                     'end': self.set_end,
                     'format': self.set_format,
                     'type': self.set_type,
-                    'resized': self.set_resized
+                    'resized': self.set_resized,
                     'minor': self.set_minor,
                     'mb': self.set_mb,
                     'origminor': self.set_origminor,
