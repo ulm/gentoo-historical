@@ -1,0 +1,969 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/mysql-howto.xml,v 1.1 2006/03/22 16:56:26 achumakov Exp $ -->
+
+<guide link="/doc/ru/mysql-howto.xml" lang="ru"> 
+<title>Руководство по MySQL для начинающих</title>
+
+<author title="автор">
+  <mail link="chriswhite@gentoo.org">Chris White</mail>
+</author>
+<author title="редактор">
+  <mail link="fox2mike@gentoo.org">Shyam Mani</mail>
+</author>
+<author title="редактор">
+  <mail link="neysx@gentoo.org">Xavier Neys</mail>
+</author>
+<author title="переводчик">
+  <mail link="astakhov@warum.ru">Юрий Астахов</mail>
+</author>
+<author title="редактор перевода">
+  <mail link="achumakov@gentoo.org">Алексей Чумаков</mail>
+</author>
+
+<abstract>
+Этот документ поможет пользователю настроить и использовать MySQL.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.3</version>
+<date>2005-12-15</date>
+
+<chapter>
+<title>Начало работы с MySQL</title>
+<section>
+<title>Введение</title>
+<body>
+
+<p>
+MySQL&nbsp;&mdash; это популярный сервер баз данных, используемый в различных
+областях. Аббревиатура SQL означает Structured Query Language (язык
+структурированных запросов), именно его использует MySQL для общения с
+другими программами. Более того, в MySQL есть собственные расширенные функции
+SQL, дающие дополнительные возможности пользователям. В этом руководстве
+рассматривается процесс начальной установки MySQL, настройка баз данных и
+таблиц, заведение новых пользователей. Итак, начнем с установки.
+</p>
+
+</body>
+</section>
+<section>
+<title>Установка MySQL</title>
+<body>
+
+<p>
+Сначала нужно установить MySQL. Если вам нужны определенные возможности 
+MySQL, установите соответствующие флаги USE, которые позволяют точнее
+регулировать процесс установки.
+</p>
+
+<pre caption="Установка MySQL">
+<comment>(просмотр имеющихся флагов USE)</comment>
+# <i>emerge --pretend --verbose mysql</i>
+<comment>(установка MySQL)</comment>
+# <i>emerge mysql</i>
+</pre>
+
+<p>
+По завершении установки вы увидите такое сообщение:
+</p>
+
+<pre caption="Сообщение программы MySQL einfo">
+You might want to run:
+"emerge --config =dev-db/mysql-[version]"
+if this is a new install.
+
+<comment>Рекомендуется запустить команду
+"emerge --config =dev-db/mysql-[версия]"
+после первоначальной установки MySQL.</comment>
+</pre>
+
+<p>
+Поскольку у нас первоначальная установка, запустим команду. Во время настройки
+базы данных MySQL вам потребуется по запросу нажать клавишу <c>ENTER</c>. 
+В процессе настройки устанавливается главная база данных MySQL, содержащая
+служебные сведения о базах данных, таблицах, пользователях, правах доступа и 
+т.д. При настройке будет рекомендовано как можно раньше изменить корневой 
+пароль. Мы определенно это сделаем, чтобы кто-нибудь не смог улучшить момент
+и взломать наш сервер MySQL, настроенный по умолчанию.
+</p>
+
+<pre caption="Настройка MySQL">
+# <i>ebuild /var/db/pkg/dev-db/mysql-[version]/mysql-[version].ebuild config</i>
+ * MySQL DATADIR is /var/lib/mysql
+ * Press ENTER to create the mysql database and set proper
+ * permissions on it, or Control-C to abort now...
+
+   Preparing db table
+   Preparing host table
+   Preparing user table
+   Preparing func table
+   Preparing tables_priv table
+   Preparing columns_priv table
+   Installing all prepared tables
+
+   To start mysqld at boot time you have to copy support-files/mysql.server
+   to the right place for your system
+
+   PLEASE REMEMBER TO SET A PASSWORD FOR THE MySQL root USER !
+   To do so, issue the following commands to start the server
+   and change the applicable passwords:
+<comment>(обратите внимание на следующие 3 строки)</comment>
+   /etc/init.d/mysql start
+   /usr/bin/mysqladmin -u root -h pegasos password 'new-password'
+   /usr/bin/mysqladmin -u root password 'new-password'
+   Depending on your configuration, a -p option may be needed
+   in the last command. See the manual for more details.
+
+<comment>(различные сообщения, не относящиеся к установке, опущены для краткости)</comment>
+
+   * For security reasons you should set your MySQL root
+   * password as soon as possible.
+</pre>
+
+<impo>
+Начиная с mysql-4.0.24-r2, пароли вводятся на этапе настройки, что повышает
+надежность ввода корневого пароля.
+</impo>
+
+<p>
+Сценарий установки уже отобразил команды, нужные для установки пароля.
+Теперь запустим их.
+</p>
+
+<pre caption="Установка корневого пароля MySQL">
+# <i>/etc/init.d/mysql start</i>
+ * Re-caching dependency info (mtimes differ)...
+ * Starting mysqld (/etc/mysql/my.cnf) ...        [ ok ]
+<comment>(вместо 'новый-пароль' укажите ваш пароль)</comment>
+# <i>/usr/bin/mysqladmin -u root -h localhost password 'новый-пароль'</i>
+</pre>
+
+<p>
+Теперь вы можете убедиться в работоспособности нового пароля, попытавшись
+войти на свой сервер MySQL:
+</p>
+
+<pre caption="Вход на сервер MySQL программой mysql">
+$ <i>mysql -u root -h localhost -p</i>
+Enter password:
+Welcome to the MySQL monitor. Commands end with ; or \g.
+Your MySQL connection id is 4 to server version: 4.0.25
+
+Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
+
+mysql&gt;
+</pre>
+
+<p>
+Параметр <c>-u</c> указывает пользователя, который будет входить в систему.
+Параметр <c>-h</c> указывает узел сети. Обычно это <c>localhost</c>, если вы 
+настраиваете не удаленный сервер. Наконец, <c>-p</c> сообщает программе-клиенту 
+mysql, что для доступа к базе данных будет вводится пароль. Обратите внимание 
+на приглашение <c>mysql&gt;</c>. Именно здесь вы будете вводить все свои 
+команды. Теперь, находясь в среде mysql в качестве корневого пользователя, 
+мы можем начать настройку базы данных. 
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Настройка базы данных</title>
+<section>
+<title>Создание базы данных</title>
+<body>
+
+<p>
+Мы вошли, и на экране &mdash; приглашение mysql. Сначала взглянем на список уже 
+имеющихся баз данных. Для этого введем команду <c>SHOW DATABASES</c>.
+</p>
+
+<pre caption="Вывод списка баз данных MySQL">
+mysql&gt; <i>SHOW DATABASES;</i>
++----------+
+| Database |
++----------+
+| mysql    |
+| test     |
++----------+
+2 rows in set (0.09 sec)
+</pre>
+
+<impo>
+Запомните, что команды MySQL следует заканчивать точкой с запятой&nbsp;&mdash; 
+<c>;</c>
+</impo>
+
+<p>
+Несмотря на то, что база данных test уже создана, создадим свою собственную. 
+Базы данных создаются командой <c>CREATE DATABASE</c>. Мы назовем свою gentoo.
+</p>
+
+<pre caption="Создание базы данных gentoo">
+mysql&gt; <i>CREATE DATABASE gentoo;</i>
+Query OK, 1 row affected (0.08 sec)
+</pre>
+
+<p>
+Ответ дает понять, что команда выполнена без каких-либо ошибок. В данном случае,
+изменилась одна строка. Это относится к главной базе данных mysql, в которой 
+содержится список всех баз данных. Но вам не нужно слишком беспокоиться о
+второстепенных подробностях. Последнее число означает время выполнения запроса.
+Убедиться, что база данных создана, мы можем, снова запустив команду <c>SHOW 
+DATABASES</c>.
+</p>
+
+<pre caption="Проверка наличия базы данных">
+mysql&gt; <i>SHOW DATABASES;</i>
++----------+
+| Database |
++----------+
+| gentoo   |
+| mysql    |
+| test     |
++----------+
+3 rows in set (0.00 sec)
+</pre>
+
+<p>
+Разумеется, наша база данных создана. Чтобы заняться созданием таблиц в новой 
+базе данных gentoo, нам потребуется установить ее как текущую. Для этого 
+используем команду <c>USE</c>. Параметром этой команды указывается название
+базы данных, которую нужно сделать текущей. Еще текущую базу можно 
+устанавливать в командной строке, указывая ее название после параметра 
+<c>-D</c>. Давайте продолжим и переключимся на базу данных gentoo.
+</p>
+
+<pre caption="Переключение базы данных">
+mysql&gt; <i>USE gentoo;</i>
+Database changed
+</pre>
+
+<p>
+Теперь текущей является только что созданная база данных gentoo. Теперь, 
+используя ее, мы можем заняться созданием таблиц и наполнением их информацией.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Работа с таблицами в MySQL</title>
+<section>
+<title>Создание таблицы</title>
+<body>
+
+<p>
+В структуру MySQL входят базы данных, таблицы, записи и поля. В базах данных
+собраны таблицы, в таблицах собраны записи, в записях&nbsp;&mdash; поля, в
+которых, в свою очередь, хранится собственно информация. Такая структура
+позволяет пользователям выбирать, каким образом обращаться к своей информации.
+Только что мы работали с базами данных, теперь давайте поработаем с таблицами. 
+Для начала, список таблиц можно вывести так же, как и список баз данных,
+используя команду <c>SHOW TABLES</c>. Сейчас в нашей базе данных gentoo
+еще нет таблиц, как показывает эта команда:
+</p>
+
+<pre caption="Пустая база данных gentoo">
+mysql&gt; <i>SHOW TABLES;</i>
+Empty set (0.00 sec)
+</pre>
+
+<p>
+Значит, нужно создать несколько таблиц. Чтобы это сделать, используем команду
+<c>CREATE TABLE</c>. Однако, эта команда довольно сильно отличается от простой
+команды <c>CREATE DATABASE</c>. Ей передается список аргументов следующего 
+вида:
+</p>
+
+<pre caption="Синтаксис CREATE TABLE">
+CREATE TABLE [имя_таблицы] ([имя_поля] [тип_данных_поля]([размер]));
+</pre>
+
+<p>
+<b>имя_таблицы</b> &mdash; имя создаваемой таблицы. В данном случае,
+давайте создадим таблицу с названием <c>developers</c> (разработчики). В 
+таблице будут находится имена разработчиков, адреса электронной почты и род 
+занятий. <b>имя_поля</b> будет содержать имена полей. Нам нужны три имени: name 
+(имя), email (почта) и job (род занятий). В параметре <b>тип_данных_поля</b> 
+укажем тип заносимой информации. Перечень возможных форматов находится на <uri
+link="http://dev.mysql.com/doc/mysql/en/column-types.html">странице описания
+типов столбцов MySQL</uri>. Здесь мы для всех полей укажем тип <c>VARCHAR</c>.
+<c>VARCHAR</c> &mdash; один из простейших типов данных, предназначенный для 
+работы со строками. <c>размер</c> указывает, сколько данных можно сохранить в
+одном поле. Укажем 128. Это значит, что поле сможет содержать 128 байт данных 
+типа <c>VARCHAR</c>. Cейчас можно упрощенно считать, что это 128 знаков текста, 
+хотя на вышеупомянутом сайте представлено более точное описание. Теперь, зная, 
+какую мы собираемся создать таблицу, сделаем это.
+</p>
+
+<pre caption="Создание таблицы">
+mysql&gt; <i>CREATE TABLE developers ( name VARCHAR(128), email VARCHAR(128), job VARCHAR(128));</i>
+Query OK, 0 rows affected (0.11 sec)
+</pre>
+
+<p>
+Похоже, таблица создалась нормально. Давайте проверим это командой <c>SHOW
+TABLES</c>:
+</p>
+
+<pre caption="Проверка таблицы">
+mysql&gt; <i>SHOW TABLES;</i>
++------------------+
+| Tables_in_gentoo |
++------------------+
+| developers       |
++------------------+
+1 row in set (0.00 sec)
+</pre>
+
+<p>
+Да, это она! Но не показано никакой информации о введенных типах полей. Для 
+этого используем команду <c>DESCRIBE</c> (или ее краткий вариант, <c>DESC</c>), 
+параметром которой указывается имя таблицы. Посмотрим, что она выдаст для 
+таблицы developers.
+</p>
+
+<pre caption="Описание таблицы developers">
+mysql&gt; <i>DESCRIBE developers;</i>
++-------+--------------+------+-----+---------+-------+
+| Field | Type         | Null | Key | Default | Extra |
++-------+--------------+------+-----+---------+-------+
+| name  | varchar(128) | YES  |     | NULL    |       |
+| email | varchar(128) | YES  |     | NULL    |       |
+| job   | varchar(128) | YES  |     | NULL    |       |
++-------+--------------+------+-----+---------+-------+
+3 rows in set (0.00 sec)
+</pre>
+
+<p>
+Показаны различные поля и их типы. Видно также несколько дополнительных
+атрибутов, выходящих за рамки этого руководства. За дополнительными сведениями 
+можно обратиться к <uri link="http://dev.mysql.com/doc/mysql/en/">Руководству 
+по MySQL</uri>. Теперь у нас есть рабочая таблица. Давайте двинемся дальше и 
+наполним ее.
+</p>
+
+</body>
+</section>
+<section>
+<title>Заполнение базы данных MySQL</title>
+<body>
+
+<p>
+Таблица заполняется (данные добавляются) командой <c>INSERT</c>. Как и у 
+команды <c>CREATE TABLE</c>, у нее есть определенный формат:
+</p>
+
+<pre caption="Синтаксис INSERT">
+INSERT INTO имя_таблицы (столбец1, столбец2, ...) VALUES('знач1','знач2',...); 
+</pre>
+
+<p>
+Эту команду используют для вставки записей в таблицу. Сначала указывается имя 
+таблицы, в которую нужно добавить информацию. Затем может идти список столбцов, 
+в которые добавляются данные, а в <c>VALUES</c> указываются значения, которые
+добавляются в таблицу. Можно опустить список полей, если значения добавляются в
+каждое в том же порядке, в каком определены поля в таблице. Сейчас мы добавим
+данные в теблицу developers. Вставьте записи как в примере:
+</p>
+
+<pre caption="Добавление информации в таблицу developers">
+mysql&gt; <i>INSERT INTO developers VALUES('Joe Smith', 'joesmith@gentoo.org', 'toolchain');</i>
+Query OK, 1 row affected (0.06 sec)
+<comment>(Если вы не знаете порядок полей в таблице или хотите добавить
+неполную запись)</comment>
+mysql&gt; <i>INSERT INTO developers (job, name) VALUES('outsourced', 'Jane
+Doe');</i>
+Query OK, 1 row affected (0.01 sec)
+</pre>
+
+<p>
+Согласно полученному ответу, запись, похоже, добавилась правильно. Но что если
+требуется ввести более одной записи? Именно здесь пригодиться команда <c>LOAD 
+DATA</c>. Она загружает записи из файла, разделенного знаками табуляции. 
+Попробуем создать файл с записями в своем домашнем каталоге. Назовем его 
+<path>records.txt</path>. Вот пример:
+</p>
+
+<pre caption="~/records.txt">
+John Doe	johndoe@gentoo.org	portage
+Chris White	chriswhite@gentoo.org	documentation
+Sam Smith	samsmith@gentoo.org	amd64
+</pre>
+
+<impo>
+Всегда уточняйте, с какими данными работаете. Чрезвычайно небезопасно
+использовать <c>LOAD DATA</c>, если вы не знаете, что находится внутри файла!
+</impo>
+
+<p>
+Вообще, у команды <c>LOAD DATA</c> весьма пространное определение, но сейчас
+мы используем простейшую форму.
+</p>
+
+<pre caption="Синтаксис LOAD DATA">
+LOAD DATA LOCAL INFILE '/путь/к/файлу' INTO TABLE имя_таблицы;
+</pre>
+
+<p>
+Здесь тоже все просто. Укажите путь к файлу и имя таблицы. В нашем
+случае&nbsp;&mdash; это файл <path>~/records.txt</path> и таблица developers.
+</p>
+
+<pre caption="Загрузка данных">
+mysql&gt; <i>LOAD DATA LOCAL INFILE '~/records.txt' INTO TABLE developers;</i>
+Query OK, 3 rows affected (0.00 sec)
+Records: 3  Deleted: 0  Skipped: 0  Warnings: 0
+</pre>
+
+<impo>
+Если вы столкнетесь со странностями, убедитесь, что поля разделены
+табуляторами. Если вы вставляете информацию в файл из другого источника,
+табуляторы могут преобразоваться в пробелы.
+</impo>
+
+<p>
+Сработало. Но эта команда просто добавляет записи и не дает проконтролировать
+работу MySQL. Множество веб-приложений используют сценарии sql для быстрой и
+легкой настройки базы данных MySQL. Если вы хотите использовать сценарий sql, 
+вам понадобится запустить mysql в пакетном режиме (в качестве ввода 
+используется файл со сценарием). Вот пример запуска mysql в пакетном режиме:
+</p>
+
+<pre caption="MySQL в пакетном режиме">
+$ <i>mysql -u root -h localhost -p &lt; sqlfile</i>
+</pre>
+
+<p>
+Как и в случае с <c>LOAD DATA</c>, убедитесь, что знаете, что именно выполняет 
+файл <path>sqlfile</path>. <e>Не делая этого, вы можете подвергнуть вашу базу 
+данных серьезному риску утечки!</e> Другой путь заключается в использовании 
+команды <c>source</c>. Эта команда запускает команды mysql из файла, когда mysql
+находится в интерактивном режиме. Вот как взять команды sql из файла:
+</p>
+
+<pre caption="Исполнение команд sql из файла">
+mysql&gt; <i>source sqlfile;</i>
+</pre>
+
+<p>
+Если вы столкнетесь с веб-приложением, которому нужно, чтобы вы запустили файл 
+с командами sql, можно использовать одну из двух команд, показанных выше. Итак, 
+наша таблица сформирована, но как же работать с полями? Это делается поиском в 
+таблице при помощи запросов. 
+</p>
+
+</body>
+</section>
+<section>
+<title>Запросы к таблицам в MySQL</title>
+<body>
+
+<p>
+Одна из главных функций любой базы данных SQL&nbsp;&mdash; запросы. Они 
+помогают обратить данные из таблиц во что-то полезное. Большинство запросов 
+выполняется командой <c>SELECT</c>. Эта команда довольно сложна, поэтому 
+в этом документе мы рассмотрим лишь три основных ее формы.
+</p>
+
+<pre caption="Формы SELECT">
+<comment>(Выборка всех записей в таблице)</comment>
+SELECT * FROM имя_таблицы;
+<comment>(Выборка конкретных записей в таблице)</comment>
+SELECT * FROM имя_таблицы WHERE поле=значение;
+<comment>(Выборка конкретных полей)</comment>
+SELECT поле1,поле2,поле3 FROM имя_таблицы [WHERE поле=значение];
+</pre>
+
+<p>
+Посмотрим на первую форму. Она относительно проста и позволяет взглянуть на
+всю таблицу. Попробуем: запустим эту команду, чтобы увидеть, что находится в 
+нашей таблице.
+</p>
+
+<pre caption="Содержимое таблицы developers">
+mysql&gt; <i>SELECT * FROM developers;</i>
++-------------+-----------------------+----------------+
+| name        | email                 | job            |
++-------------+-----------------------+----------------+
+| Joe Smith   | joesmith@gentoo.org   | toolchain      |
+| John Doe    | johndoe@gentoo.org    | portage        |
+| Chris White | chriswhite@gentoo.org | documentation  |
+| Sam Smith   | samsmith@gentoo.org   | amd64          |
+| Jane Doe    | NULL                  | Outsourced job |
++-------------+-----------------------+----------------+
+5 rows in set (0.00 sec)
+</pre>
+
+<p>
+Видно данные, не только вставленные путем <c>INSERT</c>, но и вставленные
+командой <c>LOAD DATA</c>. Теперь, к примеру, нужно посмотреть запись для Chris
+White. Это можно сделать, используя вторую форму выборки.
+</p>
+
+<pre caption="Выборка конкретной записи, используя SELECT">
+mysql&gt; <i>SELECT * FROM developers WHERE name = 'Chris White';</i>
++-------------+-----------------------+---------------+
+| name        | email                 | job           |
++-------------+-----------------------+---------------+
+| Chris White | chriswhite@gentoo.org | documentation |
++-------------+-----------------------+---------------+
+1 row in set (0.08 sec)
+</pre>
+
+<p>
+Как и ожидалось, отобрана нужная искомая запись. Теперь, допустим, что нужно
+знать только род занятий и адрес электронной почты, но не имя. Это делается
+при помощи третьей формы <c>SELECT</c>, как показано ниже.
+</p>
+
+<pre caption="Выборка нужной записи и полей с помощью SELECT">
+mysql> <i>SELECT email,job FROM developers WHERE name = 'Chris White';</i>
++-----------------------+---------------+
+| email                 | job           |
++-----------------------+---------------+
+| chriswhite@gentoo.org | documentation |
++-----------------------+---------------+
+1 row in set (0.04 sec)
+</pre>
+
+<p>
+Этот способ выборки легче в управлении, особенно при больших объемах 
+информации, как показано далее. Сейчас, войдя как суперпользователь, вы 
+обладаете неограниченными правами на любые действия в MySQL. Пользователь с 
+такими привилегиями в серверной среде может быть достаточно трудноуправляемым. 
+Чтобы управлять тем, кто и что может делать с базами данных, надо устанавливать
+привилегии.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Привилегии в MySQL</title>
+<section>
+<title>Предоставление привилегий командой GRANT</title>
+<body>
+
+<p>
+Привилегиями определяются возможности доступа пользователей к базам данных, 
+таблицам... почти ко всему. Сейчас только суперпользователь root из 
+MySQL может обращаться к базе данных gentoo, согласно данным разрешениям. 
+Давайте создадим двух самых обычных пользователей, например, guest (гостя) и 
+admin (администратора), которые будут обращаться к базе данных gentoo и 
+работать с информацией из нее. Пусть пользователь guest будет ограничен в 
+правах, и все, что он сможет &mdash; это получать информацию из базы данных.
+admin получит те же права доступа, что и root, но только к базе данных gentoo 
+(не к основным базам mysql). Но прежде, чем начать, давайте взглянем на 
+несколько упрощенный формат команды <c>GRANT</c>.
+</p>
+
+<pre caption="Синтаксис GRANT">
+GRANT [привилегии] ON база_данных.* TO '[пользователь]'@'[узел]'
+IDENTIFIED BY '[пароль]';
+</pre>
+
+<note>
+Команда <c>GRANT</c> считается способом создания пользователя. Поздние
+версии MySQL, однако, также содержат функцию <c>CREATE_USER</c>, хотя 
+<c>GRANT</c> до сих пор предпочительнее.
+</note>
+
+<p>
+Теперь нужны привилегии, которые можно присваивать. Используя все вышесказанное,
+можно устанавливать следующие привилегии:
+</p>
+
+<ul>
+  <li><c>ALL</c> - дается полный доступ ко всей базе данных</li>
+  <li><c>CREATE</c> - пользователям позволяется создавать таблицы</li>
+  <li><c>SELECT</c> - пользователям позволяется делать запросы к таблицам</li>
+  <li><c>INSERT</c> - пользователям позволяется вставлять данные в таблицу</li>
+  <li><c>SHOW DATABASES</c> - разрешается выводить список баз данных</li>
+  <li><c>USAGE</c> - у пользователя нет привилегий</li>
+  <li><c>GRANT OPTION</c> - пользователям разрешается давать привилегии</li>
+</ul>
+
+<note>
+Если вы используете MySQL для обмена данными с веб-приложением, то
+разъясняемые здесь привилегии <c>CREATE</c>, <c>SELECT</c>, <c>INSERT</c>, а
+также привилегии <c>DELETE</c> и <c>UPDATE</c> (описанные в <uri
+link="http://dev.mysql.com/doc/mysql/en/grant.html">руководстве по MySQL,
+раздел GRANT and REVOKE Syntax</uri>) &mdash; единственные, которые, вероятно, 
+потребуются. Многие совершают ошибку, раздавая все привилегии, когда это, в 
+действительности, не нужно. Сверьтесь с разработчиками приложений, 
+действительно ли такие разрешения создадут проблемы в работе.
+</note>
+
+<p>
+Для нашего пользователя admin подойдет ALL. А для пользователя guest привилегии 
+<c>SELECT</c> будет достаточно для доступа на чтение. В качестве базы
+данных укажем gentoo, на нее будут установлены разрешения. .* означает
+&laquo;все таблицы&raquo;. Если потребуется, можно установить права доступа к
+отдельным таблицам. Дальше идет имя пользователя и имя узла, с которого будет 
+работать пользователь. В большинстве случаев это будет узел localhost. Наконец, 
+задается пароль пользователя. Исходя из этого, давайте создадим пользователей.
+</p>
+
+<pre caption="Создание пользователей admin и guest">
+<comment>(admin)</comment>
+mysql&gt; <i>GRANT ALL ON gentoo.* TO 'admin'@'localhost' IDENTIFIED BY 'пароль';</i>
+<comment>(guest)</comment>
+mysql&gt; <i>GRANT SELECT ON gentoo.* TO 'guest'@'localhost' IDENTIFIED BY 'пароль';</i>
+</pre>
+
+<p>
+Итак, пользователи созданы; теперь протестируем их. Сначала выйдем из
+mysql, написав <c>quit</c> в строке приглашения:
+</p>
+
+<pre caption="Выход из MySQL">
+mysql&gt; <i>quit</i>
+</pre>
+
+<p>
+Теперь мы снова в консоли. Пользователи настроены, давайте посмотрим, что
+они могут делать.
+</p>
+
+</body>
+</section>
+<section>
+<title>Проверка прав пользователей</title>
+<body>
+
+<p>
+Попробуем зайти как пользователь guest. В данный момент у пользователя guest
+есть только право выборки (<c>SELECT</c>). В основном, это сводится к 
+возможности поиска и ничему другому. Зайдем как пользователь guest.
+</p>
+
+<pre caption="Вход опользователя guest">
+$ <i>mysql -u guest -h localhost -p</i>
+Enter password:
+Welcome to the MySQL monitor. Commands end with ; or \g.
+Your MySQL connection id is 6 to server version: 4.0.25
+
+Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
+
+mysql&gt;
+</pre>
+
+<p>
+Теперь нам нужно проверить его ограничения. Переключимся на базу данных
+gentoo:
+</p>
+
+<pre caption="Переключение на базу gentoo">
+mysql&gt; <i>USE gentoo;</i>
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+</pre>
+
+<p>
+Теперь попытаемся сделать что-нибудь недозволенное. Попробуем создать таблицу.
+</p>
+
+<pre caption="Попытка создать таблицу пользователем guest">
+mysql&gt; <i>CREATE TABLE test (test VARCHAR(20), foobar VARCHAR(2));</i>
+ERROR 1044: Access denied for user: 'guest@localhost' to database 'gentoo'
+</pre>
+
+<p>
+Как видно, это не удалось, из-за того, что у пользователя недостаточно прав.
+Но ему дано право на использование <c>SELECT</c>. Давайте проверим:
+</p>
+
+<pre caption="Попытка выборки командой SELECT">
+mysql&gt; <i>SELECT * FROM developers;</i>
++-------------+-----------------------+----------------+
+| name        | email                 | job            |
++-------------+-----------------------+----------------+
+| Joe Smith   | joesmith@gentoo.org   | toolchain      |
+| John Doe    | johndoe@gentoo.org    | portage        |
+| Chris White | chriswhite@gentoo.org | documentation  |
+| Sam Smith   | samsmith@gentoo.org   | amd64          |
+| Jane Doe    | NULL                  | Outsourced job |
++-------------+-----------------------+----------------+
+5 rows in set (0.00 sec)
+</pre>
+
+<p>
+Команда успешно отработала, а получили представление о том, на что способны 
+права пользователей. Но мы ведь еще создали пользователя admin. Он создавался 
+для демонстрации того, что даже у пользователей, которым даны все права, могут 
+быть ограничения. Выйдите из MySQL и зайдите как пользователь admin.
+</p>
+
+<pre caption="Вход пользователя admin">
+mysql&gt; <i>quit</i>
+Bye
+$ <i>mysql -u admin -h localhost -p</i>
+Enter password:
+Welcome to the MySQL monitor. Commands end with ; or \g.
+Your MySQL connection id is 7 to server version: 4.0.25
+
+Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
+
+mysql&gt;
+</pre>
+
+<p>
+Для начала, попробуем создать новую базу данных как пользователь admin.
+У пользователя admin схожие права с учетной записью root в MySQL, и он может
+вносить любые изменения, выбрав базу данных gentoo. Мы проверим права его 
+доступа к главной базе данных MySQL. Вспомним, что ранее мы дали ему права
+только для доступа к конкретной базе данных.
+</p>
+
+<pre caption="Попытка создания новой базы данных">
+mysql&gt; <i>CREATE DATABASE gentoo2;</i>
+ERROR 1044: Access denied for user: 'admin@localhost' to database 'gentoo2'
+</pre>
+
+<p>
+Разумеется, пользователь admin не может создавать базы данных в основной базе
+MySQL, несмотря на все права на базу данных gentoo. Но admin все еще может
+изменять базу данных gentoo, как показывает вставка данных в следующем примере.
+</p>
+
+<pre caption="Права admin в базе данных gentoo">
+mysql&gt; <i>USE gentoo;</i>
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql&gt; <i>INSERT INTO developers VALUES('Bob Simmons', 'bobsimmons@gentoo.org', 'python');</i>
+Query OK, 1 row affected (0.08 sec)
+</pre>
+
+<p>
+Пользователь admin может обращаться к базе gentoo, как захочет. Но иногда
+требуется лишить пользователя прав. Это может быть что угодно, начиная с
+проблематичного пользоватля, и заканчивая ушедшим сотрудником. Давайте
+разберемся, как отзывать разрешения с помощью команды <c>REVOKE</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Удаление прав пользователя командой REVOKE</title>
+<body>
+
+<p>
+Команда <c>REVOKE</c> позволяет запретить доступ пользователю. Можно либо
+запретить любой доступ, либо только определенный. В самом деле, формат очень 
+похож на <c>GRANT</c>.
+</p>
+
+<pre caption="Синтаксис REVOKE">
+REVOKE [привилегии] ON база_данных.* FROM '[пользователь]'@'[узел]';
+</pre>
+
+<p>
+Параметры объясняются в разделе команды <c>GRANT</c>. А сейчас мы запретим 
+пользователю любой вид доступа. Скажем, мы выяснили, что учетная запись
+guest вызывает проблемы с безопасностью. Мы решаем отозвать все права.
+Заходим как root делаем необходимое.
+</p>
+
+<pre caption="Отзыв разрешений для пользователя user">
+mysql&gt; <i>REVOKE ALL ON gentoo.* FROM 'guest'@'localhost';</i>
+Query OK, 0 rows affected (0.00 sec)
+</pre>
+
+<note>
+В данном случае, доступ пользователя прост, поэтому отмена прав на одну базу
+данных&nbsp;&mdash; не проблема. Но обычно вам, скорее всего, потребуется
+использовать *.* вместо gentoo.*, чтобы заодно отменить доступ пользователя
+ко всем остальным базам данных.</note>
+
+<p>
+Давайте выйдем и попробуем зайти как пользователь guest.
+</p>
+
+<pre caption="Попытка зайти как пользователь guest">
+$ <i>mysql -u guest -h localhost -p</i>
+Enter password:
+Welcome to the MySQL monitor. Commands end with ; or \g.
+Your MySQL connection id is 9 to server version: 4.0.25
+
+Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
+
+mysql&gt;
+</pre>
+
+<p>
+Хотя нам удалось войти, доступ к базе gentoo уже пропал.
+</p>
+
+<pre caption="Пользователю guest запрещен доступ ">
+mysql&gt; <i>USE gentoo;</i>
+ERROR 1044: Access denied for user: 'guest@localhost' to database 'gentoo'
+</pre>
+
+<p>
+И наш проблематичный пользователь больше не может обращаться к базе gentoo.
+Заметьте, что пользователь сохранил возможность входа. Это потому, что он
+остается в основной базе данных MySQL. Теперь взглянем, как полностью удалить
+учетную запись командой <c>DELETE</c>, и посмотрим на таблицу пользователей 
+MySQL.
+</p>
+
+</body>
+</section>
+<section>
+<title>Удаление учетных записей командой DELETE</title>
+<body>
+
+<p>
+Таблица пользователей MySQL&nbsp;&mdash; это список пользователей и информации
+о них. Убедитесь, что вы зашли как root. Используйте основную базу данных MySQL.
+</p>
+
+<pre caption="Использование основной базы mysql">
+mysql&gt; <i>USE mysql;</i>
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql&gt;
+</pre>
+
+<p>
+Посмотрим, какие в базе mysql существуют таблицы:
+</p>
+
+<pre caption="Список таблиц БД mysql">
+mysql&gt; <i>SHOW TABLES;</i>
++-----------------+
+| Tables_in_mysql |
++-----------------+
+| columns_priv    |
+| db              |
+| func            |
+| host            |
+| tables_priv     |
+| user            |
++-----------------+
+6 rows in set (0.00 sec)
+</pre>
+
+<p>
+Таблица user&nbsp;&mdash; та, что нужна. В ней 30 различных полей, и ее
+сложно читать. Для облегчения чтения используем третью форму команды
+<c>SELECT</c>. Искомые поля&nbsp;&mdash; Host (узел) и User (пользователь).
+</p>
+
+<pre caption="Нахождение пользователя guest в таблице user">
+mysql&gt; <i>SELECT Host,User FROM user WHERE User = 'guest';</i>
++-----------+-------+
+| Host      | User  |
++-----------+-------+
+| localhost | guest |
++-----------+-------+
+1 row in set (0.00 sec)
+</pre>
+
+<p>
+Теперь, получив информацию, мы можем избавиться от пользователя guest. Это 
+делается командой <c>DELETE</c>; вот ее синтаксис:
+</p>
+
+<pre caption="Синтаксис DELETE">
+DELETE FROM имя_таблицы WHERE поле='значение';
+</pre>
+
+<p>
+Вы могли заметить, что формат <c>DELETE</c> чем-то схож с форматом 
+<c>SELECT</c>. Укажем поле User и значение guest. Это удалит запись из таблицы 
+user, где пользователь &mdash; guest, удаляя нашу гостевую учетную запись. 
+Сделаем так: 
+</p>
+
+<pre caption="Удаление пользователя guest">
+mysql&gt; <i>DELETE FROM user WHERE User='guest';</i>
+Query OK, 1 row affected (0.07 sec)
+<comment>(Команда FLUSH PRIVILEGES нужна, чтобы обновить разрешения)</comment>
+mysql&gt; <i>FLUSH PRIVILEGES;</i>
+Query OK, 0 rows affected (0.00 sec)
+</pre>
+
+<p>
+Похоже, сработало. Проверим: выйдите и попробуйте зайти как пользователь guest.
+</p>
+
+<pre caption="Попытка входа пользователя guest">
+mysql&gt; <i>quit</i>
+Bye
+$ <i>mysql -u guest -h localhost -p</i>
+Enter password:
+ERROR 1045: Access denied for user: 'guest@localhost' (Using password: YES)
+</pre>
+
+<p>
+Все, пользователь успешно удален!
+</p>
+
+</body>
+</section>
+<section>
+<title>Заключение</title>
+<body>
+
+<p>
+В этом руководстве в основном рассматривалась настройка MySQL из командной 
+строки. Существует несколько альтернатив с графическим интерфейсом:
+</p>
+
+<ul>
+  <li>
+    <uri link="http://www.phpmyadmin.net/home_page/">phpMyAdmin
+    </uri>&nbsp;&mdash; популярное средство администрирования MySQL, написанное 
+    на php.
+  </li>
+  <li>
+    <uri link="http://sourceforge.net/projects/mysqlnavigator/">mysqlnavigator
+    </uri>&nbsp;&mdash; оболочка MySQL для Qt.
+  </li>
+  <li>
+    <uri link="http://gmyclient.sourceforge.net/">gmyclient</uri>&nbsp;&mdash;
+    клиент MySQL для GNOME.
+  </li>
+  <li>
+    <uri link="http://www.knoda.org/">knoda</uri>&nbsp;&mdash;
+    клиент MySQL для KDE.
+  </li>
+</ul>
+
+<p>
+На этом заканчивается введение в MySQL. Надеюсь, что оно помогло вам лучше 
+разобраться в основах MySQL и настройке базы данных. Пожалуйста, присылайте 
+свои соображения мне по адресу <mail>chriswhite@gentoo.org</mail>.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
+
+<!-- *$Localization:
+target-language: Russian
+target-version: 1.3-r1
+target-date: 2006-03-22
+source-cvs-revision: 1.5
+translated-by: Yuri Astakhov [astakhov@warum.ru]
+edited-by: Alexey Chumakov [achumakov@gentoo.org]
+
+notes:
+-->
