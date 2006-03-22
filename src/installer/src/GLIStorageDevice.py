@@ -71,6 +71,9 @@ class Device:
 		if set_geometry:
 			self.set_disk_geometry_from_disk()
 
+	def __getattr__(self, name):
+		return self.get_partition(name)
+
 	##
 	# Sets disk geometry info from disk. This function is used internally by __init__()
 	def set_disk_geometry_from_disk(self):
