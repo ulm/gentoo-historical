@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.117 2006/03/20 12:51:17 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.118 2006/03/22 02:50:44 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -94,7 +94,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 			# Check to see if the old and new partition table structures are the same
 			table_changed = 0
-			for part in parts_new[device]:
+			for part in parts_new[device].get_partitions():
 				if not part in parts_old[device]:
 					table_changed = 1
 					break
@@ -203,7 +203,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					for part_log in parts_old[device]:
 						if part_log < 5 or parts_old[device][part_log]['type'] == "free": continue
 						delete_log = 0
-						for new_part in parts_new[device]:
+						for new_part in parts_new[device].get_partitions():
 							if new_part < 5: continue
 							tmppart = parts_new[device][new_part]
 							# This partition is unchanged in the new layout
@@ -223,7 +223,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						self._logger.log("  Deleting extended partition with minor " + str(part))
 						parted_disk.delete_partition(parted_disk.get_partition(part))
 					continue
-				for new_part in parts_new[device]:
+				for new_part in parts_new[device].get_partitions():
 					tmppart = parts_new[device][new_part]
 					if tmppart['origminor'] == part and not tmppart['resized']:
 						self._logger.log("  Deleting old minor " + str(part) + " to be recreated later")
@@ -243,7 +243,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			cur_progress += 1
 			for part in parts_old[device]:
 				oldpart = parts_old[device][part]
-				for new_part in parts_new[device]:
+				for new_part in parts_new[device].get_partitions():
 					tmppart = parts_new[device][new_part]
 					if tmppart['origminor'] == part and tmppart['resized']:
 						type = tmppart['type']
