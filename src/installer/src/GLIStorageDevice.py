@@ -71,9 +71,6 @@ class Device:
 		if set_geometry:
 			self.set_disk_geometry_from_disk()
 
-	def __getattr__(self, name):
-		return self.get_partition(name)
-
 	##
 	# Sets disk geometry info from disk. This function is used internally by __init__()
 	def set_disk_geometry_from_disk(self):
@@ -423,6 +420,9 @@ class Device:
 	def get_partitions(self):
 		return self._partitions
 
+	def __getattr__(self, name):
+		return self.get_partition(name)
+
 ##
 # This class represents a partition within a GLIStorageDevice object
 class Partition:
@@ -506,43 +506,6 @@ class Partition:
 					self._resizeable = True
 			except:
 				self._resizeable = False
-
-	def __getattr__(self, name):
-		tmpdict = { 'start': self.get_start,
-                    'end': self.get_end,
-                    'format': self.get_format,
-                    'type': self.get_type,
-                    'resized': self.get_resized,
-                    'minor': self.get_minor,
-                    'mb': self.get_mb,
-                    'origminor': self.get_origminor,
-                    'mountpoint': self.get_mountpoint,
-                    'mountopts': self.get_mountopts,
-                    'mkfsopts': self.get_mkfsopts
-                  }
-		if name in tmpdict:
-			return tmpdict[name]()
-		if name in self._extra_dict:
-			return self._extra_dict[name]
-		return None
-
-	def __setattr__(self, name, value):
-		tmpdict = { 'start': self.set_start,
-                    'end': self.set_end,
-                    'format': self.set_format,
-                    'type': self.set_type,
-                    'resized': self.set_resized,
-                    'minor': self.set_minor,
-                    'mb': self.set_mb,
-                    'origminor': self.set_origminor,
-                    'mountpoint': self.set_mountpoint,
-                    'mountopts': self.set_mountopts,
-                    'mkfsopts': self.set_mkfsopts
-                  }
-		if name in tmpdict:
-			tmpdict[name](value)
-		else:
-			self._extra_dict[name] = value
 
 	##
 	# Returns whether or not the partition is extended
@@ -869,3 +832,41 @@ def detect_devices():
 
 	# We have assembled the list of devices, so return it
 	return devices
+
+	def __getattr__(self, name):
+		tmpdict = { 'start': self.get_start,
+                    'end': self.get_end,
+                    'format': self.get_format,
+                    'type': self.get_type,
+                    'resized': self.get_resized,
+                    'minor': self.get_minor,
+                    'mb': self.get_mb,
+                    'origminor': self.get_origminor,
+                    'mountpoint': self.get_mountpoint,
+                    'mountopts': self.get_mountopts,
+                    'mkfsopts': self.get_mkfsopts
+                  }
+		if name in tmpdict:
+			return tmpdict[name]()
+		if name in self._extra_dict:
+			return self._extra_dict[name]
+		return None
+
+	def __setattr__(self, name, value):
+		tmpdict = { 'start': self.set_start,
+                    'end': self.set_end,
+                    'format': self.set_format,
+                    'type': self.set_type,
+                    'resized': self.set_resized,
+                    'minor': self.set_minor,
+                    'mb': self.set_mb,
+                    'origminor': self.set_origminor,
+                    'mountpoint': self.set_mountpoint,
+                    'mountopts': self.set_mountopts,
+                    'mkfsopts': self.set_mkfsopts
+                  }
+		if name in tmpdict:
+			tmpdict[name](value)
+		else:
+			self._extra_dict[name] = value
+
