@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-net-functions.xml,v 1.1 2006/03/23 13:48:12 achumakov Exp $ -->
+
+<sections>
+
+<version>1.2</version>
+<date>2005-12-22</date>
+
+<section>
+<title>Стандартные функции-обработчики</title>
+<body>
+
+<p>
+Можно определить четыре функции, которые вызываются при операциях запуска 
+(<c>start</c>) и останова (<c>stop</c>). При вызове функциям передается 
+название интерфейса, так что одна и та же функция может управлять несколькими 
+адаптерами.
+</p>
+
+<p>
+Для указания на то, что запуск или останов интерфейса может продолжаться, 
+возвращаемое значение функций <c>preup()</c> и <c>predown()</c> должно быть 
+нулевым (успешным). Если <c>preup()</c> возвращает ненулевое значение, 
+запуск интерфейса прерывается. Если <c>predown()</c> возвращает ненулевое 
+значение, не допускается продолжение останова интерфейса.
+</p>
+
+<p>
+Возвращаемыое значение функций <c>postup()</c> и <c>postdown()</c> игнорируется,
+так как показываемая ими ошибка не обрабатывается.
+</p>
+
+<p>
+<c>${IFACE}</c> присваивается название запускаемого/останавливаемого 
+интерфейса. <c>${IFVAR}</c> &mdash; это значение <c>${IFACE}</c>, 
+преобразованное в имя переменной, разрешенное в bash.
+</p>
+
+<pre caption="Примеры функций до/после запуска/останова">
+preup() {
+  <comment># Проверка соединения интерфейса перед его запуском. Она
+  # работает лишь с некоторыми сетевыми адаптерами и требует наличия
+  # установленного пакета mii-diag.</comment>
+  if mii-tool ${IFACE} 2> /dev/null | grep -q 'no link'; then
+    ewarn "Интерфейс ${IFACE} не подключен, прерывание запуска"
+    return 1
+  fi
+
+  <comment># Проверка соединения интерфейса перед его запуском. Она
+  # работает лишь с некоторыми сетевыми адаптерами и требует наличия
+  # установленного пакета ethtool.</comment>
+  if ethtool ${IFACE} | grep -q 'Link detected: no'; then
+    ewarn "Интерфейс ${IFACE} не подключен, прерывание запуска"
+    return 1
+  fi
+
+  <comment># Не забываем вернуть 0 при успехе</comment>
+  return 0
+}
+
+predown() {
+  <comment># Назначение этого сценария - проверить наличие корня NFS
+  # и в этом случае предотвратить останов интерфейсов. Заметьте, что
+  # определяя функцию predown(), вы отменяете существующую логику. 
+  # Вот она, на случай если все же понадобится...</comment>
+  if is_net_fs /; then
+    eerror "Корневая ФС смонтирована в сети - останов ${IFACE} невозможен"
+    return 1
+  fi
+
+  <comment># Не забываем вернуть 0 при успехе</comment>
+  return 0
+}
+
+postup() {
+  <comment># Эту функцию можно использовать, например, для регистрации в
+  # службе динамического DNS. Другой пример - отправка/прием почты после
+  # запуска интерфейса.</comment>
+       return 0
+}
+
+postdown() {
+  <comment># Эта функция приводится в основном для полноты... Я не придумал,
+  # что бы ценное в нее поместить ;-)</comment>
+  return 0
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Функции-обработчики wireless tools</title>
+<body>
+
+<note>
+Это не работает вместе с WPA Supplicant, но переменные <c>${ESSID}</c> и
+<c>${ESSIDVAR}</c> доступны в функции <c>postup()</c>.
+</note>
+
+<p>
+Можно определить две функции, вызываемые до и после функции подключения 
+(associate). При вызове им сначала передается название интерфейса, так 
+что одна и та же функция может управлять несколькими адаптерами.
+</p>
+
+<p>
+Для указания на то, что запуск или останов интерфейса можно продолжать, 
+возвращаемое значение функции <c>preassociate()</c> должно быть нулевым
+(успешным). Если <c>preassociate()</c> возвращает ненулевое  
+значение, запуск интерфейса прерывается.
+</p>
+
+<p>
+Возвращаемое значение функции <c>postassociate()</c> игнорируется,
+так как показываемая ей ошибка не обрабатывается.
+</p>
+
+<p>
+<c>${ESSID}</c> присваивается точный ESSID точки доступа, к которой вы 
+подключаетесь. <c>${ESSIDVAR}</c> &mdash; это <c>${ESSID}</c>, преобразованный
+в имя переменной, разрешенное в bash.
+</p>
+
+<pre caption="Функции до/после соединения">
+preassociate() {
+  <comment># Ниже добавляются две конфигурационных переменных, leap_user_ESSID
+  # и leap_pass_ESSID. Когда они обе настроены на подключаемый ESSID,
+  # мы запускаем сценарий CISCO LEAP</comment>
+
+  local user pass
+  eval user=\"\$\{leap_user_${ESSIDVAR}\}\"
+  eval pass=\"\$\{leap_pass_${ESSIDVAR}\}\"
+
+  if [[ -n ${user} &amp;&amp; -n ${pass} ]]; then
+    if [[ ! -x /opt/cisco/bin/leapscript ]]; then
+      eend "Для поддержки LEAP, выполните emerge net-misc/cisco-aironet-client-utils"
+      return 1
+    fi
+    einfo "Ожидание допуска LEAP на \"${ESSID//\\\\//}\""
+    if /opt/cisco/bin/leapscript ${user} ${pass} | grep -q 'Login incorrect'; then
+      ewarn "Вход пользователя ${user} не удался"
+      return 1
+    fi
+  fi
+
+  return 0
+}
+
+postassociate() {
+  <comment># Эта функция приводится в основном для полноты... Я не придумал,
+  # что бы ценное в нее поместить ;-)</comment>
+
+  return 0
+}
+</pre>
+
+<note>
+<c>${ESSID}</c> и <c>${ESSIDVAR}</c> недоступны в функциях <c>predown()</c> и
+<c>postdown()</c>.
+</note>
+
+</body>
+</section>
+
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-version: 1.2-r2
+target-date: 2006-03-23
+source-cvs-revision: 1.7
+translated-by: Alexey Chumakov [achumakov@gentoo.org]
+edited-by: same
+
+note:
+-->
