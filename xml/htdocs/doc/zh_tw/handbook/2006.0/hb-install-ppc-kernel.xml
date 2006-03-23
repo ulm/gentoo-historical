@@ -1,0 +1,435 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_tw/handbook/2006.0/hb-install-ppc-kernel.xml,v 1.1 2006/03/23 02:51:42 ccpz Exp $ -->
+
+<!-- rev 1.2 by ccpz -->
+
+<sections>
+
+<version>6.0</version>
+<date>2006-02-27</date>
+
+<section>
+<title>時區</title>
+<body>
+
+<p>
+為了讓您的系統知道它的位置在那裡，您將需要設定您的系統時區。到
+<path>/usr/share/zoneinfo</path> 尋找您的時區，然後把他複製到
+<path>/etc/localtime</path>。請避免使用
+<path>/usr/share/zoneinfo/Etc/GMT*</path> 下的檔案，因為他們並不代表你預期的時
+區。例如說 <path>GMT-8</path> 實際上是 GMT+8。
+</p>
+
+<pre caption="設定時區資訊">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>（假設您要使用 GMT）</comment>
+# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>安裝核心原始碼</title>
+<subsection>
+<title>選擇一個核心</title>
+<body>
+
+<p>
+Linux 的核心是所有版本的最中心，也是最重要的。他位於使用者程式和系統硬體之間。
+Gentoo 提供使用者很多可用的核心原始碼。您可以到 <uri
+link="/doc/tw/gentoo-kernel.xml">Gentoo 核心 指南</uri> 查看我們所提供的核心。
+</p>
+
+<p>
+PPC 的使用者可以從 <c>vanilla-sources</c> 和 <c>gentoo-sources</c>核心選擇，兩
+種都是 2.6 核心。後者在你使用無網路安裝時可以使用。所以我們現在就使用
+<c>emerge</c> 來安裝核心原始碼。為了避免安裝 xorg-x11 或其他相依
+軟體，需要加上 <c>USE="-doc"</c>。第一次安裝時不一定需要
+<c>USE="symlink"</c>，但是確定你有正確建立 <path>/usr/src/linux</path> 符號連結。
+</p>
+
+<pre caption="安裝核心原始碼">
+# <i>USE="-doc symlink" emerge gentoo-sources</i>
+</pre>
+
+<p>
+當您查看 <path>/usr/src</path> 您將會看到一個 <path>linux</path> 的連接連到
+您所選的核心，我們假設安裝的核心原始碼是 <c>gentoo-sources-2.6.15</c>，你用
+的核心名稱可能不同，所以記得你用的名稱。
+</p>
+
+<pre caption="觀看核心原始碼目錄連接">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Jul 10 10:55 /usr/src/linux -&gt; linux-2.6.15
+</pre>
+
+<p>
+現在我們該設定以及編譯您的核心了。您可以使用 <c>genkernel</c> 以和
+Installation CD 一樣的通用的方式進行編譯。或是手動編譯自訂符合您的環境的核心。
+</p>
+
+<p>
+如果您想要手動設定核心，請從 <uri link="#manual">預設：手動設定</uri> 繼續。如果您想要使用 <c>genkernel</c> 您應該要閱讀 <uri link="#genkernel">其他選擇：使用 genkernel</uri>。
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>預設：手動設定</title>
+<subsection>
+<title>介紹</title>
+<body>
+
+<p>
+手動設定核心常常被 Linux 使用者認為最難完成的步驟。雖然不假，但是當您手動編譯
+幾次核心後，您應該不會覺得它有多難 ;)
+</p>
+
+<p>
+然而，<e>有</e>一個事實：您必須要了解您的系統才可以開始手動編譯。系統上多數
+的資料可以安裝 pciutils (<c>emerge pciutils</c>)，從裏面包含的 <c>lspci</c> 取得
+。你可以在 chroot 的環境下執行 <c>lspci</c>，不過可能會碰到一些 <c>lspci</c> 丟
+出來的警告(像是 pcilib: cannot open /sys/bus/pci/devices)。此外，你也可以在
+<e>未 chroot</e> 執行，兩個結果都一樣。您也可以執行 <c>lsmod</c> 看看安裝光碟使
+用那些核心模組（這是一個不錯的暗示，教您該開啟那個選項）。另一個要開啟那些元件
+的線索是在你目前成功開機過程中核心的訊息。輸入 <c>dmesg</c> 查看這些訊息。
+</p>
+
+<p>
+現在到您的核心原始碼目錄，是開始設定核心的時候了。建議你先執行
+<c>make defconfig</c> 將預設的設定加進去。預設的設定設好以後，執行
+<c>make menuconfig</c>，會出現一個 ncurses 的設定選單。
+</p>
+
+<pre caption="開始 menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make defconfig</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+您將會看到一大串的設定部份。我們將列出一些您一定要啟用的選項（不然 Gentoo 無法
+完善地工作）。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>必須開啟的選項</title>
+<body>
+
+<p>
+首先，開啟 development and experimental code/drivers。您將需要這個，不然
+您將無法看見一些其他重要的程式碼或是驅動程式。
+</p>
+
+<pre caption="選擇 experimental code/drivers, General setup">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+General setup --->
+  [*] Support for hot-pluggable devices
+</pre>
+
+<p>
+現在到 <c>File Systems</c> 然後選擇要支援的檔案系統。記得<e>不要</e>將它們編成模
+組(Module)，否則您的 Gentoo 系統將無法掛載您的分割區。另外還要勾選 <c>/proc file system</c> 和 <c>Virtual memory</c>。
+</p>
+
+<pre caption="選擇相關檔案系統">
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>（按照您系統所需要的檔案系統開啟以下選項）</comment>
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; Reiserfs support
+</pre>
+
+<p>
+如果您需要透過 PPPoE 連線到網路或是數據機撥接，您將需要以下的核心選項：
+</p>
+
+<pre caption="選擇 PPPoE 相關驅動程式">
+Device Drivers ---&gt;
+  Networking support ---&gt;  
+  &lt;*&gt; PPP (point-to-point protocol) support
+  &lt;*&gt;   PPP support for async serial ports
+  &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+雖然 <c>PPP over Ethernet</c> 選項只有在 <c>rp-pppoe</c> 設定為核心 PPPoE
+時需要，但是這兩個壓縮的選項不會造成錯誤。
+</p>
+
+<p>
+如果您需要，不要忘了為您的網路卡加入核心的支援。
+</p>
+
+<p>
+NewWorld 及 OldWord 的使用者都會將需要 HFS 支援。OldWord 的使用者可以複製編譯好的核心到 MacOS 分割區
+而 NewWorld 機器需要用他設定特殊的 Apple_Bootstrap 分割區：
+</p>
+
+<pre caption="啟用 HFS 支援">
+File Systems ---&gt;
+  [*] HFS Support
+</pre>
+
+<p>
+在目前，kernel preemption 在 PPC 上仍然不穩定，而且會引起許多編譯失敗及隨機的
+segfaults。<e>強烈</e>建議你不要使用這項功能。
+</p>
+  	 
+<pre caption="確定 Preemptible Kernel 選項是關閉的">
+Platform options ---&gt;
+[ ] Preemptible Kernel
+</pre>
+  	 
+<p>
+如果你是從 Firewire 開機，你需要啟動這些選項。但如果你不想把他們編譯進核心，可
+以把這些模組及他們相依的模組放入 initrd 中。
+</p>
+  	 
+<pre caption="在開幾時啟動 firewire 裝置支援">
+Device Drivers ---&gt;
+  IEEE 1394 (FireWire) support ---&gt;
+    &lt;*&gt; IEEE 1394 (FireWire) support
+    &lt;*&gt;   OHCI-1394 support
+    &lt;*&gt;   SBP-2 support (Harddisks etc.)
+</pre>
+  	 
+<p>
+如果用 USB，你需要啟動這些選項。但如果你不想把他們編譯進核心，可
+以把這些模組及他們相依的模組放入 initrd 中。
+</p>
+  	 
+<pre caption="在開幾時啟動 USB 裝置支援">
+Device Drivers ---&gt;
+  USB support ---&gt;
+    &lt;*&gt; Support for Host-side USB
+	&lt;*&gt;   OHCI HCD support
+	&lt;*&gt;   USB Mass Storage support
+</pre>
+  	 
+<p>
+因為開機時需要 framebuffer 支援，所以不要關掉他。如果你是用 NVIDIA 為基礎的晶片
+組，那要使用 OpenFirmware framebuffer。如果是 ATI，你要依照你的晶片選擇驅動程式
+(Mach64, Rage128 或 Radeon)。
+</p>
+  	 
+<pre caption="選擇 Framebuffer 驅動程式">
+Device Drivers ---&gt;
+  Graphics support ---&gt;
+    &lt;*&gt; Support for frame buffer devices
+	[*] Open Firmware frame buffer device support
+	&lt;*&gt; ATI Radeon display support
+	&lt;*&gt; ATI Rage128 display support
+	&lt;*&gt; ATI Mach64 display support
+	Console display driver support ---&gt;
+	  &lt;*&gt; Framebuffer Console support
+</pre>
+  	 
+<note>
+如果你選一個以上 framebuffer 驅動程式，預設使用的可能不是最好的驅動程式。最好只
+使用一種驅動程式，或是指定你要使用的驅動程式，像是 <c>video=radeonfb</c>。
+</note>
+  	 
+<p>
+當您完成核心設定時，請從 <uri link="#compiling">編譯和安裝</uri> 繼續。
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>編譯和安裝</title>
+<body>
+
+<p>
+現在您的核心已經設定完成了，我們該來編譯然後安裝它。離開核心設定，然後執行編譯
+核心的指令：
+</p>
+
+<pre caption="編譯核心">
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+當核心完成編譯時，將核心映像檔複製到 <path>/boot</path> (請確定這在 Pegasos 上
+有正確的掛載起來)。如果你用 BootX 開機，我們稍後再複製他。
+</p>
+
+<p>
+Yaboot 和 BootX 不像其他的開機管理程式，他們使用未壓縮的核心。在核心編譯好以後
+，未壓縮的核心放在 <path>/usr/src/linux</path>，檔名是 vmlinux。如果你是用
+Pegasos 機器，Pegasos firmware 需要壓縮過的核心，檔名為 zImage.chrp，可以在
+<path>/usr/src/linux/arch/ppc/boot/images</path> 找到。
+</p>
+
+<pre caption="安裝核心">
+# <i>cd /usr/src/linux</i>
+<comment>將 &lt;kernel-version&gt; 換成您的核心版本</comment>
+<comment>(Apple/IBM)</comment>
+# <i>cp vmlinux /boot/&lt;kernel-version&gt;</i>
+<comment>(Pegasos)</comment>
+# <i>cp arch/ppc/boot/images/zImage.chrp /boot/&lt;kernel-version&gt;</i>
+</pre>
+
+<p>
+現在請從 <uri link="#kernel_modules">安裝分開的核心模組</uri> 繼續。
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="kernel_modules">
+<title>安裝分開的核心映像檔和模組</title>
+<subsection>
+<title>設定模組</title>
+<body>
+
+<p>
+您將需要將想要開機時自動載入的模組放到
+<path>/etc/modules.autoload.d/kernel-2.6</path>。您也可以加上模組的選項。
+</p>
+
+<p>
+要查看所有可用的模組，執行 <c>find</c> 指令。不要忘了將 "&lt;kernel
+version&gt;"更改為您剛剛編譯的版本：
+</p>
+
+<pre caption="查看所有可用的版本">
+# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+</pre>
+
+<p>
+舉例來說，要自動載入 <c>3c59x.o</c> 模組，編輯 <path>kernel-2.6</path>：
+</p>
+
+<pre caption="編輯 /etc/modules.autoload.d/kernel-2.6">
+# <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.6">
+3c59x
+</pre>
+
+<p>
+請到 <uri link="?part=1&amp;chap=8">設定您的系統</uri> 繼續安裝程序。
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="genkernel">
+<title>其他選擇：使用 genkernel</title>
+<body>
+
+<p>
+如果您在閱讀這節，您已經選擇使用我們的 <c>genkernel</c> 指令稿來幫您設定您的核心。
+</p>
+
+<p>
+現在您的核心原始碼樹已經安裝完成，該是編譯核心的時候了，這會使用我們的
+<c>genkernel</c> 指令稿來自動為您編譯核心。<c>genkernel</c> 會設定出一個幾乎和
+安裝光碟核心完全一樣的核心，意思是說，當您使用 <c>genkernel</c> 來編譯您的核心
+，您的系統會在開機的時候偵測到您的硬體，就如同我們的安裝光碟所做的一樣。因為
+genkernel 並不需要任何手動核心設定，對不習慣編譯自己核心的使用者來說，這是個最
+好的解決辦法。
+</p>
+
+<p>
+現在讓我們來看看如何使用 genkernel。首先，emerge genkernel ebuild：
+</p>
+
+<pre caption="Emerge genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+接著，複製 Installation CD 所使用的核心設定到 genkernel 搜尋預設核心設定的位置：
+</p>
+
+<pre caption="複製 Installation CD 核心設定">
+# <i>zcat /proc/config.gz > /usr/share/genkernel/ppc/kernel-2.6</i>
+</pre>
+
+<p>
+如果你用 firewire 或 USB 開機，你需要把相關的模組加入 initrd。編輯
+<path>/usr/share/genkernel/ppc/modules_load</path> 加入
+<c>MODULES_FIREWIRE="ieee1394 ohci1394 sbp2"</c> 以支援 firewire，或加入
+<c>MODULES_USB="usbcore ohci-hcd ehci-hcd usb-storage"</c> 支援 USB。
+</p>
+
+<p>
+現在，用 <c>genkernel --genzimage all</c> 編譯您的核心。如果是 Pegasos 機器，我
+們需要使用不同設定並且使用 bzImage 而不是在 Apple 上用的 vmlinux 核心。請注意
+，因為<c>genkernel</c> 編譯的，是一個要支援幾乎所有硬體的核心，所以要編譯完成會
+花費相當的時間！
+</p>
+
+<p>
+注意，如果您存放核心的分割區不是使用 ext2 或 ext3 檔案系統，您可能需要執行
+<c>genkernel --menuconfig --genzimage all</c> 手動設定您的核心，然後加入您所使
+用的檔案系統支援到核心 <e>裡面</e> (也就是 <e>不要</e> 編譯成模組)。EVMS2 或
+LVM2 的使用者可能還會想要加入 <c>--evms2</c> 或 <c>--lvm2</c> 參數。
+</p>
+
+<pre caption="執行 genkernel">
+# <i>genkernel --genzimage all</i>
+</pre>
+  	 
+<pre caption="在 Pegasos 機器上執行 genkernel">
+# <i>genkernel --genzimage --kernel-config=/usr/share/genkernel/ppc/Pegasos all</i>
+</pre>
+
+<p>
+一旦 <c>genkernel</c> 完成，便會產生一個核心，完整的模組集合，還有
+<e>initial root disk</e> (initrd)。此份文件稍後在設定 boot loader 時
+，我們會使用到產生的核心和 initrd，記下核心的名稱和 initrd，您將會在
+編輯 bootloader 設定檔時用到。initrd 會立即在開機時啟動，執行硬體自動偵測 (就像
+在 Installation CD 上一樣)，在您 "真正的" 系統啟動之前。要記得確認你有連開機參數
+一起複製，要成功的使用 genkernel 開機的話就會用到。
+</p>
+
+<pre caption="檢查產生的核心影像名稱和 initrd">
+# <i>ls /boot/kernel* /boot/initramfs*</i>
+</pre>
+
+<p>
+如果你希望你的系統更像 Installation CD，你需要在安裝完成後 emerge
+<c>coldplug</c>。initrd 會自動偵測開機所需要用到的硬體，而 <c>coldplug</c> 則會
+自動偵測其他所有的硬體。要 emerge 並啟動 <c>coldplug</c>，鍵入下列指令：
+</p>
+
+<pre caption="Emerge 並啟動 coldplug">
+<comment>(在系統安裝完，進行 GRP 安裝時執行)</comment>
+# <i>emerge -k coldplug</i>
+# <i>rc-update add coldplug boot</i>
+</pre>
+
+<p>
+如果你要你的系統在熱插拔時有所反應，你需要安裝 <c>hotplug</c>：
+</p>
+
+<pre caption="Emerge 並啟動 hotplug">
+# <i>emerge hotplug</i>
+# <i>rc-update add hotplug default</i>
+</pre>
+<p>
+
+現在請從 <uri link="?part=1&amp;chap=8">設定您的系統</uri> 繼續。
+</p>
+
+</body>
+</section>
+</sections>
