@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.120 2006/03/22 03:06:08 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.121 2006/03/23 02:11:18 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -59,6 +59,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		return float((float(sectors) * sector_bytes)/ float(MEGABYTE))
 
 	def _add_partition(self, disk, start, end, type, fs):
+		if self._debug: self._logger.log("_add_partition(): type=%s, fstype=%s" % (type, fs))
 		types = { 'primary': parted.PARTITION_PRIMARY, 'extended': parted.PARTITION_EXTENDED, 'logical': parted.PARTITION_LOGICAL }
 		fsTypes = {}
 		fs_type = parted.file_system_type_get_next ()
@@ -68,8 +69,11 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		fstype = None
 		if fs: fstype = fsTypes[fs]
 		newpart = disk.partition_new(types[type], fstype, start, end)
+		if self._debug: self._logger.log("_add_partition(): partition object created")
 		constraint = disk.dev.constraint_any()
+		if self._debug: self._logger.log("_add_partition(): constraint object created")
 		disk.add_partition(newpart, constraint)
+		if self._debug: self._logger.log("_add_partition(): partition added")
 
 	def partition(self):
 		parts_old = {}
@@ -94,7 +98,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 			# Check to see if the old and new partition table structures are the same
 			table_changed = 0
-			for part in parts_new[device].get_ordered_partition_list():
+			for part in parts_new[device]: #.get_ordered_partition_list():
 				if not parts_old[device].get_partition(part):
 					table_changed = 1
 					break
@@ -120,7 +124,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			try:
 				parted_disk = parted.PedDisk.new(parted_dev)
 			except:
-				parted_disk = parted_dev.disk_new_fresh(parted.disk_type_get((tmp_parts_new[device].get_disklabel() or GLIStorageDevice.archinfo[self._architecture_name]['disklabel'])))
+				parted_disk = parted_dev.disk_new_fresh(parted.disk_type_get((tmp_parts_new[device].get_disklabel() or GLIStorageDevice.archinfo[self._architecture_name])))
 #			new_part_list = parts_new[device].keys()
 #			new_part_list.sort()
 			new_part_list = parts_new[device].get_ordered_partition_list()
@@ -131,14 +135,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				tmppart_new = parts_new[device][part]
 				if not tmppart_new['origminor'] or tmppart_new['format']: continue
 				tmppart_old = parts_old[device][tmppart_new['origminor']]
-				parted_part = parted_disk.get_partition(tmppart_new['origminor'])
-				# This partition in parts_new corresponds with an existing partitions, so we save the start/end sector and flags
-				for flag in range(0, 10):
-					# The 10 is completely arbitrary. If flags seem to be missed, this number should be increased
-					if not parted_part: break
-					if parted_part.is_flag_available(flag) and parted_part.get_flag(flag):
-						if not "flags" in tmppart_new: tmppart_new['flags'] = []
-						tmppart_new['flags'].append(flag)
+#				parted_part = parted_disk.get_partition(tmppart_new['origminor'])
 				if tmppart_new['resized']:
 					self._logger.log("  Partition " + str(part) + " has origminor " + str(tmppart_new['origminor']) + " and it being resized...saving start sector " + str(tmppart_old['start']))
 					tmppart_new['start'] = tmppart_old['start']
@@ -196,11 +193,11 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			for oldpart in parts_old[device].get_partitions():
 #				oldpart = parts_old[device][part]
 				# Replace 'x86' with call function to get arch from CC
-				if (GLIStorageDevice.archinfo['x86']['extended'] and part > 4) or oldpart['type'] == "free": continue
+				if (parts_old[device]._labelinfo['extended'] and oldpart['minor'] > 4) or oldpart['type'] == "free": continue
 				delete = 0
 				if oldpart['type'] == "extended":
 					logical_to_resize = 0
-					for part_log in parts_old[device].get_ordered_partition_list():
+					for part_log in parts_old[device]: #.get_ordered_partition_list():
 						if part_log < 5 or parts_old[device][part_log]['type'] == "free": continue
 						delete_log = 0
 						for new_part in new_part_list:
@@ -317,7 +314,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					start = newpart['start']
 				else:
 					self._logger.log("    Start sector calculated to be " + str(start))
-				if (newpart['minor'] < 5 or not GLIStorageDevice.archinfo['x86']['extended']) and start < extended_end:
+				if (newpart['minor'] < 5 or not parts_new[device]._labelinfo['extended']) and start < extended_end:
 					self._logger.log("    Start sector for primary is less than the end sector for previous extended")
 					start = extended_end + 1
 				if newpart['end']:
@@ -347,10 +344,10 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					self._add_partition(parted_disk, start, end, "extended", "")
 					extended_start = start
 					extended_end = end
-				elif part < 5 or not GLIStorageDevice.archinfo['x86']['extended']:
+				elif part < 5 or not parts_new[device]._labelinfo['extended']:
 					self._logger.log("  Adding primary partition " + str(part) + " from " + str(start) + " to " + str(end))
 					self._add_partition(parted_disk, start, end, "primary", newpart['type'])
-				elif GLIStorageDevice.archinfo['x86']['extended'] and part > 4:
+				elif parts_new[device]._labelinfo['extended'] and newpart['minor'] > 4:
 					if start >= extended_end:
 						start = extended_start + 1
 						end = start + part_sectors
@@ -358,12 +355,14 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 						end = extended_end
 					self._logger.log("  Adding logical partition " + str(part) + " from " + str(start) + " to " + str(end))
 					self._add_partition(parted_disk, start, end, "logical", newpart['type'])
-				if "flags" in newpart:
-					for flag in newpart['flags']:
-						if parted_disk.get_partition(part).is_flag_available(flag):
-							parted_disk.get_partition(part).set_flag(flag, True)
+				if self._debug: self._logger.log("partition(): flags: " + str(newpart['flags']))
+				for flag in newpart['flags']:
+					if parted_disk.get_partition(part).is_flag_available(flag):
+						parted_disk.get_partition(part).set_flag(flag, True)
 				# write to disk
+				if self._debug: self._logger.log("partition(): committing change to disk")
 				parted_disk.commit()
+				if self._debug: self._logger.log("partition(): committed change to disk")
 
 				# force rescan of partition table
 				# Should not be needed with current stuff
@@ -373,6 +372,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				# extended and 'free' partitions should never be formatted
 				if newpart['format'] and newpart['type'] not in ('extended', 'free'):
 					devnode = device + str(int(part))
+					if self._debug: self._logger.log("partition(): devnode is %s in formatting code" % devnode)
 					errormsg = "could't create %s filesystem on %s" % (newpart['type'],devnode)
 					# if you need a special command and
 					# some base options, place it here.

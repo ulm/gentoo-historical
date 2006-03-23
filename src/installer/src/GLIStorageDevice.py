@@ -63,13 +63,20 @@ class Device:
 			try:
 				self._parted_disk = parted.PedDisk.new(self._parted_dev)
 			except:
-				self._parted_disk = self._parted_dev.disk_new_fresh(parted.disk_type_get(archinfo[self._arch]['disklabel']))
+				self._parted_disk = self._parted_dev.disk_new_fresh(parted.disk_type_get(archinfo[self._arch]))
 			self._disklabel = self._parted_disk.type.name
 		else:
-			self._disklabel = archinfo[self._arch]['disklabel']
+			self._disklabel = archinfo[self._arch]
 		self._labelinfo = labelinfo[self._disklabel]
 		if set_geometry:
 			self.set_disk_geometry_from_disk()
+
+	def __getitem__(self, name):
+		return self.get_partition(name)
+
+	def __iter__(self):
+		for part in self.get_ordered_partition_list():
+			yield part
 
 	##
 	# Sets disk geometry info from disk. This function is used internally by __init__()
@@ -420,9 +427,6 @@ class Device:
 	def get_partitions(self):
 		return self._partitions
 
-	def __getitem__(self, name):
-		return self.get_partition(name)
-
 ##
 # This class represents a partition within a GLIStorageDevice object
 class Partition:
@@ -442,7 +446,6 @@ class Partition:
 	_mb = ""
 	_mkfsopts = None
 	_resized = False
-	_extra_dict = None
 	
 	##
 	# Initialization function for the Partition class
@@ -471,7 +474,7 @@ class Partition:
 		self._mkfsopts = mkfsopts
 		self._resizeable = False
 		self._resized = resized
-		self._exta_dict = {}
+		self._flags = []
 		if type != "free":
 			if existing and not origminor:
 				self._orig_minor = self._minor
@@ -485,7 +488,10 @@ class Partition:
 					dev_node = device._device
 				else:
 					dev_node = device._device + str(self._orig_minor)
-#				print "dev_node = " + dev_node
+				# The 10 is completely arbitrary. If flags seem to be missed, this number should be increased
+				for flag in range(0, 10):
+					if parted_part.is_flag_available(flag) and parted_part.get_flag(flag):
+						self._flags.append(flag)
 				if type == "ext2" or type == "ext3":
 					block_size = long(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Block size:' | sed -e 's/^Block size:\s\+//'")))
 					free_blocks = long(string.strip(commands.getoutput("dumpe2fs -h " + dev_node + r" 2>&1 | grep -e '^Free blocks:' | sed -e 's/^Free blocks:\s\+//'")))
@@ -506,6 +512,44 @@ class Partition:
 					self._resizeable = True
 			except:
 				self._resizeable = False
+
+	def __getitem__(self, name):
+		tmpdict = { 'start': self.get_start,
+                    'end': self.get_end,
+                    'format': self.get_format,
+                    'type': self.get_type,
+                    'resized': self.get_resized,
+                    'minor': self.get_minor,
+                    'mb': self.get_mb,
+                    'origminor': self.get_orig_minor,
+                    'mountpoint': self.get_mountpoint,
+                    'mountopts': self.get_mountopts,
+                    'mkfsopts': self.get_mkfsopts,
+                    'flags': self.get_flags
+                  }
+		if name in tmpdict:
+			return tmpdict[name]()
+		else:
+			raise ValueError(name + " is not a valid attribute!")
+
+	def __setitem__(self, name, value):
+		tmpdict = { 'start': self.set_start,
+                    'end': self.set_end,
+                    'format': self.set_format,
+                    'type': self.set_type,
+                    'resized': self.set_resized,
+                    'minor': self.set_minor,
+                    'mb': self.set_mb,
+                    'origminor': self.set_orig_minor,
+                    'mountpoint': self.set_mountpoint,
+                    'mountopts': self.set_mountopts,
+                    'mkfsopts': self.set_mkfsopts,
+                    'flags': self.set_flags
+                  }
+		if name in tmpdict:
+			tmpdict[name](value)
+		else:
+			raise ValueError(name + " is not a valid attribute!")
 
 	##
 	# Returns whether or not the partition is extended
@@ -616,7 +660,10 @@ class Partition:
 	##
 	# Returns minor of partition
 	def get_minor(self):
-		return float(self._minor)
+		if int(self._minor) == self._minor:
+			return int(self._minor)
+		else:
+			return float(self._minor)
 
 	##
 	# Sets the original minor of the partition
@@ -671,6 +718,16 @@ class Partition:
 	# Returns whether the partition is resizeable
 	def is_resizeable(self):
 		return self._resizeable
+
+	##
+	# Sets partition flags
+	def set_flags(self, flags):
+		self._flags = flags
+
+	##
+	# Returns partition flags
+	def get_flags(self):
+		return self._flags
 
 	##
 	# Returns minimum MB for resize
@@ -832,41 +889,3 @@ def detect_devices():
 
 	# We have assembled the list of devices, so return it
 	return devices
-
-	def __getitem__(self, name):
-		tmpdict = { 'start': self.get_start,
-                    'end': self.get_end,
-                    'format': self.get_format,
-                    'type': self.get_type,
-                    'resized': self.get_resized,
-                    'minor': self.get_minor,
-                    'mb': self.get_mb,
-                    'origminor': self.get_origminor,
-                    'mountpoint': self.get_mountpoint,
-                    'mountopts': self.get_mountopts,
-                    'mkfsopts': self.get_mkfsopts
-                  }
-		if name in tmpdict:
-			return tmpdict[name]()
-		if name in self._extra_dict:
-			return self._extra_dict[name]
-		return None
-
-	def __setitem__(self, name, value):
-		tmpdict = { 'start': self.set_start,
-                    'end': self.set_end,
-                    'format': self.set_format,
-                    'type': self.set_type,
-                    'resized': self.set_resized,
-                    'minor': self.set_minor,
-                    'mb': self.set_mb,
-                    'origminor': self.set_origminor,
-                    'mountpoint': self.set_mountpoint,
-                    'mountopts': self.set_mountopts,
-                    'mkfsopts': self.set_mkfsopts
-                  }
-		if name in tmpdict:
-			tmpdict[name](value)
-		else:
-			self._extra_dict[name] = value
-

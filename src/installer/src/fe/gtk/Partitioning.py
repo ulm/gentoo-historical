@@ -310,8 +310,8 @@ disk order.
 		last_log_percent = 0
 		extended_part = 0
 		extended_table = None
-		for tmppart in self.devices[self.active_device].get_partitions():
-#			tmppart = tmpparts[part]
+		for part in self.devices[self.active_device]: #.get_partitions():
+			tmppart = self.devices[self.active_device][part]
 			if tmppart.get_type() == "free":
 				partsize = tmppart.get_mb()
 				percent = (float(partsize) / float(total_mb)) * 100

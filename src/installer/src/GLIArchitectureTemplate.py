@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.268 2006/03/07 13:18:01 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.269 2006/03/23 02:11:18 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -378,9 +378,9 @@ class ArchitectureTemplate:
 		parts = self._install_profile.get_partition_tables()
 		parts_to_mount = {}
 		for device in parts:
-			tmp_partitions = parts[device].get_install_profile_structure()
+			tmp_partitions = parts[device] #.get_install_profile_structure()
 			tmp_minor = -1
-			for minor in tmp_partitions:
+			for minor in parts[device]: #.get_ordered_partition_list():
 				if not tmp_partitions[minor]['type'] in ("free", "extended"):
 					tmp_minor = minor
 					break
@@ -392,7 +392,7 @@ class ArchitectureTemplate:
 				time.sleep(1)
 			# one bit of extra sleep is needed, as there is a blip still
 			time.sleep(1)
-			for partition in tmp_partitions:
+			for partition in tmp_partitions: #.get_ordered_partition_list():
 				mountpoint = tmp_partitions[partition]['mountpoint']
 				mountopts = tmp_partitions[partition]['mountopts']
 				minor = str(int(tmp_partitions[partition]['minor']))
@@ -403,7 +403,7 @@ class ArchitectureTemplate:
 					if partition_type:
 						if partition_type == "fat32" or partition_type == "fat16": partition_type = "vfat"
 						partition_type = "-t " + partition_type + " "
-					parts_to_mount[mountpoint]= (mountopts, partition_type, device + minor)
+					parts_to_mount[mountpoint] = (mountopts, partition_type, device + minor)
 					
 				if partition_type == "linux-swap":
 					ret = GLIUtility.spawn("swapon " + device + minor)
@@ -576,8 +576,8 @@ class ArchitectureTemplate:
 		newfstab = ""
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			tmp_partitions = parts[device].get_install_profile_structure()
-			for partition in tmp_partitions:
+			tmp_partitions = parts[device] #.get_install_profile_structure()
+			for partition in tmp_partitions: #.get_ordered_partition_list():
 				mountpoint = tmp_partitions[partition]['mountpoint']
 				minor = str(int(tmp_partitions[partition]['minor']))
 				partition_type = tmp_partitions[partition]['type']
@@ -897,8 +897,8 @@ class ArchitectureTemplate:
 		# don't use an array, use a set instead
 		filesystem_types = []
 		for device in parts:
-			tmp_partitions = parts[device].get_install_profile_structure()
-			for partition in tmp_partitions:
+			tmp_partitions = parts[device] #.get_install_profile_structure()
+			for partition in tmp_partitions: #.get_ordered_partition_list():
 				partition_type = tmp_partitions[partition]['type'].lower()
 				if tmp_partitions[partition]['mountpoint'] and partition_type not in filesystem_types:
 					filesystem_types.append(partition_type)
