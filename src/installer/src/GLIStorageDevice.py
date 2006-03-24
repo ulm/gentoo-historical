@@ -342,6 +342,7 @@ class Device:
 	# This function clears the partition table
 	def clear_partitions(self):
 		self._partitions = [ Partition(self, (0 + FREE_MINOR_FRAC_PRI), self.get_total_mb(), 0, 0, "free", format=False, existing=False) ]
+		self._disklabel = archinfo[self._arch]
 
 	##
 	# Returns an ordered list (disk order) of partition minors
