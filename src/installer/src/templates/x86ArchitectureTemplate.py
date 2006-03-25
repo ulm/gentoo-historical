@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.124 2006/03/25 20:52:13 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.125 2006/03/25 20:54:52 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -199,7 +199,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		end = 0
 		extended_start = 0
 		extended_end = 0
-		total_sectors = newparts.get_num_sectors()
+		device_sectors = newparts.get_num_sectors()
 		self._logger.log("  Drive has " + str(device_sectors) + " sectors")
 		for part in newparts:
 			newpart = newparts[part]
@@ -229,8 +229,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					self._logger.log("  End sector for partition overlaps with start of next partition...fixing")
 					end = newparts[nextminor]['start'] - 1
 			# cap to end of device
-			if end >= total_sectors:
-				end = total_sectors
+			if end >= device_sectors:
+				end = device_sectors
 			# now the actual creation
 			if newpart['type'] == "free" and newparts.get_disklabel() == "mac":
 				# Create a dummy partition to be removed later because parted sucks
