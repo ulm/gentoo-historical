@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.123 2006/03/25 20:41:11 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.124 2006/03/25 20:52:13 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -295,7 +295,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					else:
 						break
 				else:
-					raise GLIException("PartitionFormatError", 'fatal', '_partition_format_step", "Could not create %s filesystem on %s" % (newpart['type'], devnode))
+					raise GLIException("PartitionFormatError", 'fatal', '_partition_format_step', "Could not create %s filesystem on %s" % (newpart['type'], devnode))
 
 	def partition(self):
 		"""
