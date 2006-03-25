@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.122 2006/03/24 18:58:12 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.123 2006/03/25 20:41:11 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -58,7 +58,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _sectors_to_megabytes(self, sectors, sector_bytes=512):
 		return float((float(sectors) * sector_bytes)/ float(MEGABYTE))
 
-	def _add_partition(self, disk, start, end, type, fs):
+	def _add_partition(self, disk, start, end, type, fs, name=""):
 		if self._debug: self._logger.log("_add_partition(): type=%s, fstype=%s" % (type, fs))
 		types = { 'primary': parted.PARTITION_PRIMARY, 'extended': parted.PARTITION_EXTENDED, 'logical': parted.PARTITION_LOGICAL }
 		fsTypes = {}
@@ -74,6 +74,12 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		if self._debug: self._logger.log("_add_partition(): constraint object created")
 		disk.add_partition(newpart, constraint)
 		if self._debug: self._logger.log("_add_partition(): partition added")
+
+	def _delete_partition(self, parted_disk, minor):
+		try:
+			parted_disk.delete_partition(parted_disk.get_partition(minor))
+		except:
+			self._logger.log("_delete_partition(): could not delete partition...ignoring (for now)")
 
 	def _check_table_changed(self, oldparts, newparts):
 		for part in newparts:
@@ -98,12 +104,205 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			if newparts[part]['origminor']: return True
 		return False
 
+	def _find_next_partition(self, curminor, parts):
+		foundmyself = False
+		for part in parts:
+			if not part == curminor and not foundmyself: continue
+			if part == curminor:
+				foundmyself = True
+				continue
+			if foundmyself:
+				return part
+		return 0
+
+	def _partition_delete_step(self, parted_disk, oldparts, newparts):
+		for oldpart in list(oldparts)[::-1]:
+			tmppart_old = oldparts[oldpart]
+			if oldparts.get_disklabel() != "mac" and tmppart_old['type'] == "free": continue
+			if tmppart_old['type'] == "extended":
+				# Iterate through logicals to see if any are being resized
+				for logpart in tmppart_old.get_logicals():
+					newminor = self._find_existing_in_new(logpart, newparts)
+					if newminor and newparts['resized']:
+						self._logger.log("  Logical partition " + str(logpart) + " to be resized...can't delete extended")
+						break
+				else:
+					self._logger.log("  No logical partitions are being resized...deleting extended")
+					self._delete_partition(parted_disk, oldpart)
+			else:
+				newminor = self._find_existing_in_new(oldpart, newparts)
+				if newminor and not newparts[newminor]['format']:
+					if newparts[newminor]['resized']:
+						self._logger.log("  Ignoring old minor " + str(oldpart) + " to resize later")
+						continue
+					else:
+						self._logger.log("  Deleting old minor " + str(oldpart) + " to be recreated later")
+				else:
+						self._logger.log("  No match in new layout for old minor " + str(oldpart) + "...deleting")
+				self._delete_partition(parted_disk, oldpart)
+		parted_disk.commit()
+
+	def _partition_resize_step(self, parted_disk, device, oldparts, newparts):
+		for oldpart in oldparts:
+			tmppart_old = oldparts[oldpart]
+			devnode = device + str(oldpart)
+			newminor = self._find_existing_in_new(oldpart, newparts)
+			if not newminor or not newparts[newminor]['resized']:
+				continue
+			tmppart_new = newparts[newminor]
+			type = tmppart_new['type']
+			start = tmppart_new['start']
+			end = start + (long(tmppart['mb']) * MEGABYTE / 512) - 1
+			total_sectors = end - start + 1
+			total_bytes = long(total_sectors) * 512
+			# Make sure calculated end sector doesn't overlap start sector of next partition
+			nextminor = self._find_next_partition(newminor, newparts)
+			if nextminor:
+				if newparts[nextminor]['start'] and end >= newparts[nextminor]['start']:
+					self._logger.log("  End sector for growing partition overlaps with start of next partition...fixing")
+					end = newparts[nextminor]['start'] - 1
+			# sleep a bit first
+			time.sleep(3)
+			# now sleep until it exists
+			while not GLIUtility.is_file(device + str(minor)):
+				self._logger.log("Waiting for device node " + devnode + " to exist before resizing")
+				time.sleep(1)
+			# one bit of extra sleep is needed, as there is a blip still
+			time.sleep(3)
+			if type in ("ext2", "ext3"):
+				ret = GLIUtility.spawn("resize2fs " + devnode + " " + str(total_sectors) + "s", logfile=self._compile_logfile, append_log=True)
+				if not GLIUtility.exitsuccess(ret): # Resize error
+					raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize ext2/3 filesystem on " + devnode)
+			elif type == "ntfs":
+				ret = GLIUtility.spawn("yes | ntfsresize -v --size " + str(total_bytes) + " " + devnode, logfile=self._compile_logfile, append_log=True)
+				if not GLIUtility.exitsuccess(ret): # Resize error
+					raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize NTFS filesystem on " + devnode)
+			elif type in ("linux-swap", "fat32", "fat16"):
+				parted_fs = parted_disk.get_partition(part).geom.file_system_open()
+				resize_constraint = parted_fs.get_resize_constraint()
+				if total_sectors < resize_constraint.min_size or start != resize_constraint.start_range.start:
+					raise GLIException("PartitionError", 'fatal', 'partition', "New size specified for " + device + str(minor) + " is not within allowed boundaries (blame parted)")
+				new_geom = resize_constraint.start_range.duplicate()
+				new_geom.set_start(start)
+				new_geom.set_end(end)
+				try:
+					parted_fs.resize(new_geom)
+				except:
+					raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
+			self._logger.log("  Deleting old minor " + str(oldpart) + " to be recreated in 3rd pass")
+			self._delete_partition(parted_disk, oldpart)
+		parted_disk.delete_all()
+		parted_disk.commit()
+
+	def _partition_recreate_step(self, parted_disk, newparts):
+		start = 0
+		end = 0
+		extended_start = 0
+		extended_end = 0
+		total_sectors = newparts.get_num_sectors()
+		self._logger.log("  Drive has " + str(device_sectors) + " sectors")
+		for part in newparts:
+			newpart = newparts[part]
+			self._logger.log("  Partition " + str(part) + " has " + str(newpart['mb']) + "MB")
+			if newpart['start']:
+				self._logger.log("    Old start sector " + str(newpart['start']) + " retrieved")
+				if start != newpart['start']:
+					self._logger.log("    Retrieved start sector is not the same as the calculated next start sector (usually not an issue)")
+				start = newpart['start']
+			else:
+				self._logger.log("    Start sector calculated to be " + str(start))
+			if not newpart.is_logical() and start <= extended_end:
+				self._logger.log("    Start sector for primary is less than the end sector for previous extended")
+				start = extended_end + 1
+			if newpart['end']:
+				self._logger.log("    Old end sector " + str(newpart['end']) + " retrieved")
+				end = newpart['end']
+				part_sectors = end - start + 1
+			else:
+				part_sectors = long(newpart['mb']) * MEGABYTE / 512
+				end = start + part_sectors
+				self._logger.log("    End sector calculated to be " + str(end))
+			# Make sure end doesn't overlap next partition's existing start sector
+			nextminor = self._find_next_partition(newminor, newparts)
+			if nextminor:
+				if newparts[nextminor]['start'] and end >= newparts[nextminor]['start']:
+					self._logger.log("  End sector for partition overlaps with start of next partition...fixing")
+					end = newparts[nextminor]['start'] - 1
+			# cap to end of device
+			if end >= total_sectors:
+				end = total_sectors
+			# now the actual creation
+			if newpart['type'] == "free" and newparts.get_disklabel() == "mac":
+				# Create a dummy partition to be removed later because parted sucks
+				self._logger.log("  Adding dummy partition to fool parted " + str(part) + " from " + str(start) + " to " + str(end))
+				self._add_partition(parted_disk, start, end, "primary", "ext2", "free")
+			elif newpart['type'] == "extended":
+				self._logger.log("  Adding extended partition " + str(part) + " from " + str(start) + " to " + str(end))
+				self._add_partition(parted_disk, start, end, "extended", "")
+				extended_start = start
+				extended_end = end
+			elif not newpart.is_logical():
+				self._logger.log("  Adding primary partition " + str(part) + " from " + str(start) + " to " + str(end))
+				self._add_partition(parted_disk, start, end, "primary", newpart['type'])
+			elif newpart.is_logical():
+				if start >= extended_end:
+					start = extended_start + 1
+					end = start + part_sectors
+				if nextminor and not newparts[nextminor].is_logical() and end > extended_end:
+					end = extended_end
+				self._logger.log("  Adding logical partition " + str(part) + " from " + str(start) + " to " + str(end))
+				self._add_partition(parted_disk, start, end, "logical", newpart['type'])
+			if self._debug: self._logger.log("partition(): flags: " + str(newpart['flags']))
+			for flag in newpart['flags']:
+				if parted_disk.get_partition(part).is_flag_available(flag):
+					parted_disk.get_partition(part).set_flag(flag, True)
+			# write to disk
+			if self._debug: self._logger.log("partition(): committing change to disk")
+			parted_disk.commit()
+			if self._debug: self._logger.log("partition(): committed change to disk")
+			start = end + 1
+
+	def _partition_format_step(self, parted_disk, device, newparts):
+		for part in newparts:
+			newpart = newparts[part]
+			devnode = device + str(part)
+			# This little hack is necessary because parted sucks goat nuts
+			if newparts.get_disklabel() == "mac" and newpart['type'] == "free":
+				self._delete_partition(parted_disk, newpart)
+				continue
+			if newpart['format'] and newpart['type'] not in ('extended', 'free'):
+				devnode = device + str(int(part))
+				if self._debug: self._logger.log("_partition_format_step(): devnode is %s in formatting code" % devnode)
+				# if you need a special command and
+				# some base options, place it here.
+				format_cmds = { 'linux-swap': "mkswap", 'fat16': "mkfs.vfat -F 16", 'fat32': "mkfs.vfat -F 32",
+				                'ntfs': "mkntfs", 'xfs': "mkfs.xfs -f", 'jfs': "mkfs.jfs -f",
+				                'reiserfs': "mkfs.reiserfs -f", 'ext2': "mkfs.ext2", 'ext3': "mkfs.ext3"
+				              }
+				if newpart['type'] in format_cmds:
+					cmdname = format_cmds[newpart['type']]
+				else: # this should catch everything else
+					raise GLIException("PartitionFormatError", 'fatal', '_partition_format_step', "Unknown partition type " + newpart['type'])
+				# sleep a bit first
+				time.sleep(1)
+				for tries in range(10):
+					cmd = "%s %s %s" % (cmdname, newpart['mkfsopts'], devnode)
+					self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))
+					ret = GLIUtility.spawn(cmd, logfile=self._compile_logfile, append_log=True)
+					if not GLIUtility.exitsuccess(ret):
+						self._logger.log("Try %d failed formatting partition %s...waiting 5 seconds" % (tries+1, devnode))
+						time.sleep(5)
+					else:
+						break
+				else:
+					raise GLIException("PartitionFormatError", 'fatal', '_partition_format_step", "Could not create %s filesystem on %s" % (newpart['type'], devnode))
+
 	def partition(self):
 		"""
 		TODO:
 		if not self._check_keeping_any_existing: wipe drive, use the default disklabel for arch, and jump to pass 3
 		if only formatting existing partitions, jump straight to pass 3
-		skip fixed partitions in all passes
+		skip fixed partitions in all passes (in GLISD maybe?)
 		"""
 		parts_old = {}
 		parts_new = self._install_profile.get_partition_tables()
@@ -112,7 +311,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			parts_old[device].set_partitions_from_disk()
 
 		self.notify_frontend("progress", (0, "Examining partitioning data"))
-		total_steps = float(len(parts_new) * 3) # 3 for the number of passes over each device
+		total_steps = float(len(parts_new) * 4) # 4 for the number of passes over each device
 		cur_progress = 0
 		for device in parts_new:
 			# Skip this device in parts_new if device isn't detected on current system
@@ -172,237 +371,29 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			# First pass to delete old partitions that aren't resized
 			self.notify_frontend("progress", (cur_progress / total_steps, "Deleting partitioning that aren't being resized for " + device))
 			cur_progress += 1
-			for oldpart in list(oldparts)[::-1]:
-				tmppart_old = oldparts[oldpart]
-				if oldparts.get_disklabel() != "mac" and tmppart_old['type'] == "free": continue
-				if tmppart_old['type'] == "extended":
-					# Iterate through logicals to see if any are being resized
-					for logpart in tmppart_old.get_logicals():
-						newminor = self._find_existing_in_new(logpart, newparts)
-						if newminor and newparts['resized']:
-							self._logger.log("  Logical partition " + str(logpart) + " to be resized...can't delete extended")
-							break
-					else:
-						self._logger.log("  No logical partitions are being resized...deleting extended")
-						try:
-							parted_disk.delete_partition(parted_disk.get_partition(oldpart))
-						except:
-							self._logger.log("    Could not delete partition...ignoring (for now)")
-				else:
-					newminor = self._find_existing_in_new(oldpart, newparts)
-					if newminor and not newparts[newminor]['format']:
-						if newparts[newminor]['resized']:
-							self._logger.log("  Ignoring old minor " + str(oldpart) + " to resize later")
-							continue
-						else:
-							self._logger.log("  Deleting old minor " + str(oldpart) + " to be recreated later")
-					else:
-							self._logger.log("  No match in new layout for old minor " + str(oldpart) + "...deleting")
-					try:
-						parted_disk.delete_partition(parted_disk.get_partition(oldpart))
-					except:
-						self._logger.log("    Could not delete partition...ignoring (for now)")
-			parted_disk.commit()
+			self._partition_delete_step(parted_disk, oldparts, newparts)
 
 			# Second pass to resize old partitions that need to be resized
 			self._logger.log("Partitioning: Second pass...")
 			self.notify_frontend("progress", (cur_progress / total_steps, "Resizing remaining partitions for " + device))
 			cur_progress += 1
-			for oldpart in oldparts:
-				tmppart_old = oldparts[oldpart]
-				devnode = device + str(oldpart)
-				newminor = self._find_existing_in_new(oldpart, newparts)
-				if not newminor:
-					continue
-				tmppart_new = newparts[newminor]
-				type = tmppart_new['type']
-				start = tmppart_new['start']
-				end = start + (long(tmppart['mb']) * MEGABYTE / 512) - 1
-				total_sectors = end - start + 1
-				total_bytes = long(total_sectors) * 512
-				# There's gotta be a better way to find the next partition in the new layout
-				foundmyself = False
-				for newpart in newparts:
-					if not newpart == newminor and not foundmyself: continue
-					if newpart == newminor:
-						foundmyself = True
-						continue
-					if foundmyself:
-						if newparts[newpart]['start']:
-							if end >= newparts[newpart]['start']:
-								self._logger.log("  End sector for growing partition overlaps with start of next partition...fixing")
-								end = newparts[newpart]['start'] - 1
-						break
-				# sleep a bit first
-				time.sleep(3)
-				# now sleep until it exists
-				while not GLIUtility.is_file(device + str(minor)):
-					self._logger.log("Waiting for device node " + devnode + " to exist before resizing")
-					time.sleep(1)
-				# one bit of extra sleep is needed, as there is a blip still
-				time.sleep(3)
-				if type in ("ext2", "ext3"):
-					ret = GLIUtility.spawn("resize2fs " + devnode + " " + str(total_sectors) + "s", logfile=self._compile_logfile, append_log=True)
-					if not GLIUtility.exitsuccess(ret): # Resize error
-						raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize ext2/3 filesystem on " + devnode)
-				elif type == "ntfs":
-					ret = GLIUtility.spawn("yes | ntfsresize -v --size " + str(total_bytes) + " " + devnode, logfile=self._compile_logfile, append_log=True)
-					if not GLIUtility.exitsuccess(ret): # Resize error
-						raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize NTFS filesystem on " + devnode)
-				elif type in ("linux-swap", "fat32", "fat16"):
-					parted_fs = parted_disk.get_partition(part).geom.file_system_open()
-					resize_constraint = parted_fs.get_resize_constraint()
-					if total_sectors < resize_constraint.min_size or start != resize_constraint.start_range.start:
-						raise GLIException("PartitionError", 'fatal', 'partition', "New size specified for " + device + str(minor) + " is not within allowed boundaries (blame parted)")
-					new_geom = resize_constraint.start_range.duplicate()
-					new_geom.set_start(start)
-					new_geom.set_end(end)
-					try:
-						parted_fs.resize(new_geom)
-					except:
-						raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
-				self._logger.log("  Deleting old minor " + str(oldpart) + " to be recreated in 3rd pass")
-				try:
-					parted_disk.delete_partition(parted_disk.get_partition(oldpart))
-				except:
-					self._logger.log("    Could not delete partition...ignoring (for now)")
-				break
-			parted_disk.delete_all()
-			parted_disk.commit()
+			self._partition_resize_step(parted_disk, device, oldparts, newparts)
 
 			# Third pass to create new partition table
 			self._logger.log("Partitioning: Third pass....creating partitions")
 			self.notify_frontend("progress", (cur_progress / total_steps, "Recreating partition table for " + device))
 			cur_progress += 1
-			start = 0
-			end = 0
-			extended_start = 0
-			extended_end = 0
-			self._logger.log("  Drive has " + str(device_sectors) + " sectors")
-#			for part in parts_new[device]:
-			for part in new_part_list:
-				newpart = parts_new[device][part]
-				self._logger.log("  Partition " + str(part) + " has " + str(newpart['mb']) + "MB")
-				if newpart['start']:
-					self._logger.log("    Old start sector " + str(newpart['start']) + " retrieved")
-					if start != newpart['start']:
-						self._logger.log("    Retrieved start sector is not the same as the calculated next start sector")
-					start = newpart['start']
-				else:
-					self._logger.log("    Start sector calculated to be " + str(start))
-				if (newpart['minor'] < 5 or not parts_new[device]._labelinfo['extended']) and start < extended_end:
-					self._logger.log("    Start sector for primary is less than the end sector for previous extended")
-					start = extended_end + 1
-				if newpart['end']:
-					self._logger.log("    Old end sector " + str(newpart['end']) + " retrieved")
-					end = newpart['end']
-					part_sectors = end - start + 1
-				else:
-					part_sectors = long(newpart['mb']) * MEGABYTE / 512
-					end = start + part_sectors
-					self._logger.log("    End sector calculated to be " + str(end))
-				# Make sure end doesn't overlap next partition's existing start sector
-				for i in new_part_list:
-					if i <= part: continue
-					if parts_new[device][i]['start'] and end >= parts_new[device][i]['start']:
-						if not newpart['type'] == "extended" or i <= 4:
-							end = parts_new[device][i]['start'] - 1
-					break
-				# cap to end of device
-				if end >= device_sectors:
-					end = device_sectors - 1
-				# now the actual creation
-				if newpart['type'] == "free":
-					# Nothing to be done for this type
-					pass
-				elif newpart['type'] == "extended":
-					self._logger.log("  Adding extended partition " + str(part) + " from " + str(start) + " to " + str(end))
-					self._add_partition(parted_disk, start, end, "extended", "")
-					extended_start = start
-					extended_end = end
-				elif part < 5 or not parts_new[device]._labelinfo['extended']:
-					self._logger.log("  Adding primary partition " + str(part) + " from " + str(start) + " to " + str(end))
-					self._add_partition(parted_disk, start, end, "primary", newpart['type'])
-				elif parts_new[device]._labelinfo['extended'] and newpart['minor'] > 4:
-					if start >= extended_end:
-						start = extended_start + 1
-						end = start + part_sectors
-					if part == new_part_list[-1] and end > extended_end:
-						end = extended_end
-					self._logger.log("  Adding logical partition " + str(part) + " from " + str(start) + " to " + str(end))
-					self._add_partition(parted_disk, start, end, "logical", newpart['type'])
-				if self._debug: self._logger.log("partition(): flags: " + str(newpart['flags']))
-				for flag in newpart['flags']:
-					if parted_disk.get_partition(part).is_flag_available(flag):
-						parted_disk.get_partition(part).set_flag(flag, True)
-				# write to disk
-				if self._debug: self._logger.log("partition(): committing change to disk")
-				parted_disk.commit()
-				if self._debug: self._logger.log("partition(): committed change to disk")
+			self._partition_recreate_step(parted_disk, newparts)
 
-				# force rescan of partition table
-				# Should not be needed with current stuff
-				#ret = GLIUtility.spawn("partprobe "+device, logfile=self._compile_logfile, append_log=True)
-				
-				# now format the partition
-				# extended and 'free' partitions should never be formatted
-				if newpart['format'] and newpart['type'] not in ('extended', 'free'):
-					devnode = device + str(int(part))
-					if self._debug: self._logger.log("partition(): devnode is %s in formatting code" % devnode)
-					errormsg = "could't create %s filesystem on %s" % (newpart['type'],devnode)
-					# if you need a special command and
-					# some base options, place it here.
-					if newpart['type'] == 'linux-swap':
-						cmdname = 'mkswap'
-					elif newpart['type'] == 'fat16':
-						cmdname = 'mkfs.vfat -F 16'
-					elif newpart['type'] == 'fat32':
-						cmdname = 'mkfs.vfat -F 32'
-					elif newpart['type'] == 'ntfs':
-						cmdname = 'mkntfs'
-					# All of these types need a -f as they
-					# ask for confirmation of format
-					elif newpart['type'] in ('xfs','jfs','reiserfs'):
-						cmdname = 'mkfs.%s -f' % (newpart['type'])
-					# add common partition stuff here
-					elif newpart['type'] in ('ext2','ext3'):
-						cmdname = 'mkfs.%s' % (newpart['type'])
-					else: # this should catch everything else
-						raise GLIException("PartitionFormatError", 'fatal', 'partition',"Unknown partition type "+newpart['type'])
+			# Fourth pass to format partitions
+			self._logger.log("Partitioning: formatting partitions")
+			self.notify_frontend("progress", (cur_progress / total_steps, "Formatting partitions for " + device))
+			cur_progress += 1
+			self._partition_format_step(parted_disk, device, newparts)
 
-					# force a stat of the device so that it
-					# is created on demand. (At least if I
-					# recall how udev works... - robbat2).
-					# sleep a bit first
-					time.sleep(1)
-					# now sleep until it exists
-#					while not GLIUtility.is_file(devnode):
-#						self._logger.log("Waiting for device node "+devnode+" to exist...")
-#						time.sleep(1)
-					# one bit of extra sleep is needed, as there is a blip still
-#					time.sleep(1)
-
-					tries = 0
-					while tries <= 10:
-						# now the actual command
-						cmd = "%s %s %s" % (cmdname,newpart['mkfsopts'],devnode)
-						self._logger.log("  Formatting partition %s as %s with: %s" % (str(part),newpart['type'],cmd))
-						# If logging is not done, then you get errors:
-						# PartitionFormatError :FATAL: partition: could't create ext2 filesystem on /dev/hda1
-						#if GLIUtility.spawn(cmd):
-						#if GLIUtility.spawn(cmd,append_log=True,logfile='/var/log/install-mkfs.log'):
-						ret = GLIUtility.spawn(cmd, logfile=self._compile_logfile, append_log=True)
-						if not GLIUtility.exitsuccess(ret):
-							tries += 1
-							self._logger.log("Try %d failed formatting partition %s...waiting 5 seconds" % (tries, devnode))
-							time.sleep(5)
-						else:
-							break
-					if tries == 3:
-						raise GLIException("PartitionFormatError", 'fatal', 'partition', errormsg)
-				start = end + 1
+			# All done for this device
 			self.notify_frontend("progress", (cur_progress / total_steps, "Done with partitioning for " + device))
-#			cur_progress += 1
+			cur_progress += 1
 
 	def _configure_grub(self):
 		self.build_mode = self._install_profile.get_kernel_build_method()
