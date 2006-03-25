@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.269 2006/03/23 02:11:18 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.270 2006/03/25 17:26:14 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1219,6 +1219,7 @@ class ArchitectureTemplate:
 					
 				# Attempt to add the group (will return success when group exists)
 				for group in groups:
+					if not group: continue
 					# Add the user
 					if self._debug: self._logger.log("DEBUG: set_users(): adding user to groups with (in chroot): "+'groupadd -f ' + group)
 					exitstatus = GLIUtility.spawn('groupadd -f ' + group, chroot=self._chroot_dir, logfile=self._compile_logfile, append_log=True, display_on_tty8=True)
