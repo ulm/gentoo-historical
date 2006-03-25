@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.125 2006/03/25 20:54:52 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.126 2006/03/25 21:01:55 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -223,14 +223,14 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				end = start + part_sectors
 				self._logger.log("    End sector calculated to be " + str(end))
 			# Make sure end doesn't overlap next partition's existing start sector
-			nextminor = self._find_next_partition(newminor, newparts)
+			nextminor = self._find_next_partition(newpart, newparts)
 			if nextminor:
 				if newparts[nextminor]['start'] and end >= newparts[nextminor]['start']:
 					self._logger.log("  End sector for partition overlaps with start of next partition...fixing")
 					end = newparts[nextminor]['start'] - 1
 			# cap to end of device
 			if end >= device_sectors:
-				end = device_sectors
+				end = device_sectors - 1
 			# now the actual creation
 			if newpart['type'] == "free" and newparts.get_disklabel() == "mac":
 				# Create a dummy partition to be removed later because parted sucks
