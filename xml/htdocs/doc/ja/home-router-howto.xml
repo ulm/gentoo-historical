@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/home-router-howto.xml,v 1.7 2005/07/06 17:42:12 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/home-router-howto.xml,v 1.8 2006/03/26 13:54:31 idani Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/ja/home-router-howto.xml">
+<guide link="/doc/ja/home-router-howto.xml" lang="ja">
 
 <title>ホームルータガイド</title>
 
@@ -12,14 +12,22 @@
 <author title="翻訳">
   <mail link="ikeda@cs.comp.kyutech.ac.jp">池田 健吾</mail>
 </author>
+<author title="翻訳">
+  <mail link="solidsneak@hyper.cx">小林弘樹</mail>
+</author>
 
 <abstract>
 このガイドでは、ホームネットワークをインターネットに繋ぐために、古いGentooマシンをルータに変える方法を紹介します。
 </abstract>
 
-<version>1.8</version>
-<date>2005-07-02</date>
-<!-- Original revision: 1.28 -->
+<!-- The content of this document is released into the public domain -->
+<license/>
+
+<version>1.24</version>
+<date>2005-12-20</date>
+
+<!-- Original revision: 1.41 -->
+
 <chapter>
 <title>はじめに</title>
 <section>
@@ -106,8 +114,7 @@ eth1      Link encap:Ethernet  HWaddr 00:60:F5:07:07:B9
 
 <p>
 次に、iptablesとNAT(それと必要ならパケット制御)のサポートが必要になるでしょう。
-次のリストは、必要(*)、推奨(x)、パケット制御(s)といった機能に分けられます。
-
+次のリストは、必ず必要(*)、PPPoEでのADSLでのみ必要(a)、推奨(x)、パケット制御のみ(s)といった機能に分けられます。
 機能をカーネルに組み込むか、
 機能が必要になったときに適切なモジュールがロードされるならばモジュールにするか、どちらでも構いません
 (ただし、モジュールのロードは楽しい課題として読者に任せます)。
@@ -142,6 +149,14 @@ Networking options  ---&gt;
       [s] QoS and/or fair queueing
          [s] HTB packet scheduler
          [s] Ingress Qdisc
+
+   [a] PPP (point-to-point protocol) support
+      [a] PPP filtering
+      [a] PPP support for async serial ports
+      [a] PPP support for sync tty ports
+      [a] PPP Deflate compression
+      [a] PPP BSD-Compress compression
+      [a] PPP over Ethernet
 </pre>
 
 <note>
@@ -182,24 +197,20 @@ Networking options  ---&gt;
 </p>
 
 <note>
-下記のnet.eth1の設定で動作するには、baselayout-1.10.1以降がシステムにインストールされている必要があります。
+下記のnetの設定で動作するには、baselayout-1.11.14以降がシステムにインストールされている必要があります。
 </note>
 
 <pre caption="eth1の設定">
 <comment>('vla9h924'をあなたのユーザ名に、'password'をあなたのパスワードに置き換えてください)</comment>
 
-# <i>nano /etc/ppp/pppoe.conf</i>
-<comment># ADSLモデムに接続されているイーサネットカード</comment>
-ETH=eth1
-<comment># ADSLユーザ名</comment>
-USER=vla9h924
 # <i>nano /etc/ppp/pap-secrets</i>
 <comment># client    server  secret</comment>
 "vla9h924" * "password"
 # <i>nano /etc/conf.d/net</i>
-<comment>config_eth1のエントリを追加してadslに設定してください</comment>
+<comment>eth1にadslを使うようbaselayoutに伝える</comment>
 config_eth1=( "adsl" )
-# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+user_eth1=( "vla9h924" )
+# <i>ln -s net.lo /etc/init.d/net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 # <i>/etc/init.d/net.eth1 start</i>
 </pre>
@@ -239,7 +250,7 @@ routes_eth1=( "default gw 66.92.78.1" )
 nameserver 123.123.123.123
 
 <comment>動的、静的設定</comment>
-# <i>ln -s net.eth0 /etc/init.d/net.eth1</i>
+# <i>ln -s net.lo /etc/init.d/net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 # <i>/etc/init.d/net.eth1 start</i>
 </pre>
@@ -290,31 +301,29 @@ ifconfig_eth0=( "192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0" )
 <p>
 DHCPは、その名前が表す通りのプロトコルです。
 他のホストを自動的に動的に設定します。
-DHCPサーバ(dhcpd)をルータ上で実行し、ネットワークに関するすべての情報(正当なIP、DNSサーバ、ゲートウェイなど)をルータに設定します。
+DHCPサーバをルータ上で実行し、ネットワークに関するすべての情報(正当なIP、DNSサーバ、ゲートウェイなど)をルータに設定します。
 そしてホストは起動するときに、DHCPクライアントを実行して自動的に自身を設定します。
 慌てず、騒がずです！
 DHCPについての詳しい情報は、<uri link="http://en.wikipedia.org/wiki/DHCP">Wikipedia</uri>で必ず見つかります。
 </p>
 
-<pre caption="dhcpdの設定">
-# <i>emerge dhcp</i>
-# <i>nano /etc/dhcp/dhcpd.conf</i>
-<comment>(これは設定ファイルのサンプルです)</comment>
-authoritative;
-ddns-update-style interim;
-subnet 192.168.0.0 netmask 255.255.255.0 {
-    range 192.168.0.100 192.168.0.250;
-    default-lease-time 259200;
-    max-lease-time 518400;
-    option subnet-mask 255.255.255.0;
-    option broadcast-address 192.168.0.255;
-    option routers 192.168.0.1;
-    option domain-name-servers 192.168.0.1;
-}
-# <i>nano /etc/conf.d/dhcp</i>
-<comment>(IFACE="eth0"に設定してください)</comment>
-# <i>rc-update add dhcp default</i>
-# <i>/etc/init.d/dhcp start</i>
+<p>
+DHCPとDNSサービスの両方を提供する、dnsmasqと言うパッケージを使用します。
+今のところは、DHCPにのみ焦点を当てます。
+別のDHCPサーバを実行したいなら、面白いことの章で別の例を探す事が出来ると言うことに注意してください。
+また、DHCPサーバの設定をいじくり回したいのなら、<path>/etc/dnsmasq.conf</path>のコメントを読んでください。
+ですが、すべてデフォルト設定でもよく動作します。
+</p>
+
+<pre caption="DHCPサーバの設定">
+# <i>emerge dnsmasq</i>
+# <i>nano /etc/dnsmasq.conf</i>
+<comment>この一行を追加するべきです</comment>
+dhcp-range=192.168.0.100,192.168.0.250,72h
+# <i>nano /etc/conf.d/dnsmasq</i>
+<comment>DNSMASQ_OPTSに"-i eth0"を追加してください</comment>
+# <i>rc-update add dnsmasq default</i>
+# <i>/etc/init.d/dnsmasq start</i>
 </pre>
 
 <p>
@@ -343,22 +352,12 @@ DNSに関する詳しい情報は、<uri link="http://en.wikipedia.org/wiki/DNS"
 </p>
 
 <p>
-前節でDHCPクライアントについて説明したとき、192.168.0.1のDNSサーバがあることにあなたは気づいてしまったかもしれません。
-また、192.168.0.1は組み立てたかわいいルータだということも覚えているかもしれませんね。
-私はDNSサーバを設定した記憶がありません…ということで今から設定しましょう！
+DHCPサーバにdnsmasqを使用しており、これにはDNSサーバが含まれているので、ここで行うことは何もありません。
+あなたのルータは、DHCPクライアントにDNSを提供する準備が出来ています。
+すべてが簡単だと思うでしょう。
 </p>
 
-<pre caption="dnsmasqの設定">
-# <i>emerge dnsmasq</i>
-# <i>nano /etc/conf.d/dnsmasq</i>
-<comment>DNSMASQ_OPTSに"-i eth0"を追加してください</comment>
-# <i>rc-update add dnsmasq default</i>
-# <i>/etc/init.d/dnsmasq start</i>
-</pre>
-
 <p>
-終わるのが早かったですが、何をしたのでしょう？
-素晴らしいことに、これで終わりなんです。
 他のDNSサーバのほうが快適であれば、遠慮なく他のDNSサーバを選んでください。
 しかしdnsmasqがすごいのは、私たちが望むことだけをしっかりやってくれるよう設計されている点です。
 これは、ローカルネットワーク用のDNSキャッシング/フォワーディングサーバです。
@@ -378,7 +377,7 @@ DNSに関する詳しい情報は、<uri link="http://en.wikipedia.org/wiki/DNS"
 </p>
 
 <p>
-それではNATのステップです。
+それではNetwork Address Translation (NAT)のステップです。
 NATは、利用できるIPアドレスの数が少ししかない場合に、プライベートLAN内の複数のコンピュータをインターネットに接続する方法です。
 一般にISPからもらえるIPアドレスは１つですが、家にあるコンピュータ全部をインターネットに接続したいとします。
 NATはこれを可能にする魔法です。
@@ -396,24 +395,33 @@ NATに関する詳しい情報は、<uri link="http://en.wikipedia.org/wiki/NAT"
 # <i>iptables -F</i>
 # <i>iptables -t nat -F</i>
 
+<comment>一致しないトラフィックを扱うためのデフォルトポリシーを設定</comment>
+# <i>iptables -P INPUT ACCEPT</i>
+# <i>iptables -P OUTPUT ACCEPT</i>
+# <i>iptables -P FORWARD DROP</i>
+
+<comment>これらの例をコピーして貼り付ける</comment>
+# <i>export LAN=eth0</i>
+# <i>export WAN=eth1</i>
+
 <comment>それからサービスをロックし、LANからだけ動作するようにします</comment>
-# <i>iptables -I INPUT 1 -i eth0 -j ACCEPT</i>
+# <i>iptables -I INPUT 1 -i ${LAN} -j ACCEPT</i>
 # <i>iptables -I INPUT 1 -i lo -j ACCEPT</i>
-# <i>iptables -A INPUT -p UDP --dport bootps -i ! eth0 -j REJECT</i>
-# <i>iptables -A INPUT -p UDP --dport domain -i ! eth0 -j REJECT</i>
+# <i>iptables -A INPUT -p UDP --dport bootps -i ! ${LAN} -j REJECT</i>
+# <i>iptables -A INPUT -p UDP --dport domain -i ! ${LAN} -j REJECT</i>
 
 <comment>(自由選択) WANから私たちのsshサーバへのアクセスを許可します</comment>
-# <i>iptables -A INPUT -p TCP --dport ssh -i eth1 -j ACCEPT</i>
+# <i>iptables -A INPUT -p TCP --dport ssh -i ${WAN} -j ACCEPT</i>
 
 <comment>特権ポートへのTCP/UDPパケットを破棄します</comment>
-# <i>iptables -A INPUT -p TCP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
-# <i>iptables -A INPUT -p UDP -i ! eth0 -d 0/0 --dport 0:1023 -j DROP</i>
+# <i>iptables -A INPUT -p TCP -i ! ${LAN} -d 0/0 --dport 0:1023 -j DROP</i>
+# <i>iptables -A INPUT -p UDP -i ! ${LAN} -d 0/0 --dport 0:1023 -j DROP</i>
 
 <comment>最後に、NAT用のルールを追加します</comment>
-# <i>iptables -I FORWARD -i eth0 -d 192.168.0.0/255.255.0.0 -j DROP</i>
-# <i>iptables -A FORWARD -i eth0 -s 192.168.0.0/255.255.0.0 -j ACCEPT</i>
-# <i>iptables -A FORWARD -i eth1 -d 192.168.0.0/255.255.0.0 -j ACCEPT</i>
-# <i>iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE</i>
+# <i>iptables -I FORWARD -i ${LAN} -d 192.168.0.0/255.255.0.0 -j DROP</i>
+# <i>iptables -A FORWARD -i ${LAN} -s 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -A FORWARD -i ${WAN} -d 192.168.0.0/255.255.0.0 -j ACCEPT</i>
+# <i>iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE</i>
 <comment>IPフォワーディングが可能なことをカーネルに伝えましょう</comment>
 # <i>echo 1 > /proc/sys/net/ipv4/ip_forward</i>
 # <i>for f in /proc/sys/net/ipv4/conf/*/rp_filter ; do echo 1 > $f ; done</i>
@@ -464,40 +472,52 @@ net.ipv4.conf.default.rp_filter = 1</comment>
 </p>
 
 <p>
-ポートフォワーディングのルールは、すべて<c>iptables -t nat -A PREROUTING [-p プロトコル] --dport [ルータ上の外部ポート] -i eth1 -j DNAT --to [IPあるいはポートをフォワードする場所]</c>という形式です。
-iptablesは、ポートフォワーディングの場合にホスト名を受け付けません。
+ポートフォワーディングのルールは、すべて<c>iptables -t nat -A PREROUTING [-p プロトコル] --dport [ルータ上の外部ポート] -i ${WAN} -j DNAT --to [IPあるいはポートをフォワードする場所]</c>という形式です。
+不幸なことに、iptablesはポートフォワーディングの場合にホスト名を受け付けません。
 外部のポートを、内部のマシン上の同じポートへフォワーディングしているなら、あて先ポートを省略できます。
 詳しい情報は、iptables(8)のページを見てください。
 </p>
 
 <pre caption="iptablesコマンドを実行する">
+<comment>これらの例をコピーして貼り付け</comment>
+# <i>export LAN=eth0</i>
+# <i>export WAN=eth1</i>
+
 <comment>2番ポートを内部ホストのsshへフォワーディング</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 2 -i eth1 -j DNAT --to 192.168.0.2:22</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 2 -i ${WAN} -j DNAT --to 192.168.0.2:22</i>
 
 <comment>FTPを内部ホストへフォワーディング</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 21 -i eth1 -j DNAT --to 192.168.0.56</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 21 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
 <comment>HTTPを内部ホストへフォワーディング</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 80 -i eth1 -j DNAT --to 192.168.0.56</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 80 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
 <comment>内部ホスト用のVNCフォワーディング</comment>
-# <i>iptables -t nat -I PREROUTING -p tcp --dport 5900 -i eth1 -j DNAT --to 192.168.0.2</i>
-# <i>iptables -t nat -I PREROUTING -p tcp --dport 5901 -i eth1 -j DNAT --to 192.168.0.3:5900</i>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5900 -i ${WAN} -j DNAT --to 192.168.0.2</i>
+# <i>iptables -t nat -I PREROUTING -p tcp --dport 5901 -i ${WAN} -j DNAT --to 192.168.0.3:5900</i>
 <comment>192.168.0.3へVNCしたいなら、ルータのホスト名にただ':1'を追加します</comment>
 
 <comment>Bittorrentフォワーディング</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i eth1 -j DNAT --to 192.168.0.2</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 6881:6889 -i ${WAN} -j DNAT --to 192.168.0.2</i>
+
+<comment>eDonkey/eMuleフォワーディング</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 4662 -i ${WAN} -j DNAT --to 192.168.0.55</i>
 
 <comment>ゲームキューブ ワープ・パイプのサポート</comment>
-# <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i eth1 -j DNAT --to 192.168.0.56</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
 <comment>プレイステーション2オンラインのサポート</comment>
-# <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i eth1 -j DNAT --to 192.168.0.11</i>
-# <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i eth1 -j DNAT --to 192.168.0.11</i>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
+
+<comment>Xbox Live</comment>
+# <i>iptables -t nat -A PREROUTING -p tcp --dport 3074 -i ${WAN} -j DNAT --to 192.168.0.69</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 3074 -i ${WAN} -j DNAT --to 192.168.0.69</i>
+# <i>iptables -t nat -A PREROUTING -p udp --dport 88 -i ${WAN} -j DNAT --to 192.168.0.69</i>
 </pre>
 
 <note>
-一般的で良い例が他にありましたら、<uri link="mailto:vapier@gentoo.org">メールをお願いします</uri>。
+一般的で良い例が他にありましたら、<mail link="vapier@gentoo.org">メールをお願いします</mail>。
 </note>
 
 </body>
@@ -658,6 +678,57 @@ restrict 192.168.0.0 mask 255.255.255.0 notrust nomodify notrap
 </section>
 
 <section>
+<title>Rsyncサーバ</title>
+<body>
+
+<p>
+同一LAN上で複数のGentooマシンを稼働させている人は、すべてのマシンでリモートマシンと<c>emerge sync</c>を行い続けたいと思うでしょう。
+ローカルrsyncを設定することで、あなたの帯域とGentoo rsyncサーバの帯域両方を節約することが出来ます。
+これはとても簡単です。
+</p>
+<note>
+より詳しいrsyncガイドは、公式の<uri link="/doc/en/rsync.xml#doc_chap4">rsync guide</uri><uri link="/doc/ja/rsync.xml#doc_chap4">（日本語訳）</uri>をご覧下さい。
+</note>
+
+<p>
+それぞれのGentooマシンにrsyncが必要ですが、それをemergeする必要はありません。
+デフォルトの<path>/etc/rsyncd.conf</path>設定ファイルを編集し、<c>[gentoo-portage]</c>の部分をコメント解除し、<c>address</c>オプションを追加します。
+そのほかはデフォルトのままでかまいません。
+</p>
+
+<pre caption="Rsyncサーバの設定">
+pid file = /var/run/rsyncd.pid
+use chroot = yes
+read only = yes
+address = 192.168.0.1
+
+[gentoo-portage]
+  path = /mnt/space/portage
+  comment = Gentoo Linux Portage tree
+  exclude = /distfiles /packages
+</pre>
+
+<p>
+その後、サービスを開始する必要があります（繰り返しますが、デフォルトでOKです）。
+</p>
+
+<pre caption="rsyncサーバの開始">
+# <i>/etc/init.d/rsyncd start</i>
+# <i>rc-update add rsyncd default</i>
+</pre>
+
+<p>
+残っていることは、クライアントがルータとsyncするよう設定するだけです。
+</p>
+
+<pre caption="make.confでのクライアントのSYNC設定">
+SYNC="rsync://192.168.0.1/gentoo-portage"
+</pre>
+
+</body>
+</section>
+
+<section>
 <title>メールサーバ</title>
 <body>
 
@@ -672,7 +743,7 @@ restrict 192.168.0.0 mask 255.255.255.0 notrust nomodify notrap
 # <i>emerge qmail</i>
 <comment>`hostname` の出力が正しいか確認してください</comment>
 # <i>ebuild /var/db/pkg/*-*/qmail-1.03-r*/*.ebuild config</i>
-# <i>iptables -I INPUT -p tcp --dport smtp -i ! eth0 -j REJECT</i>
+# <i>iptables -I INPUT -p tcp --dport smtp -i ! ${LAN} -j REJECT</i>
 # <i>ln -s /var/qmail/supervise/qmail-send /service/qmail-send</i>
 # <i>ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd</i>
 <!--
@@ -719,10 +790,83 @@ TODO
 </section>
 -->
 
+<section>
+<title>完全なDHCPサーバ</title>
+<body>
+
+<p>
+このガイドの前の方では、すべてのクライアントにDHCPサービスを提供するためにdnsmasqを使用しました。
+単純で小さなLANを使用している多くの人には、これで完璧です。
+ですが、もしかするとより多くの機能が必要かもしれません。
+<uri link="http://www.isc.org/products/DHCP">ISC</uri>が提供する完全な機能を持ったDHCPサーバに切り替えます。
+</p>
+
+<pre caption="dhcpdの設定">
+# <i>emerge dhcp</i>
+# <i>nano /etc/dhcp/dhcpd.conf</i>
+<comment>(これは設定ファイルの例です)</comment>
+authoritative;
+ddns-update-style interim;
+subnet 192.168.0.0 netmask 255.255.255.0 {
+    range 192.168.0.100 192.168.0.250;
+    default-lease-time 259200;
+    max-lease-time 518400;
+    option subnet-mask 255.255.255.0;
+    option broadcast-address 192.168.0.255;
+    option routers 192.168.0.1;
+    option domain-name-servers 192.168.0.1;
+}
+# <i>nano /etc/conf.d/dhcp</i>
+<comment>(IFACE="eth0"に設定)</comment>
+# <i>rc-update add dhcp default</i>
+# <i>/etc/init.d/dhcp start</i>
+</pre>
+
+<p>
+これは、以前使用していたdnsmasqのDHCP機能を置き換えるのに必要な最小の設定です。
+dnsmasqのDHCP機能を忘れずに無効にしましたか？
+もししていないのであれば、今すべきです（<path>/etc/dnsmasq.conf</path>の<c>dhcp-range</c>設定をコメントアウトし、サービスを再起動するだけです）。
+</p>
+
+</body>
+</section>
+
+<section>
+<title>別のLANと接続</title>
+<body>
+
+<p>
+時々、別のLANにルータを接続する必要があります。
+もしかすると、友人のグループと一時的に接続したいかもしれませんし、異常なほど几帳面なので異なるグループのコンピュータを区切りたいかもしれませんし、単にとてつもなく退屈しているのかもしれません。
+理由が何であれ、ルータを他のLANネットワークに拡張することはとてもわかりやすいでしょう。
+以下の例では、この新しいネットワークは<c>eth2</c>という3番目のイーサネットカードに接続されていると仮定します。
+</p>
+
+<p>
+まず、インタフェースを設定する必要があります。
+<uri link="#doc_chap4_pre1">4.1 code listing</uri>の指示に従い、<c>eth0</c>を<c>eth2</c>へ、<c>192.168.0</c>を<c>192.168.1</c>へ置き換えるだけです。
+</p>
+
+<p>
+その後、新しいインタフェースにサービスを提供するためにdnsmasqを調整する必要があります。
+<path>/etc/conf.d/dnsmasq</path>を再び編集し、DNSMASQ_OPTSに<c>-i eth2</c>を追加するだけです。
+-iを複数回使用しても問題ありません。
+その後、<path>/etc/dnsmasq.conf</path>を編集し、<uri link="#doc_chap5_pre1">5.1 code listing</uri>にdhcp-rangeといった別の行を追加します。<c>192.168.0</c>を<c>192.168.1</c>に置き換えてください。
+複数のdhcp-rangeがあっても問題ありません。
+</p>
+
+<p>
+最後に、<uri link="#doc_chap5_pre2">5.2 code listing</uri>のルールで、<c>-i ${LAN}</c>がある物をコピーします。
+わかりやすくするために、<c>LAN2</c>のような別の変数を作成したいかもしれません。
+</p>
+
+</body>
+</section>
+
 </chapter>
 
 <chapter>
-<title>デバッグ</title>
+<title>トラブルシューティング</title>
 
 <section>
 <title>有用なツール</title>
@@ -754,6 +898,31 @@ TODO
    <ti>ncursesベースのネットワークモニタ/コントロール</ti>
 </tr>
 </table>
+
+</body>
+</section>
+
+<section>
+<title>DHCPが起動に失敗する</title>
+<body>
+
+<p>
+dhcp init.dスクリプトの初回起動時に、ロードに失敗するが有益な情報を全く提供しないことがあるかもしれません。
+</p>
+
+<pre caption="DHCPの失敗例">
+# <i>/etc/init.d/dhcp start</i>
+* Setting ownership on dhcp.leases ...          [ ok ]
+* Starting dhcpd ...                            [ !! ]
+</pre>
+
+<p>
+これは、dhcpdがどこへ出力を送信しているかを知ることです。
+単に、/var/logにあるログファイルを読んでください。
+存在するログファイルはsyslogとして使用しているパッケージによるので、限定するために<c>grep -Rl dhcpd /var/log</c>を試してください。
+おそらく、設定ファイルでタイプミスをしたのでしょう。
+<c>dhcpd -d -f</c>(debug / foregroundのこと)を実行し、出力されたエラーをデバッグすることも出来ます。
+</p>
 
 </body>
 </section>
