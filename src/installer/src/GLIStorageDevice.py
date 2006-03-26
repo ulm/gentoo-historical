@@ -863,7 +863,7 @@ def detect_devices():
 			
 			# For each device in the devices on that bus
 			for sysfs_device in sysfs_devices:
-				dev_file = "/sys/bus/" + dev_type + "/devices/" + sysfs_device + "/block/dev"
+				dev_file = "/sys/bus/" + dev_type + "/devices/" + sysfs_device + "/block*/dev"
 						
 				# If the file is not a block device, loop
 				if not os.path.exists(dev_file):
