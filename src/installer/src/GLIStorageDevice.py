@@ -15,9 +15,9 @@ FREE_MINOR_FRAC_PRI = 1.0/32.0
 FREE_MINOR_FRAC_LOG = 1.0/8.0
 
 
-labelinfo = { 'msdos': { 'fixedparts': [], 'extended': True },
-              'mac':   { 'fixedparts': [ { 'minor': 1, 'type': 'partition_map' } ], 'extended': False },
-              'sun':   { 'fixedparts': [ { 'minor': 3, 'type': 'wholedisk' } ], 'extended': False }
+labelinfo = { 'msdos': { 'ignoreparts': None, 'extended': True },
+              'mac':   { 'ignoreparts': (1,), 'extended': False },
+              'sun':   { 'ignoreparts': (3,), 'extended': False }
             }
 
 archinfo = { 'sparc': 'sun',
