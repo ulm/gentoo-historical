@@ -4,6 +4,7 @@
 # of which can be found in the main directory of this project.
 
 import commands, string, os, parted
+from glob import glob
 from GLIException import *
 import GLIUtility
 
@@ -545,12 +546,22 @@ class Partition:
                     'mountpoint': self.set_mountpoint,
                     'mountopts': self.set_mountopts,
                     'mkfsopts': self.set_mkfsopts,
-                    'flags': self.set_flags
+                    'flags': self.set_flags,
+		            'devnode': self.get_devnode
                   }
 		if name in tmpdict:
 			tmpdict[name](value)
 		else:
 			raise ValueError(name + " is not a valid attribute!")
+
+	##
+	# Returns the dev node that this partition will have
+	def get_devnode(self):
+		device = self._device.get_device()
+		if device[-1] in "0123456789":
+			return device + "p" + self.get_minor()
+		else:
+			return device + self.get_minor()
 
 	##
 	# Returns whether or not the partition is extended
@@ -819,20 +830,15 @@ def detect_devices():
 	# Load /proc/partitions into the variable 'partitions'
 	partitions = []
 	for line in open("/proc/partitions"):
-		if len(line.split()) < 4 or not line.split()[0].isdigit() or not line.split()[1].isdigit():
+		tmpparts = line.split()
+		if len(tmpparts) < 4 or not tmpparts[0].isdigit() or not tmpparts[1].isdigit():
 			continue
 		
 		# Get the major, minor and device name
-		major = line.split()[0]
-		minor = line.split()[1]
-		device = "/dev/" + line.split()[3]
+		major = int(tmpparts[0])
+		minor = int(tmpparts[1])
+		device = "/dev/" + tmpparts[3]
 		
-		if not major.isdigit() or not minor.isdigit():
-			continue
-			
-		major = int(major)
-		minor = int(minor)
-
 		# If there is no /dev/'device_name', then scan
 		# all the devices in /dev to try and find a
 		# devices with the same major and minor		
@@ -856,33 +862,25 @@ def detect_devices():
 	
 	# Scan sysfs for the devices of type 'x'
 	# 'x' being a member of the list below:
-	# TODO: rewrite for 2.4 support
-	for dev_type in [ "ide", "scsi" ]:	# Other device types? usb? fw?
-		if os.path.exists("/sys/bus/" + dev_type):
-			sysfs_devices = os.listdir("/sys/bus/"+dev_type+"/devices")
+	# Compaq cards.../sys/block/{cciss,ida}!cXdX/dev
+	for dev_glob in ("/sys/bus/ide/devices/*/block*/dev", "/sys/bus/scsi/devices/*/block*/dev", "/sys/block/cciss*/dev", "/sys/block/ida*/dev"):
+		sysfs_devices = glob(dev_glob)
+		if not sysfs_devices: continue
+		for sysfs_device in sysfs_devices:
+			# Get the major and minor info
+			try:
+				major, minor = open(sysfs_device).read().split(":")
+				major = int(major)
+				minor = int(minor)
+			except:
+				raise GLIException("GLIStorageDeviceError", 'fatal', 'detect_devices', "invalid major/minor in " + sysfs_device)
 			
-			# For each device in the devices on that bus
-			for sysfs_device in sysfs_devices:
-				dev_file = "/sys/bus/" + dev_type + "/devices/" + sysfs_device + "/block*/dev"
-						
-				# If the file is not a block device, loop
-				if not os.path.exists(dev_file):
-					continue
-					
-				# Get the major and minor info
-				try:
-					major, minor = open(dev_file).read().split(":")
-					major = int(major)
-					minor = int(minor)
-				except:
-					raise GLIException("GLIStorageDeviceError", 'fatal', 'detect_devices', "invalid major minor in " + dev_file)
-			
-				# Find a device listed in /proc/partitions
-				# that has the same minor and major as our
-				# current block device.
-				for record in partitions:
-					if major == record[0] and minor == record[1]:
-						devices.append(record[2])
+			# Find a device listed in /proc/partitions
+			# that has the same minor and major as our
+			# current block device.
+			for record in partitions:
+				if major == record[0] and minor == record[1]:
+					devices.append(record[2])
 
 	# For testing the partitioning code
 	if GLIUtility.is_file("/tmp/disk.img"):

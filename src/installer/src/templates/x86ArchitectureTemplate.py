@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.126 2006/03/25 21:01:55 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.127 2006/03/30 17:29:23 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -145,7 +145,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _partition_resize_step(self, parted_disk, device, oldparts, newparts):
 		for oldpart in oldparts:
 			tmppart_old = oldparts[oldpart]
-			devnode = device + str(oldpart)
+			devnode = tmppart_old['devnode']
 			newminor = self._find_existing_in_new(oldpart, newparts)
 			if not newminor or not newparts[newminor]['resized']:
 				continue
@@ -265,13 +265,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _partition_format_step(self, parted_disk, device, newparts):
 		for part in newparts:
 			newpart = newparts[part]
-			devnode = device + str(part)
+			devnode = newpart['devnode']
 			# This little hack is necessary because parted sucks goat nuts
 			if newparts.get_disklabel() == "mac" and newpart['type'] == "free":
 				self._delete_partition(parted_disk, newpart)
 				continue
 			if newpart['format'] and newpart['type'] not in ('extended', 'free'):
-				devnode = device + str(int(part))
+#				devnode = device + str(int(part))
 				if self._debug: self._logger.log("_partition_format_step(): devnode is %s in formatting code" % devnode)
 				# if you need a special command and
 				# some base options, place it here.
