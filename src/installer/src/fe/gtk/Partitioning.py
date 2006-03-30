@@ -349,14 +349,14 @@ disk order.
 				elif tmppart.is_logical():
 					tmpbutton = PartitionButton.Partition(color1=self.colors[tmppart.get_type()], color2=self.colors[tmppart.get_type()], label="", division=0)
 					if percent >= 15:
-						tmpbutton.set_label(tmpdevice + str(tmpminor))
+						tmpbutton.set_label(tmppart['devnode'])
 					extended_table.attach(tmpbutton, last_log_percent, (last_log_percent + percent), 0, 1)
 					last_log_percent = last_log_percent + percent
 					tmpbutton.connect("clicked", self.part_selected, tmpdevice, tmpminor)
 				else:
 					self.part_buttons[tmpminor] = PartitionButton.Partition(color1=self.colors[tmppart.get_type()], color2=self.colors[tmppart.get_type()], label="", division=0)
 					if percent >= 15:
-						self.part_buttons[tmpminor].set_label(tmpdevice + str(tmpminor))
+						self.part_buttons[tmpminor].set_label(tmppart['devnode'])
 					self.part_buttons[tmpminor].connect("clicked", self.part_selected, tmpdevice, tmpminor)
 					self.part_table.attach(self.part_buttons[tmpminor], last_percent, (last_percent + percent), 0, 1)
 					last_percent = last_percent + percent
