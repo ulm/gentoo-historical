@@ -559,9 +559,9 @@ class Partition:
 	def get_devnode(self):
 		device = self._device.get_device()
 		if device[-1] in "0123456789":
-			return device + "p" + self.get_minor()
+			return device + "p" + str(self.get_minor())
 		else:
-			return device + self.get_minor()
+			return device + str(self.get_minor())
 
 	##
 	# Returns whether or not the partition is extended
