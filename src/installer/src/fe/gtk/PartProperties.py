@@ -38,7 +38,7 @@ class PartProperties(gtk.Window):
 		if self.fstype == "free":
 			self.set_title(_("New partition on ") + device)
 		else:
-			self.set_title(_("Properties for ") + device + str(minor))
+			self.set_title(_("Properties for ") + self.controller.devices[self.device][minor]['devnode'])
 
 		self.globalbox = gtk.VBox(False, 0)
 		self.globalbox.set_border_width(10)
@@ -187,7 +187,7 @@ class PartProperties(gtk.Window):
 			self.resize_info_part_filesystem.set_sensitive(True)
 		else:
 			tmppart = self.controller.devices[self.device].get_partition(self.minor)
-			self.info_partition.set_text(self.device + str(self.minor))
+			self.info_partition.set_text(tmppart['devnode'])
 			if self.minor < 5:
 				self.resize_info_part_type.set_active(0)
 			else:

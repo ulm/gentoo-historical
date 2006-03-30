@@ -239,7 +239,7 @@ disk order.
 	def part_selected(self, button, dev=None, minor=None):
 		minor = int(minor)
 		tmppart = self.devices[dev].get_partition(minor)
-		self.info_partition.set_text(dev + str(minor))
+		self.info_partition.set_text(tmppart['devnode'])
 		if self.devices[dev]._labelinfo['extended'] and minor > 4:
 			self.info_type.set_text(_("Logical"))
 		elif tmppart.get_type() == "extended":
@@ -269,7 +269,7 @@ disk order.
 		props.run()
 
 	def part_button_delete_clicked(self, button, data=None):
-		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("Are you sure you want to delete ") + self.active_device + str(self.active_part_minor))
+		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("Are you sure you want to delete ") + self.devices[dev][self.active_part_minor]['devnode'])
 		resp = msgdlg.run()
 		msgdlg.destroy()
 		if resp == gtk.RESPONSE_YES:
