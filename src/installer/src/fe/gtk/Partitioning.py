@@ -269,7 +269,7 @@ disk order.
 		props.run()
 
 	def part_button_delete_clicked(self, button, data=None):
-		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("Are you sure you want to delete ") + self.devices[dev][self.active_part_minor]['devnode'])
+		msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("Are you sure you want to delete ") + self.devices[self.active_device][self.active_part_minor]['devnode'])
 		resp = msgdlg.run()
 		msgdlg.destroy()
 		if resp == gtk.RESPONSE_YES:
