@@ -527,7 +527,8 @@ class Partition:
                     'mountpoint': self.get_mountpoint,
                     'mountopts': self.get_mountopts,
                     'mkfsopts': self.get_mkfsopts,
-                    'flags': self.get_flags
+                    'flags': self.get_flags,
+		            'devnode': self.get_devnode
                   }
 		if name in tmpdict:
 			return tmpdict[name]()
@@ -546,8 +547,7 @@ class Partition:
                     'mountpoint': self.set_mountpoint,
                     'mountopts': self.set_mountopts,
                     'mkfsopts': self.set_mkfsopts,
-                    'flags': self.set_flags,
-		            'devnode': self.get_devnode
+                    'flags': self.set_flags
                   }
 		if name in tmpdict:
 			tmpdict[name](value)
