@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.270 2006/03/25 17:26:14 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.271 2006/03/30 17:50:31 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -380,15 +380,15 @@ class ArchitectureTemplate:
 		for device in parts:
 			tmp_partitions = parts[device] #.get_install_profile_structure()
 			tmp_minor = -1
-			for minor in parts[device]: #.get_ordered_partition_list():
+			for minor in tmp_partitions: #.get_ordered_partition_list():
 				if not tmp_partitions[minor]['type'] in ("free", "extended"):
 					tmp_minor = minor
 					break
 			time.sleep(1)
 			if tmp_minor == -1: continue
 			# now sleep until it exists
-			while not GLIUtility.is_file(parts[device].get_device() + str(tmp_minor)):
-				if self._debug: self._logger.log("DEBUG: Waiting for device node " + parts[device].get_device() + str(tmp_minor) + " to exist...")
+			while not GLIUtility.is_file(tmp_partitions[minor]['devnode']):
+				if self._debug: self._logger.log("DEBUG: Waiting for device node " + tmp_partitions[minor]['devnode'] + " to exist...")
 				time.sleep(1)
 			# one bit of extra sleep is needed, as there is a blip still
 			time.sleep(1)
@@ -403,14 +403,14 @@ class ArchitectureTemplate:
 					if partition_type:
 						if partition_type == "fat32" or partition_type == "fat16": partition_type = "vfat"
 						partition_type = "-t " + partition_type + " "
-					parts_to_mount[mountpoint] = (mountopts, partition_type, device + minor)
+					parts_to_mount[mountpoint] = (mountopts, partition_type, tmp_partitions[partition]['devnode'])
 					
 				if partition_type == "linux-swap":
-					ret = GLIUtility.spawn("swapon " + device + minor)
+					ret = GLIUtility.spawn("swapon " + tmp_partitions[partition]['devnode'])
 					if not GLIUtility.exitsuccess(ret):
-						self._logger.log("ERROR! : Could not activate swap (" + device + minor + ")!")
+						self._logger.log("ERROR! : Could not activate swap (" + tmp_partitions[partition]['devnode'] + ")!")
 					else:
-						self._swap_devices.append(device + minor)
+						self._swap_devices.append(tmp_partitions[partition]['devnode'])
 		sorted_list = parts_to_mount.keys()
 		sorted_list.sort()
 		
@@ -589,7 +589,7 @@ class ArchitectureTemplate:
 						exitstatus = GLIUtility.spawn("mkdir -p " + self._chroot_dir + mountpoint)
 						if not GLIUtility.exitsuccess(exitstatus):
 							raise GLIException("MkdirError", 'fatal','configure_fstab', "Making the mount point failed!")
-					newfstab += device+minor+"\t "+mountpoint+"\t "+partition_type+"\t "+mountopts+"\t\t "
+					newfstab += tmp_partitions[partition]['devnode']+"\t "+mountpoint+"\t "+partition_type+"\t "+mountopts+"\t\t "
 					if mountpoint == "/boot":
 						newfstab += "1 2\n"
 					elif mountpoint == "/":
@@ -597,7 +597,7 @@ class ArchitectureTemplate:
 					else:
 						newfstab += "0 0\n"
 				if partition_type == "linux-swap":
-					newfstab += device+minor+"\t none            swap            sw              0 0\n"
+					newfstab += tmp_partitions[partition]['devnode']+"\t none            swap            sw              0 0\n"
 		newfstab += "none        /proc     proc    defaults          0 0\n"
 		newfstab += "none        /dev/shm  tmpfs   defaults          0 0\n"
 		if GLIUtility.is_device("/dev/cdroms/cdrom0"):
