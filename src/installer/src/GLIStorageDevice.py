@@ -542,7 +542,7 @@ class Partition:
                     'end': self.set_end,
                     'format': self.set_format,
                     'type': self.set_type,
-                    'resized': self.set_resized,
+#                    'resized': self.set_resized,
                     'minor': self.set_minor,
                     'mb': self.set_mb,
                     'origminor': self.set_orig_minor,
