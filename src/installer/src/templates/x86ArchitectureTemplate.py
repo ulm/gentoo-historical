@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.130 2006/03/31 04:07:21 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.131 2006/03/31 15:08:15 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -392,7 +392,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				try:
 					parted_disk = parted_dev.disk_new_fresh(parted.disk_type_get(newparts.get_disklabel()))
 					parted_disk.commit()
-				except
+				except:
 					raise GLIException("DiskLabelCreationError", 'fatal', 'partition', "Could not create a blank disklabel!")
 
 				# Third pass to create new partition table
