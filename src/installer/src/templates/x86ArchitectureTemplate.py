@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.131 2006/03/31 15:08:15 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.132 2006/03/31 15:11:00 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -223,7 +223,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				start = newpart['start']
 			else:
 				self._logger.log("    Start sector calculated to be " + str(start))
-			if not newpart.is_logical() and start <= extended_end:
+			if extended_end and not newpart.is_logical() and start <= extended_end:
 				self._logger.log("    Start sector for primary is less than the end sector for previous extended")
 				start = extended_end + 1
 			if newpart['end']:
