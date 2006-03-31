@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.127 2006/03/30 17:29:23 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.128 2006/03/31 01:05:43 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -88,6 +88,18 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			oldpart = oldparts[part]
 			newpart = newparts[part]
 			if oldpart['type'] == newpart['type'] and oldpart['mb'] == newpart['mb'] and not newpart['resized'] and not newpart['format']:
+				continue
+			else:
+				return True
+		return False
+
+	def _check_table_layout_changed(self, oldparts, newparts):
+		for part in newparts:
+			if not oldparts.get_partition(part):
+				return True
+			oldpart = oldparts[part]
+			newpart = newparts[part]
+			if oldpart['type'] == newpart['type'] and oldpart['mb'] == newpart['mb']:
 				continue
 			else:
 				return True
@@ -324,7 +336,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			oldparts = parts_old[device]
 
 			# Check to see if the old and new partition table structures are the same...skip if they are
-			if not self._check_table_changed(parts_old[device], parts_new[device]):
+			if not self._check_table_changed(oldparts, newparts):
 				self._logger.log("Partition table for " + device + " is unchanged...skipping")
 				continue
 
@@ -368,22 +380,25 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					tmppart_new['start'] = tmppart_old['start']
 					tmppart_new['end'] = tmppart_old['end']
 
-			# First pass to delete old partitions that aren't resized
-			self.notify_frontend("progress", (cur_progress / total_steps, "Deleting partitioning that aren't being resized for " + device))
-			cur_progress += 1
-			self._partition_delete_step(parted_disk, oldparts, newparts)
+			if self._check_table_layout_changed(parts_old[device], parts_new[device]):
+				# First pass to delete old partitions that aren't resized
+				self.notify_frontend("progress", (cur_progress / total_steps, "Deleting partitioning that aren't being resized for " + device))
+				cur_progress += 1
+				self._partition_delete_step(parted_disk, oldparts, newparts)
 
-			# Second pass to resize old partitions that need to be resized
-			self._logger.log("Partitioning: Second pass...")
-			self.notify_frontend("progress", (cur_progress / total_steps, "Resizing remaining partitions for " + device))
-			cur_progress += 1
-			self._partition_resize_step(parted_disk, device, oldparts, newparts)
+				# Second pass to resize old partitions that need to be resized
+				self._logger.log("Partitioning: Second pass...")
+				self.notify_frontend("progress", (cur_progress / total_steps, "Resizing remaining partitions for " + device))
+				cur_progress += 1
+				self._partition_resize_step(parted_disk, device, oldparts, newparts)
 
-			# Third pass to create new partition table
-			self._logger.log("Partitioning: Third pass....creating partitions")
-			self.notify_frontend("progress", (cur_progress / total_steps, "Recreating partition table for " + device))
-			cur_progress += 1
-			self._partition_recreate_step(parted_disk, newparts)
+				# Third pass to create new partition table
+				self._logger.log("Partitioning: Third pass....creating partitions")
+				self.notify_frontend("progress", (cur_progress / total_steps, "Recreating partition table for " + device))
+				cur_progress += 1
+				self._partition_recreate_step(parted_disk, newparts)
+			else:
+				cur_progress += 3
 
 			# Fourth pass to format partitions
 			self._logger.log("Partitioning: formatting partitions")

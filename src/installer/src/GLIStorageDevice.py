@@ -16,17 +16,19 @@ FREE_MINOR_FRAC_PRI = 1.0/32.0
 FREE_MINOR_FRAC_LOG = 1.0/8.0
 
 
-labelinfo = { 'msdos': { 'ignoreparts': None, 'extended': True },
-              'mac':   { 'ignoreparts': (1,), 'extended': False },
-              'sun':   { 'ignoreparts': (3,), 'extended': False }
-            }
+labelinfo = {
+  'msdos': { 'ignoredparts': None, 'extended': True },
+  'mac':   { 'ignoredparts': (1,), 'extended': False },
+  'sun':   { 'ignoredparts': (3,), 'extended': False }
+}
 
-archinfo = { 'sparc': 'sun',
-             'hppa': 'msdos',
-             'x86': 'msdos',
-             'amd64': 'msdos',
-             'ppc': 'mac'
-           }
+archinfo = {
+  'sparc': 'sun',
+  'hppa': 'msdos',
+  'x86': 'msdos',
+  'amd64': 'msdos',
+  'ppc': 'mac'
+}
 
 ##
 # This class provides a partitioning abstraction for the frontends
