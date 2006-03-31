@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/nvidia-guide.xml,v 1.11 2006/02/17 18:36:41 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/nvidia-guide.xml,v 1.12 2006/03/31 23:06:53 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/es/nvidia-guide.xml" lang="es">
+<guide link="/doc/es/nvidia-guide.xml">
 <title>Guía nVidia Gentoo Linux</title>
 
 <author title="Autor">
@@ -12,7 +12,7 @@
   <mail link="curtis119@gentoo.org">M. Curtis Napier</mail>
 </author>
 <author title="Editor">
-  <mail link="jackdark@gmail.com">Joshua Saddler</mail>
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
 <author title="Traductor">
   <mail link="bass@gentoo.org">José Alberto Suárez López</mail>
@@ -34,8 +34,8 @@ tarjeta. Esta guía informa cómo instalar y configurar estos drivers.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.19</version>
-<date>2006-01-21</date>
+<version>1.23</version>
+<date>2006-03-28</date>
 
 <chapter>
 <title>Introducción</title>
@@ -91,6 +91,59 @@ núcleo:
 Processor and Features ---&gt;
   [*] MTRR (Memory Type Range Register) support
 </pre>
+
+</body>
+</section>
+<section>
+<title>Observaciones específicas a la arquitectura</title>
+<body>
+
+<impo>
+Para los procesadores x86 y AMD64, el controlador incluido en el núcleo entra
+en conflicto con aquel proporcionado por nVidia. Si va a compilar su núcleo
+para alguno de esos procesadores, debe eliminar completamente el soporte para
+el controlador incluido en el núcleo tal como se muestra a continuación:
+</impo>
+
+<pre caption="Eliminar el controlador incluido en el núcleo">
+Device Drivers ---&gt;
+Graphics Support ---&gt;
+&lt; &gt;   nVidia Framebuffer Support
+&lt; &gt;   nVidia Riva support
+</pre>
+
+<p>
+Una buena alternativa de framebuffer es el <c>VESA</c>:
+</p>
+
+<pre caption="Activar el soporte para VESA">
+Device Drivers ---&gt; 
+Graphics Support ---&gt;
+&lt;*&gt;   VESA VGA graphics support
+</pre>
+
+<p>
+Luego, debajo de "VESA driver type" seleccione <c>vesafb</c> o
+<c>vesafb-tng</c>:
+</p>
+
+<pre caption="Seleccionar el tipo de framebuffer">
+( ) vesafb
+(X) vesafb-tng
+</pre>
+
+<p>
+Para mayor información, puede leer
+<path>/usr/src/linux/Documentation/fb/vesafb.txt</path> si está usando
+<c>vesafb</c> o busque la documentación para su framebuffer en
+<path>/usr/src/linux/Documentation/fb/</path>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Continuar con la configuración del núcleo</title>
+<body>
 
 <p>
 Los módulos y bibliotecas nVidia están combinados en dos paquetes:
@@ -181,7 +234,7 @@ los drivers de nVidia e instalar una versión más antigua:
 </p>
 
 <pre caption="Enmascarando los drivers más nuevos">
-# <i>echo "&gt;media-video/nvidia-kernel-1.0.6629-r4" &gt;&gt; /etc/portage/package.mask</i>
+# <i>echo "&gt;media-video/nvidia-kernel-1.0.6629-r5" &gt;&gt; /etc/portage/package.mask</i>
 # <i>echo "&gt;media-video/nvidia-glx-1.0.6629-r7" &gt;&gt; /etc/portage/package.mask</i>
 </pre>
 
@@ -454,6 +507,35 @@ Lo más probable es que falten los archivos de dispositivo
 <pre caption="Crear los nodos de dispositivo nvidia">
 # <i>/sbin/NVmakedevices.sh</i>
 </pre>
+
+<p>
+Si sus dispositivos <path>/dev/nvidia</path> siguen estando ausentes
+cada vez que reinicia, entonces lo más probable es que udev no esté creando
+automáticamente los nodos de dispositivos apropiados. Puede corregir esto
+ejecutando nuevamente <c>NVmakedevices.sh</c> y posteriormente edite el
+fichero <path>/etc/conf.d/rc</path> como se muestra a continuación:
+</p>
+
+<pre caption="Editar /etc/conf.d/rc">
+RC_DEVICE_TARBALL="yes"
+</pre>
+
+<p>
+Esto hará que se conserven sus nodos <path>/dev/nvidia</path> incluso en caso de
+que reinicie.
+</p>
+
+<note>
+De forma alternativa puede intentar reinstalar los últimos <c>nvidia-kernel</c>
+y <c>nvidia-glx</c> a partir la serie 8xxx. Al momento de redacción de este
+documento, ambos todavía estaban marcados ~arch (i.e. en la rama de pruebas).
+Estos controladores ya no dependen de hotplug o udev para crear los nodos de
+dispositivo apropiados, así que no necesitará ejecutar <c>NVmakedevices.sh</c>.
+En cambio, el controlador X creará por si mismo sus ficheros
+<path>/dev/nvidia</path> cuando inicie el servidor X. Sin embargo, esto requiere
+que use una versión reciente del núcleo (2.6.14 o superior).
+</note>
+
 </body>
 </section>
 </chapter>
