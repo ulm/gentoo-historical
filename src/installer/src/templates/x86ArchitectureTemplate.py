@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.129 2006/03/31 01:10:57 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.130 2006/03/31 04:07:21 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -312,8 +312,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def partition(self):
 		"""
 		TODO:
-		if not self._check_keeping_any_existing: wipe drive, use the default disklabel for arch, and jump to pass 3
-		if only formatting existing partitions, jump straight to pass 3
+		before step 3, wipe drive and use the default disklabel for arch
 		skip fixed partitions in all passes (in GLISD maybe?)
 		"""
 		parts_old = {}
@@ -358,9 +357,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			except:
 				if self._debug: self._logger.log("partition(): could not load existing disklabel...creating new one")
 				parted_disk = parted_dev.disk_new_fresh(parted.disk_type_get((newparts.get_disklabel() or GLIStorageDevice.archinfo[self._architecture_name])))
-			device_sectors = parted_dev.length
-			# This will go away
-			new_part_list = parts_new[device].get_ordered_partition_list()
 
 			# Iterate through new partitions and check for 'origminor' and 'format' == False
 			for part in newparts:
@@ -391,6 +387,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				self.notify_frontend("progress", (cur_progress / total_steps, "Resizing remaining partitions for " + device))
 				cur_progress += 1
 				self._partition_resize_step(parted_disk, device, oldparts, newparts)
+
+				# Wiping disk and creating blank disklabel
+				try:
+					parted_disk = parted_dev.disk_new_fresh(parted.disk_type_get(newparts.get_disklabel()))
+					parted_disk.commit()
+				except
+					raise GLIException("DiskLabelCreationError", 'fatal', 'partition', "Could not create a blank disklabel!")
 
 				# Third pass to create new partition table
 				self._logger.log("Partitioning: Third pass....creating partitions")
