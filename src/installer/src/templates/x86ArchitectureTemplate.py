@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.128 2006/03/31 01:05:43 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.129 2006/03/31 01:10:57 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -83,7 +83,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 	def _check_table_changed(self, oldparts, newparts):
 		for part in newparts:
-			if not oldparts.get_partition(part):
+			if not newparts[part]['origminor'] or not oldparts.get_partition(part):
 				return True
 			oldpart = oldparts[part]
 			newpart = newparts[part]
@@ -95,7 +95,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 
 	def _check_table_layout_changed(self, oldparts, newparts):
 		for part in newparts:
-			if not oldparts.get_partition(part):
+			if not newparts[part]['origminor'] or not oldparts.get_partition(part):
 				return True
 			oldpart = oldparts[part]
 			newpart = newparts[part]
