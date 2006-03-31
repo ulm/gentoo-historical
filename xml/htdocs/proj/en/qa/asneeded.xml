@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.4 2006/01/29 21:49:51 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.5 2006/03/31 23:25:48 flameeyes Exp $ -->
 
 <guide link="/proj/en/qa/asneeded.xml" lang="en">
 <title>--as-needed introduction and fixing guide</title>
@@ -18,8 +18,8 @@ a guide to fix simple cases where --as-needed fails to build a package.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.3</version>
-<date>2006-01-29</date>
+<version>0.4</version>
+<date>2006-04-01</date>
 
 <chapter> <!-- Introduction -->
 <title>Introduction</title>
@@ -276,25 +276,6 @@ datafile or in the script provided), and then the variable carrying this value
 should be added to the LIBADD variable for the library to be built.
 </p>
 
-<p>
-There are cases in which the problem is not due to the libraries not being
-present in the command line, but being misplaced. For the linker to know
-what to link to what, the order is important. First goes the LDFLAGS, then the
-object files to link, and then the libraries to link them with.
-</p>
-
-<pre caption="generalization of a linking command">
-$ <i>gcc ${LDFLAGS} -o ${TARGET} ${OBJS} ${LIBS}</i>
-</pre>
-
-<p>
-While using autotools there are usually small cases where this happens, because
-usually libs are feeded either via the <path>LIBS</path> variable in the
-configure script, or are listed in the LDADD/LIBADD variables for the target
-which is being built. The only case when this happens to be a problem is when
-the libraries gets feeded into LDFLAGS variable (that's incorrect).
-</p>
-
 </body>
 </section>
 
@@ -350,6 +331,53 @@ usually not the case to apply a revbump: who don't want to use the flag don't
 need to rebuild the library. For this reason, who wants to use --as-needed is
 invited to run an emerge -e world so that libraries are rebuilt.
 </note>
+
+</body>
+</section>
+
+<section> <!-- Importance of linking order -->
+<title>Importance of linking order</title>
+
+<body>
+
+<p>
+One thing that might be frustrating when fixing packages for <c>--as-needed</c>
+is that sometimes, although all the libraries are present in the linking line,
+they are just ignored and not linked at all, leading to the same issues as above
+with missing symbols either during final link or execution. This is because of a
+behaviour of the GNU linker that's enforced by <c>--as-needed</c>.
+</p>
+
+<p>
+Basically, what the linker do is to look for the symbols missing in a given file
+(either an object file, a static archive or a library) only in the files coming
+after it. When using the normal linking, without <c>--as-needed</c>, this is not
+a problem usually, although there might be some internal drawbacks on the
+linking stage, the files are linked together without considering ordering. But
+with the flag, the libraries that aren't used for resolving symbols are
+discarded and thus not linked.
+</p>
+
+<pre caption="example of wrong and correct linking order">
+<comment>(in this case libm is considered before the object files and discarded independently from the content of the two.)</comment>
+$ <i>gcc --as-needed -lm someunit1.o someunit2.o -o program</i>
+
+<comment>(this is the correct linking order to get libm linked only if needed.)</comment>
+$ <i>gcc --as-needed someunit1.o somunit2.o -lm -o program</i>
+</pre>
+
+<p>
+The fix in this case is to simply fix the linking order so that the libraries to
+linking to are all after the object files and the static archives.
+</p>
+
+<p>
+While using autotools there are usually small cases where this happens, because
+usually libs are feeded either via the <path>LIBS</path> variable in the
+configure script, or are listed in the LDADD/LIBADD variables for the target
+which is being built. The only case when this happens to be a problem is when
+the libraries gets feeded into LDFLAGS variable (that's incorrect).
+</p>
 
 </body>
 </section>
