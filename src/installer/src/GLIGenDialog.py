@@ -953,7 +953,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			boot_device = ""
 			foundboot = False
 			for device in parts:
-				tmp_partitions = parts[device].get_install_profile_structure()
+				tmp_partitions = parts[device] #.get_install_profile_structure()
 				for partition in tmp_partitions:
 					mountpoint = tmp_partitions[partition]['mountpoint']
 					if (mountpoint == "/boot"):
