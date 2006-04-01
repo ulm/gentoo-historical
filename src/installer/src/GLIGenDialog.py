@@ -303,9 +303,9 @@ on partitioning and the various filesystem types available in Linux.""")
 			code, drive_to_partition = self._d.menu(_(u"Which drive would you like to partition?\n Info provided: Type, mkfs Options, Mountpoint, Mountopts, Size in MB"), choices=choice_list, cancel=_(u"Save and Continue"))
 			if code != self._DLG_OK: break
 			while 1:
-				partitions = devices[drive_to_partition].get_partitions()
+#				partitions = devices[drive_to_partition].get_partitions()
 				partlist = devices[drive_to_partition].get_ordered_partition_list()
-				tmpparts = devices[drive_to_partition].get_partitions()
+				tmpparts = devices[drive_to_partition] #.get_partitions()
 				partsmenu = []
 				for part in partlist:
 					tmppart = tmpparts[part]
