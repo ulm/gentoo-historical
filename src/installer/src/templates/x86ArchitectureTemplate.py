@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.132 2006/03/31 15:11:00 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.133 2006/04/02 19:10:54 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -501,7 +501,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		self.foundboot = False
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			tmp_partitions = parts[device].get_install_profile_structure()
+			tmp_partitions = parts[device] #.get_install_profile_structure()
 			for partition in tmp_partitions:
 				mountpoint = tmp_partitions[partition]['mountpoint']
 				if (mountpoint == "/boot"):
@@ -530,7 +530,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _grub_add_windows(self, newgrubconf):
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			tmp_partitions = parts[device].get_install_profile_structure()
+			tmp_partitions = parts[device] #.get_install_profile_structure()
 			for partition in tmp_partitions:
 				if (tmp_partitions[partition]['type'] == "fat32") or (tmp_partitions[partition]['type'] == "ntfs"):
 					grub_dev = self._map_device_to_grub_device(device)
@@ -610,7 +610,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		self.foundboot = False
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			tmp_partitions = parts[device].get_install_profile_structure()
+			tmp_partitions = parts[device] #.get_install_profile_structure()
 			for partition in tmp_partitions:
 				mountpoint = tmp_partitions[partition]['mountpoint']
 				if (mountpoint == "/boot"):
@@ -630,7 +630,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _lilo_add_windows(self, newliloconf):
 		parts = self._install_profile.get_partition_tables()
 		for device in parts:
-			tmp_partitions = parts[device].get_install_profile_structure()
+			tmp_partitions = parts[device] #.get_install_profile_structure()
 			for partition in tmp_partitions:
 				if (tmp_partitions[partition]['type'] == "fat32") or (tmp_partitions[partition]['type'] == "ntfs"):
 					newliloconf += "other="+device+str(int(tmp_partitions[partition]['minor']))+"\n"
