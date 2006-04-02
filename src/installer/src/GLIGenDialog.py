@@ -1717,7 +1717,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		for drive in drives:
 			settings += "  Drive: " + drive + devices[drive].get_model() + "\n"
 			partlist = devices[drive].get_ordered_partition_list()
-			tmpparts = devices[drive].get_partitions()
+			tmpparts = devices[drive] #.get_partitions()
 			for part in partlist:
 				tmppart = tmpparts[part]
 				entry = "    "
