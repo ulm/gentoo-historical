@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.82 2006/03/04 00:20:20 agaffney Exp $
+$Id: GLIClientController.py,v 1.83 2006/04/03 03:23:24 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -53,6 +53,7 @@ class GLIClientController(Thread):
 		self._install_step = -1
 		self._install_steps = None
 		self._pretend = pretend
+		self._thread_pid = 0
 		self.setDaemon(True)
 
 	##
@@ -82,6 +83,9 @@ class GLIClientController(Thread):
 	##
 	# This function runs as a second thread to do the actual installation (only used internally)
 	def run(self):
+		self._thread_pid = os.getpid()
+		if self._configuration.get_verbose(): self._logger.log("DEBUG: secondary thread PID is " + str(self._thread_pid))
+
 		interactive = self._configuration.get_interactive()
 
 		if self._configuration == None and not interactive and not self._pretend:
