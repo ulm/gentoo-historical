@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/portage/doc/eapi.xml,v 1.22 2006/04/05 17:47:01 antarus Exp $ -->
+
+<guide link="/doc/en/eapi.xml" lang="en" disclaimer="draft">
+<title>Ebuild Application Programming Interface (EAPI) Overview</title>
+
+<author title="Author">
+	<mail link="antarus@gentoo.org">Alec Warner</mail>
+</author>
+<author title="GuideXML">
+  <mail link="chriswhite@gentoo.org">Chris White</mail>
+</author>
+
+<abstract>
+EAPI is a mechanism introduced in Portage versions 2.0.53 and greater.
+This mechanism allows Portage to detect and mask ebuilds for which it knows it
+cannot process properly. This document describes the general background about
+the EAPI and the logic behind it.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2006-04-04</date>
+<chapter>
+<title>Introduction</title>
+<section>
+<title>Rationale</title>
+<body>
+
+<p>
+Older <c>Portage</c> versions would improperly process or die if the application
+encountered an ebuild which used a newer feature not available in that version
+of Portage.  Often features would be added to Portage and not released for
+general use in the tree for a while ( six months or more ).  This caused feature
+deprivation as a bunch of time was always required once a feature was released
+to be relatively sure that all users had a recent version of portage.  This can
+be seen most recently with the <uri 
+link="https://bugs.gentoo.org/114798">new-style virtuals (Bug
+&#035;114798)</uri> which broke portage.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Implementation</title>
+<section>
+<title>Portage</title>
+<body>
+
+<p>
+EAPI is implemented in versions of Portage greater than or equal to 2.0.53. Each
+version of Portage has a supported EAPI value.  All current versions of Portage
+have an EAPI of 0. This EAPI value is set in
+<path>/usr/lib/portage/pym/portage_const.py</path>.  Basically, if an ebuild
+declares an EAPI that is greater than the EAPI of the Portage version that is
+accessing the ebuild, the ebuild is masked by EAPI aware versions of Portage.
+</p>
+
+</body>
+</section>
+<section>
+<title>Ebuilds</title>
+<body>
+
+<p>
+Ebuilds may declare what version of EAPI they use.  For backwards compability,
+if an ebuild does not declare an EAPI, it's EAPI is assumed to be the default (
+currently set to 0 ). An ebuild would declare a higher EAPI if it used any new
+functionality.  Such a function would be something like default USE flags in
+<c>IUSE</c>. Normally an ebuilds IUSE is one such as this:
+</p>
+
+<pre caption="Pre EAPI IUSE">
+IUSE="foo bar baz"
+</pre>
+
+<p>
+However with the new default USE in IUSE feature the IUSE line could be
+something such as:
+</p>
+
+<pre caption="EAPI IUSE">
+IUSE="foo +bar -baz"
+</pre>
+
+<p>
+If an old version of portage attempts to parse the new-style IUSE line it could
+very well get incorrect data and traceback.  It also won't turn on or off the
+specified use flags like the ebuild would expect.
+</p>
+
+</body>
+</section>
+<section>
+<title>Cache</title>
+<body>
+
+<p>
+If Portage attempts to generate a cache entry for an ebuild and the ebuild has
+an EAPI value that is not supported by that version of Portage, the values in
+the cache entry for that ebuild are set to empty and the corresponding EAPI
+value is negated.  This is done both to notify Portage that the ebuild is using
+features that the currently running Portage cannot support, but also to inform
+the rest of Portage that the cache entries are empty.  Future enhancements
+covered by EAPI may in fact invalidate how the cache entries are generated
+and/or stored, thus once Portage determines that it doesn't support that EAPI
+version, all bets on the data in the ebuild are off.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
