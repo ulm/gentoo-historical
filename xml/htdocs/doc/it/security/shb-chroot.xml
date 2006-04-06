@@ -1,0 +1,120 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/security/shb-chroot.xml,v 1.1 2006/04/06 20:07:05 so Exp $ -->
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<sections>
+
+<version>1.1</version>
+<date>2005-12-15</date>
+
+<section>
+<title>Il chroot</title>
+<body>
+
+<p>
+Il chroot per un servizio è un modo di limitare l'ambiente del servizio
+stesso (o
+dell'utente) per potere accedere solo dove si ha il permesso, e di non ottenere
+l'accesso (o le informazioni) che potrebbero portare all'accesso come root.
+Eseguendo il servizio come utente non <c>root</c> (<c>nobody</c>,
+<c>apache</c>, <c>named</c>) un attaccante può accedere solo ai file con i
+permessi di quell'utente. Questo significa che un attaccante non può ottenere
+l'accesso come <c>root</c> anche se i servizi dovessero avere un problema di
+sicurezza.
+</p>
+
+<p>
+Alcuni servizi come <c>pure-ftpd</c> e <c>bind</c> hanno delle proprie
+caratteristiche per il chroot, e altri servizi non le hanno. Se il servizio
+le supporta, si devono usare, altrimenti si devono creare. Segue come
+creare un chroot con un esempio base, e lo si proverà con <c>bash</c> (per
+una facile comprensione).
+</p>
+
+<p>
+Creare la directory <path>/chroot</path> con <c>mkdir /chroot</c>. Trovare le
+librerie dinamiche con le quali è compilato <c>bash</c> (se è compilato con
+<c>-static</c> questo passo non è necessario):
+</p>
+
+<p>
+Il seguente comando crea un elenco di librerie usate da <c>bash</c>.
+</p>
+
+<pre caption="Elenco delle librerie usate">
+# <i>ldd /bin/bash</i>
+  libncurses.so.5 => /lib/libncurses.so.5 (0x4001b000)
+  libdl.so.2 => /lib/libdl.so.2 (0x40060000)
+  libc.so.6 => /lib/libc.so.6 (0x40063000)
+  /lib/ld-linux.so.2 => /lib/ld-linux.so.2 (0x40000000)
+</pre>
+
+<p>
+Ora si crei l'ambiente per <c>bash</c>.
+</p>
+
+<pre caption="Creare l'ambiente per il chroot per bash">
+# <i>mkdir /chroot/bash</i>
+# <i>mkdir /chroot/bash/bin</i>
+# <i>mkdir /chroot/bash/lib</i>
+</pre>
+
+<p>
+Copiare i file usati da <c>bash</c> (<path>/lib</path>) nella <path>lib</path>
+del chroot e copiare il comando bash nella directory <path>bin</path> del
+chroot. Questo crea lo stesso ambiente, con meno funzionalità. Dopo provare:
+<c>chroot /chroot/bash /bin/bash</c>. Se si ottiene un prompt con
+<path>/</path>, funziona. Altrimenti si otterrà il nome del file che manca.
+Alcune librerie condivise dipendono le une dalle altre.
+</p>
+
+<p>
+Si noti che dentro al chroot non funziona niente tranne <c>echo</c>. Non ci
+sono altri comandi nell'ambiente del chroot oltre a bash, e <c>echo</c> è una
+funzionalità build-in.
+</p>
+
+<p>
+Questo è praticamente lo stesso modo con cui si può creare un chroot per un
+servizio. La sola differenza è che i servizi a volte dipendono dai
+dispositivi e dai file di configurazione in <path>/etc</path>. Si deve
+copiarli (i dispositivi possono essere copiati con <c>cp -a</c>)
+nell'ambiente del chroot, modificare l'init script per poter usare il chroot
+prima di eseguirlo. Può essere difficile trovare quali dispositivi e file di
+configurazione sono necessari a un servizio. Viene in aiuto il comando
+<c>strace</c>. Avviare il servizio con <c>/usr/bin/strace</c> e cercare open,
+read, stat e forse connect. Si troverà un aiuto su quali file devono essere
+copiati. Ma nella maggior parte dei casi basta copiare il file passwd
+(modificare la copia e rimuovere gli utenti che non hanno niente a che fare
+con il servizio), <path>/dev/zero</path>, <path>/dev/log</path> e
+<path>/dev/random</path>.
+</p>
+
+</body>
+</section>
+<section>
+<title>User Mode Linux</title>
+<body>
+
+<p>
+Un altro modo per creare un ambiente più sicuro è quello di eseguire una
+macchina virtuale. Questa, come dice il nome, è un processo che si esegue
+all'inizio del sistema operativo reale, e fornisce un ambiente hardware e del
+sistema operativo che sembra essere quello dell'unica macchina. Il beneficio
+per la sicurezza è che se il server che si esegue sulla macchina virtuale
+viene compromesso, sarà interessato solo il server virtuale e non
+l'installazione reale.
+</p>
+
+<p>
+Per ulteriori informazioni su come impostare il User Mode Linux consultare la
+<uri link="/doc/it/uml.xml">guida User Mode Linux</uri>.
+</p>
+
+</body>
+</section>
+
+</sections>
