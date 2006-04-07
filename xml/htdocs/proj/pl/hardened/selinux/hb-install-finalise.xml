@@ -1,0 +1,162 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/hardened/selinux/Attic/hb-install-finalise.xml,v 1.1 2006/04/07 21:35:54 shadoww Exp $ -->
+
+<sections>
+<section>
+<title>Ponowne oznaczenie systemu plików</title>
+<subsection>
+<body>
+
+<p>
+Po ponownym uruchomieniu systemu w czasie instalacji, jest niemal pewne, że
+pewne pliki zmieniły się w stosunku do stanu przed rebootem. Aby mieć pewność,
+że wszystkie demony i procesy pracują we właściwych kontekstach, konieczne jest
+powtórne oznaczenie systemu plików.
+</p>
+
+<pre caption="Oznaczanie systemu plików po raz drugi">
+# <i>cd /etc/security/selinux/src/policy</i>
+# <i>make relabel</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Administrowanie kontami użytkowników</title>
+<subsection>
+<title>Tworzenie konta do codziennej pracy</title>
+<body>
+
+<p>
+Wykonywanie zadań z przywilejami roota jest <e>niebezpieczne</e> i należy tego
+unikać. Do codziennej pracy należy utworzyć zwykłe konto użytkownika.
+</p>
+
+<p>
+Przykładowo aby stworzyć konto użytkownika o nazwie <c>john</c>, który należy do
+grup <c>wheel</c> (możliwość przejścia na konto roota poprzez <c>su</c>),
+<c>users</c> (domyślna dla wszystkich użytkowników) i <c>audio</c> (możliwość
+korzystania z urządzeń audio), należy zalogować się jako root (tyko root może
+dodawać konta dla nowych użytkowników) i wykonać polecenie:
+</p>
+
+<pre caption="Dodawanie użytkownika do codziennej pracy">
+Login: <i>root</i>
+Password: <comment>(wpisujemy hasło)</comment>
+
+# <i>useradd john -m -G users,wheel,audio,tty -s /bin/bash</i>
+# <i>passwd john</i>
+Password: <comment>(wpisujemy hasło dla johna)</comment>
+Re-enter password: <comment>(ponownie podajemy hasło)</comment>
+</pre>
+
+<p>
+Jeśli użytkownik kiedykolwiek będzie musiał wykonać jakieś czynności jako root,
+będzie mógł skorzystać z polecenia <c>su -</c>, aby tymczasowo uzyskać
+uprawnienia superużytkownika. Innym rozwiązaniem jest wykorzystanie pakietu
+<c>sudo</c>, który - właściwie skonfigurowany - jest bardzo
+bezpieczny. Użytkownik musi również posiadać statusy <c>staff_r</c> i
+<c>sysadm_r</c>. Nadamy je dodając do pliku
+<path>/etc/security/selinux/src/policy/users</path> poniższą linię:
+</p>
+
+<pre caption="Nadawanie statusów użytkownikowi">
+user john roles { staff_r sysadm_r };
+</pre>
+
+<p>
+Aby powyższa zmiana przyniosła efekt, należy przeładować politykę. Więcej
+informacji na ten temat można uzyskać w rozdziale <uri
+link="?part=4&amp;chap=1#doc_chap3">Przegląd SELinux</uri>.
+</p>
+
+<p>
+Gratulujemy, system jest już gotowy do użytkowania! Aby dowiedzieć się więcej o
+Gentoo, warto zapoznać się z rozdziałem <uri
+link="?part=1&amp;chap=12">I co dalej?</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+
+<!--
+<section>
+<title>Opcjonalnie: instalacja pakietów GRP</title>
+<body>
+
+<impo>
+Ta część jest przeznaczone wyłącznie dla korzystających z GRP. Pozostali
+użytkownicy powinni pominąć tę część i kontynuować instalację zgodnie z
+rozdziałem <uri link="?part=1&amp;chap=12">I co dalej?</uri>.
+</impo>
+
+<p>
+Gdy system jest uruchomiony, zalogujmy się na konto stworzonego użytkownika
+(np. <c>john</c>) i wykorzystajmy polecenie <c>su -</c>, aby uzyskać uprawnienia
+roota:
+</p>
+
+<pre caption="Uzyskiwanie uprawnień roota">
+$ <i>newrole -r sysadm_r</i>
+Authenticating john.
+Password: <comment>(Podajemy hasło johna)</comment>
+$ <i>su -</i>
+Password: <comment>(Podajemy hasło roota)</comment>
+</pre>
+
+<p>
+Musimy zmienić konfigurację drzewa Portage tak, aby szukała ona
+prekompilowanych pakietów binarnych na drugiej płycie instalacyjnej (Gentoo
+Packages CD). Na początku musimy zamontowań napęd CD:
+</p>
+
+<pre caption="Montowanie napędu CD">
+<comment>(Wkładamy do napędu Gentoo Packages CD)</comment>
+# <i>mount /mnt/cdrom</i>
+</pre>
+
+<p>
+Teraz nakażemy maszynie Portage, aby wykorzystywała <path>/mnt/cdrom</path> jako
+repozytorium z prekompilowanymi pakietami:
+</p>
+
+<pre caption="Konfigurowanie Portage, aby korzystało z /mnt/cdrom">
+# <i>ls /mnt/cdrom</i>
+
+<comment>(Jeśli istnieje katalog /mnt/cdrom/packages:)</comment>
+# <i>export PKGDIR="/mnt/cdrom/packages"</i>
+
+<comment>(W pozostałych przypadkach:)</comment>
+# <i>export PKGDIR="/mnt/cdrom"</i>
+</pre>
+
+<p>
+Następnie instalujemy wszystkie potrzebne nam pakiety. Płyta z pakietami zawiera
+sporo prekompilowanych pakietów binarnych, na przykład KDE:
+</p>
+
+<pre caption="Instalowanie KDE z prekompilowanego pakietu">
+# <i>emerge - - !!!!!!!!!!!!! usepkg kde</i>
+</pre>
+
+<p>
+Wszystkie binarne pakiety należy zainstalować przez wykonaniem polecenia
+<c>emerge sync</c>, które dokona aktualizacji drzewa Portage (później dowiemy
+się więcej na ten temat). Jest to konieczne, ponieważ później prekompilowane
+pakiety mogą nie odpowiadać nowym ebuildom w Portage. Możemy spróbować obejść
+ten problem wykonując polecenie
+<c>emerge - - !!!!!!!! usepkgonly</c> zamiast <c>emerge - - !!!!!!!!usepkg</c>.
+</p>
+
+</body>
+</section>
+-->
+</sections>

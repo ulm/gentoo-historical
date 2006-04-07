@@ -1,0 +1,408 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/hardened/selinux/Attic/hb-install-x86-bootloader.xml,v 1.1 2006/04/07 21:35:54 shadoww Exp $ -->
+
+<sections>
+<section>
+<title>Podejmowanie decyzji</title>
+<subsection>
+<title>Wprowadzenie</title>
+<body>
+
+<p>
+Gdy skonfigurowaliśmy jądro i zmodyfikowaliśmy odpowiednio niezbędne pliki
+konfiguracyjne nadeszła pora na zainstalowanie programu, który wystartuje jądro
+w czasie uruchamiania komputera. Taki program nazywany jest
+<e>bootloaderem</e>. Dla architektury x86 Gentoo oferuje dwa takie programy:
+<uri link="#grub">GRUB</uri> i <uri link="#lilo">LILO</uri>. Zanim zainstalujemy
+którykolwiek z nich przyjrzymy się, jak skonfigurować framebuffer (jeśli chcemy
+z niego skorzystać). Przy jego użyciu możemy wzbogacić konsolę o pewne proste
+elementy graficzne (np. wykorzystując bootsplash zawarty na płycie
+instalacyjnej).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcjonalnie: Framebuffer</title>
+<body>
+
+<p>
+Jeśli skonfigurowaliśmy jądro z obsługą framebuffera,
+<!-- Prawdopodobnie genkernel nie obsługuje SELinux
+(lub skorzystaliśmy z
+kernela wygenerowanego na podstawie domyślnych ustawień programu
+<c>genkernel</c>)
+-->
+powinniśmy przekazać do jądra parametr <c>vga</c>, aby z
+niego skorzystać. Poniższa tabela prezentuje wartości jakie możemy przypisać
+parametrowi <c>vga</c>. W przykładowych plikach konfiguracyjnych wykorzystano
+ustawienia <e>800x600 @ 16bpp</e>, które są reprezentowane przez wartość
+<e>788</e>.
+</p>
+
+<table>
+<tr>
+  <ti></ti><th>640x480</th><th>800x600</th><th>1024x768</th><th>1280x1024</th>
+</tr>
+<tr>
+  <th>8 bpp</th><ti>769</ti><ti>771</ti><ti>773</ti><ti>775</ti>
+</tr>
+<tr>
+  <th>16 bpp</th><ti>785</ti><ti>788</ti><ti>791</ti><ti>794</ti>
+</tr>
+<tr>
+  <th>32 bpp</th><ti>786</ti><ti>789</ti><ti>792</ti><ti>795</ti>
+</tr>
+</table>
+
+<p>
+Zapamiętajmy (lub zapiszmy) wybrane wartości - wkrótce będą nam potrzebne.
+</p>
+
+<p>
+Następnie przechodzimy do instalacji programu <uri link="#grub">GRUB</uri>
+<e>lub</e> <uri link="#lilo">LILO</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="grub">
+<title>Domyślnie: Użycie programu GRUB</title>
+<subsection>
+<title>Terminologia programu GRUB</title>
+<body>
+
+<p>
+Najważniejszym czynnikiem prowadzącym do zrozumienia programu GRUB jest
+opanowanie sposobu, w jaki odnosi się on do dysków i partycji. Partycja
+<path>/dev/hda1</path> jest określana przez GRUB jako <path>(hd0,0)</path>.
+Należy zwrócić uwagę na nawiasy po obu stronach <path>hd0,0</path> - ich użycie
+jest konieczne.
+</p>
+
+<p>
+Dyski twarde są liczone od zera, a nie od "a", partycje także zaczynają się od
+zera, a nie od jedynki. Miejmy przy tym świadomość, że w grupie urządzeń pamięci
+masowej tylko twarde dyski są liczone, nie ma to natomiast miejsca w przypadku
+napędów ATAPI-IDE takich jak cdromy i nagrywarki. Ta sama sytuacja ma miejsce w
+przypadku dysków SCSI. Normalnie otrzymują one wyższe numery niż dyski IDE, z
+wyjątkiem sytuacji, gdy BIOS jest ustawiony na start systemu z urządzenia SCSI.
+</p>
+
+<p>
+Zakładając, że posiadamy dysk twardy oznaczony jako <path>/dev/hda</path>,
+odtwarzacz cdrom <path>/dev/hdb</path>, nagrywarkę <path>/dev/hdc</path>, drugi
+dysk twardy <path>/dev/hdd</path> i nie posiadamy dysku SCSI, urządzenie
+<path>/dev/hdd7</path> jest widziane w programie GRUB jako <path>(hd1,6)</path>.
+Całość wygląda dość pokrętnie, lecz jak się niedługo przekonamy GRUB oferuje
+mechanizm uzupełniania wiersza polecenia klawiszem TAB, co z pewnością jest
+wybawieniem dla tych, którzy mają dużo dysków twardych i partycji, a gubią się
+nieco w sposobie numeracji, używanym przez tego bootloadera.
+</p>
+
+<p>
+Posiadając te informacje, możemy przystąpić do instalacji programu GRUB.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Instalowanie programu GRUB</title>
+<body>
+
+<p>
+Instalujemy program GRUB przy pomocy polecenia <c>emerge</c>;
+</p>
+
+<pre caption = "Instalowanie bootloadera GRUB">
+# <i>emerge grub</i>
+</pre>
+
+<p>
+GRUB został zainstalowany - teraz należy go jeszcze skonfigurować i umieścić w
+MBR, tak by automatycznie uruchamiał nowo zainstalowane kernele. Najpierw przy
+pomocy nano lub dowolnego innego edytora tworzymy plik
+<path>/boot/grub/grub.conf</path>:
+</p>
+
+<pre caption = "Tworzenie pliku /boot/grub/grub.conf">
+# <i>nano -w /boot/grub/grub.conf</i>
+</pre>
+
+<p>
+Teraz zajmiemy się wypełnieniem pliku <path>grub.conf</path>. Tworząc
+konfigurację zwracajmy uwagę, aby używać nazwy <e>naszego</e> pliku z obrazem
+jądra i <e>naszego</e> pliku initrd, jeśli takiego używamy.
+</p>
+
+<pre caption = "grub.conf">
+<comment># Która pozycja ma być uruchamiana domyślnie? 0 oznacza pierwszą, 1 drugą itd.</comment>
+default 0
+<comment># Ile czasu upłynie przed uruchomieniem domyślnej pozycji</comment>
+timeout 30
+<comment># Ładniutki, tłuściutki obrazek na zaostrzenie apetytu :)
+# Zakomentujmy poniższą linię, jeśli nie posiadamy karty graficznej</comment>
+splashimage=(hd0,0)/grub/splash.xpm.gz
+
+title=Gentoo Linux 2.6.7-r6
+<comment># Partycja na której znajduje się obraz jądra (lub system operacyjny)</comment>
+root (hd0,0)
+kernel /kernel-2.6.7-hardened-r6 root=/dev/hda3 gentoo=nodevfs
+
+<comment># Poniższe trzy linie są potrzebne tylko jeśli chcemy uruchamiać także system Windows.</comment>
+<comment># W poniższym przykładzie Windows znajduje się na partycji /dev/hda6.</comment>
+title=Windows XP
+rootnoverify (hd0,5)
+makeactive
+chainloader +1
+</pre>
+
+<note>
+Jeśli wykorzystaliśmy inny schemat partycjonowania i/lub używamy innego obrazu
+jądra, dokonajmy niezbędnych poprawek. Warto pilnować, aby wszystko co dotyczy
+urządzenia z programem GRUB (np. <path>(hd0,0)</path>) było względne w stosunku
+do punktu montowania, a nie partycji root. Innymi słowy,
+<path>(hd0,0)/grub/splash.xpm.gz</path> w rzeczywistości znaczy
+<path>/boot/grub/splash.xpm.gz</path>, gdyż <path>(hd0,0)</path> to partycja
+<path>/boot</path>.
+</note>
+
+<impo>
+Parametr <c>gentoo=nodevfs</c> jest konieczny, ponieważ SELinux nie może
+korzystać z devfs.
+</impo>
+
+<p>
+Jeśli chcemy przekazać do jądra przy starcie jakieś dodatkowe opcje po prostu
+dopisujemy je na końcu polecenia kernel. W tym momencie już dodaliśmy jeden
+parametr (<c>root=/dev/hda3</c>). Bez problemu możemy dopisać kolejne
+parametry. W poniższym przykładzie dodamy opcję <c>vga</c>, związaną z buforem
+ramki, który omówiliśmy na początku tego rozdziału.
+</p>
+
+<pre caption = "Dodawanie parametru uruchomieniowego vga">
+title=Gentoo Linux 2.6.7-r6
+  root (hd0,0)
+  kernel /kernel-2.6.7-hardened-r6 root=/dev/hda3 vga=788 gentoo=nodevfs
+</pre>
+
+<p>
+Jeśli korzystamy z jądra w wersji 2.6.7 lub nowszej i użyliśmy jumpera, ponieważ
+BIOS nie mógł obsłużyć dużych dysków twardych, konieczne jest dodanie parametru 
+<c>hdx=stroke</c>.
+</p>
+
+<p>
+Następnie zapisujemy plik <path>grub.conf</path> i opuszczamy edytor. Kolejnym
+krokiem jest zainstalowanie programu GRUB w MBR (Master Boot Record), aby był on
+automatycznie uruchamiany po włączeniu komputera.
+</p>
+
+<p>
+Aby tego dokonać skorzystamy z polecenia <c>grub-install</c>. Niestety to nie
+zadziała jeśli nie wykonamy najpierw innej czynności, ponieważ znajdujemy się w
+środowisku chrootowanym. Najpierw musimy zaktualizować plik
+<path>/etc/mtab</path>, który zawiera informacje o wszystkich zamontowanych
+systemach plików. Istnieje prosty sposób, aby tego dokonać - wystarczy skopiować
+<path>/proc/mounts</path> do <path>/etc/mtab</path>:
+</p>
+
+<pre caption="Aktualizowanie /etc/mtab">
+# <i>cp /proc/mounts /etc/mtab</i>
+</pre>
+
+<p>
+Teraz możemy zainstalować program GRUB przy pomocy polecenia
+<c>grub-install</c>:
+</p>
+
+<pre caption="Korzystanie z grub-install">
+# <i>grub-install --root-directory=/boot /dev/hda</i>
+</pre>
+
+<p>
+Więcej informacji o programie GRUB można znaleźć w dokumentach:
+<uri link="http://www.gnu.org/software/grub/grub-faq.html">GRUB FAQ</uri> i <uri
+link="http://www.gnu.org/software/grub/manual/">GRUB Manual</uri>.
+</p>
+
+<p>
+Kontynuujemy instalację zgodnie z paragrafem <uri link="#reboot">Ponowne
+uruchamianie systemu</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="lilo">
+<title>Alternatywnie: Użycie LILO</title>
+<subsection>
+<title>Instalowanie LILO</title>
+<body>
+
+<p>
+LILO, czyli LInuxLOader to program wypróbowany i używany od bardzo dawna przez
+bardzo wielu użytkowników. Brakuje mu jednak niektórych cech, które posiada
+GRUB, co jest jednym z powodów rosnącej popularności tego drugiego. Fakt, że na
+niektórych systemach LILO działa, a GRUB nie, powoduje, iż LILO jest ciągle w
+użyciu. Oczywiście nie jest to jedyny powód - niektórzy po prostu lepiej znają
+LILO i wolą przy nim pozostać, zamiast uczyć się obsługi całkiem nowego
+programu. My jak zawsze wybór pozostawiamy użytkownikom, Gentoo obsługuje obydwa
+programy, a w kolejnych paragrafach zajmiemy się instalacją LILO.
+</p>
+
+<p>
+Instalacja LILO jest prosta, używamy do tego polecenia <c>emerge</c>:
+</p>
+
+<pre caption = "Instalowanie LILO">
+# <i>emerge --usepkg lilo</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Konfigurowanie LILO</title>
+<body>
+
+<p>
+Aby skonfigurować LILO musimy stworzyć plik
+<path>/etc/lilo.conf</path>. Uruchamiamy ulubiony edytor (w przykładach
+konsekwentnie używamy <c>nano</c>) i tworzymy ten plik.
+</p>
+
+<pre caption = "Tworzenie /etc/lilo.conf">
+# <i>nano -w /etc/lilo.conf</i>
+</pre>
+
+<p>
+W jednym z wcześniejszych rozdziałów zwracaliśmy uwagę, aby zapamiętać nazwę
+obrazu jądra, jakie stworzyliśmy. W przykładowym pliku <path>lilo.conf</path>
+używamy nazwy <path>kernel-2.6.7-hardened-r6</path>. Korzystamy również z
+przykładowego schematu partycjonowania przedstawionego kilka rozdziałów
+wcześniej.
+</p>
+
+<p>
+Upewnijmy się, że w pliku konfiguracyjnym skorzystaliśmy z <e>naszych</e> nazw
+pliku obrazu jądra i pliku initrd (jeśli z takiego korzystamy).
+</p>
+
+<pre caption = "Przykładowy plik /etc/lilo.conf">
+boot=/dev/hda             <comment># Instalacja LILO w MBR</comment>
+prompt                    <comment># Możliwość wyboru innej pozycji</comment>
+timeout=50                <comment># Opóźnienie długości 5 sekund przed uruchomieniem domyślnej pozycji</comment>
+default=gentoo            <comment># Gdy opóźnienie minie, uruchamiamy pozycję "gentoo"</comment>
+<comment># Poniższa linia dotyczy wykorzystania framebuffera - usuwamy ją jeśli go nie używamy:</comment>
+vga=788                   <comment># Ustawienia framebuffera - zmieniamy według uznania</comment>
+
+image=/boot/kernel-2.6.7-hardened-r6
+  label=gentoo            <comment># Nazwa tej pozycji</comment>
+  read-only               <comment># Zaczynamy z partycją root tylko do odczytu. Nie należy tego zmieniać!</comment>
+  root=/dev/hda3          <comment># Lokalizacja głównego systemu plików</comment>
+  append="gentoo=nodevfs" <comment># Parametr konieczny dla SELinux</comment>
+
+
+<comment># Dwie poniższe linie dotyczą możliwości uruchomienia systemu Windows.</comment>
+<comment># Przykład zakłada, że Windows znajduje się na partycji /dev/hda6.</comment>
+other=/dev/hda6
+  label=windows
+</pre>
+
+<note>
+Jeśli wykorzystaliśmy inny schemat partycjonowania i/lub inną nazwę obrazu
+jądra, zmodyfikujmy plik konfiguracyjnym tak, aby odpowiadał naszym
+ustawieniom.
+</note>
+
+<p>
+Aby przekazać dodatkowe parametry dla jądra, dopiszmy je w sekcji <c>append</c>.
+W poniższym przykładzie dodajemy parametr <c>vga=788</c>, aby skorzystać w
+framebuffera.
+</p>
+
+<pre caption = "Wykorzystanie sekcji append w celu przekazania parametrów dla
+jądra">
+image=/boot/kernel-2.6.7-hardened-r6
+  label=gentoo
+  read-only
+  root=/dev/hda3
+  <i>append="vga=788 gentoo=nodevfs"</i>
+</pre>
+
+<p>
+Jeśli korzystamy z jądra w wersji 2.6.7 lub nowszej i użyliśmy jumpera, ponieważ
+BIOS nie mógł obsłużyć dużych dysków twardych, konieczne jest dodanie parametru 
+<c>hdx=stroke</c>.
+</p>
+
+<p>
+Teraz zapisujemy plik i opuszczamy edytor. Kończymy instalację LILO, wykonując
+polecenie <c>/sbin/lilo</c>, aby LILO mógł wprowadzić do systemu konfigurację
+jaką stworzyliśmy w pliku <path>/etc/lilo.conf</path> (np. dodać się do
+MBR). Pamiętajmy, że konieczne jest ponowne wykonanie komendy
+<c>/sbin/lilo</c> po każdej instalacji nowego jądra.
+</p>
+
+<pre caption = "Ostatni etap instalacji LILO">
+# <i>/sbin/lilo</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Przygotowania przed ponownym uruchomieniem systemu</title>
+<subsection>
+<body>
+
+<p>
+Teraz zainstalujemy domyślną politykę SELinux. Instalacja poprawnej wersji
+polityki jest konieczna. Więcej informacji na temat polityk znajdziemy w
+dokumencie <uri link="?part=4&amp;chap=1#doc_chap6">Przegląd SELinux</uri>.
+Na tym etapie musimy również dokonać znakowania systemu plików.
+</p>
+
+<pre caption="Instalowanie polityki i oznaczanie systemu plików">
+# <i>cd /etc/security/selinux/src/policy/</i>
+<comment>Zmieniamy wersję polityki, jeśli to konieczne.</comment>
+# <i>make load</i>
+# <i>make chroot_relabel</i>
+</pre>
+</body>
+</subsection>
+</section>
+
+<section id="reboot">
+<title>Ponowne uruchamianie systemu</title>
+<subsection>
+<body>
+
+<p>
+Opuszczamy środowisko chrootowane i odmontowujemy wszystkie zamontowane
+partycje. Następnie wpisujemy tę jedyną magiczną komendę, na którą czekaliśmy
+tyle czasu: <c>reboot</c>.
+</p>
+
+<pre caption="Odmontowywanie partycji i reboot">
+# <i>exit</i>
+# <i>umount /mnt/gentoo/boot /mnt/gentoo/proc /mnt/gentoo/selinux /mnt/gentoo</i>
+# <i>reboot</i>
+</pre>
+
+<p>
+Nie zapomnijmy o wyjęciu bootowalnej płyty z napędu, bo zamiast naszego nowego
+Gentoo uruchomi się system instalacyjny.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>

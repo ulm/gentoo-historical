@@ -1,0 +1,485 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/hardened/selinux/Attic/hb-install-config.xml,v 1.1 2006/04/07 21:35:54 shadoww Exp $ -->
+
+<sections>
+<section>
+<title>Informacje o systemach plików</title>
+<subsection>
+<title>Czym jest fstab?</title>
+<body>
+
+<p>
+W systemach GNU/Linux wszystkie wykorzystywane partycje powinny zostać
+wylistowane w pliku <path>/etc/fstab</path>. Znajdują się tu również punkty
+montowania poszczególnych partycji (czyli miejsca, w których są one widoczne w
+strukturze systemu plików), informacje o tym w jaki sposób powinny zostać
+zamontowane (opcje specjalne), kiedy ma to miejsce (automatycznie w momencie
+wykrycie, czy też nie) oraz czy użytkownicy mogą samodzielnie montować partycje.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Tworzenie /etc/fstab</title>
+<body>
+
+<p>
+Plik <path>/etc/fstab</path> używa specjalnej składni. Każda linia składa się z
+sześciu pól, oddzielonych od siebie białymi znakami (spacjami, znakami
+tabulacji). Każde pole posiada swoje znaczenie:
+</p>
+
+<ul>
+<li>
+  Pierwsze pole definiuje <b>partycję</b> (ścieżkę do odpowiadającego jej
+  urządzenia).
+</li>
+<li>
+  Drugie pole opisuje <b>punkt montowania</b>.
+</li>
+<li>
+  Trzecie pole opisuje używany przez partycję <b>system plików</b>.
+</li>
+<li>
+  W czwartym polu podane są <b>opcje montowania</b> używane przez <c>mount</c>.
+  Każdy system plików posiada własne ustawienia, pełna lista znajduje się w
+  podręczniku systemowym programu mount (<c>man mount</c>). Opcje
+  powinny być oddzielone przecinkami.
+</li>
+<li>
+  Piąte pole używane jest przez <c>dump</c> do ustalenia czy dana partycja ma
+  być <b>dump</b>owana czy nie. Zazwyczaj należy wpisać tu <c>0</c> (zero).
+</li>
+<li>
+  Z szóstego pola korzysta <c>fsck</c> w celu ustalenia kolejności sprawdzania
+  partycji po nieprawidłowym wyłączeniu systemu. Dla głównego systemu plików
+  należy wpisać <c>1</c>, natomiast dla pozostałych <c>2</c> (lub <c>0</c>
+  jeśli kontrola nie jest konieczna).
+</li>
+</ul>
+
+<p>
+Domyślny plik <path>/etc/fstab</path> dostarczany przez Gentoo <e>nie jest
+poprawny</e>. Uruchamiamy więc <c>nano</c> (lub inny ulubiony edytor) i tworzymy
+własny plik <path>/etc/fstab</path>:
+</p>
+
+<pre caption="Tworzenie /etc/fstab">
+# <i>nano -w /etc/fstab</i>
+</pre>
+
+<p>
+Przyjrzyjmy się w jaki sposób zapisać opcje partycji <path>/boot</path>. Jest to
+tylko przykład - nie należy go przepisywać, jeśli architektura nie wymaga takiej
+partycji (np. <b>PPC</b>).
+</p>
+
+<p>
+W naszym przykładowym schemacie (dla x86) <path>/boot</path> będzie partycją
+<path>/dev/hda1</path>, używającą systemu plików <c>ext2</c> oraz będzie
+sprawdzana podczas rozruchu.
+</p>
+
+<pre caption="Przykładowy wpis do /etc/fstab dla /boot">
+/dev/hda1   /boot     ext2    defaults        1 2
+</pre>
+
+<p>
+Niektórzy użytkownicy ze względów bezpieczeństwa nie chcą, aby partycja
+<path>/boot</path> była montowana automatycznie. Powinni oni zastąpić opcję
+<c>defaults</c> opcją <c>noauto</c>. Potem trzeba będzie ręcznie zamontować tą
+partycję przed każdym jej użyciem.
+</p>
+
+<p>
+Aby poprawić wydajność, większość użytkowników zapewne zechce dodać opcję
+<c>noatime</c>. Dzięki niej nie są rejestrowane czasy dostępów (które zazwyczaj
+nie są potrzebne):
+</p>
+
+<pre caption="Poprawiony wpis /boot do /etc/fstab">
+/dev/hda1   /boot     ext2    defaults,noatime    1 2
+</pre>
+
+<p>
+W podobny sposób dodajemy kolejne partycje. Rezultatem będą następujące trzy
+wiersze (dla partycji <path>/boot</path>, <path>/</path> oraz swap):
+</p>
+
+<pre caption="Trzy wpisy do /etc/fstab">
+/dev/hda1   /boot     ext2    defaults,noatime  1 2
+/dev/hda2   none      swap    sw                0 0
+/dev/hda3   /         ext3    noatime           0 1
+</pre>
+
+<p>
+Na koniec powinniśmy jeszcze dodać wpisy dla <c>/proc</c>, <c>tmpfs</c>
+(wymagany), <c>devpts</c>, <c>selinuxfs</c>, a także dla naszego napędu CD (i
+oczywiście dla wszystkich innych naszych partycji i napędów).
+</p>
+
+<pre caption="Przykład kompletnego pliku /etc/fstab">
+/dev/hda1   /boot     ext2        noauto,noatime    1 2
+/dev/hda2   none      swap        sw                0 0
+/dev/hda3   /         ext3        noatime           0 1
+
+none        /proc     proc        defaults          0 0
+none        /dev/shm  tmpfs       defaults          0 0
+none        /dev/pts  devpts      gid=5,mode=620    0 0
+none        /selinux  selinuxfs   defaults          0 0
+
+/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+</pre>
+
+<p>
+Opcja <c>auto</c> powoduje, że <c>mount</c> sam próbuje wykryć system plików
+(zalecane dla wymiennych nośników, które mogą posiadać różne systemy
+plików). Opcja <c>user</c> umożliwia montowanie urządzenia przez zwykłych
+użytkowników.
+</p>
+
+<p>
+Należy skorzystać z powyższego przykładu do utworzenia własnego
+<path>/etc/fstab</path>. Użytkownicy architektury <b>SPARC</b> powinni
+dodać następującą linię:
+</p>
+
+<pre caption="Dodawanie systemu plików openprom do pliku /etc/fstab">
+none        /proc/openprom  openpromfs    defaults      0 0
+</pre>
+
+<p>
+Jeśli korzystamy z <c>usbfs</c>, dodajemy jeszcze poniższą linię do
+<path>/etc/fstab</path>:
+</p>
+
+<pre caption="Dodawanie systemu plików usbfs do pliku /etc/fstab">
+none        /proc/bus/usb   usbfs         defaults      0 0
+</pre>
+
+<p>
+Dwukrotnie sprawdzamy zawartość <path>/etc/fstab</path>, zapisujemy zmiany i
+zamykamy plik.
+</p>
+
+</body>
+</subsection>
+</section>
+
+
+
+<section>
+<title>Konfiguracja sieci</title>
+<subsection>
+<title>Hostname, domainname itp.</title>
+<body>
+
+<p>
+Każdy użytkownik powinien nadać swojemu komputerowi jakąś nazwę. Wydaje się to
+proste, ale <e>wielu</e> ma z tym spore trudności. Zawsze można tę nazwę
+zmienić. My wybraliśmy nazwę hosta <c>tux</c> oraz domenę <c>homenetwork</c>.
+</p>
+
+<p>
+Skorzystamy z tych ustawień w kolejnych przykładach. Zacznijmy od ustawienia
+nazwy hosta:
+</p>
+
+<pre caption="Konfiguracja nazwy hosta">
+# <i>echo tux &gt; /etc/hostname</i>
+</pre>
+
+<p>
+Teraz skonfigurujmy domenę:
+</p>
+
+<pre caption="Konfiguracja domeny">
+# <i>echo homenetwork &gt; /etc/dnsdomainname</i>
+</pre>
+
+<p>
+Posiadacze domeny NIS powinni dokonać jej konfiguracji. Jeśli nie wiemy czym
+jest domena NIS, to prawdopodobnie jej nie posiadamy.
+</p>
+
+<pre caption="Konfiguracja nazwy domeny NIS">
+# <i>echo nis.homenetwork &gt; /etc/nisdomainname</i>
+</pre>
+
+<!--
+<p>
+Następnie dodajemy skrypt <c>domainname</c> do domyślnego poziomu uruchamiania:
+</p>
+
+<pre caption="Dodawanie domainname do domyślnego poziomu uruchamiania">
+# <i>rc-update add domainname default</i>
+</pre>
+-->
+
+</body>
+</subsection>
+<subsection>
+<title>Konfiguracja sieci</title>
+<body>
+
+<p>
+Zanim stwierdzimy: "Hej, przecież już to zrobiliśmy!", musimy zwrócić uwagę na
+fakt, że to co ustawiliśmy na początku instalacji jest przeznaczone tylko na jej
+potrzeby. Teraz ostatecznie skonfigurujemy sieć dla instalowanego systemu
+Gentoo.
+</p>
+
+<p>
+Wszystkie ustawienia dotyczące sieci znajdują się w pliku
+<path>/etc/conf.d/net</path>.  Mają prostą, ale niekoniecznie intuicyjną
+składnię. Jednak nie ma się czego bać - wszystko wyjaśnimy.
+</p>
+
+<p>
+Otwieramy plik <path>/etc/conf.d/net</path> przy pomocy naszego
+ulubionego edytora (w poniższym przykładzie jest to <c>nano</c>):
+</p>
+
+<pre caption="Otwieranie /etc/conf.d/net do edycji">
+# <i>nano -w /etc/conf.d/net</i>
+</pre>
+
+<p>
+Pierwszą zmienną, jaką znajdziemy, jest <c>iface_eth0</c>. Używa ona
+następującej składni:
+</p>
+
+<pre caption="Składnia zmiennej iface_eth0">
+iface_eth0="<i>&lt;nasz adres ip&gt;</i> broadcast <i>&lt;nasz adres broadcast&gt;</i> netmask <i>&lt;nasza maska&gt;</i>"
+</pre>
+
+<p>
+Jeśli korzystamy z DHCP (automatyczne uzyskiwanie adresu IP), powinniśmy zmienną
+<c>iface_eth0</c> ustawić jako <c>dhcp</c>. W przypadku używania rp-pppoe
+(np. ADSL), ustawiamy tu wartość <c>lo</c>. Jeśli natomiast musimy ręcznie
+skonfigurować sieć, a powyższy opis nie jest dla nas dość przejrzysty,
+powinniśmy zapoznać się z rozdziałem <uri
+link="?part=1&amp;chap=3#network_term">Poznawanie technologii sieciowych</uri>,
+o ile nie zrobiliśmy tego wcześniej.
+</p>
+
+<p>
+Poniższej znajdują się trzy przykłady. Pierwszy wykorzystuje DHCP, drugi
+statyczny adres IP (192.168.0.2), maskę sieciową 255.255.255.0, broadcast
+192.168.0.255 i bramę 192.168.0.1. Trzeci natomiast aktywuje tylko rp-pppoe.
+</p>
+
+<pre caption="Przykłady do pliku /etc/conf.d/net">
+<comment>Dla DHCP:</comment>
+iface_eth0="dhcp"
+<comment># Niektórzy administratorzy sieci wymagają, aby używana była</comment>
+<comment># nazwa hosta i nazwa domeny dostarczana przez serwer DHCP.</comment>
+<comment># W takim przypadku należy dodać poniższą linię do naszego pliku</comment>
+<comment># konfiguracyjnego. Pozwala to na nadpisania lokalnych ustawień.</comment>
+dhcpcd_eth0="-HD"
+<comment># Jeśli chcemy korzystać z NTP, aby synchronizować zegar maszyny</comment>
+<comment># dodajemy opcję -N, co zapobiega nadpisaniu przez DHCP pliku /etc/ntp.conf</comment>
+dhcpcd_eth0="-N"
+
+<comment>Dla statycznego adresu IP:</comment>
+iface_eth0="192.168.0.2 broadcast 192.168.0.255 netmask 255.255.255.0"
+gateway="eth0/192.168.0.1"
+
+<comment>Dla rp-pppoe:</comment>
+iface_eth0="up"
+</pre>
+
+<p>
+Jeśli posiadamy kilka interfejsów sieciowych, tworzymy dodatkowe zmienne
+<c>iface_eth</c>, na przykład: <c>iface_eth1</c>, <c>iface_eth2</c>
+itd. Zmienna <c>gateway</c> nie powinna być powielana dla różnych
+interfejsów, ponieważ możemy ustawić tylko jedną bramę dla jednego
+komputera.
+</p>
+
+<p>
+Następnie należy zapisać konfigurację i zamknąć edytor.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Automatyczny start sieci podczas uruchamiania systemu</title>
+<body>
+
+<p>
+Aby urządzenia sieciowe były aktywowane podczas startu, musimy je dodać do
+domyślnego poziomu uruchamiania. Posiadacze urządzeń PCMCIA mogą pominąć te
+czynności, gdyż są one inicjowane przez osobny skrypt startowy.
+</p>
+
+<pre caption="Dodawanie net.eth0 do domyślnego poziomu uruchamiania">
+# <i>rc-update add net.eth0 default</i>
+</pre>
+
+<p>
+Posiadacze kilku urządzeń sieciowych muszą utworzyć odpowiednie skrypty
+startowe, np. <path>net.eth1</path>, <path>net.eth2</path> itd. Można w tym
+celu skorzystać z <c>ln</c>:
+</p>
+
+<pre caption="Tworzenie dodatkowych skryptów startowych">
+# <i>cd /etc/init.d</i>
+# <i>ln -s net.eth0 net.eth1</i>
+# <i>rc-update add net.eth1 default</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Zapisywanie informacji o sieci</title>
+<body>
+
+<p>
+Trzeba poinformować system o istnieniu lokalnej sieci. Służy do tego plik
+<path>/etc/hosts</path>. Zapisujemy w nim nazwy hostów i odpowiadające im adresy
+IP, których nie może ustalić serwer nazw. Na przykład jeśli wewnętrzna sieć
+składa się z trzech komputerów: <c>jenny</c> (192.168.0.5), <c>benny</c>
+(192.168.0.6) oraz <c>tux</c> (192.168.0.7 - na którym pracujemy), należy dodać
+do pliku <path>/etc/hosts</path> następujące linijki:
+</p>
+
+<pre caption="Otwieranie do edycji pliku /etc/hosts">
+# <i>nano -w /etc/hosts</i>
+</pre>
+
+<pre caption="Wpisywanie informacji o sieci">
+127.0.0.1     localhost
+192.168.0.5   jenny.homenetwork jenny
+192.168.0.6   benny.homenetwork benny
+192.168.0.7   tux.homenetwork tux
+</pre>
+
+<p>
+Jeśli nie posiadamy wewnętrznej sieci (lub serwer nazw obejmuje także
+umieszczone w niej komputery) wystarczy pojedynczy wpis. Jeżeli, na przyład
+chcemy nazwać swój system <c>tux.homenetwork</c>, dodajemy wpis:
+</p>
+
+<pre caption="/etc/hosts dla samotnych lub w pełni zintegrowanych maszyn">
+127.0.0.1     tux.homenetwork tux localhost
+</pre>
+
+<p>
+Zapisujemy zmiany i zamykamy edytor.
+</p>
+
+<p>
+Osoby nie posiadające PCMCIA mogą od razu przejść do sekcji <uri
+link="#doc_chap4">Konfiguracja systemu</uri>. W przeciwnym wypadku należy czytać
+dalej.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Opcjonalnie: Konfiguracja PCMCIA</title>
+<body>
+
+<note>
+Pakiet <c>pcmcia-cs</c> jest dostępny wyłącznie na platformach x86, amd64 oraz
+ppc.
+</note>
+
+<p>
+Użytkownicy PCMCIA powinni najpierw zainstalować pakiet
+<c>pcmcia-cs</c>. Flaga <c>USE="-X"</c> jest konieczna, aby zapobiec
+instalacji <c>xorg-x11</c> na tym etapie.
+</p>
+
+<pre caption="Instalacja pcmcia-cs">
+# <i>USE="-X" emerge pcmcia-cs</i>
+</pre>
+
+<p>
+Następnie dodajemy do domyślnego poziomu uruchamiania skrypt <c>pcmcia</c>:
+</p>
+
+<pre caption="Dodawanie do domyślnego poziomu uruchamiania skryptu pcmcia">
+# <i>rc-update add pcmcia default</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Konfiguracja systemu</title>
+<subsection>
+<title>Hasło superużytkownika</title>
+<body>
+
+<p>
+Hasło roota zmieniamy poleceniem:
+</p>
+
+<pre caption="Ustawianie hasła superużytkownika">
+# <i>passwd</i>
+</pre>
+
+<p>
+Jeżeli chcemy, aby superużytkownik mógł logować się na konsole szeregowe,
+dodajemy <c>ttyS0</c> do <path>/etc/securetty</path>:
+</p>
+
+<pre caption="Dodawanie ttyS0 do /etc/securetty">
+# <i>echo "ttyS0" &gt;&gt; /etc/securetty</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Informacje o systemie</title>
+<body>
+
+<p>
+Do najbardziej podstawowych ustawień Gentoo używa pliku
+<path>/etc/rc.conf</path>. Otwieramy go i zapoznajemy się z
+umieszczonymi w nim komentarzami. :)
+</p>
+
+<pre caption="Otwieranie /etc/rc.conf">
+# <i>nano -w /etc/rc.conf</i>
+</pre>
+
+<p>
+Plik ten jest dobrze skomentowany, co ułatwia prawidłowe skonfigurowanie
+zmiennych. Szczególną uwagę należy poświęcić zmiennej <c>KEYMAP</c>: jeśli
+ustawimy tutaj niewłaściwą wartość, możemy uzyskać dziwne rezultaty w czasie
+pisania na klawiaturze.
+</p>
+
+<note>
+Użytkownicy komputerów <b>SPARC</b> i ich klonów być może będą musieli wybrać
+mapowanie klawiatury właściwe dla i386 (np. <c>us</c>), zamiast
+<c>sunkeymap</c>.
+</note>
+
+<p>
+Architektura <b>PPC</b> wykorzystuje mapowanie klawiatury właściwe dla x86 na
+większości systemów. Użytkownicy, chcący korzystać z mapowania ADB, w czasie
+uruchamiania systemu muszą włączyć obsługę przesyłania klucza kodowego ADB w
+jądrze i ustawić mapowanie klawiatury odpowiednie dla mac/ppc w pliku
+<path>rc.conf</path>.
+</p>
+
+<p>
+Po zakończeniu konfigurowania pliku <path>/etc/rc.conf</path>, należy zachować
+zmiany i opuścić edytor. Kolejnym krokiej jest <uri
+link="?part=1&amp;chap=9">Instalacja koniecznych narzędzi systemowych</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
