@@ -103,7 +103,7 @@ class Device:
 				fs_type = ""
 				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
 				if parted_part.type == 2: fs_type = "extended"
-				self._partitions.append(Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True))
+				self._partitions.append(Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True, name=parted_part.get_name()))
 			elif parted_part.type_name == "free":
 				if self._disklabel == "mac":
 					free_minor = int(GLIUtility.spawn("mac-fdisk -l %s | grep '@ %s' | cut -d ' ' -f 1" % (self._device, str(parted_part.geom.start)), return_output=True)[1].strip()[-1])
@@ -450,6 +450,7 @@ class Partition:
 	_mb = ""
 	_mkfsopts = None
 	_resized = False
+	_name = None
 	
 	##
 	# Initialization function for the Partition class
@@ -464,7 +465,7 @@ class Partition:
 	# @param mkfsopts='' Additional mkfs options
 	# @param format=True Format partition
 	# @param existing=False This partition exists on disk
-	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False, origminor=0, mkfsopts='', resized=False):
+	def __init__(self, device, minor, mb, start, end, type, mountpoint='', mountopts='', format=True, existing=False, origminor=0, mkfsopts='', resized=False, name=""):
 		self._device = device
 		self._minor = float(minor)
 		self._start = long(start)
@@ -478,6 +479,7 @@ class Partition:
 		self._mkfsopts = mkfsopts
 		self._resizeable = False
 		self._resized = resized
+		self._name = name
 		self._flags = []
 		if type != "free":
 			if existing and not origminor:
@@ -530,7 +532,8 @@ class Partition:
                     'mountopts': self.get_mountopts,
                     'mkfsopts': self.get_mkfsopts,
                     'flags': self.get_flags,
-		            'devnode': self.get_devnode
+		            'devnode': self.get_devnode,
+		            'name': self.get_name
                   }
 		if name in tmpdict:
 			return tmpdict[name]()
@@ -549,7 +552,8 @@ class Partition:
                     'mountpoint': self.set_mountpoint,
                     'mountopts': self.set_mountopts,
                     'mkfsopts': self.set_mkfsopts,
-                    'flags': self.set_flags
+                    'flags': self.set_flags,
+		            'name': self.set_name
                   }
 		if name in tmpdict:
 			tmpdict[name](value)
@@ -742,6 +746,16 @@ class Partition:
 	# Returns partition flags
 	def get_flags(self):
 		return self._flags
+
+	##
+	# Sets partition name
+	def set_name(self, name):
+		self._name = name
+
+	##
+	# Returns partition name
+	def get_name(self):
+		return self._name
 
 	##
 	# Returns minimum MB for resize

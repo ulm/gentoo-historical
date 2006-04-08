@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.87 2006/03/22 02:35:21 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.88 2006/04/08 19:43:59 agaffney Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -1185,7 +1185,6 @@ class InstallProfile:
 		self._partition_tables[devnode].set_disklabel(disklabel)
 		self._partition_tables[devnode].set_partitions_from_install_profile_structure(self._temp_partition_table)
 		self._temp_partition_table = []
-			
 
 	##
 	# FIXME: agaffney
@@ -1214,9 +1213,9 @@ class InstallProfile:
 #		if GLIUtility.is_numeric(part_entry['start']): part_entry['start'] = long(part_entry['start'])
 		if GLIUtility.is_numeric(part_entry['mb']): part_entry['mb'] = long(part_entry['mb'])
 		if GLIUtility.is_numeric(part_entry['minor']):
-			if part_entry['type'] == "free":
-				part_entry['minor'] = float(part_entry['minor'])
-			else:
+#			if part_entry['type'] == "free":
+			part_entry['minor'] = float(part_entry['minor'])
+			if int(part_entry['minor']) == part_entry['minor']:
 				part_entry['minor'] = int(part_entry['minor'])
 		if GLIUtility.is_numeric(part_entry['origminor']): part_entry['origminor'] = int(part_entry['origminor'])
 		self._temp_partition_table.append(part_entry)

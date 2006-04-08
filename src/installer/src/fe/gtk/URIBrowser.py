@@ -189,7 +189,7 @@ class URIBrowser(gtk.Window):
 		else:
 			self.entry.set_text(self.uri + name)
 			self.destroy()
-		print "New URI is '%s'" % self.uri
+#		print "New URI is '%s'" % self.uri
 		self.refresh_file_list()
 
 	def uritype_changed(self, combobox):

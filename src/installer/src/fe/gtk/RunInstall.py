@@ -127,7 +127,7 @@ class RunInstall(gtk.Window):
 				num_steps = self.controller.cc.get_num_steps()
 				if self.controller.cc.has_more_steps():
 					next_step = self.controller.cc.get_next_step_info()
-					print "Next step: " + next_step
+#					print "Next step: " + next_step
 					self.progress.set_fraction(round(float(self.which_step)/num_steps, 2))
 					self.progress.set_text(self.controller.cc.get_next_step_info())
 					self.which_step += 1
@@ -138,7 +138,7 @@ class RunInstall(gtk.Window):
 				self.install_done = True
 				self.progress.set_fraction(1)
 				self.progress.set_text("Install complete!")
-				print "Install done!"
+#				print "Install done!"
 #				msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK, message_format="Install completed successfully!")
 #				msgdlg.run()
 #				msgdlg.destroy()
@@ -231,13 +231,13 @@ class RunInstall(gtk.Window):
 		# you don't want the window to be destroyed.
 		# This is useful for popping up 'are you sure you want to quit?'
 		# type dialogs.
-		print "delete event occurred"
+#		print "delete event occurred"
 		# Change TRUE to FALSE and the main window will be destroyed with
 		# a "delete_event".
 		return False
 
 	# Destroy callback
 	def destroy(self, widget, data=None):
-		print "destroy function"
+#		print "destroy function"
 		gtk.main_quit()
 		return True
