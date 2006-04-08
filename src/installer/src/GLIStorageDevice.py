@@ -103,7 +103,10 @@ class Device:
 				fs_type = ""
 				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
 				if parted_part.type == 2: fs_type = "extended"
-				self._partitions.append(Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True, name=parted_part.get_name()))
+				part_name = ""
+				if parted_disk.disk.type.check_feature(parted.PED_DISK_TYPE_PARTITION_NAME):
+					part_name = parted_part.get_name()
+				self._partitions.append(Partition(self, parted_part.num, part_mb, parted_part.geom.start, parted_part.geom.end, fs_type, format=False, existing=True, name=part_name))
 			elif parted_part.type_name == "free":
 				if self._disklabel == "mac":
 					free_minor = int(GLIUtility.spawn("mac-fdisk -l %s | grep '@ %s' | cut -d ' ' -f 1" % (self._device, str(parted_part.geom.start)), return_output=True)[1].strip()[-1])
