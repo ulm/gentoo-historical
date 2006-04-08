@@ -14,6 +14,7 @@ import socket
 import SocketServer
 import mimetools
 import GLIServerProfile
+import GLIInstallProfile
 import time
 import base64
 import traceback
@@ -562,6 +563,14 @@ class GLINetBe:
 					return None
 				for profile in self.shared_info.profiles:
 					if profile['name'] == client['profile']:
+						#new way
+						individual_install_profile = GLIInstallProfile.InstallProfile()
+						individual_install_profile.parse(profile['ipxmlfile'])
+						individual_install_profile.set_hostname(None, client['hostname'], None)
+						#client['post_ip']
+						return individual_install_profile.serialize()
+						
+						#old way
 						tmpfile = open(profile['ipxmlfile'], "r")
 						xml = "".join(tmpfile.readlines())
 						tmpfile.close()
