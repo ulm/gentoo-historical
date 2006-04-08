@@ -1,0 +1,256 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/ldapdns-guide.xml,v 1.1 2006/04/08 18:16:02 rane Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/pl/ldapdns-guide.xml" lang="pl">
+<title>Konfiguracja LDAP-DNS w Gentoo</title>
+
+<author title="Autor">
+  <mail link="fnjordy@gmail.com">Steve-o</mail>
+</author>
+<author title="Redaktor">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+
+<abstract>
+Dzięki ldapdns można w prosty sposób udostępnić usługi DNS dla lokalnej sieci.
+Wpisy DNS są wtedy przechowywane w środowisku LDAP. Ten tekst opisuje proces
+konfiguracji OpenLDAP i ldapdns w tym właśnie celu.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>0.2</version>
+<date>2006-03-25</date>
+
+<chapter>
+<title>Wprowadzenie</title>
+<section>
+<body>
+
+<p>
+LDAPDNS to mały serwer dostarczający usługę DNS dla lokalnej sieci. Dzięki DNS
+można zarządzać nazwami hostów w scentralizowany sposób, dzięki czemu możliwa
+jest rezygnacja z irytującego aktualizowania plików <path>/etc/hosts</path> po
+każdej zmianie nazwy hosta któregoś z komputerów.
+</p>
+
+<p>
+Pakiet LDAPDNS wykorzystuje LDAP do przechowywania wszystkich wpisów DNS (linii
+zawierających nazwę hosta i przypisany mu numer IP). LDAP to protokół
+umożliwiający centralne przechowywanie danych w bazach zwanych katalogami.
+Najbardziej znanym pakietem tego typu w systemie Linux jest OpenLDAP, darmowa
+implementacja LDAP.
+</p>
+
+<p>
+Dzięki temu krótkiemu opisowi, możliwe będzie skonfigurowanie usług DNS w sieci
+minimalnym kosztem pracy.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Konfiguracja LDAP-DNS</title>
+<section>
+<body>
+
+<p>
+Po pierwsze instalujemy pakiet <c>net-dns/ldapdns</c>.
+</p>
+
+<pre caption="Instalowanie ldapdns">
+# <i>emerge net-dns/ldapdns</i>
+</pre>
+
+<p>
+Następnie konfigurujemy <c>ldapdns</c>, aby przechowywał wpisy DNS dla naszej
+sieci. W tym celu skorzystamy z polecenia <c>ldapdns-conf</c>, z następującą
+składnią:
+</p>
+
+<pre caption="Składnia ldapdns-conf">
+ldapdns-conf acct logacct /path yourip ldaphost dn [suffix]
+</pre>
+
+<table>
+<tr>
+  <th>Słowo kluczowe</th>
+  <th>Wyjaśnienie</th>
+  <th>Przykład</th>
+</tr>
+<tr>
+  <ti>acct</ti>
+  <ti>Nazwa użytkownika z jaką zostanie uruchomiony ldapdns</ti>
+  <ti>ldapdns</ti>
+</tr>
+<tr>
+  <ti>logacct</ti>
+  <ti>Nazwa użytkownika z jaką zostanie uruchomione logowanie ldapdns</ti>
+  <ti>dnslog</ti>
+</tr>
+<tr>
+  <ti>/path</ti>
+  <ti>Katalog, w którym zostanie zamknięty ldapdns (chroot)</ti>
+  <ti><path>/var/lib/ldapdns</path></ti>
+</tr>
+<tr>
+  <ti>yourip</ti>
+  <ti>Adres IP, na którym będziemy nasłuchiwać</ti>
+  <ti>127.0.0.1</ti>
+</tr>
+<tr>
+  <ti>ldaphost</ti>
+  <ti>Adres serwera LDAP</ti>
+  <ti><c>ldapi://%2fvar%2frun%2fopenldap%2fslapd.sock</c></ti>
+</tr>
+<tr>
+  <ti>dn</ti>
+  <ti>Referencje logowania w LDAP</ti>
+  <ti>cn=Manager,dc=<c>yourdomain</c></ti>
+</tr>
+<tr>
+  <ti>suffix</ti>
+  <ti>Opcjonalna domyślna ścieżka ldap do dodawania wszystkich zapytań</ti>
+  <ti>ou=Machines,dc=<c>yourdomain</c></ti>
+</tr>
+</table>
+
+<p>
+Należy zastąpić <c>127.0.0.1</c> adresem IP serwera, który jest osiągalny dla
+wszystkich komputerów. Należy też wpisać odpowiednią nazwę domeny zamiast
+<c>yourdomain</c>.
+</p>
+
+<pre caption="Przykładowe uruchomienie ldapdns-conf">
+# <i>ldapdns-conf ldapdns dnslog /var/lib/ldapdns 127.0.0.1 ldapi://%2fvar%2frun%2fopenldap%2fsldapd.sock cn=Manager,dc=yourdomain ou=Machines,dc=yourdomain</i>
+</pre>
+
+<p>
+Następnie ustawiamy hasło do LDAP:
+</p>
+
+<pre caption="Ustawianie hasła do LDAP">
+# <i>echo YourSecretPassword &gt; /var/lib/ldapdns/root/password</i>
+# <i>chmod 0400 /var/lib/ldapdns/root/password</i>
+</pre>
+
+<p>
+Następnie konfigurujemy ldapdns, aby używał prostych metod autoryzacji:
+</p>
+
+<pre caption="Konfiguracja ldapdns">
+# <i>echo simple &gt; /var/lib/ldapdns/env/LDAP_AUTH</i>
+# <i>echo cosine &gt; /var/lib/ldapdns/env/SCHEMA</i>
+</pre>
+
+<p>
+Opcjonalnie można też podać adres e-mailowy administratora:
+</p>
+
+<pre caption="Ustawianie adresu mailowego">
+# <i>echo Mail@adres &gt; /var/lib/ldapdns/env/HOSTMASTER</i>
+</pre>
+
+<p>
+Następnie dodajemy usługę do nadzorowanego skanowania, którego demona
+uruchomimy teraz, o ile nie zrobiliśmy tego wcześniej:
+</p>
+
+<pre caption="Zarządzanie usługami">
+# <i>ln -s /var/lib/ldapdns /service</i>
+# <i>/etc/init.d/svscan start</i>
+# <i>rc-update add svscan default</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Konfiguracja OpenLDAP</title>
+<section>
+<body>
+
+<p>
+Następnie musimy skonfigurować OpenLDAP do obsługi DNS. Otwieramy plik
+<path>/etc/openldap/sldap.conf</path> ulubionym edytorem i upewniamy się, że
+znajdują się tam następujące linie:
+</p>
+
+<pre caption="Edycja /etc/openldap/sldap.conf">
+include         /etc/openldap/schema/cosine.schema
+include         /etc/openldap/schema/inetorgperson.schema
+include         /etc/openldap/schema/nis.schema
+</pre>
+
+<p>
+Następnie bootstrapujemy LDAP z bazą dn zdefinowaną wcześniej w
+<c>ldapdns-conf</c>. W tym celu najpierw tworzymy plik o nazwie
+<path>bootstrap.ldif</path>, a następnie wypełniamy go informacjami o DNS.
+</p>
+
+<p>
+W przykładzie ustawimy <uri
+link="/doc/en/bootstrap.ldif.txt">bootstrap.ldif</uri> dla fikcyjnej domeny
+<c>cherchetoujours.org</c>.
+</p>
+
+<p>
+Następnie przeprowadzamy bootstrap LDAP:
+</p>
+
+<pre caption="Bootstrapowanie LDAP">
+# <i>ldapadd -x -D "cn=Manager,dc=yourdomain" -W -f bootstrap.ldif</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Sprawdzanie konfiguracji</title>
+<section>
+<body>
+
+<p>
+Wszystko gotowe. Pozostaje sprawdzić ustawienia za pomocą programu
+<c>nslookup</c> (należącego do pakietu <c>net-dns/bind-tools</c>):
+</p>
+
+<pre caption="Sprawdzanie konfiguracji ldapdns">
+# <i>nslookup ns1.yourdomain</i>
+ Note:  nslookup is deprecated and may be removed from future releases.
+ Consider using the `dig' or `host' programs instead.  Run nslookup with
+ the `-sil[ent]' option to prevent this message from appearing.
+ Server:         <i>127.0.0.1</i>
+ Address:        <i>127.0.0.1#53</i>
+
+ Name:   ns1.example.com
+ Address: <comment>(Adres IP serwera)</comment>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Zasoby</title>
+<section>
+<body>
+
+<p>
+Plik <uri
+link="http://cvs.lp.se/doc/ldapdns/README.configure.gz">README.configure.gz</uri>
+autorstwa autorów programu ldapdns.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
