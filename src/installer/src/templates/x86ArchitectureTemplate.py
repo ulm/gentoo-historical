@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.134 2006/04/08 19:43:59 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.135 2006/04/09 15:45:58 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -268,7 +268,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			for flag in newpart['flags']:
 				if parted_disk.get_partition(part).is_flag_available(flag):
 					parted_disk.get_partition(part).set_flag(flag, True)
-			if newpart['name'] and parted_disk.disk.type.check_feature(parted.PED_DISK_TYPE_PARTITION_NAME):
+			if newpart['name'] and parted_disk.type.check_feature(parted.DISK_TYPE_PARTITION_NAME):
 				parted_disk.set_name(newpart['name'])
 			# write to disk
 			if self._debug: self._logger.log("partition(): committing change to disk")
@@ -367,7 +367,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if not tmppart_new['origminor'] in oldparts:
 					raise GLIException("MissingPartitionsError", 'fatal', 'partition', "Cannot find the existing partition that a new one refers to. This is not a bug. This is in fact your (the user's) fault. You should not reuse the installprofile.xml from a previous install that started the partitioning step.")
 				tmppart_old = oldparts[tmppart_new['origminor']]
-				if parted_disk.disk.type.check_feature(parted.PED_DISK_TYPE_PARTITION_NAME):
+				if parted_disk.type.check_feature(parted.DISK_TYPE_PARTITION_NAME):
 					tmppart_new['name'] = tmppart_old['name']
 				tmppart_new['flags'] = tmppart_old['flags']
 				if tmppart_new['resized']:
