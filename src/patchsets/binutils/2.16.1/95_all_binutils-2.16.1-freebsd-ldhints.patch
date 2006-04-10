@@ -1,0 +1,189 @@
+http://sourceware.org/ml/binutils/2006-03/msg00296.html
+
+Add support for ld-elf.so.hints on FreeBSD and DragonFly
+
+--- binutils-2.16.1/ld/emultempl/elf32.em
++++ binutils-2.16.1/ld/emultempl/elf32.em
+@@ -522,6 +522,69 @@ gld${EMULATION_NAME}_add_sysroot (const 
+ 
+ EOF
+   case ${target} in
++    *-*-freebsd* | *-*-dragonfly*)
++      cat >>e${EMULATION_NAME}.c <<EOF
++/* Read the system search path the FreeBSD way rather than like Linux. */
++#ifdef HAVE_ELF_HINTS_H
++#include <elf-hints.h>
++#else
++#include "elf-hints-local.h"
++#endif
++
++static bfd_boolean
++gld${EMULATION_NAME}_check_ld_elf_hints (const char *name, int force)
++{
++  static bfd_boolean initialized;
++  static char *ld_elf_hints;
++  struct dt_needed needed;
++
++  if (!initialized)
++    {
++      FILE *f;
++      char *tmppath;
++
++      tmppath = concat (ld_sysroot, _PATH_ELF_HINTS, NULL);
++      f = fopen (tmppath, FOPEN_RB);
++      free (tmppath);
++      if (f != NULL)
++	{
++	  struct elfhints_hdr hdr;
++
++	  if (fread (&hdr, 1, sizeof (hdr), f) == sizeof (hdr)
++	      && hdr.magic == ELFHINTS_MAGIC && hdr.version == 1)
++	    {
++	      if (fseek (f, hdr.strtab + hdr.dirlist, SEEK_SET) != -1)
++		{
++		  char *b;
++
++		  b = (char *) xmalloc (hdr.dirlistlen + 1);
++		  if (fread (b, 1, hdr.dirlistlen + 1, f) ==
++		      hdr.dirlistlen + 1)
++		    {
++		      ld_elf_hints =
++			gld${EMULATION_NAME}_add_sysroot (b);
++		    }
++		  free (b);
++		}
++	    }
++	  fclose (f);
++	}
++
++      initialized = TRUE;
++    }
++
++  if (ld_elf_hints == NULL)
++    return FALSE;
++
++  needed.by = NULL;
++  needed.name = name;
++  return gld${EMULATION_NAME}_search_needed (ld_elf_hints, &needed,
++						  force);
++}
++EOF
++    # FreeBSD
++    ;;
++
+     *-*-linux-*)
+       cat >>e${EMULATION_NAME}.c <<EOF
+ /* For a native linker, check the file /etc/ld.so.conf for directories
+@@ -916,6 +979,14 @@ EOF
+ fi
+ if [ "x${USE_LIBPATH}" = xyes ] ; then
+   case ${target} in
++    *-*-freebsd* | *-*-dragonfly*)
++      cat >>e${EMULATION_NAME}.c <<EOF
++	  if (gld${EMULATION_NAME}_check_ld_elf_hints (l->name, force))
++	    break;
++EOF
++    # FreeBSD
++    ;;
++
+     *-*-linux-*)
+       cat >>e${EMULATION_NAME}.c <<EOF
+ 	  if (gld${EMULATION_NAME}_check_ld_so_conf (l->name, force))
+--- /dev/null
++++ binutils-2.16.1/ld/elf-hints-local.h
+@@ -0,0 +1,51 @@
++/*-
++ * Copyright (c) 1997 John D. Polstra.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ *
++ * $FreeBSD: src/include/elf-hints.h,v 1.4 2001/05/02 23:56:17 obrien Exp $
++ */
++
++#ifndef	_ELF_HINTS_H_
++#define	_ELF_HINTS_H_
++
++/*
++ * Hints file produced by ldconfig.
++ */
++struct elfhints_hdr
++{
++  u_int32_t magic;		/* Magic number */
++  u_int32_t version;		/* File version (1) */
++  u_int32_t strtab;		/* Offset of string table in file */
++  u_int32_t strsize;		/* Size of string table */
++  u_int32_t dirlist;		/* Offset of directory list in
++				   string table */
++  u_int32_t dirlistlen;		/* strlen(dirlist) */
++  u_int32_t spare[26];		/* Room for expansion */
++};
++
++#define ELFHINTS_MAGIC	0x746e6845
++
++#define _PATH_ELF_HINTS	"/var/run/ld-elf.so.hints"
++
++#endif /* !_ELF_HINTS_H_ */
+--- binutils-2.16.1/ld/configure.in
++++ binutils-2.16.1/ld/configure.in
+@@ -118,7 +118,7 @@ AC_SUBST(HOSTING_CRT0)
+ AC_SUBST(HOSTING_LIBS)
+ AC_SUBST(NATIVE_LIB_DIRS)
+ 
+-AC_CHECK_HEADERS(string.h strings.h stdlib.h unistd.h)
++AC_CHECK_HEADERS(string.h strings.h stdlib.h unistd.h elf-hints.h)
+ AC_CHECK_FUNCS(sbrk realpath glob)
+ AC_HEADER_DIRENT
+ 
+--- binutils-2.16.1/ld/configure
++++ binutils-2.16.1/ld/configure
+@@ -4581,7 +4581,7 @@ fi
+ 
+ 
+ 
+-for ac_hdr in string.h strings.h stdlib.h unistd.h
++for ac_hdr in string.h strings.h stdlib.h unistd.h elf-hints.h
+ do
+ ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
+--- binutils-2.16.1/ld/Makefile.am
++++ binutils-2.16.1/ld/Makefile.am
+@@ -408,7 +408,7 @@ CFILES = ldctor.c ldemul.c ldexp.c ldfil
+ 
+ HFILES = ld.h ldctor.h ldemul.h ldexp.h ldfile.h \
+ 	ldlang.h ldlex.h ldmain.h ldmisc.h ldver.h \
+-	ldwrite.h mri.h deffile.h pe-dll.h
++	ldwrite.h mri.h deffile.h pe-dll.h elf-hints-local.h
+ 
+ GENERATED_CFILES = ldgram.c ldlex.c deffilep.c
+ GENERATED_HFILES = ldgram.h ldemul-list.h deffilep.h
+--- binutils-2.16.1/ld/Makefile.in
++++ binutils-2.16.1/ld/Makefile.in
+@@ -537,7 +537,7 @@ CFILES = ldctor.c ldemul.c ldexp.c ldfil
+ 
+ HFILES = ld.h ldctor.h ldemul.h ldexp.h ldfile.h \
+ 	ldlang.h ldlex.h ldmain.h ldmisc.h ldver.h \
+-	ldwrite.h mri.h deffile.h pe-dll.h
++	ldwrite.h mri.h deffile.h pe-dll.h elf-hints-local.h
+ 
+ 
+ GENERATED_CFILES = ldgram.c ldlex.c deffilep.c
