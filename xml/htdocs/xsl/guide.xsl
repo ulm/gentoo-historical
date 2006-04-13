@@ -1445,7 +1445,7 @@
           <input type="hidden" name="return" value="http://www.gentoo.org"/>
           <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
 
-          <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!"/>
+          <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Donate to Gentoo"/>
         </form>
       </td>
     </tr>
