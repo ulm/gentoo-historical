@@ -1,0 +1,184 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- $Header:
+/var/www/www.gentoo.org/raw_cvs/gentoo/xml/htdocs/doc/en/security/shb-perms.xml,
+v 1.1 2005/06/01 15:43:47 neysx Exp $ -->
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<sections>
+
+<version>1.0</version>
+<date>2005-05-31</date>
+
+<section>
+<title>File leggibili da tutti</title>
+<body>
+
+<p>
+Gli utenti normali non dovrebbero avere accesso ai file di configurazione e alle
+password. Un aggressore può rubare le password da un database o da un sito web,
+utilizzandole poi per danneggiare, o ancora peggio per distruggere, dei dati.
+Ecco perché è importante che i permessi sui vostri file siano impostati
+correttamente. Se siete sicuri che un file è utilizzato solo da root,
+assegnategli i permessi <c>0600</c> e assegnate il file al giusto utente con
+<c>chown</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>File scrivibili da tutti o da un gruppo</title>
+<body>
+
+<pre caption="Trovare file e directory scrivibili da tutti">
+# <i>/usr/bin/find / -type f \( -perm -2 -o -perm -20 \) \ 
+   -exec ls -lg {} \; 2>/dev/null >writable.txt</i>
+# <i>/usr/bin/find / -type d \( -perm -2 -o -perm -20 \) \ 
+   -exec ls -ldg {} \; 2>/dev/null >>writable.txt</i>
+</pre>
+
+<p>
+Questi comandi creeranno un lungo file con i permessi di tutti i file aventi il
+permesso di scrittura impostato per un gruppo o per tutti. Controllate i
+permessi ed eliminate i file scrivibili da tutti, eseguendo il comando
+<c>/bin/chmod o-w</c> sui file in questione.
+</p>
+
+</body>
+</section>
+<section>
+<title>Files SUID/SGID</title>
+<body>
+
+<p>
+I file con il bit SUID o SGID impostato vengono eseguiti con i privilegi
+dell'utente <e>proprietario</e> o del suo gruppo, e non con quelli dell'utente
+che esegue il file. Normalmente questi bit vengono usati sui file che devono
+essere eseguiti come root per poter fare ciò per cui vengono eseguiti. Questi
+file possono compromettere la radice locale (se contengono buchi nella
+sicurezza). Ciò è pericoloso, e per questo i file con bit SUID o SGID impostati
+dovrebbero essere evitati ad ogni costo. Se non usate questi file, usate
+<c>chmod 0</c> su di essi per eseguire l'unmerge del pacchetto da cui essi
+provengono (controllate a quale pacchetto appartengono usando <c>equery</c>; se
+non lo avete già installato digitate <c>emerge gentoolkit</c>). Altrimenti
+disattivate semplicemente il bit SUID con <c>chmod -s</c>.
+</p>
+
+<pre caption="Trovare files con SUID">
+# <i>/usr/bin/find / -type f \( -perm -004000 -o -perm -002000 \) \ 
+   -exec ls -lg {} \; 2>/dev/null >suidfiles.txt</i>
+</pre>
+
+<p>
+Questo comando creerà un file contenente una lista di tutti i file SUID/SGID.
+</p>
+
+<pre caption="Lista dei binari SUID">
+/bin/su
+/bin/ping
+/bin/mount
+/bin/umount
+/var/qmail/bin/qmail-queue
+/usr/bin/chfn
+/usr/bin/chsh
+/usr/bin/crontab
+/usr/bin/chage
+/usr/bin/expiry
+/usr/bin/sperl5.6.1
+/usr/bin/newgrp
+/usr/bin/passwd
+/usr/bin/gpasswd
+/usr/bin/procmail
+/usr/bin/suidperl
+/usr/lib/misc/pt_chown
+/usr/sbin/unix_chkpwd
+/usr/sbin/traceroute
+/usr/sbin/pwdb_chkpwd
+</pre>
+
+<p>
+Di default Gentoo Linux non ha molti file SUID (sebbene questo dipenda da che
+cosa avete installato), ma potreste ottenere una lista come quella qui sopra. La
+maggiorparte dei comandi non dovrebbero essere eseguiti da utenti normali, ma
+solo da root. Togliete il SUID bit da <c>ping</c>, <c>mount</c>, <c>umount</c>,
+<c>chfn</c>, <c>chsh</c>, <c>newgrp</c>, <c>suidperl</c>, <c>pt_chown</c> e
+<c>traceroute</c>, eseguendo <c>chmod -s</c> su ogni file. Non rimuovete il bit
+da <c>su</c>, <c>qmail-queue</c> o <c>unix_chkpwd</c>. Rimuovere setuid da
+questi file vi impedirà di eseguire <c>su</c> e di ricevere la posta. Rimuovendo
+il bit (dove è sicuro farlo) rimuovete la possibilità che un utente normale (o
+un aggressore) conquisti i privilegi di root attraverso uno di questi file.
+</p>
+
+<p>
+Gli unici file SUID che ho sul mio sistema sono <c>su</c>, <c>passwd</c>,
+<c>gpasswd</c>, <c>qmail-queue</c>, <c>unix_chkpwd</c> e <c>pwdb_chkpwd</c>.
+Tuttavia, se state eseguendo X ne potreste avere anche altri, dato che X ha
+bisogno dell'accesso elevato reso possibile da SUID.
+</p>
+</body>
+</section>
+<section>
+<title>Binari SUID/SGID e hard link</title>
+<body>
+
+<p>
+Un file è considerato cancellato solo quando non ci sono più link che puntano ad
+esso. Questo potrebbe sembrare strano, ma considerate che un nome file come 
+<path>/usr/bin/perl</path> è in realtà un collegamento all'inode dove i
+dati sono memorizzati. Un numero potenzialmente infinito di link può puntare al
+file, e finché tutti questi non sono spariti, il file continua ad esistere.
+</p>
+
+<p>
+Se i vostri utenti hanno accesso a una partizione che non è montata con
+<c>nosuid</c> o <c>noexec</c> (per esempio, se <path>/tmp</path>,
+<path>/home</path>, o <path>/var/tmp</path> non sono su partizioni separate)
+dovreste assicurarvi che i vostri utenti non creino hard links a binari SUID o
+SGID, altrimenti dopo gli aggiornamenti di Portage essi avranno ancora accesso
+alle vecchie versioni dei programmi.
+</p>
+
+<warn>
+Se avete ricevuto un avviso da Portage riguardante degli hard link residui, e se
+i vostri utenti possono scrivere su una partizione che consente di eseguire file
+SUID/SGID, allora dovreste leggere attentamente questa sezione. Uno dei vostri
+utenti potrebbe tentare di eludere un aggiornamento tenendo la versione datata
+di un programma. Se i vostri utenti non possono creare files SUID, oppure se
+possono eseguire programmi solo utilizzando il caricatore dinamico (partizioni
+montate con <c>noexec</c>), allora non dovete preoccuparvi.
+</warn>
+
+<note>
+Gli utenti non hanno bisogno dell'accesso in lettura a un file per creare un
+link ad esso, hanno bisogno solo dei permessi di lettura sulla directory che lo
+contiene.
+</note>
+
+<p>
+Per verificare quanti link ha un file, potete usare il comando <c>stat</c>.
+</p>
+
+<pre caption="Comando stat">
+$ stat /bin/su    
+  File: `/bin/su'
+  Size: 29350           Blocks: 64         IO Block: 131072 regular file
+Device: 900h/2304d      Inode: 2057419     Links: 1
+Access: (4711/-rws--x--x)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2005-02-07 01:59:35.000000000 +0000
+Modify: 2004-11-04 01:46:17.000000000 +0000
+Change: 2004-11-04 01:46:17.000000000 +0000
+</pre>
+
+<p>
+Per trovare i file SUID e SGID con link multipli, potete usare <c>find</c>.
+</p>
+
+<pre caption="Trovare binari suid/sgid con collegamenti multipli">
+$ find / -type f \( -perm -004000 -o -perm -002000 \) -links +1 -ls
+</pre>
+
+</body>
+</section>
+</sections>
