@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- $Header:
+/var/www/www.gentoo.org/raw_cvs/gentoo/xml/htdocs/doc/en/security/shb-pam.xml,v
+1.2 2005/06/01 17:42:46 neysx Exp $ -->
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<sections>
+
+<version>1.0</version>
+<date>2005-05-31</date>
+
+<section>
+<title>PAM</title>
+<body>
+
+<p>
+PAM è una suite di librerie condivise che forniscono una via alternativa per
+l'autenticazione dell'utente nei programmi. La flag USE <c>pam</c> è attivata di
+default. Le impostazioni PAM su Gentoo Linux sono abbastanza ragionevoli, ma c'è
+sempre la possibilità di migliorare. Per prima cosa installate cracklib.
+</p>
+
+<pre caption="Installare cracklib">
+# <i>emerge cracklib</i>
+</pre>
+
+<pre caption="/etc/pam.d/passwd">
+auth     required pam_unix.so shadow nullok
+account  required pam_unix.so
+password required pam_cracklib.so difok=3 retry=3 minlen=8 dcredit=2 ocredit=2 
+password required pam_unix.so md5 use_authtok
+session  required pam_unix.so
+</pre>
+
+<p>
+Questo aggiungerà cracklib, il quale assicurerà che le password degli utenti
+siano lunghe almeno 8 caratteri, contengano un minimo di 2 cifre e 2 altri
+caratteri, e che differiscano dall'ultima password per più di 3 caratteri.
+Questo costringe l'utente a scegliere una buona password (politica delle
+password). Consultate la <uri
+link="http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/pam-6.html#ss6.3">
+documentazione PAM</uri> per ulteriori opzioni.
+</p>
+
+<pre caption="/etc/pam.d/sshd">
+auth     required pam_unix.so nullok 
+auth     required pam_shells.so
+auth     required pam_nologin.so
+auth     required pam_env.so
+account  required pam_unix.so
+password required pam_cracklib.so difok=3 retry=3 minlen=8 dcredit=2 ocredit=2
+use_authtok
+password required pam_unix.so shadow md5
+session  required pam_unix.so
+session  required pam_limits.so
+</pre>
+
+<p>
+Ogni servizio non configurato con un file PAM in <path>/etc/pam.d</path> userà
+le regole in <path>/etc/pam.d/other</path>. I valori di default sono impostati a
+<c>deny</c>, come dovrebbero essere. Ma a me piace avere un sacco di log, e per
+questo ho aggiunto <c>pam_warn.so</c>. L'ultima opzione è <c>pam_limits</c>, che
+è controllata da <path>/etc/security/limits.conf</path>. Consultate la sezione
+<uri link="?part=1&amp;chap=5#limits_conf">/etc/security/limits.conf</uri> per
+maggiori dettagli su queste impostazioni.
+</p>
+
+<pre caption="/etc/pam.d/other">
+auth     required pam_deny.so 
+auth     required pam_warn.so 
+account  required pam_deny.so 
+account  required pam_warn.so 
+password required pam_deny.so 
+password required pam_warn.so 
+session  required pam_deny.so 
+session  required pam_warn.so
+</pre>
+
+</body>
+</section>
+</sections>
