@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.89 2006/04/09 17:34:39 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.90 2006/04/15 16:48:05 agaffney Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -120,7 +120,7 @@ class InstallProfile:
 		self._parser.addHandler('gli-profile/kernel-build-method', self.set_kernel_build_method)
 		self._parser.addHandler('gli-profile/kernel-config', self.set_kernel_config_uri)
 		self._parser.addHandler('gli-profile/kernel-initrd', self.set_kernel_initrd)
-		self._parser.addHandler('gli-profile/kernel-modules/module', self.add_kernel_module)
+		self._parser.addHandler('gli-profile/kernel-modules', self.set_kernel_modules)
 		self._parser.addHandler('gli-profile/kernel-source', self.set_kernel_source_pkg)
 		self._parser.addHandler('gli-profile/logging-daemon', self.set_logging_daemon_pkg)
 #		self._parser.addHandler('gli-profile/make-conf/variable', self.make_conf_add_var)
@@ -847,28 +847,14 @@ class InstallProfile:
 	#### Kernel Modules
 
 	##
-	# Add a kernel module to the list of kernel modules
-	# @param xml_path Used internally by the XML parser. Should be None when calling directly
-	# @param kernel_module 		string of a module name
-	# @param xml_attr 		not used here
-	def add_kernel_module(self, xml_path, kernel_module, xml_attr):
-		if type(kernel_module) != str:
-			raise GLIException("KernelModuleError", 'fatal', 'add_kernel_module',  "The kernel module must be a string!")
-		self._kernel_modules.append(kernel_module)
-		
-	##
 	# "kernel_modules is a tuple of strings containing names of modules to automatically load at boot time. (ie. '( 'ide-scsi', )')"
 	# @param kernel_modules Parameter description
 	def set_kernel_modules(self, kernel_modules):
 		# Check type
-		if type(kernel_modules) != tuple:
-			raise GLIException("KernelModulesError", 'fatal', 'set_kernel_modules',  "Must be a tuple!")
-		
-		self._kernel_modules = []
-	
-		# Check tuple data type
-		for module in kernel_modules:
-			self._kernel_modules.append(module)
+		if isinstance(kernel_modules, str):
+#			raise GLIException("KernelModulesError", 'fatal', 'set_kernel_modules',  "Must be a tuple!")
+			kernel_modules = kernel_modules.split(" ")
+		self._kernel_modules = kernel_modules
 
 	##
 	# Returns kernel_modules
@@ -880,10 +866,7 @@ class InstallProfile:
 	def serialize_kernel_modules(self):
 		if self.get_kernel_modules() != []:
 			kernel_modules = self.get_kernel_modules()
-			self.xmldoc += "<kernel-modules>";
-			for module in kernel_modules:
-				self.xmldoc += "<module>%s</module>" % module
-			self.xmldoc += "</kernel-modules>";
+			self.xmldoc += "<kernel-modules>%s</kernel-modules>" % " ".join(kernel_modules)
 
 	############################################################################
 	#### Kernel Sources
