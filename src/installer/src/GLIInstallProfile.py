@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.90 2006/04/15 16:48:05 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.91 2006/04/16 02:25:29 agaffney Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -79,7 +79,6 @@ class InstallProfile:
 		self._make_conf = {}
 #		self._rc_conf = {}
 		self._install_rp_pppoe = False
-		self._filesystem_tools = ()
 		self._install_pcmcia_cs = False
 		self._dns_servers = ()
 		self._default_gateway = ()
