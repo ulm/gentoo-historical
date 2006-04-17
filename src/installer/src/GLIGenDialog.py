@@ -671,7 +671,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			use_local_flags.append((flagname, use_local_desc[flagname], int(flagname in system_use_flags)))
 		#present the menu
 		code, use_local_flags = self._d.checklist(_(u"Choose which *local* USE flags you want on the new system"), height=25, width=80,list_height=17, choices=use_local_flags)	
-		temp_use = "-* "
+		temp_use = ""
 		for flag in use_flags:
 			temp_use += flag + " "
 		for flag in use_local_flags:
