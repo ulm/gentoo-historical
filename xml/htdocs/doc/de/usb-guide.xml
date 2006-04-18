@@ -1,0 +1,658 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- English CVS Version: 1.11 -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/usb-guide.xml,v 1.1 2006/04/18 02:52:48 grahl Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/de/usb-guide.xml">
+<title>Gentoo Linux USB Guide</title>
+
+<author title="Author">
+  <mail link="fox2mike@gentoo.org">Shyam Mani</mail>
+</author>
+
+<author title="Übersetzer">
+  <mail link="gentoodoc@itsnotmy.name">Sebastian Westermayer</mail>
+</author>
+
+<abstract>
+Dieses Dokument hilft einem Benutzer USB auf einem Gentoo-System einzurichten
+und auch verschiedene USB-Geräte zu konfigurieren.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.9</version>
+<date>2006-01-14</date>
+
+<chapter>
+<title>Einleitung</title>
+<section>
+<title>Was ist USB?</title>
+<body>
+
+<p>
+USB steht für Universal Serial Bus und ist im Grunde ein Standard für externe
+Schnittstellen, die eine Kommunikation zwischen dem Computer und verschiedenen
+anderen Peripheriegeräten ermöglicht. Einge der heutzutage gebräuchlichsten
+USB-Geräte sind Tastaturen, Mäuse, USB Sticks, Digitalkameras, externe CD
+&amp; DVD Brenner, Drucker, etc.
+</p>
+
+<p>
+Gegenwärtig sind zwei USB Versionen im Einsatz: USB 1.1 und USB 2.0. Da USB
+schon immer abwärtskompatibel mit früheren Versionen war, ist USB 2.0
+abwärtskompatibel mit USB 1.1. Die neuesten USB-Geräte sind normalerweise USB
+2.0 kompatibel. USB 2.0 unterstützt eine maximale Datentransferrate von 480
+Mbps oder 60 MBps und das ist der Hauptunterschied zwischen den zwei
+Standards. Ein anderer Vorteil von USB ist, dass die Geräte alle
+<e>hot-pluggable</e> sind, was bedeutet, dass Sie Ihr System nicht neu starten
+müssen damit es Ihnen möglich ist diese Geräte zu benutzen.
+</p>
+
+</body>
+</section>
+<section>
+<title>Ein technischer Blickwinkel</title>
+<body>
+
+<p>
+Bevor wir auf die genauen Konfigurationsoptionen im Kernel eingehen, würde es
+passen einen etwas genaueren Blick auf USB zu werfen. Wenn Sie in Eile sind
+oder diesen Abschnitt überspringen möchten, springen Sie bitte zur
+<uri link="#kernel">Kernelkonfiguration</uri>.
+</p>
+
+<p>
+Ein USB-System hat unter anderem einen Hostcontroller, Hubs, einen
+<e>root Hub</e>  und unterstützt bis zu 127 USB-Geräte inklusive der Hubs. Der
+Hostcontroller ist nichts anderes als die Hardwareschnittstelle zwischen dem
+USB-Gerät und dem Betriebsystem. Es sind heutzutage einige HCI (Host Controller
+Interface) im Einsatz und die sind der OHCI (Open HCI) von Compaq, UHCI
+(Universal HCI) und EHCI (Enhanced HCI), beide von Intel. OHCI/UHCI sind die
+beiden Industriestandards für USB 1.1 Schnittstellen während EHCI der für USB
+2.0 ist.
+</p>
+
+<p>
+Der Hardwarehersteller stellt eine Schnittstelle für Programmierer zur
+Verfügung die es dem System erlaubt mit der Hardware zu interagieren, genannt
+wird sie HCD oder Host Controller Device. Durch dieses HCD kann das Gerät mit
+der Systemsoftware interagieren. Das folgende Diagramm sollte die Sache
+einfacher nachvollziehbar machen.
+</p>
+
+<pre caption="Grundlegende USB Architektur">
+<comment>(Die Software besteht auch aus anderen Bestandteilen, wie dem Gerätetreiber,
+aber der Einfachheit halber sind diese hier nicht aufgeführt)</comment>
+
+    + ----  Hardware  ----   + ----  Software  ---- +
+    |                        |                      |
+    | [USB Ger.]-+-> {EHCI} -+--->  ( EHCD )        |
+    |            |           |                      |  Benutzer
+    |            `-> {UHCI} -+--->  ( UHCD )        |
+    |                        |                      |
+    + ----  Hardware  ----   + ----  Software  ---- +
+</pre>
+
+<p>
+Ein USB-Gerät kann entweder einen individuellen Treiber benutzen oder einen der
+bereits auf dem System vorhanden ist, das Ganze basiert auf dem Konzept einer
+Geräte<e>klasse</e>. Das bedeutet, wenn ein Gerät zu einer bestimmten
+<e>Klasse</e> gehört, dann nutzen andere Geräte die zu der selben <e>Klasse</e>
+gehören denselben Gerätetreiber. Einige dieser <e>Klassen</e> sind die USB HID
+(Human Interface Devices) Klasse, die Eingabegeräte wie Tastaturen und Mäuse
+abdeckt, die USB Massenspeichergeräteklasse, die Geräte wie USB Sticks,
+Digitalkamers, Musikplayer, etc abdeckt und die USB CDC (Communication Devices
+Class), die hauptsächlich USB Modems und ähnliche Geräte abdeckt.
+</p>
+
+</body>
+</section>
+<section>
+<title>Was steckt in Ihrem Rechner?</title>
+<body>
+
+<p>
+Es ist ganz einfach herauszufinden ob Ihr Rechner USB 2.0 Unterstützung
+bietet oder nicht. Wir benutzen den Befehl <c>lspci</c> für diesen Zweck.
+</p>
+
+<note>
+Das <c>lspci</c> Werkzeug ist Teil des <c>sys-apps/pciutils</c> Pakets. Wenn
+Sie dieses nicht installiert haben, starten Sie bitte <c>emerge pciutils</c>.
+Bitte beachten Sie, dass Sie root sein müssen während Sie den <c>lspci</c>
+Befehl ausführen.
+</note>
+
+<pre caption="Verschiedene lspci Ausgaben">
+<comment>(In diesem USB 1.1 konformen System sehen Sie nur UHCI)</comment>
+
+# <i>lspci -v | grep USB</i>
+0000:00:04.2 USB Controller: Intel Corp. 82371AB/EB/MB PIIX4 USB (rev 01) (prog-if 00 [UHCI])
+
+<comment>(In diesem USB 2.0 konformen System sehen Sie EHCI und UHCI)</comment>
+
+00:1d.0 USB Controller: Intel Corp. 82801DB USB (Hub #1) (rev 01) (prog-if 00 [UHCI])
+00:1d.1 USB Controller: Intel Corp. 82801DB USB (Hub #2) (rev 01) (prog-if 00 [UHCI])
+00:1d.2 USB Controller: Intel Corp. 82801DB USB (Hub #3) (rev 01) (prog-if 00 [UHCI])
+00:1d.7 USB Controller: Intel Corp. 82801DB USB EHCI Controller (rev 01) (prog-if 20 [EHCI])
+</pre>
+
+<p>
+Also können wir mit dem <c>lspci</c> Befehl herausfinden ob das System USB 2.0
+unterstützt. Dies ist nützlich da wir die dazugehörigen Optionen im Kernel
+aktivieren werden.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="kernel">
+<title>Kernelkonfiguration</title>
+<section>
+<title>Den Kernel beziehen</title>
+<body>
+
+<note>
+Seit dem Release 2005.0 benutzt Gentoo Linux 2.6 als Standardkernel. Sofern Sie
+nicht ausdrücklich das 2.4 Profil benutzen, ist <c>gentoo-sources</c> auf den
+<e>meisten</e> Architekturen ein 2.6 Kernel. Bitte überprüfen Sie Ihre
+Kernelversion und machen Sie dann entsprechend mit der Konfiguration weiter.
+</note>
+
+<p>
+Emergen Sie zuerst die Kernelquellen Ihrer Wahl. Hier werden wir die
+<c>gentoo-sources</c> verwenden. Für weitere Informationen zu den
+verschiendenen im Portage verfügbaren Kernelquellen schauen Sie bitte im
+<uri link="/doc/de/gentoo-kernel.xml">Gentoo Linux Kernel Guide</uri> nach.
+</p>
+
+<pre caption="Beziehen der Kernelquellen">
+# <i>emerge gentoo-sources</i>
+</pre>
+
+<p>
+Nun machen wir mit der Aufgabe der Kernelkonfiguration weiter.
+</p>
+
+<pre caption="Zur Quelle wechseln">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<note>
+Das obige Beispiel setzt voraus, dass der <path>/usr/src/linux</path> Symlink
+auf die Kernelquellen zeigt, die Sie benutzen wollen. Bitte stellen Sie
+entsprechendes sicher bevor Sie weitermachen.
+</note>
+
+</body>
+</section>
+<section id="newkernelconfig">
+<title>Konfigurationsoptionen für den 2.6.x Kernel</title>
+<body>
+
+<p>
+Jetzt werden wir einen Blick auf die Optionen werfen, die wir im 2.6 Kernel
+aktivieren müssen um sicherzustellen, dass wir richtige USB-Unterstützung für
+unsere Geräte erhalten. Wenn Sie einen 2.4 Kernel benutzen machen Sie bitte mit
+<uri link="#oldkernelconfig">Konfigurationsoptionen für den 2.4.x Kernel</uri>
+weiter.
+</p>
+
+<note>
+Die Beispiele in diesem Dokument werden Konfigurationsoptionen für einfache
+USB-Unterstützung sowie die meistbenötigten, wie z.B. USB-Massenspeichergeräte
+(hauptsächlich Kameras und USB-Sticks) zeigen. Wenn Sie ein bestimmtes
+USB-Gerät haben, das konfiguriert werden muss, schauen Sie bitte in das
+Handbuch des Geräts oder suchen Online um herauszufinden ob die Unterstützung
+für dieses Gerät in den Kernel integriert wurde oder ob spezifische Treiber
+existieren die Sie benutzen können. Bitte beachten Sie, dass der Einfachheit
+halber bei allen Beispielen die Optionen in den Kernel kompiliert wurden. Wenn
+Sie einen modularen Kernel haben möchten stellen Sie sicher, dass Sie sich die
+verschiedenen Module notieren und Ihre Konfigurationsdateien entsprechend
+anpassen.
+</note>
+
+<pre caption="make menuconfig Optionen für 2.6 Kernel">
+Device Drivers  ---&gt;
+  SCSI device support  ---&gt;
+
+<comment>(Obwohl SCSI automatisch aktiviert wird wenn Sie USB Mass Storage
+ausählen, müssen wir die Festplattenunterstützung aktivieren.)</comment>
+---   SCSI support type (disk, tape, CD-ROM)
+&lt;*&gt;   SCSI disk support
+
+<comment>(Gehen Sie dann eine Ebene zurück und gehen Sie in USB support)</comment>
+USB support  ---&gt;
+
+<comment>(Das ist der root-Hub und ist für die USB-Unterstützung notwendig.
+Falls Sie es als ein Modul kompilieren möchten, es wird usbcore genannt.)</comment>
+&lt;*&gt; Support for Host-side USB
+
+<comment>(Aktivieren Sie diese Option um Ihre USB-Geräte in /proc/bus/usb zu
+sehen. Das wird empfohlen.)</comment>
+ [*]   USB device filesystem
+
+<comment>(Wählen Sie mindestens eine der HCDs. Wenn Sie sich nicht sicher sind
+ist die Auswahl aller auch in Ordnung.)</comment>
+--- USB Host Controller Drivers
+&lt;*&gt; EHCI HCD (USB 2.0) support
+&lt; &gt; OHCI HCD support
+&lt;*&gt; UHCI HCD (most Intel and VIA) support
+
+<comment>(Bewegen wir uns ein bischen weiter nach unten, gelangen wir zu CDC
+und Massenspeicher.)</comment>
+&lt; &gt; USB Modem (CDC ACM) support
+&lt;*&gt; USB Printer support
+&lt;*&gt; USB Mass Storage support
+ [*]   USB Mass Storage Write-Protected Media Detection (EXPERIMENTAL)
+
+<comment>(Danach die HID Bits.
+Sie müssen HID input support aktivieren wenn Sie eine USB Tastatur, Maus,
+Joystick oder anderes USB-Eingabegerät haben)</comment>
+--- USB Input Devices
+&lt;*&gt; USB Human Interface Device (full HID) support
+ [*]   HID input layer support
+
+<comment>(Wenn Sie eine USB-Netzwerkkarte wie die RTL8150 haben, benötigen Sie
+folgendes)</comment>
+USB Network Adapters  --->
+    &lt;*&gt; USB RTL8150 based ethernet device support (EXPERIMENTAL)
+
+<comment>(Wenn Sie einen Seriell auf USB Konverter wie den Prolific 2303 haben,
+benötigen Sie folgendes)</comment>
+USB Serial Converter support  --->
+    &lt;*&gt; USB Serial Converter support
+    &lt;*&gt; USB Prolific 2303 Single Port Serial Driver (NEW)
+</pre>
+
+<p>
+Jetzt da Ihre Optionen gesetzt sind können Sie den Kernel (neu) kompilieren und
+USB sollte funktionieren sobald Sie mit dem neuen Kernel booten. Sie können
+jetzt mit <uri link="#postkern">USB in Betrieb sehen</uri> weitermachen und
+feststellen ob alles funktioniert wie es soll.
+</p>
+
+</body>
+</section>
+<section id="oldkernelconfig">
+<title>Konfigurationsoptionen für den 2.4.x Kernel</title>
+<body>
+
+<p>
+Wir werden einen Blick auf die Optionen werfen, die wir in einem 2.4 Kernel
+aktivieren müssen um sicherzustellen, dass wir richtige USB-Unterstützung für
+unsere Geräte erhalten. Wenn Sie einen 2.6 Kernel benutzen lesen Sie bitte <uri
+link="#newkernelconfig">Konfigurationsoptionen für den 2.6.x Kernel</uri>.
+</p>
+
+<note>
+Die Beispiele in diesem Dokument werden Konfigurationsoptionen für einfache
+USB-Unterstützung sowie die meistbenötigten, wie z.B. USB-Massenspeichergeräte
+(hauptsächlich Kameras und USB-Sticks) zeigen. Wenn Sie ein bestimmtes
+USB-Gerät haben das konfiguriert werden muss, schauen Sie bitte in das Handbuch
+des Geräts oder suchen online um herauszufinden ob die Unterstützung für dieses
+Gerät in den Kernel integriert wurde oder ob spezifische Treiber existieren die
+Sie benutzen können. Bitte beachten Sie, dass der Einfachheit halber bei allen
+Beispielen die Optionen in den Kernel kompiliert wurden. Wenn Sie einen
+modularen Kernel haben möchten stellen Sie sicher, dass Sie sich die
+verschiedenen Module notieren und Ihre Konfigurationsdateien entsprechend
+anpassen.
+</note>
+
+<pre caption="make menuconfig Optionen für 2.4 Kernel">
+<comment>(Diese unmittelbare Konfiguration ist nur für diejenigen, die
+USB-Eingabegeräte haben. Input core support wird später von USB-HID benötigt.)</comment>
+Input core support  ---&gt;
+   &lt;*&gt; Input core support
+   &lt; &gt;   Keyboard support
+   &lt; &gt;   Mouse support
+   &lt; &gt;   Event interface support
+
+USB support  ---&gt;
+
+<comment>(Das ist der root-Hub und ist für die USB-Unterstützung notwendig.
+Falls Sie es als ein Modul kompilieren möchten, es wird usbcore.o genannt)</comment>
+&lt;*&gt; Support for USB
+
+<comment>(Aktivieren Sie diese Option um Ihre USB-Geräte in /proc/bus/usb zu
+sehen. Das wird empfohlen.)</comment>
+ [*]   Preliminary USB device filesystem
+
+<comment>(Wählen Sie mindestens eine der HCDs. Wenn Sie sich nicht sicher sind
+ist die Auswahl aller auch in Ordnung.)</comment>
+--- USB Host Controller Drivers
+&lt;*&gt;   UHCI Alternate Driver (JE) support
+&lt; &gt;   OHCI (Compaq, iMacs, OPTi, SiS, ALi, ...) support
+
+<comment>(Das ist der Geräteabschnitt. Wählen Sie nur aus was Sie benötigen.)</comment>
+--- USB Device Class drivers
+&lt; &gt;   USB Audio support
+&lt;*&gt;   USB Mass Storage support
+&lt; &gt;   USB Modem (CDC ACM) support
+&lt;*&gt;   USB Printer support
+
+<comment>(Gefolgt von dem HID-Abschnitt. Dieser wird gebraucht wenn Sie ein auf
+USB basierendes Eingabegerät haben.)</comment>
+--- USB Human Interface Devices (HID)
+&lt;*&gt;   USB Human Interface Device (full HID) support
+ [*]     HID input layer support
+
+<comment>(Wenn Sie einen Seriell-auf-USB Konverter wie den Prolific 2303 haben,
+brauchen Sie folgendes.)</comment>
+USB Serial Converter support  --->
+    &lt;*&gt; USB Serial Converter support
+    &lt;*&gt; USB Prolific 2303 Single Port Serial Driver (NEW)
+</pre>
+
+<p>
+Jetzt da Ihre Optionen gesetzt sind können Sie den Kernel (neu) kompilieren und
+USB sollte funktionieren sobald Sie mit dem neuen Kernel booten.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="postkern">
+<title>USB in Betrieb sehen</title>
+<section>
+<title>dmesg ist Ihr Freund!</title>
+<body>
+
+<p>
+Endlich ist die Zeit gekommen um mit den USB-Geräten zu spielen :) Lassen Sie
+uns also anfangen. In diesem Kapitel werden wir sehen wie das System auf
+verschiedene USB-Geräte reagiert. Wir starten damit einen USB 512 MB Memory
+Stick/Pen Drive einzustecken. Sie können andere ähnliche Massenspeichergeräte
+verwenden. Wir benutzen hauptsächlich <c>dmesg</c> um zu sehen was passiert und
+wie das System auf das Gerät reagiert.
+</p>
+
+<note>
+<c>dmesg</c> gibt generell viel aus bevor wir zu den Informationen kommen die
+wir benötigen, da es den Kernel Ringpuffer ließt, der auch alle Bootmeldungen
+enthält. Die Ausgabe in folgenden Beispielen beinhaltet nur die relevanten
+Teile und zusätzliche Leerzeichen dazwischen um bessere Lesbarkeit zu
+ermöglichen. Wenn nötig benutzen Sie bitte <c>dmesg | more</c> oder
+<c>dmesg | less</c> um die Ausgabe auf Ihrem System besser darzustellen.
+</note>
+
+<pre caption="dmesg Ausgabe bei einem Memorystick">
+<comment>(Stecken Sie den Memorystick in einen verfügbaren USB Steckplatz und dann..)</comment>
+# <i>dmesg | less</i>
+
+<comment>(Das Gerät wird als USB 1.1 erkannt und eine Adresse wird zugeordnet.
+Auch wird die verwendete HCD genannt.)</comment>
+usb 1-1: new full speed USB device using uhci_hcd and address 2
+
+<comment>(SCSI-Emulation läuft automatisch an)</comment>
+scsi0 : SCSI emulation for USB Mass Storage devices
+usb-storage: device found at 2
+
+<comment>(Jetzt werden die Geräteinformationen inklusive der Modellnummer bezogen)</comment>
+usb-storage: waiting for device to settle before scanning
+  Vendor: JetFlash  Model: TS512MJF2A        Rev: 1.00
+  Type:   Direct-Access                      ANSI SCSI revision: 02
+SCSI device sda: 1003600 512-byte hdwr sectors (514 MB)
+
+<comment>(Die Schreibschutzerkennung ist EXPERIMENTELLER Code in neueren Kerneln)</comment>
+sda: Write Protect is off
+sda: Mode Sense: 0b 00 00 08
+sda: assuming drive cache: write through
+SCSI device sda: 1003600 512-byte hdwr sectors (514 MB)
+/dev/scsi/host0/bus0/target0/lun0: p1
+Attached scsi removable disk sda at scsi0, channel 0, id 0, lun 0
+Attached scsi generic sg0 at scsi0, channel 0, id 0, lun 0,  type 0
+usb-storage: device scan complete
+<comment>(Zu diesem Zeitpunkt ist das Gerät grundsätzlich durch mounten von
+/dev/sda1 zugänglich)</comment>
+
+<comment>(Wenn das Gerät entfernt wird, bestätigt das System entsprechendes)</comment>
+usb 1-1: USB disconnect, address 2
+</pre>
+
+<p>
+Sobald das Gerät angeschlossen und gemountet ist, können Sie es wie eine
+normale Festplatte ansprechen. Gewohnte Aktionen wie <c>cp</c>, <c>mv</c>,
+<c>rm</c>, usw. funktionieren gut. Sie können auch ein Dateisystem auf dem
+USB-Stick anlegen/ihn formatieren.
+</p>
+
+<pre caption="Auf den Memorystick zugreifen">
+# <i>mount /dev/sda1 /mnt/usb</i>
+# <i>df -h</i>
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/hda8             9.4G  7.5G  1.9G  80% /
+/dev/hda9              11G  8.1G  2.4G  78% /usr
+none                  189M     0  189M   0% /dev/shm
+/dev/sda1             490M   34M  457M   7% /mnt/usb
+</pre>
+
+<note>
+Auf Digitalkameras kann auf die gleiche Weise zugegriffen werden wie auf
+Memorysticks. Ich habe eine Nikon Coolpix 5200 und auf diese Weise greife ich
+darauf zu. Kameras haben heutzutage normalerweise zwei Modi um Bilder zu
+übertragen; USB Massenspeicher und PTP (Picture Transfer Protocol). Die Kamera
+ist auf den USB-Massenspeichermodus eingestellt und daher ist die
+Vorgehensweise genau die selbe wie beim Zugriff auf einen Memorystick, daher
+bin ich hier nicht ins Detail gegangen. Bitte beachten Sie, dass es womöglich
+NICHT in allen Fällen und mit allen Digitalkameras, die USB-Unterstützung
+haben, funktionieren muss.
+</note>
+
+<p>
+Wie würde eine USB Maus angezeigt falls Sie eine haben? Sie wird als HID-Gerät
+angezeit.
+</p>
+
+<pre caption="Optische USB-Maus">
+# <i>dmesg | grep USB</i>
+drivers/usb/input/hid-core.c: v2.0:USB HID core driver
+usb 1-1: new low speed USB device using address 2
+input: USB HID v1.10 Mouse [Logitech USB-PS/2 Optical Mouse] on usb-0000:00:07.2-1
+</pre>
+
+<p>
+Ein anderer schicker Befehl, den Sie benutzen können um den Status Ihrer
+USB-Anschlüsse anzeigen zu lassen, ist <c>lsusb</c>. Er ist Teil von
+<c>sys-apps/usbutils</c> und wird im nächsten Kapitel behandelt.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>USB auf Benutzerebene</title>
+<section>
+<title>Schicke Werkzeuge</title>
+<body>
+
+<p>
+Bis jetzt haben wir gesehen wieviel Unterstüzung auf Kernel-/Systemseite für
+USB unter Linux vorhanden ist. Jetzt werden wir einen Blick darauf werfen
+welche Unterstützung von Gentoo für USB auf Benutzerebene zur Verfügung
+gestellt wird.
+</p>
+
+<p>
+Eines der nützlichsten Werkzeuge ist <c>lsusb</c>. Es listet all USB-Geräte
+auf die mit dem System verbunden sind. Die Installation ist ein Kinderspiel.
+</p>
+
+<pre caption="usbutils installieren">
+# <i>emerge usbutils</i>
+</pre>
+
+<p>
+Sobald es installiert ist, können Sie <c>lsusb</c> ausführen um einfache
+Informationen über die USB-Geräte zu erhalten die mit der Maschine verbunden
+sind.
+</p>
+
+<note>
+Sie müssen in den meisten Fällen root sein um <c>lsusb</c> ausführen zu können.
+</note>
+
+<warn>
+<c>lsusb</c> liest die Informationen über die USB-Geräte aus
+<path>/proc/bus/usb</path>. Wenn Sie dies nicht in Ihrem Kernel aktiviert haben
+wird <c>lsusb</c> wahrscheinlich gar nicht funktionieren. Bitte stellen Sie
+sicher, dass Sie die Unterstützung für das <path>/proc</path> Dateisystem im
+Kernel aktiviert haben und dass <c>usbfs</c> nach <path>/proc/bus/usb</path>
+gemountet ist (was automatisch passieren sollte).
+</warn>
+
+<pre caption="lsusb bei der Arbeit">
+# <i>lsusb</i>
+<comment>(Das ist der 512 MB Memorystick von Transcend)</comment>
+Bus 001 Device 003: ID 0c76:0005 JMTek, LLC. USBdisk
+<comment>(Das ist die optische Maus)</comment>
+Bus 001 Device 002: ID 046d:c00e Logitech, Inc. Optical Mouse
+<comment>(Das ist der root Hub)</comment>
+Bus 001 Device 001: ID 0000:0000
+</pre>
+
+<p>
+Wenn Sie jemand sind, der es liebt viele Informationen zu sehen haben Sie die
+Option <c>lsusb -v</c> zu starten. Versuchen Sie es und schauen Sie sich die
+Menge von Informationen an, die es ausgibt. Eine andere gute Option ist dass
+<c>lsusb</c> die aktuelle physikalische Hierarchie als Baum ausgibt und es so
+einfacher macht die genaue Gerätekarte zu verstehen. Der Befehl lautet
+<c>lsusb -t</c>. Zum Beispiel:
+</p>
+
+<pre caption="lsusb zeigt die USB-Hierarchie">
+# <i>lsusb -t</i>
+Bus#  1
+`-Dev#   1 Vendor 0x0000 Product 0x0000
+  |-Dev#   2 Vendor 0x046d Product 0xc00e
+  `-Dev#   3 Vendor 0x0c76 Product 0x0005
+</pre>
+
+<p>
+Sie können ganz einfach die Ausgaben von <c>lsusb</c> und <c>lsusb -t</c> in
+Beziehung zueinander setzen, was bei der Fehlersuche und beim Verstehen der
+Funktionsweise von USB hilft.
+</p>
+
+</body>
+</section>
+<section>
+<title>Heisser oder kalter Einbau??</title>
+<body>
+
+<p>
+Gentoo benutzt zwei Pakete, <c>sys-apps/hotplug</c> und
+<c>sys-apps/coldplug</c> um ein bischem Magie mit <e>hot-pluggable</e>
+Geräten zu vollführen. Wie bei jedem anderen magischen Trick steckt auch hier
+eine einfache Logik dahinter. Wir werden jetzt sehen welche es ist und während
+des Prozesses wird es uns hoffentlich möglich sein diese Zwillinge besser zu
+verstehen.
+</p>
+
+<p>
+Firmware kann als die Software auf einem Stück Hardware definiert werden, die
+geladen und ausgeführt wird, aber nicht einfach modifiziert werden kann. Viele
+Geräte haben eine Firmware damit sichergestellt werden kann, dass sie richtig
+funktionieren und oft kann die Firmware Code enthalten der unabdingbar für das
+richtige Funktionieren der Hardware ist. Firmware steckt in einer breiten
+Auswahl von Computergeräten, es reicht von ROM Chips bis zu aktuellen USB- und
+PCMCIA-Karten. Wenn ein Gerät eingesteckt wird, wird die Firmware (die in
+einigen Fällen auch den Treiber darstellt) gelesen und in den Speicher geladen,
+danach kann das Gerät von dem System benutzt werden.
+</p>
+
+<p>
+Um die lange Geschichte abzukürzen, Gentoo benutzt <c>sys-apps/hotplug</c> um
+mit dem Firmwareteil der <e>hot-pluggable</e> Geräte umzugehen.
+<c>sys-apps/hotplug</c> wird die benötigte Firmware nutzen um das Gerät
+benutzbar zu machen. Die Firmware sollte in das Verzeichnis
+<path>/lib/firmware</path> gelegt werden und wird von dort geladen. Man
+bekommt es ganz einfach, ein normales emerge reicht aus.
+</p>
+
+<pre caption="hotplug installieren">
+# <i>emerge hotplug</i>
+</pre>
+
+<p>
+Die offensichtliche Frage ist jetzt: Was ist coldplug und warum wird es
+benötigt? <c>sys-apps/coldplug</c> macht was hotplug macht, aber es tut es für
+<e>hot-pluggable</e> Geräte die bereits beim Systemstart angeschlossen sind.
+Ein gutes Beispiel dafür wäre eine USB-Netzwerkkarte. Früher war hotplug ein
+Paket das für beides verantwortlich war, aber dann wurde es in hotplug und
+coldplug geteilt, wobei coldplug die ganze Arbeit macht. Installieren Sie es
+wenn Sie <e>hot-pluggable</e> Geräte haben die Sie beim Booten aktiviert haben
+möchten.
+</p>
+
+<pre caption="coldplug installieren">
+# <i>emerge coldplug</i>
+<comment>(Und Sie können es zum boot Runlevel hinzufügen)</comment>
+# <i>rc-update add coldplug boot</i>
+ * coldplug added to runlevel boot
+ * rc-update complete.
+</pre>
+
+<note>
+Das Initskript oben tut, was das hotplug Initskript bisher tat (für bereits
+angeschlossene hot-pluggable Geräte). Das aktuelle
+<path>/etc/init.d/hotplug</path> Skript macht nicht mehr als zu überprüfen ob
+CONFIG_HOTPLUG für den aktuellen Kernel aktiviert ist.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Und Dank an...</title>
+<section>
+<title>Referenzen</title>
+<body>
+
+<p>
+Eine große Anzahl Onlinedokumente half mir während der Entwicklung dieses
+Dokuments und darunter sind einige hochtechnische aber wirklich interessante.
+Ich dachte, dass alle eine Würdigung verdienen, also los!
+</p>
+
+<ul>
+  <li><uri link="http://www.usb.org">Die ofizielle USB Webseite</uri></li>
+  <li><uri link="http://www.usb.org/about/faq">Die USB FAQ</uri></li>
+  <li>
+    <uri
+    link="http://h18000.www1.hp.com/productinfo/development/openhci.html">Compaqs
+    OHCI Standard</uri>
+  </li>
+  <li>
+    <uri link="http://developer.intel.com/technology/usb/uhci11d.htm">Intels
+    UHCI Standard</uri>
+  </li>
+  <li>
+    <uri link="http://www.intel.com/technology/usb/ehcispec.htm">Intels EHCI
+    Standard</uri>
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Andere interessante Links</title>
+<body>
+
+<ul>
+    <li><uri link="/doc/en/liveusb.xml">Gentoo Linux LiveUSB HOWTO</uri></li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>
