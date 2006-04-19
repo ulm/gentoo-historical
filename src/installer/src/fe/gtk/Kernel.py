@@ -99,4 +99,18 @@ a brief description beside it.
 		# For now
 		self.controller.install_profile.set_kernel_build_method(None, "genkernel", None)
 		self.controller.install_profile.set_kernel_bootsplash(None, self.bootsplash_check.get_active(), None)
+		if self.bootsplash_check.get_active() and not self.controller.install_profile.get_bootloader_kernel_args():
+			proc_cmdline = open("/proc/cmdline", "r")
+			cmdline = proc_cmdline.readline().strip()
+			proc_cmdline.close()
+			vga = None
+			splash = None
+			for x in cmdline.split(" "):
+				parts = x.split("=")
+				if len(parts) < 2: continue
+				if parts[0] == "vga":
+					vga = parts[1]
+				elif parts[0] == "splash":
+					splash = parts[1]
+			self.controller.install_profile.set_bootloader_kernel_args(None, "vga=%s splash=%s CONSOLE=/dev/tty1 quiet" % (vga, splash), None)
 		return True
