@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.271 2006/03/30 17:50:31 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.272 2006/04/19 15:16:33 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -638,6 +638,10 @@ class ArchitectureTemplate:
 			exitstatus = self._portage.emerge("coldplug")
 			self._logger.log("Coldplug emerged.  Now they should be added to the boot runlevel.")
 			self._add_to_runlevel("coldplug", runlevel="boot")
+
+			if self._install_profile.get_kernel_bootsplash():
+				self._logger.log("Bootsplash enabled...emerging necessary packages")
+				self._portage.emerge(["splashutils", "splash-themes-livecd"])
 
 			# Extra modules from kernelpkgs.txt...disabled until I can figure out why it sucks
 #			try:
