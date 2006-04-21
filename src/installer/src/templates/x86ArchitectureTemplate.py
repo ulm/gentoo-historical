@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.135 2006/04/09 15:45:58 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.136 2006/04/21 11:54:30 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -244,10 +244,11 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			if end >= device_sectors:
 				end = device_sectors - 1
 			# now the actual creation
-			if newpart['type'] == "free" and newparts.get_disklabel() == "mac":
-				# Create a dummy partition to be removed later because parted sucks
-				self._logger.log("  Adding dummy partition to fool parted " + str(part) + " from " + str(start) + " to " + str(end))
-				self._add_partition(parted_disk, start, end, "primary", "ext2", "free")
+			if newpart['type'] == "free":
+				if newparts.get_disklabel() == "mac":
+					# Create a dummy partition to be removed later because parted sucks
+					self._logger.log("  Adding dummy partition to fool parted " + str(part) + " from " + str(start) + " to " + str(end))
+					self._add_partition(parted_disk, start, end, "primary", "ext2", "free")
 			elif newpart['type'] == "extended":
 				self._logger.log("  Adding extended partition " + str(part) + " from " + str(start) + " to " + str(end))
 				self._add_partition(parted_disk, start, end, "extended", "")
