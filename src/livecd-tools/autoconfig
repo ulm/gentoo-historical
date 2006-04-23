@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.56 2006/02/10 15:36:48 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.57 2006/04/23 17:06:38 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -146,6 +146,18 @@ detect_x86_amd64() {
 	PC="Detected ${numcpu} ${cpuinfo} ${mhz} ${bit}"
 }
 
+detect_alpha() {
+	local cpuinfo="$(awk -F: '/^platform string/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
+	local numcpu="$(awk -F: '/^cpus active/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
+	if [ "${numcpu}" -gt '1' ]
+	then
+		bit="CPUs"
+	else
+		bit="CPU"
+	fi
+	PC="Detected ${numcpu} ${cpuinfo} ${bit}"
+}
+
 detect_ppc() {
 	local cpuinfo="$(awk -F: '/^cpu/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
 	local mhz="$(awk -F: '/^clock/{printf " %dMHz",int($2)};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
@@ -201,7 +213,12 @@ start() {
 			local numcpu="$(awk -F: '/^processor/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | wc -l)"
 			local arch="$(uname -m)"
 			local ismips="no"
-			[ "${numcpu}" -gt '1' ] && bit="CPUs" || bit="CPU"
+			if [ "${numcpu}" -gt '1' ]
+			then
+				bit="CPUs"
+			else
+				bit="CPU"
+			fi
 			case ${arch} in
 				mips|mips64)
 					detect_mips
@@ -209,6 +226,12 @@ start() {
 				;;
 				i?86|x86_64)
 					detect_x86_amd64
+				;;
+				alpha)
+					detect_alpha
+				;;
+				powerpc*)
+					detect_ppc
 				;;
 				*)
 					PC="$(awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null)"
