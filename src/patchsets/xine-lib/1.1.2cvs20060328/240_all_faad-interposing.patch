@@ -1,0 +1,1272 @@
+Index: xine-lib-1.1.2cvs20060328/configure.ac
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/configure.ac
++++ xine-lib-1.1.2cvs20060328/configure.ac
+@@ -1927,6 +1927,11 @@ dnl WARNING! Do not move this check behi
+ dnl (the alignment test macro does not like variables in the CFLAGS)
+ AC_C_ATTRIBUTE_ALIGNED
+ 
++CC_ATTRIBUTE_INTERNAL(
++	AC_DEFINE([INTERNAL], [__attribute__ ((visibility("internal")))], [Internal visibility]),
++	AC_DEFINE([INTERNAL], [], [Internal visibility])
++)
++
+ dnl Common cflags for all platforms
+ CFLAGS="-DNDEBUG -D_REENTRANT -D_FILE_OFFSET_BITS=64 -DXINE_COMPILE \$(MULTIPASS_CFLAGS) $CFLAGS"
+ DEBUG_CFLAGS="-D_REENTRANT -D_FILE_OFFSET_BITS=64 -DXINE_COMPILE $DEBUG_CFLAGS"
+@@ -2251,7 +2256,6 @@ _AM_DEPENDENCIES([OBJC])
+ 
+ AM_CONDITIONAL([BUILD_DMX_IMAGE], [test x"$have_imagemagick" = "xyes" -o x"$no_gdkpixbuf" != "xyes"])
+ 
+-
+ dnl ---------------------------------------------
+ dnl Output configuration files
+ dnl ---------------------------------------------
+Index: xine-lib-1.1.2cvs20060328/m4/attributes.m4
+===================================================================
+--- /dev/null
++++ xine-lib-1.1.2cvs20060328/m4/attributes.m4
+@@ -0,0 +1,140 @@
++# Functions to check for attributes support in compiler
++
++AC_DEFUN([CC_ATTRIBUTE_CONSTRUCTOR], [
++	AC_CACHE_CHECK([if compiler supports __attribute__((constructor))],
++		[cc_cv_attribute_constructor],
++		[AC_COMPILE_IFELSE([
++			void ctor() __attribute__((constructor));
++			void ctor() { };
++			],
++			[cc_cv_attribute_constructor=yes],
++			[cc_cv_attribute_constructor=no])
++		])
++	
++	if test "x$cc_cv_attribute_constructor" = "xyes"; then
++		AC_DEFINE([SUPPORT_ATTRIBUTE_CONSTRUCTOR], 1, [Define this if the compiler supports the constructor attribute])
++		$1
++	else
++		true
++		$2
++	fi
++])
++
++AC_DEFUN([CC_ATTRIBUTE_FORMAT], [
++	AC_CACHE_CHECK([if compiler supports __attribute__((format(printf, n, n)))],
++		[cc_cv_attribute_format],
++		[AC_COMPILE_IFELSE([
++			void __attribute__((format(printf, 1, 2))) printflike(const char *fmt, ...) { }
++			],
++			[cc_cv_attribute_format=yes],
++			[cc_cv_attribute_format=no])
++		])
++	
++	if test "x$cc_cv_attribute_format" = "xyes"; then
++		AC_DEFINE([SUPPORT_ATTRIBUTE_FORMAT], 1, [Define this if the compiler supports the format attribute])
++		$1
++	else
++		true
++		$2
++	fi
++])
++
++AC_DEFUN([CC_ATTRIBUTE_FORMAT_ARG], [
++	AC_CACHE_CHECK([if compiler supports __attribute__((format_arg(printf)))],
++		[cc_cv_attribute_format_arg],
++		[AC_COMPILE_IFELSE([
++			void __attribute__((format_arg(printf, 1))) gettextlike(const char *fmt) { }
++			],
++			[cc_cv_attribute_format_arg=yes],
++			[cc_cv_attribute_format_arg=no])
++		])
++	
++	if test "x$cc_cv_attribute_format_arg" = "xyes"; then
++		AC_DEFINE([SUPPORT_ATTRIBUTE_FORMAT_ARG], 1, [Define this if the compiler supports the format_arg attribute])
++		$1
++	else
++		true
++		$2
++	fi
++])
++
++AC_DEFUN([CC_ATTRIBUTE_INTERNAL], [
++	AC_CACHE_CHECK([if compiler supports __attribute__((visibility("internal")))],
++		[cc_cv_attribute_internal],
++		[AC_COMPILE_IFELSE([
++			void __attribute__((visibility("internal"))) internal_function() { }
++			],
++			[cc_cv_attribute_internal=yes],
++			[cc_cv_attribute_internal=no])
++		])
++	
++	if test "x$cc_cv_attribute_internal" = "xyes"; then
++		AC_DEFINE([SUPPORT_ATTRIBUTE_INTERNAL], 1, [Define this if the compiler supports the internal visibility attribute])
++		$1
++	else
++		true
++		$2
++	fi
++])
++
++AC_DEFUN([CC_ATTRIBUTE_NONNULL], [
++	AC_CACHE_CHECK([if compiler supports __attribute__((nonnull()))],
++		[cc_cv_attribute_nonnull],
++		[AC_COMPILE_IFELSE([
++			void some_function(void *foo, void *bar) __attribute__((nonnull()));
++			void some_function(void *foo, void *bar) { }
++			],
++			[cc_cv_attribute_nonnull=yes],
++			[cc_cv_attribute_nonnull=no])
++		])
++	
++	if test "x$cc_cv_attribute_nonnull" = "xyes"; then
++		AC_DEFINE([SUPPORT_ATTRIBUTE_NONNULL], 1, [Define this if the compiler supports the nonnull attribute])
++		$1
++	else
++		true
++		$2
++	fi
++])
++
++AC_DEFUN([CC_ATTRIBUTE_UNUSED], [
++	AC_CACHE_CHECK([if compiler supports __attribute__((unused))],
++		[cc_cv_attribute_unused],
++		[AC_COMPILE_IFELSE([
++			void some_function(void *foo, __attribute__((unused)) void *bar);
++			],
++			[cc_cv_attribute_unused=yes],
++			[cc_cv_attribute_unused=no])
++		])
++	
++	if test "x$cc_cv_attribute_unused" = "xyes"; then
++		AC_DEFINE([SUPPORT_ATTRIBUTE_UNUSED], 1, [Define this if the compiler supports the unused attribute])
++		$1
++	else
++		true
++		$2
++	fi
++])
++
++AC_DEFUN([CC_FUNC_EXPECT], [
++	AC_CACHE_CHECK([if compiler has __builtin_expect function],
++		[cc_cv_func_expect],
++		[AC_COMPILE_IFELSE([
++			int some_function()
++			{
++				int a = 3;
++				return (int)__builtin_expect(a, 3);
++			}
++			],
++			[cc_cv_func_expect=yes],
++			[cc_cv_func_expect=no])
++		])
++	
++	if test "x$cc_cv_func_expect" = "xyes"; then
++		AC_DEFINE([SUPPORT__BUILTIN_EXPECT], 1, [Define this if the compiler supports __builtin_expect() function])
++		$1
++	else
++		true
++		$2
++	fi
++])
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/codebook/hcb.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/codebook/hcb.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/codebook/hcb.h
+@@ -28,6 +28,8 @@
+ #ifndef __HCB_H__
+ #define __HCB_H__
+ 
++#include "config.h"
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+@@ -112,15 +114,15 @@ typedef struct
+     int8_t data[2];
+ } hcb_bin_pair;
+ 
+-hcb *hcb_table[];
+-hcb_2_quad *hcb_2_quad_table[];
+-hcb_2_pair *hcb_2_pair_table[];
+-hcb_bin_pair *hcb_bin_table[];
+-uint8_t hcbN[];
+-uint8_t unsigned_cb[];
+-int hcb_2_quad_table_size[];
+-int hcb_2_pair_table_size[];
+-int hcb_bin_table_size[];
++hcb *hcb_table[] INTERNAL;
++hcb_2_quad *hcb_2_quad_table[] INTERNAL;
++hcb_2_pair *hcb_2_pair_table[] INTERNAL;
++hcb_bin_pair *hcb_bin_table[] INTERNAL;
++uint8_t hcbN[] INTERNAL;
++uint8_t unsigned_cb[] INTERNAL;
++int hcb_2_quad_table_size[] INTERNAL;
++int hcb_2_pair_table_size[] INTERNAL;
++int hcb_bin_table_size[] INTERNAL;
+ 
+ #include "codebook/hcb_1.h"
+ #include "codebook/hcb_2.h"
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/faad.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/faad.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/faad.h
+@@ -28,6 +28,8 @@
+ #ifndef __AACDEC_H__
+ #define __AACDEC_H__
+ 
++#include "config.h"
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif /* __cplusplus */
+@@ -166,45 +168,45 @@ typedef struct faacDecFrameInfo
+     unsigned char channel_position[64];
+ } faacDecFrameInfo;
+ 
+-char* FAADAPI faacDecGetErrorMessage(unsigned char errcode);
++char* FAADAPI faacDecGetErrorMessage(unsigned char errcode) INTERNAL;
+ 
+-unsigned long FAADAPI faacDecGetCapabilities(void);
++unsigned long FAADAPI faacDecGetCapabilities(void) INTERNAL;
+ 
+-faacDecHandle FAADAPI faacDecOpen(void);
++faacDecHandle FAADAPI faacDecOpen(void) INTERNAL;
+ 
+-faacDecConfigurationPtr FAADAPI faacDecGetCurrentConfiguration(faacDecHandle hDecoder);
++faacDecConfigurationPtr FAADAPI faacDecGetCurrentConfiguration(faacDecHandle hDecoder) INTERNAL;
+ 
+ unsigned char FAADAPI faacDecSetConfiguration(faacDecHandle hDecoder,
+-                                    faacDecConfigurationPtr config);
++                                    faacDecConfigurationPtr config) INTERNAL;
+ 
+ /* Init the library based on info from the AAC file (ADTS/ADIF) */
+ long FAADAPI faacDecInit(faacDecHandle hDecoder,
+                         unsigned char *buffer,
+                         unsigned long buffer_size,
+                         unsigned long *samplerate,
+-                        unsigned char *channels);
++                        unsigned char *channels) INTERNAL;
+ 
+ /* Init the library using a DecoderSpecificInfo */
+ char FAADAPI faacDecInit2(faacDecHandle hDecoder, unsigned char *pBuffer,
+                          unsigned long SizeOfDecoderSpecificInfo,
+-                         unsigned long *samplerate, unsigned char *channels);
++                         unsigned long *samplerate, unsigned char *channels) INTERNAL;
+ 
+ /* Init the library for DRM */
+ char FAADAPI faacDecInitDRM(faacDecHandle hDecoder, unsigned long samplerate,
+-                            unsigned char channels);
++                            unsigned char channels) INTERNAL;
+ 
+-void FAADAPI faacDecPostSeekReset(faacDecHandle hDecoder, long frame);
++void FAADAPI faacDecPostSeekReset(faacDecHandle hDecoder, long frame) INTERNAL;
+ 
+-void FAADAPI faacDecClose(faacDecHandle hDecoder);
++void FAADAPI faacDecClose(faacDecHandle hDecoder) INTERNAL;
+ 
+ void* FAADAPI faacDecDecode(faacDecHandle hDecoder,
+                             faacDecFrameInfo *hInfo,
+                             unsigned char *buffer,
+-                            unsigned long buffer_size);
++                            unsigned long buffer_size) INTERNAL;
+ 
+ char FAADAPI AudioSpecificConfig(unsigned char *pBuffer,
+                                  unsigned long buffer_size,
+-                                 mp4AudioSpecificConfig *mp4ASC);
++                                 mp4AudioSpecificConfig *mp4ASC) INTERNAL;
+ 
+ #ifdef _WIN32
+   #pragma pack(pop)
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/common.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/common.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/common.h
+@@ -374,27 +374,27 @@ typedef real_t complex_t[2];
+ 
+ 
+ /* common functions */
+-uint8_t cpu_has_sse(void);
+-uint32_t random_int(void);
+-uint32_t ones32(uint32_t x);
+-uint32_t floor_log2(uint32_t x);
+-uint32_t wl_min_lzc(uint32_t x);
++uint8_t cpu_has_sse(void) INTERNAL;
++uint32_t random_int(void) INTERNAL;
++uint32_t ones32(uint32_t x) INTERNAL;
++uint32_t floor_log2(uint32_t x) INTERNAL;
++uint32_t wl_min_lzc(uint32_t x) INTERNAL;
+ #ifdef FIXED_POINT
+ #define LOG2_MIN_INF REAL_CONST(-10000)
+-int32_t log2_int(uint32_t val);
+-int32_t log2_fix(uint32_t val);
+-int32_t pow2_int(real_t val);
+-real_t pow2_fix(real_t val);
++int32_t log2_int(uint32_t val) INTERNAL;
++int32_t log2_fix(uint32_t val) INTERNAL;
++int32_t pow2_int(real_t val) INTERNAL;
++real_t pow2_fix(real_t val) INTERNAL;
+ #endif
+-uint8_t get_sr_index(const uint32_t samplerate);
+-uint8_t max_pred_sfb(const uint8_t sr_index);
++uint8_t get_sr_index(const uint32_t samplerate) INTERNAL;
++uint8_t max_pred_sfb(const uint8_t sr_index) INTERNAL;
+ uint8_t max_tns_sfb(const uint8_t sr_index, const uint8_t object_type,
+-                    const uint8_t is_short);
+-uint32_t get_sample_rate(const uint8_t sr_index);
+-int8_t can_decode_ot(const uint8_t object_type);
++                    const uint8_t is_short) INTERNAL;
++uint32_t get_sample_rate(const uint8_t sr_index) INTERNAL;
++int8_t can_decode_ot(const uint8_t object_type) INTERNAL;
+ 
+-void *faad_malloc(size_t size);
+-void faad_free(void *b);
++void *faad_malloc(size_t size) INTERNAL;
++void faad_free(void *b) INTERNAL;
+ 
+ //#define PROFILE
+ #ifdef PROFILE
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/drc.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/drc.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/drc.h
+@@ -34,10 +34,11 @@ extern "C" {
+ 
+ #define DRC_REF_LEVEL 20*4 /* -20 dB */
+ 
++#include "config.h"
+ 
+-drc_info *drc_init(real_t cut, real_t boost);
+-void drc_end(drc_info *drc);
+-void drc_decode(drc_info *drc, real_t *spec);
++drc_info *drc_init(real_t cut, real_t boost) INTERNAL;
++void drc_end(drc_info *drc) INTERNAL;
++void drc_decode(drc_info *drc, real_t *spec) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/error.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/error.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/error.h
+@@ -33,7 +33,7 @@ extern "C" {
+ #endif
+ 
+ #define NUM_ERROR_MESSAGES 28
+-extern char *err_msg[];
++extern char *err_msg[] INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/filtbank.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/filtbank.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/filtbank.h
+@@ -32,9 +32,10 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
+ 
+-fb_info *filter_bank_init(uint16_t frame_len);
+-void filter_bank_end(fb_info *fb);
++fb_info *filter_bank_init(uint16_t frame_len) INTERNAL;
++void filter_bank_end(fb_info *fb) INTERNAL;
+ 
+ #ifdef LTP_DEC
+ void filter_bank_ltp(fb_info *fb,
+@@ -44,13 +45,13 @@ void filter_bank_ltp(fb_info *fb,
+                      real_t *in_data,
+                      real_t *out_mdct,
+                      uint8_t object_type,
+-                     uint16_t frame_len);
++                     uint16_t frame_len) INTERNAL;
+ #endif
+ 
+ void ifilter_bank(fb_info *fb, uint8_t window_sequence, uint8_t window_shape,
+                   uint8_t window_shape_prev, real_t *freq_in,
+                   real_t *time_out, real_t *overlap,
+-                  uint8_t object_type, uint16_t frame_len);
++                  uint8_t object_type, uint16_t frame_len) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/mp4.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/mp4.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/mp4.h
+@@ -34,14 +34,16 @@ extern "C" {
+ 
+ #include "decoder.h"
+ 
++#include "config.h"
++
+ int8_t NEAACDECAPI NeAACDecAudioSpecificConfig(uint8_t *pBuffer,
+                                                uint32_t buffer_size,
+-                                               mp4AudioSpecificConfig *mp4ASC);
++                                               mp4AudioSpecificConfig *mp4ASC) INTERNAL;
+ 
+ int8_t AudioSpecificConfig2(uint8_t *pBuffer,
+                             uint32_t buffer_size,
+                             mp4AudioSpecificConfig *mp4ASC,
+-                            program_config *pce);
++                            program_config *pce) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/decoder.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/decoder.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/decoder.h
+@@ -32,6 +32,8 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ #ifdef _WIN32
+   #pragma pack(push, 8)
+   #ifndef NEAACDECAPI
+@@ -70,46 +72,46 @@ extern "C" {
+ #define LFE_CHANNEL          (9)
+ #define UNKNOWN_CHANNEL      (0)
+ 
+-char* NEAACDECAPI NeAACDecGetErrorMessage(uint8_t errcode);
++char* NEAACDECAPI NeAACDecGetErrorMessage(uint8_t errcode) INTERNAL;
+ 
+-uint32_t NEAACDECAPI NeAACDecGetCapabilities(void);
++uint32_t NEAACDECAPI NeAACDecGetCapabilities(void) INTERNAL;
+ 
+-NeAACDecHandle NEAACDECAPI NeAACDecOpen(void);
++NeAACDecHandle NEAACDECAPI NeAACDecOpen(void) INTERNAL;
+ 
+-NeAACDecConfigurationPtr NEAACDECAPI NeAACDecGetCurrentConfiguration(NeAACDecHandle hDecoder);
++NeAACDecConfigurationPtr NEAACDECAPI NeAACDecGetCurrentConfiguration(NeAACDecHandle hDecoder) INTERNAL;
+ 
+ uint8_t NEAACDECAPI NeAACDecSetConfiguration(NeAACDecHandle hDecoder,
+-                                             NeAACDecConfigurationPtr config);
++                                             NeAACDecConfigurationPtr config) INTERNAL;
+ 
+ /* Init the library based on info from the AAC file (ADTS/ADIF) */
+ int32_t NEAACDECAPI NeAACDecInit(NeAACDecHandle hDecoder,
+                                  uint8_t *buffer,
+                                  uint32_t buffer_size,
+                                  uint32_t *samplerate,
+-                                 uint8_t *channels);
++                                 uint8_t *channels) INTERNAL;
+ 
+ /* Init the library using a DecoderSpecificInfo */
+ int8_t NEAACDECAPI NeAACDecInit2(NeAACDecHandle hDecoder, uint8_t *pBuffer,
+                                  uint32_t SizeOfDecoderSpecificInfo,
+-                                 uint32_t *samplerate, uint8_t *channels);
++                                 uint32_t *samplerate, uint8_t *channels) INTERNAL;
+ 
+ /* Init the library for DRM */
+ int8_t NEAACDECAPI NeAACDecInitDRM(NeAACDecHandle *hDecoder, uint32_t samplerate,
+-                                   uint8_t channels);
++                                   uint8_t channels) INTERNAL;
+ 
+-void NEAACDECAPI NeAACDecClose(NeAACDecHandle hDecoder);
++void NEAACDECAPI NeAACDecClose(NeAACDecHandle hDecoder) INTERNAL;
+ 
+-void NEAACDECAPI NeAACDecPostSeekReset(NeAACDecHandle hDecoder, int32_t frame);
++void NEAACDECAPI NeAACDecPostSeekReset(NeAACDecHandle hDecoder, int32_t frame) INTERNAL;
+ 
+ void* NEAACDECAPI NeAACDecDecode(NeAACDecHandle hDecoder,
+                                  NeAACDecFrameInfo *hInfo,
+                                  uint8_t *buffer,
+-                                 uint32_t buffer_size);
++                                 uint32_t buffer_size) INTERNAL;
+ 
+ void* NEAACDECAPI NeAACDecDecode2(NeAACDecHandle hDecoder,
+                                   NeAACDecFrameInfo *hInfo,
+                                   uint8_t *buffer, uint32_t buffer_size,
+-                                  void **sample_buffer, uint32_t sample_buffer_size);
++                                  void **sample_buffer, uint32_t sample_buffer_size) INTERNAL;
+ 
+ #ifdef _WIN32
+   #pragma pack(pop)
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/analysis.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/analysis.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/analysis.h
+@@ -32,11 +32,12 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
+ 
+ #ifdef ANALYSIS
+ #define DEBUGDEC        ,uint8_t print,uint16_t var,uint8_t *dbg
+ #define DEBUGVAR(A,B,C) ,A,B,C
+-extern uint16_t dbg_count;
++extern uint16_t dbg_count INTERNAL;
+ #else
+ #define DEBUGDEC
+ #define DEBUGVAR(A,B,C)
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/bits.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/bits.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/bits.h
+@@ -32,6 +32,8 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ #include "analysis.h"
+ #ifdef ANALYSIS
+ #include <stdio.h>
+@@ -75,19 +77,19 @@ static uint32_t bitmask[] = {
+     , 0xFFFFFFFF
+ };
+ 
+-void faad_initbits(bitfile *ld, const void *buffer, const uint32_t buffer_size);
+-void faad_endbits(bitfile *ld);
++void faad_initbits(bitfile *ld, const void *buffer, const uint32_t buffer_size) INTERNAL;
++void faad_endbits(bitfile *ld) INTERNAL;
+ void faad_initbits_rev(bitfile *ld, void *buffer,
+-                       uint32_t bits_in_buffer);
+-uint8_t faad_byte_align(bitfile *ld);
+-uint32_t faad_get_processed_bits(bitfile *ld);
+-void faad_flushbits_ex(bitfile *ld, uint32_t bits);
+-void faad_rewindbits(bitfile *ld);
++                       uint32_t bits_in_buffer) INTERNAL;
++uint8_t faad_byte_align(bitfile *ld) INTERNAL;
++uint32_t faad_get_processed_bits(bitfile *ld) INTERNAL;
++void faad_flushbits_ex(bitfile *ld, uint32_t bits) INTERNAL;
++void faad_rewindbits(bitfile *ld) INTERNAL;
+ uint8_t *faad_getbitbuffer(bitfile *ld, uint32_t bits
+-                       DEBUGDEC);
++                       DEBUGDEC) INTERNAL;
+ #ifdef DRM
+-void *faad_origbitbuffer(bitfile *ld);
+-uint32_t faad_origbitbuffer_size(bitfile *ld);
++void *faad_origbitbuffer(bitfile *ld) INTERNAL;
++uint32_t faad_origbitbuffer_size(bitfile *ld) INTERNAL;
+ #endif
+ 
+ /* circumvent memory alignment errors on ARM */
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/cfft.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/cfft.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/cfft.h
+@@ -32,6 +32,8 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ typedef struct
+ {
+     uint16_t n;
+@@ -41,10 +43,10 @@ typedef struct
+ } cfft_info;
+ 
+ 
+-void cfftf(cfft_info *cfft, complex_t *c);
+-void cfftb(cfft_info *cfft, complex_t *c);
+-cfft_info *cffti(uint16_t n);
+-void cfftu(cfft_info *cfft);
++void cfftf(cfft_info *cfft, complex_t *c) INTERNAL;
++void cfftb(cfft_info *cfft, complex_t *c) INTERNAL;
++cfft_info *cffti(uint16_t n) INTERNAL;
++void cfftu(cfft_info *cfft) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/drm_dec.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/drm_dec.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/drm_dec.h
+@@ -32,6 +32,8 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ #include "bits.h"
+ 
+ #define DRM_PARAMETRIC_STEREO    0
+@@ -83,12 +85,12 @@ typedef struct
+ } drm_ps_info;
+ 
+ 
+-uint16_t drm_ps_data(drm_ps_info *ps, bitfile *ld);
++uint16_t drm_ps_data(drm_ps_info *ps, bitfile *ld) INTERNAL;
+ 
+-drm_ps_info *drm_ps_init(void);
+-void drm_ps_free(drm_ps_info *ps);
++drm_ps_info *drm_ps_init(void) INTERNAL;
++void drm_ps_free(drm_ps_info *ps) INTERNAL;
+ 
+-uint8_t drm_ps_decode(drm_ps_info *ps, uint8_t guess, uint32_t samplerate, qmf_t X_left[38][64], qmf_t X_right[38][64]);
++uint8_t drm_ps_decode(drm_ps_info *ps, uint8_t guess, uint32_t samplerate, qmf_t X_left[38][64], qmf_t X_right[38][64]) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/huffman.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/huffman.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/huffman.h
+@@ -32,10 +32,12 @@
+ extern "C" {
+ #endif
+ 
+-int8_t huffman_scale_factor(bitfile *ld);
+-uint8_t huffman_spectral_data(uint8_t cb, bitfile *ld, int16_t *sp);
++#include "config.h"
++
++int8_t huffman_scale_factor(bitfile *ld) INTERNAL;
++uint8_t huffman_spectral_data(uint8_t cb, bitfile *ld, int16_t *sp) INTERNAL;
+ #ifdef ERROR_RESILIENCE
+-int8_t huffman_spectral_data_2(uint8_t cb, bits_t *ld, int16_t *sp);
++int8_t huffman_spectral_data_2(uint8_t cb, bits_t *ld, int16_t *sp) INTERNAL;
+ #endif
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/ic_predict.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/ic_predict.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/ic_predict.h
+@@ -37,11 +37,12 @@ extern "C" {
+ #define ALPHA      REAL_CONST(0.90625)
+ #define A          REAL_CONST(0.953125)
+ 
++#include "config.h"
+ 
+-void pns_reset_pred_state(ic_stream *ics, pred_state *state);
+-void reset_all_predictors(pred_state *state, uint16_t frame_len);
++void pns_reset_pred_state(ic_stream *ics, pred_state *state) INTERNAL;
++void reset_all_predictors(pred_state *state, uint16_t frame_len) INTERNAL;
+ void ic_prediction(ic_stream *ics, real_t *spec, pred_state *state,
+-                   uint16_t frame_len, uint8_t sf_index);
++                   uint16_t frame_len, uint8_t sf_index) INTERNAL;
+ 
+ ALIGN static const real_t mnt_table[128] = {
+     COEF_CONST(0.9531250000), COEF_CONST(0.9453125000),
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/is.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/is.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/is.h
+@@ -32,10 +32,12 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ #include "syntax.h"
+ 
+ void is_decode(ic_stream *ics, ic_stream *icsr, real_t *l_spec, real_t *r_spec,
+-               uint16_t frame_len);
++               uint16_t frame_len) INTERNAL;
+ 
+ static INLINE int8_t is_intensity(ic_stream *ics, uint8_t group, uint8_t sfb)
+ {
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/lt_predict.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/lt_predict.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/lt_predict.h
+@@ -36,7 +36,7 @@ extern "C" {
+ 
+ #include "filtbank.h"
+ 
+-uint8_t is_ltp_ot(uint8_t object_type);
++uint8_t is_ltp_ot(uint8_t object_type) INTERNAL;
+ 
+ void lt_prediction(ic_stream *ics,
+                    ltp_info *ltp,
+@@ -47,13 +47,13 @@ void lt_prediction(ic_stream *ics,
+                    uint8_t win_shape_prev,
+                    uint8_t sr_index,
+                    uint8_t object_type,
+-                   uint16_t frame_len);
++                   uint16_t frame_len) INTERNAL;
+ 
+ void lt_update_state(int16_t *lt_pred_stat,
+                      real_t *time,
+                      real_t *overlap,
+                      uint16_t frame_len,
+-                     uint8_t object_type);
++                     uint8_t object_type) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/mdct.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/mdct.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/mdct.h
+@@ -32,11 +32,12 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
+ 
+-mdct_info *faad_mdct_init(uint16_t N);
+-void faad_mdct_end(mdct_info *mdct);
+-void faad_imdct(mdct_info *mdct, real_t *X_in, real_t *X_out);
+-void faad_mdct(mdct_info *mdct, real_t *X_in, real_t *X_out);
++mdct_info *faad_mdct_init(uint16_t N) INTERNAL;
++void faad_mdct_end(mdct_info *mdct) INTERNAL;
++void faad_imdct(mdct_info *mdct, real_t *X_in, real_t *X_out) INTERNAL;
++void faad_mdct(mdct_info *mdct, real_t *X_in, real_t *X_out) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/ms.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/ms.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/ms.h
+@@ -32,8 +32,10 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ void ms_decode(ic_stream *ics, ic_stream *icsr, real_t *l_spec, real_t *r_spec,
+-               uint16_t frame_len);
++               uint16_t frame_len) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/output.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/output.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/output.h
+@@ -32,12 +32,14 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ void* output_to_PCM(NeAACDecHandle hDecoder,
+                     real_t **input,
+                     void *samplebuffer,
+                     uint8_t channels,
+                     uint16_t frame_len,
+-                    uint8_t format);
++                    uint8_t format) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/pns.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/pns.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/pns.h
+@@ -33,12 +33,13 @@ extern "C" {
+ #endif
+ 
+ #include "syntax.h"
++#include "config.h"
+ 
+ #define NOISE_OFFSET 90
+ 
+ void pns_decode(ic_stream *ics_left, ic_stream *ics_right,
+                 real_t *spec_left, real_t *spec_right, uint16_t frame_len,
+-                uint8_t channel_pair, uint8_t object_type);
++                uint8_t channel_pair, uint8_t object_type) INTERNAL;
+ 
+ static INLINE uint8_t is_noise(ic_stream *ics, uint8_t group, uint8_t sfb)
+ {
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/ps_dec.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/ps_dec.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/ps_dec.h
+@@ -33,6 +33,7 @@ extern "C" {
+ #endif
+ 
+ #include "bits.h"
++#include "config.h"
+ 
+ #define EXTENSION_ID_PS 2
+ 
+@@ -132,13 +133,13 @@ typedef struct
+ } ps_info;
+ 
+ /* ps_syntax.c */
+-uint16_t ps_data(ps_info *ps, bitfile *ld, uint8_t *header);
++uint16_t ps_data(ps_info *ps, bitfile *ld, uint8_t *header) INTERNAL;
+ 
+ /* ps_dec.c */
+-ps_info *ps_init(uint8_t sr_index);
+-void ps_free(ps_info *ps);
++ps_info *ps_init(uint8_t sr_index) INTERNAL;
++void ps_free(ps_info *ps) INTERNAL;
+ 
+-uint8_t ps_decode(ps_info *ps, qmf_t X_left[38][64], qmf_t X_right[38][64]);
++uint8_t ps_decode(ps_info *ps, qmf_t X_left[38][64], qmf_t X_right[38][64]) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/pulse.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/pulse.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/pulse.h
+@@ -32,7 +32,9 @@
+ extern "C" {
+ #endif
+ 
+-uint8_t pulse_decode(ic_stream *ics, int16_t *spec_coef, uint16_t framelen);
++#include "config.h"
++
++uint8_t pulse_decode(ic_stream *ics, int16_t *spec_coef, uint16_t framelen) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/rvlc.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/rvlc.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/rvlc.h
+@@ -32,6 +32,8 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ typedef struct
+ {
+     int8_t index;
+@@ -43,8 +45,8 @@ typedef struct
+ #define ESC_VAL 7
+ 
+ 
+-uint8_t rvlc_scale_factor_data(ic_stream *ics, bitfile *ld);
+-uint8_t rvlc_decode_scale_factors(ic_stream *ics, bitfile *ld);
++uint8_t rvlc_scale_factor_data(ic_stream *ics, bitfile *ld) INTERNAL;
++uint8_t rvlc_decode_scale_factors(ic_stream *ics, bitfile *ld) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_dct.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_dct.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_dct.h
+@@ -32,14 +32,16 @@
+ extern "C" {
+ #endif
+ 
+-void dct4_kernel(real_t * in_real, real_t * in_imag, real_t * out_real, real_t * out_imag);
++#include "config.h"
+ 
+-void DCT3_32_unscaled(real_t *y, real_t *x);
+-void DCT4_32(real_t *y, real_t *x);
+-void DST4_32(real_t *y, real_t *x);
+-void DCT2_32_unscaled(real_t *y, real_t *x);
+-void DCT4_16(real_t *y, real_t *x);
+-void DCT2_16_unscaled(real_t *y, real_t *x);
++void dct4_kernel(real_t * in_real, real_t * in_imag, real_t * out_real, real_t * out_imag) INTERNAL;
++
++void DCT3_32_unscaled(real_t *y, real_t *x) INTERNAL;
++void DCT4_32(real_t *y, real_t *x) INTERNAL;
++void DST4_32(real_t *y, real_t *x) INTERNAL;
++void DCT2_32_unscaled(real_t *y, real_t *x) INTERNAL;
++void DCT4_16(real_t *y, real_t *x) INTERNAL;
++void DCT2_16_unscaled(real_t *y, real_t *x) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_dec.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_dec.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_dec.h
+@@ -32,6 +32,8 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ #ifdef PS_DEC
+ #include "ps_dec.h"
+ #endif
+@@ -229,16 +231,16 @@ sbr_info *sbrDecodeInit(uint16_t framele
+ #ifdef DRM
+                         , uint8_t IsDRM
+ #endif
+-                        );
+-void sbrDecodeEnd(sbr_info *sbr);
++                        ) INTERNAL;
++void sbrDecodeEnd(sbr_info *sbr) INTERNAL;
+ 
+ uint8_t sbrDecodeCoupleFrame(sbr_info *sbr, real_t *left_chan, real_t *right_chan,
+-                             const uint8_t just_seeked, const uint8_t downSampledSBR);
++                             const uint8_t just_seeked, const uint8_t downSampledSBR) INTERNAL;
+ uint8_t sbrDecodeSingleFrame(sbr_info *sbr, real_t *channel,
+-                             const uint8_t just_seeked, const uint8_t downSampledSBR);
++                             const uint8_t just_seeked, const uint8_t downSampledSBR) INTERNAL;
+ #if (defined(PS_DEC) || defined(DRM_PS))
+ uint8_t sbrDecodeSingleFramePS(sbr_info *sbr, real_t *left_channel, real_t *right_channel,
+-                               const uint8_t just_seeked, const uint8_t downSampledSBR);
++                               const uint8_t just_seeked, const uint8_t downSampledSBR) INTERNAL;
+ #endif
+ 
+ 
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_e_nf.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_e_nf.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_e_nf.h
+@@ -32,12 +32,14 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
+ 
+-void extract_envelope_data(sbr_info *sbr, uint8_t ch);
+-void extract_noise_floor_data(sbr_info *sbr, uint8_t ch);
++
++void extract_envelope_data(sbr_info *sbr, uint8_t ch) INTERNAL;
++void extract_noise_floor_data(sbr_info *sbr, uint8_t ch) INTERNAL;
+ #ifndef FIXED_POINT
+-void envelope_noise_dequantisation(sbr_info *sbr, uint8_t ch);
+-void unmap_envelope_noise(sbr_info *sbr);
++void envelope_noise_dequantisation(sbr_info *sbr, uint8_t ch) INTERNAL;
++void unmap_envelope_noise(sbr_info *sbr) INTERNAL;
+ #endif
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_fbt.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_fbt.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_fbt.h
+@@ -32,17 +32,19 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ uint8_t qmf_start_channel(uint8_t bs_start_freq, uint8_t bs_samplerate_mode,
+-                           uint32_t sample_rate);
++                           uint32_t sample_rate) INTERNAL;
+ uint8_t qmf_stop_channel(uint8_t bs_stop_freq, uint32_t sample_rate,
+-                          uint8_t k0);
++                          uint8_t k0) INTERNAL;
+ uint8_t master_frequency_table_fs0(sbr_info *sbr, uint8_t k0, uint8_t k2,
+-                                   uint8_t bs_alter_scale);
++                                   uint8_t bs_alter_scale) INTERNAL;
+ uint8_t master_frequency_table(sbr_info *sbr, uint8_t k0, uint8_t k2,
+-                               uint8_t bs_freq_scale, uint8_t bs_alter_scale);
++                               uint8_t bs_freq_scale, uint8_t bs_alter_scale) INTERNAL;
+ uint8_t derived_frequency_table(sbr_info *sbr, uint8_t bs_xover_band,
+-                                uint8_t k2);
+-void limiter_frequency_table(sbr_info *sbr);
++                                uint8_t k2) INTERNAL;
++void limiter_frequency_table(sbr_info *sbr) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_hfadj.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_hfadj.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_hfadj.h
+@@ -32,6 +32,8 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ typedef struct
+ {
+     real_t G_lim_boost[MAX_L_E][MAX_M];
+@@ -44,7 +46,7 @@ void hf_adjustment(sbr_info *sbr, qmf_t 
+ #ifdef SBR_LOW_POWER
+                    ,real_t *deg
+ #endif
+-                   ,uint8_t ch);
++                   ,uint8_t ch) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_hfgen.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_hfgen.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_hfgen.h
+@@ -32,12 +32,14 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ void hf_generation(sbr_info *sbr, qmf_t Xlow[MAX_NTSRHFG][64],
+                    qmf_t Xhigh[MAX_NTSRHFG][64]
+ #ifdef SBR_LOW_POWER
+                    ,real_t *deg
+ #endif
+-                   ,uint8_t ch);
++                   ,uint8_t ch) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_huff.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_huff.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_huff.h
+@@ -32,9 +32,10 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
+ 
+-void sbr_envelope(bitfile *ld, sbr_info *sbr, uint8_t ch);
+-void sbr_noise(bitfile *ld, sbr_info *sbr, uint8_t ch);
++void sbr_envelope(bitfile *ld, sbr_info *sbr, uint8_t ch) INTERNAL;
++void sbr_noise(bitfile *ld, sbr_info *sbr, uint8_t ch) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_qmf.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_qmf.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_qmf.h
+@@ -32,17 +32,19 @@
+ extern "C" {
+ #endif
+ 
+-qmfa_info *qmfa_init(uint8_t channels);
+-void qmfa_end(qmfa_info *qmfa);
+-qmfs_info *qmfs_init(uint8_t channels);
+-void qmfs_end(qmfs_info *qmfs);
++#include "config.h"
++
++qmfa_info *qmfa_init(uint8_t channels) INTERNAL;
++void qmfa_end(qmfa_info *qmfa) INTERNAL;
++qmfs_info *qmfs_init(uint8_t channels) INTERNAL;
++void qmfs_end(qmfs_info *qmfs) INTERNAL;
+ 
+ void sbr_qmf_analysis_32(sbr_info *sbr, qmfa_info *qmfa, const real_t *input,
+-                         qmf_t X[MAX_NTSRHFG][64], uint8_t offset, uint8_t kx);
++                         qmf_t X[MAX_NTSRHFG][64], uint8_t offset, uint8_t kx) INTERNAL;
+ void sbr_qmf_synthesis_32(sbr_info *sbr, qmfs_info *qmfs, qmf_t X[MAX_NTSRHFG][64],
+-                          real_t *output);
++                          real_t *output) INTERNAL;
+ void sbr_qmf_synthesis_64(sbr_info *sbr, qmfs_info *qmfs, qmf_t X[MAX_NTSRHFG][64],
+-                          real_t *output);
++                          real_t *output) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_syntax.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_syntax.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_syntax.h
+@@ -33,6 +33,7 @@ extern "C" {
+ #endif
+ 
+ #include "bits.h"
++#include "config.h"
+ 
+ #define T_HFGEN 8
+ #define T_HFADJ 2
+@@ -55,7 +56,7 @@ extern "C" {
+ #define NOISE_FLOOR_OFFSET 6
+ 
+ 
+-uint8_t sbr_extension_data(bitfile *ld, sbr_info *sbr, uint16_t cnt);
++uint8_t sbr_extension_data(bitfile *ld, sbr_info *sbr, uint16_t cnt) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_tf_grid.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_tf_grid.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_tf_grid.h
+@@ -32,9 +32,10 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
+ 
+-uint8_t envelope_time_border_vector(sbr_info *sbr, uint8_t ch);
+-void noise_floor_time_border_vector(sbr_info *sbr, uint8_t ch);
++uint8_t envelope_time_border_vector(sbr_info *sbr, uint8_t ch) INTERNAL;
++void noise_floor_time_border_vector(sbr_info *sbr, uint8_t ch) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/specrec.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/specrec.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/specrec.h
+@@ -32,13 +32,14 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
+ #include "syntax.h"
+ 
+-uint8_t window_grouping_info(NeAACDecHandle hDecoder, ic_stream *ics);
++uint8_t window_grouping_info(NeAACDecHandle hDecoder, ic_stream *ics) INTERNAL;
+ uint8_t reconstruct_channel_pair(NeAACDecHandle hDecoder, ic_stream *ics1, ic_stream *ics2,
+-                                 element *cpe, int16_t *spec_data1, int16_t *spec_data2);
++                                 element *cpe, int16_t *spec_data1, int16_t *spec_data2) INTERNAL;
+ uint8_t reconstruct_single_channel(NeAACDecHandle hDecoder, ic_stream *ics, element *sce,
+-                                int16_t *spec_data);
++                                int16_t *spec_data) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/ssr_fb.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/ssr_fb.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/ssr_fb.h
+@@ -26,8 +26,10 @@
+ extern "C" {
+ #endif
+ 
+-fb_info *ssr_filter_bank_init(uint16_t frame_len);
+-void ssr_filter_bank_end(fb_info *fb);
++#include "config.h"
++
++fb_info *ssr_filter_bank_init(uint16_t frame_len) INTERNAL;
++void ssr_filter_bank_end(fb_info *fb) INTERNAL;
+ 
+ /*non overlapping inverse filterbank */
+ void ssr_ifilter_bank(fb_info *fb,
+@@ -36,7 +38,7 @@ void ssr_ifilter_bank(fb_info *fb,
+                       uint8_t window_shape_prev,
+                       real_t *freq_in,
+                       real_t *time_out,
+-                      uint16_t frame_len);
++                      uint16_t frame_len) INTERNAL;
+ 
+ #ifdef __cplusplus
+ }
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/ssr.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/ssr.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/ssr.h
+@@ -32,6 +32,8 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ #define SSR_BANDS 4
+ #define PQFTAPS 96
+ 
+@@ -39,15 +41,15 @@ void ssr_decode(ssr_info *ssr, fb_info *
+                 uint8_t window_shape, uint8_t window_shape_prev,
+                 real_t *freq_in, real_t *time_out, real_t *overlap,
+                 real_t ipqf_buffer[SSR_BANDS][96/4],
+-                real_t *prev_fmd, uint16_t frame_len);
++                real_t *prev_fmd, uint16_t frame_len) INTERNAL;
+ 
+ 
+ static void ssr_gain_control(ssr_info *ssr, real_t *data, real_t *output,
+                              real_t *overlap, real_t *prev_fmd, uint8_t band,
+-                             uint8_t window_sequence, uint16_t frame_len);
++                             uint8_t window_sequence, uint16_t frame_len) INTERNAL;
+ static void ssr_gc_function(ssr_info *ssr, real_t *prev_fmd,
+                             real_t *gc_function, uint8_t window_sequence,
+-                            uint16_t frame_len);
++                            uint16_t frame_len) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/tns.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/tns.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/tns.h
+@@ -32,14 +32,15 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
+ 
+ #define TNS_MAX_ORDER 20
+ 
+     
+ void tns_decode_frame(ic_stream *ics, tns_info *tns, uint8_t sr_index,
+-                      uint8_t object_type, real_t *spec, uint16_t frame_len);
++                      uint8_t object_type, real_t *spec, uint16_t frame_len) INTERNAL;
+ void tns_encode_frame(ic_stream *ics, tns_info *tns, uint8_t sr_index,
+-                      uint8_t object_type, real_t *spec, uint16_t frame_len);
++                      uint8_t object_type, real_t *spec, uint16_t frame_len) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/hcr.c
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/hcr.c
++++ xine-lib-1.1.2cvs20060328/src/libfaad/hcr.c
+@@ -170,7 +170,7 @@ static void concat_bits(bits_t *b, bits_
+     b->len += a->len;
+ }
+      
+-uint8_t is_good_cb(uint8_t this_CB, uint8_t this_sec_CB)
++static uint8_t is_good_cb(uint8_t this_CB, uint8_t this_sec_CB)
+ {
+     /* only want spectral data CB's */
+     if ((this_sec_CB > ZERO_HCB && this_sec_CB <= ESC_HCB) || (this_sec_CB >= VCB11_FIRST && this_sec_CB <= VCB11_LAST))
+@@ -188,7 +188,7 @@ uint8_t is_good_cb(uint8_t this_CB, uint
+     return 0;
+ }
+                     
+-void read_segment(bits_t *segment, uint8_t segwidth, bitfile *ld)
++static void read_segment(bits_t *segment, uint8_t segwidth, bitfile *ld)
+ {
+     segment->len = segwidth;
+ 
+@@ -203,7 +203,7 @@ void read_segment(bits_t *segment, uint8
+     }    
+ }
+ 
+-void fill_in_codeword(codeword_t *codeword, uint16_t index, uint16_t sp, uint8_t cb)
++static void fill_in_codeword(codeword_t *codeword, uint16_t index, uint16_t sp, uint8_t cb)
+ {
+     codeword[index].sp_offset = sp;
+     codeword[index].cb = cb;
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/sbr_e_nf.c
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/sbr_e_nf.c
++++ xine-lib-1.1.2cvs20060328/src/libfaad/sbr_e_nf.c
+@@ -231,7 +231,7 @@ static const real_t Q_div_tab_right[31][
+ 
+ /* calculates 1/(1+Q) */
+ /* [0..1] */
+-real_t calc_Q_div(sbr_info *sbr, uint8_t ch, uint8_t m, uint8_t l)
++static real_t calc_Q_div(sbr_info *sbr, uint8_t ch, uint8_t m, uint8_t l)
+ {
+     if (sbr->bs_coupling)
+     {
+@@ -350,7 +350,7 @@ static const real_t Q_div2_tab_right[31]
+ 
+ /* calculates Q/(1+Q) */
+ /* [0..1] */
+-real_t calc_Q_div2(sbr_info *sbr, uint8_t ch, uint8_t m, uint8_t l)
++static real_t calc_Q_div2(sbr_info *sbr, uint8_t ch, uint8_t m, uint8_t l)
+ {
+     if (sbr->bs_coupling)
+     {
+Index: xine-lib-1.1.2cvs20060328/src/libfaad/syntax.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libfaad/syntax.h
++++ xine-lib-1.1.2cvs20060328/src/libfaad/syntax.h
+@@ -32,6 +32,8 @@
+ extern "C" {
+ #endif
+ 
++#include "config.h"
++
+ #include "decoder.h"
+ #include "bits.h"
+ 
+@@ -106,16 +108,16 @@ extern "C" {
+ #define INVALID_SBR_ELEMENT 255
+ 
+ int8_t GASpecificConfig(bitfile *ld, mp4AudioSpecificConfig *mp4ASC,
+-                        program_config *pce);
++                        program_config *pce) INTERNAL;
+ 
+-uint8_t adts_frame(adts_header *adts, bitfile *ld);
+-void get_adif_header(adif_header *adif, bitfile *ld);
++uint8_t adts_frame(adts_header *adts, bitfile *ld) INTERNAL;
++void get_adif_header(adif_header *adif, bitfile *ld) INTERNAL;
+ void raw_data_block(NeAACDecHandle hDecoder, NeAACDecFrameInfo *hInfo,
+-                    bitfile *ld, program_config *pce, drc_info *drc);
++                    bitfile *ld, program_config *pce, drc_info *drc) INTERNAL;
+ uint8_t reordered_spectral_data(NeAACDecHandle hDecoder, ic_stream *ics, bitfile *ld,
+-                                int16_t *spectral_data);
++                                int16_t *spectral_data) INTERNAL;
+ void aac_scalable_main_element(NeAACDecHandle hDecoder, NeAACDecFrameInfo *hInfo,
+-                               bitfile *ld, program_config *pce, drc_info *drc);
++                               bitfile *ld, program_config *pce, drc_info *drc) INTERNAL;
+ 
+ 
+ #ifdef __cplusplus
