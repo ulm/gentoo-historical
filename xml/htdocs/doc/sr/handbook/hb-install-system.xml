@@ -1,0 +1,391 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- Sadržaj ovog dokumenta je licenciran pod CC-BY-SA licencom -->
+<!-- Pogledajte http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/sr/handbook/hb-install-system.xml,v 1.1 2006/04/25 09:35:02 neysx Exp $ -->
+
+<sections>
+
+<version>2.19</version>
+<date>2006-03-06</date>
+
+<section>
+<title>Korišćenje sredine Chroot</title>
+<subsection>
+<title>Opciono: Izbor mirror-a</title>
+<body>
+
+<p>
+Da bi download izvornog koda bio što brži, preporučuje se izbor brzog mirror-a.
+Portage će pogledati u vaš <path>make.conf</path> fajl i potražiti
+GENTOO_MIRRORS promenljivu, a zatim iskoristiti nabrojane mirror-e. Možete
+pogledati našu <uri link="/main/en/mirrors.xml">mirror listu</uri> i potražiti
+mirror (ili mirror-e) najbliže vama (jer su ti najčešće i najbrži), ali
+obezbeđujemo interesantan alat zvan <c>mirrorselect</c> koji vam omogućuje,
+kroz lep interfejs, da izaberete mirror-e koje želite.
+</p>
+  
+<pre caption="Upotreba mirrorselect-a za definisanje GENTOO_MIRRORS promenljive">
+# <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+</pre>
+
+<warn>
+Nemojte koristiti IPv6 mirror-e. Naši stage-vi trenutno ne podržavaju IPv6.
+</warn>
+
+<p>
+Druga važna stavka je SYNC podešavanje u<path>make.conf</path>-u. Ova
+promenljiva sadrži rsync server koji želite da koristite kada ažurirate vaše
+Portage stablo (kolekcija ebuild-ova, skripti koje sadrže sve informacije koje
+su Portage-u potrebne kada downloaduje i instalira softver). Iako možete ručno
+da unesete SYNC server, <c>mirrorselect</c> vam može olakšati taj postupak:
+</p>
+
+<pre caption="Odabir rsync mirror-a koristeći mirrorselect">
+# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+</pre>
+
+<p>
+Nakon korišćenja <c>mirrorselect</c> preporučljivo je da još jednom proverite
+podešavanja u <path>/mnt/gentoo/etc/make.conf</path> !
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Kopiranje DNS informacija</title>
+<body>
+
+<p>
+Još jedna stvar preostaje da se uradi pre nego što uđemo u novo okruženje, a to
+je kopiranje DNS informacija u <path>/etc/resolv.conf</path>. Morate uraditi
+ovo da biste bili sigurni da će vam mreža raditi i posle prelaska u novo
+okruženje. <path>/etc/resolv.conf</path> sadrži imena DNS servera za vašu
+mrežu.
+</p>
+
+<pre caption="Kopiranje DNS informacija">
+<comment>(Opcija "-L" je neophodna da bismo bili sigurni da ne prekopiramo simbolički link)</comment>
+# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Montiranje (mount) /proc i /dev fajl sistema</title>
+<body>
+
+<p>
+Montirajte <path>/proc</path> fajl sistem na <path>/mnt/gentoo/proc</path> da
+dozvolite instalaciji da u chroot-ovanom okruženju koristi informacije
+obezbeđene od strane kernela, a potom montirajte vezom fajl sistem
+<path>/dev</path>.
+</p>
+
+<pre caption="Montiranje /proc and /dev">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Ulazak u novo okruženje</title>
+<body>
+
+<p>
+Sada, kada su sve particije inicijalizovane i kada je instalirano osnovno
+okruženje, je vreme da pređemo u novo instalaciono okruženje tako što ćemo se
+<e>chroot</e>-ovati u njega. Ovo znači da prelazimo iz trenutnog instalacionog
+okruženja (Instalacioni CD ili neki drugi medijum) u vaš instalacioni sistem
+(zapravo u inicijalizovane particije).
+</p>
+
+<p>
+Chroot-ovanje se sastoji od tri koraka. Prvo ćemo promeniti root putanju iz
+<path>/</path> (na instalacionom medijumu) u <path>/mnt/gentoo</path> (na vašim
+particijiama) upotrebom <c>chroot</c>. Zatim ćemo napraviti novo okruženje
+korišćenjem <c>env-update</c> koji kreira i neophodne promenljive okruženja.
+Konačno, učitavamo ove promenljive u memoriju upotrebom <c>source</c>.
+</p>
+
+<pre caption = "Chroot-ovanje u novo okruženje">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+>> Regenerating /etc/ld.so.cache...
+# <i>source /etc/profile</i>
+# <i>export PS1="(chroot) $PS1"</i>
+</pre>
+
+<p>
+Čestitamo! Sada se nalazite u vašem ličnom Gentoo Linux okruženju. Naravno ovo
+je daleko od kraja, što i jeste razlog zašto instalacija ima još nekoliko
+preostalih odeljaka :-)
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Configurisanje Portage-a</title>
+<subsection>
+<title>Ažuriranje Portage stabla</title>
+<body>
+
+<p>
+Sada bi trebao da ažurirate Portage stablo na poslednju verziju. <c>emerge
+--sync</c> će uradi to za vas.
+</p>
+
+<pre caption="Ažuriranje Portage stabla">
+# <i>emerge --sync</i>
+<comment>(Ako koristite neki spor terminal kao što je na primer framebuffer-ov ili
+serisku konzolu, možete dodati --quiet opciju da biste ubrzali ovaj proces:)</comment>
+# <i>emerge --sync --quiet</i>
+</pre>
+
+<p>
+Ako se nalazite iza firewall-a koji blokira rsync saobraćaj, možete da
+koristite <c>emerge-webrsync</c> koji će dovući i instalirati portage snapshot
+za vas.
+</p>
+
+<p>
+Ako dobijete upozorenje da je nova verzija Portage-a dostupna i da bi trebalo
+da ažurirate Portage, ignorišite ga. Portage će se ažurirati kasnije u toku
+instalacije.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Izbor ispravnog profila</title>
+<body>
+
+<p>
+Prvo da damo definiciju profila.
+</p>
+
+<p>
+Profil je kamen temeljac za svaki Gentoo sistem. Ne samo da određuje
+podrazumevane vrednosti za CHOST, CFLAGS i druge važne promenljive, već takođe
+zaključava sistem za određene verzije paketa. Sve se održava od strane Gentoo
+programera.
+</p>
+
+<p>
+Prethodno, ovakav profil korisnik jedva da je i mogao da pogleda. Međutim, x86,
+hppa i alpha korisnici mogu da biraju između dva profila, jedan za 2.4 kernel i
+jedan za 2.6 kernel. Ovaj zahtev je nametnut da bi se poboljšala integracija
+2.6 kernela. ppc i ppc64 arhitekture takođe imaju nekoliko dostupnih profila. O
+njima će biti reči nešto kasnije.
+</p>
+
+<p>
+Koji profil trenutno koristite možete videti koristeći sledeću komandu:
+</p>
+
+<pre caption="Provera sistemskog profila">
+# <i>ls -FGg /etc/make.profile</i>
+lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2006.0/
+</pre>
+
+<p>
+Ako koristite jednu od gorepomenutih arhitektura, podrazumevani profil će vam
+obezbediti Linux 2.6 baziran sistem. Ovo je preporučljivo i podrazumevano, ali
+vam na raspolaganju takođe stoji i opcija izbora drugog profila.
+</p>
+
+<p>
+Neki korisnici možda žele da instaliraju sistem baziran na starijem, Linux 2.4
+profilu. Ako imate dobar razlog da radite to, onda prvo treba da proverite da
+li postoji dodatni profil. Na x86 arhitekturi to ćemo proveriti sledećom
+komandom:
+</p>
+
+<pre caption="Pronalaženje dodatnog profila ako postoji">
+# <i>ls -d /usr/portage/profiles/default-linux/x86/no-nptl/2.4</i>
+/usr/portage/profiles/default-linux/x86/no-nptl/2.4
+</pre>
+
+<p>
+Prethodni primer prikazuje da dodatni 2.4 profil postoji (drugim rečima, nije
+se žalio da nedostaje fajl ili direktorijum). Preporučljivo da se pridržavate
+podrazumevanog profila, ali ako baš želite da ga promenite, uradite to na
+sledeći način:
+</p>
+
+<pre caption="Prebacivanje na 2.4 profil">
+<comment>(Budite sigurni se da koristite konkretnu arhitekturu, primer u nastavku je za x86 arhitekturu)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/x86/no-nptl/2.4 /etc/make.profile</i>
+<comment>(Listanje svih fajlova u 2.4 profilu)</comment>
+# <i>ls -FGg /etc/make.profile/</i>
+total 12
+-rw-r--r--  1 939 Dec 10 14:06 packages
+-rw-r--r--  1 347 Dec  3  2004 parent
+-rw-r--r--  1 573 Dec  3  2004 virtuals
+</pre>
+
+<p>
+Za ppc obezbeđeno je više profila sa 2006.0
+</p>
+
+<pre caption="PPC profili">
+<comment>(Generički PPC profil, za sve PPC mašine, minimalan)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0 /etc/make.profile</i>
+<comment>(G3 profil)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G3 /etc/make.profile</i>
+<comment>(G3 Pegasos profil)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G3/Pegasos/ /etc/make.profile</i>
+<comment>(G4 (Altivec) profil)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G4 /etc/make.profile</i>
+<comment>(G4 (Altivec) Pegasos profil)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G4/Pegasos/ /etc/make.profile</i>
+</pre>
+
+<p>
+Za ppc64 postoji nekoliko novih profila obezbeđenih u 2006.0.
+</p>
+
+<pre caption="PPC64 profili">
+<comment>(Generički 64bit korisnički PPC64 profil, za sve PPC64 mašine)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/64bit-userland /etc/make.profile</i>
+<comment>(Generički 32bit korisnički PPC64 profil, za sve PPC64 mašine)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/32bit-userland /etc/make.profile</i>
+<comment>(Svaki tip userland-a ima podprofil, kao što sledi, gde (userland) se zamenjuje sa userland-om od gore)</comment>
+<comment>(970 profil za JS20)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/970 /etc/make.profile</i>
+<comment>(G5 profil)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/970/pmac /etc/make.profile</i>
+<comment>(POWER3 profil)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power3 /etc/make.profile</i>
+<comment>(POWER4 profil)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power4 /etc/make.profile</i>
+<comment>(POWER5 profil)</comment>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power5 /etc/make.profile</i>
+<comment>(Multitab profil nije stabilan u ovom izdanju)</comment>
+</pre>
+
+</body>
+</subsection>
+<subsection id="configure_USE">
+<title>Konfigurisanje USE promenljive</title>
+<body>
+
+<p>
+<c>USE</c> je jedna od najmoćnijih promenljivih koju Gentoo obezbeđuje svojim
+korisnicima.  Neki programi mogu biti kompajlirani sa ili bez dodatne podrške
+za određene stvari. Na primer, neki programi mogu biti kompajlirani sa podrškom
+za gtk, ili sa qt podrškom. Drugi mogu biti kompajlirani sa ili bez podrške za
+SSL. Neki programi čak mogu da se kompajliraju sa framebuffer podrškom
+(svgalib) umesto sa podrškom za X11 (X-server).
+</p>
+
+<p>
+Mnoge distribucije kompajliraju svoje pakete sa podrškom za što je moguće više
+stvari povećavajući veličinu programa i vreme potrebno za podizanje istih, a da
+ne pominjemo ogromne količine zavisnosti. U Gentoo-u možete definisati sa kojim
+opcijama želite da kompajlirate paket. To je mesto gde <c>USE</c> dobija na
+značaju.
+</p>
+
+<p>
+U <c>USE</c> promenljivoj definišete ključne reči koje se mapiraju u opcije
+kompajlera. Na primer <e>ssl</e> će kompajlirati podršku za ssl u programima
+koji ga podržavaju. <e>-X</e> će isključiti podršku za X-server (primetite znak
+minus ispred).  <e>gnome gtk -kde -qt</e>  će kompajlirati vaše programe sa
+gnome (i gtk) podrškom, i bez kde (i qt) podrške, čineći vaš sistem potpuno
+prilagođen za GNOME.
+</p>
+
+<p>
+Podrazumevana <c>USE</c> podešavanja su smeštena u <path>make.defaults</path>
+fajlu vašeg profila. Naćićete <path>make.defaults</path> fajlove u
+direktorijumu na koji <path>/etc/make.profile</path> pokazuje i takođe u svim
+roditeljskim direktorijumima. Podrazumevano <c>USE</c> podešavanje je zbir svih
+<c>USE</c> podešavanja u <path>make.defaults</path> fajlovima. Šta stavite u
+<path>/etc/make.conf</path> se postavlja iznad podrazumevanih podešavanja. Ako
+dodate nešto u <c>USE</c> podešavanja to se dodaje u podrazumevanu listu. Ako
+izbacite nešto iz <c>USE</c> podešavanja (tako što ćete staviti znak minus
+ispred) izbacuje se iz podrazumevane liste (ako je uopšte tamo i bilo).
+<e>Nikada</e> ne menjajte sadržaj <path>/etc/make.profile</path> direktorijuma
+jer se isti prepisuje kada se ažurira Portage!
+</p>
+
+<p>
+Pun opis <c>USE</c> promenljivih možete naći u drugom delu Gentoo priručnika
+<uri link="?part=2&amp;chap=2">USE flag-ovi</uri>. Potupno objašnjene o
+dostupnim USE flag-ovima možete naći na vašem sistemu u
+<path>/usr/portage/profiles/use.desc</path>.
+</p>
+
+<pre caption="Pregled dostupnih USE flag-ova">
+# <i>less /usr/portage/profiles/use.desc</i>
+<comment>(Možete pregledati sadržaj koristeći strelice. Izlazi se pritiskom na 'q')</comment>
+</pre>
+
+<p>
+Kao primer pokazaćemo <c>USE</c> podešavanja za sistem baziran na KDE-u sa
+podrškom za DVD, ALSA i rezanje CD-ova.
+</p>
+
+<pre caption="Otvaranje /etc/make.conf">
+# <i>nano -w /etc/make.conf</i>
+</pre>
+
+<pre caption="USE podešavanja">
+USE="-gtk -gnome qt kde dvd alsa cdr"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Opciono: GLIBC lokalizacije</title>
+<body>
+
+<p>
+Verovatno ćete koristiti jednu ili možda dve lokalizacije na vašem sistemu. Sve
+do sad nakon kompajliranja <c>glibc</c>-a pun komplet svih dostupnih
+lokalizacija biće napravljen. Sada možete aktivirati <c>userlocales</c> USE
+flag i odrediti samo lokalizacije koje su vam potrebne u fajlu
+<path>/etc/locales.build</path>. Uradite ovo samo u slučaju da znate koje ćete
+lokalizacije odabrati.
+</p>
+
+<pre caption="Aktivirajte userlocales USE flag posebno za glibc">
+# <i>mkdir -p /etc/portage</i>
+# <i>echo "sys-libs/glibc userlocales" >> /etc/portage/package.use</i>
+</pre>
+
+<p>
+Sada odaberite koje lokalizacije želite da budete u mogućnosti da koristite:
+</p>
+
+<pre caption="Otvaranje /etc/locales.build">
+# <i>nano -w /etc/locales.build</i>
+</pre>
+
+<p>
+Pred vama je primer lokalizacija koji vam omogućava da koristite Engleski
+(Sjedinjene Američke Države) i Nemački (Nemačka) sa propratnim formatima
+karaktera (kao što je UTF-8).
+</p>
+
+<pre caption="Određivanje vaših lokalizacija">
+en_US/ISO-8859-1
+en_US.UTF-8/UTF-8
+de_DE/ISO-8859-1
+de_DE@euro/ISO-8859-15
+</pre>
+
+<p>
+Sada nastavite sa <uri link="?part=1&amp;chap=7">Konfigurisanje kernel-a</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
