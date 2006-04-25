@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.20 2006/02/09 19:25:05 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.21 2006/04/25 19:31:47 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -36,8 +36,6 @@ livecd_get_cmdline() {
 }
 
 no_gl() {
-	ewarn "No OpenGL-capable card found."
-	echo
 	einfo "If you have a card that you know is supported by either the ATI or"
 	einfo "NVIDIA binary drivers, please file a bug with the output of lspci"
 	einfo "on http://bugs.gentoo.org so we can resolve this."
@@ -58,13 +56,20 @@ get_video_cards() {
 	[ -x /sbin/lspci ] && VIDEO_CARDS="$(/sbin/lspci | grep VGA)"
 	[ -x /usr/sbin/lspci ] && VIDEO_CARDS="$(/usr/sbin/lspci | grep VGA)"
 	NUM_CARDS="$(echo ${VIDEO_CARDS} | wc -l)"
-	if [ ${NUM_CARDS} -eq 1 ]; then
+	if [ ${NUM_CARDS} -eq 1 ]
+	then
 		NVIDIA=$(echo ${VIDEO_CARDS} | grep "nVidia Corporation")
 		ATI=$(echo ${VIDEO_CARDS} | grep "ATI Technologies")
-		if [ -n "${NVIDIA}" ]; then
-			NVIDIA_CARD=$(echo ${NVIDIA} | awk 'BEGIN {RS=" "} /(NV|nv)[0-9]+/ {print $1}' | cut -d. -f1 | sed 's/ //' | sed 's:[^0-9]::g')
-			if [ -n "${NVIDIA_CARD}" ]; then
-				if [ $(echo ${NVIDIA_CARD} | cut -dV -f2) -ge 4 ]; then
+		if [ -n "${NVIDIA}" ]
+		then
+			NVIDIA_CARD=$(echo ${NVIDIA} | awk 'BEGIN {RS=" "} /(NV|nv|G)[0-9]+/ {print $1}' | cut -d. -f1 | sed 's/ //' | sed 's:[^0-9]::g')
+			if [ -n "${NVIDIA_CARD}" ]
+			then
+				if [ $(echo ${NVIDIA_CARD} | cut -dV -f2) -ge 4 ]
+				then
+					nv_gl
+				elif [ $(echo ${NVIDIA_CARD} | cut -dG -f2) -ge 70 ]
+				then
 					nv_gl
 				else
 					no_gl
@@ -72,20 +77,26 @@ get_video_cards() {
 			else
 				no_gl
 			fi
-		elif [ -n "${ATI}" ]; then
+		elif [ -n "${ATI}" ]
+		then
 			ATI_CARD=$(echo ${ATI} | awk 'BEGIN {RS=" "} /(R|RV|RS)[0-9]+/ {print $1}')
-			if [ $(echo ${ATI_CARD} | grep S) ]; then
+			if [ $(echo ${ATI_CARD} | grep S) ]
+			then
 				ATI_CARD_S=$(echo ${ATI_CARD} | cut -dS -f2)
-			elif [ $(echo ${ATI_CARD} | grep V) ]; then
+			elif [ $(echo ${ATI_CARD} | grep V) ]
+			then
 				ATI_CARD_V=$(echo ${ATI_CARD} | cut -dV -f2)
 			else
 				ATI_CARD=$(echo ${ATI_CARD} | cut -dR -f2)
 			fi
-			if [ -n "${ATI_CARD_S}" ] && [ ${ATI_CARD_S} -ge 350 ]; then
+			if [ -n "${ATI_CARD_S}" ] && [ ${ATI_CARD_S} -ge 350 ]
+			then
 				ati_gl
-			elif [ -n "${ATI_CARD_V}" ] && [ ${ATI_CARD_V} -ge 250 ]; then
+			elif [ -n "${ATI_CARD_V}" ] && [ ${ATI_CARD_V} -ge 250 ]
+			then
 				ati_gl
-			elif [ -n "${ATI_CARD}" ] && [ ${ATI_CARD} -ge 200 ]; then
+			elif [ -n "${ATI_CARD}" ] && [ ${ATI_CARD} -ge 200 ]
+			then
 				ati_gl
 			else
 				no_gl
