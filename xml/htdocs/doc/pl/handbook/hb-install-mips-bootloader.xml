@@ -2,23 +2,83 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-install-mips-bootloader.xml,v 1.13 2006/02/03 15:46:42 shadoww Exp $ -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-install-mips-bootloader.xml,v 1.14 2006/04/26 17:53:01 rane Exp $ -->
 
 <sections>
 
-<version>1.8</version>
-<date>2006-01-19</date>
+<version>1.10</version>
+<date>2006-02-27</date>
 
 <section id="sgi">
-<title>Komputery Silicon Graphics - Konfiguracja Arcboot</title>
+<title>Komputery Silicon Graphics - instalacja bootloadera arcboot lub arcload</title>
 <subsection>
-<title>Instalowanie arcboot</title>
+<title>Który wybrać?</title>
 <body>
 
 <p>
-W poprzednich rozdziałach opowiedzieliśmy o tym jak zbudować kernel i umieścić
-go w nagłówku woluminu za pomocą <c>dvhtool</c>. Taka konfiguracja ma dwie
-poważne wady: 
+Na komputerach SGI w roli bootloadera można wykorzystać dwa programy. Są to
+<c>arcboot</c> i <c>arcload</c>. Poniższa tabela przedstawia ich wady i zalety.
+</p>
+
+<table>
+<tr>
+  <th> </th>
+  <th>arcboot</th>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>
+    Może załadować zawartość partycji EXT2 i EXT3, więc nie trzeba umieszczać
+    jądra w nagłówkowej części woluminu
+  </ti>
+</tr>
+<tr>
+  <th>-</th>
+  <ti>
+    Nie działa na komputerach Octane/Octane2, Origin 200/2000 i Indigo2 Impact
+    (R10000)
+  </ti>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th> </th>
+  <th>arcload</th>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>
+    Działa na wszystkich komputerach SGI
+  </ti>
+</tr>
+<tr>
+  <th>-</th>
+  <ti>
+    W chwili obecnej nie może czytać z partycji EXT2/EXT3, więc jądro i plik
+    konfiguracyjny muszą zostać umieszczone w nagłówkowej części woluminu
+  </ti>
+</tr>
+</table>
+
+<note>
+Nagłówkowa część woluminu na komputerach SGI posiada ograniczenia w postaci
+maksymalnej długości nazwy pliku wynoszącej 8 znaków i limitu liczby plików w
+niej zawartych na poziomie 16 plików.
+</note>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Instalowanie programu arcboot</title>
+<body>
+
+<p>
+W poprzednich rozdziałach mówiliśmy o tym jak zbudować kernel i umieścić go w
+nagłówku woluminu za pomocą programu <c>dvhtool</c>. Taka konfiguracja ma dwie
+poważne wady:
 </p>
 
 <ul>
@@ -27,12 +87,12 @@ poważne wady:
 </ul>
 
 <p>
-Z tego powodu, w celu uruchamiania systemu powstał znacznie wygodniejszy program
-ładujący o nazwie <c>arcboot</c>. Zamiast umieszczania jądra w nagłówku woluminu
-można zostawić je w katalogu /boot (na partycji ext2/3) i skonfigurować
-znajdujący się, właśnie w nagłówku woluminu, program <c>arcboot</c> tak, aby je
-tam odnajdywał i uruchamiał. Pierwszą czynnością jaką wykonamy będzie
-zainstalowanie całego potrzebnego oprogramowania.
+Ze względu na te problemu powstał znacznie wygodniejszy program ładujący o
+nazwie <c>arcboot</c>. Zamiast umieszczania jądra w nagłówku woluminu można
+zostawić je w katalogu /boot (na partycji ext2/3) i skonfigurować - znajdujący
+się właśnie w nagłówku woluminu - program <c>arcboot</c> tak, aby je tam
+odnajdywał i uruchamiał. Pierwszą czynnością jaką wykonamy będzie zainstalowanie
+całego potrzebnego oprogramowania.
 </p>
 
 <pre caption="Instalowanie wymaganych programów">
@@ -45,21 +105,31 @@ w nagłówku woluminu oraz <c>dvhtool</c>, który pomoże w umieszczeniu go tam.
 </p>
 
 <p>
-Plik, który jest nam potrzebny znajduje się w katalogu
-<path>/usr/lib/arcboot</path>. Ma systemach IP22 (Indy, Indigo 2, Challenge S)
-ma on nazwę <path>arcboot.ip22</path>. Na innych powinno być podobnie. Musimy go
-skopiować do nagłówka woluminu.
+Skompilowany program <c>arcboot</c> znajdziemy w katalogu
+<path>/usr/lib/arcboot</path>. Dokładna nazwa binarnego pliku zależy od
+posiadanego komputera.
 </p>
+
+<ul>
+  <li>
+    <c>arcboot.ip22</c>: program binarny dla komputerów Indy, Indigo2 (R4k) i
+    Challenge S    
+  </li>
+  <li>
+    <c>arcboot.ip32</c>: program binarny dla komputerów O2
+  </li>
+</ul>
+
 
 <pre caption="Instalowanie arcboot w nagłówku woluminu">
 # <i>dvhtool --unix-to-vh /usr/lib/arcboot/arcboot.ip?? arcboot</i>
 </pre>
 
 <p>
-Potem sprawdzamy czy naprawdę został tam wgrany.
+Potem sprawdzamy czy arcboot faktycznie został umieszczony w nagłówku woluminu.
 </p>
 
-<pre caption="Sprawdzanie arcboot">
+<pre caption="Sprawdzanie, czy arcboot rezyduje w nagłówku woluminu">
 # <i>dvhtool --print-volume-directory</i>
 ----- directory entries -----
 Entry #0, name "linux", start 4, bytes 3262570
@@ -69,27 +139,27 @@ Entry #3, name "arcboot", start 21260, bytes 51448
 </pre>
 
 <note>
-Warto zauważyć, że w tym przypadku do dyspozycji mamy dwa jądra -
-<path>linux</path> i <path>newlinux</path>. Jest to pozostałość po poprzedniej
-instalacji <c>arcboot</c> i nie ma żadnego praktycznego znaczenia. Jeśli
-znajduje się tam <c>arcboot</c>, wszystko jest w porządku.
+Warto zauważyć, że w powyższym przykładzie w nagłówku woluminu znajdują się dwa
+starsze kernele: <path>linux</path> i <path>newlinux</path>. Jest to pozostałość
+z czasów przed instalacją programu <c>arcboot</c>. Nie ma to żadnego
+praktycznego znaczenia - jeśli na liście znajduje się <c>arcboot</c>, to
+wszystko jest w porządku.
 </note>
-
-</body>
-</subsection>
-<subsection>
-<title>Konfigurowanie arcboot</title>
-<body>
 
 <p>
 Osoby, które używały wcześniej LILO zauważą, że <c>arcboot</c> posiada bardzo
 podobną składnię pliku konfiguracyjnego. Należy pamiętać, że plik konfiguracyjny
 <c>arcboot</c> musi znajdować się na partycji EXT2/3 i w miejscu
 <path>/etc/arcboot.conf</path>. Najprostszym sposobem zapewnienia tego jest
-utworzenie partycji <path>/boot</path> z którymś z tych systemów plików
-posiadającej katalog <path>/boot/etc</path>. Przykładowy plik konfiguracyjny
-to <path>/etc/arcboot.conf.sample</path>.
+utworzenie partycji <path>/boot</path> z jednym z tych systemów plików,
+posiadającej katalog <path>/boot/etc</path>. Przykładowy plik konfiguracyjny to
+<path>/etc/arcboot.conf.sample</path>.
 </p>
+
+<note>
+Jeśli nie posiadamy oddzielnej partycji <path>/boot</path>, używamy ścieżek
+odpowiadających naszemu podziałowi dysku.
+</note>
 
 <pre caption="Instalowanie arcboot">
 <comment>(Tworzenie katalogu /boot/etc)</comment>
@@ -106,10 +176,10 @@ to <path>/etc/arcboot.conf.sample</path>.
 </pre>
 
 <p>
-Teraz można otworzyć do edycji plik <path>/etc/arcboot.conf</path>. Osobiście
-stosuję dwa pliki kernela: <path>new</path>, świeżo zbudowany obraz, który może
-nie działać poprawnie i <path>working</path>, stary i sprawdzony już plik. Mój
-<path>arcboot.conf</path> wygląda następująco:
+Teraz otwieramy do edycji plik <path>/etc/arcboot.conf</path>. Można stosować
+dwa pliki kernela, np.: <path>new</path>, świeżo zbudowany obraz, który może nie
+działać poprawnie i <path>working</path>, stary i sprawdzony już plik. Plik
+<path>arcboot.conf</path> wygląda w takiej sytuacji następująco:
 </p>
 
 <pre caption="Przykładowy arcboot.conf">
@@ -117,25 +187,153 @@ nie działać poprawnie i <path>working</path>, stary i sprawdzony już plik. M�
 <comment>#</comment>
 <comment># copyright 2002 Guido Guenther &lt;agx@sigxcpu.org&gt;</comment>
 <comment>#</comment>
+<comment># działające jądro</comment>
 label=working
         image=/vmlinux
         append="root=/dev/sda3"
 
-<comment># wersja zapasowa</comment>
+<comment># nowy, nieprzetestowany kernel</comment>
 label=new
         image=/vmlinux-new
         append="root=/dev/sda3"
 </pre>
 
 <p>
-Po skonfigurowaniu trzeba wprowadzić kilka drobnych zmian w SGI PROM. Wszystkie
-opisujemy w akapicie dotyczącym <uri link="#reboot">Ponownego
-uruchomienia</uri>.  
+Po przeprowadzeniu konfiguracji trzeba wprowadzić kilka drobnych zmian w SGI
+PROM. Zajmiemy się tym w akapicie dotyczącym <uri link="#reboot">Ponownego
+uruchamiania komputera</uri>.
 </p>
 
 </body>
 </subsection>
+
+<subsection>
+<title>Instalacja programu arcload</title>
+<body>
+
+<p>
+Bootloader <c>arcload</c> został napisany dla komputerów, które wymagają użycia
+64-bitowego jądra i z tego powodu nie mogą używać programu <c>arcboot</c> (nie
+ma łatwego sposobu, aby skompilować go do postaci 64-bitowych
+binariów). <c>arcload</c> pozwala również na obejście pewnych problemów, które
+mogą wyniknąć w czasie ładowania jądra bezpośrednio z nagłówka woluminu. Znając
+już idee tego bootloadera, możemy przystąpić do jego instalacji:
+</p>
+
+<pre caption="Instalacja programów arcload i dvhtool">
+# <i>emerge arcload dvhtool</i>
+</pre>
+
+<p>
+Gby instalacja zakończy się, w katalogu <path>/usr/lib/arcload</path> znajdziemy
+skompilowany program. Istnieją dwa binarne pliki:
+</p>
+
+<ul>
+  <li>
+    <c>sashARCS</c>: 32-bitowy plik binarny dla komputerów Indy, Indigo2 (R4k),
+    Challenge S i O2
+  </li>
+  <li>
+    <c>sash64</c>: 64-bitowy plik binarny dla komputerów Octane/Octane2, Origin
+    200/2000 i Indigo2 Impact
+  </li>
+</ul>
+
+<p>
+Instalację odpowiedniego pliku binarnego w nagłówkowej części woluminu
+przeprowadzimy przy pomocy programu <c>dvhtool</c>:
+</p>
+
+<pre caption="Umieszczanie programu arcload w nagłówku woluminu">
+<comment>(użytkownicy Indy/Indigo2/Challenge S/O2)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sashARCS sashARCS</i>
+
+<comment>(użytkownicy Indigo2 Impact/Octane/Octane2/Origin 200/Origin 2000)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sash64 sash64</i>
+</pre>
+
+<note>
+Nie musimy używać nazw <c>sashARCS</c> i <c>sash64</c>. Są one potrzebe tylko,
+jeśli instalujemy program w nagłówku woluminu bootowalnej płyty CD. W przypadku
+uruchamiania z dysku twardego można użyć dowolnych nazw.
+</note>
+
+<p>
+Korzystając z programu <c>dvhtool</c>, sprawdzamy, czy program został
+umieszczony w nagłówku woluminu.
+</p>
+
+<pre caption="Sprawdzanie, czy arcload znajduje się w nagłówku woluminu">
+# <i>dvhtool --print-volume-directory</i>
+----- directory entries -----
+Entry #0, name "sash64", start 4, bytes 55859
+#
+</pre>
+
+<p>
+Plik konfiguracyjny <c>arc.cf</c> posiada składnię zbliżoną do języka C. Pełny
+opis konfiguracji znajdziemy w wiki Linux/MIPS na <uri
+link="http://www.linux-mips.org/wiki/Arcload">stronie programu
+arcload</uri>. Mówiąc w skrócie, definiujemy pewne opcje, a następnie wybieramy
+je w czasie uruchamiania systemu przy pomocy zmiennej <c>OSLoadFilename</c>.
+</p>
+
+<pre caption="Przykładowy plik arc.cf">
+<comment># Konfiguracja programu ARCLoad</comment>
+
+<comment># Domyślne ustawienia</comment>
+append  "root=/dev/sda3";
+append  "ro";
+append  "console=ttyS0,9600";
+
+<comment># Główna część pliku. Nazwa ip28 może zostać dowolnie zmieniona.</comment>
+ip28 {
+        <comment># Sekcja dla działającego jądra</comment>
+        <comment># Wybierzemy ją używając: OSLoadFilename="ip28(working)"</comment>
+        working {
+                description     "SGI Indigo2 Impact R10000\n\r";
+                image system    "/working";
+        }
+
+        <comment># Sekcja dla testowego jądra</comment>
+        <comment># Wybierzemy ją używając: OSLoadFilename="ip28(new)"</comment>
+        new {
+                description     "SGI Indigo2 Impact R10000 - jądro testowe\n\r";
+                image system    "/new";
+        }
+
+        <comment># Sekcja dla trybu debugowania</comment>
+        <comment># Wybierzemy ją używając: OSLoadFilename="ip28(working,debug)"</comment>
+        <comment># lub OSLoadFilename="ip28(new,debug)"</comment>
+        debug {
+                description     "Debug console";
+                append          "init=/bin/bash";
+        }
+}
+</pre>
+
+<p>
+Następnie musimy umieścić plik konfiguracyjny w nagłówku woluminu razem z
+plikiem <c>sash64</c> (lub <c>sashARCS</c>). Jądro również musi się tam znaleźć.
+Dokonamy tego przy użyciu znanego już programu <c>dvhtool</c>:
+</p>
+
+<pre caption="Umieszczanie pliku arc.cf i jądra w nagłówku woluminu">
+# <i>dvhtool --unix-to-vh arc.cf arc.cf</i>
+# <i>dvhtool --unix-to-vh /usr/src/linux/vmlinux new</i>
+</pre>
+
+<p>
+Po wykonaniu tych czynności, musimy jeszcze ustawić kilka opcji PROM. Zrobimy to
+w paragrafie <uri link="#reboot">Ponowne uruchamianie komputera</uri>.
+</p>
+
+</body>
+</subsection>
+
 </section>
+
 <section id="cobalt">
 <title>Serwery Cobalt - konfiguracja CoLo</title>
 <subsection>
@@ -143,22 +341,22 @@ uruchomienia</uri>.
 <body>
 
 <p>
-Serwery Cobalt nie posiadają zbyt dobrego firmware, ich BOOTPROM jest prymitywny
+Serwery Cobalt nie posiadają zbyt dobrego firmware - ich BOOTPROM jest prymitywny
 i posiada wiele ograniczeń w porównaniu z SGI PROM.
 </p>
 
 <ul>
   <li>
-    Istnieje limit rozmiaru 675kB dla jądra. Obecny rozmiar jąder serii 2.4
-    niemal uniemożliwia budowę kernela o takim rozmiarze, nie mówiąc już o
-    jądrach 2.6.
+    Istnieje limit rozmiaru około 675kB dla jądra. Obecny rozmiar jąder serii
+    2.4 niemal uniemożliwia budowę kernela o takim rozmiarze, nie mówiąc już o
+    jądrach 2.6
   </li>
   <li>
     Firmware nie obsługuje jąder 64-bitowych (które są już w fazie testów na
     komputerach Cobalt)
   </li>
   <li>
-    Powłoka jest naprawdę uproszczona
+    Powłoka jest bardzo uproszczona
   </li>
 </ul>
 
@@ -185,7 +383,7 @@ wynikające ze zignorowania tego ostrzeżenia.
 
 <p>
 Po krótkim ostrzeżeniu wracamy do instalacji CoLo. Po pierwsze musimy zemergować
-pakiet z nim.
+pakiet, w którym się on znajduje:
 </p>
 
 <pre caption="Instalowanie pakietu colo">
@@ -193,12 +391,12 @@ pakiet z nim.
 </pre>
 
 <p>
-Po zainstalowaniu należy przejść do katalogu <path>/usr/lib/colo</path> i
-odszukać dwa pliki, <path>colo-chain.elf</path>, czyli jądro jakie ma wczytywać
-domyślny firmware oraz <path>colo-rom-image.bin</path>, czyli obraz ROM który
-będziemy umieszczać w BOOTPROM. Zaczynamy od zamontowania partycji /boot i
-umieszczenia skompresowanej kopii pliku <path>colo-chain.elf</path> w katalogu
-<path>/boot</path>, w którym system będzie go szukał.
+Po zakończeniu instalacji należy przejść do katalogu <path>/usr/lib/colo</path>
+i odszukać dwa pliki, <path>colo-chain.elf</path>, czyli jądro jakie ma
+wczytywać domyślny firmware oraz <path>colo-rom-image.bin</path>, czyli obraz
+ROM który będziemy umieszczać w BOOTPROM. Zaczynamy od zamontowania partycji
+/boot i umieszczenia skompresowanej kopii pliku <path>colo-chain.elf</path> w
+katalogu <path>/boot</path>, w którym system będzie go szukał.
 </p>
 
 <pre caption="Umieszczenie CoLo w odpowiednim miejscu">
@@ -224,11 +422,11 @@ zainstalowanej wersji programu.
 </p>
 
 <note>
-Mała rada: podczas instalowania kerneli należy tworzyć dwa obrazy.
+Podczas instalowania nowych kerneli dobrze jest tworzyć dwa obrazy:
 <path>kernel.gz.working</path> - sprawdzony i działający kernel oraz
 <path>kernel.gz.new</path> - jądro, które właśnie zostało skompilowane. Można
 użyć dowiązań w celu wskazania odpowiednich obrazów lub po prostu zmienić ich
-nazwę.
+nazwy.
 </note>
 
 <pre caption="Plik default.colo">
@@ -239,48 +437,44 @@ execute root=/dev/hda3 ro console=ttyS0,115200
 </pre>
 
 <note>
-CoLo odmówi wczytania jakiegokolwiek skryptu jeśli nie będzie się on zaczynał
+CoLo odmówi wczytania jakiegokolwiek skryptu jeśli nie będzie on zaczynał się
 linią <c>#:CoLo:#</c>. Jest to odpowiednik <c>#!/bin/sh</c> dla skryptów
 powłoki.
 </note>
 
 <p>
-Możliwe jest wyświetlanie zapytania, dotyczącego tego, które jądro i która
-konfiguracja ma być wczytana, również z domyślnym okresem oczekiwania przed
-uruchomieniem domyślnej opcji. Oto konfiguracja używana na moich serwerach
-Cobalt:
+Możliwe, że zostanie wyświetlone pytanie, którą konfigurację jądra chcemy
+uruchomić domyślnie po czasie oczekiwania. Pliki <path>vmlinux.gz.new</path> i
+<path>vmlinux.gz.working</path> mogą być obrazami jądra lub tylko dowiązaniami
+symbolicznymi, które wskazują na właściwe pliki. Wartość <c>50</c> przypisana do
+<c>select</c> określa, że pierwsza opcja z listy ("Working") zostanie
+automatycznie wybrana po 50/10 sekundach.
 </p>
-
-<impo>
-Z <c>menu</c> można skorzystać tylko w wersjach CoLO v1.12 lub v1.13. Nie
-zadziała na wersji v1.11.
-</impo>
-
-<impo>
-W CoLo v1.14 polecenie <c>menu</c> zostało zastąpione poleceniem <c>select</c>.
-Jeśli wcześniej zainstalowano CoLo, należy zapoznać się z plikiem
-<path>menu.colo</path> z podkatalogu <path>examples</path> w paczce CoLo.
-</impo>
 
 <pre caption="Konfiguracja menu">
 <comment>#:CoLo:#</comment>
 
 lcd "Mounting hda1"
 mount hda1
-menu "Which Kernel?" 50 Working working New new
-lcd "Loading Linux" {menu-option}
-load /kernel.gz.{menu-option}
+select "Which Kernel?" 50 Working New
+
+goto {menu-option}
+var image-name vmlinux.gz.working
+goto 3f
+@var image-name vmlinux.gz.working
+goto 2f
+@var image-name vmlinux.gz.new
+
+@lcd "Loading Linux" {image-name}
+load /{image-name}
 lcd "Booting..."
 execute root=/dev/hda5 ro console=ttyS0,115200
 boot
 </pre>
 
 <p>
-Powyższy skrypt powoduje zapytanie użytkownika, którego jądra chce użyć ("New"
-czy "Working"), następnie zostanie wczytany obraz <path>vmlinux.gz.new</path>
-lub <path>vmlinux.gz.working</path> w zależności od tego wyboru. Jeśli wyboru
-nie dokona się w ciągu 5 sekund zostanie wybrana i uruchomiona pierwsza
-możliwość.
+Więcej informacji uzyskamy czytając dokumentację dostępną w pliku
+<path>/usr/share/doc/colo-WERSJA</path>.
 </p>
 
 </body>
@@ -298,11 +492,12 @@ takiego nie ma.
 </p>
 
 <note>
-Posiadacze luksusu, jakim jest obsługa framebuffera, mogą pominąć ten akapit.
+Jeśli doświadczyliśmy luksusu posiadania obsługiwanej karty graficznej, możemy
+pominąć ten paragraf.
 </note>
 
 <p>
-Po pierwsze zatem otwieramy w edytorze plik <path>/etc/inittab</path>. Na dole
+Po pierwsze otwieramy w edytorze plik <path>/etc/inittab</path>. Na dole
 pliku znajduje się następujący wpis:
 </p>
 
@@ -324,14 +519,15 @@ ca:12345:ctrlaltdel:/sbin/shutdown -r now
 
 <p>
 Zaczynamy od odkomentowania linii z <c>c0</c>. Domyślnie korzysta się z
-terminala o 9600 bps. Na serwerach Cobalt można zmienić tę wartość do 115200
-tak, aby pasowała do ilości bodów BOOT ROM. Poniżej znajduje się część pliku
-konfiguracyjnego z mojego komputera. Na niektórych komputerach zalecane jest
-wykomentowanie linii od <c>c1</c> do <c>c6</c>, ponieważ mogą one zachowywać się
-dziwnie gdy nie będą w stanie otworzyć <path>/dev/ttyX</path>.
+terminala o przepustowości 9600 bps. Na serwerach Cobalt można zmienić tę
+wartość do 115200 tak, aby pasowała do ilości bodów BOOT ROM. Poniżej znajduje
+się fragment przykładowego pliku konfiguracyjnego. Na niektórych komputerach
+zalecane jest zakomentowanie linii od <c>c1</c> do <c>c6</c>, ponieważ mogą one
+wywołać dziene zachowania, gdy nie będzie możliwe otworzenie
+<path>/dev/ttyX</path>.
 </p>
 
-<pre caption="Przykladowy fragment inittab">
+<pre caption="Przykładowy fragment inittab">
 <comment># SERIAL CONSOLE</comment>
 c0:12345:respawn:/sbin/agetty 115200 ttyS0 vt102
 
@@ -348,7 +544,7 @@ c0:12345:respawn:/sbin/agetty 115200 ttyS0 vt102
 Na koniec musimy jeszcze zabezpieczyć system tak, aby lokalny port szeregowy
 mógł być uważany za bezpieczny terminal. Plik, który musimy zmienić to
 <path>/etc/securetty</path>, zawierający listę zaufanych terminali. Dodamy do
-niego dwie linie, które umożliwią logowanie się tam jako <c>root</c>.
+niego dwie linie, które umożliwią logowanie się jako <c>root</c>.
 </p>
 
 <pre caption="Umożliwianie logowania roota na konsolach szeregowych">
@@ -365,16 +561,16 @@ niego dwie linie, które umożliwią logowanie się tam jako <c>root</c>.
 </section>
 
 <section id="reboot">
-<title>Ponowne uruchomienie komputera</title>
+<title>Ponowne uruchamienie komputera</title>
 <subsection>
 <body>
 
 <p>
 Opuszczamy chrootowane środowisko i odmontowujemy wszystkie partycje. Następnie
-wpisujemy tak wyczekiwane polecenie: <c>reboot</c>.
+wpisujemy od dawna oczekiwane polecenie: <c>reboot</c>.
 </p>
 
-<pre caption="Opuszczanie chroota, odmontowywanie i ponowne uruchamianie">
+<pre caption="Opuszczanie środowiska chrootowanego, odmontowywanie partycji i reboot">
 # <i>exit</i>
 cdimage ~# <i>cd</i>
 cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo</i>
@@ -383,11 +579,11 @@ cdimage ~# <i>reboot</i>
 
 <note>
 Dla <e>użytkowników Cobalt</e>: Pozostała część tekstu dotyczy konfiguracji SGI
-PROM tak, aby uruchamiał <c>arcboot</c>, który następnie uruchomi Linuksa. Nie
-dotyczy to serwerów Cobalt, na nich praca już jest skończona, nie trzeba
-wykonywać żadnej dodatkowej konfiguracji i można przejść do następnego
-rozdziału Podręcznika, zatytułowanej <uri link="?part=1&amp;chap=11">Zakończenie
-instalacji Gentoo</uri>.
+PROM tak, aby uruchamiał bootloader, który następnie uruchomi Linuksa. Nie
+dotyczy to serwerów Cobalt (jeśli taki posiadamy, całą pracę mamy już za sobą),
+nie trzeba wykonywać żadnej dodatkowej konfiguracji i można przejść do
+następnego rozdziału Podręcznika, zatytułowanego <uri
+link="?part=1&amp;chap=11">Zakończenie instalacji Gentoo</uri>.
 </note>
 
 </body>
@@ -396,17 +592,32 @@ instalacji Gentoo</uri>.
 <section>
 <title>Konfigurowanie SGI PROM</title>
 <subsection>
+<title>Podstawowe ustawienia PROM</title>
 <body>
 
 <p>
-Po ponownym uruchomieniu komputera przechodzimy do <e>System Maintenance
-Menu</e> i wybieramy opcję <e>Enter Command Monitor</e> (<c>5</c>). Jeśli chcemy
-przetestować świeżo zainstalowane Gentoo, możemy uruchomić polecenie <c>boot -f
-&lt;nazwa kernela&gt;</c>. Jeśli uruchamianym domyślnie systemem ma na stałe
-pozostać Gentoo potrzebne będzie ustawienie następujących zmiennych w SGI PROM:
+Po instalacji bootloadera możemy ponownie uruchomić komputer.
 </p>
 
-<pre caption="Konfigurowanie PROM do uruchamiania Gentoo">
+<pre caption="Ponowne uruchamianie komputera">
+<comment>(Opuszczamy środowisko chrootowane)</comment>
+# <i>exit</i>
+
+<comment>(Odmontowujemy partycje)</comment>
+# <i>umount /gentoo/boot</i>
+# <i>umount /gentoo</i>
+
+<comment>(Uruchamiamy ponownie komputer)</comment>
+# <i>reboot</i>
+</pre>
+
+<p>
+Po ponownym uruchomieniu komputera przechodzimy do sekcji <e>System Maintenance
+Menu</e> i wybieramy opcję <e>Enter Command Monitor</e> (<c>5</c>) tak, jak to
+zrobiliśmy, kiedy wykonywaliśmy netboot.
+</p>
+
+<pre caption="Konfigurowanie PROM tak, aby uruchamiane było Gentoo">
 1) Start System
 2) Install System Software
 3) Run Diagnostics
@@ -416,17 +627,9 @@ pozostać Gentoo potrzebne będzie ustawienie następujących zmiennych w SGI PR
 Option? <i>5</i>
 Command Monitor.  Type "exit" to return to the menu.
 
-<comment>(&lt;root device&gt; = główna partycja Gentoo np. /dev/sda3)</comment>
-&gt;&gt; <i>setenv OSLoadPartition &lt;urządzenie root&gt;</i>
+<comment>(Ustawiamy opcje wspólne dla programów arcload i arcboot)</comment>
 
-<comment>(Listę dostępnych jąder uzyskujemy poleceniem "ls"</comment>
-&gt;&gt; <i>setenv OSLoader &lt;nazwa jądra&gt;</i>
-&gt;&gt; <i>setenv OSLoadFilename &lt;nazwa jądra&gt;</i>
-
-<comment>(Deklarujemy dodatkowe parametry uruchomieniowe dla jądra)</comment>
-&gt;&gt; <i>setenv OSLoadOptions &lt;parametry jądra&gt;</i>
-
-<comment>(Definiujemy miejsce nagłówka woluminu)</comment>
+<comment>(Lokalizacja nagłówka woluminu (volume header)</comment>
 &gt;&gt; <i>setenv SystemPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
 
 <comment>(Automatyczne uruchamianie Gentoo)</comment>
@@ -435,14 +638,138 @@ Command Monitor.  Type "exit" to return to the menu.
 <comment>(Ustawienia strefy czasowej)</comment>
 &gt;&gt; <i>setenv TimeZone EST5EDT</i>
 
-<comment>(Używanie konsoli szeregowej, posiadacze adapterów graficznych powinni
-wpisać "g" zamiast "d1"</comment>
+<comment>(Użycie konsoli szeregowej; jeśli posiadamy kartę graficzną, powinniśmy
+wpisać "g" zamiast "d1")</comment>
 &gt;&gt; <i>setenv console d1</i>
+
+<comment>(Ustawienia prędkości transmisji konsoli szeregowej. Jest to
+opcjonalne. Domyślna wartość to 9600.
+Maksymalna wartość jaką możemy wykorzystać to 38400)</comment>
+&gt;&gt; <i>setenv dbaud 9600</i>
 </pre>
 
 <p>
-To już wszystko, uruchamiamy Gentoo i przechodzimy do rozdziału <uri
-link="?part=1&amp;chap=11">Zakończenie instalacji Gentoo</uri>.
+Kolejne ustawienia zależą od tego, w jaki sposób ładujemy system.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Ustawienia dla uruchamiania bezpośrednio z nagłówka woluminu</title>
+<body>
+
+<p>
+Ten paragraf został umieszczony w Podręczniku jedynie ze względu na to, aby opis
+był kompletny. Zaleca się jednak korzystanie z bootloaderów <c>arcboot</c> lub
+<c>arcload</c> zamist bezpośredniego uruchamiania z nagłówka woluminu.
+</p>
+
+<note>
+Ta metoda działa jedynie na komputerach Indy, Indigo2 (R4k) i Challenge S.
+</note>
+
+<pre caption="Ustawienia PROM dla uruchamiania systemu bezpośrednio z nagłówka woluminu">
+<comment>(&lt;root device&gt; = główna partycja Gentoo, np. /dev/sda3)</comment>
+&gt;&gt; <i>setenv OSLoadPartition &lt;root device&gt;</i>
+
+<comment>(Listę dostępnych kerneli uzyskamy przy użyciu polecenia "ls")</comment>
+&gt;&gt; <i>setenv OSLoader &lt;kernel name&gt;</i>
+&gt;&gt; <i>setenv OSLoadFilename &lt;kernel name&gt;</i>
+
+<comment>(Deklarujemy dodatkowe parametry, które chcemy przekazać do jądra)</comment>
+&gt;&gt; <i>setenv OSLoadOptions &lt;kernel parameters&gt;</i>
+</pre>
+
+<p>
+Jeśli chcemy uruchomić jądro bez zmieniania powyższych ustawień, możemy to
+zrobić przy użyciu polecenia PROM <c>boot -f</c> :
+</p>
+
+<pre caption="Uruchamianie jądra bez zmieniania ustawień PROM">
+<comment>(Uruchamianie kernela o nazwie "new" z dodatkowymi parametrami)</comment>
+# <i>boot -f new root=/dev/sda3 ro</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Ustawienia dla programu arcload</title>
+<body>
+
+<p>
+Program <c>arcload</c> wykorzystuje opcję <c>OSLoadFilename</c> do określenia,
+które części pliku <path>arc.cf</path> mają zostać wykorzystane w czasie
+ładowania jądra. Plik konfiguracyjny jest w rzeczywistości skryptem,
+zawierającym bloki definiujące różne obrazy jąder dla różnych systemów i
+dodatkowe parametry, jakie mogą zostać przekazane podczas
+uruchamiania. Ustawienie <c>OSLoadFilename=mysys(serial)</c> spowoduje
+wykorzystanie ustawień z bloku nazwanego <c>mysys</c>, określonych przez opcje z
+sekcji o nazwie <c>serial</c> tego bloku.
+</p>
+
+<p>
+W przykładowym pliku konfiguracyjnym, który zaprezentowaliśmy wcześniej,
+znajdowała się definicja jednego bloku o nazwie <c>ip28</c> i trzech sekcji z
+opcjami, nazwanych <c>working</c>, <c>new</c> i <c>debug</c>. Dla takiej
+konfiguracji zmienne PROM definiujemy następująco:
+</p>
+
+<pre caption="Ustawienia PROM dla programu arcload">
+<comment>(Wybieramy program arcload jako bootloader: sash64 lub sashARCS)</comment>
+&gt;&gt; setenv OSLoader sash64
+
+<comment>(Używamy obrazu jądra o nazwie "working", zdefiniowanego w bloku "ip28")</comment>
+&gt;&gt; setenv OSLoadFilename ip28(working)
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Ustawienia dla programu arcboot</title>
+<body>
+
+<p>
+Program <c>arcboot</c> ładuje plik konfiguracyjny i jądro z partycji
+<path>/boot</path>, która musi posiadać format plików EXT2 lub EXT3. Zmienna
+<c>OSLoadPartition</c> musi wskazywać na tę partycję. Zmienna <c>OSLoader</c>
+określa plik wykonywalny programu <c>arcboot</c> w nagłówku woluminu, a zmienna
+<c>OSLoadFilename</c> określna nazwę obrazu jądra.
+</p>
+
+<pre caption="Ustawienia PROM dla programu arcboot">
+<comment>(Wczytanie konfiguracji i jądra z SCSI ID# 1, partycja 0 - sda1)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(0)</i>
+
+<comment>(Użycie programu arcboot jako bootloadera)</comment>
+&gt;&gt; <i>setenv OSLoader arcload</i>
+
+<comment>(Określenie, który obraz jądra ma zostać załadowany)</comment>
+&gt;&gt; <i>setenv OSLoadFilename working</i>
+</pre>
+
+<p>
+Nowe kernele możemy testować przy pomocy programu <c>arcboot</c> w następujący
+sposób (<c>new</c> jest nazwą obrazu jądra):
+</p>
+
+<pre caption="Użycie innego obrazu jądra">
+# <i>boot new</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Wszystko gotowe</title>
+<body>
+
+<p>
+Teraz możemy cieszyć się naszym nowym Gentoo! Uruchamiamy system i kończymy
+instalację zgodnie z rozdziałem <uri link="?part=1&amp;chap=11">Zakończenie
+instalacji Gentoo</uri>.
 </p>
 
 </body>
