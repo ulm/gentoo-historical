@@ -1,0 +1,57 @@
+Subject: [xine-devel] Fixed goom crash and enabling -fomit-frame-pointer
+From: Frantisek Dvorak <valtri@users.sourceforge.net>
+To: xine-devel@lists.sourceforge.net
+Date: Sat, 22 Apr 2006 17:32:42 +0200
+   
+Hi comrades,
+
+I found a bug which leads to crash of the goom. Maybe it can due to the
+reason we disabled -fomit-frame-pointer for goom. But I can't confirm it
+on my systems. With the fix it just still works and without it crashes
+even with the fomit workaround.
+
+I would like to check it. Any objectives against commiting the fix
+together with removed "fomit pointer" workaround?
+
+Thanks,
+  Frantisek
+Index: xine-lib-1.1.2cvs20060328/src/post/goom/diff_against_release.patch
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/post/goom/diff_against_release.patch
++++ xine-lib-1.1.2cvs20060328/src/post/goom/diff_against_release.patch
+@@ -425,7 +425,7 @@ diff -r -u xine-lib-1.1.0-orig/src/post/
+  		"movd %%mm0,%0 \n\t"
+ -		  :"=g"(expix2[loop])
+ -		  :"r"(pos),"r"(coeffs),"r"(expix1)
+-+		  :"=g"(expix2[loop]),"=r"(pos)
+++		  :"=g"(expix2[loop]),"+r"(pos)
+ +		  :"r"(coeffs),"r"(expix1),"g"(sizeX)
+  
+  		);
+Index: xine-lib-1.1.2cvs20060328/src/post/goom/Makefile.am
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/post/goom/Makefile.am
++++ xine-lib-1.1.2cvs20060328/src/post/goom/Makefile.am
+@@ -6,7 +6,8 @@ EXTRA_DIST = mmx.c xmmx.c ppc_drawings.s
+ 
+ ## -fomit-frame-pointer segfaults here
+ ## Use -O2 if -Os is stripped or x86 does not build
+-CFLAGS = `echo @CFLAGS@ | sed -e 's/-fomit-frame-pointer//g;s/-Os/-O2/g'`
++#CFLAGS = `echo @CFLAGS@ | sed -e 's/-fomit-frame-pointer//g;s/-Os/-O2/g'`
++CFLAGS = `echo @CFLAGS@ | sed -e 's/-Os/-O2/g'`
+ 
+ lib_LTLIBRARIES = xineplug_post_goom.la
+ 
+Index: xine-lib-1.1.2cvs20060328/src/post/goom/mmx.c
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/post/goom/mmx.c
++++ xine-lib-1.1.2cvs20060328/src/post/goom/mmx.c
+@@ -116,7 +116,7 @@ void zoom_filter_mmx (int prevX, int pre
+ 		"packuswb %%mm7, %%mm0 \n\t"
+ 
+ 		"movd %%mm0,%0 \n\t"
+-		  :"=g"(expix2[loop]),"=r"(pos)
++		  :"=g"(expix2[loop]),"+r"(pos)
+ 		  :"r"(coeffs),"r"(expix1),"g"(sizeX)
+ 
+ 		);
