@@ -1067,6 +1067,9 @@
 <!-- Table Item -->
 <xsl:template match="ti">
 <td class="tableinfo">
+  <xsl:if test="@align='center' or @align='right'">
+    <xsl:attribute name="style"><xsl:value-of select="concat('text-align:',@align)"/></xsl:attribute>
+  </xsl:if>
   <xsl:if test="@colspan">
     <xsl:attribute name="colspan"><xsl:value-of select="@colspan"/></xsl:attribute>
   </xsl:if>
