@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.273 2006/04/19 15:25:51 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.274 2006/04/27 14:14:44 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -219,7 +219,7 @@ class ArchitectureTemplate:
 			self._logger.log("Starting bootstrap.")
 			pkgs = self._get_packages_to_emerge("/usr/portage/scripts/bootstrap.sh --pretend")
 			if self._debug: self._logger.log("DEBUG: Packages to emerge: "+str(pkgs)+". Now running bootstrap.sh")
-			exitstatus = GLIUtility.spawn("/usr/portage/scripts/bootstrap.sh", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
+			exitstatus = GLIUtility.spawn("env-update && source /etc/profile && /usr/portage/scripts/bootstrap.sh", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage1Error", 'fatal','stage1', "Bootstrapping failed!")
 			self._logger.log("Bootstrap complete.")
@@ -233,7 +233,8 @@ class ArchitectureTemplate:
 			self._logger.log("Starting emerge system.")
 			pkgs = self._get_packages_to_emerge("emerge -p system")  #currently quite the useless
 			if self._debug: self._logger.log("DEBUG: Packages to emerge: "+str(pkgs)+"/ Now running emerge --emptytree system")
-			exitstatus = self._emerge("--emptytree system")
+#			exitstatus = self._emerge("--emptytree system")
+			exitstatus = GLIUtility.spawn("env-update && source /etc/profile && emerge -e system", chroot=self._chroot_dir, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(exitstatus):
 				raise GLIException("Stage2Error", 'fatal','stage2', "Building the system failed!")
 			self._logger.log("Emerge system complete.")
