@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.6 2006/04/01 21:49:16 antarus Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.7 2006/04/28 12:44:36 flameeyes Exp $ -->
 
 <guide link="/proj/en/qa/asneeded.xml" lang="en">
 <title>--as-needed introduction and fixing guide</title>
@@ -18,8 +18,8 @@ steps to fix simple cases where --as-needed fails to build a package.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.4</version>
-<date>2006-04-01</date>
+<version>0.5</version>
+<date>2006-04-28</date>
 
 <chapter> <!-- Introduction -->
 <title>Introduction</title>
@@ -127,13 +127,14 @@ prefix to pass them back to the linker.
 LDFLAGS="-Wl,--as-needed"
 </pre>
 
-<p>
-There are known issues with <c>ld</c> shipped with binutils up to 2.16.1, so if
-you feel like experimenting with this flag, you probably want to use some 
-prerelease version like 2.16.91.5.  This also means that you might also 
-encounter problems that are caused by this specific binutils version that might
-be specific to your platform.
-</p>
+<note>
+There are known issues with <c>ld</c> shipped with binutils up to 2.16.91.0.5,
+so if you feel like experimenting with this flag, you probably want to use some
+newer prerelease. The suggested version that should solve all the ld-related
+problems with <c>--as-needed</c> is 2.16.92. This also means that you might
+encounter problems due to this specific binutils version dependent on your
+platform.
+</note>
 
 <p>
 This flag should (note again the <e>conditional</e>) work on every Linux
@@ -144,9 +145,10 @@ does not work on other non-Linux targets.
 </p>
 
 <p>
-Depending on when you merged them you might be required to rebuild some packages
-like <path>faad2</path>, <path>lame</path> and <path>net-snmp</path> so that
-other packages can link to them.
+As <c>--as-needed</c> depends not only on the way the package you're building is
+linked but also its dependencies, there are quite a few packages that were
+silently patched and fixed and might require rebuilding. Please make sure to
+rebuild the dependencies failing to link against before filing a bug.
 </p>
 
 </body>
@@ -171,7 +173,11 @@ some of them are really simple, others are not.
 
 <p>
 Once again, if you're not interested in fixing those problems, or you are not a
-developer, please try to stay away from experimental things like this.
+developer, please try to stay away from experimental things like this. If you're
+a developer or you have a patch to fix --as-needed issues, you can file a bug in
+<uri link="http://bugs.gentoo.org/">Gentoo Bugzilla</uri>, blocking
+<uri link="http://bugs.gentoo.org/show_bug.cgi?id=129413">bug #129413</uri> and
+CCing <mail link="flameeyes@gentoo.org">flameeyes@gentoo.org</mail> on it.
 </p>
 
 </body>
@@ -183,19 +189,22 @@ developer, please try to stay away from experimental things like this.
 <body>
 
 <p>
-The first thing to take into account is <path>binutils</path>, the package that
-contains the GNU utilities to assemble and link binaries, so also GNU <c>ld</c>.
-As this flag is being tested with a pre-release version, we can't rule out the
-problem is within binutils, in which case the best thing to do might be looking
-for an already open bug on its bugzilla or report the failure there.
+As above stated, 2.16 binutils series and the early 2.17 prereleases suffer from
+problems when linking with <c>--as-needed</c>, which leads to <c>ld</c>
+segfaulting when trying to link complex C++ libraries like <path>wxGTK</path>.
 </p>
 
 <p>
-This class of failures is common with packages related to wxWidgets:
-<path>wxGTK</path> itself and packages linking to it while using a GUI, like
-<path>vlc</path> and <path>mkvtoolnix</path>.  These packages trigger a 
-segmentation fault inside <c>ld</c>.  The only way to work around this is by 
-filtering the flag altogether in the ebuild.
+In this case the first thing to do is to use the latest prerelease available
+from upstrea. At the date of writing last prerelease is 2.16.92 that is told to
+solve most if not all the problems with <c>--as-needed</c> flag and does not
+fail anymore with <path>wxGTK</path> for once.
+</p>
+
+<p>
+If the last snapshot doesn't work, you might consider filtering the flag with
+the following code, after reporting the case upstream with as much details
+possible.
 </p>
 
 <pre caption="filtering the --as-needed flag in an ebuild">
@@ -206,6 +215,13 @@ pkg_setup() {
     filter-ldflags -Wl,--as-needed --as-needed
 }
 </pre>
+
+<impo>
+These problems should be gone as of 2.16.92 and thus the filtering is
+unnecessary, as anyone using <c>--as-needed</c> and finding segfaults should
+simply update binutils. For this reason you mighw ant to do this locally but you
+should <e>not</e> commit flags filtering for this reason.
+</impo>
 
 </body>
 </section>
