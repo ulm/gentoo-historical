@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.274 2006/04/27 14:14:44 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.275 2006/04/30 16:25:17 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -671,7 +671,7 @@ class ArchitectureTemplate:
 				found_a_kernel = False
 				counter = 0
 				while not found_a_kernel:
-					if kernels[counter][0:6]=="linux-":
+					if (len(kernels[counter]) > 6)  and (kernels[counter][0:6]=="linux-"):
 						if self._debug: self._logger.log("DEBUG: found one.  linking it. running: ln -s /usr/src/"+kernels[counter]+ " /usr/src/linux in the chroot.")
 						exitstatus = GLIUtility.spawn("ln -s /usr/src/"+kernels[counter]+ " /usr/src/linux",chroot=self._chroot_dir)
 						if not GLIUtility.exitsuccess(exitstatus):
