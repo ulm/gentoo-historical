@@ -508,35 +508,34 @@
 
 <!-- Chapter -->
 <xsl:template match="chapter">
-<xsl:variable name="chid"><xsl:number/></xsl:variable>
-<xsl:choose>
-  <xsl:when test="title">
-    <p class="chaphead">
-      <xsl:if test="@id">
-        <a name="{@id}"/>
-      </xsl:if>
-      <span class="chapnum">
-        <a name="doc_chap{$chid}"><xsl:number/>. </a>
-      </span>
-      <xsl:value-of select="title"/>
-    </p>
-  </xsl:when>
-  <xsl:otherwise>
-    <xsl:if test="/guide">
+  <xsl:variable name="chid"><xsl:number/></xsl:variable>
+  <xsl:choose>
+    <xsl:when test="title">
       <p class="chaphead">
-        <span class="chapnum">
-          <a name="doc_chap{$chid}"><xsl:number/>.</a>
-        </span>
+        <xsl:if test="@id"><a name="{@id}"/></xsl:if>
+        <a name="doc_chap{$chid}"/>
+        <xsl:if test="not(/mainpage) and count(//chapter)>1">
+          <span class="chapnum"><xsl:number/>.&#160;</span>
+        </xsl:if>
+        <xsl:value-of select="title"/>
       </p>
-    </xsl:if>
-  </xsl:otherwise>
-</xsl:choose>
-<xsl:apply-templates select="body">
-  <xsl:with-param name="chid" select="$chid"/>
-</xsl:apply-templates>
-<xsl:apply-templates select="section">
-  <xsl:with-param name="chid" select="$chid"/>
-</xsl:apply-templates>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:if test="/guide">
+        <p class="chaphead">
+          <span class="chapnum">
+            <a name="doc_chap{$chid}"><xsl:number/>.</a>
+          </span>
+        </p>
+      </xsl:if>
+    </xsl:otherwise>
+  </xsl:choose>
+  <xsl:apply-templates select="body">
+    <xsl:with-param name="chid" select="$chid"/>
+  </xsl:apply-templates>
+  <xsl:apply-templates select="section">
+    <xsl:with-param name="chid" select="$chid"/>
+  </xsl:apply-templates>
 </xsl:template>
 
 
