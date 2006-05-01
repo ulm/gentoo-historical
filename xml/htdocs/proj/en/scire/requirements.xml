@@ -1,0 +1,349 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/scire/requirements.xml,v 1.1 2006/05/01 02:43:35 codeman Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/en/scire/requirements.xml">
+<title>Scire - Systems Configuration, Installation, and Replication Environment</title>
+
+<author title="Author">
+  <mail link="codeman@gentoo.org">Preston Cody</mail>
+</author>
+<author title="Editor">
+  <mail link="blackace@gentoo.org">Blackace</mail>
+</author>
+
+<abstract>
+The Scire project aims to create a simple interface for installing, 
+configuring, updating, and managing mass numbers of client machines.
+This document contains notes concerning the implementation of the Scire project.
+</abstract>
+
+<license/>
+
+<version>1.1</version>
+<date>30 Apr 2006</date>
+
+<chapter>
+<title>Application Overview</title>
+<section>
+<title>Objectives</title>
+<body>
+
+<p>
+Scire will serve as a common portal for administrative tasks for multiple Linux
+client machines.  Common tasks will include updating software, installing
+software, customizing configuration files, and running scripts.
+</p>
+
+<p>
+Scire will keep track of client machines and let privileged users assign tasks
+to individual clients or groups of clients.
+</p>
+
+<p>
+The goal of Scire is to make administration of massive networks of Linux
+machines easy on administrators.  It will be extremely modular so as to allow
+users to create modules that extend it's functionality.
+</p>
+
+<p>
+In its simplest form, Scire is just a database of information about client
+machines along with modules designed to use that information to manage the
+clients.
+</p>
+
+</body>
+</section>
+<section>
+<title>Process</title>
+<body>
+
+<p>
+When possible Scire will use existing technologies in order to make the
+development as easy and pain-free as possible.  This will likely include
+Apache, PHP, mySQL or postgreSQL, and a SecureXMLRPC server and client
+written for the Gentoo Linux Installer.  Other technologies planned for use
+are PHP-GACL, ADOdb, and Smarty.
+</p>
+
+</body>
+</section>
+<section>
+<title>User Groups and Privileges</title>
+<body>
+
+<p>
+Communication with clients or client groups will be permitted only to privileged
+users or user groups.  For example: Samir is in the Technology group, and the
+Technology group is granted the Update privilege on the PrinterServers group, so
+Samir can schedule a "update world" job on Printer1 and Printer2,
+but not on MTA5.
+</p>
+
+<ul>
+  <li>
+    'root' user: The root Scire user will have the ability to control all
+		machines and users in the network, including assigning them to client groups
+		and user groups, respectively.  The root user is the only user that can add
+		users to the Administrators group.
+		The 'Administrators' group has the ability to assign users to user groups,
+		and grant privileges to them.  Administrators will (though not recommended) 
+		have the ability to assign itself to every user group, it will be able to 
+		assign tasks to any client as well as granting/revoking privileges, 
+		adding/deleting clients, client groups, users, and user groups.
+  </li>
+  <li>
+    Other users: Users will be given roles that will define what tasks they can
+    assign to which clients.  Thus, many maintenance tasks may be accomplished
+    by people other than the 'root' user, saving the system administrator time.
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Interaction with other systems</title>
+<body>
+
+<p>
+	Scire will have two methods of communicating with clients to send jobs for the
+	client to do.  The common way will be to use a client program installed 
+	(likely in the crontab) on each client machine.  This program will fetch any
+	waiting jobs from the Scire server into a local queue to run.  If this client
+	program is not run, the client operates independently as if Scire didn't 
+	exist, and if configured to do so, Scire will present an alert to certain 
+	users or user groups stating that the client missed a communication interval.
+	This method is preferred since it is a pull mechanism with built-in
+	authentication checks and is more secure because it does not leave an open 
+	port.
+</p>
+<p>
+	Alternatively, a Scire client program can be run in daemon mode, where it then
+	opens a port/socekt and both sends requests for work and waits for commands
+	from the Scire server.  This allows for immediate actions to be executed from
+	the Scire server.
+</p>
+<p>
+	When requests are fetched either way, they are put into the client's local
+	queue.  The queue is ordered by priority and then by time (oldest jobs first).
+	An example line for running the client might be:
+	:$ scire_client --daemon --poll_interval 5m
+</p>
+<p>
+	When run, the client will be able to execute scripts and run jobs as the 
+	root user of that client, though this is not preferred.  The access granted 
+	to the machine will be determined by the permissions the job has been 
+	assigned.  The interval that the client program will be run should be 
+	configurable and be related to the number of clients, the required expediency
+	of updates, and the hardware/network abilities of the Scire server.
+</p>
+
+<p>
+In the hopes of creating a secure system, there will be at least two levels of
+authentication for clients before they will trust a job well enough to execute
+it.  The client will authenticate that the host it is asking for work is indeed
+the Scire server, using a host key.  If the key doesn't match the key on record
+on the Scire server, the client will not connect.  In order to create a job,
+the user will need to login to the Scire server, and be granted the appropriate
+rights by the Administrators.  This provides the second level of security.
+</p>
+
+</body>
+</section>
+<section>
+<title>Replacement of Legacy Systems</title>
+<body>
+
+<p>
+Scire will duplicate much of the functionality currently existing in other
+system management programs such as Red Hat Satellite, m23, and SystemInstaller
+to name a few, and will seek to improve on that functionality, while adding
+new functionality not yet found in other systems.
+</p>
+
+</body>
+</section>
+<section>
+<title>Terminology</title>
+<body>
+
+<table>
+  <tr>
+    <th>Term</th>
+    <th>Definition</th>
+  </tr>
+  <tr>
+    <ti>root user</ti>
+    <ti>The user with all access, main administrator.</ti>
+  </tr>
+  <tr>
+    <ti>user</ti>
+    <ti>Someone else using Scire.</ti>
+  </tr>
+  <tr>
+    <ti>user group</ti>
+    <ti>
+      A group of users that job assigning and client access privileges may be
+      granted to, or revoked from.
+    </ti>
+  </tr>
+  <tr>
+    <ti>client machine || client</ti>
+    <ti>The machines that Scire manages.</ti>
+  </tr>
+  <tr>
+    <ti>client group</ti>
+    <ti>
+      A group of client machines that privileges may be granted to, or revoked
+      from users or user groups.
+    </ti>
+  </tr>
+  <tr>
+    <ti>client program</ti>
+    <ti>
+      Program that runs in cron on a client machine and allows it to communicate
+      with the Scire server and gather and execute jobs.
+    </ti>
+  </tr>
+  <tr>
+    <ti>job</ti>
+    <ti>
+      A defined set of information describing an action to be performed on a
+      client which may include permissions information describing the context in
+      which it should be executed on the client.
+    </ti>
+  </tr>
+  <tr>
+    <ti>Secure XMLRPC</ti>
+    <ti>Protocol for job communication.</ti>
+  </tr>
+</table>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Functional Requirements</title>
+<section>
+<title>Statement of Functionality</title>
+<body>
+
+<p>
+Physically, Scire requires a server or servers to run the main database and web
+interface.  The number of client machines will be arbitrary but Scire will be
+designed to scale.  Setting up the clients will normally require the use of a
+module to configure the client machine to use the Scire client program.  It
+will be possible, however, to install the Scire client program on any Linux
+computer and then set up that client's settings using the Scire web interface.
+</p>
+
+<p>
+Because the developers are Gentoo users, the Gentoo Linux Installation
+Management Daemon will be a module designed to work cooperatively with Scire by
+optionally installing and configuring the Scire client program, and then
+providing Scire with the appropriate client information to set up the client
+(i.e. network settings, package versions, etc).
+</p>
+
+<note>The following topics need to be expanded on:</note>
+
+<ul>
+  <li>Security</li>
+  <li>Auditing</li>
+  <li>Administration/Customization of the Application</li>
+  <li>Reporting</li>
+  <li>Scope</li>
+  <li>Performance</li>
+  <li>Usability</li>
+  <li>Concurrency</li>
+</ul>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Component Descriptions</title>
+<section>
+<title>Scire User Management</title>
+<body>
+
+<note>This section is incomplete.</note>
+
+</body>
+</section>
+<section>
+<title>Job scheduling and queuing system</title>
+<body>
+
+<p>
+When a user assigns a client a job, it will go into the queuing system to be
+fetched by the client program.  Alternatively, users will be able to schedule
+jobs to be executed in the future, optionally recurring.  Jobs will be stored
+in the database on the Scire server (web server side, database can be
+separate).
+</p>
+<p>
+When the client machine requests work, it will fetch all jobs
+past the current time (will not fetch future jobs), and put them into a local
+queue. A directory structure such as 
+<path>/$LOCAL/Jobs/queue/priority@timestamp@job_id</path> where
+$LOCAL is the root of the directory structure, priority is 1-9, 1 being highest
+priority, timestamp is a unix epoch, and job_id is the database job id # (for
+status values).
+</p>
+
+<p>
+Once done fetching the client program will look at the queue and move the 
+first file to <path>$LOCAL/Jobs/running/</path>.  If client
+is unable to run the job or doesn't receive correctly, it will return a code
+that the server daemon will receive, and also move the job to
+<path>$LOCAL/Jobs/failed/</path>, otherwise if it succeeds it will
+move to <path>$LOCAL/Jobs/done/</path>.  Since the client is
+calling the server, the server will automatically fork a thread per client
+connection.  Since there is almost no overhead besides bandwidth in transferring
+the jobs, the load is not expected to be able to bring down the server.  If
+stability becomes a problem, the max_threads/connections will be made to be
+customizable.
+</p>
+
+</body>
+</section>
+<section>
+<title>Scire Client Program</title>
+<body>
+
+<note>This section is incomplete.</note>
+
+</body>
+</section>
+<section>
+<title>Communication protocols/methods between client and server</title>
+<body>
+
+<note>This section is incomplete.</note>
+
+</body>
+</section>
+<section>
+<title>Client setup and configuration</title>
+<body>
+
+<note>This section is incomplete.</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Appendices</title>
+<section>
+<body>
+
+<p></p>
+
+</body>
+</section>
+</chapter>
+</guide>
