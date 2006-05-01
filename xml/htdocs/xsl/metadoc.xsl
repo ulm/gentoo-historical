@@ -420,8 +420,9 @@
     <!--<th><xsl:value-of select="func:gettext('editing', $lang)"/></th>-->
   </tr>
   <xsl:for-each select="exslt:node-set($metadoc)/metadoc/files/file">
-  <xsl:sort select="document(text())/metadoc/@lang" order="descending"/>
-  <xsl:sort select="document(text())/inserts/@lang" order="descending"/>
+  <xsl:sort select="document(text())/metadoc/@lang"    order="descending"/>
+  <xsl:sort select="document(text())/inserts/@lang"    order="descending"/>
+  <xsl:sort select="document(text())/dynamic/@metadoc" order="descending"/>
   <xsl:sort select="text()"/>
   <xsl:variable name="fileurl"    select="text()"/>
   <xsl:variable name="dfile"      select="document($fileurl)"/>
@@ -441,6 +442,9 @@
     <xsl:when test="exslt:node-set($dfile)/inserts">
       <b><xsl:value-of select="$fileurl"/></b>
     </xsl:when>
+    <xsl:when test="exslt:node-set($dfile)/dynamic">
+      <b><xsl:value-of select="$fileurl"/></b>
+    </xsl:when>
     <xsl:otherwise>
       <uri link="{$fileurl}"><xsl:value-of select="$fileurl"/></uri>
     </xsl:otherwise>
@@ -452,7 +456,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.30 2006/03/06 16:45:58 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.31 2006/05/01 17:04:43 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -474,7 +478,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.30 2006/03/06 16:45:58 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.31 2006/05/01 17:04:43 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:otherwise>
