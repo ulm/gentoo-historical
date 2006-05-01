@@ -13,12 +13,18 @@
 <author title="Editor">
     <mail link="ramereth@gentoo.org">Lance Albertson</mail>
 </author>
+<author title="Editor">
+    <mail link="dostrow@gentoo.org">Daniel Ostrow</mail>
+</author>
+<author title="Editor">
+    <mail link="kingtaco@gentoo.org">Mike Doty</mail>
+</author>
 <abstract>
 This document describes what you, as Gentoo Developer, can expect from
 our new e-mail system.
 </abstract>
-<version>1.2.1</version>
-<date>May 4, 2005</date>
+<version>1.3.0</version>
+<date>April 30, 2006</date>
 
 <!-- This doesn't look good, can be handy though. Commenting out
      untill someone wants it. How's that for anticipation :)
@@ -83,20 +89,20 @@ should log on to dev.gentoo.org and put the e-mail address in
 cvs.gentoo.org: you'll be using the same keys.
 </p>
 <pre caption = "Forwarding e-mails to another e-mail address">
-$ <i>ssh -l username dev.gentoo.org</i>
-username@emu username $ <i>echo new.e-mail@address.com &gt; ~/.forward</i>
-username@emu username $ <i>exit</i>
+$ <i>ssh  username@dev.gentoo.org</i>
+username@woodpecker username $ <i>echo new.e-mail@address.com &gt; ~/.forward</i>
+username@woodpecker username $ <i>exit</i>
 </pre>
-<note>
-Old(er) developers who want to use this situation don't have to do
-anything. We have already created all <path>~/.forward</path>'s with
-their current e-mail address.
-</note>
 <p>
 If you at some point want to change the e-mail address to which the
 e-mails should be forwarded, change the content of the
 <path>~/.forward</path> file to the new e-mail address.
 </p>
+<note>
+If you use a forward please make sure that it is reliable. If the queue on
+dev.gentoo.org starts to grow due to bouncing e-mail Infra will be forced to
+remove you forward. All e-mail will then be delivered locally until you fix it.
+</note>
 </body>
 </section>
 <section>
@@ -116,12 +122,6 @@ There are some things you must know about your mailbox on
 dev.gentoo.org:
 </p>
 <ul>
-<li>There is a <e>quota</e> on the amount of data you can store on
-dev.gentoo.org. This is currently 100 Mb so the chance that e-mails are
-lost because you exceeded the quota are slim. However, if you plan on
-taking a vacation and you think that the quota can be exceeded during
-your vacation, have the e-mails forwarded to another e-mail address
-where you have no such quota.</li>
 <li>You can only access it using pop3s or imaps (see the following
 chapter).</li>
 <li>There are some local e-mail clients installed on
@@ -199,8 +199,8 @@ IMAP without SSL is <e>not</e> supported! It is insecure because it
 uses static authentication, which is a Bad Thing (TM).
 </warn>
 <note>
-The dev.gentoo.org password is the same as the one used on
-cvs.gentoo.org (which is now SSH-key only). If you don't know your
+Your *.gentoo.org LDAP password is the same as the one used on
+all gentoo infrastructure you have access to. If you don't know your
 password anymore, ask <mail
 link="klieber@gentoo.org">klieber</mail> or <mail
 link="peitolm@gentoo.org">peitolm</mail> to reset your password).
@@ -229,50 +229,47 @@ relay server whenever possible.
 <p>
 If you need a relay-server desperately and have no other means of
 sending e-mails, you can use dev.gentoo.org as a relayserver. To do
-this, you must first provide it with a password (not your dev.gentoo.org
-password!). 
 </p>
-<pre caption = "Setting a password for auth-smtp">
-$ <i>ssh -l username dev.gentoo.org</i>
-username@emu username $ <i>echo "ChosenPassword" > ~/.asmtppasswd</i>
-username@emu username $ <i>chmod 0740 ~/.asmtppasswd</i>
-username@emu username $ <i>chmod o+x ~/</i>
-username@emu username $ <i>exit</i>
-</pre>
-<impo>Please do <b>not</b> use your regular login password for your asmtp password.  Instead, choose a random password and use that or <c>emerge makepasswd</c> and run <c>makepasswd --chars=8</c> to have it select one for you</impo>
-<note>~/.asmtppasswd must be owned by the 'mail' group.  This should be the default setting.  If you notice, however, that your ~/.asmtppasswd file is group-owned by a different group, please wait up to an hour until a cron-job corrected the permissions.</note>
-<note>For devs unable to use port 25 to send mail, dev.gentoo.org also accepts inbound SMTP connections on TCP port 587.</note>
+<note>
+For devs unable to use port 25 to send mail, dev.gentoo.org also accepts
+inbound SMTP connections on TCP port 587.
+</note>
 <p>
 Now setup your e-mail client to use dev.gentoo.org as the SMTP server.
 Select <e>yes</e> when asked if the server uses authentication. If you
-get the choice, select <e>cram-md5</e> as the hash-method. Use your
-username and the provided password from above for authentication.
+get the choice, select <e>plain</e> as the hash-method. Use your
+username and your LDAP password for authentication.
 </p>
 </body>
 </section>
 <section>
-<title>Setting up procmail rules for Spamassassin and Clamav</title>
+<title>Setting up procmail rules for Spam Checking</title>
 <body>
 <p>
-If you would like your mail to be scanned for spam or viruses, use these rules below with procmail to set it up.
+All email coming into dev.gentoo.org is scanned for spam and viruses. Viruses
+are automatically deleted so there is no need to check for them yourself. To 
+check for spam use something like the following procmail recipie.
 </p>
 <pre caption = "~/.procmailrc">
-:0fw: spamassassin.lock
- * &lt; 256000
- | /usr/bin/spamc
-
- :0fBHw: clamassassin.lock
- * ^Content\-(?:Disposition|Transfer-Encoding|Type)\: (?:attachment|base64|multipart)
- | /usr/bin/clamassassin
-
  :0:
  * ^X-Spam-Status: Yes
- .spam/
-
- :0:
- * ^X-Virus-Status: Yes
- .virus/
+ .maildir/.spam/
 </pre>
+<p>
+If you wish to check your spam based on spam level a recipie like the following
+can be used (adjust the number of '\*' to the level that fits you best, the more
+stars the greater the possibilty that what you are filtering is spam).
+</p>
+<pre caption = "~/.procmailrc">
+ :0:
+ * ^X-Spam-Level: \*\*\*
+ .maildir/.spam/
+</pre>
+<note>
+Mail placed into ~/.maildir/.spam is auto cleaned every 14 days. If you wish to
+save your potential spam for an extended period of time please place it in another
+directory. The usage of ~/.maildir/.spam is strongly encouraged.
+</note>
 </body>
 </section>
 </chapter>
@@ -304,7 +301,8 @@ following content:
 <title>Can I use SpamAssassin on dev.gentoo.org?</title>
 <body>
 <p>
-Yes you can. 
+Spam is automatically marked for you. There is no need to run your mail through
+any additional filters just check for the appropriate headers.
 </p>
 </body>
 </section>
@@ -312,8 +310,10 @@ Yes you can.
 <title>Why don't you set up a system-wide (spam|virus) filter?</title>
 <body>
 <p>
-Spam and virus filtering is not 100% accurate and there are risks of losing legitimate email when using these tools.
-Consequently, the infrastructure team makes the necessary tools available to the developers to use if they so choose.
+Due to the rapid spread of e-mail bourne viruses we have had to filter all of
+these despite the risk of loosing legitimate e-mail. Spam filtering is not 100%
+accurate so although we tag all e-mail with Spam level headers we do not filter
+it. We leave that option to the developers to do so if they choose.
 </p>
 </body>
 </section>
@@ -322,8 +322,8 @@ Consequently, the infrastructure team makes the necessary tools available to the
 regularly?</title>
 <body>
 <p>
-No, it's the responsibility of the individual to back up their own 
-important files and mail.
+No, it's the responsibility of the individual to back up their own important 
+files and mail.
 </p>
 </body>
 </section>
