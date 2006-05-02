@@ -176,6 +176,7 @@
 		<xsl:apply-templates select="node()|@*"/>
 	</xsl:copy>
 </xsl:template>
+
 <xsl:template match="dev">
 <xsl:variable name="nick" select='string(text())'/>
 	<tr>
@@ -190,11 +191,9 @@
 			<xsl:value-of select='translate($nick,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")'/>
 		</ti>
 		<ti>
-			<xsl:value-of select="@role"/>
+			<xsl:value-of select="concat( translate( substring( @role, 1, 1 ),'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ), substring( @role, 2))" />
 			<xsl:if test="@description">
-				<xsl:text> ( </xsl:text>
-				<xsl:value-of select="@description"/>
-				<xsl:text> )</xsl:text>
+				<xsl:value-of select="concat(' ( ', @description, ' )')"/>
 			</xsl:if>
 		</ti>
 	</tr>
