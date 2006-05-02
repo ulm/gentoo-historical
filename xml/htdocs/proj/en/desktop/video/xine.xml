@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/video/xine.xml,v 1.19 2006/01/30 07:12:43 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/video/xine.xml,v 1.20 2006/05/02 07:31:51 flameeyes Exp $ -->
 
 <guide link="/proj/en/desktop/video/xine.xml" lang="en">
 <title>xine-lib and related</title>
@@ -18,8 +18,8 @@ Maintainer notes about xine-lib package and its relatives.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.13</version>
-<date>2006-01-30</date>
+<version>1.14</version>
+<date>2006-05-02</date>
 
 <chapter> <!-- xine-lib -->
 <title>xine-lib</title>
@@ -40,7 +40,10 @@ the frontend itself.
 <p>
 For this reason <c>xine-lib</c> package must be managed carefully, to avoid
 adding dangerous crashes that might be difficult to reproduce (the same happened
-in the past).
+in the past). As in many cases the crashes are difficult to grasp just looking
+at the code, as there might be symbols collisions and similar stuff, to report
+bugs it's important to produce also a valid
+<uri link="/proj/en/qa/backtraces.xml">backtrace</uri> of the crash.
 </p>
 
 <p>
@@ -58,16 +61,15 @@ be updated during the time, also when maintainer changes.
 <body>
 
 <p>
-<c>xine-lib</c> is classically heavy patched on Portage tree. The reason of this
-is that the original <c>xine-lib</c> package had a lot of
-<uri link="/proj/en/qa/automagic.xml">automagic dependencies</uri>,
-so it autorecognized presence of some libraries enabling or
-disabling extra plugins for them. As this is not good in an ebuild, a dirty
-workaround of faking <c>autoconf</c> cache was used. Unfortunately this is quite
-difficult to manage, so instead of using that, it was moved to patching the
-<path>configure.ac</path> file to add the switches needed. The patches are being
-merged upstream, so they can be dropped when new versions are released that have
-them applied.
+<c>xine-lib</c> is classically heavy patched on Portage tree. Although the
+original reason was because of
+<uri link="/proj/en/qa/automagic.xml">automagic dependencies</uri>, these are
+almost entirely fixed upstream; what remains now are patches and fixes for
+"external projects" like the internal copy of <c>ffmpeg</c>, or <c>vidix</c>,
+that requires to be, or also changes that are a bit intrusive and upstream is
+not likely to apply (like the textrel patch that doesn't work with GCC 2.95).
+There are also extra patches to fix crashes and symbols' collisions, but those
+are being merged upstream, too.
 </p>
 
 <p>
@@ -126,21 +128,22 @@ to be fixed, xine will make use of the fixes. This was for example the case of
 
 <note>
 As also <path>libmad</path> is used external or not used at all, <c>xine-lib</c>
-might not be able to decode mp3 audio without it.
+might not be able to decode mp3 audio without it. Since versions
+1.1.2_pre20060328-r1 this doesn't lead to crashes anymore.
 </note>
 
 <p>
 An exception to the above rules applies to <c>libdvdnav</c>. For unknown reasons
-using the external library a lot of DVDs seems not to work at all on xine (while
-they works fine on vlc using the same external library), so the internal library
-is used.
+using the external library a lot of DVDs seems not to work reliably on xine (while
+they works fine on vlc using the same external library), and also seeking
+capabilities are lost, so the internal library is always used.
 </p>
 
 <p>
 A different treatment is used for <c>ffmpeg</c>. The included version is highly
-suggested by upstream, and sometimes it's just the only practicable way, as the
+recommended by upstream, and sometimes it's just the only practicable way, as the
 snapshot on portage might be too updated or too outdated to be used. For this
-reason, the default behavior should be to use the internal copy, and then the
+reason, the default behavior should be to use the internal copy, while the
 <b>ffmpeg</b> useflag is used to choose the external copy of it. The
 external copy is usually faster and supports extra formats or variations of some
 specific video or audio format.
@@ -184,9 +187,8 @@ modular <c>xorg-x11</c> is out of package masking.
 <p>
 As many other multimedia programs, also <c>xine-lib</c> has its own problems
 with extremely riced flags. Actually, the original xine-lib configure uses by
-itself quite extreme flags, on x86 and amd64 platforms. As these were causing
-some bugs difficult to smash, Portage's version patches it to avoid adding extra
-flags.
+itself quite extreme flags, on x86 and amd64 platforms. A saner behaviour can be
+applied by using the <c>--disable-optimisations</c> option at <c>./configure</c>.
 </p>
 
 <p>
@@ -198,23 +200,10 @@ debug. Also, you cannot build it without any kind of <c>-O</c> flag, so if user
 doesn't provide one, you should at least use <c>-O2</c>.
 </p>
 
-<impo>
-As most of the problems with CFLAGS are relative only to x86 architecture, it's
-preferred to mangle them only in a protected section run only on x86 systems.
-This way you avoid changing the flags for people that might use them on better
-architectures, where, for example <c>-fomit-frame-pointer</c> can be avoided.
-</impo>
-
-<p>
-As of release 1.1.1 <c>xine-lib</c> uses a configure option
-<c>--disable-optimizations</c> to avoid adding more flags to the default flags
-used by xine-lib itself. For this reason some flags needs to be added to the
-ebuild as they are needed to build in certain conditions on x86 architecture.
-Never enable optimizations insidea an ebuild as they add a lot of extra flags
-that are known to have bad behavior on some GCCs and might introduce bugs that
-are difficult or impossible to reproduce on a stable basis and then difficult to
-debug. Remember that on x86 architecture <c>xine-lib</c> cannot be debugged.
-</p>
+<note>
+The aforementioned problem is solved in version 1.1.2_pre20050328-r5. Leave the
+note until that's stable.
+</note>
 
 </body>
 </section>
@@ -234,33 +223,22 @@ notes.
 <p>
 The first note is about <b>win32codecs</b> useflag. This is used to enable
 the support for the binary win32 codecs that are emulated using a subset of
-Wine functions. Before version 1.1.1-r1, without this flag xine lost also ASF
-demuxing support, because the code was unstablea and lead to crashes when not
-using win32codecs but, for example, ffmpeg to decode WMA files. Since version
-1.1.1-r1, this problem seems gone, so the <b>asf</b> useflag got introduced to
-control if enable or not the ASF demuxer (as it can be patented and not legal
-on some countries). At the same time, before 1.1.1-r1 the <b>win32codecs</b>
-useflag did not actually disable the building of the plugin, that was left
-unused as it did not bring in the codecs and the ASF demuxer; from that version
-onwards, <c>xine-lib</c> is patched to not build the plugin at all if it's not
-passed.
+Wine functions. This flag does not enable the ASF demuxer, so if you want to
+play WMV files you also need to enable the <b>asf</b> useflag (present because
+the ASF demuxer might be illegal to be used in some countries). This flag is
+also needed to be able to play WMA files with <c>ffmpeg</c>.
 </p>
 
 <p>
-Also, the <b>xvmc</b> useflag and its conditioned useflags (<b>nvidia</b>,
-<b>cle266</b> and <b>i8x0</b>) have a special treatment. The single <b>xvmc</b>
-can't enable XvMC output plugin as it requires to know which library to use, 
-that is specific to a single driver (actually, if no library is specified, the
-configure will look for libXvMCW, a wrapper library that allows to choose at run
-time which low-level library to use; unfortunately that wrapper is present only
-in XOrg 6.9 and later, pre-releases and final release). The three other
-flags select the right library, but only one of them can be enabled to have the
-output plugin. If more than one of them is enabled, the XvMC output plugin is
-disabled. Because of the way the configure script was written, before patchset
-24 (used by versions 1.1.1-r3 and 1.1.1-r4) if libXvMCW was present on the
-system, XvMC and XxMC plugins would be built also if <b>xvmc</b> flag wasn't
-present. With patchset 24 the <path>--disable-xvmc</path> configure parameter
-was added to allow to disable it entirely.
+Another flag having a special treatament is <b>xvmc</b>, that conditions the
+usage of three <c>VIDEO_CARDS</c> values that might be enabled directly as
+useflags or by setting the <c>VIDEO_CARDS</c> variable: <b>nvidia</b>,
+<b>i810</b> and <b>via</b>. The single <b>xvmc</b> alone will link
+<path>libXvMCW</path> if present, a wrapper library that allows to choose which
+other low-level library to use, while setting one of the other useflags will
+enable the correspondant driver. If more than one driver is enabled, the ebuild
+will behave as if none were enabled, thus using <path>libXvMCW</path> if present
+or disabling xvmc in the contrary.
 </p>
 
 <p>
@@ -272,7 +250,8 @@ a way to create a "debug build" by using special make targets, this build simply
 adds <c>-DDEBUG -g</c> flags to the compiler flags. Using that with <b>debug</b>
 useflag is bad looking inside the ebuild. The <c>-g</c> flag should be passed
 by the user if he really wants debug, so the only thing ad hoc for the package
-is the <c>-DDEBUG</c> flag.
+is the <c>-DDEBUG</c> flag. If you want to be able to get meaningful backtraces,
+please follow <uri link="/proj/en/qa/backtraces.xml">the related guide</uri>.
 </p>
 
 </body>
@@ -290,13 +269,51 @@ TEXTRELs in compiled binaries on x86 platform. The problem is stated in
 </p>
 
 <p>
-Thanks to the PaX Team, <c>xine-lib-1.1.1-r3</c> are now fixed not to have
-TEXTRELs due to the win32codecs support and to the postprocessing filters of
-xine itself. There are still TEXTRELs due to <c>ffmpeg</c> code that needs to be
-fixed in ffmpeg first.
+Thanks to the PaX Team, <c>xine-lib-1.1.1-r3</c> and later versions are now
+fixed not to have TEXTRELs due to the win32codecs support and to the
+postprocessing filters of xine itself. There are still TEXTRELs due to
+<c>ffmpeg</c> code that needs to be fixed in ffmpeg first.
 </p>
 
 </body>
+</section>
+
+<section> <!-- CVS Snapshot -->
+<title>CVS Snapshots</title>
+
+<body>
+
+<p>
+Missing an updated release after 1.1.1, and this having quite a few of problems
+(counting in also a security issue), it happened that a pre-1.1.2 snapshot was
+made and also marked stable. In case there will be need for more CVS snapshots,
+these are the basic instructions needed to generate one.
+</p>
+
+<p>
+The first thig is to get a CVS checkout of xine-lib sources, and making sure it
+is complete and not with a lot of FIXME in the log. After that you can use the
+simple command <c>make dist</c> to build a tarball to use for the ebuild. Make
+sure you try a <c>make distcheck</c> to make sure that everything is present,
+and run a few compile tests as well as runtime tests so that it works.
+</p>
+
+<p>
+Patches has to be applied over that snapshot, not included in the snapshot
+itself, to make sure they don't collide if they have to be modified. The patches
+can be handled as usual from Gentoo CVS with <c>quilt</c>.
+</p>
+
+<p>
+The naming of the snapshot tarball should be using <c>${P}</c> variable, and
+should be compressed with <c>bzip2</c>. The source directory would be named as
+<c>make dist</c> command did already (in this case <path>xine-lib-1.1.2cvs</path>),
+the one of the patchset can be either <c>${P}</c> or simply
+<path>xine-lib-1.1.2cvs${DATE}</path>.
+</p>
+
+</body>
+
 </section>
 
 </chapter>
@@ -314,21 +331,13 @@ released by the same project as <c>xine-lib</c> and it is toolkit-agnostic.
 </p>
 
 <p>
-Its handling is much simpler than <c>xine-lib</c>'s, while it shares the problem
-of needing <path>configure.ac</path> patches to disable optional dependencies
-such as <c>ncurses</c> or <c>libcaca</c>. The patches can still be sent upstream
-to <path>xine-devel</path> mailing list, and then dropped when the new releases
-are done.
+Its handling is much simpler than <c>xine-lib</c>'s, the patches can still be
+sent upstream to <path>xine-devel</path> mailing list, and then dropped when the
+new releases are done.
 </p>
 
 <p>
-The only note about this is that it might require a bit of tweaking to the code
-for portability, but it's usually a side problem, unlikely to happen again in
-the near future.
-</p>
-
-<p>
-In a way similar to xine-lib, also patches to <c>xine-ui</c> are hosted in CVS
+In a fashion similar to xine-lib, also patches to <c>xine-ui</c> are hosted in CVS
 at <path>gentoo/src/patchsets/xine-ui</path>, orderd by version. The directories
 are also <c>quilt</c> patches so they can be symlinked and then managed by it.
 It's important to document the non-obvious patches, as done for xine-lib.
@@ -385,17 +394,24 @@ with old versions and with <c>xfree</c>.
 <body>
 <p>
 <c>media-sound/amarok</c> is an advanced audio player for KDE, that uses xine as
-one of its engines (the suggested one). It's managed by sound and KDE herds
-together, and it's usually not a big trouble to handle.
+main engine (the default one). It's in sound and KDE herds, and it's usually not
+a big trouble to handle as upstream takes care of most of the issues.
 </p>
 
 <p>
-THe most common problem with amaroK and xine backend is the interface skipping
+The most common problem with amaroK and xine backend is the interface skipping
 all around an mp3 playlist. This is usually due to someone who builds
 <c>xine-lib</c> with <b>-mad</b> useflag, and then tries to play mp3s with
 amaroK using xine engine. Another cause would be unmerging <c>libmad</c>, this
-way the mad plugin for xine cannot be loaded and so it doesn't play mp3s.
+way the mad plugin for xine cannot be loaded and so it doesn't play mp3s either.
 </p>
+
+<p>
+The same applies when building <c>xine-lib</c> with <b>-asf</b> and trying to
+play WMA files, or <b>-aac</b> trying to play AAC files. Those problems are
+usually due to users so are not related to this guide.
+</p>
+
 </body>
 
 </section>
