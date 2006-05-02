@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/contribute/maintnotes.xml,v 1.2 2005/12/15 22:55:19 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/contribute/maintnotes.xml,v 1.3 2006/05/02 06:28:15 flameeyes Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>1.0</version>
-<date>2005-10-22</date>
+<version>1.1</version>
+<date>2006-05-02</date>
 
 <section>
 <title>General Structure</title>
@@ -61,6 +61,12 @@ making use of <path>/sbin/nologin</path> where that is present (*BSD, Darwin
 and Linux using <c>app-admin/nologin</c>) or falling back to
 <path>/bin/false</path> when nothing else can be used.
 </p>
+
+<note>
+As of now <c>eneweruser</c> function fails when using <path>/bin/false</path> or
+any other direct "disabled" shell as shell for the user, forcing the ebuild
+developers to use -1 as it should be.
+</note>
 
 <p>
 If you need to find out the home directory for a given user, you can't rely on 
@@ -166,7 +172,12 @@ doen't break apart, so calling <c>make</c>, <c>sed</c>, <c>patch</c> and
 The GNU tools' aliases works only if the tools are called by themselves, they
 won't work inside scripts called by the ebuild, and they won't work if called
 by <c>find .. -exec</c> or by <c>xargs</c>. In those cases, it's usually better
-to check for the right tool to call.
+to check for the right tool to call. An important exception is the usage of the
+<c>sed</c> command to call GNU sed: being widely used and difficult to check or
+fix, Portage 2.1_pre9 and later provides a wrapper script that calls GNU sed in
+any case, when used from ebuilds, if the <c>$ESED</c> variable is not set, in
+which case the called <c>sed</c> will be the one there indicated. This allows
+the usage of BSD sed when building BSD packages for instance.
 </warn>
 
 <p>
@@ -213,7 +224,7 @@ from <c>portability</c> eclass.
 </p>
 
 <pre caption="using get_bmake">
-DEPEND="!userland_BSD? ( sys-devel/pmake )"
+DEPEND="virtual/pmake"
 ...
 
 src_compile() {
@@ -452,6 +463,26 @@ will be called only when gettext is requested and linked against.
 </p>
 
 <p>
+There's then the opposite problem: when building with NLS support, some packages
+fail with undefined references to functions like <path>libintl_gettext</path>.
+This happens because the package does not really add the variables to link
+against to the linking command, that is, it misses to link to <path>libintl</path>
+when the functions are not provided by the <c>libc</c>. For autotooled packages
+the library that contains the library to link against for <path>libintl_*</path>
+functions is <c>LTLIBINTL</c>, while the one for <path>libiconv_*</path>
+function is <c>LTLIBICONV</c>. Don't be confused by the LT prefix, those are not
+dependent on libtool presence, but rather means that <c>libintl/libiconv</c>
+were built with libtool, so passes <c>-L${libdir} -lintl</c> commandline instead
+of pointing directly to the .so file.
+</p>
+
+<pre caption="Makefile.am that links correctly against libintl">
+..
+somebinary_LDADD = $(LTLIBINTL)
+..
+</pre>
+
+<p>
 The way <c>gettext</c> and <c>libiconv</c> are used by some GNU software, with respect
 to generic software, actually adds a couple more problems to Gentoo/*BSD systems. 
 Packages like <c>tar</c>, <c>gettext</c>, <c>glib2</c> and <c>libiconv</c> themselves 
@@ -472,11 +503,12 @@ enabled (and the package does not regenerate <c>autotools</c> support files), or
 unconditional build-time dependency when <c>autopoint</c> needs to be run. On a 
 non-glibc system, <c>gettext</c> is also a run-time dependency when building with 
 nls useflag enabled. While currently <c>gettext</c> and <c>libiconv</c> are in the list
-of system packages for Gentoo/*BSD ports, the complete dependency would be:
+of system packages for Gentoo/*BSD ports, the complete dependencies should be
+stated as:
 </p>
 
 <pre caption="gettext dependancy sample">
-RDEPEND="!elibc_glibc? ( nls? ( sys-devel/gettext ) )"
+RDEPEND="nls? ( virtual/libintl )"
 DEPEND="nls? ( sys-devel/gettext )"
 </pre>
 
@@ -487,8 +519,17 @@ presence on <c>configure --help</c> does not always mean that nls support can be
 or is even present.
 </p>
 
+<p>
+Similarly, the packages that uses the <path>iconv()</path> function and thus
+requires <c>libiconv</c> package when building on non-GLIBC systems, have to
+depend on <c>virtual/libiconv</c>, that doesn't add extra dependencies on
+GLIBC users but satisfy the dependencies for non-GLIBC users.
+</p>
+
 </body>
 </subsection>
 </section>
 
 </sections>
+
+<!-- kate: space-indent on; indent-width 2; replace-tabs on; indent-mode normal; -->
