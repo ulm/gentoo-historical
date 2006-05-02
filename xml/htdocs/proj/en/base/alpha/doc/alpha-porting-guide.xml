@@ -1,0 +1,1068 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/base/alpha/doc/alpha-porting-guide.xml,v 1.1 2006/05/02 13:30:48 yoswink Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="/proj/en/base/alpha/doc/alpha-porting-guide.xml">
+
+<title>Alpha Porting Guide</title>
+<author title="Author">
+  <mail link="tcort@cs.ubishops.ca">Thomas Cort</mail>
+</author>
+
+<abstract>
+This guide is intended to show C programmers how to port programs
+written on other architectures to the Alpha architecture.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.1</version>
+<date>2006-04-23</date>
+
+<chapter>
+<title>Overview</title>
+
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+This guide is intended to show C programmers how to port programs
+written on other architectures to the Alpha architecture. The
+overview has some basic information that should be known when
+porting any application to Alpha. The subsequent sections will have
+example problems, explanations, and solutions. All of the code examples
+compile and work without warnings on i386 systems, but fail or are
+potentially unsafe on alpha.
+</p>
+
+</body>
+</section>
+<section>
+<title>Endianness</title>
+<body>
+
+<p>
+Linux/Alpha is <c>little endian</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Word Size</title>
+<body>
+
+<p>
+Alpha is a 64-bit platform. Alpha systems use a 64 bit kernel and a 64 bit
+userland.
+</p>
+
+</body>
+</section>
+<section>
+<title>Variable Sizes (in bytes)</title>
+
+<body>
+
+<p>
+The most important things to note here are that the size of <c>int</c> is
+not the same as the size of any of the pointer types and that the memory
+must be naturally aligned.
+</p>
+
+<table>
+  <tr>
+    <th>Type</th><th>Size</th><th>Alignment</th>
+    <th>Type</th><th>Size</th><th>Alignment</th>
+  </tr>
+  <tr>
+    <ti>char</ti><ti>1</ti><ti>Any</ti>
+    <ti>char*</ti><ti>8</ti><ti>8</ti>
+  </tr>
+  <tr>
+    <ti>void</ti><ti>1</ti><ti>Any</ti>
+    <ti>void*</ti><ti>8</ti><ti>8</ti>
+  </tr>
+  <tr>
+    <ti>short</ti><ti>2</ti><ti>2</ti>
+    <ti>short*</ti><ti>8</ti><ti>8</ti>
+  </tr>
+  <tr>
+    <ti>float</ti><ti>4</ti><ti>4</ti>
+    <ti>float*</ti><ti>8</ti><ti>8</ti>
+  </tr>
+  <tr>
+    <ti>int</ti><ti>4</ti><ti>4</ti>
+    <ti>int*</ti><ti>8</ti><ti>8</ti>
+  </tr>
+  <tr>
+    <ti>double</ti><ti>8</ti><ti>8</ti>
+    <ti>double*</ti><ti>8</ti><ti>8</ti>
+  </tr>
+  <tr>
+    <ti>long double</ti><ti>8</ti><ti>8</ti>
+    <ti>long double*</ti><ti>8</ti><ti>8</ti>
+  </tr>
+  <tr>
+    <ti>long</ti><ti>8</ti><ti>8</ti>
+    <ti>long*</ti><ti>8</ti><ti>8</ti>
+  </tr>
+  <tr>
+    <ti>long long</ti><ti>8</ti><ti>8</ti>
+    <ti>long long*</ti><ti>8</ti><ti>8</ti>
+  </tr>
+</table>
+
+<p>
+* sizes are the same for signed and unsigned variables.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Storage Size Mismatch</title>
+
+<section>
+<title>Identifying the Problem</title>
+<body>
+
+<p>
+You will see compile time warnings about casting between types of different
+sizes.
+</p>
+
+<pre caption="cast to pointer from integer of different size warning">
+tcort@topcat ~ $ gcc test.c
+test.c: In function `main':
+test.c:6: warning: cast to pointer from integer of different size
+tcort@topcat ~ $
+</pre>
+
+<pre caption="cast from pointer to integer of different size warning">
+tcort@topcat ~ $ gcc test.c
+test.c: In function `main':
+test.c:10: warning: cast from pointer to integer of different size
+tcort@topcat ~ $
+</pre>
+
+</body>
+</section>
+<section>
+<title>Explanation of the Problem</title>
+<body>
+
+<p>
+When you store a value in a variable of one size and convert it to another
+size, bits either get added or chopped from the original value. A lot of
+programmers assume that integers and pointers are the same size and cast freely
+between the two. While it works on x86 systems, it can cause problems on
+systems where the size of an integer is different than the size of a pointer.
+</p>
+
+<p>
+Below is an example of a cast to pointer from integer of different size. This
+cast is dangerous because we are casting a 64 bit pointer to a 32 bit integer.
+We effectively chop off the 32 most significant bits, then we try to access
+the memory at that 64 bit address using only the 32 least significant bits.
+This will cause a segfault unless your program is located in physical memory
+between address <c>0x0000000000000000</c> and address
+<c>0x00000000FFFFFFFF</c>.
+</p>
+
+<pre caption="cast to pointer from integer of different size">
+int main(void) {
+    /* Expected output: "Ice cream has no bones." */
+    /* Actual   output: "Segmentation fault"      */
+
+    int x = (int) "Ice cream has no bones.\n";
+    printf((const char*)x);
+    return 0;
+}
+</pre>
+
+<p>
+Below is an example of a cast from pointer to integer of different size.
+Usually this is done for pointer arithmetic. Most of the time the pointers
+we use are relatively close to each other and they have a good position in
+memory, so the program executes normally. However, problems occur when the
+calculations require more than 32 bits. The example below would seg fault if
+the <c>'!'</c> was located at <c>0x000000010000000e</c> and the array started
+at <c>0x00000000FFFFFFFF</c>.
+</p>
+
+<pre caption="cast from pointer to integer of different size">
+int main(void) {
+    /* Expected output: "Banana Phone" */
+    /* Actual   output: "Banana Phone" */
+
+    char c[16], *ptr;
+
+    strncpy(c,"Banana Phone\n!",16);
+
+    ptr = strchr(c,'!');        /* remove '!' by putting */
+    c[(int)ptr-(int)c]=0x00;    /* '\0' in its place   */
+
+    printf("%s",c);
+    return 0;
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Finding a Solution</title>
+<body>
+
+<p>
+When programming, don't try to be smart and do tricks with pointers. Always
+use the appropriate type, and don't cast between pointer and non-pointer
+types. Following that advice creates more portable code, and the code
+produced is generally easier to read.
+</p>
+
+<pre caption="always use the appropriate storage class">
+int main(void) {
+    char *x = "Ice cream has no bones.\n";
+    printf(x);
+    return 0;
+}
+</pre>
+
+<p>
+When doing pointer arithmetic, you should avoid casting between pointer
+and non-pointer types as much as possible.
+</p>
+
+<pre caption="avoid casting when doing pointer arithmetic">
+int main(void) {
+    char c[16], *ptr;
+
+    strncpy(c,"Banana Phone\n!",16);
+
+    ptr = strchr(c,'!');        /* remove '!' by putting */
+    *(c+(ptr-c))=0x00;        /* '\0' in its place     */
+
+    printf("%s",c);
+    return 0;
+}
+</pre>
+
+<note>
+The above example is used to demonstrate pointer arithmetic without casting.
+Removing the <c>'!'</c> character can be done by <c>*ptr=0x00;</c> instead
+of doing <c>*(c+(ptr-c))=0x00;</c>.
+</note>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Unaligned Accesses</title>
+
+<section>
+<title>Identifying the Problem</title>
+<body>
+
+<p>
+The kernel will log an <b>unaligned trap</b>.
+</p>
+
+<pre caption="error message in the kernel log">
+Mar 14 22:07:25 [kernel] a.out(3572): unaligned trap at 0000000120000590: 0000000120010b52 2c 31
+</pre>
+
+</body>
+</section>
+<section>
+<title>Explanation of the Problem</title>
+<body>
+
+<p>
+On Alpha, all memory accesses have to be <b>naturally aligned</b>. For example,
+the address of a 4 byte integer must be a multiple of 4. The address of an
+8 byte (long) integer must be a multiple of 8. The compiler will do its
+best to align variables automatically, but sometimes you can override this
+by doing some pointer tricks or adding assembly language code.
+</p>
+
+<p>
+When a program does an unaligned memory access, the CPU traps into the kernel.
+The kernel then does an aligned access and returns the unaligned portion of
+memory that the program requested. The program continues to function normally
+as if nothing has happened.
+</p>
+
+<p>
+Even though the program will work correctly with unaligned accesses, you
+should try to remove as many unaligned accesses as possible because they
+cause a performance hit.
+</p>
+
+<p>
+The following example shows how to make an unaligned memory access by
+manipulating pointers.
+</p>
+
+<pre caption="unaligned memory access">
+int main(void) {
+    /* Expected results: Nothing appended to the kernel log */
+
+    /* Actual results: The following appended to the kernel log
+     *    unaligned trap at 0000000120000590: 0000000120010b52 2c 31
+     */
+
+    short x[10];
+    int  *y = (int*) (x+1);
+
+    *y = 0;
+
+    return 0;
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Finding a Solution</title>
+<body>
+
+<p>
+The first step in fixing unaligned traps is determining where the
+unaligned access happens in our code. To do that we are going to use
+the following tool.
+</p>
+
+<pre caption="unalign.c - unaligned access debugging tool">
+#include &lt;errno.h&gt;
+#include &lt;stdio.h&gt;
+
+#ifndef __linux__
+#include &lt;sys/sysinfo.h&gt;
+#else
+#include &lt;asm/sysinfo.h&gt;
+#include &lt;asm/unistd.h&gt;
+static int setsysinfo(unsigned long op, void *buffer, unsigned long size,
+                        int *start, void *arg, unsigned long flag) {
+        syscall(__NR_osf_setsysinfo, op, buffer, size, start, arg, flag);
+}
+#endif
+
+static void usage(void) {
+        fprintf(stderr, "usage: unaligned &lt;command-path&gt; [command-args...]\n\n"
+        "  This program is designed to assist debugging of\n"
+        "  unaligned traps by running the program in gdb\n"
+        "  and causing it to get SIGBUS when it encounters\n"
+        "  an unaligned trap.\n\n"
+        "  It is free software written by Sean Hunter &gt;sean@uncarved.co.uk&lt;\n"
+        "  based on code by Richard Henderson and Andrew Morgan. It was further\n"
+        "  modified by Thomas Cort &lt;tcort@cs.ubishops.ca&gt;. It is provided\n"
+        "  under the gnu public license without warrantees of any kind.\n\n");
+
+        exit(1);
+}
+
+void trap_unaligned(void) {
+        unsigned int buf[2];
+        buf[0] = SSIN_UACPROC;
+        buf[1] = UAC_SIGBUS | UAC_NOPRINT;
+        setsysinfo(SSI_NVPAIRS, buf, 1, 0, 0, 0);
+}
+
+int main(int argc, char **argv) {
+        char *tmp_filename;
+        char* my_debugger = "/usr/bin/gdb";
+        FILE* tmp_file;
+        int curr_arg, pid, status;
+
+        /* check that we have at least 1 argument */
+        if (argc &lt; 2) {
+                usage();
+        }
+
+        trap_unaligned();
+
+        /* add the extra args to a file to pass to gdb */
+        tmp_filename = tmpnam(NULL);
+        tmp_file = fopen(tmp_filename, "w+");
+        if (!tmp_file) {
+                fprintf(stderr, "Unable to create temp file %s reason: %s\n",
+                        tmp_filename,
+                        strerror(errno));
+                exit(1);
+        }
+
+        fprintf(tmp_file, "file %s\n", argv[1]);
+        fprintf(tmp_file, "set args");
+
+        for(curr_arg = 2; curr_arg &lt; argc; curr_arg++) {
+                fprintf(tmp_file, " %s", argv[curr_arg]);
+        }
+
+        fprintf(tmp_file, "\n");
+        fprintf(tmp_file, "run\n");
+        fclose(tmp_file);
+
+        printf("Extra arguments passed to gdb in file %s.\n", tmp_filename);
+
+        if ((pid = fork()) &lt; 0) {
+                fprintf(stderr, "fork() failed!");
+                exit(1);
+        }
+
+        if (pid == 0) /*child*/ {
+
+                execlp(my_debugger, argv[1], "-x", tmp_filename, NULL);
+
+                /* if we fall through to here, our exec failed -- announce the fact */
+                fprintf(stderr, "Unable to execute command: %s\n", strerror(errno));
+
+                usage();
+        }
+
+        while (wait(&amp;status) != pid);
+
+        unlink(tmp_filename); /* clean up */
+        free(tmp_filename);
+}
+</pre>
+
+<p>
+Using this tool is very simple. Compile the code above. Then, compile your
+program with debugging information via the <c>-g3</c> compiler flag. Finally,
+execute <c>unalign</c> with the name of your program as an argument.
+</p>
+
+<pre caption="using unalign">
+tcort@topcat ~ $ gcc unalign.c -o unalign
+tcort@topcat ~ $ gcc test.c -g3
+tcort@topcat ~ $ ./unalign a.out
+Extra arguments passed to gdb in file /tmp/fileKAaEhf.
+GNU gdb 6.4
+Copyright 2005 Free Software Foundation, Inc.
+GDB is free software, covered by the GNU General Public License, and you are
+welcome to change it and/or distribute copies of it under certain conditions.
+Type "show copying" to see the conditions.
+There is absolutely no warranty for GDB.  Type "show warranty" for details.
+This GDB was configured as "alpha-unknown-linux-gnu".
+Using host libthread_db library "/lib/libthread_db.so.1".
+
+Program received signal SIGBUS, Bus error.
+0x00000001200005cc in main () at test.c:11
+11              *y = 0;
+(gdb) The program is running.  Exit anyway? (y or n) y
+Bus error
+</pre>
+
+<p>
+As with most programming problems, there are multiple solutions. In the
+first solution we simply pad <c>x</c> with some extra bytes so that <c>y</c>
+points to an aligned memory address.
+</p>
+
+<pre caption="no unaligned memory access">
+int main(void) {
+    short x[10+3];
+    int  *y = (int*) (x+4);
+
+    *y = 0;
+
+    return 0;
+}
+</pre>
+
+<p>
+In the second solution we use types with the same byte alignment to avoid
+the possibility of an unaligned access.
+</p>
+
+<pre caption="no unaligned memory access">
+int main(void) {
+    int x[10];
+    int  *y = (int*) (x+1);
+
+    *y = 0;
+
+    return 0;
+}
+</pre>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>IEEE Floating Point Numbers</title>
+
+<section>
+<title>Identifying the Problem</title>
+<body>
+
+<p>
+You will encounter a Floating point exception at runtime.
+</p>
+
+<pre caption="Floating point exception">
+tcort@topcat ~ $ ./a.out
+Floating point exception
+tcort@topcat ~ $
+</pre>
+
+</body>
+</section>
+<section>
+<title>Explanation of the Problem</title>
+<body>
+
+<p>
+When the Alpha architecture's floating point unit was first designed, the
+designers traded performance for functionality. As a result, all Alpha systems
+below <c>EV6</c> do not fully implement the IEEE floating point standard. For
+those earlier systems, there is no hardware support for denormalized numbers or
+exceptional IEEE values like not a number and positive/negative infinity. If
+you wish to use those features, you must enable software assisted IEEE
+floating point at compile time and have kernel support for software
+completion enabled.
+</p>
+
+<pre caption="exceptional IEEE values">
+int main(void) {
+    /* Expected output: "x/y = inf"                */
+    /* Actual   output: "Floating point exception" */
+
+    double x = 1.0, y = 0.0;
+    printf ("x/y = %g\n", x/y);
+    return 0;
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Finding a Solution</title>
+<body>
+
+<note>
+Alphas of model <c>EV6</c> or better do not need the <c>-mieee</c> compiler
+flag.
+</note>
+
+<p>
+Enable software assisted floating point at compile time with the <c>-mieee</c>
+compiler flag.
+</p>
+
+<pre caption="using the -mieee compiler flag">
+tcort@topcat ~ $ gcc -mieee test.c
+tcort@topcat ~ $ 
+</pre>
+
+<note>
+Using <c>-mieee</c> doesn't result in any noticeable slowdown and is 
+recommended in general.
+</note>
+
+<p>
+Enable kernel floating point software completion.
+</p>
+
+<pre caption="enabling kernel floating point software completion">
+Kernel hacking  --->
+  [*] Kernel debugging
+    &lt;*&gt;   Kernel FP software completion
+</pre>
+
+<p>
+You can make sure the program is being compiled with the <c>-mieee</c>
+compiler flag by checking for <c>_IEEE_FP</c>. It is defined when a 
+program is compiled with <c>-mieee</c>.
+</p>
+
+<pre caption="give an error if the program isn't compiled with -mieee">
+#if defined(__alpha) &amp;&amp; !defined(_IEEE_FP)
+#error "You must compile this program with the -mieee CFLAG on Alpha"
+#endif
+
+int main(void) {
+    double x = 1.0, y = 0.0;
+    printf ("x/y = %g\n", x/y);
+    return 0;
+}
+</pre>
+
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Forgetting Alpha Exists / Endianness</title>
+
+<section>
+<title>Identifying the Problem</title>
+<body>
+
+<p>
+You will get unexpected and/or incorrect results.
+</p>
+
+</body>
+</section>
+<section>
+<title>Explanation of the Problem</title>
+<body>
+
+<p>
+Sometimes programmers don't think about Alpha when conditionally compiling
+sections of code. They may make assumptions, or only consider a subset of
+all architectures.
+</p>
+
+<p>
+In the following example the programmer assumes that if the system compiling
+the program is <c>i386</c>, then it is little endian. The programmer also
+assumes that the only other system type that would compile this program is
+<c>ppc</c> and therefore would be big endian.
+</p>
+
+<pre caption="forget about alpha when determining endianness">
+int main(void) {
+    /* Expected output: "3" (works on x86 and ppc) */
+    /* Actual   output: "4" */
+
+    int x;
+    unsigned char y[4];
+    memset(y,0,sizeof(unsigned char)*4);
+
+    y[0]=0xff; y[1]=0x00;
+    y[2]=0xff; y[4]=0x00;
+
+    memcpy(&amp;x,y,4);
+
+#ifdef __i386
+    /* little endian */
+    x = (x&amp;1) + 2;
+#else /* __ppc */
+    /* big endian */
+    x = (x&amp;1) + 3;
+#endif
+
+        printf("%d\n",x);
+    return 0;
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Finding a Solution</title>
+<body>
+
+<p>
+When determining whether the system compiling your program has a particular
+property (example, little endian vs. big endian), you should never use 
+<c>__arch</c>. If you do, then to ensure portability you will have to
+determine if the property exists or not for every architecture, and you will
+have to add new architectures as they are created. Instead you should 
+use preprocessor definitions, or a runtime check if the definitions are 
+not available.
+</p>
+
+<pre caption="correctly determining endianness">
+#include &lt;sys/param.h&gt;
+
+int is_big_endian() {
+    long l = 1;
+    return !(*((char *)(&amp;l)));
+}
+
+int main(void) {
+    int x;
+    unsigned char y[4];
+    memset(y,0,sizeof(unsigned char)*4);
+
+    y[0]=0xff; y[1]=0x00;
+    y[2]=0xff; y[4]=0x00;
+
+    memcpy(&amp;x,y,4);
+
+#ifdef __BYTE_ORDER
+#    if __BYTE_ORDER == __LITTLE_ENDIAN
+        x = (x&amp;1) + 2;
+#    else
+#        if __BYTE_ORDER == __BIG_ENDIAN
+            x = (x&amp;1) + 3;
+#        else
+            if (is_big_endian()) {
+                x = (x&amp;1) + 3;
+            } else {
+                x = (x&amp;1) + 2;
+            }
+#        endif
+#    endif
+#else
+    if (is_big_endian()) {
+        x = (x&amp;1) + 3;
+    } else {
+        x = (x&amp;1) + 2;
+    }
+#endif
+
+    printf("%d\n",x);
+    return 0;
+}
+</pre>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Variable Length Parameter Lists</title>
+
+<section>
+<title>Identifying the Problem</title>
+<body>
+
+<p>
+You will get unexpected and/or incorrect results or possibly a crash.
+</p>
+
+</body>
+</section>
+<section>
+<title>Explanation of the Problem</title>
+<body>
+
+<p>
+Functions like <c>printf</c> can accept any number of arguments. The
+arguments are stored on the stack. Generally, they are accessed by doing 
+pointer arithmetic and casting. The direction in which you iterate over 
+the remaining arguments varies depending on architecture / operating system.
+On some systems you increment the pointer to reach the next parameter, 
+on other systems you decrement the pointer to reach the next paramater.
+Furthermore, there is no compile time storage size check, nor type 
+checking.
+</p>
+
+<pre caption="variable length parameter list">
+int sum(int n, ...) {
+    int sum, *arg;
+
+    /* sum n parameters (excluding the first) */
+    for(sum=0, arg=(int*)&amp;n+1; n--; sum+=*arg++)
+        /* nothing */;
+
+    return sum;
+}
+
+int main(void) {
+    /* Expected output: "1 + 2 + 3 - 2 = 4"         */
+    /* Actual   output: "1 + 2 + 3 - 2 = 536867769" */
+
+    printf("1 + 2 + 3 - 2 = %d\n",sum(4,1,2,3,-2));
+    return 0;
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Finding a Solution</title>
+<body>
+
+<p>
+Since accessing parameters is so system dependent, we cannot easily 
+write very portable code without the help of some preprocessor macros.
+Fortunately, those preprocessor macros are already written for us.
+</p>
+
+<pre caption="variable length parameter list using stdarg.h">
+#include &lt;stdarg.h&gt;
+
+int sum(int n, ...) {
+    int sum = 0;
+    va_list v;
+
+    va_start(v, n);
+
+    while(n--)
+        sum += va_arg(v, int);
+
+    va_end(v);
+    return sum;
+}
+
+int main(void) {
+    printf("1 + 2 + 3 - 2 = %d\n",sum(4,1,2,3,-2));
+    return 0;
+}
+</pre>
+
+<warn>
+Being portable does not imply being safe. Even if you use the macros in 
+<c>stdarg.h</c> you still have to be careful about sizes, types, and
+the number of parameters. Variable length parameter lists should be used
+only when absolutely needed.
+</warn>
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Failure to determine CPU Frequency</title>
+
+<section>
+<title>Identifying the Problem</title>
+<body>
+
+<p>
+A program that displays or uses the CPU frequency for some purpose will
+fail at runtime.
+</p>
+
+</body>
+</section>
+<section>
+<title>Explanation of the Problem</title>
+<body>
+
+<p>
+There are some programs that determine the CPU frequency from 
+<c>/proc/cpuinfo</c>. The format of this file is slightly different on 
+Alpha. Below are example <c>/proc/cpuinfo</c> listings.
+</p>
+
+<pre caption="/proc/cpuinfo on amd64">
+processor       : 0
+vendor_id       : AuthenticAMD
+cpu family      : 15
+model           : 36
+model name      : AMD Turion(tm) 64 Mobile Technology ML-32
+stepping        : 2
+cpu MHz         : 1800.000
+cache size      : 512 KB
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 1
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge 
+mca cmov pat pse36 clflush mmx fxsr sse sse2 syscall nx mmxext fxsr_opt 
+lm 3dnowext 3dnow pni lahf_lm
+bogomips        : 3604.45
+TLB size        : 1024 4K pages
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 40 bits physical, 48 bits virtual
+power management: ts fid vid ttp tm stc
+</pre>
+
+<p>
+Above, in the amd64 example, you will notice that the CPU frequency is 
+given on the <c>cpu MHz</c> line. Below, in the alpha example, you 
+will notice that the CPU frequency is given on the <c>cycle frequency 
+[Hz]</c> line.
+</p>
+
+<pre caption="/proc/cpuinfo on alpha">
+cpu                     : Alpha
+cpu model               : EV56
+cpu variation           : 7
+cpu revision            : 0
+cpu serial number       :
+system type             : Miata
+system variation        : 0
+system revision         : 0
+system serial number    :
+cycle frequency [Hz]    : 499714426 est.
+timer frequency [Hz]    : 1024.00
+page size [bytes]       : 8192
+phys. address bits      : 40
+max. addr. space #      : 127
+BogoMIPS                : 992.88
+kernel unaligned acc    : 196 (pc=fffffc0000517e44,va=2000001a032)
+user unaligned acc      : 171263 (pc=20000e6f610,va=1200c6f26)
+platform string         : Digital Personal WorkStation 500au
+cpus detected           : 1
+</pre>
+
+<p>
+conky is an advanced, highly configurable system monitor for X. The 
+program can display your CPU frequency. Below is the <c>/proc/cpuinfo</c>
+parser that comes with versions of conky prior to 1.4.1. It doesn't work 
+correctly on alpha. It reports a CPU frequency of 0 MHz.
+</p>
+
+<pre caption="/proc/cpuinfo parser from conky">
+Copyright (c) 2004, Hannu Saransaari and Lauri Hakkarainen
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    * this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+    * notice, this list of conditions and the following disclaimer in the
+    * documentation and/or other materials provided with the distribution.
+    * Neither the name of the &lt;ORGANIZATION&gt; nor the names of its
+    * contributors may be used to endorse or promote products derived from
+    * this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+/* return system frequency in MHz (use divisor=1) or GHz (use divisor=1000) */
+void get_freq( char * p_client_buffer, size_t client_buffer_size, char * p_format, int divisor )
+{
+        FILE *f;
+        char frequency[32];
+        char s[256];
+        double freq = 0;
+
+        if ( !p_client_buffer || client_buffer_size &lt;= 0 || !p_format || divisor &lt;= 0 )
+                return;
+
+        f = fopen(CPUFREQ_CURRENT, "r");
+        if (f) {
+                /* if there's a cpufreq /sys node, read the current frequency from this node;
+                 * divide by 1000 to get Mhz. */
+                if (fgets(s, sizeof(s), f)) {
+                        s[strlen(s)-1] = '\0';
+                        freq = strtod(s, NULL);
+                }
+                fclose(f);
+                snprintf( p_client_buffer, client_buffer_size, p_format, (freq/1000)/divisor );
+                return;
+        }
+
+        f = fopen("/proc/cpuinfo", "r");                //open the CPU information file
+        if (!f)
+            return;
+
+        while (fgets(s, sizeof(s), f) != NULL){         //read the file
+#if defined(__i386) || defined(__x86_64)
+                if (strncmp(s, "cpu MHz", 7) == 0) {    //and search for the cpu mhz
+#else
+                if (strncmp(s, "clock", 5) == 0) {      // this is different on ppc for some reason
+#endif
+                strcpy(frequency, strchr(s, ':') + 2);  //copy just the number
+                frequency[strlen(frequency) - 1] = '\0'; // strip \n
+                freq = strtod(frequency, NULL);
+                break;
+                }
+        }
+
+        fclose(f);
+        snprintf( p_client_buffer, client_buffer_size, p_format, (float)freq/divisor );
+        return;
+}
+</pre>
+</body>
+</section>
+<section>
+<title>Finding a Solution</title>
+<body>
+
+<p>
+To solve the problem we make an exception for alpha by using the 
+<c>__alpha</c> preprocessor definition. We also need to divide the value 
+by 1000000 to get the CPU frequency in MHz.
+</p>
+
+<pre caption="/proc/cpuinfo parser from conky">
+Copyright (c) 2004, Hannu Saransaari and Lauri Hakkarainen
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    * this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+    * notice, this list of conditions and the following disclaimer in the
+    * documentation and/or other materials provided with the distribution.
+    * Neither the name of the &lt;ORGANIZATION&gt; nor the names of its
+    * contributors may be used to endorse or promote products derived from
+    * this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+/* return system frequency in MHz (use divisor=1) or GHz (use divisor=1000) */
+void get_freq( char * p_client_buffer, size_t client_buffer_size, char * p_format, int divisor )
+{
+        FILE *f;
+        char frequency[32];
+        char s[256];
+        double freq = 0;
+
+        if ( !p_client_buffer || client_buffer_size &lt;= 0 || !p_format || divisor &lt;= 0 )
+                return;
+
+        f = fopen(CPUFREQ_CURRENT, "r");
+        if (f) {
+                /* if there's a cpufreq /sys node, read the current frequency from this node;
+                 * divide by 1000 to get Mhz. */
+                if (fgets(s, sizeof(s), f)) {
+                        s[strlen(s)-1] = '\0';
+                        freq = strtod(s, NULL);
+                }
+                fclose(f);
+                snprintf( p_client_buffer, client_buffer_size, p_format, (freq/1000)/divisor );
+                return;
+        }
+
+        f = fopen("/proc/cpuinfo", "r");                //open the CPU information file
+        if (!f)
+            return;
+
+        while (fgets(s, sizeof(s), f) != NULL){         //read the file
+#if defined(__i386) || defined(__x86_64)
+                if (strncmp(s, "cpu MHz", 7) == 0) {    //and search for the cpu mhz
+#else
+#if defined(__alpha)
+                if (strncmp(s, "cycle frequency [Hz]", 20) == 0) {              // different on alpha
+#else
+                if (strncmp(s, "clock", 5) == 0) {      // this is different on ppc for some reason
+#endif // defined(__alpha)
+#endif // defined(__i386) || defined(__x86_64)
+
+                strcpy(frequency, strchr(s, ':') + 2);  //copy just the number
+#if defined(__alpha)
+                frequency[strlen(frequency) - 6] = '\0';// strip " est.\n"
+                freq = strtod(frequency, NULL)/1000000; // kernel reports in Hz
+#else
+                frequency[strlen(frequency) - 1] = '\0'; // strip \n
+                freq = strtod(frequency, NULL);
+#endif
+                break;
+                }
+        }
+
+        fclose(f);
+        snprintf( p_client_buffer, client_buffer_size, p_format, (float)freq/divisor );
+        return;
+}
+</pre>
+
+</body>
+</section>
+</chapter>
+</guide>
