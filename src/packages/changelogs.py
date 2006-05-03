@@ -43,7 +43,7 @@ def bugs_to_html(string):
             (substring[:11], substring[11:])
         (string, index) = mstring.replace_sub(string[:end+1], html, start, end)
     string = GENTOO_DEV.sub('(<a href="%s\\2">\\1</a>)' % CIA_URL, string)
-    return '<span style="whitespace: pre">%s\n\n</span>' % string
+    return '<span style="white-space: pre">%s\n\n</span>' % string
 
 def changelog(filename):
 	try:
