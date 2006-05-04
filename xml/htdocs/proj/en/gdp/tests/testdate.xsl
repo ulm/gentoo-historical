@@ -130,8 +130,8 @@ first column.
     <xsl:variable name="LL" select="."/>
     <tr>
      <th><xsl:value-of select="$LL" /></th>
-     <ti><xsl:value-of select="func:format-date($date,$LL)" /></ti>
-     <xsl:for-each select="//doc/date"><xsl:sort select="."/><ti><xsl:value-of select="func:format-date(.,$LL)" /></ti></xsl:for-each>
+     <ti><xsl:copy-of select="func:format-date($date,$LL)" /></ti>
+     <xsl:for-each select="//doc/date"><xsl:sort select="."/><ti><xsl:copy-of select="func:format-date(.,$LL)" /></ti></xsl:for-each>
     </tr>
   </xsl:template>
 
