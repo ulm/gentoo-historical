@@ -16,6 +16,7 @@ from GLIFutureBar import GLIFutureBar
 from HelpDialog import HelpDialog
 from SplashScreen import SplashScreen
 import gtk
+import gobject
 import crypt
 import random
 from gettext import gettext as _
@@ -69,7 +70,8 @@ class Installer:
 		self.panel = None
 		self._cur_panel = 0
 		self.__full_path = self.get_current_path()
-		splash = SplashScreen(self.__full_path)
+		self.splash = SplashScreen(self.__full_path)
+		self.splash.show()
 		while gtk.events_pending():
 			gtk.main_iteration()
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -111,15 +113,15 @@ class Installer:
 		# Right frame contents
 		self.panels = []
 		self.right_pane_box = gtk.Notebook()
-		for item in self.menuItems:
-			if item['module'] == None: break
-			if self._debug:
-				print "Instantiating " + item['text'] + " screen...",
-			panel = item['module'].Panel(self)
-			if self._debug:
-				print "done"
-			self.panels.append(panel)
-			self.right_pane_box.append_page(panel)
+#		for item in self.menuItems:
+#			if item['module'] == None: break
+#			if self._debug:
+#				print "Instantiating " + item['text'] + " screen...",
+#			panel = item['module'].Panel(self)
+#			if self._debug:
+#				print "done"
+#			self.panels.append(panel)
+#			self.right_pane_box.append_page(panel)
 		self.right_pane_box.set_show_tabs(False)
 		self.right_pane_box.set_show_border(False)
 		self.rightframe.add(self.right_pane_box)
@@ -150,8 +152,7 @@ class Installer:
 			else:
 				self.bottombox.pack_end(self.buttons[button[0]], expand=False, fill=False, padding=5)
 
-		splash.destroy()
-		self.make_visible()
+		gobject.idle_add(self.init_screens)
 
 	def redraw_left_pane(self, firstrun=False):
 		if not firstrun: self.leftframe.remove(self.navlinks)
@@ -230,8 +231,23 @@ class Installer:
 		self.futurebar.setpos(panel)
 		self.redraw_buttons()
 
-	def run(self):
+	def init_screens(self):
+#		self.splash.show()
+		for item in self.menuItems:
+			if item['module'] == None: break
+#			if self._debug:
+			print "Instantiating " + item['text'] + " screen...",
+			panel = item['module'].Panel(self)
+#			if self._debug:
+			print "done"
+			self.panels.append(panel)
+			self.right_pane_box.append_page(panel)
 		self.loadPanel()
+		self.splash.destroy()
+		self.make_visible()
+		return False
+
+	def run(self):
 		gtk.threads_init()
 		gtk.main()
 

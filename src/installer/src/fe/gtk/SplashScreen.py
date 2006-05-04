@@ -19,8 +19,8 @@ class SplashScreen(gtk.Window):
 		image.set_from_file(fullpath + "/installer-splash.png")
 		image.show()
 		self.add(image)
-		self.show()
-		self.present()
+#		self.show()
+#		self.present()
 
 	def delete_event(self, widget, event, data=None):
 		return False
