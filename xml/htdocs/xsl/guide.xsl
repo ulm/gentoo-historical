@@ -21,8 +21,6 @@
 <!-- Category from metadoc -->
 <xsl:param name="catid">0</xsl:param>
 
-
-
 <!-- img tag -->
 <xsl:template match="img">
   <img src="{@src}" alt=""/>
@@ -31,11 +29,17 @@
 <xsl:template name="show-disclaimer">
   <!-- Disclaimer stuff -->
   <xsl:if test="/*[1][@disclaimer] or /*[1][@redirect]">
-    <table class="ncontent" align="center" width="90%" border="1px" cellspacing="0" cellpadding="4px">
+    <table class="ncontent" align="center" width="90%" border="2px" cellspacing="0" cellpadding="4px">
+      <xsl:if test="/*[1]/@disclaimer='obsolete'">
+        <xsl:attribute name="style">margin-top:40px;margin-bottom:30px</xsl:attribute>
+      </xsl:if>
       <tr>
         <td bgcolor="#ddddff">
           <p class="note">
             <xsl:if test="/*[1][@disclaimer]">
+              <xsl:if test="/*[1]/@disclaimer='obsolete'">
+                <xsl:attribute name="style">font-size:1.3em</xsl:attribute>
+              </xsl:if>
               <b><xsl:value-of select="func:gettext('disclaimer')"/>: </b>
               <xsl:apply-templates select="func:gettext(/*[1]/@disclaimer)"/>
             </xsl:if>
