@@ -14,6 +14,7 @@ import GLIClientController
 import GLIUtility
 from GLIFutureBar import GLIFutureBar
 from HelpDialog import HelpDialog
+from SplashScreen import SplashScreen
 import gtk
 import crypt
 import random
@@ -68,6 +69,9 @@ class Installer:
 		self.panel = None
 		self._cur_panel = 0
 		self.__full_path = self.get_current_path()
+		splash = SplashScreen(self.__full_path)
+		while gtk.events_pending():
+			gtk.main_iteration()
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.title = _("Gentoo Linux Installer")
 		self.window.realize()
@@ -146,6 +150,7 @@ class Installer:
 			else:
 				self.bottombox.pack_end(self.buttons[button[0]], expand=False, fill=False, padding=5)
 
+		splash.destroy()
 		self.make_visible()
 
 	def redraw_left_pane(self, firstrun=False):
