@@ -235,16 +235,16 @@ class Installer:
 #		self.splash.show()
 		for item in self.menuItems:
 			if item['module'] == None: break
-#			if self._debug:
-			print "Instantiating " + item['text'] + " screen...",
+			if self._debug:
+				print "Instantiating " + item['text'] + " screen...",
 			panel = item['module'].Panel(self)
-#			if self._debug:
-			print "done"
+			if self._debug:
+				print "done"
 			self.panels.append(panel)
 			self.right_pane_box.append_page(panel)
-		self.loadPanel()
 		self.splash.destroy()
 		self.make_visible()
+		self.loadPanel()
 		return False
 
 	def run(self):

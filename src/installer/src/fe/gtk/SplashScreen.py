@@ -19,6 +19,8 @@ class SplashScreen(gtk.Window):
 		image.set_from_file(fullpath + "/installer-splash.png")
 		image.show()
 		self.add(image)
+		width, height = self.get_size()
+		self.move((gtk.gdk.screen_width() / 2) - (width / 2), (gtk.gdk.screen_height() / 2) - (height / 2))
 #		self.show()
 #		self.present()
 
