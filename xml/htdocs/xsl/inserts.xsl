@@ -186,6 +186,83 @@
   </func:result>
 </func:function>
 
+<!-- Return number of days between YYYY-MM-DD formatted dates
+     Nan if invalid or ill-formatted dates are passed
+     Negative if D0 > D1
+-->
+<func:function name="func:days-between">
+  <xsl:param name="D0"/>
+  <xsl:param name="D1"/>
+  <xsl:choose>
+    <xsl:when test="func:is-date($D0)='YES' and func:is-date($D1)='YES'">
+      <xsl:variable name="Y0"><xsl:value-of select="substring($D0,1,4)"/></xsl:variable>
+      <xsl:variable name="Y1"><xsl:value-of select="substring($D1,1,4)"/></xsl:variable>
+      <xsl:choose>
+        <xsl:when test="$Y0 = $Y1">
+          <func:result select="date:day-in-year($D1) - date:day-in-year($D0)" />
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:variable name="ndays" xmlns="">
+            <xsl:choose>
+              <xsl:when test="number($Y0) &lt; number($Y1)">
+                <!-- Days left in first year -->
+                <d><xsl:value-of select="365 - date:day-in-year($D0)"/></d>
+                <!-- Extra day in 1st year? -->
+                <xsl:if test="date:leap-year($D0)"><d>1</d></xsl:if>
+                <!-- Days into last year -->
+                <d><xsl:value-of select="date:day-in-year($D1)"/></d>
+                <!-- Years in ]y0,y1[ -->
+                <xsl:if test="(number($Y1)-number($Y0)) > 1">
+                  <!-- Add all 29/02 -->
+                  <xsl:call-template name="add-leap-years-in-between">
+                   <xsl:with-param name="y0" select="$Y0+1"/>
+                   <xsl:with-param name="y1" select="$Y1"/>
+                  </xsl:call-template>
+                  <!-- 365 * years -->
+                  <d><xsl:value-of select="(number($Y1)-number($Y0)-1)*365"/></d>
+                </xsl:if>
+              </xsl:when>
+              <xsl:otherwise>
+                <!-- Same thing, but swap dates & change sign -->
+                <d><xsl:value-of select="date:day-in-year($D1) - 365"/></d>
+                <xsl:if test="date:leap-year($D1)"><d>-1</d></xsl:if>
+                <d><xsl:value-of select="-date:day-in-year($D0)"/></d>
+                <xsl:if test="(number($Y0)-number($Y1)) > 1">
+                  <xsl:call-template name="add-leap-years-in-between">
+                   <xsl:with-param name="y0" select="$Y1+1"/>
+                   <xsl:with-param name="y1" select="$Y0"/>
+                   <xsl:with-param name="plusmin" select="-1"/>
+                  </xsl:call-template>
+                  <d><xsl:value-of select="(number($Y1)-number($Y0)+1)*365"/></d>
+                </xsl:if>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:variable>
+          <func:result select="sum(exslt:node-set($ndays)/d)"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <func:result select="number('NaN')" />
+    </xsl:otherwise>
+  </xsl:choose>
+</func:function>
+
+<xsl:template name="add-leap-years-in-between">
+  <xsl:param name="y0"/>
+  <xsl:param name="y1"/>
+  <xsl:param name="plusmin" select="1"/>
+  <xsl:if test="number($y1)>number($y0)">
+    <xsl:if test="date:leap-year($y0)"><d xmlns=""><xsl:value-of select="$plusmin"/></d></xsl:if>
+    <xsl:call-template name="add-leap-years-in-between">
+       <xsl:with-param name="y0" select="$y0+1"/>
+       <xsl:with-param name="y1" select="$y1"/>
+       <xsl:with-param name="plusmin" select="$plusmin"/>
+    </xsl:call-template>
+  </xsl:if>
+</xsl:template>
+
+
 <!-- Format date according to RFC822, time is set to 00:00:00 UTC,
      Day of the week is optional, we do not output it
      RFC says YY but YYYY is widely accepted
