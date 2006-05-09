@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.276 2006/05/05 18:57:39 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.277 2006/05/09 12:16:52 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1077,9 +1077,9 @@ class ArchitectureTemplate:
 		
 		# If the default gateway exists, add it
 		if default_gateway:
-			default_gateway_string = default_gateway[0] + "/" + default_gateway[1]
+			default_gateway_string = '( "default via ' + default_gateway[1] + '" )'
 			if self._debug: self._logger.log("DEBUG: setup_network_post(): found gateway. adding to confing. "+default_gateway_string)
-			self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"gateway": default_gateway_string})
+			self._edit_config(self._chroot_dir + "/etc/conf.d/net", {"routes_"+default_gateway[0]: default_gateway_string})
 			
 		#
 		# SET RESOLV INFO
