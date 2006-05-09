@@ -1,0 +1,277 @@
+Patch from Albert Lib to fix the problems with FAAD 5.1 decoding.
+Index: src/libfaad/common.h
+===================================================================
+RCS file: /cvsroot/xine/xine-lib/src/libfaad/common.h,v
+retrieving revision 1.16
+diff -u -r1.16 common.h
+--- src/libfaad/common.h	30 Oct 2005 01:21:53 -0000	1.16
++++ src/libfaad/common.h	8 May 2006 16:38:51 -0000
+@@ -61,7 +61,7 @@
+ /* Use if target platform has address generators with autoincrement */
+ //#define PREFER_POINTERS
+ 
+-#ifdef _WIN32_WCE
++#if defined(_WIN32_WCE) || defined(__arm__)
+ #define FIXED_POINT
+ #endif
+ 
+@@ -117,6 +117,9 @@
+ # ifdef MAIN_DEC
+ #  undef MAIN_DEC
+ # endif
++# ifdef SBR_DEC
++#  undef SBR_DEC
++# endif
+ #endif // FIXED_POINT
+ 
+ #ifdef DRM
+@@ -297,7 +300,7 @@
+         }
+         return i;
+     }
+-  #elif (defined(__i386__) && defined(__GNUC__))
++  #elif (defined(__i386__) && defined(__GNUC__)) && !defined(HAVE_LRINTF)
+     #define HAS_LRINTF
+     // from http://www.stereopsis.com/FPU.html
+     static INLINE int lrintf(float f)
+@@ -326,6 +329,8 @@
+ 
+   #else
+ 
++#include <math.h>
++
+ #ifdef HAVE_LRINTF
+ #  define HAS_LRINTF
+ #  define _ISOC9X_SOURCE 1
+@@ -334,8 +339,6 @@
+ #  define __USE_ISOC99   1
+ #endif
+ 
+-    #include <math.h>
+-
+ #ifdef HAVE_SINF
+ #  define sin sinf
+ #error
+Index: src/libfaad/output.c
+===================================================================
+RCS file: /cvsroot/xine/xine-lib/src/libfaad/output.c,v
+retrieving revision 1.7
+diff -u -r1.7 output.c
+--- src/libfaad/output.c	29 Oct 2005 23:57:07 -0000	1.7
++++ src/libfaad/output.c	8 May 2006 16:38:51 -0000
+@@ -478,6 +478,28 @@
+         switch (format)
+         {
+         case FAAD_FMT_16BIT:
++            if (hDecoder->downMatrix) {
++                real_t *ch0 = input[hDecoder->internal_channel[0]];
++                real_t *ch1 = input[hDecoder->internal_channel[1]];
++                real_t *ch2 = input[hDecoder->internal_channel[2]];
++                real_t *ch3 = input[hDecoder->internal_channel[3]];
++                real_t *ch4 = input[hDecoder->internal_channel[4]];
++                int32_t tmp;
++                for(i = 0; i < frame_len; i++)
++                {
++                    tmp = (ch1[i] + ((ch0[i]+ch3[i])>>1) + ((ch0[i]+ch3[i])>>2) + (1<<(REAL_BITS))) >> (REAL_BITS+1);
++                    if ((tmp+0x8000) & ~0xffff)
++                        tmp = ~(tmp>>31)-0x8000;
++                    short_sample_buffer[0] = tmp;
++                    tmp = (ch2[i] + ((ch0[i]+ch4[i])>>1) + ((ch0[i]+ch4[i])>>2) + (1<<(REAL_BITS))) >> (REAL_BITS+1);
++                    if ((tmp+0x8000) & ~0xffff)
++                        tmp = ~(tmp>>31)-0x8000;
++                    short_sample_buffer[1] = tmp;
++                    short_sample_buffer += channels;
++                }
++                return sample_buffer;
++            }
++
+             for(i = 0; i < frame_len; i++)
+             {
+                 int32_t tmp = get_sample(input, ch, i, hDecoder->downMatrix, hDecoder->upMatrix,
+Index: src/libfaad/ps_dec.c
+===================================================================
+RCS file: /cvsroot/xine/xine-lib/src/libfaad/ps_dec.c,v
+retrieving revision 1.1
+diff -u -r1.1 ps_dec.c
+--- src/libfaad/ps_dec.c	30 Oct 2005 00:50:19 -0000	1.1
++++ src/libfaad/ps_dec.c	8 May 2006 16:38:52 -0000
+@@ -159,7 +159,7 @@
+ 
+ /* static function declarations */
+ static void ps_data_decode(ps_info *ps);
+-static hyb_info *hybrid_init();
++static hyb_info *hybrid_init(void);
+ static void channel_filter2(hyb_info *hyb, uint8_t frame_len, const real_t *filter,
+                             qmf_t *buffer, qmf_t **X_hybrid);
+ static void INLINE DCT3_4_unscaled(real_t *y, real_t *x);
+@@ -189,7 +189,7 @@
+ /*  */
+ 
+ 
+-static hyb_info *hybrid_init()
++static hyb_info *hybrid_init(void)
+ {
+     uint8_t i;
+ 
+@@ -1935,8 +1935,8 @@
+ /* main Parametric Stereo decoding function */
+ uint8_t ps_decode(ps_info *ps, qmf_t X_left[38][64], qmf_t X_right[38][64])
+ {
+-    qmf_t X_hybrid_left[32][32] = {{0}};
+-    qmf_t X_hybrid_right[32][32] = {{0}};
++    qmf_t X_hybrid_left[32][32] = {{{0}}};
++    qmf_t X_hybrid_right[32][32] = {{{0}}};
+ 
+     /* delta decoding of the bitstream data */
+     ps_data_decode(ps);
+Index: src/libfaad/sbr_dec.c
+===================================================================
+RCS file: /cvsroot/xine/xine-lib/src/libfaad/sbr_dec.c,v
+retrieving revision 1.8
+diff -u -r1.8 sbr_dec.c
+--- src/libfaad/sbr_dec.c	29 Oct 2005 23:57:07 -0000	1.8
++++ src/libfaad/sbr_dec.c	8 May 2006 16:38:52 -0000
+@@ -526,8 +526,8 @@
+     uint8_t l, k;
+     uint8_t dont_process = 0;
+     uint8_t ret = 0;
+-    ALIGN qmf_t X_left[38][64] = {{0}};
+-    ALIGN qmf_t X_right[38][64] = {{0}}; /* must set this to 0 */
++    ALIGN qmf_t X_left[38][64] = {{{0}}};
++    ALIGN qmf_t X_right[38][64] = {{{0}}}; /* must set this to 0 */
+ 
+     if (sbr == NULL)
+         return 20;
+Index: src/libfaad/specrec.c
+===================================================================
+RCS file: /cvsroot/xine/xine-lib/src/libfaad/specrec.c,v
+retrieving revision 1.9
+diff -u -r1.9 specrec.c
+--- src/libfaad/specrec.c	29 Oct 2005 23:57:07 -0000	1.9
++++ src/libfaad/specrec.c	8 May 2006 16:38:52 -0000
+@@ -673,29 +673,19 @@
+     /* MAIN object type prediction */
+     if (hDecoder->object_type == MAIN)
+     {
+-        /* allocate the state only when needed */
+-        if (hDecoder->pred_stat[channel] == NULL)
+-        {
+-            hDecoder->pred_stat[channel] = (pred_state*)faad_malloc(hDecoder->frameLength * sizeof(pred_state));
++            hDecoder->pred_stat[channel] = (pred_state*)realloc(hDecoder->pred_stat[channel], hDecoder->frameLength * sizeof(pred_state));
+             reset_all_predictors(hDecoder->pred_stat[channel], hDecoder->frameLength);
+-        }
+     }
+ #endif
+ 
+ #ifdef LTP_DEC
+     if (is_ltp_ot(hDecoder->object_type))
+     {
+-        /* allocate the state only when needed */
+-        if (hDecoder->lt_pred_stat[channel] == NULL)
+-        {
+-            hDecoder->lt_pred_stat[channel] = (int16_t*)faad_malloc(hDecoder->frameLength*4 * sizeof(int16_t));
++            hDecoder->lt_pred_stat[channel] = (int16_t*)realloc(hDecoder->lt_pred_stat[channel], hDecoder->frameLength*4 * sizeof(int16_t));
+             memset(hDecoder->lt_pred_stat[channel], 0, hDecoder->frameLength*4 * sizeof(int16_t));
+-        }
+     }
+ #endif
+ 
+-    if (hDecoder->time_out[channel] == NULL)
+-    {
+         mul = 1;
+ #ifdef SBR_DEC
+         hDecoder->sbr_alloced[hDecoder->fr_ch_ele] = 0;
+@@ -706,41 +696,28 @@
+             hDecoder->sbr_alloced[hDecoder->fr_ch_ele] = 1;
+         }
+ #endif
+-        hDecoder->time_out[channel] = (real_t*)faad_malloc(mul*hDecoder->frameLength*sizeof(real_t));
++        hDecoder->time_out[channel] = (real_t*)realloc(hDecoder->time_out[channel], mul*hDecoder->frameLength*sizeof(real_t));
+         memset(hDecoder->time_out[channel], 0, mul*hDecoder->frameLength*sizeof(real_t));
+-    }
+ #if (defined(PS_DEC) || defined(DRM_PS))
+     if (output_channels == 2)
+     {
+-        if (hDecoder->time_out[channel+1] == NULL)
+-        {
+-            hDecoder->time_out[channel+1] = (real_t*)faad_malloc(mul*hDecoder->frameLength*sizeof(real_t));
++            hDecoder->time_out[channel+1] = (real_t*)realloc(hDecoder->time_out[channel+1], mul*hDecoder->frameLength*sizeof(real_t));
+             memset(hDecoder->time_out[channel+1], 0, mul*hDecoder->frameLength*sizeof(real_t));
+-        }
+     }
+ #endif
+ 
+-    if (hDecoder->fb_intermed[channel] == NULL)
+-    {
+-        hDecoder->fb_intermed[channel] = (real_t*)faad_malloc(hDecoder->frameLength*sizeof(real_t));
++        hDecoder->fb_intermed[channel] = (real_t*)realloc(hDecoder->fb_intermed[channel], hDecoder->frameLength*sizeof(real_t));
+         memset(hDecoder->fb_intermed[channel], 0, hDecoder->frameLength*sizeof(real_t));
+-    }
+ 
+ #ifdef SSR_DEC
+     if (hDecoder->object_type == SSR)
+     {
+-        if (hDecoder->ssr_overlap[channel] == NULL)
+-        {
+-            hDecoder->ssr_overlap[channel] = (real_t*)faad_malloc(2*hDecoder->frameLength*sizeof(real_t));
+-            memset(hDecoder->ssr_overlap[channel], 0, 2*hDecoder->frameLength*sizeof(real_t));
+-        }
+-        if (hDecoder->prev_fmd[channel] == NULL)
+-        {
+             uint16_t k;
+-            hDecoder->prev_fmd[channel] = (real_t*)faad_malloc(2*hDecoder->frameLength*sizeof(real_t));
++            hDecoder->ssr_overlap[channel] = (real_t*)realloc(hDecoder->ssr_overlap[channel], 2*hDecoder->frameLength*sizeof(real_t));
++            memset(hDecoder->ssr_overlap[channel], 0, 2*hDecoder->frameLength*sizeof(real_t));
++            hDecoder->prev_fmd[channel] = (real_t*)realloc(hDecoder->prev_fmd[channel], 2*hDecoder->frameLength*sizeof(real_t));
+             for (k = 0; k < 2*hDecoder->frameLength; k++)
+                 hDecoder->prev_fmd[channel][k] = REAL_CONST(-1);
+-        }
+     }
+ #endif
+ 
+@@ -865,22 +842,13 @@
+ 
+     /* always allocate 2 channels, PS can always "suddenly" turn up */
+ #if (defined(PS_DEC) || defined(DRM_PS))
+-    output_channels = 2;
++    output_channels = hDecoder->ps_used[hDecoder->fr_ch_ele] ? 2 : 1;
+ #else
+     output_channels = 1;
+ #endif
+ 
+-    if (hDecoder->element_output_channels[hDecoder->fr_ch_ele] == 0)
+-    {
+-        /* element_output_channels not set yet */
++    if (hDecoder->element_output_channels[hDecoder->fr_ch_ele] < output_channels) {
+         hDecoder->element_output_channels[hDecoder->fr_ch_ele] = output_channels;
+-    } else if (hDecoder->element_output_channels[hDecoder->fr_ch_ele] != output_channels) {
+-        /* element inconsistency */
+-        return 21;
+-    }
+-
+-    if (hDecoder->element_alloced[hDecoder->fr_ch_ele] == 0)
+-    {
+         retval = allocate_single_channel(hDecoder, sce->channel, output_channels);
+         if (retval > 0)
+             return retval;
+@@ -1026,11 +994,10 @@
+     {
+         return 23;
+     }
+-#endif
+ 
+     /* copy L to R when no PS is used */
+ #if (defined(PS_DEC) || defined(DRM_PS))
+-    if ((hDecoder->ps_used[hDecoder->fr_ch_ele] == 0))
++    if ((hDecoder->ps_used[hDecoder->fr_ch_ele] == 0) && (output_channels == 2))
+     {
+         uint8_t ele = hDecoder->fr_ch_ele;
+         uint8_t ch = sce->channel;
+@@ -1040,6 +1007,7 @@
+         memcpy(hDecoder->time_out[ch+1], hDecoder->time_out[ch], frame_size);
+     }
+ #endif
++#endif
+ 
+     return 0;
+ }
