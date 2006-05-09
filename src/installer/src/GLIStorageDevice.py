@@ -134,7 +134,8 @@ class Device:
 				self._partitions.append(Partition(self, free_minor, part_mb, parted_part.geom.start, parted_part.geom.end, "free", format=False, existing=False))
 			parted_part = self._parted_disk.next_partition(parted_part)
 		# Juggle minor numbers so they match physical disk order. People may complain, but we're actually doing them a favor
-		self.reorder_minors()
+		# This is apparently bad to do when you just want to see the disk info
+#		self.reorder_minors()
 
 	##
 	# Reorders partition minors so that they match physical disk order
@@ -158,6 +159,8 @@ class Device:
 				if not last_minor:
 					new_minor = 1
 				else:
+					if part.is_logical() and self.get_partition(last_minor).is_extended():
+						last_minor = 4
 					new_minor = int(last_minor) + 1
 				part.set_minor(new_minor)
 
@@ -274,6 +277,7 @@ class Device:
 					part.set_minor(self.find_free_minor(1, part.get_minor()))
 			newparts.append(part)
 		self._partitions = newparts
+		self.reorder_minors()
 
 	##
 	# Adds a new partition to the partition info
