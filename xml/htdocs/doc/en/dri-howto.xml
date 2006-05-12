@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/dri-howto.xml,v 1.29 2006/05/07 12:39:17 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/dri-howto.xml,v 1.30 2006/05/12 19:32:26 nightmorph Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/dri-howto.xml">
@@ -21,7 +21,7 @@ with Xorg in Gentoo Linux.
 <license/>
 
 <version>1.3</version>
-<date>2006-05-07</date>
+<date>2006-05-12</date>
 
 <chapter>
 <title>Introduction</title>
@@ -442,8 +442,66 @@ first.
 <body>
 
 <p>
-A few options may increase performance by up to 30 percent (or more) over the 
-default. Set them in <path>/etc/X11/xorg.conf</path>.
+A few options may increase performance by up to 30 percent (or more) over the
+default. Set them in <path>/etc/X11/xorg.conf</path>. However, you will first
+need to check that your motherboard and video card support these options.
+</p>
+
+<p>
+First, let's see if your video card can support fast writes. We'll do this by
+closely inspecting the output from <c>lspci</c>. Specifically, we are looking
+at the "VGA compatible controller" information.
+</p>
+
+<pre caption="Video card check">
+# <i>lspci -vv</i>
+01:00.0 VGA compatible controller: ATI Technologies Inc Radeon Mobility M6 LY (prog-if 00 [VGA])
+. . .
+Capabilities: [58] AGP version 2.0
+    Status: RQ=48 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
+</pre>
+
+<p>
+While quite a lot of information is produced, we are looking for <b>FW</b> in
+the "Status" subsection of the AGP "Capabilities" section. If <b>FW+</b> is
+present in the "Status" line, it means the card supports fast writes. We can
+now check if the motherboard supports fast writes.
+</p>
+
+<impo>
+If you do not see <b>FW+</b>, but instead see <b>FW-</b>, you cannot enable
+fast writes in <path>xorg.conf</path>. Your card does not support fast writes.
+</impo>
+
+<p>
+Now let's make sure the motherboard supports fast writes as well. This time,
+look at the "Host bridge" section of your <c>lspci</c> output.
+</p>
+
+<pre caption="Motherboard check">
+# <i>lspci -vv</i>
+00:00.0 Host bridge: Intel Corporation 82830 830 Chipset Host Bridge (rev 02)
+. . .
+Capabilities: [a0] AGP version 2.0
+    Status: RQ=32 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
+</pre>
+
+<p>
+Again, examine the "Status" subsection of your AGP "Capabilities" section. Look
+for <b>FW</b>. If you see <b>FW+</b>, your motherboard supports fast writes.
+</p>
+
+<impo>
+Remember, both your video card information and your motherboard information
+must show the same <b>FW</b> capability. If either device shows <b>FW-</b> in
+"Status", you cannot enable fast writes in <path>xorg.conf</path>.
+</impo>
+
+<p>
+Assuming that all has gone well and both your motherboard and video card
+support fast writes, let's enable this option in
+<path>/etc/X11/xorg.conf</path> and get the best performance out of your
+hardware.
 </p>
 
 <pre caption="xorg.conf">
@@ -469,46 +527,6 @@ this setting at your own risk.
 Remember, if you want fast writes to work properly, you will have to first
 enable the appropriate option in your BIOS.
 </note>
-
-<!-- 
-**
-This section needs to be in eventually, but non-nvidia cards don't use
-/proc/driver at all. We need some way to get users to check and see that SBA
-and fast-writes are allowed for their hardware; that info is somewhere else in
-/proc. If you have a non-nvidia card, you can help by emailing
-nightmorph@gentoo.org with the relevant bits of your /proc so I can get this
-info into the guide. See below for where things are found on an nvidia card.
-**
-
-<p>
-A few options may increase performance by up to 30 percent (or more) over the
-default. Set them in <path>/etc/X11/xorg.conf</path>. However, you will first
-need to check that your motherboard and video card support these options.
-</p>
- 
-<p>
-First, let's check the supported modes of your video cards, and see if your it
-supports fast writes. Remember to replace <c>nvidia</c> with the actual name of
-your device in <path>/proc/driver/nvidia/</path>.
-</p>
-
-<pre caption="Video card check">
-$ <i>cat /proc/driver/nvidia/agp/card</i>
-</pre>
-
-<p>
-Next, let's check out the capabilities of the motherboard:
-</p>
-
-<pre caption="Motherboard check">
-$ <i>cat /proc/driver/nvidia/agp/host-bridge</i>
-</pre>
-
-<impo>
-Remember, the modes and capabilities for your video card and motherboard must
-match for these settings to work!
-</impo>
--->
 
 <p>
 If you want to set even more features, check out the <uri
