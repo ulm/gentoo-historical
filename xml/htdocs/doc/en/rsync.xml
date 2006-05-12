@@ -1,47 +1,61 @@
-<?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/rsync.xml,v 1.46 2006/01/01 11:51:43 neysx Exp $ -->
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/rsync.xml,v 1.47 2006/05/12 11:21:10 jforman Exp $ -->
 
-<guide link="/doc/en/rsync.xml">
-<title>Gentoo Linux rsync Mirrors Policy</title>
-<author title="Author">
+<guide link="/doc/en/rsync.xml" lang="en">
+<title>Gentoo Linux rsync Mirrors Policy and Guide</title>
+
+<author title="Author, new version">
+  Tobias Klausmann
+</author>
+
+<author title="Original Author">
   <mail link="mirror-admin@gentoo.org">Gentoo Mirror Administrators</mail>
 </author>
-<author title="Editor">
+<author title="Original Editor">
   <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
+<author title="Contributor">
+  <mail link="klausman@schwarzvogel.de">Tobias Klausmann</mail>
+</author>
+
+
 
 <abstract>
 This document explains how to set up a official rsync mirror and your own local
 mirror.
 </abstract>
 
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.13</version>
-<date>2005-12-12</date>
+<version>3.0</version>
+<date>2006-05-12</date>
 
 <chapter>
-<title>Hardware Request</title>
+<title>Preliminaries</title>
 <section>
-<title>Machine Donation</title>
+<title>Terms, names and all that</title>
 <body>
 
 <p>
-Gentoo Linux relies upon two different kinds of mirrors:  main rotation mirrors
-and community mirrors.  Main rotation mirrors are dedicated rsync servers and
-are responsible for handling the bulk of our rsync traffic.  All main rotation
-mirrors run Gentoo Linux and are managed by members of the Gentoo development
-team.  Community mirrors are servers which are provided and managed by members
-of the community.  These servers may or may not be dedicated to rsync usage and
-they may or may not run Gentoo Linux.
+This guide is intended for people who would like to set up an rsync mirror of
+their own. I caters not only to those who want to run an official rsync mirror
+but also those wanting to run private mirrors.
 </p>
 
-<p>
-At this time, we have enough community mirrors and are actively seeking
-additional main rotation mirrors.  Specifications for main rotation servers
-include:
-</p>
+<p>There are three kinds of Gentoo rsync mirrors: main rotation mirrors,
+community mirrors and private mirrors. Main rotation mirrors are maintained by
+the Gentoo infrastructure team. They handle the bulk of the Gentoo rsync
+traffic. The community mirrors are run by volunteers from the Gentoo community.
+Private mirrors are mirrors run by individuals which are closed off to the
+public and meant to cut traffic costs and latency for an organization or
+individual.</p>
+
+<p>At this time, we have enough community mirrors and are actively seeking
+additional main rotation mirrors. Specifications for main rotation servers
+include:</p>
 
 <ul>
   <li>Minimum of a 2GHz Pentium 4 processor (or equivalent)</li>
@@ -65,295 +79,152 @@ link="jforman@gentoo.org">Jeffrey Forman</mail> with the pertinent information.
 </body>
 </section>
 </chapter>
-<!--
+
 <chapter>
-<title>Requirements</title>
+<title>Setting up your own local rsync mirror</title>
 <section>
-<title>Minimum Bandwidth</title>
+<title>Introduction</title>
 <body>
 
-<p>
-To properly host a mirror you should have a minimum of 5Mbps full duplex
-bandwidth.
+<p>Many users run Gentoo on several machines and need to sync the portage trees
+on all of them. Using public mirrors is simply a waste of bandwidth at both
+ends. Syncing only one machine against a public mirror and all others against
+that computer would save resources on Gentoo mirrors and save users' bandwidth.
 </p>
+
+<p>The same holds true for organizations who would like to control the rsync
+mirror their servers and workstations sync against. Of course, they usually also
+want to save on badnwidth and traffic costs. </p>
+
+<p>All you need to do is select which machine is going to be your own local
+rsync mirror and set it up. You should choose a computer that can handle the CPU
+and disk load that an rsync operation require. Your local mirror also needs to
+be available whenever any of your other computers syncs its portage tree.
+Besides, it should have a static IP address or a name that always resolves to
+your server.  Configuring a DHCP and/or a DNS server is beyond the scope of this
+guide.</p>
+
+<p>Note that these instructions assume your private rsync mirror is a Gentoo
+machine. If you intend to run it on a different distribution, the guide for
+setting up a community mirror might be more helpful. Just don't sync the mirror
+every half hour but once or twice a day.</p>
 
 </body>
 </section>
 <section>
-<title>Minimum User Count</title>
+<title>Setting up the server</title>
 <body>
 
-<p>
-We ask that you support a minimum of 15 concurrent user connections.
+<p>There is no extra package to install as the required software is already on
+your computer.Setting up your own local rsync mirror is just a matter of
+configuring the <e>rsyncd</e> daemon to make your <path>/usr/portage</path>
+directory available for syncing. Create the following
+<path>/etc/rsyncd.conf</path> configuration file: </p>
+
+<pre caption="Sample /etc/rsyncd.conf">
+pid file = /var/run/rsyncd.pid
+max connections = 5
+use chroot = yes
+uid = nobody
+gid = nobody
+<comment># Optional: restrict access to your Gentoo boxes</comment>
+hosts allow = 192.168.0.1 192.168.0.2 192.168.1.0/24
+hosts deny  = *
+
+[gentoo-portage]
+path=/usr/portage
+comment=Gentoo Portage
+exclude=distfiles/ packages/
+</pre>
+
+<p> You do not need to use the <c>hosts allow</c> and <c>hosts deny</c> options.
+By default, all clients will be allowed to connect. The order in which you write
+the options is not relevant. The server will always check the <c>hosts allow</c>
+option first and grant the connection if the connecting host matches any of the
+listed patterns. The server will then check the <c>hosts deny</c> option and
+refuse the connection if any match is found. Any host that does not match
+anything will be granted a connection. Please read the man page (<c>man
+rsyncd.conf</c>) for more information. </p>
+
+<p> Now, start your rsync daemon with the following command as the root user:
 </p>
+
+<pre caption="Starting the rsync daemon">
+<comment>(Start the daemon now)</comment>
+# <i>/etc/init.d/rsyncd start</i>
+<comment>(Add the daemon to your default runlevel)</comment>
+# <i>rc-update add rsyncd default</i>
+</pre>
+
+<p> Let's test your rsync mirror. You do not need to try from another machine
+but it would be a good idea to do so. If your server is not known by name from
+all your computers, you can use its IP address instead. </p>
+
+<pre caption="Testing your mirror">
+<comment>(You may use the server name or its IP)</comment>
+# <i>rsync 192.168.0.1::</i>
+gentoo-portage     Gentoo Portage
+# <i>rsync your_server_name::gentoo-portage</i>
+<comment>(You should see the content of /usr/portage on your mirror)</comment>
+</pre>
+
+<p> Your rsync mirror is now set up. Keep running <c>emerge --sync</c> as you
+have done so far to keep your server up-to-date. If you use cron or similar
+facilities to sync regularly, remember to keep it down to a sensible frequency
+like once or twice a day.</p>
+
+<note> Please note that most public mirror administrators consider syncing more
+than once or twice a day an abuse. Some if not most of them will ban your IP
+from their server if you start abusing their machines.</note>
 
 </body>
 </section>
 <section>
-<title>Minimum Hardware</title>
+<title>Configuring your clients</title>
 <body>
 
-<p>
-In order to effectively serve at least 15 concurrent user connections, we ask
-that you have at least the following minimum hardware requirements:
-</p>
+<p> Now, make your other computers use your own local rsync mirror instead of a
+public one. Edit your <path>/etc/make.conf</path> and make the <c>SYNC</c>
+variable point to your server. </p>
 
-<ul>
-  <li>PIII 500 Processor</li>
-  <li>256MB RAM</li>
-</ul>
+<pre caption="Define SYNC in /etc/make.conf">
+<comment>(Use your server IP addess)</comment>
+SYNC="rsync://<i>192.168.0.1</i>/gentoo-portage"
+<comment>(Or use your server name)</comment>
+SYNC="rsync://<i>your_server_name</i>/gentoo-portage"
+</pre>
 
-</body>
-</section>
-<section>
-<title>Update Frequency</title>
-<body>
+<p> You can check that your computer has been properly set up by syncing against
+your own local mirror for the first time: </p>
 
-<p>
-Updates must occur at :00 and :30 of each hour, 24 hours a day. It is
-<e>very</e> important that this schedule is followed strictly, as we use a
-round robin style DNS to select the users' rsync server.
-</p>
+<pre caption="Checking and syncing">
+<comment>(Check that the SYNC variable has been setup)</comment>
+# <i>emerge --info|grep SYNC</i>
+SYNC="rsync://your_server_name/gentoo-portage"
+<comment>(Sync against your local mirror)</comment>
+# <i>emerge --sync</i>
+</pre>
 
-</body>
-</section>
-<section>
-<title>MOTD (/etc/rsync/rsyncd.motd)</title>
-<body>
-
-<p>
-Please include the following information in your rsync MOTD file:
-</p>
-
-<ul>
-<li>server name</li>
-<li>server IP address</li>
-<li>server specs (CPU and RAM)</li>
-<li>bandwidth available to the server</li>
-<li>user connection limit, if any</li>
-<li>server location (city and country)</li>
-<li>a contact name and email address</li>
-</ul>
-
-<p>
-Including the above information in your MOTD file makes it easy to identify
-your mirror in case of problems.
-</p>
+<p> That's it! All your computers will now use your local rsync mirror whenever
+you run <c>emerge --sync</c>. </p>
 
 </body>
 </section>
 </chapter>
 
-<chapter>
-<title>Implementation details</title>
-<section>
-<body>
-
-<p>
-To set up a new mirror, please complete the following steps:
-</p>
-
-<ul>
-<li>
-  Set up your mirror to synchronize against an existing, public Gentoo Linux
-  rsync mirror.  It does not matter which one.  Please make sure to synchronize
-  in accordance with our <e>Update Frequency</e> schedule noted above.
-</li>
-<li>
-  Fill out a bug report on <uri link="http://bugs.gentoo.org">bugs.gentoo.org</uri>
-  that contains your organization name, server name, ip address, contact information and the fact
-  that you'd like to become a new rsync mirror.  We will check your server to
-  ensure it is synchronizing properly. It is important that your server synchronizes
-  twice an hour, with one sync occuring between :00 and :10 and the second sync
-  occuring between :30 and :40.  You may pick any time in these two, 10-minute 
-  windows to schedule your sync. 
-</li>
-<li>
-  Once we have verified that the mirror is synchronizing correctly, we will add
-  the server's IP address to the rsync1.us.gentoo.org access list.
-</li>
-<li>
-  Update your rsync cron job to point to <path>rsync1.us.gentoo.org</path>. We
-  will monitor your server over the next 48-72 hours to ensure it is
-  synchronizing correctly.
-</li>
-</ul>
-
-<p>
-If all steps went smoothly, we will then set up an official 
-<path>rsync[num].[countrycode].gentoo.org</path> DNS entry and add you to our
-DNS round-robin for rsync.[continentcode].gentoo.org and rsync.[countrycode].gentoo.org.
-Shortly after you've been added to our DNS, you should start to see rsync
-traffic.
-</p>
-
-<p>
-Additionally, you, the mirror admin will be added to the gentoo-mirrors mailing
-list (low traffic) so that you can folllow all issues associated with rsync
-mirrors.
-</p>
-
-<note>
-Thanks for helping out Gentoo Linux users and developers! :) For any rsync
-administration issues or problems, please visit <uri
-link="http://bugs.gentoo.org">http://bugs.gentoo.org</uri> and fill out a bug
-on the product "Rsync".
-</note>
-
-</body>
-</section>
-</chapter>
 
 <chapter>
-<title>Parallel Tasks</title>
+<title>Setting up a community rsync server</title>
 <section>
+<title>Introduction</title>
 <body>
 
-<p>
-We will have soon a rrdtool created page that will simply have links to graphs
-(ordered by continent, then country, then server) of official rsync mirrors
-availability (these graphs will be made from sping output). We will check these
-graphs at least once a day, and unreacheable boxes will be removed from the
-RR DNS scheme until the problems are addressed. We will have scripts checking
-that every 30 minutes all mirrors are, in fact, syncing with us.
-</p>
-
-<warn>
-If a mirror has periodically problematic behavior and the admin is being
-contacted and the situation doesn't improve, then that mirror box will be
-taken of the RR scheme permanently.
-</warn>
-
-</body>
-</section>
-</chapter>
--->
-<chapter>
-<title>Short FAQ (provided as a reference for current mirror admins)</title>
-<section>
-<title>Q: Who should I contact regarding rsync issues and maintenance?</title>
-<body>
+<note> You can find sample configuration and script files in the
+gentoo-rsync-mirror package. Just do <c>emerge gentoo-rsync-mirror</c> </note>
 
 <p>
-A: Visit http://bugs.gentoo.org and fill out a bug on the product "Rsync".
-</p>
-
-</body>
-</section>
-<section>
-<title>Q: I run a private rsync mirror for my company. Can I still access rsync1.us.gentoo.org?</title>
-<body>
-
-<p>
-A: Because our resources are limited, we need to ensure we allocate them in
-such a way as to provide the maximum amount of benefit to our users. As such, we
-limit connections to our master rsync and distfile mirrors to public mirrors
-only. Users are welcome to use our regular mirror system to establish a private
-rsync mirror, though they are asked to follow certain basic
-<uri link="http://www.gentoo.org/news/en/gwn/20030505-newsletter.xml#doc_chap1_sect3">
-rsync etiquette guidelines</uri>.
-</p>
-
-</body>
-</section>
-<section>
-<title>Q: Is it important that I sync my mirror twice an hour?</title>
-<body>
-
-<p>
-A: Yes it is important.  You do not need to perform the syncs at exactly :00 and :30
-but the syncs should take place in each of the following two windows:
-</p>
-
-<ol>
-  <li>:00 to :10</li>
-  <li>:30 to :40</li>
-</ol>
-
-<p>
-Additionally, please make sure that your syncs are exactly 30 minutes apart.  So, if
-you schedule the first sync of each hour for :08, please schedule the second sync of
-the hour for :38.
-</p>
-
-</body>
-</section>
-
-<section>
-<title>Q: Where should I sync my rsync mirror before I become an official Gentoo mirror?</title>
-<body>
-
-<ul>
-  <li>I am a European-based rsync mirror: sync to rsync.de.gentoo.org</li>
-  <li>I am a US-based rsync mirror: sync to rsync.us.gentoo.org</li>
-  <li>I am not in the first two groups: sync to rsync.us.gentoo.org</li>
-</ul>
-
-</body>
-</section>
-<section>
-<title>Q: How do I find the mirror nearest to me?</title>
-<body>
-
-<p>
-A: <c>netselect</c> was designed to do this for you. If you haven't already run
-<c>emerge netselect</c> then do it. Then run: <c>netselect rsync.gentoo.org</c>.
-After a minute or so netselect will print an IP address. Take this address and
-use it as the only parameter for rsync with two colons appended to it. eg:
-<c>rsync 1.2.3.4::</c>. You should be able to find out which mirror that is
-from the banner message. Update your <path>/etc/make.conf</path> accordingly.
-</p>
-
-</body>
-</section>
-<section>
-<title>Q: Can I use compression when syncing against rsync1.us.gentoo.org?</title>
-<body>
-
-<p>
-A: No.  Compression utilizes too many resources on the server, so we have
-forcibly disabled it on <path>rsync1.us.gentoo.org</path>. Please <e>do not</e>
-attempt to use compression when syncing against this server.
-</p>
-
-</body>
-</section>
-<section>
-<title>Q: I'm seeing a lot of old and probably dead rsync processes, how can I get rid of them?</title>
-<body>
-
-<p>
-A: Please see the Example Scripts section.
-</p>
-
-</body>
-</section>
-<section>
-<title>Q: There are many users who connect to my rsync server very frequently,
-sometimes even causing a DoS to my mirror, is there any way to prevent this?</title>
-<body>
-
-<p>
-A: Again please see the Example Scripts section.
-</p>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Example Scripts</title>
-<section>
-<body>
-
-<note>
-You will find sample configuration and script files in the gentoo-rsync-mirror
-package. Just do <c>emerge gentoo-rsync-mirror</c>
-</note>
-
-<p>
-Right now, mirroring our Portage tree requires around 250Mb, so it isn't space
-intensive; having at least 500Mb free should allow for growing room. Setting
+Right now, mirroring our Portage tree requires around 600Mb, so it isn't space
+intensive; having at least 1Gb free should allow for growing room. Setting
 up a Portage tree mirror is simple -- first, ensure that your mirror has rsync
 installed. Then, set up your <path>rsyncd.conf</path> file to look something like this:
 </p>
@@ -383,21 +254,24 @@ comment = Gentoo Linux Portage tree mirror
 exclude = distfiles
 </pre>
 
-<p>
-Above, the gentoo-x86-portage mirror points to the same data as gentoo-portage.
-Although we have recently changed the official name of our mirror to
-gentoo-portage, gentoo-x86-portage is still needed for backwards compatibility,
-so include both entries.
-</p>
+<p>You can pick your own locations for most of the files, of course. What's
+important are the section names (<c>[gentoo-portage]</c> and
+<c>[gentoo-x86-portage]</c>). They are the locations that rsync clients will try
+to sync from</p>
 
-<p>
-For security reasons, the use of a chrooted environment is required!
-</p>
+<p>Above, the gentoo-x86-portage mirror points to the same data as
+gentoo-portage. Although we have recently changed the official name of our
+mirror to gentoo-portage, gentoo-x86-portage is still needed for backwards
+compatibility, so include both entries. Eventually, the gentoo-x86-portage
+location will be removed.</p>
 
-<p>
-Now, you need to mirror the Gentoo Linux Portage tree. You should use the
-following script to do so:
-</p>
+<p> For security reasons, the use of a chrooted environment is required! This
+has implications for the logged timestamps -- see the FAQ below.</p>
+
+<p> Now, you need to mirror the Gentoo Linux Portage tree. You can use the
+script below to do so. Again, you'll probably want to change some of the file
+locations to suit your needs -- in particular, they should match those of your
+<path>rsyncd.conf</path>.</p>
 
 <pre caption="rsync-gentoo-portage.sh">
 #!/bin/bash
@@ -417,39 +291,120 @@ ${RSYNC} ${OPTS} ${SRC} ${DST} >> $0.log 2>&amp;1
 echo "End: "`date` >> $0.log 2>&amp;1 
 </pre>
 
-<pre caption="/etc/init.d/rsyncd">
-#!/sbin/runscript
-# Copyright 1999-2004 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
-# &#36;Header: /var/cvsroot/gentoo-x86/net-misc/rsync/files/rsyncd.init.d,v 1.2 2004/05/02 22:45:02 mholzer Exp &#36;
+<p> Your <path>rsyncd.motd</path> should contain your IP address and other
+relevant information about your mirror, such as information about the host
+providing the Portage mirror and an administrative contact.You can now test your
+server as outlined in the "Setting up your own local rsync mirror" section
+above.</p>
 
-depend() {
-need net
-}
+<p> After you have been approved as an official rsync mirror your host will be
+aliased with a name of the form: <path>rsync[num].[country
+code].gentoo.org</path> </p> 
 
-# FYI: --sparce seems to cause problems.
-RSYNCOPTS="--daemon --safe-links --timeout=300"
+</body>
+</section>
+</chapter>
 
-start() {
-ebegin "Starting rsync daemon"
-start-stop-daemon --start --quiet --pidfile /var/run/rsyncd.pid --nicelevel 15 --exec /usr/bin/rsync -- ${RSYNCOPTS}
-eend $?
-}
+<chapter>
+<title>Short FAQ</title>
+<section>
+<title>Q: Who should I contact regarding rsync issues and maintenance?</title>
+<body>
 
-stop() {
-ebegin "Stopping rsync daemon"
-start-stop-daemon --stop --quiet --pidfile /var/run/rsyncd.pid
-eend $?
-} 
-</pre>
+<p> A: Visit <uri link="http://bugs.gentoo.org">Gentoo Bugzilla</uri> and fill
+out a bug on the product "Mirrors", component "Server Problem". </p>
 
-<p>
-Your <path>rsyncd.motd</path> should contain your IP address and other relevant information
-about your mirror, such as information about the host providing the Portage
-mirror and an administrative contact. After you have been approved as an
-official rsync mirror your host will be aliased with a name of the form:
-<path>rsync[num].[country code].gentoo.org</path>
+</body>
+</section>
+
+<section>
+<title>Q: How can I check the freshness of an official rsync server?</title>
+<body> 
+<p>The Gentoo infrastructure team monitors all community rsync servers for
+freshness. You can see the results on the <uri link="http://mirrorstats.gentoo.org/rsync">corresponding web page</uri>. 
+</p></body>
+</section>
+
+<section>
+<title>Q: I run a private rsync mirror for my company. Can I still access
+rsync1.us.gentoo.org?</title> 
+
+<body>
+
+<p> A: Because our resources are limited, we need to ensure we allocate them in
+such a way as to provide the maximum amount of benefit to our users. As such, we
+limit connections to our master rsync and distfile mirrors to public mirrors
+only. Users are welcome to use our regular mirror system to establish a private
+rsync mirror, though they are asked to follow certain basic <uri
+link="http://www.gentoo.org/news/en/gwn/20030505-newsletter.xml#doc_chap1_sect3">
+rsync etiquette guidelines</uri>. </p>
+
+</body>
+</section>
+<section>
+<title>Q: Is it important that I sync my mirror twice an hour?</title>
+<body>
+
+<p> A: Yes it is important.  You do not need to perform the syncs at exactly :00
+and :30 but the syncs should take place in each of the following two windows:
 </p>
+
+<ol>
+  <li>:00 to :10</li>
+  <li>:30 to :40</li>
+</ol>
+
+<p> Additionally, please make sure that your syncs are exactly 30 minutes apart.
+So, if you schedule the first sync of each hour for :08, please schedule the
+second sync of the hour for :38.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Q: Where should I sync my rsync mirror before I become an official Gentoo mirror?</title>
+<body>
+
+<ul>
+  <li>For European-based rsync mirror: sync to rsync.de.gentoo.org</li>
+  <li>For US-based rsync mirror: sync to rsync.us.gentoo.org</li>
+  <li>For all others: sync to rsync.us.gentoo.org</li>
+</ul>
+
+</body>
+</section>
+
+<section>
+<title>Q: How do I find the mirror nearest to me?</title>
+<body>
+
+<p> A: <c>netselect</c> was designed to do this for you. If you haven't already
+run <c>emerge netselect</c> then do it. Then run: <c>netselect
+rsync.gentoo.org</c>. After a minute or so netselect will print an IP address.
+Take this address and use it as the only parameter for rsync with two colons
+appended to it. eg: <c>rsync 1.2.3.4::</c>. You should be able to find out which
+mirror that is from the banner message. Update your <path>/etc/make.conf</path>
+accordingly. </p>
+
+</body>
+</section>
+
+<section>
+<title>Q: Can I use compression when syncing against rsync1.us.gentoo.org?</title>
+<body>
+
+<p> A: No. Compression utilizes too many resources on the server, so we have
+forcibly disabled it on <path>rsync1.us.gentoo.org</path>. Please <e>do not</e>
+attempt to use compression when syncing against this server. </p>
+
+</body>
+</section>
+
+<section>
+<title>Q: I'm seeing a lot of old and probably dead rsync processes, how can I
+get rid of them?</title>
+<body>
 
 <p>
 This command will help you to kill old rsync processes that sometimes lie
@@ -464,170 +419,40 @@ than one hour.
              /bin/grep "[0-9]\{2\}:[0-9]\{2\}:" |/bin/awk '{print $3}'` 
 </pre>
 
+</body>
+</section>
+<section>
+<title>Q: There are many users who connect to my rsync server very frequently,
+sometimes even causing a DoS to my mirror, is there any way to prevent
+this?</title>
+<body>
+
 <p>
 In some cases, there are a few inconsiderate users who abuse the rsync mirror
-system by syncing more than 1-2 times per day.  In the most extreme cases,
-users schedule cron jobs to sync every 15 minutes or so.  This often leads to a
-Denial of Service attack by continually occupying an rsync slot that could have
-otherwise gone to another user.  To try and prevent this, you may use the
-following <uri link="/proj/en/infrastructure/mirrors/rsyncd.conf_pl.txt">perl
-script</uri> which will scan through your rsync log files, pick out IP
-addresses that have already connected more than <c>N</c> times that day and
-dynamically create a <path>rsyncd.conf</path> file, including the offending IP addresses in
-the 'hosts deny' directive.  The following line controls what <c>N</c> equals:
-</p>
+system by syncing more than 1-2 times per day.  In the most extreme cases, users
+schedule cron jobs to sync every 15 minutes or so.  This often leads to a Denial
+of Service attack by continually occupying an rsync slot that could have
+otherwise gone to another user.  To try and prevent this, you may use the <uri
+link="/proj/en/infrastructure/mirrors/rsyncd.conf_pl.txt">this perl script</uri>
+which will scan through your rsync log files, pick out IP addresses that have
+already connected more than <c>N</c> times that day and dynamically create a
+<path>rsyncd.conf</path> file, including the offending IP addresses in the
+'hosts deny' directive.  The following line controls what <c>N</c> equals (in
+this case 4): </p>
 
 <pre caption="Define maximum number of connections per IP">
 @badhosts=grep {$hash{$_}>4} keys %hash;
 </pre>
 
-<p>
-If you use this script, please remember to rotate your rsync log files daily
+<p> If you use this script, please remember to rotate your rsync log files daily
 and modify the script to match the location of your <path>rsyncd.conf</path>
 file. This script is tested on Gentoo Linux, but should work suitably on other
-arches that support both rsync and perl.  
-</p>
+arches that support both rsync and perl. </p>
 
 </body>
 </section>
 </chapter>
 
-<chapter>
-<title>Setting up your own local rsync mirror</title>
-<section>
-<title>Introduction</title>
-<body>
 
-<p>
-Many users run Gentoo on several machines and need to run <c>emerge --sync</c>
-on all of them. Using public mirrors is simply a waste of bandwidth at both
-ends. Syncing only one machine against a public mirror and all others against
-that computer would save resources on Gentoo mirrors and save users' bandwidth.
-</p>
 
-<p>
-All you need to do is select which of your machines is going to be your own local
-rsync mirror and set it up. You should choose a computer that can handle the
-CPU and disk load that an rsync operation require. Your local mirror also needs
-to be available whenever any of your other computers syncs its portage tree.
-Besides, it should have a static IP address or a name that always resolves to
-your server.  Configuring a DHCP and/or a DNS server is beyond the scope of
-this guide.
-</p>
-
-</body>
-</section>
-<section>
-<title>Setting up the server</title>
-<body>
-
-<p>
-There is no extra package to install as the required software is already on
-your computer.  Setting up your own local rsync mirror is just a matter of
-configuring the <e>rsyncd</e> daemon to make your <path>/usr/portage</path>
-directory available for syncing. Create the following
-<path>/etc/rsyncd.conf</path> configuration file: </p>
-
-<pre caption="Sample /etc/rsyncd.conf">
-pid file = /var/run/rsyncd.pid
-max connections = 5
-use chroot = yes
-uid = nobody
-gid = nobody
-<comment># Optional: restrict access to your Gentoo boxes</comment>
-hosts allow = 192.168.0.1 192.168.0.2 192.168.1.0/24
-hosts deny  = *
-
-[gentoo-portage]
-path=/usr/portage
-comment=Gentoo Portage
-exclude=distfiles/ packages/
-</pre>
-
-<p>
-You do not have to use the <c>hosts allow</c> and <c>hosts deny</c> options. By
-default, all clients will be allowed to connect. The order in which you write
-the options is not relevant. The server will always check the <c>hosts
-allow</c> option first and grant the connection if the connecting host matches
-any of the listed patterns. The server will then check the <c>hosts deny</c>
-option and refuse the connection if any match is found. Any host that does not
-match anything will be granted a connection. Please read the man page (<c>man
-rsyncd.conf</c>) for more information.
-</p>
-
-<p>
-Now, start your rsync daemon with the following command as the root user:
-</p>
-
-<pre caption="Starting the rsync daemon">
-<comment>(Start the daemon now)</comment>
-# <i>/etc/init.d/rsyncd start</i>
-<comment>(Add the daemon to your default runlevel)</comment>
-# <i>rc-update add rsyncd default</i>
-</pre>
-
-<p>
-Let's test your rsync mirror. You do not need to try from another machine but
-it would be a good idea to do so. If your server is not known by name from all
-your computers, you can use its IP address instead.
-</p>
-
-<pre caption="Testing your mirror">
-<comment>(You may use the server name or its IP)</comment>
-# <i>rsync 192.168.0.1::</i>
-gentoo-portage     Gentoo Portage
-# <i>rsync your_server_name::gentoo-portage</i>
-<comment>(You should see the content of /usr/portage on your mirror)</comment>
-</pre>
-
-<p>
-Your rsync mirror is now set up. Keep running <c>emerge --sync</c> as you have
-done so far to keep your server up-to-date.
-</p>
-
-<note>
-Please note that most public mirror administrators consider syncing more than
-once or twice a day an abuse.
-</note>
-
-</body>
-</section>
-<section>
-<title>Configuring your clients</title>
-<body>
-
-<p>
-Now, make your other computers use your own local rsync mirror instead of a
-public one. Edit your <path>/etc/make.conf</path> and make the <c>SYNC</c>
-variable point to your server.
-</p>
-
-<pre caption="Define SYNC in /etc/make.conf">
-<comment>(Use your server IP addess)</comment>
-SYNC="rsync://<i>192.168.0.1</i>/gentoo-portage"
-<comment>(Or use your server name)</comment>
-SYNC="rsync://<i>your_server_name</i>/gentoo-portage"
-</pre>
-
-<p>
-You can check that your computer has been properly set up by syncing against your
-own local mirror for the first time:
-</p>
-
-<pre caption="Checking and syncing">
-<comment>(Check that the SYNC variable has been setup)</comment>
-# <i>emerge --info|grep SYNC</i>
-SYNC="rsync://your_server_name/gentoo-portage"
-<comment>(Sync against your local mirror)</comment>
-# <i>emerge --sync</i>
-</pre>
-
-<p>
-That's it! All your computers will now use your local rsync mirror whenever you
-run <c>emerge --sync</c>.
-</p>
-
-</body>
-</section>
-</chapter>
 </guide>
