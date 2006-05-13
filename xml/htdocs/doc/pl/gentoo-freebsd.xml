@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/gentoo-freebsd.xml,v 1.8 2006/05/10 11:33:41 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/gentoo-freebsd.xml,v 1.9 2006/05/13 21:06:06 shadoww Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/pl/gentoo-freebsd.xml" lang="pl">
@@ -31,8 +31,8 @@ rozwoju projektu.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.3</version>
-<date>2006-03-24</date>
+<version>2.4</version>
+<date>2006-05-03</date>
 
 <chapter>
 <title>Wprowadzenie do FreeBSD</title>
@@ -153,6 +153,12 @@ Wersje testowe możemy pobrać z
 w tym dokumencie.
 </note>
 
+<note>
+W przewodniku tym, używamy <c>ee</c>, jako domyślnego edytora. Jednak nic nie
+stoi na przeszkodzie, aby nasz system konfigurować przy pomocy naszego
+ulubionego narzędzia, takie jak np. <c>vim</c> czy <c>nano</c>.
+</note>
+
 <p>
 Zanim rozpoczniemy instalację należy przygotować dysk twardy do korzystania z
 Gentoo/FreeBSD. Może to zostać dokonane albo przy użyciu <c>sysinstall</c>
@@ -254,6 +260,20 @@ Po uzyskaniu nakładki Gentoo/FreeBSD nadchodzi czas na dowiązanie
 <path>/etc/make.conf</path>.
 </p>
 
+<p>
+Teraz pora na zdobycie właśnej kopii drzewa Portage. Może to potrwać dłuższą
+chwilę, w zależności od tego jak szybkie jest nasze połączenie z internetem.
+</p>
+
+<pre caption="Ściąganie drzewa Portage">
+# <i>emerge --sync</i>
+<comment>(Możliwe jest również zdobycie drzewa w inny sposób:)</comment>
+# <i>cd /</i>
+# <i>wget http://gentoo.osuosl.org/snapshots/portage-latest.tar.bz2</i>
+# <i>tar -xjf portage-latest.tar.bz2 -C /usr/</i>
+# <i>emerge --metadata</i>
+</pre>
+
 <pre caption="Konfiguracja profilu oraz /etc/make.conf">
 # <i>ln -sf /usr/local/portage/portage-alt-overlay/profiles/default-bsd/fbsd/6.0/x86/ 
 /etc/make.profile</i>
@@ -261,15 +281,19 @@ Po uzyskaniu nakładki Gentoo/FreeBSD nadchodzi czas na dowiązanie
 # <i>ee /etc/make.conf</i>
 <comment>(Należy upewnić się, że dodano co najmniej następujące wpisy)</comment>
 CHOST="i686-gentoo-freebsd6.0"
-ACCEPT_KEYWORDS="~x86-fbsd ~x86"
+ACCEPT_KEYWORDS="~x86-fbsd"
 FEATURES="-sandbox collision-protect"
 PORTDIR_OVERLAY="/usr/local/portage/portage-alt-overlay"
 </pre>
 
 <note>
-Jeśli przeprowadzamy instalacje z użyciem starego stage 5.4 musimy
-zastąpić "5.4" wpisując "6.0" podczas tworzenia dowiązania symbolicznego do
-profilu i ustawiania zmiennej CHOST.
+Jeżeli użyjemy jedynie słowa kluczowego ~x86-fbsd nasz system będzie miał
+bardzo ograniczone możliwości. Możemy dodać słowo kluczowe ~x86 do zmiennej
+ACCEPT_KEYWORDS, aby uzyskać dostęp do większej ilości pakietów, jednak
+niektóre z nich mogą nie działać lub mieć błędne zależności. Do testowania
+pakietów prosimy używać packages.keywords, a te działające prosimy zgłaszać na
+<uri link="http://bugs.gentoo.org">Bugzillę</uri> zaznaczając produkt
+Gentoo/Alt.
 </note>
 
 <p>
@@ -279,20 +303,6 @@ katalogu <path>/proc</path>.
 
 <pre caption="Tworzenie katalogu /proc">
 # <i>mkdir /proc</i>
-</pre>
-
-<p>
-Teraz ściągniemy kopię głównego drzewa Portage, co na słabszych łączach
-może zająć całkiem sporo czasu.
-</p>
-
-<pre caption="Pozyskiwanie drzewa Portage">
-# <i>emerge --sync</i>
-<comment>(Możliwe jest również uzyskanie drzewa Portage w inny sposób)</comment>
-# <i>cd /</i>
-# <i>wget http://gentoo.osuosl.org/snapshots/portage-latest.tar.bz2</i>
-# <i>tar -xjf portage-latest.tar.bz2 -C /usr/</i>
-# <i>emerge --metadata</i>
 </pre>
 
 <p>
@@ -329,13 +339,6 @@ wersja może zostać znaleziona w podkatalogu <path>conf</path> konfiguracji
 <c>GENERIC</c> i nazwana jest <path>GENERIC.hints</path>.
 </p>
 
-<note>
-Podczas kompilowania kernela należy użyć polecenia "make WERROR=NO_WERROR"
-ponieważ deweloperzy Gentoo/FreeBSD nie byli w stanie usunąć wszystkich 
-wystąpień flagi -Werror, więc obecna wersja GCC nie akceptuje rozszerzeń
-funkcji printf() dla FreeBSD.
-</note>
-
 <p>
 Teraz można już dokonać podstawowej konfiguracji systemu. Najpierw zdefiniujemy
 punkty montowania w <path>/etc/fstab</path>:
@@ -358,13 +361,11 @@ Teraz jest też właściwy czas by skonfigurować połączenia sieciowe przed
 ostatecznym przeładowaniem systemu:
 </p>
 
-<pre caption="Konfiguracja sieci">
-# <i>ee /etc/conf.d/net</i>
-<comment>(To również jest tylko przykład, który trzeba zmodyfikować na
-potrzeby konkretnej sieci.)</comment>
-ifconfig_rl0=("192.168.0.10 netmask 255.255.255.0 broadcast 192.168.0.255")
-routes_rl0=("-net 0.0.0.0 -host 192.168.0.1")
-</pre>
+<p>
+Wszelkie informacje dotyczące konfiguracji sieci znajdziemy w <uri
+link="/doc/pl/handbook/handbook-x86.xml?part=4&amp;chap=1">podręczniku
+Gentoo</uri>.
+</p>
 
 <p>
 Połączenie sieciowe może być automatycznie aktywowane w czasie uruchamiania
@@ -377,11 +378,36 @@ uruchomieniowego.
 </pre>
 
 <p>
-Należy również dostosować wpis nazwy hosta w pliku <path>/etc/hostname</path>.
+Należy również dostosować wpis nazwy hosta w pliku 
+<path>/etc/conf.d/hostname</path>.
 </p>
 
 <pre caption="Zmiana nazwy komputera">
-# <i>echo "NAZWA_KOMPUTERA" > /etc/hostname</i>
+# <i>ee /etc/conf.d/hostname</i>
+<comment>(Nazwę komputera podstawiamy do zmiennej HOSTNAME)</comment>
+HOSTNAME="tux"
+</pre>
+
+<p>
+Powinniśmy skonfigurować również nazwę domenową, poprzez plik
+<path>/etc/conf.d/domainname</path>:
+</p>
+
+<pre caption="Ustawianie nazwy domenowej">
+# <i>ee /etc/conf.d/domainname</i>
+<comment>(Nazwę domenową podstawiamy do zmiennej DNSDOMAIN)</comment>
+DNSDOMAIN="homenetwork"
+</pre>
+
+<p>
+Jeżeli posiadamy domenę NIS ustawimy ją za pomocą pliku
+<path>/etc/conf.d/domainname</path>:
+</p>
+
+<pre caption="Ustawianie domeny NIS">
+# <i>ee /etc/conf.d/domainname</i>
+<comment>(Domenę NIS podstawiamy do zmiennej NISDOMAIN)</comment>
+NISDOMAIN="my-nisdomain"
 </pre>
 
 <p>
