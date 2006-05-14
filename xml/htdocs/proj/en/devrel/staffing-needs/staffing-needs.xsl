@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:exslt="http://exslt.org/common"
+                xmlns:func="http://exslt.org/functions"
+                extension-element-prefixes="exslt func"
+                version="1.0">
+
 <xsl:output encoding="UTF-8" method="xml" indent="no" doctype-system="/dtd/project.dtd"/>
+<xsl:include href="/xsl/inserts.xsl"/>
+
 <xsl:template match="/staffingNeeds">
 <project>
   <name>Staffing Needs</name>
   <longname>Gentoo Linux Staffing Needs</longname>
 
-  <date>automatically</date><!-- Should give: Updated automatically -->
+  <date>today</date>
   <author title="Script"><mail link="devrel@gentoo.org">Gentoo Developer Relations</mail></author>
 
   <description>
@@ -67,7 +74,7 @@
             </ti>
             <ti>
               Requested on
-              <xsl:value-of select="summary/@dateRequested"/> by
+              <xsl:value-of select="func:format-date(summary/@dateRequested,'en')"/> by
               <xsl:choose>
                 <xsl:when test="contact/@herd != ''">the </xsl:when>
                 <xsl:when test="contact/@team != ''">the </xsl:when>
