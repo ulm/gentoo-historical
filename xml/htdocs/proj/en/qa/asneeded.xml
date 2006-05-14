@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.7 2006/04/28 12:44:36 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.8 2006/05/14 14:03:36 nightmorph Exp $ -->
 
 <guide link="/proj/en/qa/asneeded.xml" lang="en">
 <title>--as-needed introduction and fixing guide</title>
@@ -18,8 +18,8 @@ steps to fix simple cases where --as-needed fails to build a package.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.5</version>
-<date>2006-04-28</date>
+<version>0.6</version>
+<date>2006-05-14</date>
 
 <chapter> <!-- Introduction -->
 <title>Introduction</title>
@@ -47,7 +47,7 @@ can be either a final executable or another library.
 <p>
 In theory, when linking something, only the needed libraries are passed to the
 command line used to invoke the linker.  But to workaround systems with broken
-linkers or not using ELF format, many libraries declares some "dependencies"
+linkers or not using ELF format, many libraries declare some "dependencies"
 that get pulled in while linking.  A simple example can be found by looking at
 the libraries declared as dependencies by <path>gtk+ 2.0</path>:
 </p>
@@ -81,16 +81,16 @@ framework.
 </p>
 
 <p>
-More importantly, the use of <c>--as-needed</c> avoids adding dependencies
-to a binary that are prerequisites of one of its direct or indirect
-dependencies.  This is important because when a library changes SONAME after an
-ABI change, all the binaries directly linking to it have to be rebuilt. By
-linking only the libraries that are actually needed, the breakage due to an ABI 
-change is reduced.  It is particularry useful when the ABI breakage happens in 
-a library used by some other high level library (like for example 
-<path>cairo</path>, that's used directly by <path>gtk+-2.0</path>, and gets 
-linked indirectly in applications using the latter), as it prevents the rebuild
-of the final binaries and thus of the packages carrying them.
+More importantly, the use of <c>--as-needed</c> avoids adding dependencies to a
+binary that are prerequisites of one of its direct or indirect dependencies.
+This is important because when a library changes SONAME after an ABI change,
+all the binaries directly linking to it have to be rebuilt. By linking only the
+libraries that are actually needed, the breakage due to an ABI change is
+reduced.  It is particularly useful when the ABI breakage happens in a library
+used by some other high level library (like <path>cairo</path>, which is used
+directly by <path>gtk+-2.0</path>, and gets linked indirectly in applications
+using the latter), as it prevents the rebuild of the final binaries and thus of
+the packages carrying them.
 </p>
 
 <p>
@@ -110,10 +110,11 @@ written.
 <body>
 
 <warn>
-At the time of writing, there are many packages failing in funny ways because of
-<c>--as-needed</c> as they weren't designed to be used with it.  While there
+At the time of writing, there are many packages failing in funny ways because
+of <c>--as-needed</c> as they weren't designed to be used with it.  While there
 shouldn't be (note the <e>conditional</e>) problems such as crashes, this flag
-is not considered safe for production use and not supported in any way by Gentoo.
+is not considered safe for production use and not supported in any way by
+Gentoo.
 </warn>
 
 <p>
@@ -165,10 +166,10 @@ rebuild the dependencies failing to link against before filing a bug.
 <body>
 
 <p>
-Anyone willing to try out <c>--as-needed</c> flag should be aware that there
-are many cases of failures that may fall into one of a few different categories.
-I'll try to explain here the reasoning behind the failures and ways to fix them;
-some of them are really simple, others are not.
+Anyone willing to try out the <c>--as-needed</c> flag should be aware that
+there are many cases of failures that may fall into one of a few different
+categories.  I'll try to explain here the reasoning behind the failures and
+ways to fix them; some of them are really simple, others are not.
 </p>
 
 <p>
@@ -189,21 +190,21 @@ CCing <mail link="flameeyes@gentoo.org">flameeyes@gentoo.org</mail> on it.
 <body>
 
 <p>
-As above stated, 2.16 binutils series and the early 2.17 prereleases suffer from
-problems when linking with <c>--as-needed</c>, which leads to <c>ld</c>
+As stated above, the 2.16 binutils series and the early 2.17 prereleases suffer
+from problems when linking with <c>--as-needed</c>, which leads to <c>ld</c>
 segfaulting when trying to link complex C++ libraries like <path>wxGTK</path>.
 </p>
 
 <p>
 In this case the first thing to do is to use the latest prerelease available
-from upstrea. At the date of writing last prerelease is 2.16.92 that is told to
-solve most if not all the problems with <c>--as-needed</c> flag and does not
-fail anymore with <path>wxGTK</path> for once.
+from upstrea. At the date of writing the last prerelease is 2.16.92 that is
+said to solve most if not all the problems with <c>--as-needed</c> flag and
+does not fail anymore with <path>wxGTK</path> for once.
 </p>
 
 <p>
 If the last snapshot doesn't work, you might consider filtering the flag with
-the following code, after reporting the case upstream with as much details
+the following code, after reporting the case upstream with as many details
 possible.
 </p>
 
@@ -211,16 +212,16 @@ possible.
 inherit flag-o-matic
 ...
 
-pkg_setup() {
-    filter-ldflags -Wl,--as-needed --as-needed
+<stmt>pkg_setup()</stmt> {
+    <keyword>filter-ldflags</keyword> -Wl,--as-needed --as-needed
 }
 </pre>
 
 <impo>
 These problems should be gone as of 2.16.92 and thus the filtering is
 unnecessary, as anyone using <c>--as-needed</c> and finding segfaults should
-simply update binutils. For this reason you mighw ant to do this locally but you
-should <e>not</e> commit flags filtering for this reason.
+simply update binutils. For this reason you might want to do this locally but
+you should <e>not</e> commit flags filtering for this reason.
 </impo>
 
 </body>
@@ -242,19 +243,19 @@ ld: use the --help option for usage information
 </pre>
 
 <p>
-This is caused by <c>ld</c> being called with <path>LDFLAGS</path> variable
+This is caused by <c>ld</c> being called with the <path>LDFLAGS</path> variable
 instead of <c>gcc</c>, thus breaking because it doesn't recognize the
 <c>-Wl,</c> prefix used to tell <c>gcc</c> to pass the option down to the
-linker.  To fix this, one must pass to the make process the output of the
-<c>raw-ldflags</c> function.
+linker.  To fix this, one must pass the output of the <c>raw-ldflags</c>
+function to the <c>make</c> process.
 </p>
 
 <pre caption="example of raw-ldflags usage">
 inherit flag-o-matic
-..
+...
 
-src_compile() {
-    emake LDFLAGS="$(raw-ldflags)" || die "emake failed"
+<stmt>src_compile()</stmt> {
+    <keyword>emake</keyword> <ident>LDFLAGS</ident>="<var>$(raw-ldflags)</var>" || <keyword>die</keyword> <const>"emake failed"</const>
 }
 </pre>
 
@@ -267,12 +268,12 @@ src_compile() {
 <body>
 
 <p>
-This is the most common error that happens while using <c>--as-needed</c>.  It
+This is the most common error that happens while using <c>--as-needed</c>. It
 happens during the final linking stage of an executable (libraries don't create
-problems, because they are allowed to have undefined symbols).  The executable
-linking stage dies because of an undefined symbol that is present in one of the
-libraries fed to the command line.  However the library is not used by the 
-executable itself (thus it gets removed by <c>--as-needed</c>).
+problems, because they are allowed to have undefined symbols). The executable
+linking stage dies because of an undefined symbol that is present in one of
+the libraries fed to the command line. However, the library is not used by the
+executable itself, thus it gets removed by <c>--as-needed</c>.
 </p>
 
 <p>
@@ -344,10 +345,10 @@ detected.
 
 <note>
 While applying patches to libraries to fix <c>--as-needed</c> support, it is
-usually not the case to apply a revbump: those who don't want to use the flag don't
-need to rebuild the library.  For this reason, those who want to use 
-<c>--as-needed</c> are invited to run an emerge -e world so that libraries are 
-rebuilt.
+usually not the case to apply a revbump: those who don't want to use the flag
+don't need to rebuild the library.  For this reason, those who want to use
+<c>--as-needed</c> are invited to run an <c>emerge -e world</c> so that
+libraries are rebuilt.
 </note>
 
 </body>
@@ -367,13 +368,13 @@ of a behaviour of the GNU linker that's enforced by <c>--as-needed</c>.
 </p>
 
 <p>
-Basically, what the linker does is looks for the symbols missing in a given file
+Basically, what the linker does is look for the symbols missing in a given file
 (either an object file, a static archive or a library) only in the files coming
-after it.  When using the normal linking, without <c>--as-needed</c>, this is not
-a problem, although there might be some internal drawbacks on the linking stage,
-the files are linked together without considering ordering.  But with the flag, 
-the libraries that aren't used for resolving symbols are discarded and thus not 
-linked.
+after it.  When using the normal linking, without <c>--as-needed</c>, this is
+not a problem, although there might be some internal drawbacks on the linking
+stage, the files are linked together without considering ordering.  But with
+the flag, the libraries that aren't used for resolving symbols are discarded
+and thus not linked.
 </p>
 
 <pre caption="example of wrong and correct linking order">
