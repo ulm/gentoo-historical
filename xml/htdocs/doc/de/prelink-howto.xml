@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/prelink-howto.xml,v 1.11 2006/03/12 00:03:45 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/prelink-howto.xml,v 1.12 2006/05/14 23:51:08 grahl Exp $ -->
 
-<!-- English CVS Version: 1.37 -->
+<!-- English CVS Version: 1.39 -->
 
 <guide link="/doc/de/prelink-howto.xml" lang="de">
 <title>Gentoo Linux Prelink Einführung</title>
@@ -37,8 +37,8 @@ in der Portage 2.0.46 und später verwendet.
 
 <license/>
 
-<version>1.12</version>
-<date>2005-04-21</date>
+<version>1.13</version>
+<date>2006-04-21</date>
 
 
 <chapter>
@@ -48,12 +48,12 @@ in der Portage 2.0.46 und später verwendet.
 <body>
 
 <p>
-Die meisten, gebräuchlichen Programme verwenden shared libraries. Diese
-shared libraries müssen während der Laufzeit in den Speicher geladen
-und vielfältige Symbolreferenzen aufgelöst werden. Fr die meisten, kleineren
-Anwendungen geschieht dies sehr schnell. Für Programme die in C++ geschrieben
-worden sind und die zudem viele Bibliotheks-Abhängigkeiten haben, kann das
-Linken eine nicht unerhebliche Zeit in Anspruch nehmen.
+Die meisten, gebräuchlichen Programme verwenden gemeinsam genutzte
+Bibliotheken. Diese Shared-Libraries müssen während der Laufzeit in den
+Speicher geladen und vielfältige Symbolreferenzen aufgelöst werden. Für die
+meisten, kleineren Anwendungen geschieht dies sehr schnell. Für Programme die
+in C++ geschrieben worden sind und die zudem viele Bibliotheks-Abhängigkeiten
+haben, kann das Linken eine nicht unerhebliche Zeit in Anspruch nehmen.
 </p>
 
 <p>
@@ -65,11 +65,19 @@ Ausführen linkt (daher <c>prelink</c>).
 </p>
 
 <p>
-Prelinking kann die Startzeit von Anwendungen stark verkürzen. Zum Beispiel 
+Prelinking kann die Startzeit von Anwendungen stark verkürzen. Zum Beispiel
 kann die Ladezeit für ein typisches KDE-Programm um bis zu 50% verkürzt werden.
-Lediglich beim Ersetzen von Bibliotheken muss durch erneutes Ausführen von 
+Lediglich beim Ersetzen von Bibliotheken muss durch erneutes Ausführen von
 Prelink eine neue Programmdatei erzeugt werden.
 </p>
+
+<warn>
+Prelink wird zusammen mit Hardened Gentoo nicht funktionieren. Dies liegt
+daran, dass beide Projekte versuchen den Adressraum für Shared-Libraries zu
+adressieren. Jedoch liefert prelink mit der -R Option eine zufällige Zuweisung
+der Basisadressen für Bibliotheken, was zu einem gewissen Grad von verstärkter
+Sicherheit führt.
+</warn>
 
 </body>
 </section>
@@ -152,13 +160,6 @@ an <mail link="cretin@gentoo.org">Stefan Jones</mail>.
 <section>
 <title>Vorbereiten Ihres Systems</title>
 <body>
-
-<p>
-Als nächstes sollten Sie das "pic" USE Flag in <path>/etc/make.conf</path> 
-aktivieren. Vergessen Sie nicht <c>emerge --update --deep --newuse world</c> 
-auszuführen, so dass die Änderung der USE Flags in Ihr System eingearbeitet 
-werden können.
-</p>
 
 <p>
 Stellen Sie auch sicher, dass Sie -fPIC in Ihren  CFLAGS/CXXFLAGS <e>nicht</e> 
@@ -258,6 +259,20 @@ Für weitere Optionen und Details siehe <c>man prelink</c>.
 </body>
 </section>
 <section>
+<title>Prelink Cron-Job</title>
+<body>
+
+<p>
+<c>sys-devel/prelink-20060213</c> und neuer installieren einen Cron-Job in
+<path>/etc/cron.daily/prelink</path>. Um ihn zu aktivieren editieren sie die
+Konfigurationsdatei <path>/etc/conf.d/prelink</path>. Dies wird prelink täglich
+im Hintergrund, wenn benötigt, ausführen und Ihnen es esparen den Befehl
+manuell aufzurufen.
+</p>
+
+</body>
+</section>
+<section>
 <title>KDE beschleunigen nach Prelink</title>
 <body>
 <p>
@@ -279,11 +294,11 @@ um KDE über Prelink zu informieren.
 <chapter>
 <title>Bekannte Probleme und Bereinigungen</title>
 <section>
-<title>&quot;Prelink gegen non-PIC shared library nicht möglich&quot;</title>
+<title>"Prelink gegen non-PIC Shared-Library nicht möglich"</title>
 <body>
 
 <p>
-Der Grund für dieses Problem sind fehlerhaft compilierte shared libraries,
+Der Grund für dieses Problem sind fehlerhaft kompilierte Shared-Libraries,
 die ohne die -fPIC Option für alle Objekt-Dateien erstellt wurden.
 </p>
 
@@ -300,6 +315,11 @@ korrigierbar sind:
   <li>
     Die Bibliothek in media-video/mjpegtools,
     <path>/usr/lib/liblavfile-1.6.so.0</path>.
+  </li>
+  <li>
+    Nvidia OpenGl-Bibliotheken in
+    <path>/usr/lib/opengl/nvidia/lib/libGL.so.*</path>.  Aus Gründen der
+    Performance wurden Sie ohne PIC-Unterstützung kompiliert.
   </li>
 </ul>
 
@@ -324,28 +344,28 @@ Howell,
 </p>
 
 <p>
-&quot;Ich vermute die dahinter stehende Idee ist, daß Alles in der
+"Ich vermute die dahinter stehende Idee ist, daß Alles in der
 heruntergeladenen Datei enthalten ist und somit keine Abhängigkeiten von den
 lokalen Bibliotheken des Zielsystems vorhanden sein sollen. Unglücklicherweise
-ist dies bei Linux, und ich vermute bei jedem anderen System, welches die 
+ist dies bei Linux, und ich vermute bei jedem anderen System, welches die
 GLIBC verwendet, nicht korrekt. Da ist die "libnss" (name service switch, manche
 Leute nennen sie network security system), welche Funktionen zum Zugriff auf
 diverse Datenbanken mit Authentifikations- und Netzwerk-Informationen, sowie
 anderen Informationen. Sie ist dafür gedacht, Anwendungen unabhängig vom
 getrennt davon konfigurierten Netzwerk zu machen. Eine gute Idee, jedoch können
-Änderungen an der GLIBC zu Problemen beim Laden dieser Bibliothek führen. 
-Zudem kann man die "libnss" nicht statisch linken, da sie für jede Maschine 
-individuell konfiguriert wird. Das Problem rührt meiner Meinung nach 
+Änderungen an der GLIBC zu Problemen beim Laden dieser Bibliothek führen.
+Zudem kann man die "libnss" nicht statisch linken, da sie für jede Maschine
+individuell konfiguriert wird. Das Problem rührt meiner Meinung nach
 hauptsächlich daher, daß andere GLIBC Bibliotheken, insbesondere "libpthread",
-"libm" and libc", statisch gelinkt werden, was zu inkompatiblen Aufrufen von 
-Funktionen der "libnss" führt.&quot;
+"libm" and libc", statisch gelinkt werden, was zu inkompatiblen Aufrufen von
+Funktionen der "libnss" führt."
 </p>
 
 </body>
 </section>
 <section>
-<title>Prelink bricht mit &quot;prelink: dso.c:306: fdopen_dso: Assertion
-`j == k' failed.&quot; ab</title>
+<title>Prelink bricht mit ";prelink: dso.c:306: fdopen_dso: Assertion
+`j == k' failed." ab</title>
 <body>
 
 <p>
