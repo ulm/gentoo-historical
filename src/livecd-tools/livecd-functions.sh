@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.21 2006/04/25 19:31:47 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.22 2006/05/15 12:55:27 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -52,6 +52,15 @@ nv_gl() {
 	GLTYPE=nvidia
 }
 
+nv_no_gl() {
+	einfo "NVIDIA card detected."
+	echo
+	einfo "This card is not supported by the latest version of the NVIDIA"
+	einfo "binary drivers.  Switching to the X server's driver instead."
+	GLTYPE=xorg-x11
+	sed -i 's/nvidia/nv/' /etc/X11/xorg.conf
+}
+
 get_video_cards() {
 	[ -x /sbin/lspci ] && VIDEO_CARDS="$(/sbin/lspci | grep VGA)"
 	[ -x /usr/sbin/lspci ] && VIDEO_CARDS="$(/usr/sbin/lspci | grep VGA)"
@@ -63,16 +72,21 @@ get_video_cards() {
 		if [ -n "${NVIDIA}" ]
 		then
 			NVIDIA_CARD=$(echo ${NVIDIA} | awk 'BEGIN {RS=" "} /(NV|nv|G)[0-9]+/ {print $1}' | cut -d. -f1 | sed 's/ //' | sed 's:[^0-9]::g')
+			# NVIDIA Model reference:
+			# http://en.wikipedia.org/wiki/Comparison_of_NVIDIA_Graphics_Processing_Units
 			if [ -n "${NVIDIA_CARD}" ]
 			then
-				if [ $(echo ${NVIDIA_CARD} | cut -dV -f2) -ge 4 ]
+				if [ $(echo ${NVIDIA_CARD} | cut -dV -f2) -ge 17 ]
 				then
 					nv_gl
 				elif [ $(echo ${NVIDIA_CARD} | cut -dG -f2) -ge 70 ]
 				then
 					nv_gl
+				elif [ $(echo ${NVIDIA_CARD} | cut -dV -f2) -eq 11 ]
+				then
+					nv_gl
 				else
-					no_gl
+					nv_no_gl
 				fi
 			else
 				no_gl
