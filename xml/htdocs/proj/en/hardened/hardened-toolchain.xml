@@ -43,10 +43,6 @@ Technical description of, and rationale for, the Gentoo Hardened Toolchain modif
 The Gentoo Hardened project introduces a number of changes to the default behaviour of the toolchain (gcc, binutils, glibc/uclibc) intended to improve security. It supports other initiatives taken by the hardened project; most directly PaX and Grsecurity, but can also be applied to SELinux and RSBAC. This document describes each of the modifications made to the toolchain, showing what they achieve and how they relate to the Gentoo hardened strategy.
 </p>
 
-<p>
-This document describes the changes made to the toolchain, the reasons for those changes, and how those changes impact the system.
-</p>
-
 </body>
 </section>
 
@@ -55,7 +51,7 @@ This document describes the changes made to the toolchain, the reasons for those
 <body>
 
 <p>
-First developed by Hiroaki Etoh at IBM for the 3.x series of GCC (originally under the name ProPolice) and re-developed for the 4.x series by RedHat, the Stack Smashing Protector attempts to protect against stack buffer overflows. It causes the compiler to insert a check for stack buffer overflows before function returns, so that if an attempt is made to exploit a previously unfixed (and probably undiscovered) error that exposes a buffer overflow vulnerability, the attempt will cause the application to be killed immediately thus reducing any potential exploit to a denial-of-service.
+First developed by Dr Hiroaki Etoh at IBM for the 3.x series of GCC (originally under the name ProPolice) and re-developed in a different way for the 4.x series by RedHat, the Stack Smashing Protector attempts to protect against stack buffer overflows. It causes the compiler to insert a check for stack buffer overflows before function returns.  If an attempt is made to exploit a previously unfixed (and probably undiscovered) error that exposes a buffer overflow vulnerability, the application will be killed immediately.  This reduces any potential exploit to a denial-of-service.
 </p>
 
 <p>
@@ -100,7 +96,7 @@ The Gentoo hardened GCC automatically sets the linker to set RELRO, unless expli
 <body>
 
 <p>
-Normally, to reduce the time between starting an application and actually being able to use it, most software is built with "lazy binding", where references to functions in shared libraries are resolved when they are actually used for the first time, rather than when the application is loaded. The hardened toolchain changes this behaviour so that by default it will set the "BIND_NOW" flag, which causes the loader to sort out all of these links before starting execution.  It improves the effectiveness of <uri link="#RELROintro">RELRO</uri>.
+To reduce the time between starting an application and actually being able to use it, most software is built with "lazy binding". This means that references to functions in shared libraries are resolved when they are actually used for the first time, rather than when the application is loaded. The hardened toolchain changes this behaviour so that by default it will set the "BIND_NOW" flag, which causes the loader to sort out all of these links before starting execution.  It improves the effectiveness of <uri link="#RELROintro">RELRO</uri>.
 </p>
 
 <p>
@@ -164,11 +160,11 @@ The SSP implementation in gcc-4.x is completely different, even so far as changi
 <title>Position Independent Executables (PIEs)</title>
 
 <section id="PIErationale">
-<title>Rationale building Position Indepedent Executables (PIEs)</title>
+<title>Rationale for building Position Indepedent Executables (PIEs)</title>
 <body>
 
 <p>
-The reason for building applications as position-independent, is to allow the application to be loaded at a random address rather than the fixed address the kernel normally loads executables to.  This makes it harder for an attacker to exploit the executable, since it is harder to know where the code and heap reside.
+The reason for building applications as position-independent is to allow the application to be loaded at a random address; normally the kernel loads all executables to the same fixed address.  Randomising this address makes it harder for an attacker to exploit the executable, since it is harder to know where the code (and heap) reside.
 </p>
 <p>
 This is most effective when running a PaX kernel with Address Space Layout Randomisation (ASLR), which increases the randomness of the various parts of a process significantly.  It is also necessary to enable the GRsecurity option to hide the location information in the /proc filesystem - otherwise the attacker can just look there to find the addresses needed!
@@ -185,7 +181,7 @@ Note that using prelink reduces the effectiveness of this approach significantly
 <body>
 
 <p>
-Position-independent executables support is provided by the standard GNU toolchain.  For PIEs, GCC has different versions of some of the compiler support objects so that for example instead of using crtbegin.o, crt1.o and crtend.o it uses crtbeginS.o, Scrt1.o and crtendS.o (the exact files vary according to the compiler target), and code is built position-independent for executables.  This is similar to PIC code, although in the case of executables some symbols are not referenced via the Global Offset Table (GOT).  The compiler obtains the list of compiler support objects via the "specs" file - see "info gcc" section 3 (Invoking GCC) subsection 15 (Spec Files).  Building code for PIEs is achieved by adding '-fPIE' when compiling and '-fPIE -pie' when linking.
+Support for position-independent executables is provided by the standard GNU toolchain.  For PIEs, GCC has different versions of some of the compiler support objects so that for example instead of using crtbegin.o, crt1.o and crtend.o it uses crtbeginS.o, Scrt1.o and crtendS.o (the exact files vary according to the compiler target).  It also builds code in a similar fashion to library PIC code, although in the case of executables some symbols are not referenced via the Global Offset Table (GOT).  The compiler obtains the list of compiler support objects via the "specs" file - see "info gcc" section 3 (Invoking GCC) subsection 15 (Spec Files).  Building code for PIEs is achieved by adding '-fPIE' when compiling and '-fPIE -pie' when linking.
 </p>
 <p>
 To change the default for building executables from absolute to position-independent, it is necessary to change the selection of support objects and to set the -fPIE and -pie options appropriately.  The specs rules for this are startfile, endfile, cc1 and link_command.  Exact details of the modifications vary according to the target; to illustrate here are the changes for x86:
@@ -321,7 +317,7 @@ So far, the hardened project has found no issues with switching on RELRO by defa
 <body>
 
 <p>
-As described in the <uri link="#RELRO">RELRO</uri> chapter, setting BIND_NOW increases the effectiveness of setting RELRO, removing attacks that involve overwriting data in the Global Offset Table (GOT).
+As described in the <uri link="#RELRO">RELRO</uri> chapter, setting BIND_NOW increases the effectiveness of setting RELRO, making attacks that involve overwriting data in the Global Offset Table (GOT) fail.
 </p>
 
 </body>
@@ -359,18 +355,15 @@ So a new option is introduced, "nonow", which can be used to prevent the hardene
 <body>
 
 <p>
-NOW binding has several noticeable effects.  The first is that initial loading time for applications increases, sometimes very noticeably, as the loader resolves all the references before passing execution to the loaded process.  The second more serious effect is that applications that are not written to refer to shared libraries in the standard way can fail; the most obvious of these is X, which has modules with circular resolution dependencies amongst other unusual behaviour.  Another trick occasionally performed by applications is to decide between a number of shared libraries at run time, and use lazy binding to resolve references to the chosen library.  Normally this would be done with dlopen(3) and friends, including obtaining symbol addresses via dlsym(3), but it is possible to avoid using dlsym(3) and a plethora of pointers in the code by using lazy binding.
+NOW binding has several noticeable effects.  The first is that initial loading time for applications increases, sometimes very noticeably, as the loader resolves all the references before passing execution to the loaded process.  The second more serious effect is that applications that are not written to refer to shared libraries in the standard way can fail; the most obvious of these is X, which has modules with circular resolution dependencies amongst other unusual behaviour.  Another trick occasionally performed by applications is to decide between a number of shared libraries at run time, and use lazy binding to resolve references to the chosen library.  Normally this would be done with dlopen(3) and friends, including obtaining symbol addresses via dlsym(3), but it is possible to avoid using dlsym(3) and a plethora of pointers in the code by using lazy binding, although it's not pretty.
 </p>
 <p>
 The following packages have issues with BIND_NOW at the time of writing, and it has to be relaxed somewhat for them:
 </p>
 <ul>
-<li>X - the main server contains references to the drivers, which in turn contain references to the server.  Also some drivers consist of more than several libraries which are co-dependent</li>
+<li>X - the main server contains references to the drivers, which in turn contain references to the server.  Also some drivers consist of several libraries which are co-dependent</li>
 <li>transcode - relies on lazy binding to be able to load its modules; the issues are similar to the X issues.</li>
 </ul>
-<p>
-In both cases the problem is of co-dependence between libraries and/or executables.  They occur because the code makes direct reference to symbols in the libraries that are not listed in the executable's list of required libraries.  The code typically uses dlopen() to load a library (which is correct), but doesn't use dlsym() to resolve the symbols it needs (which is incorrect).
-</p>
 
 </body>
 </section>
@@ -398,7 +391,7 @@ In both cases the problem is of co-dependence between libraries and/or executabl
 <body>
 
 <ul>
-<li><uri link="http://people.redhat.com/drepper/dsohowto.pdf">How to Write Shared Libraries</uri> by Ulrich Drepper</li>
+<li><uri link="http://people.redhat.com/drepper/dsohowto.pdf">How to Write Shared Libraries</uri> by Ulrich Drepper (PDF)</li>
 </ul>
 
 </body>
