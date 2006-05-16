@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.137 2006/05/16 04:01:43 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.138 2006/05/16 04:29:03 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -182,7 +182,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			newminor = self._find_existing_in_new(oldpart, newparts)
 			if not newminor or not newparts[newminor]['resized'] or newparts[newminor]['type'] in ("extended", "free"):
 				continue
-			curminor = self._find_current_minor_for_part(device, tmppart_old['start'])
 			tmppart_new = newparts[newminor]
 			type = tmppart_new['type']
 			start = tmppart_new['start']
@@ -202,14 +201,17 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			total_sectors = end - start + 1
 			total_bytes = long(total_sectors) * 512
 
-			# Delete partition and recreate at same start point with new size
-			self._delete_partition(parted_disk, curminor)
-			if tmppart_new.is_logical():
-				tmptype = "logical"
-			else:
-				tmptype = "primary"
-			self._add_partition(parted_disk, start, end, tmptype, tmppart_new['type'], strict_start=True)
-			parted_disk.commit()
+			# Delete partition and recreate at same start point with new size if growing
+			if tmppart_new['mb'] > tmppart_old['mb']:
+				curminor = self._find_current_minor_for_part(device, start)
+				self._delete_partition(parted_disk, curminor)
+				if tmppart_new.is_logical():
+					tmptype = "logical"
+				else:
+					tmptype = "primary"
+				self._add_partition(parted_disk, start, end, tmptype, tmppart_new['type'], strict_start=True)
+				parted_disk.commit()
+
 			devnode = device + str(self._find_current_minor_for_part(device, start))
 
 			# sleep a bit first
@@ -222,7 +224,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			time.sleep(3)
 
 			if type in ("ext2", "ext3"):
-				ret = GLIUtility.spawn("resize2fs " + devnode, logfile=self._compile_logfile, append_log=True)
+				resizecmd = "resize2fs %s %sK" % (devnode, str(int((total_bytes - (2 * MEGABYTE)) / 1024)))
+				self._logger.log("_partition_resize_step(): running: " + resizecmd)
+				ret = GLIUtility.spawn(resizecmd, logfile=self._compile_logfile, append_log=True)
 				if not GLIUtility.exitsuccess(ret):
 					raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize ext2/3 filesystem on " + devnode)
 			elif type == "ntfs":
