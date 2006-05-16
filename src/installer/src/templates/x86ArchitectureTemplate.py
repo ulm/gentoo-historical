@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.136 2006/04/21 11:54:30 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.137 2006/05/16 04:01:43 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -58,7 +58,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 	def _sectors_to_megabytes(self, sectors, sector_bytes=512):
 		return float((float(sectors) * sector_bytes)/ float(MEGABYTE))
 
-	def _add_partition(self, disk, start, end, type, fs, name=""):
+	def _add_partition(self, disk, start, end, type, fs, name="", strict_start=False, strict_end=False):
 		if self._debug: self._logger.log("_add_partition(): type=%s, fstype=%s" % (type, fs))
 		types = { 'primary': parted.PARTITION_PRIMARY, 'extended': parted.PARTITION_EXTENDED, 'logical': parted.PARTITION_LOGICAL }
 		fsTypes = {}
@@ -69,9 +69,15 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		fstype = None
 		if fs: fstype = fsTypes[fs]
 		newpart = disk.partition_new(types[type], fstype, start, end)
-		if self._debug: self._logger.log("_add_partition(): partition object created")
 		constraint = disk.dev.constraint_any()
-		if self._debug: self._logger.log("_add_partition(): constraint object created")
+		if strict_start:
+			constraint.start_range.set_start(start)
+			constraint.start_range.set_end(start)
+			constraint.end_range.set_start(end)
+		if strict_end:
+			constraint.start_range.set_start(start)
+			constraint.end_range.set_start(end)
+			constraint.end_range.set_end(end)
 		disk.add_partition(newpart, constraint)
 		if self._debug: self._logger.log("_add_partition(): partition added")
 
@@ -94,12 +100,13 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		return False
 
 	def _check_table_layout_changed(self, oldparts, newparts):
+		# This function is similar to the above function except it will see it as un-changed even if a partition is just being reformatted
 		for part in newparts:
 			if not newparts[part]['origminor'] or not oldparts.get_partition(part):
 				return True
 			oldpart = oldparts[part]
 			newpart = newparts[part]
-			if oldpart['type'] == newpart['type'] and oldpart['mb'] == newpart['mb']:
+			if oldpart['type'] == newpart['type'] and oldpart['mb'] == newpart['mb'] and not newpart['resized']:
 				continue
 			else:
 				return True
@@ -127,15 +134,28 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				return part
 		return 0
 
+	def _find_current_minor_for_part(self, device, start):
+		tmp_oldparts = GLIStorageDevice.Device(device, arch=self._client_configuration.get_architecture_template())
+		tmp_oldparts.set_partitions_from_disk()
+		for tmp_oldpart in tmp_oldparts:
+			self._logger.log("_find_current_minor_for_part(): looking at minor %s...start sector is %s...looking for %s" % (str(tmp_oldpart), str(tmp_oldparts[tmp_oldpart]['start']), str(start)))
+			if tmp_oldparts[tmp_oldpart]['start'] == start:
+				return tmp_oldparts[tmp_oldpart]['minor']
+		else:
+			raise GLIException("PartitionResizeError", 'fatal', '_find_current_minor_for_part', "Could not determine the new devnode for partition starting at sector " + str(start))
+
 	def _partition_delete_step(self, parted_disk, oldparts, newparts):
+		self._logger.log("_partition_delete_step(): Deleting partitions that aren't being resized")
 		for oldpart in list(oldparts)[::-1]:
 			tmppart_old = oldparts[oldpart]
 			if oldparts.get_disklabel() != "mac" and tmppart_old['type'] == "free": continue
 			if tmppart_old['type'] == "extended":
 				# Iterate through logicals to see if any are being resized
+				self._logger.log("_partition_delete_step(): logicals for extended part %d: %s" % (tmppart_old['minor'], str(tmppart_old.get_logicals())))
 				for logpart in tmppart_old.get_logicals():
 					newminor = self._find_existing_in_new(logpart, newparts)
-					if newminor and newparts['resized']:
+					self._logger.log("_partition_delete_step(): newminor is " + str(newminor))
+					if newminor and newparts[newminor]['resized']:
 						self._logger.log("  Logical partition " + str(logpart) + " to be resized...can't delete extended")
 						break
 				else:
@@ -155,58 +175,79 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		parted_disk.commit()
 
 	def _partition_resize_step(self, parted_disk, device, oldparts, newparts):
+		self._logger.log("_partition_resize_step(): Resizing partitions")
+		device_sectors = newparts.get_num_sectors()
 		for oldpart in oldparts:
 			tmppart_old = oldparts[oldpart]
-			devnode = tmppart_old['devnode']
 			newminor = self._find_existing_in_new(oldpart, newparts)
-			if not newminor or not newparts[newminor]['resized']:
+			if not newminor or not newparts[newminor]['resized'] or newparts[newminor]['type'] in ("extended", "free"):
 				continue
+			curminor = self._find_current_minor_for_part(device, tmppart_old['start'])
 			tmppart_new = newparts[newminor]
 			type = tmppart_new['type']
 			start = tmppart_new['start']
-			end = start + (long(tmppart['mb']) * MEGABYTE / 512) - 1
-			total_sectors = end - start + 1
-			total_bytes = long(total_sectors) * 512
+			end = start + (long(tmppart_new['mb']) * MEGABYTE / 512) - 1
+
 			# Make sure calculated end sector doesn't overlap start sector of next partition
 			nextminor = self._find_next_partition(newminor, newparts)
 			if nextminor:
 				if newparts[nextminor]['start'] and end >= newparts[nextminor]['start']:
 					self._logger.log("  End sector for growing partition overlaps with start of next partition...fixing")
 					end = newparts[nextminor]['start'] - 1
+
+			# cap to end of device
+			if end >= device_sectors:
+				end = device_sectors - 1
+
+			total_sectors = end - start + 1
+			total_bytes = long(total_sectors) * 512
+
+			# Delete partition and recreate at same start point with new size
+			self._delete_partition(parted_disk, curminor)
+			if tmppart_new.is_logical():
+				tmptype = "logical"
+			else:
+				tmptype = "primary"
+			self._add_partition(parted_disk, start, end, tmptype, tmppart_new['type'], strict_start=True)
+			parted_disk.commit()
+			devnode = device + str(self._find_current_minor_for_part(device, start))
+
 			# sleep a bit first
 			time.sleep(3)
 			# now sleep until it exists
-			while not GLIUtility.is_file(device + str(minor)):
+			while not GLIUtility.is_file(devnode):
 				self._logger.log("Waiting for device node " + devnode + " to exist before resizing")
 				time.sleep(1)
 			# one bit of extra sleep is needed, as there is a blip still
 			time.sleep(3)
+
 			if type in ("ext2", "ext3"):
-				ret = GLIUtility.spawn("resize2fs " + devnode + " " + str(total_sectors) + "s", logfile=self._compile_logfile, append_log=True)
-				if not GLIUtility.exitsuccess(ret): # Resize error
+				ret = GLIUtility.spawn("resize2fs " + devnode, logfile=self._compile_logfile, append_log=True)
+				if not GLIUtility.exitsuccess(ret):
 					raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize ext2/3 filesystem on " + devnode)
 			elif type == "ntfs":
 				ret = GLIUtility.spawn("yes | ntfsresize -v --size " + str(total_bytes) + " " + devnode, logfile=self._compile_logfile, append_log=True)
-				if not GLIUtility.exitsuccess(ret): # Resize error
+				if not GLIUtility.exitsuccess(ret):
 					raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize NTFS filesystem on " + devnode)
 			elif type in ("linux-swap", "fat32", "fat16"):
 				parted_fs = parted_disk.get_partition(part).geom.file_system_open()
 				resize_constraint = parted_fs.get_resize_constraint()
 				if total_sectors < resize_constraint.min_size or start != resize_constraint.start_range.start:
-					raise GLIException("PartitionError", 'fatal', 'partition', "New size specified for " + device + str(minor) + " is not within allowed boundaries (blame parted)")
+					raise GLIException("PartitionError", 'fatal', 'partition', "New size specified for " + devnode + " is not within allowed boundaries (blame parted)")
 				new_geom = resize_constraint.start_range.duplicate()
 				new_geom.set_start(start)
 				new_geom.set_end(end)
 				try:
 					parted_fs.resize(new_geom)
 				except:
-					raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + device + str(minor))
-			self._logger.log("  Deleting old minor " + str(oldpart) + " to be recreated in 3rd pass")
-			self._delete_partition(parted_disk, oldpart)
+					raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize " + devnode)
+			self._logger.log("  Deleting old minor " + str(oldpart) + " to be recreated in next pass")
+#			self._delete_partition(parted_disk, oldpart)
 		parted_disk.delete_all()
 		parted_disk.commit()
 
 	def _partition_recreate_step(self, parted_disk, newparts):
+		self._logger.log("_partition_recreate_step(): Recreating partitions")
 		start = 0
 		end = 0
 		extended_start = 0
@@ -278,6 +319,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			start = end + 1
 
 	def _partition_format_step(self, parted_disk, device, newparts):
+		self._logger.log("_partition_format_step(): Formatting new partitions")
 		for part in newparts:
 			newpart = newparts[part]
 			devnode = newpart['devnode']
@@ -389,7 +431,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				self._partition_delete_step(parted_disk, oldparts, newparts)
 
 				# Second pass to resize old partitions that need to be resized
-				self._logger.log("Partitioning: Second pass...")
 				self.notify_frontend("progress", (cur_progress / total_steps, "Resizing remaining partitions for " + device))
 				cur_progress += 1
 				self._partition_resize_step(parted_disk, device, oldparts, newparts)
@@ -402,7 +443,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 					raise GLIException("DiskLabelCreationError", 'fatal', 'partition', "Could not create a blank disklabel!")
 
 				# Third pass to create new partition table
-				self._logger.log("Partitioning: Third pass....creating partitions")
 				self.notify_frontend("progress", (cur_progress / total_steps, "Recreating partition table for " + device))
 				cur_progress += 1
 				self._partition_recreate_step(parted_disk, newparts)
@@ -410,7 +450,6 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				cur_progress += 3
 
 			# Fourth pass to format partitions
-			self._logger.log("Partitioning: formatting partitions")
 			self.notify_frontend("progress", (cur_progress / total_steps, "Formatting partitions for " + device))
 			cur_progress += 1
 			self._partition_format_step(parted_disk, device, newparts)
