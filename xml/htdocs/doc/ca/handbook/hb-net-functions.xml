@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ca/handbook/hb-net-functions.xml,v 1.1 2006/05/18 13:40:03 neysx Exp $ -->
+
+<sections>
+
+<version>1.1</version>
+<date>2005-06-14</date>
+
+<section>
+<title>Afegint funcionalitat</title>
+<body>
+
+<p>
+Es poden definir quatre funcions que seran cridades al voltant de les
+operacions d'arrencada/aturada. Les funcions són cridades amb el nom de la
+interfície primer així que aquesta funció pot controlar múltiples adaptadors.
+</p>
+
+<p>
+Els valors de retorn per les funcions preup i predown haurien de ser 0 (succés)
+per indicar que la configuració o desconfiguració de la interfície pot
+continuar. Si preup retorna un valor diferent de zero, llavors la configuració
+de la interfície s'anul·larà. Si predown retorna un valor diferent de zero,
+llavors no es permetrà continuar la de-configuració de la interfície.
+</p>
+
+<p>
+Els valors de retorn per a les funcions de postup i postdown són ignorats ja
+que no hi ha res a fer si indiquen una fallida.
+</p>
+
+<p>
+<c>${IFACE}</c> s'estableix a la darrera interfície que és aixecada/baixada.
+<c>${IFVAR}</c> és <c>${IFACE}</c> convertit a un nom variable que permeti bash
+</p>
+
+<pre caption="exemples de funcions pre/post up/down">
+preup() {
+  <comment># Prova per enllaçar a la interfície abans d'aixecar-la. Això
+  # només funciona en alguns adaptadors de xarxa i requereix que el paquet
+  # mii-diag estigui instal·lat.</comment>
+  if mii-tool ${IFACE} 2> /dev/null | grep -q 'no link'; then
+    ewarn "No hi ha enllaç a ${IFACE}, avortant la configuració"
+    return 1
+  fi
+
+  <comment># Prova per enllaçar a la interfície abans d'aixecar-la. Això
+  # només funciona en alguns adaptadors de xarxa i requereix que el paquet
+  # ethtool estigui instal·lat.</comment>
+  if ethtool ${IFACE} | grep -q 'Link detected: no'; then
+    ewarn "No hi ha enllaç a ${IFACE}, avortant la configuració"
+    return 1
+  fi
+
+  <comment># Recordar retornar 0 en cas d'èxit</comment>
+  return 0
+}
+
+predown() {
+  <comment># Per defecte a l'script es comprova l'arrel NFS i es deshabilita
+  # abaixar interfícies en aquest cas. Noti que si especifica una funció
+  # predown() sobreescriurà aquesta lògica. Aquí està, en
+  # cas que encara ho vulgui...</comment>
+  if is_net_fs /; then
+    eerror "el sistema arrel de xarxa està montat -- no es pot aturar ${IFACE}"
+    return 1
+  fi
+
+  <comment># Recordi retornar 0 en cas d'èxit</comment>
+  return 0
+}
+
+postup() {
+  <comment># Aquesta funció pot ser emprada, per exemple, per registrar-se amb
+  # un servei de DNS dinàmic. Una altra possibilitat seria per
+  # enviar/rebre correu una vegada la interfície s'aixequi.</comment>
+       return 0
+}
+
+postdown() {
+  <comment># Aquesta funció és més que res aquí per a fer-ho complet... No he
+  # pensat en res útil que fer amb això encara ;-)</comment>
+  return 0
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Afegint funcionalitat a les eines sense fils</title>
+<body>
+
+<note>
+Això no funcionarà amb WPA Supplicant - però les variables <c>${ESSID}</c> i
+<c>${ESSIDVAR}</c> estan disponibles a la funció postup()
+</note>
+
+<p>
+Poden definir-se dues funcions abans o després de la funció associada. Les
+funcions són cridades amb el nom d'interfície primer així aquesta funció pot
+controlar múltiples adaptadors.
+</p>
+
+<p>
+Els valors de retorn per la funció preassociada hauria de ser 0 (succés) per
+indicar que la configuració o de-configuració de la interfície pot continuar.
+Sí la preassociada retorna un valor diferent de zero, llavors la configuració
+de la funció serà avortada.
+</p>
+
+<p>
+El valor retornat per la funció postassociada és ignorat ja que no hi ha res a
+fer si indica fallida.
+</p>
+
+<p>
+<c>${ESSID}</c> s'estableix a l'ESSID exacta de l'AP al que es connecta.
+<c>${ESSIDVAR}</c> és <c>${ESSID}</c> convertit a un nom de variable que bash
+permeti
+</p>
+
+<pre caption="funcions d'associació pre/post">
+preassociate() {
+  <comment># El de sota afegeix les dues variables de configuració leap_user_ESSID
+  # i leap_pass_ESSID. Quan ambdos estan configurades per l'ESSID al que es
+  # connecten llavors executem l'script CISCO LEAP</comment>
+
+  local user pass
+  eval user=\"\$\{leap_user_${ESSIDVAR}\}\"
+  eval pass=\"\$\{leap_pass_${ESSIDVAR}\}\"
+
+  if [[ -n ${user} &amp;&amp; -n ${pass} ]]; then
+    if [[ ! -x /opt/cisco/bin/leapscript ]]; then
+      eend "Per a suport de LEAP, si us plau emergeixi net-misc/cisco-aironet-client-utils"
+      return 1
+    fi
+    einfo "Esperant una Autenticació LEAP a \"${ESSID//\\\\//}\""
+    if /opt/cisco/bin/leapscript ${user} ${pass} | grep -q 'Login incorrect'; then
+      ewarn "Identificació Fallida per a ${user}"
+      return 1
+    fi
+  fi
+
+  return 0
+}
+
+postassociate() {
+  <comment># Aquesta funció és bàsicament aquí per a tenir-ho complet... No
+  # he pensat en res útil per fer amb això encara ;-)</comment>
+
+  return 0
+}
+</pre>
+
+<note>
+<c>${ESSID}</c> i <c>${ESSIDVAR}</c> no estan disponibles a les funcions
+predown() i postdown()
+</note>
+
+</body>
+</section>
+
+</sections>

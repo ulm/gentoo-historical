@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ca/handbook/hb-net-wireless.xml,v 1.1 2006/05/18 13:40:03 neysx Exp $ -->
+
+<sections>
+
+<version>1.2</version>
+<date>2005-08-02</date>
+
+<section>
+<title>Introducció</title>
+<body>
+
+<p>
+Actualment suportem la configuració de connexions sense fils tant mitjançant
+wireless-tools o wpa_supplicant. L'important és recordar que configuri per les
+xarxes sense fils en una base global i no en una base d'interfície.
+</p>
+
+<p>
+wpa_supplicant és la millor tria, però no suporta tots els controladors.
+Per a una llista dels controladors suportats,
+<uri link="http://hostap.epitest.fi/wpa_supplicant">llegeixi el lloc web de
+wpa_supplicant</uri>. També, wpa_supplicant de moment només pot connectar
+al SSID per al que l'hagi configurat.
+</p>
+
+<p>
+wireless-tools suporta quasi bé totes les targes i controladors, però no pot
+connectar a Punts d'Accés amb només WPA.
+</p>
+
+<warn>
+El controlador linux-wlan-ng de moment no és soportat per baselayout pel
+moment. Això és perquè linux-wlan-ng té la pròpia configuració que és
+completament diferent de la de la qualsevol altre. El rumoreja que els
+desenvolupadors de linux-wlan-ng canviaran la seva configuració a la de
+wireless-tools - quan això succeeixi podrà emprar linux-wlan-ng amb baselayout.
+</warn>
+
+</body>
+</section>
+<section>
+<title>WPA Supplicant</title>
+<body>
+
+<p>
+<uri link="http://hostap.epitest.fi/wpa_supplicant">WPA Supplicant</uri> és un
+paquet que li permet connectar a un punt d'accés amb WPA activat. La seva
+configuració és força fluida ja que encara està en proves - tot i això funciona
+bé, en la seva major part.
+</p>
+
+<pre caption="Instal·li wpa_supplicant">
+# <i>emerge net-wireless/wpa_supplicant</i>
+</pre>
+
+<impo>
+Ha de tenir CONFIG_PACKET activat al seu nucli per a que wpa_supplicant
+funcioni.
+</impo>
+
+<p>
+Ara hem de configurar <path>/etc/conf.d/net</path> per dir que preferim
+wpa_supplicant abans que wireless-tools (si ambdos estan instal·lats, és
+wireless-tools per defecte).
+</p>
+
+<pre caption="configuri /etc/conf.d/net per wpa_supplicant">
+<comment># Preferir wpa_supplicant sobre wireless-tools</comment>
+modules=( "wpa_supplicant" )
+
+<comment># És important que li diguem a wpa_supplicant quin controlador hauríem
+# d'estar emprant ja que no és gaire bo descobrint-ho encara</comment>
+wpa_supplicant_eth0="-Dmadwifi"
+</pre>
+
+<note>
+Si està emprant el controlador host-ap necessitarà posar la tarja en mode
+managed abans que pugui ser emprada correctament amb wpa_supplicant. Pot emprar
+<e>iwconfig_eth0="mode managed"</e> per aconseguir això a
+<path>/etc/conf.d/net</path>.
+</note>
+
+<p>
+Ha estat senzill no? Tot i així encara hem de configurar wpa_supplicant
+en si mateix que és una mica més complex depenent de com de segur sigui el
+punt d'accés al que prova de connectar. L'exemple de sota està pres i
+simplificat del <path>/etc/wpa_supplicant.conf.example</path> que ve amb
+wpa_supplicant.
+</p>
+
+<pre caption="un exemple /etc/wpa_supplicant.conf">
+<comment># La línia de sota no pot ser canviada, d'altre manera pot no funcionar</comment>
+ctrl_interface=/var/run/wpa_supplicant
+
+<comment># Asseguri's que només root pot llegir la configuració WPA</comment>
+ctrl_interface_group=0
+
+<comment># Deixi a wpa_supplicant fer-se càrrec d'escanejar la sel·lecció d'APs</comment>
+ap_scan=1
+
+<comment># Cas senzill: WPA-PSK, PSK com a mot de passada ASCII, permet totes les encriptacions vàlides</comment>
+network={
+  ssid="senzill"
+  psk="frase d'accés molt secreta"
+  <comment># Quanta més prioritat abans ens connectarem</comment>
+  priority=5
+}
+
+<comment># El mateix d'abans, però requereix l'escaneig d'un SSID específic (per APs que
+# rebutgen fer broadcast de l'SSID)</comment>
+network={
+  ssid="segon ssid"
+  scan_ssid=1
+  psk="frasse d'accés molt secreta"
+  priority=2
+}
+
+<comment># Només s'empra WPA-PSK. Qualsevol combinació xifrada vàlida s'accepta</comment>
+network={
+  ssid="exemple"
+  proto=WPA
+  key_mgmt=WPA-PSK
+  pairwise=CCMP TKIP
+  group=CCMP TKIP WEP104 WEP40
+  psk=06b4be19da289f475aa46a33cb793029d4ab3db7a23ee92382eb0106c72ac7bb
+  priority=2
+}
+
+<comment># Connexió sense xifrat (sense WPA, ni IEEE 802.1X)</comment>
+network={
+  ssid="sensexifrar-prova"
+  key_mgmt=NONE
+}
+
+<comment># Connexió amb la clau WEP compartida (sense WPA, ni IEEE 802.1X)</comment>
+network={
+  ssid="wep-estatic-prova"
+  key_mgmt=NONE
+  wep_key0="abcde"
+  wep_key1=0102030405
+  wep_key2="1234567890123"
+  wep_tx_keyidx=0
+  priority=5
+}
+
+<comment># Connexió amb la clau WEP compartida (sense WPA, ni IEEE 802.1X) emprant
+# un autenticació amb una clau compartida IEEE 802.11</comment>
+network={
+  ssid="wep-estatic-prova2"
+  key_mgmt=NONE
+  wep_key0="abcde"
+  wep_key1=0102030405
+  wep_key2="1234567890123"
+  wep_tx_keyidx=0
+  priority=5
+  auth_alg=SHARED
+}
+
+<comment># Xarxa IBSS/ad-hoc amb WPA-None/TKIP</comment>
+network={
+  ssid="prova adhoc"
+  mode=1
+  proto=WPA
+  key_mgmt=WPA-NONE
+  pairwise=NONE
+  group=TKIP
+  psk="frase secreta"
+}
+</pre>                  
+
+</body>
+</section>
+<section>
+<title>Eines Sense Fils</title>
+
+<subsection>
+<title>Configuració inicial i Mode Managed</title>
+<body>
+
+<p>
+<uri link="http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/Tools.html">
+Wireless Tools</uri> proveeix d'una manera genèrica de configurar interfícies
+sense fils bàsiques fins al nivell de seguretat WEP. Mentre que WEP és un
+mètode de seguretat pobre també és el més extés.
+</p>
+
+<p>
+La configuració de les Wireless Tools és controlada per unes poques variables
+principals. El fitxer d'exemple de configuració hauria de descriure tot el que
+necessita. Una cosa a tenir en compte és que cap configuració significa
+"connectar al Punt d'Accés sense encriptar amb senyal més forta" - sempre
+provarem i et connectarem a alguna cosa.
+</p>
+
+<pre caption="Instal·lar wireless-tools">
+# <i>emerge net-wireless/wireless-tools</i>
+</pre>
+
+<note>
+Encara que pot emmagatzemar els seus paràmetres sense fils a
+<path>/etc/conf.d/wireless</path> aquesta guia t'aconsella emmagatzemar-los a
+<path>/etc/conf.d/net</path>
+</note>
+
+<impo>
+<e>Necessitarà</e> consultar la documentació de
+<uri link="?part=4&amp;chap=2#variable_name">nom de variable</uri>.
+</impo>
+
+<pre caption="exemple de configuració d'iwconfig a /etc/conf.d/net">
+<comment># Preferir iwconfig abans de wpa_supplicant</comment>
+modules=( "iwconfig" )
+
+<comment># Configura les claus WEP per als Punts d'Accés anomenats ESSID1 i ESSID2</comment>
+<comment># Pot configurar fins a 4 claus WEP, però només 1 pot estar activa
+# alhora així que per defecte tenim un índex de [1] per a la clau[1] i llavors
+# un altre cop per canviar la clau activa a [1]
+# Fem això per en cas que defineixi altres ESSIDs per emprar altres claus que
+# pas 1
+# Prefixant la clau amb s: vol dir que és una clau ASCII, d'altra manera
+# és una clau HEX
+# enc open especifica seguretat oberta (més segur)
+# enc restricted especifica seguretat restringida (menys segur)</comment>
+key_ESSID1="[1] s:lasevaclauaqui key [1] enc open"
+key_ESSID2="[1] aaaa-bbbb-cccc-dd key [1] enc restricted"
+
+<comment># El de sota només funciona quan escanegem per Punts d'Accés disponibles.</comment>
+
+<comment># algunes vegades més d'un punt d'accés és visible així que necessitem
+# definir un ordre de preferència per a connectar-hi</comment>
+preferred_aps=( "ESSID1" "ESSID2" )
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Afinament a la Tria del Punt d'Accés</title>
+<body>
+
+<p>
+Pot afegir algunes opcions extra per afinar la seva tria del Punt d'Accés
+però aquestes no són normalment requerides.
+</p>
+
+<p>
+Pot decidir quan connectarem a un Punt d'Accés preferit o no. Per defecte
+si tot el configurat ha fallat i podem connectar a un Punt d'Accés no
+encriptat llavors ho farem Això pot ser controlat per la variable
+<c>associate_order</c>. Aquí hi ha una taula de valors i com controlen això.
+</p>
+
+<table>
+<tr>
+  <th>Valor</th>
+  <th>Descripció</th>
+</tr>
+<tr>
+  <ti>any</ti>
+  <ti>Comportament per defecte</ti>
+</tr>
+<tr>
+  <ti>preferredonly</ti>
+  <ti>Només connectarem als APs a la llista de preferits</ti>
+</tr>
+<tr>
+  <ti>forcepreferred</ti>
+  <ti>
+    Connectarem forçosament als APs en l'ordre preferit si no es troben en un
+    escaneig
+  </ti>
+</tr>
+<tr>
+  <ti>forcepreferredonly</ti>
+  <ti>
+    No escanegem buscant APs - en canvi només mirem provem de connectar a cada
+    un en ordre
+  </ti>
+</tr>
+<tr>
+  <ti>forceany</ti>
+  <ti>El mateix que a forcepreferred + connectar a qualsevol altre AP disponible</ti>
+</tr>
+</table>
+
+<p>
+Finalment tenim blacklist_aps i unique_ap. blacklist_aps treballa d'una manera
+similar a prefered_aps. unique_ap és un valor yes o no que diu si una segona
+interfície sense fils pot connectar al mateix Punt d'Accés a la primera
+interfície.
+</p>
+
+<pre caption="exemple de blacklist_aps i unique_ap">
+<comment># Algunes vegades mai vol connectar a certs punts d'accés</comment>
+blacklist_aps=( "ESSID3" "ESSID4" )
+
+<comment># Si té més d'una tarja sense fils, pot dir si vol
+# permetre a cada tarja associar-se amb el mateix Punt d'Accés o no
+# Els valors són "yes" o "no"
+# Per defecte és "yes"</comment>
+unique_ap="yes"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Modes Ad-Hoc i Master</title>
+<body>
+
+<p>
+Si vol establir-se com a un node Ad-Hoc si falla la connexió a qualsevol Punt
+d'Accés en mode managed, pot fer-ho també.
+</p>
+
+<pre caption="tornada a mode ad-hoc">
+adhoc_essid_eth0="Aquest Node Adhoc"
+</pre>
+
+<p>
+Que hi ha sobre connectar a xarxes Ad-Hoc o funcionar en mode Master per
+esdevenir un Punt d'Accés? Aquí hi ha una configuració només per això!
+Pot necessitar especificar les claus WEP com es mostra a sobre.
+</p>
+
+<pre caption="exemple de configuració ad-hoc/master">
+<comment># Estableix el mode - pot ser managed (per defecte), ad-hoc o master
+# No tots els controladors suporten tots els modes</comment>
+mode_eth0="ad-hoc"
+
+<comment># Establir l'ESSID de la interfície
+# En el mode managed, això força a la interfície a intentar connectar a
+# l'ESSID especificat o no fer res</comment>
+essid_eth0="Aquest Node Adhoc"
+
+<comment># Emprem el canal 3 si no n'especifica cap</comment>
+channel_eth0="9"
+</pre>
+
+<impo>
+El de sota està copiat de la documentació de wavelan de BSD trobada a
+<uri link="http://www.netbsd.org/Documentation/network/wavelan.html">
+la documentació de NetBSD</uri>.
+Hi ha 14 canals possibles; Els canals 1-11 són legals per a Nord Amèrica,
+el canals 1-13 per la majoria d'Europa, els canals 10-13 per França,
+i només el canal 14 per Japó. Si hi ha cap dubte, si us plau adrecis a la
+documentació que be amb la seva tarja o punt d'accés. Asseguris que el canal
+que hagi triat és el mateix canal del seu punt d'accés (o de l'altre tarja
+en mode de xarxa ad-hoc). Per defecte a les targes venudes a Nord Amèrica i a
+la majoria d'Europa és 3; per defecte per targes venudes a França és 11, i per
+defecte per les targes venudes a Japó és el 14.
+</impo>
+
+</body>
+</subsection>
+<subsection>
+<title>Solucionant problemes amb Wireless Tools</title>
+<body>
+
+<p>
+Hi ha algunes variables més que pot emprar per ajudar a configurar i fer
+funcionar la seva xarxa sense fils per problemes de controladors o d'entorn.
+Aquí hi ha una taula de coses que pot provar.
+</p>
+
+<table>
+<tr>
+  <th>Variable</th>
+  <th>Valor per Defecte</th>
+  <th>Descripció</th>
+</tr>
+<tr>
+  <ti>iwconfig_eth0</ti>
+  <ti/>
+  <ti>Miri la plana man d'iwconfig per a detalls de que enviar a iwconfig</ti>
+</tr>
+<tr>
+  <ti>iwpriv_eth0</ti>
+  <ti/>
+  <ti>Miri la plana man d'iwpriv per detalls sobre que enviar a iwpriv</ti>
+</tr>
+<tr>
+  <ti>sleep_scan_eth0</ti>
+  <ti>0</ti>
+  <ti>
+    El nombre de segons a esperar abans de provar un escaneig. Això és necessari
+    quan el controlador necessita més temps per activar-se abans que es pugui
+    emprar.
+  </ti>
+</tr>
+<tr>
+  <ti>sleep_associate_eth0</ti>
+  <ti>5</ti>
+  <ti>
+    El nombre de segons a esperar per la interfície associada amb el Punt
+    d'Accés abans de saltar al següent
+  </ti>
+</tr>
+<tr>
+  <ti>associate_test_eth0</ti>
+  <ti>MAC</ti>
+  <ti>
+    Alguns controladors no resetegen l'adreça MAC associada a una invàlida
+    quan perden la senyal o proven d'associar-se.
+    Alguns controladors no resetegen el nivell de qualitat quan perden la
+    senyal o proven d'associar-se.
+    Els arguments vàlids són MAC, quality i all.
+  </ti>
+</tr>
+<tr>
+  <ti>scan_mode_eth0</ti>
+  <ti/>
+  <ti>
+    Alguns controladors han d'escanejar en mode ad-hoc, així si l'escaneig
+    falla proven ad-hoc
+  </ti>
+</tr>
+<tr>
+  <ti>iwpriv_scan_pre_eth0</ti>
+  <ti/>
+  <ti>
+    Enviar algunes comandes iwpriv a la interfície abans d'escanejar.
+    Miri la plana man d'iwpriv per a més detalls.
+  </ti>
+</tr>
+<tr>
+  <ti>iwpriv_scan_post_eth0</ti>
+  <ti/>
+  <ti>
+    Enviar algunes comandes iwpriv a la interfície abans d'escanejar.
+    Miri la plana man d'iwpriv per a més detalls.
+  </ti>
+</tr>
+</table>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Definint la configuració de xarxa per ESSID</title>
+<body>
+
+<p>
+Quan connecta a l'ESSID1 necessita una IP estàtica i quan connecta a l'ESSID2
+necessita DHCP. De fet la majoria de variables de mòdul les podem canviar per
+ESSID. Aquí està com ho fem.
+</p>
+
+<note>
+Això funciona tant si fa servir WPA Supplicant o Wireless Tools.
+</note>
+
+<impo>
+<e>Necessitarà</e> consultar la documentació de
+<uri link="?part=4&amp;chap=2#variable_name">noms de variable</uri>.
+</impo>
+
+<pre caption="Reemplaçar configuració de xarxa per ESSID">
+config_ESSID1=( "192.168.0.3/24 brd 192.168.0.255" )
+routes_ESSID1=( "default via 192.168.0.1" )
+
+config_ESSID2=( "dhcp" )
+fallback_ESSID2=( "192.168.3.4/24" )
+fallback_route_ESSID2=( "default via 192.168.3.1" )
+
+<comment># Podem definir servidors de noms i altres coses també</comment>
+<comment># NOTA: DHCP sobreescriurà això a menys que li diguem que no</comment>
+dns_servers_ESSID1=( "192.168.0.1" "192.168.0.2" )
+dns_domain_ESSID1="algun.domini"
+dns_search_domains_ESSID1="buscar.aquest.domini.buscar.aquell.domini"
+
+<comment># Substitueixi-ho per l'adreça MAC del seu Punt d'Accés
+# Això és útil si va a diversos llocs on tenen el mateix ESSID</comment>
+config_001122334455=( "dhcp" )
+dhcpcd_001122334455="-t 10"
+dns_servers_001122334455=( "192.168.0.1" "192.168.0.2" )
+</pre>
+
+</body>
+</section>
+</sections>
