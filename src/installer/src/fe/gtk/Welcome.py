@@ -40,7 +40,15 @@ your configuration settings (install profile), you can click the "Load" button t
 load your previous settings as defaults.""")
 
 		content_label = gtk.Label(content_str)
-		vert.pack_start(content_label, expand=False, fill=False, padding=0)            
+		vert.pack_start(content_label, expand=False, fill=False, padding=0)
+
+		hbox = gtk.HBox(False, 0)
+		hbox.pack_start(gtk.Label("Install type:"), expand=False, fill=False, padding=10)
+		self.install_type_standard = gtk.RadioButton(label=_("Standard"))
+		hbox.pack_start(self.install_type_standard, expand=False, fill=False, padding=15)
+		self.install_type_networkless = gtk.RadioButton(group=self.install_type_standard, label=_("Networkless"))
+		hbox.pack_start(self.install_type_networkless, expand=False, fill=False, padding=0)
+		vert.pack_start(hbox, expand=False, fill=True, padding=20)
 
 		self.add_content(vert)
 
@@ -50,3 +58,10 @@ load your previous settings as defaults.""")
 		self.controller.SHOW_BUTTON_BACK    = False
 		self.controller.SHOW_BUTTON_FORWARD = True
 		self.controller.SHOW_BUTTON_FINISH  = False
+
+	def deactivate(self):
+		if self.install_type_standard.get_active():
+			self.controller.install_type = "standard"
+		elif self.install_type_networkless.get_active():
+			self.controller.install_type = "networkless"
+		return True

@@ -32,6 +32,7 @@ class Installer:
 	SHOW_BUTTON_EXIT = 1
 	install_profile_xml_file = ""
 	install_window = None
+	install_type = "standard"
 
 	menuItems = [ { 'text': _('Welcome'), 'module': __import__("Welcome") },
                   { 'text': _('Pre-install Config'), 'module': __import__("ClientConfig") },
