@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.58 2006/05/19 23:52:00 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.59 2006/05/23 12:57:39 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -93,6 +93,7 @@ list_services() {
 	svcs="${svcs} $(check_svc ${GPM} gpm)"
 	svcs="${svcs} $(check_svc ${HOTPLUG} coldplug hotplug)"
 	svcs="${svcs} $(check_svc ${ALSA} alsasound)"
+	svcs="${svcs} $(check_svc ${X11} x-setup)"
 
 	echo ${svcs}
 }
@@ -381,7 +382,7 @@ start() {
 
 			if [ -e /proc/asound/cards ]
 			then
-				for i in $(cat /proc/asound/cards | cut -d" " -f1)
+				for i in $(cat /proc/asound/cards | awk '{print $1}' | grep ^[[:digit:]])
 				do
 					if [ -d /proc/asound/card$i ] && [ -x /usr/bin/amixer ]
 					then
@@ -409,12 +410,13 @@ start() {
 		ewarn "Skipping ALSA detection as requested on command line ..."
 	fi
 
-	if [ "${DETECT}" = "yes" ]
+	if [ "${X11}" = "yes" ]
 	then
 		[ -x /etc/init.d/x-setup ] && start_service x-setup
+	else
+		touch /etc/init.d/.noxdm
 	fi
 
-	[ "${X11}" = "no" ] && touch /etc/init.d/.noxdm
 	[ -n "${XDESC}" ] && einfo "VideoCard:   ${HILITE}${XDESC}${NORMAL}"
 
 	killall hwsetup 2>/dev/null
