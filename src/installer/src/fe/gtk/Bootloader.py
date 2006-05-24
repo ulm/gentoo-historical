@@ -11,7 +11,6 @@ class Panel(GLIScreen.GLIScreen):
 
 	title = "Bootloader"
 	active_selection = None
-	install_in_mbr = True
 	boot_loaders = {}
 	_helptext = """
 <b><u>Bootloader</u></b>
@@ -128,7 +127,7 @@ a brief description beside it.
 		self.controller.SHOW_BUTTON_FINISH  = False
 		self.active_selection = self.controller.install_profile.get_boot_loader_pkg() or "grub"
 		self.boot_loaders[self.active_selection].set_active(True)
-		self.check_install_in_mbr.set_active(self.install_in_mbr)
+		self.check_install_in_mbr.set_active(self.controller.install_profile.get_boot_loader_mbr())
 		self.boot_devices = self.controller.install_profile.get_partition_tables().keys()
 		self.boot_devices.sort()
 		self.boot_device_combo.get_model().clear()
