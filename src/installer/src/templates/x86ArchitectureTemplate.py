@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.138 2006/05/16 04:29:03 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.139 2006/05/24 01:44:59 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -259,6 +259,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 		device_sectors = newparts.get_num_sectors()
 		self._logger.log("  Drive has " + str(device_sectors) + " sectors")
 		for part in newparts:
+			strict_start = False
+			strict_end = False
 			newpart = newparts[part]
 			self._logger.log("  Partition " + str(part) + " has " + str(newpart['mb']) + "MB")
 			if newpart['start']:
@@ -266,6 +268,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if start != newpart['start']:
 					self._logger.log("    Retrieved start sector is not the same as the calculated next start sector (usually not an issue)")
 				start = newpart['start']
+				strict_start = True
 			else:
 				self._logger.log("    Start sector calculated to be " + str(start))
 			if extended_end and not newpart.is_logical() and start <= extended_end:
@@ -275,6 +278,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				self._logger.log("    Old end sector " + str(newpart['end']) + " retrieved")
 				end = newpart['end']
 				part_sectors = end - start + 1
+				strict_end = True
 			else:
 				part_sectors = long(newpart['mb']) * MEGABYTE / 512
 				end = start + part_sectors
@@ -285,6 +289,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if newparts[nextminor]['start'] and end >= newparts[nextminor]['start']:
 					self._logger.log("  End sector for partition overlaps with start of next partition...fixing")
 					end = newparts[nextminor]['start'] - 1
+					strict_end = True
 			# cap to end of device
 			if end >= device_sectors:
 				end = device_sectors - 1
@@ -293,15 +298,15 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if newparts.get_disklabel() == "mac":
 					# Create a dummy partition to be removed later because parted sucks
 					self._logger.log("  Adding dummy partition to fool parted " + str(part) + " from " + str(start) + " to " + str(end))
-					self._add_partition(parted_disk, start, end, "primary", "ext2", "free")
+					self._add_partition(parted_disk, start, end, "primary", "ext2", "free", strict_start, strict_end)
 			elif newpart['type'] == "extended":
 				self._logger.log("  Adding extended partition " + str(part) + " from " + str(start) + " to " + str(end))
-				self._add_partition(parted_disk, start, end, "extended", "")
+				self._add_partition(parted_disk, start, end, "extended", "", strict_start, strict_end)
 				extended_start = start
 				extended_end = end
 			elif not newpart.is_logical():
 				self._logger.log("  Adding primary partition " + str(part) + " from " + str(start) + " to " + str(end))
-				self._add_partition(parted_disk, start, end, "primary", newpart['type'])
+				self._add_partition(parted_disk, start, end, "primary", newpart['type'], strict_start, strict_end)
 			elif newpart.is_logical():
 				if start >= extended_end:
 					start = extended_start + 1
@@ -309,7 +314,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if nextminor and not newparts[nextminor].is_logical() and end > extended_end:
 					end = extended_end
 				self._logger.log("  Adding logical partition " + str(part) + " from " + str(start) + " to " + str(end))
-				self._add_partition(parted_disk, start, end, "logical", newpart['type'])
+				self._add_partition(parted_disk, start, end, "logical", newpart['type'], strict_start, strict_end)
 			if self._debug: self._logger.log("partition(): flags: " + str(newpart['flags']))
 			for flag in newpart['flags']:
 				if parted_disk.get_partition(part).is_flag_available(flag):
