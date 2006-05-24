@@ -48,7 +48,9 @@ load your previous settings as defaults.""")
 		hbox.pack_start(self.install_type_standard, expand=False, fill=False, padding=15)
 		self.install_type_networkless = gtk.RadioButton(group=self.install_type_standard, label=_("Networkless"))
 		hbox.pack_start(self.install_type_networkless, expand=False, fill=False, padding=0)
-		vert.pack_start(hbox, expand=False, fill=True, padding=20)
+		hbox2 = gtk.HBox(True, 0)
+		hbox2.pack_start(hbox, expand=False, fill=False, padding=0)
+		vert.pack_start(hbox2, expand=False, fill=False, padding=20)
 
 		self.add_content(vert)
 
