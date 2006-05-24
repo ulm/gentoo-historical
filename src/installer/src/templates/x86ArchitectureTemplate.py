@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.139 2006/05/24 01:44:59 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.140 2006/05/24 12:11:33 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -298,15 +298,15 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if newparts.get_disklabel() == "mac":
 					# Create a dummy partition to be removed later because parted sucks
 					self._logger.log("  Adding dummy partition to fool parted " + str(part) + " from " + str(start) + " to " + str(end))
-					self._add_partition(parted_disk, start, end, "primary", "ext2", "free", strict_start, strict_end)
+					self._add_partition(parted_disk, start, end, "primary", "ext2", "free", strict_start=strict_start, strict_end=strict_end)
 			elif newpart['type'] == "extended":
 				self._logger.log("  Adding extended partition " + str(part) + " from " + str(start) + " to " + str(end))
-				self._add_partition(parted_disk, start, end, "extended", "", strict_start, strict_end)
+				self._add_partition(parted_disk, start, end, "extended", "", strict_start=strict_start, strict_end=strict_end)
 				extended_start = start
 				extended_end = end
 			elif not newpart.is_logical():
 				self._logger.log("  Adding primary partition " + str(part) + " from " + str(start) + " to " + str(end))
-				self._add_partition(parted_disk, start, end, "primary", newpart['type'], strict_start, strict_end)
+				self._add_partition(parted_disk, start, end, "primary", newpart['type'], strict_start=strict_start, strict_end=strict_end)
 			elif newpart.is_logical():
 				if start >= extended_end:
 					start = extended_start + 1
@@ -314,7 +314,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if nextminor and not newparts[nextminor].is_logical() and end > extended_end:
 					end = extended_end
 				self._logger.log("  Adding logical partition " + str(part) + " from " + str(start) + " to " + str(end))
-				self._add_partition(parted_disk, start, end, "logical", newpart['type'], strict_start, strict_end)
+				self._add_partition(parted_disk, start, end, "logical", newpart['type'], strict_start=strict_start, strict_end=strict_end)
 			if self._debug: self._logger.log("partition(): flags: " + str(newpart['flags']))
 			for flag in newpart['flags']:
 				if parted_disk.get_partition(part).is_flag_available(flag):
