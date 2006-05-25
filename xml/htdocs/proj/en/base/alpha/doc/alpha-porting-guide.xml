@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/base/alpha/doc/alpha-porting-guide.xml,v 1.1 2006/05/02 13:30:48 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/base/alpha/doc/alpha-porting-guide.xml,v 1.2 2006/05/25 20:36:15 tcort Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/proj/en/base/alpha/doc/alpha-porting-guide.xml">
@@ -18,8 +18,8 @@ written on other architectures to the Alpha architecture.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.1</version>
-<date>2006-04-23</date>
+<version>1.2</version>
+<date>2006-05-25</date>
 
 <chapter>
 <title>Overview</title>
@@ -965,6 +965,22 @@ void get_freq( char * p_client_buffer, size_t client_buffer_size, char * p_forma
         return;
 }
 </pre>
+
+<p>
+Unlike some of the other portability problems that this document discusses,
+this problem is not language specific. Here is an example of the problem
+in python.
+</p>
+
+<pre caption="/proc/cpuinfo parser written in python">
+import re
+
+def get_freq():
+        r = re.compile('^cpu MHz\s+:\s+(\d+\.\d+)$', re.M)
+        m = r.search( open('/proc/cpuinfo').read() )
+        return float(m.group(1))
+</pre>
+
 </body>
 </section>
 <section>
@@ -1060,6 +1076,28 @@ void get_freq( char * p_client_buffer, size_t client_buffer_size, char * p_forma
         snprintf( p_client_buffer, client_buffer_size, p_format, (float)freq/divisor );
         return;
 }
+</pre>
+
+<p>
+The python fix is similar, just make an exception for alpha by using
+<c>os.uname()[-1]</c> to determine the system architecture.
+</p>
+
+<pre caption="/proc/cpuinfo parser written in python">
+import re, os
+
+def get_freq_alpha():
+        r = re.compile('^cycle frequency \[Hz\]\s+:\s+(\d+)\s+est\.$', re.M)
+        m = r.search( open('/proc/cpuinfo').read() )
+        return float(int(m.group(1))/1000000.0)
+
+def get_freq():
+        if os.uname()[-1] == 'alpha':
+                return get_freq_alpha()
+        else:
+                r = re.compile('^cpu MHz\s+:\s+(\d+\.\d+)$', re.M)
+                m = r.search( open('/proc/cpuinfo').read() )
+                return float(m.group(1))
 </pre>
 
 </body>
