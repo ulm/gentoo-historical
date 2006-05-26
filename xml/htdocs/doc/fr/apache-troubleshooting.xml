@@ -1,0 +1,521 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/apache-troubleshooting.xml,v 1.1 2006/05/26 13:22:54 cam Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/fr/apache-troubleshooting.xml" lang="fr">
+<title>Résolution des problèmes avec Apache</title>
+
+<author title="Auteur">
+  <mail link="vericgar@gentoo.org">Michael Stewart</mail>
+</author>
+<author title="Contributor">
+  <mail link="beu@gentoo.org">Elfyn McBratney</mail>
+</author>
+<author title="Contributor">
+  <mail link="kloeri@gentoo.org">Bryan Østergaard</mail>
+</author>
+<author title="Traducteur">
+  <mail link="cam@gentoo.org">Camille Huot</mail>
+</author>
+
+<abstract>
+Ce document décrit un certain nombre de moyens de trouver ce qui ne va pas dans
+une installation Apache qui fonctionne mal.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.5</version>
+<date>2005-10-24</date>
+
+<chapter>
+<title>Vérification des logs</title>
+<section>
+<body>
+
+<p>
+Si quelque chose cloche avec votre Apache alors que vous n'avez aucune idée de
+ce que ça peut être, vous trouverez certainement des indices dans les fichiers
+de logs (N.D.T.&nbsp;: journaux où est enregistré l'activité de l'application).
+</p>
+
+<p>
+Il y a plusieurs fichiers de logs différents, mais certains d'entre eux peuvent
+ne pas être présents sur votre système selon les modules que vous avez activés.
+En principe, ils se trouvent dans <path>/var/log/apache2/</path>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>access_log</title>
+<body>
+
+<pre caption="access_log">
+67.185.0.236 - - [18/Jun/2005:12:05:50 -0700] "GET / HTTP/1.0" 200 721
+10.0.1.80 - - [18/Jun/2005:12:11:07 -0700] "GET /~jaspenelle/__journal1.jpg HTTP/1.1" 200 19079
+66.239.233.163 - - [18/Jun/2005:12:15:06 -0700] "GET /~jaspenelle/avy14.gif HTTP/1.0" 200 1661
+67.185.60.155 - - [18/Jun/2005:12:18:48 -0700] "GET / HTTP/1.0" 200 721
+67.185.0.236 - - [18/Jun/2005:12:25:39 -0700] "GET / HTTP/1.0" 200 721
+10.0.1.80 - - [18/Jun/2005:12:28:04 -0700] "GET /~jaspenelle/avy14.gif HTTP/1.1" 200 1661
+10.0.1.80 - - [18/Jun/2005:12:28:46 -0700] "GET /~jaspenelle/avy7.png HTTP/1.1" 200 13066
+</pre>
+
+<p>
+Ce fichier contient simplement la liste de chaque fichier demandé à votre
+serveur. À moins que vous ayiez changé la configuration par défaut, les lignes
+sont en Common Log Format&nbsp;:
+</p>
+
+<pre caption="Syntaxe du Common Log Format">
+adresseclient rfc931 utilisateur [date] "requête" statut octets
+</pre>
+
+<table>
+<tr>
+  <ti>adresseclient</ti>
+  <ti>Nom d'hôte ou adresse IP du client qui a fait la requête.</ti>
+</tr>
+<tr>
+  <ti>rfc931</ti>
+  <ti>L'identifiant distant du client qui a fait la requête.</ti>
+</tr>
+<tr>
+  <ti>utilisateur</ti>
+  <ti>L'identifiant qu'a donné l'utilisateur pour s'identifier sur la page.</ti>
+</tr>
+<tr>
+  <ti>[date]</ti>
+  <ti>Date et heure de la requête.</ti>
+</tr>
+<tr>
+  <ti>"requête"</ti>
+  <ti>La requête complète telle qu'envoyée par le client.</ti>
+</tr>
+<tr>
+  <ti>statut</ti>
+  <ti>
+    Le code de retour HTTP renvoyé au client pour indiquer le statut de la
+    réponse.
+  </ti>
+</tr>
+<tr>
+  <ti>octets</ti>
+  <ti>
+    La taille du document transféré (en-tête «&nbsp;content-length&nbsp;»).
+  </ti>
+</tr>
+</table>
+
+</body>
+</section>
+<section>
+<title>error_log</title>
+<body>
+
+<pre caption="error_log">
+[Mon Feb 07 23:33:18 2005] [notice] suEXEC mechanism enabled (wrapper: /usr/sbin/suexec2)
+[Mon Feb 07 23:33:18 2005] [notice] Digest: generating secret for digest authentication ...
+[Mon Feb 07 23:33:18 2005] [notice] Digest: done
+[Mon Feb 07 23:33:18 2005] [notice] Apache/2.0.52 (Gentoo/Linux) PHP/4.3.10 configured -- resuming normal operations
+[Sat Jun 18 13:01:54 2005] [error] [client 10.0.1.80] File does not exist: /var/www/localhost/htdocs/favicon.ico
+[Sat Jun 18 13:02:14 2005] [error] [client 10.0.1.80] File does not exist: /var/www/localhost/htdocs/favicon.ico
+[Sat Jun 18 13:02:18 2005] [error] [client 10.0.1.80] File does not exist: /var/www/localhost/htdocs/favicon.ico
+[Sat Jun 18 13:02:21 2005] [error] [client 10.0.1.80] File does not exist: /var/www/localhost/htdocs/favicon.ico
+[Sat Jun 18 13:02:24 2005] [error] [client 10.0.1.80] File does not exist: /var/www/localhost/htdocs/favicon.ico
+</pre>
+
+<p>
+Comme vous le voyez, ce fichier peut contenir beaucoup de choses, selon la
+valeur de la directive <c>ErrorLevel</c> dans votre fichier
+<path>httpd.conf</path>. Il vous indique si Apache a démarré correctement,
+quelles sont les erreurs rencontrées... C'est lui qui vous dira si quelque chose
+se passe mal en général. Si quelque chose ne fonctionne pas, il est le premier
+fichier à consulter.
+</p>
+
+</body>
+</section>
+<section>
+<title>suexec_log</title>
+<body>
+
+<pre caption="suexec_log">
+[2005-02-11 22:33:19]: uid: (1000/vericgar) gid: (1000/1000) cmd: test.cgi
+[2005-03-11 19:20:13]: uid: (1000/vericgar) gid: (1000/1000) cmd: test.cgi
+[2005-03-11 19:34:47]: uid: (1000/vericgar) gid: (1000/1000) cmd: test.cgi
+</pre>
+
+<p>
+Ce fichier contient une entrée pour chaque fois qu'un script est lancé en
+utilisant CGI et suexec. Si vous n'arrivez pas à faire fonctionner un script
+avec suexec, ce fichier est celui à consulter car il contiendra en principe une
+ligne indiquant pourquoi il n'a pas pu lancer le script.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>J'ai installé un module Apache, mais il ne marche pas&nbsp;!</title>
+<section>
+<body>
+
+<p>
+Installer le module ne suffit pas, il faut également l'activer. Nous procédons
+ainsi pour pouvoir facilement activer et désactiver les modules
+individuellement, pour les tester un par un en cas de problème afin de trouver
+celui qui cloche.
+</p>
+
+<p>
+Lorsque vous installez un module, il devrait y avoir un message dans ce
+genre&nbsp;:
+</p>
+
+<pre caption="Message post-installation (emerge)">
+ * 
+ * To enable mod_layout, you need to edit your /etc/conf.d/apache2 file and
+ * add '-D LAYOUT' to APACHE2_OPTS.
+ * 
+ * 
+ * Configuration file installed as
+ *     /etc/apache2/modules.d/15_mod_layout.conf
+ * You may want to edit it before turning the module on in /etc/conf.d/apache2
+ * 
+</pre>
+
+<p>
+Si vous comprenez un minimum l'anglais, il suffit de faire exactement ce qui est
+indiqué pour activer le module. Pour les autres, il suffit de rajouter <c>-D
+LAYOUT</c> à la variable <c>APACHE2_OPTS</c> qui se trouve dans le fichier
+<path>/etc/conf.d/apache2</path> pour activer mod_layout.
+</p>
+
+<p>
+Si vous avez loupé ce message, il existe un moyen simple de savoir ce qu'il faut
+ajouter à <c>APACHE2_OPTS</c> dans <path>/etc/conf.d/apache2</path>&nbsp;:
+ouvrez le fichier de configuration du module installé par l'ebuild et vous
+verrez quelle variable est testée par <c>IfDefine</c>. Il suffit alors de la
+déclarer dans APACHE2_OPTS. Les fichiers de configuration des modules Apache se
+trouvent dans <path>/etc/apache2/modules.d/</path>.
+</p>
+
+<pre caption="Un extrait de 15_mod_layout.conf">
+&lt;IfDefine LAYOUT&gt;
+  &lt;IfModule !mod_layout.c&gt;
+    LoadModule layout_module    modules/mod_layout.so
+  &lt;/IfModule&gt;
+&lt;/IfDefine&gt;
+</pre>
+
+<p>
+Ce qui se trouve dans le bloc <c>IfDefine</c> est exécuté si vous ajoutez <c>-D
+LAYOUT</c> au fichier <path>/etc/conf.d/apache2</path>. <c>LAYOUT</c> n'est
+qu'un exemple.
+</p>
+
+<p>
+La variable <c>APACHE2_OPTS</c> accepte plusieurs autre options qui sont
+spécifiées dans la configuration par défaut&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>Option</th>
+  <th>Effet</th>
+</tr>
+<tr>
+  <ti>USERDIR</ti>
+  <ti>
+    Permet au répertoire public_html des utilisateurs d'être accessible via
+    http://serveur/~utilisateur/.
+  </ti>
+</tr>
+<tr>
+  <ti>INFO</ti>
+  <ti>
+    Active le module mod_info, qui affiche des informations à propos du serveur
+    via http://localhost/server-info.
+  </ti>
+</tr>
+<tr>
+  <ti>PROXY</ti>
+  <ti>Active mod_proxy.</ti>
+</tr>
+<tr>
+  <ti>SSL</ti>
+  <ti>
+    Active le support SSL/HTTPS. (Apache doit être compilé avec l'option USE
+    <c>ssl</c>.)
+  </ti>
+</tr>
+<tr>
+  <ti>DAV</ti>
+  <ti>Active mod_dav, le module WebDav.</ti>
+</tr>
+<tr>
+  <ti>DAV_FS</ti>
+  <ti>
+    Active mod_dav_fs, c'est le support des systèmes de fichiers avec WebDav.
+  </ti>
+</tr>
+<tr>
+  <ti>LDAP</ti>
+  <ti>
+    Active mod_ldap, qui permet à Apache de se connecter à des serveurs LDAP
+    (nécessite l'option USE <c>ldap</c>).
+  </ti>
+</tr>
+<tr>
+  <ti>AUTH_LDAP</ti>
+  <ti>Permet l'authentication via un serveur LDAP.</ti>
+</tr>
+</table>
+
+<p>
+La documentation concernant tous les modules de base se trouve dans la <uri
+link="http://httpd.apache.org/docs-2.0/">documentation Apache 2.0</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Apache renvoie des pages vides, Apache plante</title>
+<section>
+<body>
+
+<p>
+Cela arrive surtout lors des mises à jour car la compatibilité des binaires est
+rompue dans APR (ce qui peut arriver pour un nombre certain de raisons). Pour
+corriger le problème, il faut recompiler Apache et ses outils&nbsp;:
+</p>
+
+<pre caption="Recompiler Apache et ses outils">
+<comment>(Faites tout ceci dans l'ordre, c'est très important !)</comment>
+
+<comment>(D'abord, on supprime l'Apache actuel.)</comment>
+# <i>emerge -aCv '=net-www/apache-2*'</i>
+
+<comment>(Ensuite, on recompile les outils.)</comment>
+# <i>emerge -av '=dev-libs/apr-0*' '=dev-libs/apr-util-0*'</i>
+
+<comment>(Enfin, on recompile Apache.)</comment>
+# <i>emerge -av '=net-www/apache-2*'</i>
+
+<comment>(Trouvons maintenant quels paquets dépendent d'Apache.)</comment>
+$ <i>equery depends net-www/apache</i>
+[ Searching for packages depending on net-www/apache... ]
+dev-php/phpsysinfo-2.3-r2
+dev-php/phpsysinfo-2.1-r2
+dev-php/mod_php-4.3.11-r2
+net-www/mod_layout-4.0.1a-r1
+www-servers/gorg-0.5
+
+<comment>(Et recompilons tous les modules que nous avions installés.)</comment>
+# <i>emerge -av '=dev-php/mod_php-4.3.11-r2' '=net-www/mod_layout-4.0.1.a-r1'</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Détecter un module bogué</title>
+<body>
+
+<p>
+Si vous rencontrez toujours des problèmes après avoir suivi les instructions
+ci-dessus, le coupable est très certainement un des modules additionnels
+chargé par Apache.
+</p>
+
+<p>
+Commencez par désactiver tous les modules additionnels et redémarrez Apache.
+</p>
+
+<pre caption="Désactiver les modules additionnels">
+<comment>(Dans /etc/conf.d/apache2,)</comment>
+
+<comment>(avant...)</comment>
+APACHE2_OPTS="-D PHP4 -D USERDIR -D SSL"
+
+<comment>(après.)</comment>
+APACHE2_OPTS=""
+</pre>
+
+<pre caption="Redémarrer Apache">
+# <i>/etc/init.d/apache2 stop</i>
+<comment>(Vérifiez qu'Apache est bien arrêté.)</comment>
+# <i>ps -A</i> 
+# <i>/etc/init.d/apache2 start</i>
+</pre>
+
+<note>
+Vous devrez peut-être modifier votre configuration d'Apache si vous y avez
+ajouté des <c>Directive</c>s fournies par un de ces modules sans faire de test
+pour savoir si le module était bien chargé. D'une manière générale, il vaut
+mieux placer ces directives dans des blocs qui testent la présence du module en
+mémoire. Vous pouvez vous inspirer des fichiers .conf situés dans le répertoire
+<path>/etc/apache2/modules.d</path> pour des exemples.
+</note>
+
+<p>
+Si Apache arrête enfin de crasher ou de renvoyer des pages blanches, le problème
+venait bien de l'un des modules qui ont été désactivés. Pour trouver duquel cela
+provient, nous allons les réactiver un par un en redémarrant Apache à chaque
+fois.
+</p>
+
+<p>
+Une fois que vous avez trouvé quel module était responsable, une simple
+recompilation du module en question peut résoudre le problème.
+</p>
+
+<p>
+Si Apache ne fonctionne toujours pas correctement une fois que le module a été
+réinstallé, alors <uri link="http://bugs.gentoo.org">ouvrez un bogue</uri> en
+donnant les versions et révisions exactes du module et en précisant exactement
+ce qui ne va pas. Cherchez d'abord si le problème n'aurait pas déjà été
+décrit&nbsp;!
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Le serveur n'interprète pas le code PHP ou les scripts CGI et renvoie
+directement le source à la place</title>
+<section>
+<body>
+
+<p>
+Il arrive qu'Apache renvoie le code PHP ou CGI au lieu d'exécuter les scripts et
+de ne renvoyer que le résultat. Si cela arrive même lorsque le module est activé
+dans <path>/etc/conf.d/apache2</path>, il se peut que ce soit un problème de
+cache. Effacer le cache du navigateur web peut résoudre le problème.
+</p>
+
+<p>
+Parfois le problème n'apparaît que si l'on accède au site par son adresse IP au
+lieu de son nom ou vice-versa. Dans ce cas, il s'agit très certainement d'un
+problème de cache.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>configure: error: changes in the environment can compromise the build</title>
+<section>
+<body>
+
+<p>
+Si vous obtenez cette erreur, il se peut que votre variable <c>CFLAGS</c>
+dans <path>/etc/make.conf</path> contienne des espaces en trop. Ceci est simple
+à corriger&nbsp;:
+</p>
+
+<pre caption="Exemple de correction pour /etc/make.conf">
+<comment>(Avant...)</comment>
+CFLAGS="-O2 -mcpu=pentium3 -march=pentium3  -pipe"
+
+<comment>(après. Notez la suppression de l'espace.)</comment>
+CFLAGS="-O2 -mcpu=pentium3 -march=pentium3 -pipe"
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Address already in use: make_sock: could not bind to address
+0.0.0.0:443</title>
+<section>
+<body>
+
+<p>
+Cette erreur apparaît lors du démarrage et provient du fait qu'il y a plusieurs
+directives <c>Listen</c> incompatibles dans la configuration du serveur. Pour
+résoudre ce problème, cherchez toutes les directives <c>Listen</c> et résolvez
+le problème.
+</p>
+
+<pre caption="Trouver toutes les directives Listen">
+<comment>(Placez-vous dans le répertoire de configuration d'Apache...)</comment>
+# <i>cd /etc/apache2/</i>
+
+<comment>(et listez les directives Listen.)</comment>
+# <i>grep Listen httpd.conf vhosts.d/*.conf modules.d/*.conf</i>
+</pre>
+
+<p>
+Il s'agit maintenant de repérer les conflits qu'il pourrait y avoir au niveau
+des ports ouverts par Apache. Par exemple, s'il y a une ligne <c>Listen 80</c>
+dans <path>httpd.conf</path> et une ligne <c>Listen 10.0.0.15:80</c> dans un
+autre fichier, alors Apache ne pourra pas démarrer. Dans ce cas, Apache ouvrira
+le port 80 sur toutes les adresses IP que le serveur possède et essaiera ensuite
+d'ouvrir le port 80 sur l'adresse IP 10.0.0.15, ce qui n'est pas possible
+puisque ce port est déjà ouvert.
+</p>
+
+<p>
+La configuration recommandée est de n'avoir qu'une seule ligne <c>Listen 80</c>
+(c'est la valeur par défaut de <c>httpd.conf</c>) afin d'ouvrir par défaut le
+port HTTP standard sur toutes les adresses IP, puis de rajouter une ligne
+<c>Listen</c> supplémentaire pour chaque <c>VirtualHost</c> SSL en spécifiant
+l'adresse IP (par exemple&nbsp;: <c>Listen 10.0.0.15:443</c>).
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Après la mise à jour vers apache-2.0.54-r13, le vhost par défaut (SSL ou
+non-SSL) ne fonctionne plus</title>
+<section>
+<body>
+
+<p>
+À partir de la version apache-2.0.54-r13, deux nouvelles directives ont été
+ajoutées pour fixer le <uri
+link="http://bugs.gentoo.org/show_bug.cgi?id=100624">bogue 100624</uri>.
+</p>
+
+<p>
+Les nouvelles directives en question sont&nbsp;: <c>-D DEFAULT_VHOST</c> pour
+activer le vhost par défaut et <c>-D SSL_DEFAULT_VHOST</c> pour activer le vhost
+SSL par défaut. Ces deux directives doivent être ajoutées à la variable
+<c>APACHE2_OPTS</c> du fichier <path>/etc/conf.d/apache2</path> pour être
+activées (ce qui rétablit l'ancien comportement d'Apache).
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="getting-help">
+<title>À l'aide...</title>
+<section>
+<body>
+
+<p>
+Si aucune de ces astuces n'a pu résoudre votre problème ou si vous avez d'autres
+questions, passez nous voir sur IRC dans le canal <path>#gentoo-apache</path>
+(on y parle anglais) sur le serveur <path>irc.freenode.net</path>. Vous pouvez
+aussi remplir un ticket de bogue sur le <uri
+link="http://bugs.gentoo.org">Bugzilla de Gentoo</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
