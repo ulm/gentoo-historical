@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<guide link="/proj/it/releng/catalyst/faq.xml" lang="it">
+
+<title>Catalyst FAQ</title>
+<author title="Autore">John P. Davis</author>
+<author title="Autore">Daniel Robbins</author>
+<author title="Contributore">William Kilian</author>
+<author title="Revisione">Chris Gianelloni</author>
+<author title="Traduzione">Davide Cendron</author>
+
+<abstract>
+Domande frequenti relative allo strumento Catalyst.
+</abstract>
+
+<version>1.0</version>
+<date>2005-12-01</date>
+
+<chapter>
+<title>Domande frequenti</title>
+
+<section>
+<body>
+<p>
+<b>D: Come creare un tarball stage2 e stage3 per un tipo di CPU
+non generico, come <c>pentium4</c> o <c>g4</c>?</b>
+</p>
+<p>
+R: Per prima cosa ci si assicuri che l'hardware che si sta usando sia capace di
+compilare quel tipo di stage. Se si vuole compilare uno stage per
+<c>pentium4</c>, si avrà bisogno di un sistema Pentium 4 o AMD64/Opteron. Non
+sarà possibile farlo su un sistema Athlon XP, in quanto questa CPU non supporta
+le istruzioni SSE2, le quali sono abilitate per gli stage <c>pentium4</c>.
+Similmente, se si vuole creare uno stage per <c>g4</c>, bisognerà farlo su un
+sistema PowerPC G4 o G5.
+</p>
+<p>
+Dopo essersi assicurati che l'hardware è adatto, si seguano semplicemente i
+passi precedenti, prestando attenzione nell'impostare, per la creazione dello
+stage2, la variabile <c>subarch</c>  con una valida architettura non generica
+(es. <c>pentium4</c>.)  Di conseguenza lo stage2 verrà compilato per la
+sottoarchitettura specificata. Successivamente si userà lo stage2 come stage
+"seme" di partenza per creare lo stage3. Ovviamente si dovrà impostare la
+variabile <c>subarch</c> nelle specifiche dello stage3 con lo stesso valore
+usato nelle specifiche dello stage2.
+</p>
+
+<p>
+<b>D: Voglio creare un gruppo di stage per diverse sottoarchitetture. Come
+posso farlo?</b>
+</p>
+<p>R: Per prima cosa si deve compilare uno stage1 generico. Successivamente
+si deve usare questo stage1 per creare lo stage2 ed lo stage3 specializzato
+per le varie sottoarchitetture. Non occorre ricompilare lo stage1 -- tutti
+gli stage2 e stage3 specializzati possono usare lo stesso stage1 di base.
+</p>
+
+<p>
+<b>D: Posso creare uno stage1 per una CPU di tipo non generico?</b>
+</p>
+<p>R: Questa è un'idea molto pericolosa, in quanto come utente ci si aspetta
+che lo stage1 funzioni su ogni tipo di sottoarchitettura. In questo modo è
+possibile usare lo stage1 su ogni sistema senza problemi. Bisogna assicurarsi
+di non "inquinare" lo stage1 con codice specifico per CPU non generiche. Si
+usi sempre uno stage2 o stage3 "generico" per compilare un nuovo stage1.
+</p>
+
+<p>
+<b>D: Pensavo che catalyst riuscisse a creare gli stage "da zero".  Se catalyst
+crea gli stage da zero, perchè allora necessita di uno "stage di partenza"?</b>
+</p>
+<p>R: Bella domanda. Ovviamente uno stage2 o uno stage3 dipendono dallo stage
+precedente per la loro creazione, e ciò è chiaramente esemplificato dal loro
+nome (es. uno "stage2" implica che prima c'era uno "stage1".). Tuttavia
+catalyst necessita di uno stage di partenza per compilare uno stage1, e vale
+la pena capire il perchè di questo requisito fondamentale.  Quando si crea
+uno stage1, catalyst usa il seme (stage2 o stage3) per impostare un ambiente
+in chroot. Dentro ad esso verrà compilato il nuovo stage1 tramite il
+settaggio della variabile <c>ROOT</c> a <path>/tmp/stage1root</path>. Questa
+operazione dice a Portage che i nuovi pacchetti andranno installati non nel
+filesystem corrente, ma nel filesystem presente in
+<path>/tmp/stage1root</path>. <path>/tmp/stage1root</path> viene poi
+compresso in un archivio tar e diventa lo stage1 di destinazione. Ciò
+significa che quando catalyst crea uno stage1, lo stage1 stesso non eredita
+nessun binario o libreria dallo stage di partenza. Lo stage "seme" usato in
+qualche modo <c>ha</c> un impatto sullo stage1 di destinazione -- gli headers
+di Linux nel seme sono usati per compilare le glibc dello stage1, e i
+compilatori nel seme sono usati per compilare tutti i programmi nello stage1.
+Lo stage seme viene usato per isolare il processo di creazione dello stage1
+dal sistema locale, inoltre, per esempio, permette di creare stage1 x86 su
+sistemi amd64.  </p>
+
+<p>
+<b>D: Esiste un HOWTO ufficiale per Catalyst??</b>
+</p>
+<p>
+R: Attualmente non ci sono HOWTO ufficiali. Se si è interessati a scriverne
+uno, si è pregati di aprire un nuovo bug allegando l'HOWTO. La mancanza di un
+HOWTO ufficiale non significa che Catalyst sia completamente non documentato.
+Se Catalyst viene emerso con la flag USE <c>doc</c> attivata, degli esempi
+ben documentati di file delle specifiche per i vari stage verranno installati
+in <path>/usr/share/doc/catalyst-$version/examples</path>.
+</p>
+<p>
+Se si hanno ulteriori quesiti da porre dopo aver letto gli esempi ci si può
+iscrivere liberamente alla mailing list gentoo-catalyst.
+</p>
+
+<p>
+<b>D: Dove bisogna mettere le flag USE per pacchetto, e i settaggi di
+mascheramento?</b>
+</p>
+<p>
+R: Catalyst supporta i file di configurazione in /etc/portage. Basta aggiungere
+la seguente voce nel file delle specifiche, e assicurarsi di usare la stessa
+impostazione di <c>portage_confdir</c> per lo stage seme:
+</p>
+<p>
+portage_confdir: /path/to/custom/etc/portage
+</p>
+
+<p>
+<b>D: Ho veramente bisogno di creare il mio stage1 personalizzato o posso
+usarne uno tra quelli presenti nei mirror Gentoo?</b>
+</p>
+<p>
+R: Gli stage dell'ultima release di Gentoo dovrebbero essere
+sufficienti, a meno che non si sia pianificato di eseguire una compilazione di
+tipo hardened o si voglia cambiare le impostazioni del profilo (es. flag USE,
+CFLAGS, ecc.).
+</p>
+
+<p>
+<b>D: Come posso tenere aggiornati i miei pacchetti contenuti
+nei GRP/stage/LiveCD?</b>
+</p>
+<p>
+R: Catalyst usa Portage per tutto il processo di creazione, per
+cui tutto quello che si deve fare è rigenerare lo snapshot di Portage e
+ricompilare i GRP/stage/LiveCD. Portage seguirà tutte le normali regole per
+decidere quali pacchetti aggiornare.
+</p>
+
+<p>
+<b>Q: Catalyst usa delle sintassi particolari per le flag USE?</b>
+</p>
+<p>
+R: No, la sintassi per le flag USE di Catalyst è la stessa di Portage.
+</p>
+</body>
+</section>
+</chapter>
+
+</guide>
