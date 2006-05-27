@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/dri-howto.xml,v 1.2 2006/05/08 04:53:51 alin Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ro/dri-howto.xml,v 1.3 2006/05/27 07:26:18 alin Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/dri-howto.xml">
@@ -24,7 +24,7 @@ utilizând X11-DRM cu Xorg în Gentoo Linux.
 <license/>
 
 <version>1.3</version>
-<date>2006-05-07</date>
+<date>2006-05-12</date>
 
 <chapter>
 <title>Introducere</title>
@@ -349,13 +349,13 @@ din CVS.
 </body>
 </section>
 <section>
-<title>Do the CVS sources support your card?</title>
+<title>Suportă sursele CVS placa dvs?</title>
 <body>
 
 <p>
-Check the DRI <uri link="http://dri.freedesktop.org/wiki/Status">supported
-cards list</uri> to see if the CVS supports your card. Even if it doesn't, but
-it supports a similar card, try it.
+Verificaţi <uri link="http://dri.freedesktop.org/wiki/Status">lista de plăci
+suportate</uri> de DRI pentru a vedea dacă sursele CVS vă suportă placa
+dvs. Chiar dacă nu, dar suportă o placă similară, încercaţi-o.
 </p>
 
 <!-- I see a couple of 8x AGP stuff on the Internet about vanilla 2.4 kernels;
@@ -462,7 +462,71 @@ unele module DRM necesită ca modulul agpgart să fie încărcat primul.
 <p>
 Unele opţiuni pot îmbunătăţi performanţele cu până la 30 de procente
 (sau mai mult) peste valoarea implicită. Setaţi-le în
-<path>/etc/X11/xorg.conf</path>.
+<path>/etc/X11/xorg.conf</path>. Oricum, va trebui mai întâi să verificaţi
+dacă placa dvs. de bază şi placa video suportă aceste opţiuni.
+</p>
+
+<p>
+Mai întâi, să vedem dacă placa dvs. video poate suporta scrierile rapide.
+Vom face asta prin inspectarea atentă a textului afişat de comanda
+<c>lspci</c>. În mod specific, căutăm informaţiile despre "VGA
+compatible controller".
+</p>
+
+<pre caption="Verificarea plăcii video">
+# <i>lspci -vv</i>
+01:00.0 VGA compatible controller: ATI Technologies Inc Radeon Mobility M6 LY (prog-if 00 [VGA])
+. . .
+Capabilities: [58] AGP version 2.0
+    Status: RQ=48 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
+</pre>
+
+<p>
+În timp ce destul de multe informaţii sunt afişate, vom căuta <b>FW</b>
+în subsecţiunea "Status" a secţiunii de capabilităţi AGP. Dacă textul
+<b>FW+</b> este prezent în linia "Status", aceasta înseamnă că placa
+video suportă scrierile rapide. Putem verifica, acum, dacă placa de bază
+suportă scrierile rapide.
+</p>
+
+<impo>
+Dacă nu vedeţi <b>FW+</b>, dar in loc vedeţi <b>FW-</b>, nu puteţi activa
+scrierile rapude în <path>xorg.conf</path>. Placa nu suportă scrierile
+rapide.
+</impo>
+
+<p>
+Acum, să ne asigurăm că şi placa dvs. de bază suportă scrierile
+rapide. De această dată, analizaţi secţiunea "Host bridge" din textul
+afişat de comanda <c>lspci</c>.
+</p>
+
+<pre caption="Verificarea plăcii de bază">
+# <i>lspci -vv</i>
+00:00.0 Host bridge: Intel Corporation 82830 830 Chipset Host Bridge (rev 02)
+. . .
+Capabilities: [a0] AGP version 2.0
+    Status: RQ=32 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
+</pre>
+
+<p>
+Din nou, examinaţi subsecţiunea "Status" din cadrul secţiunii "Capabilities"
+pentru AGP. Căutaţi textul <b>FW</b>. Dacă vedeţi <b>FW+</b>, placa dvs.
+de bază suportă scrierile rapide.
+</p>
+
+<impo>
+Amintiţi-vă, atât informaţiile despre placa video cât şi cele despre
+placa de bază trebuie să afişeze capabilitatea <b>FW</b>. Dacă una
+dintre ele afişează <b>FW-</b> în linia "Status", nu puteţi activa
+scrierile rapide în <path>xorg.conf</path>.
+</impo>
+
+<p>
+Presupunând că totul a funcţionat corect şi atât placa video cât şi
+placa de bază suportă scrierile rapide, să activăm această opţiune
+în <path>/etc/X11/xorg.conf</path> şi să obţinem cea mai mare
+performanţă din placa dvs.
 </p>
 
 <pre caption="xorg.conf">
@@ -488,50 +552,6 @@ rapide, deci utilizaţi această opţiune pe riscul dvs.
 Amintiţi-vă, dacă doriţi să puteţi utiliza scrierile rapide corect,
 trebuie mai întâi să activaţi opţiunea corespunzătoare în BIOS.
 </note>
-
-<!-- 
-**
-This section needs to be in eventually, but non-nvidia cards don't use
-/proc/driver at all. We need some way to get users to check and see that SBA
-and fast-writes are allowed for their hardware; that info is somewhere else in
-/proc. If you have a non-nvidia card, you can help by emailing
-nightmorph@gentoo.org with the relevant bits of your /proc so I can get this
-info into the guide. See below for where things are found on an nvidia card.
-**
-
-<p>
-Unele opţiuni pot creşte performanţa cu până la 30 de procente (sau mai
-mult) peste valoarea implicită. Setaţi-le în
-<path>/etc/X11/xorg.conf</path>. Totuşi, va trebui mai întâi să
-verificaţi că placa dvs. de bază şi placa video suportă aceste
-opţiuni.
-</p>
- 
-<p>
-Mai întâi, haideţi să verificăm modurile suportate ale plăcilor dvs.
-video, şi să vedeţi dacă suportă scrierile rapide. Amintiţi-vă să
-înlocuiţi <c>nvidia</c> cu numele efectiv al dispozitivului dvs. din
-<path>/proc/driver/nvidia/</path>.
-</p>
-
-<pre caption="Verificarea plăcii video">
-$ <i>cat /proc/driver/nvidia/agp/card</i>
-</pre>
-
-<p>
-Acum, să verificăm capabilităţile plăcii dvs. de bază:
-</p>
-
-<pre caption="Verificarea plăcii de bază">
-$ <i>cat /proc/driver/nvidia/agp/host-bridge</i>
-</pre>
-
-<impo>
-Amintiţi-vă, că modurile şi capabilităţile plăcii video şi ale
-celei de bază trebuie să se potrivească cu aceste setări pentru a
-funcţiona!
-</impo>
--->
 
 <p>
 Dacă doriţi să mai setaţi şi alte opţiuni, consultaţi <uri
