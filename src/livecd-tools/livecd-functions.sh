@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.22 2006/05/15 12:55:27 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.23 2006/05/30 20:20:11 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -260,6 +260,134 @@ livecd_write_net_conf() {
 			fi
 		;;
 	esac
+}
+
+get_ifmac() {
+	local iface=$1
+
+	# Example: 00:01:6f:e1:7a:06
+	cat /sys/class/net/${iface}/address
+}
+
+
+get_ifdriver() {
+	local iface=$1
+
+	# Example: ../../../bus/pci/drivers/forcedeth (wanted: forcedeth)
+	local if_driver="$(readlink /sys/class/net/${iface}/device/driver)"
+	basename ${if_driver}
+}
+
+get_ifbus() {
+	local iface=$1
+
+	# Example: ../../../bus/pci (wanted: pci)
+	# Example: ../../../../bus/pci (wanted: pci)
+	# Example: ../../../../../../bus/usb (wanted: usb)
+	local if_bus="$(readlink /sys/class/net/${iface}/device/bus)"
+	basename ${if_bus}
+}
+
+get_ifproduct() {
+	local iface=$1
+	local bus="$(get_ifbus ${iface})"
+	local if_pciaddr
+	local if_devname
+	local if_usbpath
+	local if_usbmanufacturer
+	local if_usbproduct
+
+	if [[ ${bus} == "pci" ]]; then
+		# Example: ../../../devices/pci0000:00/0000:00:0a.0 (wanted: 0000:00:0a.0)
+		# Example: ../../../devices/pci0000:00/0000:00:09.0/0000:01:07.0 (wanted: 0000:01:07.0)
+		if_pciaddr="$(readlink /sys/class/net/${iface}/device)"
+		if_pciaddr="$(basename ${if_pciaddr})"
+
+		# Example: 00:0a.0 Bridge: nVidia Corporation CK804 Ethernet Controller (rev a3)
+		#  (wanted: nVidia Corporation CK804 Ethernet Controller)
+		if_devname="$(lspci -s ${if_pciaddr})"
+		if_devname="${if_devname#*: }"
+		if_devname="${if_devname%(rev *)}"
+	fi
+
+	if [[ ${bus} == "usb" ]]; then
+		if_usbpath="$(readlink /sys/class/net/${iface}/device)"
+		if_usbpath="/sys/class/net/${iface}/$(dirname ${if_usbpath})"
+		if_usbmanufacturer="$(< ${if_usbpath}/manufacturer)"
+		if_usbproduct="$(< ${if_usbpath}/product)"
+
+		[[ -n ${if_usbmanufacturer} ]] && if_devname="${if_usbmanufacturer} "
+		[[ -n ${if_usbproduct} ]] && if_devname="${if_devname}${if_usbproduct}"
+	fi
+
+	if [[ ${bus} == "ieee1394" ]]; then
+		if_devname="IEEE1394 (FireWire) Network Adapter";
+	fi
+
+	echo ${if_devname}
+}
+
+get_ifdesc() {
+	local iface=$1
+	desc="$(get_ifproduct ${iface})"
+	if [[ -n ${desc} ]]; then
+		echo $desc
+		return;
+	fi
+
+	desc="$(get_ifdriver ${iface})"
+	if [[ -n ${desc} ]]; then
+		echo $desc
+		return;
+	fi
+
+	desc="$(get_ifmac ${iface})"
+	if [[ -n ${desc} ]]; then
+		echo $desc
+		return;
+	fi
+
+	echo "Unknown"
+}
+
+show_ifmenu() {
+	local old_ifs="${IFS}"
+	local opts
+	IFS="
+"
+	for ifname in $(/sbin/ifconfig -a | grep "^[^ ]"); do
+		ifname="${ifname%% *}"
+		[[ ${ifname} == "lo" ]] && continue
+		opts="${opts} ${ifname} '$(get_ifdesc ${ifname})'"
+	done
+	IFS="${old_ifs}"
+
+	if ! eval dialog --menu \"Please select the interface that you wish to configure from the list below:\" 0 0 0 $opts 2>iface; then
+		exit
+	fi
+
+	iface="$(< iface)"
+}
+
+show_ifconfirm() {
+	local iface=$1
+	local if_mac="$(get_ifmac ${iface})"
+	local if_driver="$(get_ifdriver ${iface})"
+	local if_bus="$(get_ifbus ${iface})"
+	local if_product="$(get_ifproduct ${iface})"
+
+	local text="Details for network interface ${iface} are shown below.\n\nInterface name: ${iface}\n"
+	[[ -n ${if_product} ]] && text="${text}Device: ${if_product}\n"
+	[[ -n ${if_mac} ]] && text="${text}MAC address: ${if_mac}\n"
+	[[ -n ${if_driver} ]] && text="${text}Driver: ${if_driver}\n"
+	[[ -n ${if_bus} ]] && text="${text}Bus type: ${if_bus}\n"
+	text="${text}\nIs this the interface that you wish to configure?"
+
+	if ! dialog --title "Interface details" --yesno "${text}" 15 70; then
+		result="no"
+	else
+		result="yes"
+	fi
 }
 
 livecd_console_settings() {
