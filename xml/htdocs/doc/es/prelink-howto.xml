@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/prelink-howto.xml,v 1.4 2006/03/25 19:50:10 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/prelink-howto.xml,v 1.5 2006/06/02 12:06:04 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/es/prelink-howto.xml" lang="es">
-
 <title>Guía Prelink de Gentoo Linux</title>
+
 <author title="Autor">
   <mail link="cretin@gentoo.org">Stefan Jones</mail>
 </author>
@@ -39,8 +39,8 @@ Esta guía le indica cómo hacer uso del soporte prelink en versiones de portage
 
 <license/>
 
-<version>1.12</version>
-<date>2005-04-21</date>
+<version>1.14</version>
+<date>2006-05-28</date>
 
 <chapter>
 <title>Introducción</title>
@@ -70,6 +70,14 @@ Por ejemplo, el tiempo de carga de un programa típico de KDE puede ser reducido
 hasta un 50%. El único mantenimiento requerido es ejecutar prelink cada vez que
 se actualice una librería para un ejecutable prelinkado.
 </p>
+
+<warn>
+Prelink no funciona en Gentoo Hardened. Esto es debido a que ambos proyectos
+tratan de cambiar el espacio de mapeo de direcciones de las librerías
+compartidas. De todos modos, prelink con la opción -R utiliza direcciones
+aleatorias, proporcionando así mayor grado de protección.
+</warn>
+
 </body>
 </section>
 
@@ -141,8 +149,9 @@ proporcionar algunas pistas de utilidad.
 
 <p>
 Si obtiene una serie de pasos que reproducen el error de emerge en otro
-sistema, por favor envíenos un correo electrónico a
-<mail link="cretin@gentoo.org">Stefan Jones</mail>.
+sistema, por favor compruebe <uri
+link="http://bugzilla.gentoo.org">Bugzilla</uri> y realice un nuevo informe de
+error si éste todavía no ha sido reportado.
 </p>
 </body>
 </section>
@@ -150,12 +159,6 @@ sistema, por favor envíenos un correo electrónico a
 <section>
 <title>Preparar su sistema</title>
 <body>
-
-<p>
-Ahora debería activar el parámetro USE "pic" en su <path>/etc/make.conf</path>
-No olvide ejecutar <c>emerge --update --deep --newuse world</c> para que el
-cambio sea incorporado en su sistema.
-</p>
 
 <p>
 Asegúrese también de que <e>no</e> tiene el parámetro -fPIC puesto en sus
@@ -250,6 +253,21 @@ Para más opciones y detalles vea <c>man prelink</c>.
 </body>
 </section>
 <section>
+<title>Prelink como tarea programada</title>
+<body>
+
+<p>
+<c>sys-devel/prelink-20060213</c> y posteriores instalan una tarea programada
+en <path>/etc/cron.daily/prelink</path>. Para activarla, edite el fichero de
+configuración <path>/etc/conf.d/prelink</path>. Esto ejecutará prelink en
+segundo plano a diario, como es necesario, ahorrándole lanzar el comando
+manualmente.
+</p>
+
+</body>
+</section>
+
+<section>
 <title>Acelerar KDE después del Prelinkado</title>
 <body>
 
@@ -270,8 +288,7 @@ informar del prelinkado a KDE.
 <chapter>
 <title>Problemas conocidos y soluciones</title>
 <section>
-<title>&quot;No puedo prelinkar contra librerías compartidas non-PIC&quot;
-</title>
+<title>"No puedo prelinkar contra librerías compartidas non-PIC"</title>
 <body>
 
 <p>
@@ -292,6 +309,11 @@ Aquí están las librerías que no han sido o no pueden ser arregladas:
   <li>
     La librería en media-video/mjpegtools, 
     <path>/usr/lib/liblavfile-1.6.so.0</path>.
+  </li>
+  <li>
+    Las librerías OpenGL de NVIDIA,
+    <path>/usr/lib/opengl/nvidia/lib/libGL.so.*</path>. Debido a razones de
+    rendimiento fueron compiladas sin soporte PIC.
   </li>
 </ul>
 
@@ -315,7 +337,7 @@ ficheros del sistema. A continuación tiene una explicación de Dick Howell,
 </p>
 
 <p>
-&quot;Supongo que la idea es que todo estuviera en el fichero descargado, de
+"Supongo que la idea es que todo estuviera en el fichero descargado, de
 modo que nada dependa de las librerías locales del sistema al que va dirigido.
 Desafortunadamente con Linux, y creo que con todo lo que use GLIBC, esto
 todavía no es del todo cierto. Ahí está "libnss" (servicio de nombres (name
@@ -328,14 +350,14 @@ cargándolo. Además, no puede linkar "libnss" estáticamente ya que está
 configurado individualmente para cada máquina. El problema viene, pienso,
 principalmente de linkar estáticamente otras librerías de GLIBC, en particular
 "libpthread", "libm" y "libc" de donde vienen llamadas incompatibles a
-funciones de "libnss".&quot;
+funciones de "libnss"."
 </p>
 </body>
 </section>
 
 <section>
-<title>Prelink se para con &quot;prelink: dso.c:306: fdopen_dso: Assertion
-`j == k' failed.&quot;</title>
+<title>Prelink se para con "prelink: dso.c:306: fdopen_dso: Assertion
+`j == k' failed."</title>
 <body>
 
 <p>
@@ -361,8 +383,39 @@ aleatoria, es necesario quitar "randomized mmap() base" del fichero
 pero debe hacerse cuando el fichero no esté en uso (p.e. iniciando desde un
 disco de rescate)
 </p>
+
 </body>
-</section>    
+</section>
+<section>
+<title>
+Prelink falla con el error "prelink: Can't walk directory tree XXXX: Too many
+levels of symbolic links"
+</title>
+<body>
+
+<p>
+Sus enlaces simbólicos están demasiado anidados. Esto ocurre cuando un enlace
+simbólico se apunta a sí mismo. Por ejemplo, <path>/usr/lib/lib -&gt;
+lib</path> es el más común. Para solucionarlo, puede buscar el enlace
+manualmente o emplear la herramienta proporcionada por el paquete
+<c>symlinks</c>:
+</p>
+
+<pre caption="Arreglar enlaces simbólicos">
+# <i>emerge symlinks</i>
+# <i>symlinks -drv /</i>
+</pre>
+
+<p>
+Puede encontrar más detalles en <uri
+link="http://bugs.gentoo.org/show_bug.cgi?id=82117">Bugzilla</uri> y en este
+<uri
+link="http://forums.gentoo.org/viewtopic-t-458144-highlight-prelink.html">hilo
+del foro</uri>.
+</p>
+
+</body>
+</section>
 </chapter>
 
 <chapter>
