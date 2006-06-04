@@ -8,6 +8,14 @@
 <mail link="kevquinn@gentoo.org">Kevin F. Quinn</mail>
 </author>
 
+<author title="Contributor">
+<mail link="solar@gentoo.org">Ned Ludd</mail>
+</author>
+
+<author title="Contributor">
+<mail link="pageexec@freemail.hu">The PaX Team</mail>
+</author>
+
 <abstract>
 Technical description of, and rationale for, the Gentoo Hardened Toolchain modifications.
 </abstract>
@@ -66,7 +74,19 @@ Normally the compiler must be explicitly directed to switch on the stack protect
 <body>
 
 <p>
-Standard executables have a fixed base address, and they must be loaded to this address otherwise they will not execute correctly. Position Independent Executables can be loaded anywhere in memory much like shared libraries, allowing <uri link="/proj/en/hardened/pax-quickstart.xml">PaX</uri>'s Address Space Layout Randomisation (ASLR) to take effect.  This is achieved by building the code to be position-independent, and linking them as ELF shared objects.  Support for PIEs was introduced into GCC by RedHat.
+Standard executables have a fixed base address, and they must be loaded to this address otherwise they will not execute correctly. Position Independent Executables can be loaded anywhere in memory much like shared libraries, allowing <uri link="/proj/en/hardened/pax-quickstart.xml">PaX</uri>'s Address Space Layout Randomisation (ASLR) to take effect.  This is achieved by building the code to be position-independent, and linking them as ELF shared objects.
+</p>
+
+<p>
+In 2003 Hardened Gentoo introduced an approach referred to as '-y etdyn' which consisted of building all code with -fPIC, and modifying the link stage to provide an ET_DYN executable using a modified PIC version of crt1.o, and setting the interp header to cause the executable to be loaded by the loader from glibc.  ET_DYN versions of the crt1.o object were created for x86, parisc, ppc and sparc.
+</p>
+
+<p>
+Further work was undertaken by RedHat, who implemented a '-pie' switch for the linker, and '-fPIE' to be used when compiling objects for linking into a Position Independent Executable.  Building an object with -fPIE is slightly different from -fPIC; in particular not all symbols are vectored through the GOT which means pre-loaded shared libraries do not override these symbols in the executable, which is also the case for ET_EXEC executables.
+</p>
+
+<p>
+As the support for PIEs in the upstream toolchain matured, Hardened Gentoo switched to PIE, dropping the earlier "-y et_dyn" support.  PIEs have several advantages, not least of which is that upstream have taken on the burden of support in gcc, glibc and binutils.
 </p>
 
 <p>
@@ -81,7 +101,7 @@ The Gentoo hardened GCC automatically builds PIEs when building application code
 <body>
 
 <p>
-The standard toolchain places the relocation tables in a writable section of ELF files. Setting RELRO causes the toolchain to reorganise the layout of the ELF file so that as much as possible of the relocation tables can be marked read-only, to prevent an attacker from overwriting data in the tables. If <uri link="#NOWintro">BIND_NOW</uri> is also set then all of the relocation tables can be set read-only, preventing various attack methods that involve corrupting these tables.
+The standard toolchain places the Global Offset Table (GOT) in a writable section of ELF files. Setting RELRO causes the toolchain to reorganise the layout of the ELF file so that as much as possible of the GOT can be marked read-only, to prevent an attacker from overwriting data in the tables. If <uri link="#NOWintro">BIND_NOW</uri> is also set then all of the all of the GOT can be set read-only, preventing various attack methods that involve overwriting it.
 </p>
 
 <p>
@@ -148,7 +168,7 @@ The patches to GCC-3.x are not trivial, so a detailed explanation here is not su
 The SSP implementation in gcc-3.x is not perfect, and can cause problems.  In particular C++ code can be built incorrectly when SSP is enabled, although the exact details are not clear at the moment.
 </p>
 <p>
-The SSP implementation in gcc-4.x is completely different, even so far as changing the semantics of the compiler switches.
+The SSP implementation in gcc-4.x is completely different, even so far as changing the semantics of the compiler switches.  At the time of writing, we have little experience in the SSP implementation in gcc-4.x.
 </p>
 
 </body>
@@ -169,8 +189,7 @@ The reason for building applications as position-independent is to allow the app
 <p>
 This is most effective when running a PaX kernel with Address Space Layout Randomisation (ASLR), which increases the randomness of the various parts of a process significantly.  It is also necessary to enable the GRsecurity option to hide the location information in the /proc filesystem - otherwise the attacker can just look there to find the addresses needed!
 </p>
-<p>
-Note that using prelink reduces the effectiveness of this approach significantly.  With prelink, although the location of shared libraries is different on every system, for a given system the location is usually the same.  So an attacker can make an initial attempt at an exploit, which could yield the location of the exploit code - then when the same process is attacked again (for example an HTTP request handler) the address will be known.
+<p>A note on prelink: prelinking sets hints for the address at which an ELF file will be loaded.  These hints, if followed, would make ASLR ineffective  The PaX kernel causes these hints to be ignored, so prelinking does nothing useful for a Gentoo Hardened system.  Since there is no point using prelink, just don't use it.  This also means you don't have to worry about knock-on effects of prelink.  Since prelink modifies the ELF files whenever it prelink is run, these changes need to be propogated to other systems that depend on them, for example host-based Intrusion Detection Systems (IDS) which watch for changes to executables and libraries - if prelink is not used then maintenance of such systems is simplified.  There are two technologies on the way which reduce the need for prelink.  One is symbol visibility support which reduces dramatically the number of symbols to resolve, and the second is direct binding which simplifies the search that the loader has to do in order to resolve symbols.  See <uri link="#NOWissues">Issues arising from BIND_NOW</uri> for more on direct binding.
 </p>
 
 </body>
@@ -263,7 +282,7 @@ Debugging PIEs with gdb is not workable as gdb does not support PIEs.  In order 
 <body>
 
 <p>
-RELRO reorganises the relocation information in an ELF object in such a way that it can be marked read-only.  When combined with <uri link="#NOW">BIND_NOW</uri>, this means the whole Global Offset Table (including the Procedure Lookup Table) can be marked read-only.  This means that attacks that target the global offset table will fail.
+RELRO reorganises the information in an ELF object in such a way that most of the Global Offset Table (GOT) can be marked read-only (everything except the Procedure Linkage Table - PLT).  When combined with <uri link="#NOW">BIND_NOW</uri>, this means the whole GOT (including the PLT) can be marked read-only before control is passed to the executable.  This means that attacks that target the global offset table by overwriting it will fail.
 </p>
 
 </body>
@@ -355,13 +374,16 @@ So a new option is introduced, "nonow", which can be used to prevent the hardene
 <body>
 
 <p>
-NOW binding has several noticeable effects.  The first is that initial loading time for applications increases, sometimes very noticeably, as the loader resolves all the references before passing execution to the loaded process.  The second more serious effect is that applications that are not written to refer to shared libraries in the standard way can fail; the most obvious of these is X, which has modules with circular resolution dependencies amongst other unusual behaviour.  Another trick occasionally performed by applications is to decide between a number of shared libraries at run time, and use lazy binding to resolve references to the chosen library.  Normally this would be done with dlopen(3) and friends, including obtaining symbol addresses via dlsym(3), but it is possible to avoid using dlsym(3) and a plethora of pointers in the code by using lazy binding, although it's not pretty.
+NOW binding has several noticeable effects.  The first is that initial loading time for applications increases, sometimes very noticeably, as the loader resolves all the references before passing execution to the loaded process.  One promising technique that will reduce this overhead significantly is the introduction of "Direct Binding", something that exists on Unix systems (e.g. Solaris) but does not exist in the GNU toolchain.  Direct binding adds information to libraries when they are built, to tell the linker which library contains the symbol it is looking for.  Normally the linker performs a search across all referenced libraries to find symbols, which adds significantly to the time taken to resolve them.  Michael Meeks at Novell is working on this; see our <uri link="http://bugs.gentoo.org/114008">bug #114008</uri> for out status on this.
+</p>
+<p>
+The second more serious effect is that applications that are not written to refer to shared libraries in the standard way can fail; the most obvious of these is X, which has modules with circular resolution dependencies amongst other unusual behaviour.  Another trick occasionally performed by applications is to decide between a number of shared libraries at run time, and use lazy binding to resolve references to the chosen library.  Normally this would be done with dlopen(3) and friends, including obtaining symbol addresses via dlsym(3), but it is possible to avoid using dlsym(3) and a plethora of pointers in the code by using lazy binding, although it's not pretty.
 </p>
 <p>
 The following packages have issues with BIND_NOW at the time of writing, and it has to be relaxed somewhat for them:
 </p>
 <ul>
-<li>X - the main server contains references to the drivers, which in turn contain references to the server.  Also some drivers consist of several libraries which are co-dependent</li>
+<li>X - some drivers consist of several libraries which are co-dependent, and the modules frequently have references to modules that they load.</li>
 <li>transcode - relies on lazy binding to be able to load its modules; the issues are similar to the X issues.</li>
 </ul>
 
