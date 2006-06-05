@@ -1,0 +1,590 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/articles/l-posix2.xml,v 1.1 2006/06/05 15:47:25 shadoww Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/pl/articles/l-posix2.xml" disclaimer="articles" lang="pl">
+<title>Wszystko o wątkach systemu POSIX, część druga</title>
+<author title="Author">
+  <mail link="drobbins@gentoo.org">Daniel Robbins</mail>
+</author>
+<author title="Tłumaczenie">
+<mail link="rzadzins@wit.edu.pl">Patryk Rządziński</mail>
+</author>
+
+<abstract>
+Wątki zaimplementowane w systemie POSIX to świetny sposób na poprawienie 
+osiągów i użyteczności programu. W tej części instrukcji, Daniel Robbins 
+pokazuje jak właściwie korzystać z wątków w kodzie programów. Omawiane 
+są także liczne szczegóły wyjaśniające ich działanie, toteż po lekturze 
+tego dokumentu czytelnik będzie w stanie tworzyć własne aplikacje 
+wielowątkowe.
+</abstract>
+
+<!-- The original version of this article was published on IBM developerWorks,
+and is property of Westtech Information Services. This document is an updated
+version of the original article, and contains various improvements made by the
+Gentoo Linux Documentation team -->
+
+<version>1.2</version>
+<date>2005-10-09</date>
+
+<chapter>
+<title>Urządzenia zwane muteksami</title>
+<section id="watek3.c">
+<title>Zamuteksuj mnie!</title>
+<body>
+
+<p>
+W <uri link="/doc/pl/articles/l-posix1.xml">poprzedniej części</uri> tego
+artykułu omawiany był przykładowy program, który w wyniku swojego działania 
+zwrócił nieoczekiwany wynik. Każdy z dwu wątków inkrementował zmienną globalną 
+dwadzieścia razy, w wyniku czego wynik powinien był wynieść 40. Tak się jednak 
+nie stało i otrzymaliśmy 21. Co się stało? Problem tkwił w tym, że obie 
+inkrementacje wzajemnie nadpisywały swoje wyniki. Spójrzmy na poprawiony kod, 
+który wykorzystuje <b>muteksy</b> (ang. mutex, od mutual exclusion), aby sobie 
+z tym poradzić.
+</p>
+
+<pre caption="watek3.c">
+#include &lt;pthread.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+
+int mojazmiennaglobalna;
+pthread_mutex_t mojmuteks=PTHREAD_MUTEX_INITIALIZER;
+
+void *MojaFunkcjaDlaWatku(void *arg) {
+  int i,j;
+  for ( i=0; i&lt;20; i++ ) {
+    pthread_mutex_lock(&amp;mojmuteks);
+    j=mojazmiennaglobalna;
+    j=j+1;
+    printf(".");
+    fflush(stdout);
+   sleep(1);
+    mojazmiennaglobalna=j;
+    pthread_mutex_unlock(&amp;mojmuteks);
+  }
+  return NULL;
+}
+
+int main(void) {
+
+  pthread_t mojwatek;
+  int i;
+
+  if ( pthread_create( &amp;mojwatek, NULL, MojaFunkcjaDlaWatku, NULL) ) {
+    printf("blad przy tworzeniu watka.");
+    bort();
+  }
+
+  for ( i=0; i&lt;20; i++) {
+    pthread_mutex_lock(&amp;mojmuteks);
+    mojazmiennaglobalna=mojazmiennaglobalna+1;
+    pthread_mutex_unlock(&amp;mojmuteks);
+    printf("o");
+    fflush(stdout);
+    sleep(1);
+  }
+
+  if ( pthread_join ( mojwatek, NULL ) ) {
+    printf("blad przy konczeniu watka.");
+    abort();
+  }
+
+  printf("\nWartosc mojej zmiennej globalnej to %d\n",mojazmiennaglobalna);
+
+  exit(0);
+
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Wyjaśnienie</title>
+<body>
+
+<p>
+Gdyby porównać ten kod z tym, który zamieściłem w <uri
+link="/doc/en/articles/l-posix1.xml">poprzednim artykule</uri>, uważny 
+czytelnik z pewnością zauważy, że pojawiły się wywołania funkcji 
+pthread_mutex_lock() oraz pthread_mutex_unlock(). Umożliwiają one wykonywanie 
+jednoczesnych operacji. Gdy jeden wątek ma odblokowany muteks, to drugi ma 
+zablokowany. 
+</p>
+
+<p>
+Tak właśnie działają muteksy. Jeśli wątek A próbuje zablokować muteks, podczas 
+gdy wątek B już go blokuje, to wówczas A zostaje uśpiony. Jak tylko B zwolni
+muteks (dzięki funkcji pthread_mutex_unlock()), A będzie w stanie go zablokować
+na swój użytek (innymi słowy, pthread_mutex_lock() zwróci kod sukcesu). 
+Analogicznie, jeśli wątek C spróbuje zablokować ten muteks, podczas gdy A już 
+blokuje, to C zostanie uśpiony na jakiś czas. Wszystkie wątki, które zostaną
+uśpione, będą kolejkowane do danego muteksu.
+</p>
+
+<p>
+Zazwyczaj funkcje pthread_mutex_lock() i pthread_mutex_unlock() stosuje się, 
+aby chronić swoje współdzielone struktury danych, a dokładniej  upewnić się, 
+że w danym momencie tylko jeden wątek ma dostęp do pewnych danych. Oczywiście, 
+jeśli jakiś wątek chce zablokować obecnie odblokowany muteks, to biblioteka 
+wątków mu to umożliwi bez potrzeby usypiania go.
+</p>
+
+<figure link="/images/docs/l-posix-mutex.gif" caption="Cztery znurty odgrywają 
+scenkę z wywołaniami pthread_mutex_lock()"/>
+
+
+<p>
+Na powyższym obrazku, ten wątek, który blokuje muteks, otrzymuje dostęp do 
+pełnej struktury danych. Nie musi się martwić, że inny wątek coś namiesza w 
+międzyczasie. Ta struktura danych jest de facto niedostępna dopóki, dopóty 
+muteks ten pozostaje zablokowany. To tak, jakby funkcje pthread_mutex_lock() 
+oraz pthread_mutex_unlock() były znakami informującymi o pracach drogowych na 
+danym odcinku jezdni, tu na wybranym fragmencie kodu. Są ostrzeżeniem dla
+innych  wątków i zmuszają je, aby poszły spać. Rzecz jasna, taki przykład
+jest prawdziwy tylko wtedy, gdy każdą operację odczytu i zapisu ujmiemy w
+wywołanie tych funkcji.
+</p>
+
+</body>
+</section>
+<section>
+<title>Dlaczego właściwie muteks?</title>
+<body>
+
+<p>
+Brzmi interesująco, ale dlaczego mielibyśmy chcieć usypiać nasze wątki?
+W końcu, czyż ich główną zaletą nie miało być współbieżne i czasami 
+jednoczesne działanie? Jest to niewątpliwie prawda, aczkolwiek każdy, 
+choć trochę bardziej zaawansowany program wielowątkowy będzie wymagał 
+użycia muteksów. Rzućmy okiem jeszcze raz na nasz przykład, aby 
+zrozumieć dlaczego.
+</p>
+
+<p>
+Warto zwrócić uwagę, że w MojaFunkcjaDlaWątku() muteks jest blokowany przy 
+początku pętli i zwalniany przy jej końcu. W tym przykładzie, "mojmuteks" jest 
+używany, aby chronić zmienną "mojazmiennaglobalna". Zgodnie z przykładem, 
+wartość jest kopiowana do zmiennej lokalnej, a następnie inkrementowana, po 
+czym wywoływana jest funkcja sleep(1) i dopiero wówczas zawartość zmiennej 
+lokalnej jest zapisywana do naszej zmiennej globalnej. Bez muteksu nasza 
+funkcja nadpisze wartość zmiennej globalnej, gdy wyjdzie ze sleep(1). 
+Korzystanie z muteksu zapewnia nas, że tak się nie stanie. Na wszelki wypadek 
+dodam, że użycie funkcji sleep() w tym przykładzie służyło tylko spowodowaniu 
+wadliwego działania. Poza tym, jest tutaj całkowicie zbędna. Program watek3.c 
+w wyniku swojego funkcjonowania zwraca już poprawne wartości:</p>
+
+<pre caption="Wynik działania programu watek3">
+$ <i>./watek3</i>
+o..o..o.o..o..o.o.o.o.o..o..o..o.ooooooo
+Wartosc mojej zmiennej globalnej to 40
+</pre>
+
+<p>
+Aby w dalszym stopniu zbadać ten przykład, obejrzyjmy kod inkrementacji w
+naszym przykładzie.
+</p>
+
+<pre caption="Kod inkrementacji">
+Kod inkrementacji w MojaFunkcjaDlaWatku():
+        j=mojazmiennaglobalna;
+        j=j+1;
+        printf(".");
+        fflush(stdout);
+        sleep(1);
+        mojazmiennaglobalna=j;
+
+Kod inkrementacji w głównym wątku:
+        mojazmiennaglobalna=mojazmiennaglobalna+1;
+</pre>
+
+<p>
+Dla takiego kodu, w przypadku jednowątkowego programu, należałoby oczekiwać, 
+że MojaFunkcjaDlaWątku() wykona się całkowicie, a następnie zacznie się 
+wykonywać część kodu w funkcji main(). W programie wielowątkowym bez muteksów 
+program zazwyczaj będzie się jednak wykonywał w następującym porządku (dzięki 
+funkcji sleep()):
+</p>
+
+<pre caption="Kolejność wykonywania się">
+  wątek MojaFunkcjaDlaWątku()           wątek główny
+
+  j=mojazmiennaglobalna;
+  j=j+1;
+  printf(".");
+  fflush(stdout);
+  sleep(1);                             mojazmiennaglobalna=mojazmiennaglobalna+1;
+  mojazmiennaglobalna=j;
+</pre>
+
+<p>
+Ponieważ program wykona się w takiej kolejności, modyfikacje przeprowadzone w 
+wątku głównym na zmiennej globalnej zostają nadpisane, w wyniku czego 
+użytkownik otrzymuje niewłaściwy wynik działania programu. Gdybyśmy tutaj 
+manipulowali wskaźnikami, najprawdopodobniej otrzymalibyśmy błąd związany z 
+naruszeniem ochrony pamięci. Należy zwrócić uwagę, że MojaFunkcjaDlaWątku() 
+wykonuje wszystkie swoje instrukcje w kolejności chronologicznej. Po prostu, 
+problem związany jest z tym, że operacje wykonują dwa wątki, a nie, że któryś 
+z nich przetwarza instrukcje w niewłaściwej kolejności.
+</p>
+
+</body>
+</section>
+<section>
+<title>Wątki od środka, część pierwsza</title>
+<body>
+
+<p>
+Zanim wytłumaczę, w jaki sposób znajduję miejsca, gdzie trzeba użyć wątków, 
+chciałbym zaprezentować ich działanie od wewnątrz. Oto przykład pierwszy: 
+</p>
+
+<p>
+Załóżmy, że w głównym wątku tworzone są trzy inne wątki: A, B oraz C,
+wywoływane w odpowiedniej kolejności: 
+</p>
+
+<pre caption="Kolejność tworzenia wątków">
+  pthread_create( &amp;watek_a, NULL, MojaFunkcjaDlaWatku, NULL);
+  pthread_create( &amp;watek_b, NULL, MojaFunkcjaDlaWatku, NULL);
+  pthread_create( &amp;watek_c, NULL, MojaFunkcjaDlaWatku, NULL);
+</pre>
+
+<p>
+Po pierwszym, sukcesywnym wywołaniu pthread_create() można założyć, że albo 
+wątek A istnieje albo jest obecnie zatrzymany. Po drugim, sukcesywnym  
+wywołaniu oba wątki, główny i B mogą zakładać, że A istnieje lub jest 
+wstrzymany.
+</p>
+
+<p>
+Jednak gdy tylko drugie wywołanie pthread_create() zwróci wartość, główny wątek 
+nie może założyć, który wątek, A czy B, rozpocznie swoje działanie w 
+przyszłości jako pierwszy. Mimo, że oba wątki istnieją, to jądro systemu wraz 
+z biblioteką zadecydują, któremu z nich przydzielić kwant czasu procesora. Nie 
+ma reguły na to, który z nich wykona się pierwszy. Jest jednak całkiem 
+prawdopodobne, że to A będzie pierwsze, po prostu nie ma na to gwarancji. 
+Prawdopodobieństwo jest za to mniejsze na maszynach wieloprocesorowych. 
+Programiści, którzy z góry zakładają, że A wykona się przed B, będą mieli kod 
+działający poprawnie w 99% przypadków. A może gorzej - działający w 100% na ich 
+komputerach, ale w 0% przypadków na cztero-procesorowych maszynach ich klientów.
+</p>
+
+<p>
+Kolejną wnioskiem, jaki można wyciągnąć z powyższego przykładu jest fakt, że 
+biblioteka wątków zachowuje kody wykonywania dla każdego wątku z osobna. 
+Innymi słowy, te trzy wywołania funkcji pthread_create() wykonają się w takiej 
+kolejności, w jakiej są wywoływane. Z perspektywy głównego wątku, cały kod 
+jest wykonywany w odpowiedniej kolejności. Czasami można ten fakt wykorzystać 
+do optymalizacji niektórych części naszych programów. Na przykład, w powyższym 
+kodzie, wątek C może założyć, że A i B się wykonują, lub są zakończone. Nie 
+musi się martwić, że A czy B mogły nie powstać, a takie zachowanie może 
+posłużyć pewnej optymalizacji aplikacji wielowątkowych.
+</p>
+
+</body>
+</section>
+<section>
+<title>Wątki od środka, część druga</title>
+<body>
+
+<p>
+A teraz kolejny, hipotetyczny przykład. Załóżmy, że mamy kilka wątków, które 
+wykonują następujący kod:
+</p>
+
+<pre caption="Wywoływany kod">
+  mojazmiennaglobalna=mojazmiennaglobalna+1;
+</pre>
+
+<p>
+Czy trzeba blokować muteks przed każdą inkrementacją i blokować po? Niektórzy 
+powiedzą, że nie. Jest bardzo prawdopodobne, że kompilator skompiluje ten kod 
+jako pojedynczą instrukcję języka maszynowego, a jak wiadomo, pojedynczej 
+instrukcji nie da się przerwać, jeśli jest już wykonywana. Nawet system 
+przerwań sprzętowych przestrzega tej reguły. Wiedząc to, ma się chęć 
+zrezygnowania z pthread_mutex_lock() i pthread_mutex_unlock(), jednak takie 
+wyjście byłoby błędne. 
+</p>
+
+<p>
+Czy gadam jak mięczak? Właściwie, to nie. Po pierwsze, nie należy zakładać, że 
+coś zostanie skompilowane jako pojedyncza instrukcja kodu maszynowego, chyba, 
+że ktoś to sprawdza później w języku niskopoziomowym. Nawet, jeśli programista 
+zdecyduje się na dołożenie asercji upewniających go o tym, to i tak mogą 
+pojawić się problemy.
+</p>
+
+<p>
+Dlaczego? Korzystanie z pojedynczych asercji prawdopodobnie będzie działać 
+idealnie na komputerze jednoprocesorowym. Każda inkrementacja nastąpi 
+automatycznie, a więc jest spora szansa, że wynik będzie zgodny z oczekiwanym. 
+Jednak na maszynie wieloprocesorowej będzie inaczej. Tam taka instrukcja 
+mogłaby być wykonywana przez wiele jednostek procesorowych jednocześnie. 
+Należy też pamiętać, że zmiana w pamięci musi przejść przez pamięć cache L1 
+oraz L2 i dopiero trafi do pamięci głównej. Maszyna wieloprocesorowa to nie 
+tylko więcej procesorów. Jest tam także specjalny sprzęt zarządzający dostępem 
+do pamięci. W rezultacie, programista nie może wiedzieć, który procesor 
+obsłuży daną instrukcję. Aby nasz kod był przewidywalny i stabilny, powinniśmy  
+korzystać z muteksów. Wprowadzą one barierę w pamięci, która upewni nas, że 
+operacje czytania i pisania na zmiennych odbędą się w takiej kolejności, w 
+jakiej wątki blokują wybrany muteks.
+</p>
+
+<p>
+Weźmy pod uwagę maszynę o symetrycznej architekturze wieloprocesorowej, która 
+odświeża pamięć główną 32-bitowymi blokami. Gdyby inkrementować 64-bitową 
+zmienną całkowitą bez pomocy muteksów, to cztery najstarsze bajty mogą być od 
+jednego procesora, a cztery pozostałe od innego. Pech! Co gorsze, taki program 
+może nawalić kiedyś na maszynie naszego klienta o trzeciej w nocy.
+David R. Butenhof omawia możliwe permutacje programowania bez używania 
+muteksów w swojej książce "Programowanie przy pomocy wątków w POSIX" 
+(patrz <uri link="#źródła">źródła</uri> na końcu tego artykułu).
+</p>
+
+</body>
+</section>
+<section>
+<title>Wiele muteksów</title>
+<body>
+
+<p>
+Jeśli upchamy do programu zbyt wiele muteksów, to stracimy na współbieżności, 
+a w rezultacie może okazać się, że będzie on działał wolniej, niż taki sam 
+program jednowątkowy. Gdyby muteksów zaś było za mało, to mogą pojawić się 
+błędy w funkcjonowaniu. Na szczęście istnieje złoty środek. Po pierwsze, 
+muteksy należy stosować do kolejkowania dostępu do *danych współdzielonych*. 
+Nie należy używać muteksów do danych prywatnych albo do takich, do których 
+ w danej chwili dostęp może mieć tylko jeden wątek.
+</p>
+
+<p>
+Po drugie, w przypadku korzystania ze współdzielonych struktur danych, należy 
+korzystać z muteksów zarówno dla operacji odczytu jak i zapisu - zwyczajnie 
+otaczając dane bloki instrukcji wywołaniami funkcji pthread_mutex_lock() oraz 
+pthread_mutex_unlock(). Można też zastosować je wszędzie tam, gdzie jakieś 
+niezmienniki zostały naruszone. Trzeba się więc nauczyć przeglądać swój kod 
+z perspektywy programu jednowątkowego i upewnić się, że każdy inny wątek 
+ma zwięzły i przyjazny wgląd do pamięci. To może zająć wiele dodatkowych 
+godzin, ale gdy takie programowanie wejdzie nam w nawyk, to dalsze 
+działania na muteksach przyjdą nam bez potrzeby <e>dłuższego</e> zastanawiania 
+się. 
+</p>
+
+</body>
+</section>
+<section>
+<title>Korzystanie z wywołań - inicjalizacja</title>
+<body>
+
+<p>
+Czas na przegląd wszystkich możliwych sposobów korzystania z muteksów. 
+Zaczniemy od inicjalizacji. W przykładzie 
+<uri link="#watek3.c">watek3.c</uri>, skorzystałem z inicjalizacji statycznej, 
+czyli zadeklarowania zmiennej typu pthread_mutex_t, a następnie przypisaniu 
+jej stałej wartości PTHREAD_MUTEX_INITIALIZER:
+</p>
+
+<pre caption="Przykład inicjalizacji">
+pthread_mutex_t mojmuteks=PTHREAD_MUTEX_INITIALIZER;
+</pre>
+
+<p>
+To całkiem proste. Można także tworzyć muteksy dynamicznie. Robi się tak, gdy 
+kod alokuje nowy muteks za pomocą funkcji malloc(). Wówczas metoda statyczna 
+się nie sprawdzi. Należy skorzystać z funkcji pthread_mutex_init():
+</p>
+
+<pre caption="Sposób na dynamiczne tworzenie muteksów">
+int pthread_mutex_init( pthread_mutex_t *mojmuteks, const pthread_mutexattr_t *attr)
+</pre>
+
+<p>
+Jak widać, pthread_mutex_init() przyjmuje wskaźnik do zaalokowaniej uprzednio 
+w pamięci zmiennej na muteks oraz opcjonalny argument typu wskaźnik do 
+pthread_mutexattr_t. Struktura ta może być użyta do ustawienia różnorakich 
+atrybutów dla danego muteksu. Zazwyczaj jednak, atrybuty te nie są potrzebne, 
+toteż korzysta się w tym miejscu z pseudowartości NULL.
+</p>
+
+<p>
+Kiedykolwiek używana jest funkcja pthread_mutex_init() w celu inicjalizacji 
+muteksu, to należy potem posprzątać za pomocą pthread_mutex_destroy(). 
+Funkcja ta przyjmuje jako argument wskaźnik do zmiennej typu 
+pthread_mutex_t i zwalnia wszelkie zasoby, jakie są alokowane dla danego 
+muteksu podczas podczas jego tworzenia. Należy jednak zwrócić uwagę, że nie 
+zwalnia pamięci zarezerwowanej na samą zmienną pthread_mutex_t, tylko obszar 
+pamięci z danymi. Warto także nadmienić, iż obie funkcje pthread_mutex_init() 
+i pthread_mutex_destroy() zwracają zero jako kod sukcesu.
+</p>
+
+</body>
+</section>
+<section>
+<title>Korzystanie z wywołań - blokowanie</title>
+<body>
+
+<pre caption="Przykład blokowania">
+pthread_mutex_lock(pthread_mutex_t *mojmuteks)
+</pre>
+
+<p>
+Funkcja pthread_mutex_lock() przyjmuje pojedynczy argument w postaci wskaźnika 
+do muteksu. Jeśli zdarzy się, że ten muteks jest już zablokowany, to dana 
+funkcja pójdzie spać. Jeśli jednak funkcja zwróci kod sukcesu, to funkcja 
+wywołująca zostanie wybudzona i to ona będzie od teraz blokować ten muteks. 
+Można więc otrzymać zero jako kod sukcesu, albo niezerowy kod błędu.
+</p>
+
+<pre caption="Przykład odblokowywania">
+pthread_mutex_unlock(pthread_mutex_t *mojmuteks)
+</pre>
+
+<p>
+Funkcja pthread_mutex_unlock() uzupełnia pthread_mutex_lock() i jest w stanie 
+odblokować muteks, który został przez jakiś wątek zablokowany. Zawsze należy 
+odblokowywać swoje muteksy, jeśli tylko będzie to możliwe i za razem 
+bezpieczne (aby poprawić osiągi). Nie należy zaś odblokowywać muteksów, które 
+uprzednio nie były zablokowane, bowiem wówczas funkcja zwróci nam niezerowy 
+kod błędu (EPERM).
+</p>
+
+<pre caption="Przykład na próbę blokowania">
+pthread_mutex_trylock(pthread_mutex_t *mojmuteks)
+</pre>
+
+<p>
+Ta funkcja jest przydatna, gdy trzeba zablokować muteks, p'odczas gdy dana 
+funkcja zajmuje się czymś innym (ponieważ interesujący ją muteks jest obecnie 
+zablokowany). Po wywołaniu tej funkcji nastąpi próba zablokowania muteksu. 
+Jeśli nie jest on w danej chwili zablokowany, to tak się stanie i otrzymamy 
+kod sukcesu. Jeśli muteks jest zablokowany, to funkcja ta nie będzie się 
+ustawiać w kolejce do niego. Zwróci jednak niezerową wartość EBUSY jako kod 
+błędu. Można wówczas kontynuować swoją pracę i wrócić do tego miejsca później.
+</p>
+
+</body>
+</section>
+<section>
+<title>Oczekiwanie na spełnienie warunków</title>
+<body>
+
+<p>
+Muteksy są niezbędnym narzędziem dla programów, w których istnieje podział na 
+wątki, ale nie załatwią one wszystkiego. Co, na przykład, się dzieje, gdy 
+oczekujemy na spełnienie konkretnego warunku, którym było pojawienie się 
+czegoś w strukturze danych współdzielonych? Można napisać kod, który 
+nieustannie to sprawdza, blokując co raz jakiś muteks. Gdy warunek się 
+spełni, można szybko odblokować muteks i dokonać odpowiednich operacji. To 
+jest jednak fatalne podejście, gdyż dodatkowe pętle spowolnią działanie 
+naszego programu. 
+</p>
+
+<p>
+Można uśpić dany wątek na jakiś moment, powiedzmy na trzy sekundy po każdym 
+sprawdzeniu, jednak wtedy nasz kod nie będzie reagował w optymalnym czasie. 
+W tym wypadku potrzebna jest funkcja, która uśpi dany wątek na czas tak długi, 
+aż dany warunek zostanie spełniony. A gdy tak się stanie, potrzebna jest metoda 
+na obudzenie wątków, które czekają na spełnienie naszego warunku. Jeśli da się 
+to jakoś zorganizować, to nasz kod będzie bardzo wydajny i pozbędziemy się 
+przymusu blokowania muteksów. A zmienne warunkowe w POSIX właśnie to nam 
+gwarantują.
+</p>
+
+<p>
+Zmienne warunkowe w POSIX są tematem następnej części tego artykułu. Powiem w 
+nim jak dokładnie się nimi posługiwać. Po jego lekturze czytelnik będzie w 
+stanie napisać w pełni zaawansowaną aplikację wielowątkową. W kolejnej części 
+zamierzam także zwiększyć tempo, zakładając, że czytelnicy nabrali trochę 
+wprawy w posługiwaniu się wątkami. Liczę, że pozwoli mi to na omówienie 
+bardziej złożonych przykładów. A skoro mowa o czekaniu na spełnienie warunków 
+- do zobaczenia w części trzeciej!
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="źródła">
+<title>Źródła</title>
+<section>
+<body>
+
+<ul>
+  <li>
+    Daniel o wątkach w POSIX <uri link="l-posix1.xml">Część pierwsza</uri>
+    oraz <uri link="l-posix3.xml">część trzecia</uri>
+  </li>
+  <li>
+    Oficjalna dokumentacja: <uri 
+    link="http://metalab.unc.edu/pub/Linux/docs/faqs/Threads-FAQ/html/">
+    Wątki w Linuksie</uri>, autorstwa Sean'a Walton'a, KB7rfa 
+  </li>
+  <li>
+    Oczywiście zawsze pomocne są strony w man (<c>man -k pthread</c>) 
+  </li>
+  <li>
+    Warto sprawdzić 
+    <uri link="http://pauillac.inria.fr/~xleroy/linuxthreads/"> 
+    Bibliotekę LinuxThreads</uri>
+  </li>
+  <li>
+    <uri
+    link="http://www.users.itl.net.ua/~prool/proolix.html">Proolix</uri> to 
+    prosty system operacyjny w standardzie POSIX dla układów i8086+, 
+    stale ulepszany 
+  </li>
+  <li>
+    Książka David'a R. Butenhof'a <uri 
+    link="http://www.amazon.com/exec/obidos/ASIN/0201633922/o/qid=961544788/sr=8-1/ref=aps_sr_b_1_1/002-2882413-1227240">
+    Programowanie z obsługą wątków w POSIX</uri>, w której omawiane są, między
+    innymi, możliwe permutacje niekorzystania z muteksów
+  </li>
+  <li>
+    Książka W. Richard'a Stevens'a <!-- FIXME not available out there,
+    commenting out and leaving finding it pleasure to readers<uri
+    link="http://devworks.krcinfo.com/WebForms/ProductDetails.aspx?ProductID=0139498761">-->"UNIX
+    Network Programming".
+  </li>
+  <li>
+    Więcej tekstów źródłowych dla programistów linuksowych na <uri
+    link="http://www.ibm.com/developerworks/linux/">developerWorks Linux
+    zone</uri>. 
+  </li>
+  <li>
+    Istnieje możliwość przyłączenia się do społeczności programistów 
+    poprzez wzięcie udziału w blogach <uri
+    link="http://www.ibm.com/developerworks/blogs/">developerWorks</uri>.
+  </li>
+  <!-- FIXME Ugly advertisement
+  15:25  <rane> is that ok to put such advertisment at gentoo.org?
+  15:26  * neysx would not copy them
+  15:27  <SwifT> I wouldn't keep it
+  <li>
+    Purchase <uri
+    link="http://devworks.krcinfo.com/WebForms/ProductList.aspx?Search=Category&id=300&parent=Linux">Linux
+    books at discounted prices</uri> in the Linux section of the
+    Developer Bookstore.
+  </li>
+  <li>
+    Order the no-charge SEK for Linux, a two-DVD set cont/msg R REQUESTBOT
+    #aining the latest IBM
+    trial software for Linux from DB2&registered;, Lotus&registered;,
+    Rational&registered;, Tivoli&registered;, and WebSphere&registered;.
+  </li>
+  <li>
+    Innovate your next Linux development project with <uri
+    link="http://www.ibm.com/developerworks/downloads/?S_TACT=105AGX03">IBM
+    trial software</uri>, available for download directly from developerWorks.
+  </li>
+  -->
+</ul>
+
+</body>
+</section>
+</chapter>
+
+</guide>

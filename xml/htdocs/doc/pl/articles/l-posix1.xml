@@ -1,0 +1,561 @@
+<?xml version='1.0' encoding="UTF-8"?> 
+<!-- $Header: --> 
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/pl/articles/l-posix1.xml" disclaimer="articles" lang="pl">
+<title>Wszystko o wątkach systemu POSIX, część pierwsza</title>
+
+<author title="Autor"> 
+<mail link="drobbins@gentoo.org">Daniel Robbins</mail>
+</author>
+
+<author title="Tłumaczenie"> 
+<mail link="rzadzins@wit.edu.pl">Patryk Rządziński</mail> 
+</author>
+
+<abstract> 
+Wątki (ang. threads) zaimplementowane w systemie POSIX (ang.
+Portable Operating System Interface, czyli Przenośny / Wieloplatformowy
+Interfejs Systemu Operacyjnego) to świetny sposób na poprawienie osiągów i
+użyteczności programu. W tej części instrukcji, Daniel Robbins pokazuje jak
+właściwie korzystać z wątków w kodzie programów. Omawiane są także liczne
+szczegóły wyjaśniające ich działanie, toteż po lekturze tego dokumentu
+czytelnik będzie w stanie tworzyć własne aplikacje wielowątkowe.  
+</abstract>
+
+<!-- The original version of this article was published on IBM developerWorks,
+and is property of Westtech Information Services. This document is an updated
+version of the original article, and contains various improvements made by the
+Gentoo Linux Documentation team -->
+
+<version>1.2</version> 
+<date>2005-10-09</date>
+
+<chapter> 
+<title>Proste i elastyczne narzędzie do współdzielenia pamięci</title> 
+<section> 
+<title>Wątki są fajne</title> 
+<body>
+
+<p> 
+Każdy szanujący się programista powinien wiedzieć, jak programować z
+użyciem wątków. Są one podobne do procesów - tak samo jądro systemu decyduje o
+przydzielaniu im kwantu czasu procesora. W systemach jednordzeniowych jądro
+zarządza przydzielaniem kwantu czasu procesora, aby stworzyć wrażenie
+jednoczesnego obsługiwania wątków dokładnie tak, jak to jest w przypadku
+procesów. W przypadku systemów wieloprocesorowych, wątki i procesy mogą się
+wykonywać jednocześnie.
+</p>
+
+<p> 
+Dlaczego więc wielowątkowość (ang. multithreading) jest tak często uznawana
+za lepsze rozwiązanie od wielu niezależnych procesów w zadaniach wymagających
+wzajemnej współpracy? Głównie z tego powodu, że wątki wykorzystują ten sam
+obszar pamięci, toteż wszystkie stworzone przez programistę wątki mogą
+zapisywać do lub czytać z globalnie zadeklarowanych zmiennych. Każdy, kto
+kiedykolwiek pisał jakąś niebanalną aplikację korzystającą z funkcji fork(),
+powinien zdać sobie sprawę z użyteczności tego narzędzia. Dlaczego? Podczas,
+gdy fork() tworzy nowe procesy potomne, tworzy także pewien problem. 
+Mianowicie, jak zmusić wiele procesów potomnych, z których każdy korzysta z
+własnego, wydzielonego obszaru w pamięci, aby się komunikowały między sobą.
+Niestety nie ma prostego rozwiązania. Mimo wielu różnych rodzajów lokalnych
+IPC (ang. inter-process communication, czyli komunikacja między procesami),
+są one obciążone pewnymi niepożądanymi konsekwencjami: 
+</p>
+
+<ul> 
+  <li>
+    Zużywają zasoby związane ze specjalnymi (a także nadmiarowymi)
+    funkcjami, jakie zostały dla nich zaimplementowane w jądrze systemu.  
+  </li>
+  <li>
+    W zdecydowanej większości przypadków, IPC nie są naturalną częścią kodu
+    programu. Nieraz implementacja IPC w wielkim stopniu komplikuje dany
+    program.
+  </li> 
+</ul>
+
+<p> 
+Nie jest dobrze, są dwa poważne problemy, mianowicie nadmiarowość i zbędna
+komplikacja. Każdy, kto dotychczas musiał zmagać się z implementacją IPC,
+która wiązałą się z masowym zmienianiem źródeł, powinien docenić zalety
+współdzielenia pamięci, które wprowadzają wątki. Wątki zaimplementowane w
+POSIX nie wymagają wprowadzania wielokrotnych zmian i komplikowania kodu, zaś
+ich obsługa całkowicie zamyka się w źródłach danego programu. Zaledwie
+niewielkie modyfikacje umoźliwią wątkom korzystanie z istniejących struktur
+danych. Nie trzeba ich wcale tłoczyć do zbędnych deskryptorów albo umieszczać w
+specjalnym obszarze wspólnej pamięci. Właśnie dlatego programiści zachęcani są
+do porzucenia modelu wielu procesów korzystających z pojedynczych wątków i
+przejścia na system korzystający z jednego procesu rozdzielanego na wiele
+wątków.
+</p>
+
+</body> 
+</section> 
+<section> 
+<title>Wątki są elastyczne</title> 
+<body>
+
+<p> 
+Ale to nie wszystko. Zdarza się, że wątki potrafią być bardzo elastyczne. W
+porównaniu z funkcją fork(), wątki potrzebują o wiele mniej zasobów
+zarezerwowanych do ich obsługi. Jądro systemu nie musi tworzyć niezależnych
+kopii deskryptorów, obszaru pamięci, itp. dla każdego z nich, co pozwala
+zaosczędzić sporo mocy obliczeniowej procesora. Zaletą takiego rozwiązania
+jest tworzenie poszczególnych wątków nawet sto razy szybciej niż nowych
+procesów potomnych. Dzięki temu można lekką ręką powołać do działania całą
+masę nowych wątków i właściwie nie trzeba się przejmować, że zajmą dużą część
+zasobów, jak to odbywa się w przypadku tworzenia procesów za pomocą funkcji
+fork(). Oznacza to, że można wprowadzać bezkarnie wątki wszędzie tam, gdzie
+wydaje się to choć trochę przydatne.  
+</p>
+
+<p> 
+Rzecz jasna wątki, tak jak i procesy, będą obsługiwane szybciej w
+środowisku wieloprocesorowym. To dość istotny aspekt jeśli dana aplikacja
+będzie uruchamiana w takowym (a generalnie, jeśli ta aplikacja jest typu open
+source, to bardzo możliwe, ze będzie w niejednym funkcjonować). Między
+osiągami aplikacji wielowątkowych a komputerami działającymi w oparciu o
+systemy wieloprocesorowe istnieje zależność liniowa, która szczególnie
+uwidacznia się w przypadku aplikacji intensywnie wykorzystujących moc
+procesora. W przypadku tych aplikacji często, dość naturalnie nasuwają się na
+myśl rozwiązania wielowątkowe. Wprawiony programista aplikacji wielowątkowych
+jest w stanie zmierzyć się z dotychczas nieosiągalnymi problemami w innowacyjny
+sposób. Ponadto sporo niejasności, jakie niosły ze sobą IPC będzie można
+zignorować. Dzięki wszystkim tym zaletom, programowanie aplikacji
+wielowątkowych stanie się elastyczne, proste i przyjemne.  
+</p>
+
+</body> 
+</section> 
+<section> 
+<title>Wydaje mi się, że jestem klonem</title>
+<body>
+
+<p> 
+Funkcja systemowa __clone() jest chyba dość powszechnie znana programistom
+tworzącym swoje aplikacje pod Linuksem. Jest podobna do funkcji fork(), jednak
+ma w sobie sporo funkcjonalności typowej dla wątków. Na przykład może
+selektywnie udostępniać elementy środowiska, w jakim dany program został
+uruchomiony (obszar pamięci, deskryptory plików, itp.) przez nowopowołany
+proces potomny. Jest to niewątpliwie ważna zaleta, aczkolwiek korzystanie z tej
+funkcji wiąże się także z pewnym obciążeniem, mianowicie, cytując stronę z man
+__clone(): 
+</p>
+
+<pre caption="cytat z man __clone()"> 
+"Funkcja systemowa __clone() jest rozwiązaniem stosowanym w systemach typu 
+Linux więc nie zaleca się jej stosowania w aplikacjach wieloplatformowych. 
+Lepiej korzystać z bibliotek implementujących API wątków w POSIX 1003.1c, 
+takich jak wątki linuksowe (ang. pthread; patrz funkcja pthread_create())" 
+</pre>
+
+<p>
+Podczas, gdy __clone() niesie ze sobą wiele zalet wątków, nie jest funkcją,
+którą można stosować w środowiskach nielinuksowych. Nie oznacza to, że nie
+należy z niej korzystać, po prostu należy to brać pod uwagę. Na szczęście, jak
+widnieje w man __clone(), istnieje lepsze rozwiązanie - wątki w POSIX. Aby
+napisać program działający pod Linuksem, BSD, Solarisem i wielu innych
+systemach operacyjnych, trzeba skorzystać z wątków zaproponowanych w POSIX.
+</p>
+
+</body> 
+</section> 
+<section> 
+<title>Tworzenie wątków</title> 
+<body>
+
+<p> 
+Oto prosty przykładowy program wykorzystujący linuksowe wątki: 
+</p>
+
+<pre caption="Przykładowy program wykorzystujący linuksowe wątki"> 
+#include &lt;pthread.h&gt; 
+#include &lt;stdlib.h&gt; 
+#include &lt;unistd.h&gt;
+
+void *MojaFunkcjaDlaWatku(void *arg) { 
+        int i; 
+        for ( i=0; i&lt;20; i++ ) {
+                printf("Watek mowi czesc!\n"); 
+                sleep(1); 
+        } 
+        return NULL; 
+}
+
+int main(void) {
+
+  pthread_t mojwatek;
+  
+  if ( pthread_create( &amp;mojwatek, NULL, MojaFunkcjaDlaWatku, NULL) ) {
+        printf("blad przy tworzeniu watku\n"); abort(); 
+  }
+
+  if ( pthread_join ( mythread, NULL ) ) { 
+        printf("blad w konczeniu watku\n");
+        abort(); 
+  }
+
+  exit(0);
+
+} 
+</pre>
+
+<p> 
+Aby skompilować ten program, należy zwyczajnie zapisać go jako watek1.c i
+wpisać: 
+</p>
+
+<pre caption="Kompilacja przykładowego programu"> 
+$ <i>gcc watek1.c -o watek1 -lpthread</i> 
+</pre>
+
+<p>
+Uruchomienie następuje przez wydanie komendy: 
+</p>
+
+<pre caption="Uruchamianie programu"> 
+$ <i>./watek1</i> 
+</pre>
+
+</body> 
+</section> 
+<section> 
+<title>Zrozumienie przykładu watek1.c</title>
+<body>
+
+<p>
+<path>watek1.c</path> to bardzo prosty programik typu "hello world",
+którego głównym zadaniem jest pomoc w zrozumieniu zasady tworzenia wątków. 
+Przejrzyjmy krok po kroku jego działanie. W funkcji main() jest zadeklarowana
+zmienna typu pthread_t (zdefiniowany w pthread.h) o nazwie "mojwatek". Zawiera
+ona identyfikator wątku (ang. thread id, tid) i należy jej używać jako
+odniesienia do danego wątku w celu efektywnego nim zarządzania.  
+</p>
+
+<p> 
+Po zadeklarowaniu zmiennej "mojwatek", wywoływana jest funkcja
+pthread_create(), która de facto tworzy właściwy wątek. Samo wywołanie znajduje
+się w instrukcji warunkowej "if", dzięki czemu programista ma pewność, że
+funkcja zwróciła zero w przypadku sukcesu i wątek został powołany do życia. W
+przeciwnym wypadku zostanie wyświetlony komunikat o błędzie. Spójrzmy na listę
+argumentów, jakie pobiera ta funkcja. Pierwsza z nich to wskaźnik do zmiennej
+"mojwatek". Następny (tu ustawiony jako pseudowartość NULL) pozwala wybrać
+atrybuty dla tego wątku. W tym przypadku domyślna wartość jest w zupełności
+wystarczająca, więc wstawiono NULL. 
+</p>
+
+<p>
+Trzeci argument to nazwa funkcji, która będzie wykonywana w chwili, gdy
+pthread_create() zostanie wywołana i zwróci zero. W tym przypadku jest to
+"MojaFunkcjaDlaWatku()" (może zaistnieć potrzeba rzutowania na *void, przyp.
+tłum.). Gdy ta funkcja się wykona, wątek, który ją wywołał również zostanie
+zakończony. W tym przypadku nie robi ona nic sensownego, po prostu wypisuje
+"Watek mowi czesc!" dwudziestokrotnie, na standardowe wyjście. Warto zwrócić
+uwagę, że przyjmuje ona argument typu void* i takiego samego typu wartość jest
+zwracana. Oznacza to, że można przekazać jej dodatkową porcję danych w
+argumencie i można też takową otrzymać. A jak przekazać te dane naszemu
+wątkowi? Zwyczajnie korzystając z czwartego argumentu funkcji pthread_create(),
+który w pozyższym przypadku został ustawiony na pseudowartość NULL, bowiem ten
+kod nie wymaga niczego więcej.  
+</p>
+
+<p>
+Jak się zapewne cześć użytkowników się domyśla, program ten składa się z dwu
+wątków, jeśli pthread_create() wykona się poprawnie. Chwila, dwu wątków?
+Przecież wywołanie pthread_create() nastąpiło tylko raz! Tak, to prawda, ale
+główny program również jest traktowany jako wątek (ang. "main" thread, wątek
+główny). Należy patrzeć na to z tej strony - program napisany bez podziału na
+wątki składa się z jednego wątku głównego. Poprzez powołanie nowego wątku mamy
+ich w programie dwa.  
+</p>
+
+<p>
+Domyślam się, że w głowach czytelników pojawiają się teraz przynajmniej dwa
+ważne pytania. Po pierwsze, co robi główny wątek, gdy powołany zostanie nowy?
+Wykonywanie go jest kontynuowane, linijka po linijce. A co się dzieje z
+nowym wątkiem, gdy ten skończy się wykonywać? Czeka on, aż zostanie z powrotem
+przyłączony w ramach procesu zbierającego śmieci (ang. garbage collecting).  
+</p>
+
+<p>
+Parę słów o funkcji pthread_join(). Tak, jak pthread_create() rozdziela
+dany program na dwa wątki, funkcja ta scala dwa wątki w jeden. Pierwszym
+argumentem tej funkcji jest identyfikator tid, "mojwatek". Kolejny to wskaźnik
+do void, który w przypadku, gdy nie jest ustawiony na NULL, będzie obszarem do
+umieszczenia tego, co zwróci funkcja wykonywana w danym wątku. W tym przypadku
+jest to NULL, ponieważ nasza funkcja nie zwraca niczego istotnego.  
+</p>
+
+<p> 
+Łatwo można wywnioskować, że "MojaFunkcjaDlaWatku()" potrzebuje 20 sekund
+na wykonanie się, czyli dużo więcej niż czas, po jakim zostanie wykonana
+funkcja pthread_join. Gdy to jednak nastąpi, w wątku głównym jest wywoływana
+funkcja sleep(), która zmusza go, aby czekał, aż nasza funkcja skończy się
+wykonywać. Dopiero wtedy wątek będzie miał możliwość scalenia się z głównym.
+Wówczas ten program znowu będzie składać się z pojedynczego wątku. Zawsze
+należy kończyć swoje wątki, ponieważ, gdy będą już niepotrzebne, zaśmiecają
+system, a także powodują osiągnięcie limitu stworzonych przez danego
+użytkownika wątków. W rezultacie spowoduje to, że pthread_create() zacznie
+zwracać informacje o błędach. 
+</p>
+
+</body> 
+</section> 
+<section> 
+<title>Nie ma rodziców, nie ma potomków</title>
+<body>
+
+<p> 
+Jak wiadomo, gdy korzysta się z modelu rodzic-potomek, proces, w którym
+wywoływana jest funkcja fork() jest rodzicem, zaś proces powołany przez tą
+funkcję staje się jego potomkiem. Taki model pozwala na hierarchizację
+procesów, który może okazać się całkiem przydatny, szczególnie, gdy czekamy na
+potomka, aby się zakończył. Przykładowo funkcja waitpid() zmuśi wybrany proces,
+żeby ten czekał, aż wszystkie jego potomki zostaną zakończone. Jest to typowa
+funkcja sprzątająca w rodzicu.  
+</p>
+
+<p>
+Sprawa ma się ciekawiej w przypadku wątków w POSIX. Jak dotąd umyślnie nie
+korzystałem z nazwy wątek-rodzic czy wątek-potomek, a to dlatego, że tu taka
+hierarchia nie istnieje. Mimo, że program może powoływać wątek, a ten może
+powołać następny, wszystkie one będą równorzędne. Takie założenie niesie za
+sobą pewną implikację: gdy programista chce czekać na koniec jakiegoś wątku, to
+musi podać jego identyfikator. Biblioteka sama tego nie odgadnie.  
+</p>
+
+<p>
+Dla wielu osób to może nie być dobra wiadomość, ponieważ to może
+skomplikować programy, które bazują na więcej niż dwu wątkach. Niech to jednak
+nas nie martwi, bowiem standard wątków w POSIX dostarcza wszelkie możliwe
+narzędzia, jakie mogłyby się przydać w zarządzaniu wieloma wątkami. Właściwie
+to brak hierarchii rodzic-potomek otwiera nową furtkę dla programistów. Na
+przykład, jeśli powołamy wątek1, który to podzieli się i stworzy wątek2, to
+wątek1 wcale nie musi czekać, aż wątek2 się zakończy. Funkcję pthread_join dla
+wątek2 można wywołać w jakimkolwiek innym wątku. Gdy dany program ma bardzo
+wiele wątków, można łatwo stworzyć listę do przechowywania "wątków, które
+należy zakończyć", a następnie stworzyć wątek, który będzie za nas sprzątał
+pozostałe wątki z tej listy. Dzięki temu można zminimalizować śmiecenie, jakie
+może wyniknąć z działania naszego programu.  
+</p>
+
+</body> 
+</section> 
+<section> 
+<title>Pływanie synchroniczne</title> 
+<body>
+
+<p> 
+Czas przyjrzeć się przykładowi programu, który w swoim wyniku poda coś
+nieoczekiwanego. Oto watek2.c: 
+</p>
+
+<pre caption="watek2.c"> 
+#include &lt;pthread.h&gt; 
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt; 
+#include &lt;stdio.h&gt;
+
+int mojazmiennaglobalna=0;
+
+void *MojaFunkcjaDlaWatku(void *arg) { 
+        int i,j; 
+        for ( i=0; i&lt;20; i++ ) {
+                j=mojazmiennaglobalna; 
+                j=j+1; 
+                printf("."); 
+                fflush(stdout); 
+                sleep(1);
+                mojazmiennaglobalna=j; 
+        } 
+        return NULL; 
+}
+
+int main(void) {
+
+  pthread_t mojwatek; 
+  int i;
+
+  if ( pthread_create( &amp;mojwatek, NULL, MojaFunkcjaDlaWatku, NULL) ) {
+        printf("blad przy tworzeniu watku."); 
+        abort(); 
+  }
+
+  for ( i=0; i&lt;20; i++) { 
+        mojazmiennaglobalna=mojazmiennaglobalna+1;
+        printf("o"); 
+        fflush(stdout); 
+        sleep(1); 
+  }
+
+  if ( pthread_join ( mojwatek, NULL ) ) { 
+        printf("blad przy konczeniu watku."); 
+        abort(); 
+  }
+
+  printf("\nMoja zmienna globalna wynosi %d\n",mojazmiennaglobalna);
+
+  exit(0);
+
+} 
+</pre>
+
+</body> 
+</section> 
+<section> 
+<title>Zrozumienie działania watek2.c</title>
+<body>
+
+<p> 
+Ten program, podobnie jak poprzedni, tworzy nowy wątek. Zarówno ten wątek,
+jak i wątek główny inkrementują zmienną "mojazmiennaglobalna"
+dwudziestokrotnie. Jednak wynik działania tego programu jest dość
+nieoczekiwany. Aby go skompilować, należy podać: 
+</p>
+
+<pre caption="Kompilacja programu"> 
+$ <i>gcc watek2.c -o watek2 -lpthread</i>
+</pre>
+
+<p> 
+Następnie można go uruchomić poprzez podanie: 
+</p>
+
+<pre caption="Uruchamianie programu"> 
+$ <i>./watek2</i>
+..o.o.o.o.oo.o.o.o.o.o.o.o.o.o..o.o.o.o.o 
+Moja zmienna globalna wynosi 21
+</pre>
+
+<p> 
+Skoro "mojazmiennaglobalna" zaczyna od zera, a następnie oba wątki zwiększają
+jej wartość o 20, to program powinien na koniec wypisać 40. Skoro jednak jest
+21, to coś tu chyba jest nie tak. Ale co?  
+</p>
+
+<p>
+Kluczem do rozwiązania tego problemu jest przypisanie do zmiennej globalnej
+wartości ze zmiennej lokalnej "j". Jest ona najpierw inkrementowana, następnie
+wywoływana jest funkcja sleep(1) i dopiero wtedy ta wartość jest kopiowana z
+powrotem do zmiennej globalnej. O to właśnie chodzi. Jeśli wątek główny zrobi
+to samo <e>dokładnie po tym</e>, gdy wartość jest kopiowana, to zostanie ona
+nadpisana, a w rezultacie wartości obu inkrementacji nie ulegają zsumowaniu.
+Dlatego w wyniku działania programu jest 21 a nie 40.  
+</p>
+
+<p>
+Reasumując, ważne jest, aby być świadomym zależności podobnych do tej
+wymienionej w powyższym przykładzie. Gdy w grę wchodzą wątki i nastąpi taka
+pomyłka, to może się z tym wiązać utrata cennego czasu. No chyba, że ktoś pisze
+artykuł o wątkach w POSIX rzecz jasna :). A zatem, co można zrobić, aby się
+przed nimi zabezpieczyć?  
+</p>
+
+<p>
+Skoro problem powstaje przy kopiowaniu zmiennej globalnej do "j", po którym
+następuje jednosekundowa pauza przed ponownym przypisaniem, można spróbować
+uniknąć korzystania ze zmiennej pomocniczej i inkrementować zmienną globalną
+bezpośrednio. I chociaż to rozwiązanie rozwiąże nasz problem w tym przypadku,
+nie jest ono poprawne. Gdyby zamiast inkrementacji, na zmiennej globalnej była
+wykonywana jakaś skomplikowana operacja matematyczna, program prawie na pewno
+nie zachowa się poprawnie. Dlaczego?  
+</p>
+
+<p>
+Aby zrozumieć ten problem, trzeba pamiętać, że wątki obsługiwane są
+współbieżnie. Nawet na systemach jednordzeniowych (czy też w tym wypadku
+jednoprocesorowych), gdzie jądro zarządza przydziałem kwantu czasu procesora
+aby zrealizować jednoczesne działanie, można z perspektywy programisty
+wyobrazić sobie oba wątki wykonywane w tym samym czasie. Watek2.c jest wadliwy,
+ponieważ kod zawarty w "MojaFunkcjaDlaWatku()" zależy od tego, czy ta zmienna
+globalna będzie modyfikowana poza funkcją, podczas tej jednej sekundy, przed
+którą następuje inkrementacja. Potrzebny jest zatem jakiś sposób, aby
+przekazać drugiemu wątkowi "poczekaj, teraz ja wprowadzam zmiany do zmiennej
+globalnej". O tym powiem w następnej części tego artykułu.  A zatem do
+zobaczenia!  
+</p>
+
+</body>
+</section> 
+</chapter>
+
+<chapter> 
+<title>Źródła</title> 
+<section> 
+<body>
+
+<ul> 
+  <li> 
+    Daniel o wątkach w POSIX <uri link="l-posix2.xml">Część druga</uri>
+    oraz <uri link="l-posix3.xml">część trzecia</uri>
+  </li> 
+  <li> 
+    Oficjalna dokumentacja: 
+    <uri
+    link="http://metalab.unc.edu/pub/Linux/docs/faqs/Threads-FAQ/html/">Wątki 
+    w Linuksie</uri>, autorstwa Sean'a Walton'a, KB7rfa 
+  </li> 
+  <li>
+    Wątki w POSIX - 
+    <uri
+    link="http://www.math.arizona.edu/swig/pthreads/threads.html">poradnik</uri>
+    autorstwa Mark'a Hays'a z Uniwersytetu w Arizonie 
+  </li> 
+  <li>
+    <uri
+    link="http://hwaci.com/sw/pttcl/pttcl.html">Wprowadzenie do linuksowych  
+    wątków w TCL</uri>, czyli zmiany, jakie należy wprowadzić w TCLu, aby była 
+    możliwość korzystania z wątków 
+  </li> 
+  <li> 
+    Inny poradnik 
+    <uri
+    link="http://dis.cs.umass.edu/~wagner/threads_html/tutorial.html"> Wątki w 
+    POSIX dla początkujących</uri>, autorstwa Tom'a Wagner'a i Don'a Towsley'a z
+    Wydziału Informatyki na Uniwersytecie w Massachusetts w Amherst 
+  </li> 
+  <li>Oczywiście zawsze pomocne są strony w man (<c>man -k pthread</c>)</li> 
+  <li>
+    <uri
+    link="http://moss.csc.ncsu.edu/~mueller/pthreads/">FSU PThreads</uri> to
+    biblioteka języka C, która implementuje wątki POSIX dla systemów SunOS
+    4.1.x, Solaris 2.x, SCO UNIX, FreeBSD, Linuksa i pod DOS'em 
+  </li> 
+  <li>
+    Strona domowa dla referencji, pt. 
+    <uri
+    link="http://www.sai.msu.su/sal/C/2/PCTHREADS.html">Wątki w POSIX i DCE 
+    pod Linuksem</uri> 
+  </li> 
+  <li>
+    Warto sprawdzić <uri link="http://pauillac.inria.fr/~xleroy/linuxthreads/"> 
+    Biblioteka LinuxThreads</uri> 
+  </li> 
+  <li> 
+    <uri
+    link="http://www.users.itl.net.ua/~prool/proolix.html">Proolix</uri> to 
+    prosty system operacyjny w standardzie POSIX dla układów i8086+, stale
+    ulepszany 
+  </li>
+  <li> 
+    Książka David'a R. Butenhof'a 
+    <uri
+    link="http://www.amazon.com/exec/obidos/ASIN/0201633922/o/qid=961544788/sr=8-1/ref=aps_sr_b_1_1/002-2882413-1227240">
+    Programowanie z obsługą wątków w POSIX</uri>, w której omawiane są, między
+    innymi, możliwe permutcje niekorzystania z muteksów 
+  </li> 
+  <li> 
+    Książka W. Richard'a Stevens'a 
+    <uri
+    link="http://search.borders.com/fcgi-bin/db2www/search/search.d2w/Details?&amp;mediaType=Book&amp;prodID=2362607">
+    UNIX Programowanie sieciowe: Sieciowe API: Gniazda oraz XTI, część
+    pierwsza</uri>
+  </li> 
+</ul>
+
+</body>
+</section>
+</chapter>
+
+</guide>
