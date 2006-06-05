@@ -2,11 +2,11 @@ Index: xine-lib-1.1.2cvs20060328/configure.ac
 ===================================================================
 --- xine-lib-1.1.2cvs20060328.orig/configure.ac
 +++ xine-lib-1.1.2cvs20060328/configure.ac
-@@ -1930,6 +1930,16 @@ dnl WARNING! Do not move this check behi
+@@ -1927,6 +1927,17 @@ dnl WARNING! Do not move this check behi
  dnl (the alignment test macro does not like variables in the CFLAGS)
  AC_C_ATTRIBUTE_ALIGNED
  
-+CC_ATTRIBUTE_VISIBILITY_DEFAULT([
++CC_FLAG_VISIBILITY([
 +		AC_DEFINE([EXPORTED],
 +			[__attribute__((visibility("default")))],
 +			[Mark a symbol as being exported if visibility is changed])
@@ -14,12 +14,13 @@ Index: xine-lib-1.1.2cvs20060328/configure.ac
 +	], [
 +		AC_DEFINE([EXPORT], [], [Dummy mark as being exported])
 +	])
++
 +AC_SUBST([VISIBILITY_FLAG])
 +
  dnl Common cflags for all platforms
  CFLAGS="-DNDEBUG -D_REENTRANT -D_FILE_OFFSET_BITS=64 -DXINE_COMPILE \$(MULTIPASS_CFLAGS) $CFLAGS"
  DEBUG_CFLAGS="-D_REENTRANT -D_FILE_OFFSET_BITS=64 -DXINE_COMPILE $DEBUG_CFLAGS"
-@@ -2041,40 +2051,6 @@ AM_CONDITIONAL(HOST_OS_DARWIN, test x"$H
+@@ -2038,40 +2049,6 @@ AM_CONDITIONAL(HOST_OS_DARWIN, test x"$H
  AM_CONDITIONAL(HAVE_FFMMX, test x"$enable_ffmmx" = "xyes")
  
  dnl ---------------------------------------------
@@ -64,7 +65,7 @@ Index: xine-lib-1.1.2cvs20060328/m4/attributes.m4
 ===================================================================
 --- /dev/null
 +++ xine-lib-1.1.2cvs20060328/m4/attributes.m4
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,163 @@
 +# Functions to check for attributes support in compiler
 +
 +AC_DEFUN([CC_ATTRIBUTE_CONSTRUCTOR], [
@@ -125,18 +126,20 @@ Index: xine-lib-1.1.2cvs20060328/m4/attributes.m4
 +	fi
 +])
 +
-+AC_DEFUN([CC_ATTRIBUTE_INTERNAL], [
-+	AC_CACHE_CHECK([if compiler supports __attribute__((visibility("internal")))],
-+		[cc_cv_attribute_internal],
++AC_DEFUN([CC_ATTRIBUTE_VISIBILITY], [
++	AC_CACHE_CHECK([if compiler supports __attribute__((visibility("...")))],
++		[cc_cv_attribute_visibility],
 +		[AC_COMPILE_IFELSE([
 +			void __attribute__((visibility("internal"))) internal_function() { }
++			void __attribute__((visibility("hidden"))) hidden_function() { }
++			void __attribute__((visibility("default"))) external_function() { }
 +			],
-+			[cc_cv_attribute_internal=yes],
-+			[cc_cv_attribute_internal=no])
++			[cc_cv_attribute_visibility=yes],
++			[cc_cv_attribute_visibility=no])
 +		])
 +	
-+	if test "x$cc_cv_attribute_internal" = "xyes"; then
-+		AC_DEFINE([SUPPORT_ATTRIBUTE_INTERNAL], 1, [Define this if the compiler supports the internal visibility attribute])
++	if test "x$cc_cv_attribute_visibility" = "xyes"; then
++		AC_DEFINE([SUPPORT_ATTRIBUTE_VISIBILITY], 1, [Define this if the compiler supports the visibility attribute])
 +		$1
 +	else
 +		true
@@ -144,18 +147,20 @@ Index: xine-lib-1.1.2cvs20060328/m4/attributes.m4
 +	fi
 +])
 +
-+AC_DEFUN([CC_ATTRIBUTE_VISIBILITY_DEFAULT], [
-+	AC_CACHE_CHECK([if compiler supports __attribute__((visibility("default")))],
-+		[cc_cv_attribute_visibility_default],
-+		[AC_COMPILE_IFELSE([
-+			void __attribute__((visibility("default"))) external_function() { }
-+			],
-+			[cc_cv_attribute_visibility_default=yes],
-+			[cc_cv_attribute_visibility_default=no])
++AC_DEFUN([CC_FLAG_VISIBILITY], [
++	AC_CACHE_CHECK([if compiler supports -fvisibility=hidden],
++		[cc_cv_flag_visibility],
++		[
++		save_CFLAGS=$CFLAGS
++		CFLAGS="$CFLAGS -fvisibility=hidden"
++		AC_COMPILE_IFELSE([int a;],
++			[cc_cv_flag_visibility=yes],
++			[cc_cv_flag_visibility=no])
++		CFLAGS="$save_CFLAGS"
 +		])
 +	
-+	if test "x$cc_cv_attribute_visibility_default" = "xyes"; then
-+		AC_DEFINE([SUPPORT_ATTRIBUTE_VISIBILITY_DEFAULT], 1, [Define this if the compiler supports the default visibility attribute])
++	if test "x$cc_cv_flag_visibility" = "xyes"; then
++		AC_DEFINE([SUPPORT_FLAG_VISIBILITY], 1, [Define this if the compiler supports the -fvisibility flag])
 +		$1
 +	else
 +		true
@@ -1922,7 +1927,7 @@ Index: xine-lib-1.1.2cvs20060328/src/post/goom/Makefile.am
 ===================================================================
 --- xine-lib-1.1.2cvs20060328.orig/src/post/goom/Makefile.am
 +++ xine-lib-1.1.2cvs20060328/src/post/goom/Makefile.am
-@@ -28,7 +28,8 @@ xineplug_post_goom_la_SOURCES = $(extra_
+@@ -27,7 +27,8 @@ xineplug_post_goom_la_SOURCES = $(extra_
  	goomsl_lex.c goomsl_yacc.c graphic.c ifs.c lines.c mathtools.c \
  	plugin_info.c sound_tester.c surf3d.c tentacle3d.c v3d.c
  xineplug_post_goom_la_LIBADD = $(XINE_LIB) $(GOOM_LIBS) $(THREAD_LIBS)
