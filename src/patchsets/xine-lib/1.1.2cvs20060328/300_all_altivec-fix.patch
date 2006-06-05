@@ -1,28 +1,19 @@
+Fixes for libmpeg2 altivec code from Luca Barbato <lu_zero@gentoo.org>.
+Thanks a lot Luca, really appreciated :)
 Index: xine-lib-1.1.2cvs20060328/src/libmpeg2/idct_altivec.c
 ===================================================================
 --- xine-lib-1.1.2cvs20060328.orig/src/libmpeg2/idct_altivec.c
 +++ xine-lib-1.1.2cvs20060328/src/libmpeg2/idct_altivec.c
-@@ -1,6 +1,6 @@
- /*
-  * idct_altivec.c
-- * Copyright (C) 2000-2002 Michel Lespinasse <walken@zoy.org>
-+ * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
-  * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
-  *
-  * This file is part of mpeg2dec, a free MPEG-2 video stream decoder.
-@@ -23,538 +23,55 @@
+@@ -25,495 +25,15 @@
  
- #include "config.h"
- 
--#if defined (ARCH_PPC) && defined (ENABLE_ALTIVEC)
-+#if defined(ARCH_PPC) && defined(ENABLE_ALTIVEC)
+ #if defined (ARCH_PPC) && defined (ENABLE_ALTIVEC)
  
 +#ifdef HAVE_ALTIVEC_H
 +#include <altivec.h>
 +#endif
++
  #include <inttypes.h>
  
-+#include "attributes.h"
  #include "mpeg2_internal.h"
  #include "xineutils.h"
  
@@ -494,18 +485,7 @@ Index: xine-lib-1.1.2cvs20060328/src/libmpeg2/idct_altivec.c
 -};
 -
 -void mpeg2_idct_altivec_init (void)
-+typedef vector signed char vector_s8_t;
-+typedef vector unsigned char vector_u8_t;
-+typedef vector signed short vector_s16_t;
-+typedef vector unsigned short vector_u16_t;
-+typedef vector signed int vector_s32_t;
-+typedef vector unsigned int vector_u32_t;
-+
-+#if defined(HAVE_ALTIVEC_H) && (__GNUC__ * 100 + __GNUC_MINOR__ < 303)
-+/* work around gcc <3.3 vec_mergel bug */
-+static inline vector_s16_t my_vec_mergel (vector_s16_t const A,
-+					  vector_s16_t const B)
- {
+-{
 -    int i, j;
 -
 -    i = constants[0][0];	/* just pretending - keeps gcc happy */
@@ -517,271 +497,141 @@ Index: xine-lib-1.1.2cvs20060328/src/libmpeg2/idct_altivec.c
 -	j = mpeg2_scan_alt[i];
 -	mpeg2_scan_alt[i] = (j >> 3) | ((j & 7) << 3);
 -    }
-+    static const vector_u8_t mergel = {
-+	0x08, 0x09, 0x18, 0x19, 0x0a, 0x0b, 0x1a, 0x1b,
-+	0x0c, 0x0d, 0x1c, 0x1d, 0x0e, 0x0f, 0x1e, 0x1f
-+    };
-+    return vec_perm (A, B, mergel);
- }
+-}
 -
 -#else	/* HOST_OS_DARWIN */
 -
--#define vector_s16_t vector signed short
--#define vector_u16_t vector unsigned short
--#define vector_s8_t vector signed char
--#define vector_u8_t vector unsigned char
--#define vector_s32_t vector signed int
--#define vector_u32_t vector unsigned int
--
--#define IDCT_HALF					\
--    /* 1st stage */					\
--    t1 = vec_mradds (a1, vx7, vx1 );			\
--    t8 = vec_mradds (a1, vx1, vec_subs (zero, vx7));	\
--    t7 = vec_mradds (a2, vx5, vx3);			\
--    t3 = vec_mradds (ma2, vx3, vx5);			\
--							\
--    /* 2nd stage */					\
--    t5 = vec_adds (vx0, vx4);				\
--    t0 = vec_subs (vx0, vx4);				\
--    t2 = vec_mradds (a0, vx6, vx2);			\
--    t4 = vec_mradds (a0, vx2, vec_subs (zero,vx6));	\
--    t6 = vec_adds (t8, t3);				\
--    t3 = vec_subs (t8, t3);				\
--    t8 = vec_subs (t1, t7);				\
--    t1 = vec_adds (t1, t7);				\
--							\
--    /* 3rd stage */					\
--    t7 = vec_adds (t5, t2);				\
--    t2 = vec_subs (t5, t2);				\
--    t5 = vec_adds (t0, t4);				\
--    t0 = vec_subs (t0, t4);				\
--    t4 = vec_subs (t8, t3);				\
--    t3 = vec_adds (t8, t3);				\
--							\
--    /* 4th stage */					\
--    vy0 = vec_adds (t7, t1);				\
--    vy7 = vec_subs (t7, t1);				\
--    vy1 = vec_mradds (c4, t3, t5);			\
--    vy6 = vec_mradds (mc4, t3, t5);			\
--    vy2 = vec_mradds (c4, t4, t0);			\
--    vy5 = vec_mradds (mc4, t4, t0);			\
--    vy3 = vec_adds (t2, t6);				\
--    vy4 = vec_subs (t2, t6);
-+#undef vec_mergel
-+#define vec_mergel my_vec_mergel
-+#endif
-+
-+#ifdef HAVE_ALTIVEC_H	/* gnu */
-+#define VEC_S16(a,b,c,d,e,f,g,h) {a, b, c, d, e, f, g, h}
-+#else			/* apple */
-+#define VEC_S16(a,b,c,d,e,f,g,h) (vector_s16_t) (a, b, c, d, e, f, g, h)
-+#endif
-+
-+static const vector_s16_t constants ATTR_ALIGN(16) =
-+    VEC_S16 (23170, 13573, 6518, 21895, -23170, -21895, 32, 31);
-+static const vector_s16_t constants_1 ATTR_ALIGN(16) =
-+    VEC_S16 (16384, 22725, 21407, 19266, 16384, 19266, 21407, 22725);
-+static const vector_s16_t constants_2 ATTR_ALIGN(16) =
-+    VEC_S16 (16069, 22289, 20995, 18895, 16069, 18895, 20995, 22289);
-+static const vector_s16_t constants_3 ATTR_ALIGN(16) =
-+    VEC_S16 (21407, 29692, 27969, 25172, 21407, 25172, 27969, 29692);
-+static const vector_s16_t constants_4 ATTR_ALIGN(16) =
-+    VEC_S16 (13623, 18895, 17799, 16019, 13623, 16019, 17799, 18895);
- 
- #define IDCT								\
-     vector_s16_t vx0, vx1, vx2, vx3, vx4, vx5, vx6, vx7;		\
-@@ -563,27 +80,58 @@ void mpeg2_idct_altivec_init (void)
-     vector_s16_t t0, t1, t2, t3, t4, t5, t6, t7, t8;			\
-     vector_u16_t shift;							\
- 									\
--    c4 = vec_splat (constants[0], 0);					\
--    a0 = vec_splat (constants[0], 1);					\
--    a1 = vec_splat (constants[0], 2);					\
--    a2 = vec_splat (constants[0], 3);					\
--    mc4 = vec_splat (constants[0], 4);					\
--    ma2 = vec_splat (constants[0], 5);					\
--    bias = (vector_s16_t)vec_splat ((vector_s32_t)constants[0], 3);	\
-+    c4 = vec_splat (constants, 0);					\
-+    a0 = vec_splat (constants, 1);					\
-+    a1 = vec_splat (constants, 2);					\
-+    a2 = vec_splat (constants, 3);					\
-+    mc4 = vec_splat (constants, 4);					\
-+    ma2 = vec_splat (constants, 5);					\
-+    bias = (vector_s16_t)vec_splat ((vector_s32_t)constants, 3);	\
- 									\
-     zero = vec_splat_s16 (0);						\
--    shift = vec_splat_u16 (4);						\
- 									\
--    vx0 = vec_mradds (vec_sl (block[0], shift), constants[1], zero);	\
--    vx1 = vec_mradds (vec_sl (block[1], shift), constants[2], zero);	\
--    vx2 = vec_mradds (vec_sl (block[2], shift), constants[3], zero);	\
--    vx3 = vec_mradds (vec_sl (block[3], shift), constants[4], zero);	\
--    vx4 = vec_mradds (vec_sl (block[4], shift), constants[1], zero);	\
--    vx5 = vec_mradds (vec_sl (block[5], shift), constants[4], zero);	\
--    vx6 = vec_mradds (vec_sl (block[6], shift), constants[3], zero);	\
--    vx7 = vec_mradds (vec_sl (block[7], shift), constants[2], zero);	\
-+    vx0 = vec_adds (block[0], block[4]);				\
-+    vx4 = vec_subs (block[0], block[4]);				\
-+    t5 = vec_mradds (vx0, constants_1, zero);				\
-+    t0 = vec_mradds (vx4, constants_1, zero);				\
-+									\
-+    vx1 = vec_mradds (a1, block[7], block[1]);				\
-+    vx7 = vec_mradds (a1, block[1], vec_subs (zero, block[7]));		\
-+    t1 = vec_mradds (vx1, constants_2, zero);				\
-+    t8 = vec_mradds (vx7, constants_2, zero);				\
- 									\
--    IDCT_HALF								\
-+    vx2 = vec_mradds (a0, block[6], block[2]);				\
-+    vx6 = vec_mradds (a0, block[2], vec_subs (zero, block[6]));		\
-+    t2 = vec_mradds (vx2, constants_3, zero);				\
-+    t4 = vec_mradds (vx6, constants_3, zero);				\
-+									\
-+    vx3 = vec_mradds (block[3], constants_4, zero);			\
-+    vx5 = vec_mradds (block[5], constants_4, zero);			\
-+    t7 = vec_mradds (a2, vx5, vx3);					\
-+    t3 = vec_mradds (ma2, vx3, vx5);					\
-+									\
-+    t6 = vec_adds (t8, t3);						\
-+    t3 = vec_subs (t8, t3);						\
-+    t8 = vec_subs (t1, t7);						\
-+    t1 = vec_adds (t1, t7);						\
-+    t6 = vec_mradds (a0, t6, t6);	/* a0+1 == 2*c4 */		\
-+    t1 = vec_mradds (a0, t1, t1);	/* a0+1 == 2*c4 */		\
-+									\
-+    t7 = vec_adds (t5, t2);						\
-+    t2 = vec_subs (t5, t2);						\
-+    t5 = vec_adds (t0, t4);						\
-+    t0 = vec_subs (t0, t4);						\
-+    t4 = vec_subs (t8, t3);						\
-+    t3 = vec_adds (t8, t3);						\
-+									\
-+    vy0 = vec_adds (t7, t1);						\
-+    vy7 = vec_subs (t7, t1);						\
-+    vy1 = vec_adds (t5, t3);						\
-+    vy6 = vec_subs (t5, t3);						\
-+    vy2 = vec_adds (t0, t4);						\
-+    vy5 = vec_subs (t0, t4);						\
-+    vy3 = vec_adds (t2, t6);						\
-+    vy4 = vec_subs (t2, t6);						\
- 									\
-     vx0 = vec_mergeh (vy0, vy4);					\
-     vx1 = vec_mergel (vy0, vy4);					\
-@@ -603,7 +151,7 @@ void mpeg2_idct_altivec_init (void)
-     vy6 = vec_mergeh (vx3, vx7);					\
-     vy7 = vec_mergel (vx3, vx7);					\
- 									\
--    vx0 = vec_adds (vec_mergeh (vy0, vy4), bias);			\
-+    vx0 = vec_mergeh (vy0, vy4);					\
-     vx1 = vec_mergel (vy0, vy4);					\
-     vx2 = vec_mergeh (vy1, vy5);					\
-     vx3 = vec_mergel (vy1, vy5);					\
-@@ -612,7 +160,39 @@ void mpeg2_idct_altivec_init (void)
-     vx6 = vec_mergeh (vy3, vy7);					\
-     vx7 = vec_mergel (vy3, vy7);					\
- 									\
--    IDCT_HALF								\
-+    vx0 = vec_adds (vx0, bias);						\
-+    t5 = vec_adds (vx0, vx4);						\
-+    t0 = vec_subs (vx0, vx4);						\
-+									\
-+    t1 = vec_mradds (a1, vx7, vx1);					\
-+    t8 = vec_mradds (a1, vx1, vec_subs (zero, vx7));			\
-+									\
-+    t2 = vec_mradds (a0, vx6, vx2);					\
-+    t4 = vec_mradds (a0, vx2, vec_subs (zero, vx6));			\
-+									\
-+    t7 = vec_mradds (a2, vx5, vx3);					\
-+    t3 = vec_mradds (ma2, vx3, vx5);					\
-+									\
-+    t6 = vec_adds (t8, t3);						\
-+    t3 = vec_subs (t8, t3);						\
-+    t8 = vec_subs (t1, t7);						\
-+    t1 = vec_adds (t1, t7);						\
-+									\
-+    t7 = vec_adds (t5, t2);						\
-+    t2 = vec_subs (t5, t2);						\
-+    t5 = vec_adds (t0, t4);						\
-+    t0 = vec_subs (t0, t4);						\
-+    t4 = vec_subs (t8, t3);						\
-+    t3 = vec_adds (t8, t3);						\
-+									\
-+    vy0 = vec_adds (t7, t1);						\
-+    vy7 = vec_subs (t7, t1);						\
-+    vy1 = vec_mradds (c4, t3, t5);					\
-+    vy6 = vec_mradds (mc4, t3, t5);					\
-+    vy2 = vec_mradds (c4, t4, t0);					\
-+    vy5 = vec_mradds (mc4, t4, t0);					\
-+    vy3 = vec_adds (t2, t6);						\
-+    vy4 = vec_subs (t2, t6);						\
- 									\
-     shift = vec_splat_u16 (6);						\
-     vx0 = vec_sra (vy0, shift);						\
-@@ -624,17 +204,10 @@ void mpeg2_idct_altivec_init (void)
+ #define vector_s16_t vector signed short
+ #define vector_u16_t vector unsigned short
+ #define vector_s8_t vector signed char
+@@ -624,12 +144,18 @@ void mpeg2_idct_altivec_init (void)
      vx6 = vec_sra (vy6, shift);						\
      vx7 = vec_sra (vy7, shift);
  
--static vector_s16_t constants[5] = {
++#if defined( __APPLE_CC__ ) && defined( __APPLE_ALTIVEC__ ) /* apple */
++#define VEC_S16(a,b,c,d,e,f,g,h) (vector_s16_t) (a, b, c, d, e, f, g, h)
++#else			/* gnu */
++#define VEC_S16(a,b,c,d,e,f,g,h) (vector_s16_t) {a, b, c, d, e, f, g, h}
++#endif
++
+ static vector_s16_t constants[5] = {
 -    (vector_s16_t)(23170, 13573, 6518, 21895, -23170, -21895, 32, 31),
 -    (vector_s16_t)(16384, 22725, 21407, 19266, 16384, 19266, 21407, 22725),
 -    (vector_s16_t)(22725, 31521, 29692, 26722, 22725, 26722, 29692, 31521),
 -    (vector_s16_t)(21407, 29692, 27969, 25172, 21407, 25172, 27969, 29692),
 -    (vector_s16_t)(19266, 26722, 25172, 22654, 19266, 22654, 25172, 26722)
--};
--
--void mpeg2_idct_copy_altivec (vector_s16_t * block, unsigned char * dest,
--			      int stride)
-+void mpeg2_idct_copy_altivec (int16_t * const _block, uint8_t * dest,
-+			      const int stride)
- {
-+    vector_s16_t * const block = (vector_s16_t *)_block;
-     vector_u8_t tmp;
++    VEC_S16(23170, 13573, 6518, 21895, -23170, -21895, 32, 31),
++    VEC_S16(16384, 22725, 21407, 19266, 16384, 19266, 21407, 22725),
++    VEC_S16(22725, 31521, 29692, 26722, 22725, 26722, 29692, 31521),
++    VEC_S16(21407, 29692, 27969, 25172, 21407, 25172, 27969, 29692),
++    VEC_S16(19266, 26722, 25172, 22654, 19266, 22654, 25172, 26722)
+ };
  
-     IDCT
-@@ -652,12 +225,15 @@ void mpeg2_idct_copy_altivec (vector_s16
-     COPY (dest, vx5)	dest += stride;
-     COPY (dest, vx6)	dest += stride;
-     COPY (dest, vx7)
--    memset (block, 0, 64 * sizeof (signed short));
-+
-+    block[0] = block[1] = block[2] = block[3] = zero;
-+    block[4] = block[5] = block[6] = block[7] = zero;
- }
- 
--void mpeg2_idct_add_altivec (vector_s16_t * block, unsigned char * dest,
--			     int stride)
-+void mpeg2_idct_add_altivec (int16_t * const _block,
-+			     uint8_t * dest, const int stride)
- {
-+    vector_s16_t * const block = (vector_s16_t *)_block;
-     vector_u8_t tmp;
-     vector_s16_t tmp2, tmp3;
-     vector_u8_t perm0;
-@@ -689,11 +265,15 @@ void mpeg2_idct_add_altivec (vector_s16_
-     ADD (dest, vx5, perm1)	dest += stride;
-     ADD (dest, vx6, perm0)	dest += stride;
-     ADD (dest, vx7, perm1)
--    memset (block, 0, 64 * sizeof (signed short));
-+
-+    block[0] = block[1] = block[2] = block[3] = zero;
-+    block[4] = block[5] = block[6] = block[7] = zero;
- }
- 
- void mpeg2_idct_altivec_init (void)
- {
-+    extern uint8_t mpeg2_scan_norm[64];
-+    extern uint8_t mpeg2_scan_alt[64];
-     int i, j;
- 
-     /* the altivec idct uses a transposed input, so we patch scan tables */
-@@ -705,7 +285,4 @@ void mpeg2_idct_altivec_init (void)
+ void mpeg2_idct_copy_altivec (vector_s16_t * block, unsigned char * dest,
+@@ -705,7 +231,5 @@ void mpeg2_idct_altivec_init (void)
      }
  }
  
 -#endif	/* HOST_OS_DARWIN */
 -
--#endif	/* ARCH_PPC && ENABLED_ALTIVEC */
--
+ #endif	/* ARCH_PPC && ENABLED_ALTIVEC */
+ 
+Index: xine-lib-1.1.2cvs20060328/src/libmpeg2/mpeg2_internal.h
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libmpeg2/mpeg2_internal.h
++++ xine-lib-1.1.2cvs20060328/src/libmpeg2/mpeg2_internal.h
+@@ -27,6 +27,10 @@
+ #include "video_out.h"
+ #include "accel_xvmc.h"
+ 
++#ifdef HAVE_ALTIVEC_H
++#include <altivec.h>
 +#endif
++
+ /* macroblock modes */
+ #define MACROBLOCK_INTRA            XINE_MACROBLOCK_INTRA
+ #define MACROBLOCK_PATTERN          XINE_MACROBLOCK_PATTERN
+@@ -243,10 +247,6 @@ void mpeg2_zero_block_mmx (int16_t * blo
+ void mpeg2_idct_mmx_init (void);
+ 
+ /* idct_altivec.c */
+-#ifndef HOST_OS_DARWIN
+-void mpeg2_idct_copy_altivec (int16_t * block, uint8_t * dest, int stride);
+-void mpeg2_idct_add_altivec (int16_t * block, uint8_t * dest, int stride);
+-#else /* HOST_OS_DARWIN */
+ # ifdef ENABLE_ALTIVEC
+ void mpeg2_idct_copy_altivec (vector signed short * block, unsigned char * dest,
+ 			      int stride);
+@@ -258,7 +258,6 @@ void mpeg2_idct_copy_altivec (signed sho
+ void mpeg2_idct_add_altivec (signed short * block, unsigned char * dest,
+ 			     int stride);
+ # endif /* ENABLE_ALTIVEC */
+-#endif /* HOST_OS_DARWIN */
+ void mpeg2_idct_altivec_init (void);
+ 
+ /* motion_comp.c */
+Index: xine-lib-1.1.2cvs20060328/src/libmpeg2/slice.c
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libmpeg2/slice.c
++++ xine-lib-1.1.2cvs20060328/src/libmpeg2/slice.c
+@@ -205,7 +205,7 @@ static inline int get_motion_delta (pict
+ #undef bit_ptr
+ }
+ 
+-static inline int bound_motion_vector (int vector, int f_code)
++static inline int bound_motion_vector (int vec, int f_code)
+ {
+ #if 1
+     unsigned int limit;
+@@ -213,11 +213,11 @@ static inline int bound_motion_vector (i
+ 
+     limit = 16 << f_code;
+ 
+-    if ((unsigned int)(vector + limit) < 2 * limit)
+-	return vector;
++    if ((unsigned int)(vec + limit) < 2 * limit)
++	return vec;
+     else {
+-	sign = ((int32_t)vector) >> 31;
+-	return vector - ((2 * limit) ^ sign) + sign;
++	sign = ((int32_t)vec) >> 31;
++	return vec - ((2 * limit) ^ sign) + sign;
+     }
+ #else
+     return ((int32_t)vector << (27 - f_code)) >> (27 - f_code);
+Index: xine-lib-1.1.2cvs20060328/src/libmpeg2/slice_xvmc.c
+===================================================================
+--- xine-lib-1.1.2cvs20060328.orig/src/libmpeg2/slice_xvmc.c
++++ xine-lib-1.1.2cvs20060328/src/libmpeg2/slice_xvmc.c
+@@ -256,7 +256,7 @@ static inline int get_xvmc_motion_delta 
+ #undef bit_ptr
+ }
+ 
+-static inline int bound_motion_vector (int vector, int f_code)
++static inline int bound_motion_vector (int vec, int f_code)
+ {
+ #if 1
+     unsigned int limit;
+@@ -264,14 +264,14 @@ static inline int bound_motion_vector (i
+ 
+     limit = 16 << f_code;
+ 
+-    if ((unsigned int)(vector + limit) < 2 * limit)
+-	return vector;
++    if ((unsigned int)(vec + limit) < 2 * limit)
++	return vec;
+     else {
+-	sign = ((int32_t)vector) >> 31;
+-	return vector - ((2 * limit) ^ sign) + sign;
++	sign = ((int32_t)vec) >> 31;
++	return vec - ((2 * limit) ^ sign) + sign;
+     }
+ #else
+-    return ((int32_t)vector << (27 - f_code)) >> (27 - f_code);
++    return ((int32_t)vec << (27 - f_code)) >> (27 - f_code);
+ #endif
+ }
+ 
 Index: xine-lib-1.1.2cvs20060328/configure.ac
 ===================================================================
 --- xine-lib-1.1.2cvs20060328.orig/configure.ac
