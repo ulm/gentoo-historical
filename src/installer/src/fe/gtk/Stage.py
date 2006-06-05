@@ -162,11 +162,20 @@ Each option has a brief description beside it.
 		self.controller.SHOW_BUTTON_BACK    = True
 		self.controller.SHOW_BUTTON_FORWARD = True
 		self.controller.SHOW_BUTTON_FINISH  = False
-		self.active_selection = int(self.controller.install_profile.get_install_stage()) or 1
+		self.active_selection = int(self.controller.install_profile.get_install_stage()) or 3
 		self.radio_stages[self.active_selection].set_active(True)
 		self.entry_stage_tarball_uri.set_text(self.controller.install_profile.get_stage_tarball_uri())
 		self.check_grp.set_active(self.controller.install_profile.get_grp_install())
 		self.check_dynamic.set_active(self.controller.install_profile.get_dynamic_stage3())
+		if self.controller.install_type == "networkless":
+			self.radio_stages[1].set_sensitive(False)
+			self.radio_stages[2].set_sensitive(False)
+			self.entry_stage_tarball_uri.set_sensitive(False)
+			self.browse_uri.set_sensitive(False)
+			self.check_grp.set_active(True)
+			self.check_grp.set_sensitive(False)
+			self.check_dynamic.set_active(True)
+			self.check_dynamic.set_sensitive(False)
 
 	def deactivate(self):
 		if not self.check_dynamic.get_active():
