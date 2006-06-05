@@ -415,8 +415,17 @@ and will not leave you with a bootable system.
 			self.verbose_yes_radio.set_active(True)
 		else:
 			self.verbose_no_radio.set_active(True)
-		if GLIUtility.ping("www.gentoo.org"):
+		if self.controller.install_type == "networkless":
 			self.already_setup_check.set_active(True)
+			self.notebook.set_show_tabs(False)
+			self.notebook.set_current_page(1)
+			self.sshd_yes_radio.set_sensitive(False)
+			self.sshd_no_radio.set_sensitive(False)
+			self.root_password_entry.set_sensitive(False)
+			self.verify_root_password_entry.set_sensitive(False)
+		else:
+			if GLIUtility.ping("www.gentoo.org"):
+				self.already_setup_check.set_active(True)
 
 	def deactivate(self):
 		self.controller.client_profile.set_network_interface(None, self.interface_combo.get_child().get_text(), None)

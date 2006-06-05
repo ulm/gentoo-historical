@@ -1,4 +1,4 @@
-# $Id: GLIFutureBar.py,v 1.3 2006/06/05 01:11:16 agaffney Exp $
+# $Id: GLIFutureBar.py,v 1.4 2006/06/05 02:11:48 agaffney Exp $
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -31,8 +31,8 @@ class GLIFutureBar(gtk.HBox):
 		self.set_border_width(2)
 
 		# Widths
-		self.arrow_width = 20
-		self.text_width = 144
+		self.arrow_width = 15 #20
+		self.text_width = 139 #144
 
 		# state
 		self.pos = 0
@@ -93,7 +93,7 @@ class GLIFutureBar(gtk.HBox):
 		# cur (current in the middle)
 		self.cur = gtk.Label()
 		self.cur.set_use_markup(True)
-		self.cur.set_size_request(self.text_width, -1)
+		self.cur.set_size_request(self.text_width + 40, -1)
 		self.pack_start(self.cur, True, True, 0)
 
 		# r1 (level 1 on the right)
