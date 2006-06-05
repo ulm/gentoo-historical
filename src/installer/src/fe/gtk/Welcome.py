@@ -13,8 +13,10 @@ class Panel(GLIScreen.GLIScreen):
 	_helptext = """
 <b><u>Welcome screen</u></b>
 
-This is the fscking Welcome screen. Do you <i>really</i> need help here? If so,
-please turn back now and install Windows or something.
+This screen is fairly straightforward. It welcomes you to the Installer and
+gives you one option. The "Standard" mode is used for networked installs. It
+allows you the most flexibility. The "Networkless" mode removes some options
+from subsequent screens and sets a few useful defaults.
 """
 
 	def __init__(self, controller):

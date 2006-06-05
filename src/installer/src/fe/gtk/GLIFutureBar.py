@@ -1,4 +1,4 @@
-# $Id: GLIFutureBar.py,v 1.2 2005/11/06 16:41:08 agaffney Exp $
+# $Id: GLIFutureBar.py,v 1.3 2006/06/05 01:11:16 agaffney Exp $
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -148,7 +148,7 @@ class GLIFutureBar(gtk.HBox):
 				self.l1.label.set_markup("")
 				self.l1.arrow.set_markup("")
 	
-			self.cur.set_markup("<span size=\"" + str(((label.get_pango_context().get_font_description().get_size() / 1024) + int(self.cur_size)) * 1024) + "\" weight=\"bold\" foreground=\"" + self.cur_color + "\">" + self.titles[self.pos] + "</span>")
+			self.cur.set_markup("<span size=\"" + str(((label.get_pango_context().get_font_description().get_size() / 1024) + int(self.cur_size)) * 1024) + "\" weight=\"bold\" foreground=\"" + self.cur_color + "\">" + self.titles[self.pos] + "(" + str(self.pos+1) + "/" + str(len(self.titles)) + ")</span>")
 	
 			if (self.pos + 1) < len(self.titles):
 				self.r1.label.set_markup("<span size=\"" + str(((label.get_pango_context().get_font_description().get_size() / 1024) + int(self.l1_size)) * 1024) + "\" weight=\"bold\" foreground=\"" + self.l1_color + "\">" + self.titles[self.pos + 1] + "</span>")
