@@ -1145,6 +1145,23 @@ sweep_string_variable (rtx sweep_var, HOST_WIDE_INT var_size)
 
   switch (GET_CODE (sweep_var))
     {
+    case REG:
+      /* Kevin F. Quinn May 2006
+       * arrange_var_order can clearly call this function with
+       * the code REG in sweep_var, so we need to handle the case
+       * at least. This does nothing, as it appears there's nothing
+       * to sweep.
+       * Reached if a class variable is passed by value.
+       */
+      if (warn_stack_protector)
+	{
+	  warning ("sweep string type REG (%d) ignored - rtl:\n",
+		   GET_CODE(sweep_var));
+	  print_rtl(stderr,sweep_var);
+	  fputs("\n",stderr);
+	}
+      return;
+      break;
     case MEM:
       if (GET_CODE (XEXP (sweep_var, 0)) == ADDRESSOF
 	  && GET_CODE (XEXP (XEXP (sweep_var, 0), 0)) == REG)
@@ -1155,6 +1172,13 @@ sweep_string_variable (rtx sweep_var, HOST_WIDE_INT var_size)
       sweep_offset = INTVAL (sweep_var);
       break;
     default:
+      if (warn_stack_protector)
+	{
+	  warning ("sweep string type %d unexpected - rtl:\n",
+		   GET_CODE(sweep_var));
+	  print_rtl(stderr,sweep_var);
+	  fputs("\n",stderr);
+	}
       abort ();
     }
 
