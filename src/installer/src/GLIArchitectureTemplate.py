@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.277 2006/05/09 12:16:52 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.278 2006/06/07 01:20:35 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -256,11 +256,12 @@ class ArchitectureTemplate:
 			except:
 				raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not open /usr/livecd/systempkgs.txt")
 
-			# Pre-create /lib (and possible /lib32 and /lib64)
-			if os.path.islink("/lib") and os.readlink("/lib") == "lib64":
-				if self._debug: self._logger.log("DEBUG: unpack_stage_tarball(): precreating /lib64 dir and /lib -> /lib64 symlink because glibc/portage sucks")
-				if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir " + self._chroot_dir + "/lib64 && ln -s lib64 " + self._chroot_dir + "/lib")):
-					raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not precreate /lib64 dir and /lib -> /lib64 symlink")
+			# Pre-create /lib (and possibly /lib32 and /lib64)
+			for libdir in ("/lib", "/usr/lib"):
+				if os.path.islink(libdir) and os.readlink(libdir) == libdir + "64":
+					if self._debug: self._logger.log("DEBUG: unpack_stage_tarball(): precreating " + libdir + "64 dir and " + libdir + " -> " + libdir + "64 symlink because glibc/portage sucks")
+					if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir " + self._chroot_dir + libdir + "64 && ln -s " + libdir[1:] + "64 " + self._chroot_dir + libdir)):
+						raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not precreate " + libdir + "64 dir and " + libdir + " -> " + libdir + "64 symlink")
 
 			syspkglen = len(systempkgs)
 			for i, pkg in enumerate(systempkgs):
