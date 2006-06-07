@@ -64,7 +64,7 @@ caution. These trouble packages can be installed manually after you reboot.
 		self.package_objects = {}
 		
 		self.categories = self.controller.install_profile.get_install_package_list()
-		self.group_packages = GLIUtility.get_grp_pkgs_from_cd()
+		self.grp_packages = GLIUtility.get_grp_pkgs_from_cd()
 		
 		# first load the category
 		for category in self.categories:
@@ -76,7 +76,9 @@ caution. These trouble packages can be installed manually after you reboot.
 			# then load the packages in that category
 			packages = self.categories[category][1]
 			for package in packages:
-				# group_packages may be in the format category/package or just package
+				if self.controller.install_type == "networkless" and not package in self.grp_packages:
+					continue
+				# grp_packages may be in the format category/package or just package
 				if "/" in package:
 					displayname = package[package.index("/")+1:]
 				else:
@@ -84,7 +86,7 @@ caution. These trouble packages can be installed manually after you reboot.
 				
 				# if its a grp install, append (GRP) to the name
 				if self.controller.install_profile.get_grp_install():
-					if package in self.group_packages:
+					if package in self.grp_packages:
 						displayname = displayname + " (GRP)"
 						
 				pack = self.Package(self, package, packages[package], displayname)
