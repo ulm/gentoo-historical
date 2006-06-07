@@ -14,7 +14,6 @@ class Panel(GLIScreen.GLIScreen):
 	sources = [("gentoo-sources", "These are the vanilla sources patched with the Gentoo patchset. These are generally considered stable."),
 	           ("vanilla-sources", "These are the kernel sources straight from kernel.org without patches (except where necessary)"),
 	           ("hardened-sources", "These are the vanilla sources patched with the hardened patchset. This results in a more secure system. Do not use these unless you have read the hardened guide first."),
-#	           ("grsec-sources", "These are the vanilla sources patched with the grsecurity patchset. Do not use these unless you wear a tinfoil hat and think the government is out to get you."),
 	           ("livecd-kernel", "This will install the LiveCD's kernel/initrd into your new system. Use this option to get your system up and running quickly. You should not tell the installer to emerge any packages that require kernel sources as they won't be present.")]
 	_helptext = """
 <b><u>Choosing a Kernel</u></b>
@@ -93,6 +92,14 @@ a brief description beside it.
 		self.active_selection = self.controller.install_profile.get_kernel_source_pkg() or "gentoo-sources"
 		self.kernel_sources[self.active_selection].set_active(True)
 		self.bootsplash_check.set_active(self.controller.install_profile.get_kernel_bootsplash())
+		if self.controller.install_type == "networkless":
+			self.active_selection = "livecd-kernel"
+			self.kernel_sources[self.active_selection].set_active(True)
+			self.bootsplash_check.set_active(False)
+			for kernel_source in self.kernel_sources:
+				if not kernel_source == "livecd-kernel":
+					self.kernel_sources[kernel_source].set_sensitive(False)
+			self.bootsplash_check.set_sensitive(False)
 
 	def deactivate(self):
 		self.controller.install_profile.set_kernel_source_pkg(None, self.active_selection, None)
