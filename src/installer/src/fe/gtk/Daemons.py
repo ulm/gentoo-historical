@@ -173,10 +173,12 @@ a brief description beside it.
 		self.cron_daemons[self.active_selection_cron].set_active(True)
 		self.log_daemons[self.active_selection_logger].set_active(True)
 		if self.controller.install_type == "networkless":
+			self.active_selection_cron = "vixie-cron"
 			self.cron_daemons['vixie-cron'].set_active(True)
 			self.cron_daemons['fcron'].set_sensitive(False)
 			self.cron_daemons['dcron'].set_sensitive(False)
 			self.cron_daemons['none'].set_sensitive(False)
+			self.active_selection_logger = "syslog-ng"
 			self.log_daemons['syslog-ng'].set_active(True)
 			self.log_daemons['metalog'].set_sensitive(False)
 			self.log_daemons['sysklogd'].set_sensitive(False)
