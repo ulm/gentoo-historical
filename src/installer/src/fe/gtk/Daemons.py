@@ -177,7 +177,7 @@ a brief description beside it.
 			self.cron_daemons['vixie-cron'].set_active(True)
 			self.cron_daemons['fcron'].set_sensitive(False)
 			self.cron_daemons['dcron'].set_sensitive(False)
-			self.cron_daemons['none'].set_sensitive(False)
+#			self.cron_daemons['none'].set_sensitive(False)
 			self.active_selection_logger = "syslog-ng"
 			self.log_daemons['syslog-ng'].set_active(True)
 			self.log_daemons['metalog'].set_sensitive(False)
