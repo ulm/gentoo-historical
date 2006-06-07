@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.279 2006/06/07 03:28:32 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.280 2006/06/07 03:32:10 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -260,7 +260,7 @@ class ArchitectureTemplate:
 			for libdir in ("/lib", "/usr/lib"):
 				if os.path.islink(libdir) and os.readlink(libdir).endswith("64"):
 					if self._debug: self._logger.log("DEBUG: unpack_stage_tarball(): precreating " + libdir + "64 dir and " + libdir + " -> " + libdir + "64 symlink because glibc/portage sucks")
-					if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir " + self._chroot_dir + libdir + "64 && ln -s " + libdir[1:] + "64 " + self._chroot_dir + libdir)):
+					if not GLIUtility.exitsuccess(GLIUtility.spawn("mkdir -p " + self._chroot_dir + libdir + "64 && ln -s " + libdir[1:] + "64 " + self._chroot_dir + libdir)):
 						raise GLIException("CreateStage3Error", "fatal", "unpack_stage_tarball", "Could not precreate " + libdir + "64 dir and " + libdir + " -> " + libdir + "64 symlink")
 
 			syspkglen = len(systempkgs)
