@@ -1,2 +1,0 @@
-SUBDIRS = src conf
-EXTRA_DIST = TODO
