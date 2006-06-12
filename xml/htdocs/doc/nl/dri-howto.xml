@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/nl/dri-howto.xml,v 1.7 2006/04/07 12:50:01 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/nl/dri-howto.xml,v 1.8 2006/06/12 10:35:38 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- Sync: 1.28 -->
+<!-- Sync: 1.30 -->
 
 <guide link="/doc/nl/dri-howto.xml" lang="nl">
 <title>Handleiding voor 3D hardware</title>
 <author title="Author">
-  <mail link="spyderous@gentoo.org">Donnie Berkholz</mail>
+<mail link="spyderous@gentoo.org">Donnie Berkholz</mail>
 </author>
 <author title="Editor">
-  <mail link="peesh@gentoo.org">Jorge Paulo</mail>
+<mail link="peesh@gentoo.org">Jorge Paulo</mail>
 </author>
 
 <abstract>
@@ -22,8 +22,8 @@ X11-DRM te activeren voor Xorg in Gentoo Linux
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.2</version>
-<date>2006-02-01</date>
+<version>1.3</version>
+<date>2006-05-12</date>
 
 <chapter>
 <title>Inleiding</title>
@@ -97,8 +97,10 @@ wordt toegevoegd, door de benodigde kernel modules toe te voegen.
 <p>
 Deze handleiding is voor degenen die direct rendering niet werkende krijgen
 met enkel Xorg. Xorg-DRM werkt voor 3dfx, gamma, i8x0, matrox, rage128, radeon,
-mach64 en sis3000 drivers. Zie ook <uri
-link="http://dri.freedesktop.org">de DRI pagina</uri> voor meer informatie.
+mach64 en sis300 drivers. Degenen met een VIA kaart moeten <c>x11-drm</c> niet
+gebruiken, maar kiezen voor de ingebouwde DRI in de nieuwere kernels 
+(&gt;2.6.13). Zie ook <uri link="http://dri.freedesktop.org">de DRI pagina</uri>
+voor meer informatie.
 </p>
 
 </body>
@@ -278,6 +280,11 @@ opstart, u de module naam toevoegen in
 intel-agp
 </pre>
 
+<note>
+Als u <c>agpgart</c> als losse module hebt gecompileerd, moet u deze toevoegen in
+<path>/etc/modules.autoload.d/kernel-2.6</path>.
+</note>
+
 </body>
 </section>
 </chapter>
@@ -289,20 +296,20 @@ intel-agp
 <body>
 
 <p>
-Start uw computer op met de nieuwe kernel, zodat we kunnen kijken of
-direct rendering nu werkt en of u er wel zo veel voordeel bij hebt als dat
-gezegd wordt.
+Start uw computer op met de nieuwe kernel en log in als een standaard gebruiker, 
+zodat we kunnen kijken of direct rendering nu werkt en of u er wel zo veel 
+voordeel bij hebt als dat gezegd wordt.
 </p>
 
 <pre caption="Het renderen testen">
-# <i>startx</i>
+$ <i>startx</i>
 <comment>(U moet geen modules voor uw driver/agpgart laden wanneer deze)</comment>
 <comment>(als module is gecompileerd.)</comment>
 <comment>(Deze worden automatisch geladen.)</comment>
-# <i>glxinfo | grep rendering</i>
+$ <i>glxinfo | grep rendering</i>
 direct rendering: Yes
 <comment>(Indien er "No" staat, hebt u geen 3D ondersteuning.)</comment>
-# <i>glxgears</i>
+$ <i>glxgears</i>
 <comment>(Test de fps op de standaard grootte. Het getal zou)</comment>
 <comment>(beduidend hoger moeten zijn dan voordat u x11-drm had)</comment>
 <comment>(ge�stalleerd. Voer dit uit wanneer de CPU zo min mogelijk
@@ -447,7 +454,65 @@ sommige DRM modules niet werken als de agpgart module niet eerst is geladen.
 <p>
 Sommige opties kunnen de prestaties met wel 30% (of meer) verbeteren ten op
 zichte van de standaard instellingen. U kunt de opties aanzetten via
-<path>/etc/X11/xorg.donf</path>
+<path>/etc/X11/xorg.donf</path>.
+</p>
+
+<p>
+We gaan nu eerst kijken of uw video kaart "fast writes" ondersteunt. We doen dit
+door de resultaten van het commando <c>lspci</c> te bekijken. We zoeken hier
+specifiek naar de informatie voor de "VGA compatible controller"
+</p>
+
+<pre caption="Video kaart check">
+# <i>lspci -vv</i>
+01:00.0 VGA compatible controller: ATI Technologies Inc Radeon Mobility M6 LY (prog-if 00 [VGA])
+. . .
+Capabilities: [58] AGP version 2.0
+    Status: RQ=48 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
+</pre>
+
+<p>
+Tussen al deze informatie zijn we op zoek naar de letters <b>FW</b> in het stukje
+"Status" van het onderdeel AGP "Capabilites". Als we <b>FW+</b> vinden, betekent
+dit dat de video kaart "fast writes" ondersteunt. We gaan dan kijken of het
+moederbord ook "fast writes" ondersteunt.
+</p>
+
+<impo>
+Wanneer u <b>FW-</b> ziet staan in plaats van <b>FW+</b>, dan kunt u "fast 
+writes" niet instellen in <path>xorg.conf</path>. Uw grafische kaart ondersteunt
+dit dan niet.
+</impo>
+
+<p>
+Nu gaan we kijken of het moederbord ook "fast writes" ondersteunt. Deze keer
+zoeken we in het stuk "Host bridge" van uw <c>lspci</c> resultaten.
+</p>
+
+<pre caption="Motherboard check">
+# <i>lspci -vv</i>
+00:00.0 Host bridge: Intel Corporation 82830 830 Chipset Host Bridge (rev 02)
+. . .
+Capabilities: [a0] AGP version 2.0
+    Status: RQ=32 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
+</pre>
+
+<p>
+Ook hier kijken we naar "Status" in het onderdeel AGP "Capabilities". Zoek hier
+weer naar <b>FW</b>. Indien u <b>FW+</b> ziet staan, ondersteunt uw moederbord
+"fast writes".
+</p>
+
+<impo>
+Let er op dat zowel bij uw video kaart, als bij uw moederbord, hetzelfde moet
+staan bij <b>FW</b>. Als een van beiden <b>FW-</b> laat zien, kunt u geen
+gebruik maken van "fast writes" via <path>xorg.conf</path>.
+</impo>
+
+<p>
+Als zowel uw moederbord als uw grafische kaart ondersteuning voor "fast writes"
+geeft, kunt u de optie inschakelen in <path>/etc/X11/xorg.conf</path> en betere
+prestaties van uw hardware verwachten
 </p>
 
 <pre caption="xorg.conf">
@@ -463,6 +528,17 @@ er zijn weinig problemen bekent.)</comment>
 
 EndSection
 </pre>
+
+<warn>
+Het inschakelen van <c>AGPFastWrite</c> op een VIA Chipset zal uw machine zeer
+waarschijnlijk laten vast lopen. VIA Chipsets werken slecht samen met "fast 
+writes", het gebruik van deze optie is dus voor eigen risico.
+</warn>
+
+<note>
+Denk eraan, om "fast writes" juist te laten functioneren moet u eerst de juiste
+opties instellen in uw BIOS.
+</note>
 
 <p>
 Als u meer opties wilt instellen, kijk dan in de <uri
