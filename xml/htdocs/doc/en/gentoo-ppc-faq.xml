@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-ppc-faq.xml,v 1.50 2006/05/01 03:13:47 josejx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-ppc-faq.xml,v 1.51 2006/06/12 19:12:05 josejx Exp $ -->
 
 <guide link="/doc/en/gentoo-ppc-faq.xml">
 <title>Gentoo Linux/PowerPC Frequently Asked Questions</title>
@@ -27,8 +27,8 @@ Gentoo/PPC mailing lists and from IRC.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.27</version>
-<date>2006-04-30</date>
+<version>1.28</version>
+<date>2006-06-12</date>
 
 <chapter>
 <title>Questions</title>
@@ -97,6 +97,11 @@ documentation team.
   <li>
     <uri link="#fixit">
       When I rebooted, yaboot didn't work! Now, I'm stuck. How can I fix this?
+    </uri>
+  </li>
+  <li>
+    <uri link="#xfs">
+      When I try to boot, yaboot only says "read error"!  Why can't I boot?
     </uri>
   </li>
   <li>
@@ -493,6 +498,25 @@ Choose OSX and remember to fix your boot problems later.
 
 </body>
 </section>
+<section id="xfs">
+<title>
+When I try to boot, yaboot only says "read error"!  Why can't I boot?
+</title>
+<body>
+
+<p>
+You're probably using XFS for your root partition.  While this is an option,
+yaboot has some issues accessing files with holes.  To ensure that your kernel
+will boot, instead of copying the vmlinux file to /boot, simply <c>cat</c>
+the kernel as shown below.
+</p>
+
+<pre caption="Fixing yaboot read errors on XFS with cat">
+# <i>cat /usr/src/linux/vmlinux > /boot/vmlinux</i>
+</pre>
+
+</body>
+</section>
 <section id="applebrokeit">
 <title>
 I installed an OSX update and now my computer only boots into OSX! How can I 
@@ -675,18 +699,29 @@ For a generic guide to setting up wireless with Gentoo, please see the
 The Airport Extreme is an 802.11b/g card that is included with modern Apple
 portable computers.  It is based on the Broadcom 43xx chipset which is supported
 by the native <uri link="http://bcm43xx.berlios.de">bcm43xx driver</uri> 
-project.  Until this driver is added to the kernel, you can use the ebuild in
-portage.
+project.  It has been included in the 2.6.17_rc2 kernel.  To enable it select
+the options below (you must enable SoftMAC first!):
 </p>
 
-<pre caption="Emerge the bcm43xx driver">
-# <i>emerge bcm43xx</i>
+<pre caption="Adding bcm43xx support to the kernel">
+Networking --&gt;
+     &lt;M&gt;   Generic IEEE 802.11 Networking Stack
+     [*]     Enable full debugging output
+     &lt;M&gt;     IEEE 802.11 WEP encryption (802.1x)
+     &lt;M&gt;     IEEE 802.11i CCMP support
+     &lt;M&gt;     IEEE 802.11i TKIP encryption
+     &lt;M&gt;     Software MAC add-on to the IEEE 802.11 networking stack
+     [*]       Enable full debugging output
+
+Device Drivers --&gt; Network device support --&gt; Wireless LAN drivers (non-hamradio) &amp; Wireless Extensions
+     &lt;M&gt;   Broadcom BCM43xx wireless support
+     [*]     Broadcom BCM43xx debugging (RECOMMENDED) 
 </pre>
 
 <p>
-For additional information, please see this
-<uri link="http://forums.gentoo.org/viewtopic-t-409194.html">forum post</uri>
-for details.
+After compiling your kernel, you'll need to emerge <c>bcm43xx-fwcutter</c> to
+install the firmware. For additional information, please see this
+<uri link="http://forums.gentoo.org/viewtopic-t-409194.html">forum post.</uri>
 </p>
 
 <p>
@@ -768,16 +803,17 @@ the main mixer volume is turned up and that the device isn't muted!
 </p>
 
 <note>
-The sound card on Macs is connected through the i2c Keywest bus, not the PCI
-bus.  You will not see the card listed when viewing the PCI bus. This is less
-of a problem then you might imagine, because all Macs use the same driver
-for sound, but you will need to insure that you have i2c Keywest support in 
-your kernel.
+The sound card on Macs is connected through the i2c Keywest/PowerMac bus, not
+the PCI bus.  You will not see the card listed when viewing the PCI bus or when
+using alsaconf. This is less of a problem then you might imagine, because all
+Macs use the same driver for sound, but you will need to insure that you have
+i2c Keywest/PowerMac support in your kernel.
 </note>
 
 <impo>
-If you compile in ALSA support, you need to also compile in i2c Keywest support.
-Failure to do this will result in kernel panics on boot!
+If you compile in ALSA support, you need to also compile in i2c 
+Keywest/PowerMac support. Failure to do this will result in kernel panics on
+boot!
 </impo>
 
 </body>
@@ -815,9 +851,8 @@ Device Drivers - Sound ---&gt;
 (or configure as modules and ensure they're loaded on boot).  If you have a
 late model Powerbook, you should look into snd-aoa instead.  If you're using
 snd-aoa, be sure to disable the 
-PowerMac (AWACS, DACA, Burgundy, Tumbler, Keywest) driver above.  snd-aoa is
-available in this git repository: 
-<uri>http://johannes.sipsolutions.net/snd-aoa.git</uri>
+PowerMac (AWACS, DACA, Burgundy, Tumbler, Keywest) driver above, but leave the
+rest of the options the same.  Once you've built your kernel, emerge snd-aoa.
 </p>
 
 <note>
@@ -865,6 +900,11 @@ Device Drivers - Sound ---&gt;
 If the <c>dmasound_pmac</c> module does not load, you probably need to enable
 <c>i2c-core</c> in the kernel or as a module.
 </p>
+
+<note>
+If you are still using OSS sound, please test the ALSA drivers instead and 
+report any regressions to the ALSA bugzila.  Thanks!
+</note>
 
 </body>
 </section>
