@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/dri-howto.xml,v 1.13 2006/02/01 12:06:59 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/dri-howto.xml,v 1.14 2006/06/12 11:09:21 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/dri-howto.xml" lang="fr">
@@ -23,8 +23,8 @@ X11-DRM et Xorg sur Gentoo Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.2</version>
-<date>2006-02-01</date>
+<version>1.3</version>
+<date>2006-05-12</date>
 
 <chapter>
 <title>Introduction</title>
@@ -101,7 +101,9 @@ aux cartes en fournissant le module noyau nécessaire au Rendu Direct.
 Ce guide est destiné aux personnes qui ne peuvent faire fonctionner le
 Rendu Direct avec seulement Xorg. X11-DRM fonctionne pour les
 pilotes 3dfx, gamma, i8x0, matrox, rage128, radeon, mach64 et pour la série des
-sis300. Visitez le <uri link="http://dri.sourceforge.net">site DRI</uri>
+sis300. Les propriétaires de cartes VIA ne devraient pas utiliser 
+<c>x11-drm</c>, mais plutôt le module DRI fourni dans les noyaux Linux récents
+(&gt;2.6.13). Visitez le <uri link="http://dri.sourceforge.net">site DRI</uri>
 pour plus d'informations et de documentation.
 </p>
 
@@ -284,6 +286,12 @@ automatiquement au démarrage.
 intel-agp
 </pre>
 
+<note>
+Si vous avez compilé <c>agpgart</c> en tant que module, il vous faudra
+également l'ajouter dans le fichier
+<path>/etc/modules.autoload.d/kernel-2.6</path>.
+</note>
+
 </body>
 </section>
 </chapter>
@@ -295,19 +303,20 @@ intel-agp
 <body>
 
 <p>
-Redémarrez avec votre nouveau noyau. Il est temps de voir si vous disposez du
-Rendu Direct et quel en est le bénéfice.
+Redémarrez avec votre nouveau noyau et connectez-vous en tant qu'utilisateur
+normal. Il est temps de voir si vous disposez du Rendu Direct et quel en est le
+bénéfice.
 </p>
 
 <pre caption="Test du rendu">
-# <i>startx</i>
+$ <i>startx</i>
 <comment>(Inutile de charger les modules pour votre pilote ou pour agpgart si vous avez compilé agpgart comme module.)</comment>
 <comment>(Ils seront chargés automatiquement.)</comment>
-# <i>glxinfo | grep rendering</i>
+$ <i>glxinfo | grep rendering</i>
 direct rendering: Yes
 <comment>(S'il est indiqué "No", vous ne disposez pas de l'accélération 3D.)</comment>
 
-# <i>glxgears</i>
+$ <i>glxgears</i>
 <comment>(Testez votre nombre de trames par secondes (FPS - Frames Per Second) pour la taille par défaut.)</comment>
 <comment>(Le nombre devrait être significativement plus élevé qu'avant l'installation d'x11-drm.)</comment>
 <comment>(Faites ce test lorsque le processeur est en train de faire le moins de traitements possibles.)</comment>
@@ -335,7 +344,7 @@ Ne faites pas cela si le paquet fonctionne bien.
 <p>
 En premier lieu, vous devez vérifier si le paquet x11-drm fonctionne. Si ce
 n'est pas le cas et que vous avez regardé vos journaux (logs) pour vous assurer
-qu'il n'y a pas d'erreur de configuration, vous pouvez considérer l'utilisation
+qu'il n'y a pas d'erreur de configuration, vous pouvez envisager l'utilisation
 des sources CVS. Il existe aussi des images quotidiennes des pilotes si vous ne
 souhaitez pas compiler tout le CVS.
 </p>
@@ -632,9 +641,72 @@ requièrent que le module agpgart soit chargé en premier.
 <body>
 
 <p>
-Quelques options peuvent améliorer les performances jusqu'à 30%
-(voire plus) par rapport aux réglages par défaut. Réglez-les dans
-<path>/etc/X11/xorg.conf</path>.
+Quelques options peuvent améliorer les performances jusqu'à 30% (voire plus)
+par rapport aux réglages par défaut. Réglez-les dans
+<path>/etc/X11/xorg.conf</path>. Cependant, il vous faudra d'abord vérifier
+que votre carte mère et carte vidéo supportent ces options
+</p>
+
+<p>
+D'abord, voyons si votre carte supporte l'écriture rapide (fast writes). Cela
+se fait en inspectant le résultat de la commande <c>lspci</c>. Plus
+particulièrement, on s'intéresse à la partie «&nbsp;VGA compatible
+controller&nbsp;».
+</p>
+
+<pre caption="Vérification de la carte vidéo">
+# <i>lspci -vv</i>
+01:00.0 VGA compatible controller: ATI Technologies Inc Radeon Mobility M6 LY (prog-if 00 [VGA])
+. . .
+Capabilities: [58] AGP version 2.0
+  Status: RQ=48 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
+</pre>
+
+<p>
+Même si beaucoup d'informations sont affichées, nous nous préoccuperons
+seulement des lettres <b>FW</b> sur la ligne «&nbsp;Status&nbsp;» de la section
+«&nbsp;Capabilities&nbsp;». Si <b>FW+</b> est présent sur la ligne
+«&nbsp;Status&nbsp;», alors votre carte vidéo supporte l'écriture rapide. Nous
+pouvons maintenant vérifier si votre carte-mère le supporte également.
+</p>
+
+<impo>
+Si vous voyez <b>FW-</b>, à la place de <b>FW+</b>, vous ne pouvez pas activer
+l'écriture rapide dans <path>xorg.conf</path> car votre carte ne le supporte
+pas.
+</impo>
+
+<p>
+Vérifions maintenant que votre carte-mère supporte l'écriture rapide. Cette
+fois, regardez dans la section «&nbsp;Host Bridge&nbsp;» de <c>lspci</c>.
+</p>
+
+<pre caption="Vérification de la carte-mère">
+# <i>lspci -vv</i>
+00:00.0 Host bridge: Intel Corporation 82830 830 Chipset Host Bridge (rev 02)
+. . .
+Capabilities: [a0] AGP version 2.0
+  Status: RQ=32 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
+</pre>
+
+<p>
+Encore une fois, vérifiez la ligne «&nbsp;Status&nbsp;» de la section AGP
+«&nbsp;Capabilities&nbsp;». Cherchez <b>FW</b>. Si vous voyez <b>FW+</b>,
+alors votre carte-mère supporte l'écriture rapide.
+</p>
+
+<impo>
+Retenez bien qu'il faut que votre carte-mère et votre carte graphique
+supportent toutes les deux l'écriture rapide. Si au moins une des deux affiche
+<b>FW-</b>, vous ne pourrez pas activer l'écriture rapide dans
+<path>xorg.conf</path>.
+</impo>
+
+<p>
+En supposant que tout va bien et qu'à la fois votre carte-mère et votre carte
+vidéo supportent l'écriture rapide, nous allons activer cette option dans
+<path>xorg.conf</path> pour obtenir les meilleures performances de votre
+matériel.
 </p>
 
 <pre caption="Extrait du fichier xorg.conf">
@@ -650,6 +722,18 @@ Section "Device"
   ...
 EndSection
 </pre>
+
+<warn>
+Activer l'option <c>AGPFastWrite</c> sur un chipset VIA causera probablement le
+gel complet de votre machine. Les chipsets VIA ne fonctionnent pas très bien
+avec l'écriture rapide, aussi n'utilisez cette option qu'à vos risques et
+périls.
+</warn>
+
+<note>
+N'oubliez pas que si vous voulez que l'écriture rapide fonctionne correctement,
+vous devrez d'abord l'activer dans le BIOS.
+</note>
 
 <p>
 Si vous souhaitez régler encore plus d'options, consultez la page <uri
