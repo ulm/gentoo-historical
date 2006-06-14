@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.23 2006/05/30 20:20:11 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.24 2006/06/14 14:48:07 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -123,6 +123,8 @@ get_video_cards() {
 
 livecd_config_wireless() {
 	cd /tmp/setup.opts
+	[ -x /usr/sbin/iwconfig ] && iwconfig=/usr/sbin/iwconfig
+	[ -x /sbin/iwconfig ] && iwconfig=/sbin/iwconfig
 	dialog --title "SSID" --inputbox "Please enter your SSID, or leave blank for selecting the nearest open network" 20 50 2> ${iface}.SSID
 	SSID="$(cat ${iface}.SSID)"
 	if [ -n "${SSID}" ]
@@ -137,26 +139,26 @@ livecd_config_wireless() {
 					1)
 						dialog --title "WEP (Part 3)" --inputbox "Please enter your WEP key in the form of XXXX-XXXX-XX for 64-bit or XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XX for 128-bit" 20 50 2> ${iface}.WEPKEY
 						WEP_KEY="$(cat ${iface}.WEPKEY)"
-						if [ -n "${WEP_KEY}" -a -x /usr/sbin/iwconfig ]
+						if [ -n "${WEP_KEY}" ]
 						then
-							/usr/sbin/iwconfig ${iface} essid "${SSID}"
-							/usr/sbin/iwconfig ${iface} key "${WEP_KEY}"
+							${iwconfig} ${iface} essid "${SSID}"
+							${iwconfig} ${iface} key "${WEP_KEY}"
 						fi
 					;;
 					2)
 						dialog --title "WEP (Part 3)" --inputbox "Please enter your WEP key in ASCII form.  This should be 5 or 13 characters for either 64-bit or 128-bit encryption, repectively" 20 50 2> ${iface}.WEPKEY
 						WEP_KEY="$(cat ${iface}.WEPKEY)"
-						if [ -n "${WEP_KEY}" -a -x /usr/sbin/iwconfig ]
+						if [ -n "${WEP_KEY}" ]
 						then
-							/usr/sbin/iwconfig ${iface} essid "${SSID}"
-							/usr/sbin/iwconfig ${iface} key "s:${WEP_KEY}"
+							${iwconfig} ${iface} essid "${SSID}"
+							${iwconfig} ${iface} key "s:${WEP_KEY}"
 						fi
 					;;
 				esac
 			;;
 			2)
-				/usr/sbin/iwconfig ${iface} essid "${SSID}"
-				/usr/sbin/iwconfig ${iface} key off
+				${iwconfig} ${iface} essid "${SSID}"
+				${iwconfig} ${iface} key off
 			;;
 		esac
 	fi
