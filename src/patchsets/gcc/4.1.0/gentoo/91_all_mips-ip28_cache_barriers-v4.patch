@@ -1,15 +1,17 @@
 diff -Naurp gcc-4.1.1.orig/gcc/config/mips/mips.c gcc-4.1.1/gcc/config/mips/mips.c
---- gcc-4.1.1.orig/gcc/config/mips/mips.c	2006-06-07 22:35:02.000000000 -0400
-+++ gcc-4.1.1/gcc/config/mips/mips.c	2006-06-07 22:50:37.000000000 -0400
-@@ -56,6 +56,7 @@ Boston, MA 02110-1301, USA.  */
- #include "cfglayout.h"
- #include "sched-int.h"
- #include "tree-gimple.h"
-+#include "r10k-cacheb.c"
+--- gcc-4.1.1.orig/gcc/config/mips/mips.c	2006-06-14 13:36:35.000000000 -0400
++++ gcc-4.1.1/gcc/config/mips/mips.c	2006-06-14 14:06:08.000000000 -0400
+@@ -255,6 +255,9 @@ static const char *const mips_fp_conditi
+   MIPS_FP_CONDITIONS (STRINGIFY)
+ };
  
- /* True if X is an unspec wrapper around a SYMBOL_REF or LABEL_REF.  */
- #define UNSPEC_ADDRESS_P(X)					\
-@@ -408,6 +409,7 @@ static rtx mips_expand_builtin_compare (
++/* R10K Cache Barrier Functions */
++#include "r10k-cacheb.c"
++
+ /* A function to save or store a register.  The first argument is the
+    register and the second is the stack slot.  */
+ typedef void (*mips_save_restore_fn) (rtx, rtx);
+@@ -408,6 +411,7 @@ static rtx mips_expand_builtin_compare (
  static rtx mips_expand_builtin_bposge (enum mips_builtin_type, rtx);
  static void mips_encode_section_info (tree, rtx, int);
  
@@ -17,7 +19,7 @@ diff -Naurp gcc-4.1.1.orig/gcc/config/mips/mips.c gcc-4.1.1/gcc/config/mips/mips
  /* Structure to be filled in by compute_frame_size with register
     save masks, and offsets for the current function.  */
  
-@@ -8959,7 +8961,6 @@ mips_avoid_hazards (void)
+@@ -8959,7 +8963,6 @@ mips_avoid_hazards (void)
        }
  }
  
@@ -25,7 +27,7 @@ diff -Naurp gcc-4.1.1.orig/gcc/config/mips/mips.c gcc-4.1.1/gcc/config/mips/mips
  /* Implement TARGET_MACHINE_DEPENDENT_REORG.  */
  
  static void
-@@ -8975,6 +8976,10 @@ mips_reorg (void)
+@@ -8975,6 +8978,10 @@ mips_reorg (void)
        if (TUNE_MIPS4130 && TARGET_VR4130_ALIGN)
  	vr4130_align_insns ();
      }
@@ -38,7 +40,7 @@ diff -Naurp gcc-4.1.1.orig/gcc/config/mips/mips.c gcc-4.1.1/gcc/config/mips/mips
  /* This function does three things:
 diff -Naurp gcc-4.1.1.orig/gcc/config/mips/mips.opt gcc-4.1.1/gcc/config/mips/mips.opt
 --- gcc-4.1.1.orig/gcc/config/mips/mips.opt	2005-07-23 04:36:54.000000000 -0400
-+++ gcc-4.1.1/gcc/config/mips/mips.opt	2006-06-07 22:49:22.000000000 -0400
++++ gcc-4.1.1/gcc/config/mips/mips.opt	2006-06-14 14:02:34.000000000 -0400
 @@ -216,3 +216,13 @@ Perform VR4130-specific alignment optimi
  mxgot
  Target Report Var(TARGET_XGOT)
@@ -55,7 +57,7 @@ diff -Naurp gcc-4.1.1.orig/gcc/config/mips/mips.opt gcc-4.1.1/gcc/config/mips/mi
 +Target Undocumented Var(TARGET_R10K_SPECEX) VarExists
 diff -Naurp gcc-4.1.1.orig/gcc/config/mips/r10k-cacheb.c gcc-4.1.1/gcc/config/mips/r10k-cacheb.c
 --- gcc-4.1.1.orig/gcc/config/mips/r10k-cacheb.c	1969-12-31 19:00:00.000000000 -0500
-+++ gcc-4.1.1/gcc/config/mips/r10k-cacheb.c	2006-06-07 22:49:54.000000000 -0400
++++ gcc-4.1.1/gcc/config/mips/r10k-cacheb.c	2006-06-14 14:02:34.000000000 -0400
 @@ -0,0 +1,298 @@
 +/* Subroutines used for MIPS code generation: generate cache-barriers
 +   for SiliconGraphics IP28 and IP32/R10000 kernel-code.
