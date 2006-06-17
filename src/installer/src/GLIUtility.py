@@ -658,7 +658,7 @@ def list_mirrors(http=True, ftp=True, rsync=True):
 		if mirrortypes:
 			mirrortypes += '\|'
 		mirrortypes += "rsync"
-	mirrorlist = spawn(r"wget -O - 'http://www.gentoo.org/main/en/mirrors.xml?passthru=1' 2>/dev/null | /bin/sed -ne '/^[[:space:]]*<uri link=\"\(" + mirrortypes + r"\):\/\/[^\"]\+\">/{s/^[[:space:]]*<uri link=\"\([^\"]\+\)\">\(.*\)<\/uri>.*$/\1|\2/;p}'", return_output=True)[1].strip().split("\n")
+	mirrorlist = spawn(r"wget -O - 'http://www.gentoo.org/main/en/mirrors.xml?passthru=1' 2>/dev/null | /bin/sed -ne '/^[[:space:]]*<uri link=\"\(" + mirrortypes + r"\):\/\/[^\"]\+\">.\+<\/uri>/{s/^[[:space:]]*<uri link=\"\([^\"]\+\)\">\(.*\)<\/uri>.*$/\1|\2/;p}'", return_output=True)[1].strip().split("\n")
 	for mirror in mirrorlist:
 		mirror = mirror.strip()
 		mirrors.append(mirror.split("|"))
