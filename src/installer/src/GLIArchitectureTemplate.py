@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.281 2006/06/07 22:36:02 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.282 2006/06/17 04:55:04 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -855,7 +855,15 @@ class ArchitectureTemplate:
 #			if not GLIUtility.exitsuccess(exitstatus):
 #				raise GLIException("MTAError", 'fatal','install_mta', "Could not emerge " + mta_pkg + "!")
 			self._logger.log("MTA installed: "+mta_pkg)
-
+		else:
+			installpackages = self._install_profile.get_install_packages()
+			if installpackages:
+				for pkg in installpackages:
+					if pkg in ['esmtp', 'exim', 'msmtp', 'nbsmtp', 'nullmailer', 'sendmail', 'ssmtp', 'xmail']:
+						self._logger.log("Found an mta in the package list: "+pkg+".  Installing early.")
+						exitstatus = self._portage.emerge(pkg)
+						self._logger.log("MTA installed.")
+					
 	##
 	# Installs and sets up logging daemon on the new system.  adds to runlevel too.
 	def install_logging_daemon(self):
