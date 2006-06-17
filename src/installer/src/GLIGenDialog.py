@@ -637,15 +637,6 @@ global USE flags and one for local flags specific to each program.
 Please be patient while the screens load. It may take awhile."""), width=73, height=16)
 					
 		#First set the USE flags, this is a biggie.
-
-		if self._install_profile.get_install_packages():
-			install_packages = self._install_profile.get_install_packages()
-			if isinstance(install_packages, str):
-				install_packages = install_packages.split()
-		else:
-			install_packages = []
-
-
 		if make_conf.has_key("USE"): 
 			system_use_flags = make_conf["USE"]
 		else:  #not a preloaded config.  this is the NORMAL case.
@@ -653,7 +644,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		use_flags = []
 		use_local_flags = []
 		use_desc = GLIUtility.get_global_use_flags()
-		use_local_desc = GLIUtility.get_local_use_flags(install_packages)
+		use_local_desc = GLIUtility.get_local_use_flags()
 		
 		#populate the choices list
 		sorted_use = use_desc.keys()

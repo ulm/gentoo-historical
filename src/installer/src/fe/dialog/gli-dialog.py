@@ -43,7 +43,6 @@ class Setup_InstallProfile(GLIGenIP):
 				self.set_network_mounts()
 				self.set_install_stage()
 				self.set_portage_tree()
-				self.set_extra_packages()
 				self.set_make_conf()
 				if advanced_mode:
 					self.set_distcc()
@@ -54,6 +53,7 @@ class Setup_InstallProfile(GLIGenIP):
 				if advanced_mode:
 					self.set_cron_daemon()
 					self.set_logger()
+				self.set_extra_packages()
 				if advanced_mode:
 					self.set_services()
 				self.set_rc_conf()

@@ -737,7 +737,7 @@ def get_global_use_flags():
 	f.close()
 	return use_desc
 	
-def get_local_use_flags(install_packages):
+def get_local_use_flags():
 	use_local_desc = {}
 	f = open("/usr/portage/profiles/use.local.desc", "r")
 	for line in f:
@@ -749,13 +749,7 @@ def get_local_use_flags(install_packages):
 		pkg = line[:colon_pos]
 		flagname = line[colon_pos+1:dash_pos] or line[colon_pos+1]
 		desc = "(" + pkg + ") " + line[dash_pos+3:]
-		if install_packages:
-			if desc[(desc.find('/')+1):] in install_packages:
-				use_local_desc[flagname] = desc
-			else:
-				continue
-		else:
-			use_local_desc[flagname] = desc
+		use_local_desc[flagname] = desc
 	f.close()
 	return use_local_desc
 	
