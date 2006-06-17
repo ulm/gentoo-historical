@@ -551,25 +551,15 @@ on partitioning and the various filesystem types available in Linux.""")
 			else:
 				mirror = mirrorurls[int(mirror)-1]
 				arch = self._client_profile.get_architecture_template()
-				subarches = GLIUtility.list_subarch_from_mirror(mirror,arch)
-				if subarches:
-					code, subarch = self._d.menu(_(u"Select the sub-architecture that most closely matches your system (this changes the amount of optimization):"), choices=self._dmenu_list_to_choices(subarches))
-					if code != self._DLG_OK:
-						type_it_in = True
-					else:
-						subarch = subarches[int(subarch)-1]	
+				tarballs = GLIUtility.list_stage_tarballs_from_mirror(mirror, arch)
+				code, stage_tarball = self._d.menu(_(u"Select your desired stage tarball:"), choices=self._dmenu_list_to_choices(tarballs), width=77, height=20)
+				if (code != self._DLG_OK):
+					type_it_in = True
 				else:
-					subarch = ""
-				if not type_it_in:
-					tarballs = GLIUtility.list_stage_tarballs_from_mirror(mirror, arch, subarch)
-					code, stage_tarball = self._d.menu(_(u"Select your desired stage tarball:"), choices=self._dmenu_list_to_choices(tarballs))
-					if (code != self._DLG_OK):
-						type_it_in = True
-					else:
-						stage_tarball = mirror + "/releases/" + arch + "/current/stages/" + subarch + tarballs[int(stage_tarball)-1]
+					stage_tarball = mirror + "/releases/" + arch + "/current/stages/" + tarballs[int(stage_tarball)-1]
 		#get portageq envvar value of cflags and look for x86, i686,etc.
 			#URL SYNTAX
-			#http://gentoo.osuosl.org/releases/ARCHITECTURE/current/stages/SUB-ARCH/
+			#http://gentoo.osuosl.org/releases/ARCHITECTURE/current/stages/
 		else:
 			type_it_in = True
 		if type_it_in:

@@ -639,11 +639,8 @@ def get_interface_realname(interface):
 	else:
 		return "No Information Found"
 
-def list_stage_tarballs_from_mirror(mirror, arch, subarch):
-	return spawn("wget -O - " + mirror + "/releases/" + arch + "/current/stages/" + subarch + r"/ 2> /dev/null | grep 'bz2\"' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].strip().split("\n")
-
-def list_subarch_from_mirror(mirror, arch):
-	return spawn("wget -O - " + mirror + "/releases/" + arch + r"/current/stages/ 2> /dev/null | grep folder.gif | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i'", return_output=True)[1].strip().split("\n")
+def list_stage_tarballs_from_mirror(mirror, arch):
+	return spawn("wget -O - " + mirror + "/releases/" + arch + "/current/stages/" + r" 2> /dev/null | grep 'bz2\"' | sed -e 's:^.\+href=\"\(.\+\)\".\+$:\1:i' -e 's:.\+/\(.\+\)$:\1:'", return_output=True)[1].strip().split("\n")
 
 def list_mirrors(http=True, ftp=True, rsync=True):
 	mirrors = []
