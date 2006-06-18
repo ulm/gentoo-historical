@@ -1,0 +1,180 @@
+Index: vlc-0.8.5/configure.ac
+===================================================================
+--- vlc-0.8.5.orig/configure.ac
++++ vlc-0.8.5/configure.ac
+@@ -4445,17 +4445,6 @@ then
+       AC_MSG_ERROR([Your development package for wxWidgets is too old, you need at least version 2.3.0. Please upgrade and try again. Alternatively you can also configure with --disable-wxwidgets.])
+     fi
+     AC_LANG_PUSH(C++)
+-    # Turn this error:
+-    #   playlist.cpp:1351: error: ISO C++ forbids cast to non-reference type
+-    # into a warning. However better would be to fix playlist.cpp
+-    AC_CACHE_CHECK([if \$CXX accepts -fpermissive],
+-        [ac_cv_cxx_fpermissive],
+-        [CXXFLAGS="${CXXFLAGS_save} -fpermissive"
+-         AC_TRY_COMPILE([],,ac_cv_cxx_fpermissive=yes,
+-                        ac_cv_cxx_fpermissive=no)])
+-    if test "${ac_cv_cxx_fpermissive}" = "yes"; then
+-      VLC_ADD_CXXFLAGS([wxwidgets],-fpermissive)
+-    fi
+     VLC_ADD_LDFLAGS([wxwidgets],[`${WX_CONFIG} --libs`])
+     VLC_ADD_CXXFLAGS([wxwidgets],[`${WX_CONFIG} --cxxflags`])
+     if ${WX_CONFIG} --unicode
+Index: vlc-0.8.5/modules/gui/wxwidgets/dialogs/playlist.cpp
+===================================================================
+--- vlc-0.8.5.orig/modules/gui/wxwidgets/dialogs/playlist.cpp
++++ vlc-0.8.5/modules/gui/wxwidgets/dialogs/playlist.cpp
+@@ -1307,7 +1307,7 @@ bool PlaylistFileDropTarget::OnDropFiles
+     /* Put the items in the playlist node */
+     for( size_t i = 0; i < filenames.GetCount(); i++ )
+     {
+-        const char *psz_utf8 = wxDnDFromLocale( filenames[i] );
++        char *psz_utf8 = wxDnDFromLocale( filenames[i] );
+         playlist_item_t *p_item =
+             playlist_ItemNew( p->p_playlist, psz_utf8, psz_utf8 );
+         playlist_NodeAddItem( p->p_playlist, p_item, p->i_current_view,
+Index: vlc-0.8.5/include/vlc_common.h
+===================================================================
+--- vlc-0.8.5.orig/include/vlc_common.h
++++ vlc-0.8.5/include/vlc_common.h
+@@ -599,6 +599,29 @@ static int64_t GCD( int64_t a, int64_t b
+     }                                                                         \
+     while( 0 )
+ 
++/* Special version for C++ code */
++#define REMOVE_ELEM_PP( type_p_ar, p_ar, i_oldsize, i_pos )                   \
++    do                                                                        \
++    {                                                                         \
++        if( (i_oldsize) - (i_pos) - 1 )                                       \
++        {                                                                     \
++            memmove( (p_ar) + (i_pos),                                        \
++                     (p_ar) + (i_pos) + 1,                                    \
++                     ((i_oldsize) - (i_pos) - 1) * sizeof( *(p_ar) ) );       \
++        }                                                                     \
++        if( i_oldsize > 1 )                                                   \
++        {                                                                     \
++            (p_ar) = (type_p_ar)realloc( p_ar, ((i_oldsize) - 1) * sizeof( *(p_ar) ) );  \
++        }                                                                     \
++        else                                                                  \
++        {                                                                     \
++            free( p_ar );                                                     \
++            (p_ar) = NULL;                                                    \
++        }                                                                     \
++        (i_oldsize)--;                                                        \
++    }                                                                         \
++    while( 0 )
++
+ 
+ #define TAB_APPEND( count, tab, p )             \
+     if( (count) > 0 )                           \
+Index: vlc-0.8.5/modules/gui/wxwidgets/dialogs/interaction.cpp
+===================================================================
+--- vlc-0.8.5.orig/modules/gui/wxwidgets/dialogs/interaction.cpp
++++ vlc-0.8.5/modules/gui/wxwidgets/dialogs/interaction.cpp
+@@ -247,7 +247,7 @@ void InteractionDialog::OnClear( wxComma
+         user_widget_t *p_widget = p_dialog->pp_widgets[i];
+         FREE( p_widget->psz_text );
+         FREE( p_widget->val.psz_string );
+-        REMOVE_ELEM( p_dialog->pp_widgets, p_dialog->i_widgets, i );
++        REMOVE_ELEM_PP( user_widget_t **, p_dialog->pp_widgets, p_dialog->i_widgets, i );
+         free( p_widget );
+     }
+     widgets_panel->DestroyChildren();
+Index: vlc-0.8.5/modules/gui/wxwidgets/dialogs/open.cpp
+===================================================================
+--- vlc-0.8.5.orig/modules/gui/wxwidgets/dialogs/open.cpp
++++ vlc-0.8.5/modules/gui/wxwidgets/dialogs/open.cpp
+@@ -1822,14 +1822,14 @@ void OpenDialog::OnSubsFileSettings( wxC
+         }
+         if( subsfile_dialog->align_combo )
+         {
+-            subsfile_mrl.Add( wxString::Format(wxT("subsdec-align=%i"),
+-                              (int)subsfile_dialog->align_combo->GetClientData(
++            subsfile_mrl.Add( wxString::Format(wxT("subsdec-align=%li"),
++                              (long)subsfile_dialog->align_combo->GetClientData(
+                               subsfile_dialog->align_combo->GetSelection()) ) );
+         }
+         if( subsfile_dialog->size_combo )
+         {
+-            subsfile_mrl.Add( wxString::Format( wxT("freetype-rel-fontsize=%i"),
+-                              (int)subsfile_dialog->size_combo->GetClientData(
++            subsfile_mrl.Add( wxString::Format( wxT("freetype-rel-fontsize=%li"),
++                              (long)subsfile_dialog->size_combo->GetClientData(
+                               subsfile_dialog->size_combo->GetSelection()) ) );
+         }
+         subsfile_mrl.Add( wxString::Format( wxT("sub-fps=%i"),
+Index: vlc-0.8.5/modules/gui/wxwidgets/dialogs/preferences_widgets.cpp
+===================================================================
+--- vlc-0.8.5.orig/modules/gui/wxwidgets/dialogs/preferences_widgets.cpp
++++ vlc-0.8.5/modules/gui/wxwidgets/dialogs/preferences_widgets.cpp
+@@ -249,7 +249,7 @@ int KeyConfigControl::GetIntValue()
+     int selected = combo->GetSelection();
+     if( selected != -1 )
+     {
+-        result |= (int)combo->GetClientData( selected );
++        result |= (long)combo->GetClientData( selected );
+     }
+     return result;
+ }
+@@ -853,7 +853,7 @@ int IntegerListConfigControl::GetIntValu
+     int selected = combo->GetSelection();
+     if( selected != -1 )
+     {
+-        return (int)combo->GetClientData( selected );
++        return static_cast<int>((long)combo->GetClientData( selected ));
+     }
+     return -1;
+ }
+Index: vlc-0.8.5/modules/gui/wxwidgets/dialogs/updatevlc.cpp
+===================================================================
+--- vlc-0.8.5.orig/modules/gui/wxwidgets/dialogs/updatevlc.cpp
++++ vlc-0.8.5/modules/gui/wxwidgets/dialogs/updatevlc.cpp
+@@ -200,7 +200,7 @@ void UpdateVLC::OnChooseItem( wxListEven
+                         wxSAVE | wxOVERWRITE_PROMPT );
+         if( filedialog->ShowModal() == wxID_OK )
+         {
+-            update_download( p_uit, filedialog->GetPath().mb_str() );
++            update_download( p_uit, const_cast<char*>((const char*)filedialog->GetPath().mb_str()) );
+         }
+         update_iterator_Delete( p_uit );
+         delete filedialog;
+Index: vlc-0.8.5/modules/gui/wxwidgets/dialogs/wizard.cpp
+===================================================================
+--- vlc-0.8.5.orig/modules/gui/wxwidgets/dialogs/wizard.cpp
++++ vlc-0.8.5/modules/gui/wxwidgets/dialogs/wizard.cpp
+@@ -208,7 +208,7 @@ class wizInputPage : public wxWizardPage
+ {
+     public:
+         wizInputPage( wxWizard *, wxWizardPage *, intf_thread_t *);
+-        wizInputPage::~wizInputPage();
++        ~wizInputPage();
+         void OnWizardPageChanging(wxWizardEvent& event);
+         void OnInputChange( wxCommandEvent& event );
+         void OnEnablePartial(wxCommandEvent& event);
+@@ -262,7 +262,7 @@ class wizTranscodeCodecPage : public wxW
+ public:
+     wizTranscodeCodecPage( wxWizard *parent, wxWizardPage *next);
+     ~wizTranscodeCodecPage();
+-    void wizTranscodeCodecPage::OnWizardPageChanging(wxWizardEvent& event);
++    void OnWizardPageChanging(wxWizardEvent& event);
+     virtual wxWizardPage *GetPrev() const;
+     virtual wxWizardPage *GetNext() const;
+     void SetPrev( wxWizardPage *page);
+@@ -339,7 +339,7 @@ class wizEncapPage : public wxWizardPage
+ {
+ public:
+     wizEncapPage( wxWizard *parent);
+-    wizEncapPage::~wizEncapPage();
++    ~wizEncapPage();
+     void OnWizardPageChanging(wxWizardEvent& event);
+     virtual wxWizardPage *GetPrev() const;
+     virtual wxWizardPage *GetNext() const;
+@@ -387,7 +387,7 @@ public:
+     void OnWizardPageChanging( wxWizardEvent& event );
+ protected:
+     DECLARE_EVENT_TABLE()
+-    void wizTranscodeExtraPage::OnSelectFile(wxCommandEvent&);
++    void OnSelectFile(wxCommandEvent&);
+     wxTextCtrl *file_text;
+     WizardDialog *p_parent;
+     wxWizardPage *p_prev;
