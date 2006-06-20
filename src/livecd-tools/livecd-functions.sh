@@ -1,7 +1,4 @@
 #!/bin/bash
-# Copyright 1999-2005 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/livecd-functions.sh,v 1.24 2006/06/14 14:48:07 wolf31o2 Exp $
 
 # Global Variables:
 #    CDBOOT			-- is booting off CD
@@ -36,27 +33,48 @@ livecd_get_cmdline() {
 }
 
 no_gl() {
-	einfo "If you have a card that you know is supported by either the ATI or"
-	einfo "NVIDIA binary drivers, please file a bug with the output of lspci"
-	einfo "on http://bugs.gentoo.org so we can resolve this."
+#	einfo "If you have a card that you know is supported by either the ATI or"
+#	einfo "NVIDIA binary drivers, please file a bug with the output of lspci"
+#	einfo "on http://bugs.gentoo.org so we can resolve this."
 	GLTYPE=xorg-x11
 }
 
 ati_gl() {
 	einfo "ATI card detected."
-	GLTYPE=ati
+	if [ -e /usr/lib/xorg/modules/drivers/fglrx_drv.so ] \
+	|| [ -e /usr/lib/modules/drivers/fglrx_drv.so ]
+	then
+#		sed -i \
+#			-e 's/ati/fglrx/' \
+#			-e 's/radeon/fglrx/' \
+#			-e 's/r300/fglrx/' \
+#			/etc/X11/xorg.conf
+		GLTYPE=ati
+	else
+		GLTYPE=xorg-x11
+	fi
 }
 
 nv_gl() {
 	einfo "NVIDIA card detected."
-	GLTYPE=nvidia
+	if [ -e /usr/lib/xorg/modules/drivers/nvidia_drv.so ] \
+	|| [ -e /usr/lib/modules/drivers/nvidia_drv.so ]
+	then
+		GLTYPE=nvidia
+	else
+		GLTYPE=xorg-x11
+	fi
 }
 
 nv_no_gl() {
 	einfo "NVIDIA card detected."
 	echo
-	einfo "This card is not supported by the latest version of the NVIDIA"
-	einfo "binary drivers.  Switching to the X server's driver instead."
+	if [ -e /usr/lib/xorg/modules/drivers/nvidia_drv.so ] \
+	|| [ -e /usr/lib/modules/drivers/nvidia_drv.so ]
+	then
+		einfo "This card is not supported by the latest version of the NVIDIA"
+		einfo "binary drivers.  Switching to the X server's driver instead."
+	fi
 	GLTYPE=xorg-x11
 	sed -i 's/nvidia/nv/' /etc/X11/xorg.conf
 }
@@ -71,7 +89,7 @@ get_video_cards() {
 		ATI=$(echo ${VIDEO_CARDS} | grep "ATI Technologies")
 		if [ -n "${NVIDIA}" ]
 		then
-			NVIDIA_CARD=$(echo ${NVIDIA} | awk 'BEGIN {RS=" "} /(NV|nv|G)[0-9]+/ {print $1}' | cut -d. -f1 | sed 's/ //' | sed 's:[^0-9]::g')
+			NVIDIA_CARD=$(echo ${NVIDIA} | awk 'BEGIN {RS=" "} /(NV|nv|G|C)[0-9]+/ {print $1}' | cut -d. -f1 | sed 's/ //' | sed 's:[^0-9]::g')
 			# NVIDIA Model reference:
 			# http://en.wikipedia.org/wiki/Comparison_of_NVIDIA_Graphics_Processing_Units
 			if [ -n "${NVIDIA_CARD}" ]
@@ -83,6 +101,9 @@ get_video_cards() {
 				then
 					nv_gl
 				elif [ $(echo ${NVIDIA_CARD} | cut -dV -f2) -eq 11 ]
+				then
+					nv_gl
+				elif [ $(echo ${NVIDIA_CARD} | cut -dC -f2) -ge 50 ]
 				then
 					nv_gl
 				else
