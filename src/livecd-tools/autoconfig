@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.60 2006/06/16 16:25:20 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.61 2006/06/21 15:29:04 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -110,76 +110,67 @@ unpack_firmware() {
 	fi
 }
 
-# Only used on SGI CDs, this determines:
-# A) CPU Type
-# B) System
+get_info() {
+	local tmp
+
+	if [ ! -z "${1}" -a ! -z "${2}" ]
+	then
+		tmp=$(grep "^$1[[:space:]]\+:" /proc/cpuinfo | head -n 1 | cut -d" " -f3-)
+		eval "$2='${tmp}'"
+	fi
+}
+
 detect_mips() {
-	local cpuinfo="$(awk -F: '/^cpu model/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1 | cut -d" " -f2,3)"
-	local machinfo="$(awk -F: '/^system type/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | cut -d" " -f2-)"
-	local machtype=""
+	get_info "cpu model" cpuinfo
+	get_info "system type" machinfo
+	cpuinfo="${cpuinfo%%  FPU*}"
 
 	case "${machinfo}" in
-		"SGI Indy")
-			machtype="SGI Indy" # Indy R4x00/R5000
-		;;
 		"SGI Indigo2")
 			case "${cpuinfo}" in
 				R4*)
-					machtype="SGI Indigo2" # I2 R4x00
+					machinfo="SGI Indigo2" # I2 R4x00
 				;;
 				R8*)
-					machtype="SGI Indigo2 Power" # I2 R8000
+					machinfo="SGI Indigo2 Power" # I2 R8000
 				;;
 				R10*)
-					machtype="SGI Indigo2 Impact" # I2 R10000
+					machinfo="SGI Indigo2 Impact" # I2 R10000
 				;;
 			esac
-			;;
-		"SGI O2"|"SGI IP32")
-			machtype="SGI O2" # O2 R5K/RM5K2/RM7K/R10K/R12K
-		;;
-		"SGI Octane"|"SGI IP30")
-			machtype="SGI Octane" # Octane R10K/R12K/R14K
-		;;
-		"SGI Origin"|"SGI IP27")
-			machtype="SGI Origin" # Origin R10K/R12K
-		;;
-		*)
-			machtype="Unknown SGI MIPS" # ???
 		;;
 	esac
 
-	PC="Detected an ${machtype} w/ ${numcpu} ${cpuinfo} ${bit}"
+	PC="Detected an ${machinfo} w/ ${numcpu} ${cpuinfo} CPU(s)"
 }
 
-detect_x86_amd64() {
-	local cpuinfo="$(awk -F: '/^model name/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
-	local mhz="$(awk -F: '/^cpu MHz/{printf " %dMHz",int($2)};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
+detect_x86_amd64_ia64() {
+	[ "$1" = "ia64" ] \
+		&& get_info "family" cpuinfo \
+		|| get_info "model name" cpuinfo
+	get_info "cpu MHz" mhz
+	mhz="~${mhz%%.*}MHz"
 
-	PC="Detected ${numcpu} ${cpuinfo} ${mhz} ${bit}"
+	PC="Detected ${numcpu} ${cpuinfo} CPU(s) @ ${mhz} each"
 }
 
 detect_alpha() {
-	local cpuinfo="$(awk -F: '/^platform string/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
-	local numcpu="$(awk -F: '/^cpus detected/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
-	if [ "${numcpu}" -gt '1' ]
-	then
-		bit="CPUs"
-	else
-		bit="CPU"
-	fi
-	PC="Detected ${numcpu} ${cpuinfo} ${bit}"
+	get_info "platform string" machinfo
+	get_info "cpu" cpuinfo1
+	get_info "cpu model" cpuinfo2
+	get_info "cpus detected" numcpu
+
+	PC="Detected ${numcpu} ${cpuinfo1} ${cpuinfo2} CPU(s) in a ${machinfo} system"
 }
 
 detect_ppc() {
-	local cpuinfo="$(awk -F: '/^cpu/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
-	local mhz="$(awk -F: '/^clock/{printf " %dMHz",int($2)};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | head -n 1)"
-	local machinfo="$(awk -F: '/^detected as/{printf $2}' /proc/cpuinfo | cut -d'(' -f2 | cut -d')' -f1)"
+	get_info "cpu" cpuinfo
+	get_info "clock" mhz
+	get_info "detected as" machinfo
+	machinfo="${machinfo##*\(}"
+	machinfo="${machinfo%%\)*}"
+
 	local machtype=""
-	# if [ -z "machinfo" ]
-	# then
-	#	machinfo=$(awk -F: '/^machine/{printf $2}' /proc/cpuinfo)"
-	# fi
 
 	case "${machinfo}" in
 		"PowerMac G4 AGP Graphics")
@@ -214,7 +205,15 @@ detect_ppc() {
 			;;
 	esac
 
-	PC="Detected an ${machtype} w/ ${numcpu} ${cpuinfo} ${bit}"
+	PC="Detected a(n) ${machtype} w/ ${numcpu} ${cpuinfo} CPU(s)"
+}
+
+detect_sparc() {
+	get_info "cpu" cpuinfo
+	get_info "ncpus active" numcpu
+	get_info "ncpus probed" numprobed
+
+	PC="Detected ${numcpu} active ${cpuinfo} CPU(s) of ${numprobed} total"
 }
 
 start() {
@@ -223,34 +222,43 @@ start() {
 	if [ "${DETECT}" = "yes" ]
 	then
 		ebegin "Hardware detection started"
-			local numcpu="$(awk -F: '/^processor/{printf $2};/^$/{print ""}' /proc/cpuinfo 2>/dev/null | wc -l)"
+			local numcpu="$(grep -c '^processor[[:space:]]\+:' /proc/cpuinfo)"
 			local arch="$(uname -m)"
-			local ismips="no"
-			if [ "${numcpu}" -gt '1' ]
-			then
-				bit="CPUs"
-			else
-				bit="CPU"
-			fi
+
 			case ${arch} in
-				mips|mips64)
+				mips*)
 					detect_mips
-					ismips="yes"
+					ACPI="no"
+					APM="no"
+					IDEDMA="no"
 				;;
 				i?86|x86_64)
-					detect_x86_amd64
+					detect_x86_amd64_ia64
 				;;
 				alpha)
 					detect_alpha
+					ACPI="no"
+					APM="no"
+				;;
+				sparc*)
+					detect_sparc
+					ACPI="no"
+					APM="no"
 				;;
 				powerpc*)
 					detect_ppc
+					ACPI="no"
+					APM="no"
+				;;
+				ia64)
+					detect_x86_amd64_ia64 "ia64"
+					APM="no"
 				;;
 				*)
-					PC="$(awk -F: '/^processor/{printf "Processor"$2" is"};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null)"
+					PC=
 				;;
 			esac
-			einfo "${PC}"
+			[ -n "${PC}" ] && einfo "${PC}"
 			[ -x /usr/sbin/hwsetup ] && hwsetup -p >/dev/null
 		eend
 	else
@@ -263,7 +271,7 @@ start() {
 			einfo "APM BIOS found, power management functions enabled ..."
 		[ -x /etc/init.d/apmd ] && start_service apmd
 	else
-		[ "${ismips}" = "no" ] && ewarn "Not Loading APM Bios support ..."
+		einfo "Not Loading APM Bios support ..."
 	fi
 
 	if [ "${ACPI}" = "yes" ]
@@ -278,14 +286,12 @@ start() {
 		[ -x /etc/init.d/acpid ] && start_service acpid
 		eend
 	else
-		[ "${ismips}" = "no" ] && ewarn "Not Loading ACPI support ..."
+		einfo "Not Loading ACPI support ..."
 	fi
 
 	if [ "${IDEDMA}" = "yes" ]
 	then
-		if [ "${ismips}" = "no" ]; then
-			[ -x /etc/init.d/hdparm ] && start_service hdparm
-		fi
+		[ -x /etc/init.d/hdparm ] && start_service hdparm
 	fi
 
 	if [ "${PCMCIA}" = "yes" ]
@@ -304,7 +310,6 @@ start() {
 	fi
 
 	# Read in what hwsetup has found
-	[ -f /etc/sysconfig/knoppix ] && . /etc/sysconfig/knoppix
 	[ -f /etc/sysconfig/gentoo ] && . /etc/sysconfig/gentoo
 
 	# Mouse
@@ -412,7 +417,13 @@ start() {
 
 	if [ "${X11}" = "yes" ]
 	then
-		[ -x /etc/init.d/x-setup ] && start_service x-setup
+		if [ -x /etc/init.d/x-setup ]
+		then
+			start_service x-setup
+		elif [ -x /etc/init.d/mkxf86config ]
+		then
+			start_service mkxf86config
+		fi
 	else
 		touch /etc/init.d/.noxdm
 	fi
