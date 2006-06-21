@@ -11,8 +11,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.8 2005/10/07 01:24:19 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/compiler-wrapper/Attic/compiler-wrapper.c,v 1.9 2006/06/21 02:37:13 eradicator Exp $
  * $Log: compiler-wrapper.c,v $
+ * Revision 1.9  2006/06/21 02:37:13  eradicator
+ * Don't use getenv(CHOST).  Updated README.
+ *
  * Revision 1.8  2005/10/07 01:24:19  eradicator
  * Ignore ABI environment variable by default.  Give option in selection.conf to not ignore it.
  *
@@ -186,13 +189,17 @@ static void setCtargetAndProfile(WrapperData *data) {
 		}
 	}
 
-	/* We didn't find a match, so see if we have ${CHOST} set. */
+	/* We don't want to check the envvar because it causes some packages
+	 * to fail on cross-compile.  A better solution would be to check
+	 * ${CBUILD} first, but an even better solution would be to fix
+	 * packages in portage to use <tuple>-gcc wrather than just 'gcc'.
 	if(getenv("CHOST") != NULL) {
 		if((data->profile = hashGet(data->selectionConf->selectionHash, getenv("CHOST"))) != NULL) {
 			strncpy(data->ctarget, getenv("CHOST"), MAXPATHLEN);
 			return;
 		}
 	}
+	*/
 
 	/* No match, use the default */
 	strncpy(data->ctarget, data->selectionConf->defaultCtarget, MAXPATHLEN);
