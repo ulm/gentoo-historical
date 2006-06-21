@@ -1,7 +1,7 @@
 /*
  * C Header: hash
  *
- * Description: 
+ * Description:
  * Simple hash table.  All keys are char *.  Data is void *.
  *
  * Author: Jeremy Huddleston <eradicator@gentoo.org>
@@ -10,8 +10,11 @@
  * Distributed under the terms of the GNU General Public License v2
  * See COPYING file that comes with this distribution
  *
- * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.10 2005/10/02 20:45:56 eradicator Exp $
+ * $Header: /var/cvsroot/gentoo/src/toolchain/gcc-config/src/libcommon/Attic/hash.h,v 1.11 2006/06/21 02:57:57 eradicator Exp $
  * $Log: hash.h,v $
+ * Revision 1.11  2006/06/21 02:57:57  eradicator
+ * Marking for rc2.
+ *
  * Revision 1.10  2005/10/02 20:45:56  eradicator
  * BSD related cleanup.
  *
