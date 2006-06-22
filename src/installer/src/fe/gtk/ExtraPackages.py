@@ -97,6 +97,8 @@ caution. These trouble packages can be installed manually after you reboot.
 		# add the custom space-seperated list bar
 		entry_description = gtk.Label("Enter a space seperated list of extra packages to install on the system ( in addition to those checked above ):")
 		self.entry=gtk.Entry()
+		if self.controller.install_type == "networkless":
+			self.entry.set_sensitive(False)
 
 		scrolled_window.add_with_viewport(self.vert2)
 		viewport = scrolled_window.get_children()[0]
