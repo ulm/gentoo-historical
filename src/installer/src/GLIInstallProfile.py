@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.91 2006/04/16 02:25:29 agaffney Exp $
+$Id: GLIInstallProfile.py,v 1.92 2006/06/22 19:46:06 codeman Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -583,6 +583,7 @@ class InstallProfile:
 				"gftp": "Gnome based FTP Client",
 				"gimp": "GNU Image Manipulation Program",
 				"inkscape": "A SVG based generic vector-drawing program",
+				"k3b": "KDE CD Writing Software",
 				"koffice": "An integrated office suite for KDE, the K Desktop Environment",
 				"mozilla": "The Mozilla Web Browser",
 				"mozilla-firefox": "The Mozilla Firefox Web Browser",
@@ -613,7 +614,7 @@ class InstallProfile:
 			'X11': ("Window managers and X selection.", 
 				{"xorg-x11": "An X11 implementation maintained by the X.Org Foundation",
 				"gnome": "The Gnome Desktop Environment",
-				"kde": "The K Desktop Environment",
+				"kde-meta": "The K Desktop Environment",
 				"blackbox": "A small, fast, full-featured window manager for X",
 				"enlightenment": "Enlightenment Window Manager",
 				"fluxbox": "Fluxbox is an X11 window manager featuring tabs and an iconbar",
