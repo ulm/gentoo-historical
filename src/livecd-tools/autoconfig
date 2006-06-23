@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.61 2006/06/21 15:29:04 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.62 2006/06/23 21:01:30 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -115,7 +115,8 @@ get_info() {
 
 	if [ ! -z "${1}" -a ! -z "${2}" ]
 	then
-		tmp=$(grep "^$1[[:space:]]\+:" /proc/cpuinfo | head -n 1 | cut -d" " -f3-)
+#		tmp=$(grep "^$1[[:space:]]\+:" /proc/cpuinfo | head -n 1 | cut -d" " -f3-)
+		tmp=$([[ $'\n'$(</proc/cpuinfo) =~ $'\n''$1[[:space:]]\+:' ]] | head -n 1 | cut -d" " -f3-)
 		eval "$2='${tmp}'"
 	fi
 }
@@ -222,7 +223,8 @@ start() {
 	if [ "${DETECT}" = "yes" ]
 	then
 		ebegin "Hardware detection started"
-			local numcpu="$(grep -c '^processor[[:space:]]\+:' /proc/cpuinfo)"
+#			local numcpu="$(grep -c '^processor[[:space:]]\+:' /proc/cpuinfo)"
+			local numcpu=$([[ $'\n'$(</proc/cpuinfo) =~ $'\n''processor[[:space:]]\+:' ]] | wc -l)
 			local arch="$(uname -m)"
 
 			case ${arch} in
@@ -319,13 +321,21 @@ start() {
 		source /etc/sysconfig/mouse
 		if [ -x /usr/sbin/gpm ]
 		then
-			[ $(grep "#MOUSE=${MOUSETYPE}" /etc/conf.d/gpm) ] \
-				&& sed -i "\@MOUSE=${MOUSETYPE}@s@^#@@" /etc/conf.d/gpm \
-				|| echo "MOUSE=${MOUSETYPE}" >>/etc/conf.d/gpm
+#			if [ $(grep "#MOUSE=${MOUSETYPE}" /etc/conf.d/gpm) ]
+			if [ $([[ $'\n'$(</etc/conf.d/gpm) =~ $'\n''#MOUSE=${MOUSETYPE}' ]]) ]
+			then
+				sed -i "\@MOUSE=${MOUSETYPE}@s@^#@@" /etc/conf.d/gpm
+			else
+				echo "MOUSE=${MOUSETYPE}" >>/etc/conf.d/gpm
+			fi
 
-			[ $(grep "#MOUSEDEV=${DEVICE}" /etc/conf.d/gpm) ] \
-				&& sed -i "\@MOUSEDEV=${DEVICE}@s@^#@@" /etc/conf.d/gpm \
-				|| echo "MOUSEDEV=${DEVICE}" >>/etc/conf.d/gpm
+#			if [ $(grep "#MOUSEDEV=${DEVICE}" /etc/conf.d/gpm) ]
+			if [ $([[ $'\n'$(</etc/conf.d/gpm) =~ $'\n''#MOUSEDEV=${DEVICE}' ]]) ]
+			then
+				sed -i "\@MOUSEDEV=${DEVICE}@s@^#@@" /etc/conf.d/gpm
+			else
+				echo "MOUSEDEV=${DEVICE}" >>/etc/conf.d/gpm
+			fi
 
 			[ "${GPM}" = "yes" ] \
 				&& [ -x /etc/init.d/gpm ] && start_service gpm
