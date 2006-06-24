@@ -138,7 +138,16 @@ a brief description beside it.
 				self.boot_device_combo.set_active(i)
 		if self.boot_device_combo.get_active() == -1:
 			self.boot_device_combo.set_active(0)
-		self.kernel_params_entry.set_text(self.controller.install_profile.get_bootloader_kernel_args())
+#		self.kernel_params_entry.set_text(self.controller.install_profile.get_bootloader_kernel_args())
+		kernel_params = self.controller.install_profile.get_bootloader_kernel_args()
+		if not "doscsi" in kernel_params.split():
+			parts_tmp = self.controller.install_profile.get_partition_tables()
+			for device in parts_tmp:
+				if not device.startswith("/dev/sda"): continue
+				for part in parts_tmp[device]:
+					if parts_tmp[device][part]['mountpoint'] == "/":
+						kernel_params += " doscsi"
+		self.kernel_params_entry.set_text(kernel_params)
 
 	def deactivate(self):
 		self.controller.install_profile.set_boot_loader_pkg(None, self.active_selection, None)
