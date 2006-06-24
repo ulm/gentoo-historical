@@ -5,6 +5,7 @@
 
 import gtk
 import GLIScreen
+import URIBrowser
 
 class Panel(GLIScreen.GLIScreen):
 
@@ -36,11 +37,12 @@ once your system is installed you will eventually need to recreate a kernel
 again.
 
 If you're not concerned about time, select vanilla-sources or gentoo-sources if
-you're feeling lucky.
-
-For non-livecd-kernel sources, selecting Enable Bootsplash gives you a colorful
-background image in a frame buffer.
+you're feeling lucky. If you have a pre-made .config file, you can specify it in
+the entry field at the bottom, and it will be used when the kernel is built.
 """
+
+#For non-livecd-kernel sources, selecting Enable Bootsplash gives you a colorful
+#background image in a frame buffer.
 
 	def __init__(self, controller):
 		GLIScreen.GLIScreen.__init__(self, controller)
@@ -69,19 +71,40 @@ a brief description beside it.
 			hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
 			vert.pack_start(hbox, expand=False, fill=False, padding=10)
 
+#		hbox = gtk.HBox(False, 0)
+#		self.bootsplash_check = gtk.CheckButton("Enable bootsplash")
+#		self.bootsplash_check.set_size_request(150, -1)
+#		hbox.pack_start(self.bootsplash_check, expand=False, fill=False, padding=0)
+#		tmplabel = gtk.Label("This enables a colorful background image during system boot.")
+#		tmplabel.set_line_wrap(True)
+#		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
+
 		hbox = gtk.HBox(False, 0)
-		self.bootsplash_check = gtk.CheckButton("Enable bootsplash")
-		self.bootsplash_check.set_size_request(150, -1)
-		hbox.pack_start(self.bootsplash_check, expand=False, fill=False, padding=0)
-		tmplabel = gtk.Label("This enables a colorful background image during system boot.")
-		tmplabel.set_line_wrap(True)
-		hbox.pack_start(tmplabel, expand=False, fill=False, padding=20)
-		vert.pack_start(hbox, expand=False, fill=False, padding=10)
+		hbox.pack_start(gtk.Label("Kernel config URI:"), expand=False, fill=False, padding=5)
+		self.kernel_config_uri = gtk.Entry()
+		self.kernel_config_uri.set_width_chars(50)
+		hbox.pack_start(self.kernel_config_uri, expand=False, fill=False, padding=10)
+		self.browse_uri = gtk.Button(" ... ")
+		self.browse_uri.connect("clicked", self.browse_uri_clicked)
+		hbox.pack_start(self.browse_uri, expand=False, fill=False, padding=5)
+		vert.pack_end(hbox, expand=False, fill=False, padding=0)
 
 		self.add_content(vert)
 
+	def browse_uri_clicked(self, widget):
+		uribrowser = URIBrowser.URIBrowser(self, self.kernel_config_uri)
+		uribrowser.run(self.kernel_config_uri.get_text())
+
 	def kernel_selected(self, widget, data=None):
 		self.active_selection = data
+		if data == "livecd-kernel":
+#			self.bootsplash_check.set_sensitive(False)
+			self.kernel_config_uri.set_sensitive(False)
+			self.browse_uri.set_sensitive(False)
+		else:
+#			self.bootsplash_check.set_sensitive(True)
+			self.kernel_config_uri.set_sensitive(True)
+			self.browse_uri.set_sensitive(True)
 
 	def activate(self):
 		self.controller.SHOW_BUTTON_EXIT    = True
@@ -91,33 +114,38 @@ a brief description beside it.
 		self.controller.SHOW_BUTTON_FINISH  = False
 		self.active_selection = self.controller.install_profile.get_kernel_source_pkg() or "gentoo-sources"
 		self.kernel_sources[self.active_selection].set_active(True)
-		self.bootsplash_check.set_active(self.controller.install_profile.get_kernel_bootsplash())
+#		self.bootsplash_check.set_active(self.controller.install_profile.get_kernel_bootsplash())
 		if self.controller.install_type == "networkless":
 			self.active_selection = "livecd-kernel"
 			self.kernel_sources[self.active_selection].set_active(True)
-			self.bootsplash_check.set_active(False)
+#			self.bootsplash_check.set_active(False)
 			for kernel_source in self.kernel_sources:
 				if not kernel_source == "livecd-kernel":
 					self.kernel_sources[kernel_source].set_sensitive(False)
-			self.bootsplash_check.set_sensitive(False)
+#			self.bootsplash_check.set_sensitive(False)
 
 	def deactivate(self):
 		self.controller.install_profile.set_kernel_source_pkg(None, self.active_selection, None)
 		# For now
 		self.controller.install_profile.set_kernel_build_method(None, "genkernel", None)
-		self.controller.install_profile.set_kernel_bootsplash(None, self.bootsplash_check.get_active(), None)
-		if self.bootsplash_check.get_active() and not self.controller.install_profile.get_bootloader_kernel_args():
-			proc_cmdline = open("/proc/cmdline", "r")
-			cmdline = proc_cmdline.readline().strip()
-			proc_cmdline.close()
-			vga = None
-			splash = None
-			for x in cmdline.split(" "):
-				parts = x.split("=")
-				if len(parts) < 2: continue
-				if parts[0] == "vga":
-					vga = parts[1]
-				elif parts[0] == "splash":
-					splash = parts[1]
-			self.controller.install_profile.set_bootloader_kernel_args(None, "vga=%s splash=%s CONSOLE=/dev/tty1 quiet" % (vga, splash), None)
+		if self.kernel_config_uri.get_text():
+			self.controller.install_profile.set_kernel_config_uri(None, self.kernel_config_uri.get_text(), None)
+#		if self.active_selection == "livecd-kernel":
+		self.controller.install_profile.set_kernel_bootsplash(None, False, None)
+#		else:
+#			self.controller.install_profile.set_kernel_bootsplash(None, self.bootsplash_check.get_active(), None)
+#		if self.bootsplash_check.get_active() and not self.controller.install_profile.get_bootloader_kernel_args():
+#			proc_cmdline = open("/proc/cmdline", "r")
+#			cmdline = proc_cmdline.readline().strip()
+#			proc_cmdline.close()
+#			vga = None
+#			splash = None
+#			for x in cmdline.split(" "):
+#				parts = x.split("=")
+#				if len(parts) < 2: continue
+#				if parts[0] == "vga":
+#					vga = parts[1]
+#				elif parts[0] == "splash":
+#					splash = parts[1]
+#			self.controller.install_profile.set_bootloader_kernel_args(None, "vga=%s splash=%s CONSOLE=/dev/tty1 quiet" % (vga, splash), None)
 		return True
