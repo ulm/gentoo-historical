@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.52 2006/04/19 16:31:18 agaffney Exp $
+$Id: GLIPortage.py,v 1.53 2006/06/25 02:28:19 agaffney Exp $
 """
 
 import re
@@ -75,16 +75,16 @@ class GLIPortage(object):
 		             '/opt': '/mnt/livecd/opt/', '/sbin': '/mnt/livecd/sbin/', '/usr': '/mnt/livecd/usr/',
 		             '/etc/gconf': '/usr/livecd/gconf/' }
 
-		tmpdir = "/var/tmp/portage"
-		image_dir = tmpdir + "/" + package.split("/")[1] + "/image"
+		tmpdir = "/var/tmp"
+		image_dir = tmpdir + "/portage/" + package.split("/")[1] + "/image"
 		root_cmd = ""
 		tmp_chroot_dir = self._chroot_dir
-		portage_tmpdir = "/var/tmp/portage"
+		portage_tmpdir = "/var/tmp"
 		vdb_dir = "/var/db/pkg/"
 		if use_root:
 			root_cmd = "ROOT=" + self._chroot_dir
 			tmp_chroot_dir = ""
-			portage_tmpdir = self._chroot_dir + "/var/tmp/portage"
+			portage_tmpdir = self._chroot_dir + "/var/tmp"
 			vdb_dir = self._chroot_dir + "/var/db/pkg/"
 
 		# Create /tmp, /var/tmp, and /var/lib/portage with proper permissions
@@ -161,16 +161,16 @@ class GLIPortage(object):
 				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "Could not execute tar for " + package)
 
 			# Fix mode, uid, and gid of directories
-#			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running find " + self._chroot_dir + image_dir + " -type d 2>/dev/null | sed -e 's:^" + self._chroot_dir + image_dir + "::' | grep -v '^$'")
-#			dirlist = GLIUtility.spawn("find " + self._chroot_dir + image_dir + " -type d 2>/dev/null | sed -e 's:^" + self._chroot_dir + image_dir + "::' | grep -v '^$'", return_output=True)[1].strip().split("\n")
-#			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): found the following directories: " + str(dirlist))
-#			if not dirlist or dirlist[0] == "":
-#				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "directory list entry for " + package + "...this shouldn't happen!")
-#			for dir in dirlist:
-#				dirstat = os.stat(dir)
-#				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): setting mode " + str(dirstat[0]) + " and uid/gid " + str(dirstat[4]) + "/" + str(dirstat[5]) + " for directory " + self._chroot_dir + image_dir + dir)
-#				os.chown(self._chroot_dir + image_dir + dir, dirstat[4], dirstat[5])
-#				os.chmod(self._chroot_dir + image_dir + dir, dirstat[0])
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): running find " + self._chroot_dir + image_dir + " -mindepth 1 -type d 2>/dev/null | sed -e 's:^" + self._chroot_dir + image_dir + "::' | grep -v '^$'")
+			dirlist = GLIUtility.spawn("find " + self._chroot_dir + image_dir + " -mindepth 1 -type d 2>/dev/null | sed -e 's:^" + self._chroot_dir + image_dir + "::' | grep -v '^$'", return_output=True)[1].strip().split("\n")
+			if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): found the following directories: " + str(dirlist))
+			if not dirlist or dirlist[0] == "":
+				raise GLIException("CopyPackageToChrootError", 'fatal', 'copy_pkg_to_chroot', "directory list entry for " + package + "...this shouldn't happen!")
+			for dir in dirlist:
+				dirstat = os.stat(dir)
+				if self._debug: self._logger.log("DEBUG: copy_pkg_to_chroot(): setting mode " + str(dirstat[0]) + " and uid/gid " + str(dirstat[4]) + "/" + str(dirstat[5]) + " for directory " + self._chroot_dir + image_dir + dir)
+				os.chown(self._chroot_dir + image_dir + dir, dirstat[4], dirstat[5])
+				os.chmod(self._chroot_dir + image_dir + dir, dirstat[0])
 
 #			# More symlink crappiness hacks
 #			for symlink in symlinks:
