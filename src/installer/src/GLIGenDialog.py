@@ -937,6 +937,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		arch = self._client_profile.get_architecture_template()
 		parts = self._install_profile.get_partition_tables()
 		#Bootloader code yanked from the x86ArchTemplate
+		kernel_params = self._install_profile.get_bootloader_kernel_args()
 		if self._install_profile.get_boot_device():
 			boot_device = self._install_profile.get_boot_device()
 		else:
@@ -950,7 +951,8 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						foundboot = True
 					if (( (mountpoint == "/") and (not foundboot) ) or (mountpoint == "/boot")):
 						boot_device = device
-
+						if not "doscsi" in kernel_params.split():
+							if device.startswith("/dev/sd"): kernel_params += " doscsi"
 		arch_loaders = { 'x86': [
 			("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED")),
 			("lilo",_(u"LInux LOader, older, traditional.(detects windows partitions)"))],
@@ -998,12 +1000,17 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				except:
 					self._d.msgbox(_(u"ERROR! Could not set the boot device!")+boot_drive_choice)
 		if self.advanced_mode:
-			code, bootloader_kernel_args = self._d.inputbox(_(u"If you have any additional optional arguments you want to pass to the kernel at boot, type them here or just press Enter to continue:"), height=12, width=55)
+			code, bootloader_kernel_args = self._d.inputbox(_(u"If you have any additional optional arguments you want to pass to the kernel at boot, type them here or just press Enter to continue:"), height=12, width=55, init=kernel_params)
 			if code == self._DLG_OK:
 				try:
 					self._install_profile.set_bootloader_kernel_args(None, bootloader_kernel_args, None)
 				except:
 					self._d.msgbox(_(u"ERROR! Could not set bootloader kernel arguments! ")+bootloader_kernel_args)
+		elif kernel_params:  #If we are in standard mode but have the dosci to add.
+			try:
+				self._install_profile.set_bootloader_kernel_args(None, kernel_params, None)
+			except:
+				self._d.msgbox(_(u"ERROR! Could not set bootloader kernel arguments! ")+bootloader_kernel_args)
 				
 
 	def set_timezone(self):
