@@ -391,7 +391,7 @@
                     <br/>
                     <a class="altlink" href="/main/en/projects.xml">Gentoo-hosted projects</a>
                     <br/>
-                    <a class="altlink" href="/main/en/articles.xml">IBM dW/Intel article archive</a>
+                    <a class="altlink" href="/doc/en/articles.xml">IBM dW/Intel article archive</a>
                     <xsl:if test="/mainpage/@id='news'">
                     <br/><br/>
                       Older News:<br/>
