@@ -979,7 +979,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			else:
 				self._install_profile.set_boot_loader_mbr(None, False, None)
 		if self._install_profile.get_boot_loader_mbr():  #If we're installing to MBR gotta check the device.
-			if self.advanced_mode or (boot_device[-1] != 'a'):
+			if self.advanced_mode or (boot_device and boot_device[-1] != 'a'):
 				#show the menu.
 				boot_string3_std = _(u"Your boot device may not be correct.  It is currently set to %s, but this device may not be the first to boot.  Usually boot devices end in 'a' such as hda or sda.") % boot_device
 				boot_string3 = _(u"  Please confirm your boot device by choosing it from the menu.")
