@@ -127,6 +127,10 @@ a brief description beside it.
 		self.controller.SHOW_BUTTON_FINISH  = False
 		self.active_selection = self.controller.install_profile.get_boot_loader_pkg() or "grub"
 		self.boot_loaders[self.active_selection].set_active(True)
+		if self.controller.install_type == "networkless":
+			self.active_selection = "grub"
+			self.boot_loaders["lilo"].set_sensitive(False)
+			self.boot_loaders["grub"].set_active(True)
 		self.check_install_in_mbr.set_active(self.controller.install_profile.get_boot_loader_mbr())
 		self.boot_devices = self.controller.install_profile.get_partition_tables().keys()
 		self.boot_devices.sort()
