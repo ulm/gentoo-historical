@@ -954,10 +954,11 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						if not "doscsi" in kernel_params.split():
 							if device.startswith("/dev/sd"): kernel_params += " doscsi"
 		arch_loaders = { 'x86': [
-			("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED")),
-			("lilo",_(u"LInux LOader, older, traditional.(detects windows partitions)"))],
+			("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED"))],
 		'amd64': [
 			("grub",_(u"GRand Unified Bootloader, newer, RECOMMENDED"))]} #FIXME ADD OTHER ARCHS
+		if not self._networkless:  
+			arch_loaders['x86'].append(("lilo",_(u"LInux LOader, older, traditional.(detects windows partitions)")))
 		boot_loaders = arch_loaders[arch]
 		boot_loaders.append(("none", _(u"Do not install a bootloader.  (System may be unbootable!)")))
 		boot_string1 = _(u"To boot successfully into your new Linux system, a bootloader will be needed.  If you already have a bootloader you want to use you can select None here.  The bootloader choices available are dependent on what GLI supports and what architecture your system is.  Choose a bootloader")
