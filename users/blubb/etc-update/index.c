@@ -39,6 +39,7 @@ char **find_updates(char *searchdir) {
 					}
 				}
 			}
+			free(myfile);
 		}
 	}
 	
@@ -46,29 +47,19 @@ char **find_updates(char *searchdir) {
 }
 
 MENU *create_menu(char **protected) {
-	int i, j = 0, count = 0, arraycount = 0;
+	int i, arraycount = 0;
 	ITEM **item_array;
 	MENU *mymenu;
 	
 	for (i=0;!is_last_entry(protected[i]);i++) {
-		if (is_valid_entry(protected[i])) {
-			count++;
-		}
 		arraycount++;
 	}
-	// we really want this sorted
 	qsort(protected, arraycount, sizeof(char *), compare_updates);
 	// TODO: fold
-	//struct node *folded_protected = fold_updates(protected);
-	item_array = (ITEM **)malloc(sizeof(ITEM *) * (count + 1));
-	for (i=0;!is_last_entry(protected[i]);i++) {
-		if (is_valid_entry(protected[i])) {
-			item_array[j] = new_item(protected[i], "");
-			set_item_userptr(item_array[j], protected[i]);
-			j++;
-		}
-	}
-	item_array[count] = NULL;
+	struct node *folded_protected = fold_updates(protected);
+	item_array = (ITEM **)calloc(count_array_items(folded_protected) + 1, sizeof(ITEM *));
+	build_item_array(item_array, folded_protected);
+	
 	mymenu = new_menu(item_array);
 	set_menu_mark(mymenu, " * ");
 	menu_opts_off(mymenu, O_ONEVALUE);
@@ -79,4 +70,16 @@ MENU *create_menu(char **protected) {
 	
 	// free folded_protected
 	return mymenu;
+}
+
+void remove_menu(MENU *mymenu) {
+	ITEM **item_list = menu_items(mymenu);
+	int i;
+	
+	unpost_menu(mymenu);
+	
+	for (i=0;i<item_count(mymenu);i++) {
+		free_item(item_list[i]);
+	}
+	free_menu(mymenu);
 }

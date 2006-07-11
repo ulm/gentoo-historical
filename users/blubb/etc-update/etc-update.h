@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <string.h>
+#include <errno.h>
 #include <openssl/md5.h>
 #include <curses.h>
 #include <menu.h>
@@ -21,6 +22,9 @@
 
 #define SKIP_ENTRY (char *)1
 #define LAST_ENTRY (char *)2
+
+#define INDENT_CHAR ' '
+#define INDENT_STR "  "
 
 #include "helpers.h"
 #include "index.h"

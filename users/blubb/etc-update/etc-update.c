@@ -1,37 +1,39 @@
 #include "etc-update.h"
 
 int main() {
+	char *config_protect;
+	char *config_protect_mask;
+	char *cmd;
+	char *myfile;
+	char *highest;
+	char *name;
+	char *myname;
+	int indent;
+	int myindent;
+	bool cont;
+	char **result;
+	char **envvars;
+	char **protected;
+	char **masked;
+	char **md5_cache;
+	char **md5sum_cache;
+	ITEM **items_list;
+	int i, j, file_count, c;
+	bool menu_changed;
+	WINDOW *inner;
+	WINDOW *menu_win;
+	MENU *mymenu;
+	
 	read_config();
-	
-	// create /var/lib/etc-update/md5sum_index if needed
-	if (access(MD5SUM_INDEX, R_OK) != 0) {
-		if (access(MD5SUM_INDEX_DIR, R_OK) != 0) {
-			mkdir(MD5SUM_INDEX_DIR, 0755);
-		}
-		FILE *f = fopen(MD5SUM_INDEX, "w+");
-		fclose(f);
-	}
-	
-	#ifndef DEBUG
-	if (getuid() != 0) {
-		fprintf(stderr, "!!! Oops, you're not root!\n");
-		exit(EXIT_FAILURE);
-	}
-	#endif
+	sanity_checks();
 	
 	#ifdef DEBUG
 	fprintf(stderr, "Getting CONFIG_PROTECT and CONFIG_PROTECT_MASK variables from portage... ");
 	// sandboxing is useful for debugging, believe me
-	char **envvars = get_listing("portageq envvar CONFIG_PROTECT CONFIG_PROTECT_MASK | sed -e \"s:^/:${ROOT}/:\" -e \"s: /: ${ROOT}/:g\"", "\n");
+	envvars = get_listing("portageq envvar CONFIG_PROTECT CONFIG_PROTECT_MASK | sed -e \"s:^/:${ROOT}/:\" -e \"s: /: ${ROOT}/:g\"", "\n");
 	#else
-	char **envvars = get_listing("portageq envvar CONFIG_PROTECT CONFIG_PROTECT_MASK", "\n");
+	envvars = get_listing("portageq envvar CONFIG_PROTECT CONFIG_PROTECT_MASK", "\n");
 	#endif
-	char *config_protect;
-	char *config_protect_mask;
-	char *cmd;
-	char *myfile, *highest;
-	char **result;
-	int i, j, file_count;
 	
 	if (is_valid_entry(envvars[0]) && is_valid_entry(envvars[1])) {
 		config_protect = strdup(envvars[0]);
@@ -44,20 +46,21 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 	free(envvars);
+	
 	fprintf(stderr, "Automerging updates in CONFIG_PROTECT_MASK... ");
-	char **masked = find_updates(config_protect_mask);
+	masked = find_updates(config_protect_mask);
 	for (i=0;!is_last_entry(masked[i]);i++) {
 		if (is_valid_entry(masked[i])) {
 			merge(get_highest_update(masked, masked[i]), masked);
 		}
 	}
+	free(masked);
 	fprintf(stderr, "done.\n");
 	
 	fprintf(stderr, "Searching for updates in CONFIG_PROTECT... ");
-	char **protected = find_updates(config_protect);
+	protected = find_updates(config_protect);
 	fprintf(stderr, "done.\n");
-	char **md5_cache;
-	char **md5sum_cache;
+
 	// it's important that we do this first
 	if (config.automerge_unmodified) {
 		fprintf(stderr, "Updating md5 sums... ");
@@ -146,6 +149,7 @@ int main() {
 				strcat(cmd, "' | grep \"^[+-][^+-]\" | grep -v \"# .Header:.*\"");
 				
 				result = get_listing(cmd, "\n");
+				free(cmd);
 				if (is_last_entry(result[0])) {
 					merge(highest, protected);
 				}
@@ -185,76 +189,17 @@ int main() {
 	init_pair(3, COLOR_BLACK, COLOR_WHITE);
 	init_pair(4, COLOR_YELLOW, COLOR_WHITE);
 	init_pair(5, COLOR_WHITE, COLOR_BLACK);
-	attron(A_BOLD);
-	attron(COLOR_PAIR(1));
-	// TODO: why does clear() not work here?
-	for (i=0;i<LINES;i++) {
-		mvhline(i, 0, ' ', COLS);
-	}
-	attron(COLOR_PAIR(5));
-	mvhline(LINES-2, 3, ' ', COLS-4);
-	mvvline(3, COLS-2, ' ', LINES-4);
-	attron(COLOR_PAIR(1));
-	mvprintw(0,1, "etc-update v 2.0_alpha");
-	mvhline(1, 1, ACS_HLINE, COLS - 2);
-	refresh();
-	WINDOW *inner = newwin(LINES - 4, COLS - 4, 2, 2);
+	
+	draw_background();
+	
+	inner = newwin(LINES - 4, COLS - 4, 2, 2);
 	keypad(inner, TRUE);
-	wattron(inner, COLOR_PAIR(2));
-	wattron(inner, A_BOLD);
-	box(inner, 0, 0);
-	// again, TODO from above
-	for (i=1;i<LINES-5;i++) {
-		mvwhline(inner, i, 1, ' ', COLS-6);
-	}
-	// This is sick! TODO: make a seperate function later on
-	wattroff(inner, A_BOLD);
-	wattron(inner, COLOR_PAIR(3));
-	mvwprintw(inner, 1, 3, "Select current: ");
-	wattron(inner, COLOR_PAIR(4) | A_BOLD);
-	mvwprintw(inner, 1, 3 + strlen("Select current: "), "<SPACE>");
-	wattron(inner, COLOR_PAIR(3));
-	wattroff(inner, A_BOLD);
-	mvwprintw(inner, 1, 3 + strlen("Select current: <SPACE> "), "| ");
-	wattron(inner, COLOR_PAIR(4) | A_BOLD);
-	mvwprintw(inner, 1, 3 + strlen("Select current: <SPACE> | "), "<a>");
-	wattron(inner, COLOR_PAIR(3));
-	wattroff(inner, A_BOLD);
-	mvwprintw(inner, 1, 3 + strlen("Select current: <SPACE> | <a>"), "ll | ");
-	wattron(inner, COLOR_PAIR(4) | A_BOLD);
-	mvwprintw(inner, 1, 3 + strlen("Select current: <SPACE> | <a>ll | "), "<u>");
-	wattron(inner, COLOR_PAIR(3));
-	wattroff(inner, A_BOLD);
-	mvwprintw(inner, 1, 3 + strlen("Select current: <SPACE> | <a>ll | <u>"), "nselect all | ");
-	wattron(inner, COLOR_PAIR(4) | A_BOLD);
-	mvwprintw(inner, 1, 3 + strlen("Select current: <SPACE> | <a>ll | <u>nselect all | "), "<i>");
-	wattron(inner, COLOR_PAIR(3));
-	wattroff(inner, A_BOLD);
-	mvwprintw(inner, 1, 3 + strlen("Select current: <SPACE> | <a>ll | <u>nselect all | <i>"), "nvert");
 	
-	mvwprintw(inner, 2, 3, "Show diff: ");
-	wattron(inner, COLOR_PAIR(4) | A_BOLD);
-	mvwprintw(inner, 2, 3 + strlen("Show diff: "), "<ENTER>");
-	wattron(inner, COLOR_PAIR(3));
-	wattroff(inner, A_BOLD);
+	draw_legend(inner);
 	
-	mvwprintw(inner, 3, 3, "Action shortcuts: ");
-	wattron(inner, COLOR_PAIR(4) | A_BOLD);
-	mvwprintw(inner, 3, 3 + strlen("Action shortcuts: "), "<m>");
-	wattron(inner, COLOR_PAIR(3));
-	wattroff(inner, A_BOLD);
-	mvwprintw(inner, 3, 3 + strlen("Action shortcuts: <m>"), "erge | ");
-	wattron(inner, COLOR_PAIR(4) | A_BOLD);
-	mvwprintw(inner, 3, 3 + strlen("Action shortcuts: <m>erge | "), "<d>");
-	wattron(inner, COLOR_PAIR(3));
-	wattroff(inner, A_BOLD);
-	mvwprintw(inner, 3, 3 + strlen("Action shortcuts: <m>erge | <d>"), "elete update");
-	
-	wrefresh(inner);
-	// end of huge legend chunk
-	
-	WINDOW *menu_win = subwin(inner, LINES - 7 - 6, COLS - 4 - 5, 8, 5);
-	MENU *mymenu = create_menu(protected);
+	menu_win = subwin(inner, LINES - 7 - 6, COLS - 4 - 5, 8, 5);
+	mymenu = create_menu(protected);
+	items_list = menu_items(mymenu);
 	set_menu_win(mymenu, inner);
 	set_menu_sub(mymenu, menu_win);
 	set_menu_format(mymenu, LINES - 7 - 6, 1);
@@ -262,8 +207,8 @@ int main() {
 	post_menu(mymenu);
 	touchwin(inner);
 	wrefresh(inner);
-	int c;
-	while ((c = wgetch(inner)) != 'q' && c != 27) {
+	menu_changed = false;
+	while ((c = wgetch(inner)) != 'q' && c != 27 && c != 'Q') {
 		switch(c) {
 			// navigation 1up/down
 			case KEY_DOWN:
@@ -287,50 +232,101 @@ int main() {
 				menu_driver(mymenu, REQ_LAST_ITEM);
 				break;
 			
+			// select single
+			case ' ':
+				if ((strrchr(item_name(current_item(mymenu)), '/'))) {
+					// it's a dir, select all subdirs + files
+					name = item_name(current_item(mymenu));
+					indent = 0;
+					while (name[indent] == INDENT_CHAR) {
+						indent++;
+					}
+					cont = true;
+					while (cont) {
+						menu_driver(mymenu, REQ_DOWN_ITEM);
+						myname = item_name(current_item(mymenu));
+						myindent = 0;
+						while (myname[myindent] == INDENT_CHAR) {
+							myindent++;
+						}
+						if (myindent > indent) {
+							if ((!strrchr(myname, '/'))) {
+								set_item_value(current_item(mymenu), TRUE);
+							}
+						} else {
+							menu_driver(mymenu, REQ_UP_ITEM);
+							cont = false;
+						}
+					}
+				} else {
+					menu_driver(mymenu, REQ_TOGGLE_ITEM);
+				}
+				break;
+			// select all
+			case 'a':
+			case 'A':
+				menu_driver(mymenu, REQ_LAST_ITEM);
+				for (i=0;i<item_count(mymenu);i++) {
+					if ((!strrchr(item_name(current_item(mymenu)), '/'))) {
+						set_item_value(current_item(mymenu), TRUE);
+					}
+					menu_driver(mymenu, REQ_UP_ITEM);
+				}
+				menu_driver(mymenu, REQ_FIRST_ITEM);
+				break;
+			// deselect all
+			case 'u':
+			case 'U':
+				menu_driver(mymenu, REQ_LAST_ITEM);
+				for (i=0;i<item_count(mymenu);i++) {
+					menu_driver(mymenu, REQ_UP_ITEM);
+					set_item_value(current_item(mymenu), FALSE);
+				}
+				menu_driver(mymenu, REQ_FIRST_ITEM);
+				break;
+				
 			// disp diff
 			case '\n':
 				endwin();
 				show_diff(item_userptr(current_item(mymenu)));
 				reset_prog_mode();
 				break;
-			// select single
-			case ' ':
-				menu_driver(mymenu, REQ_TOGGLE_ITEM);
-				break;
-			// select all
-			case 'a':
-				menu_driver(mymenu, REQ_LAST_ITEM);
-				for (i=0;i<item_count(mymenu);i++) {
-						set_item_value(current_item(mymenu), TRUE);
-						menu_driver(mymenu, REQ_UP_ITEM);
+			// merge update
+			case 'm':
+			case 'M':
+				/* it is important that we go from last to first:
+				 * if e.g. both 0000 and 0001 are selected for merging, this
+				 * assures (given a sorted list), that 0001 gets merged before
+				 * 0000 and therefore 0000 gets removed
+				 */
+				for (i=item_count(mymenu)-1;i>=0;i--) {
+					if (is_valid_entry((char *)item_userptr(items_list[i]))) {
+						if (item_value(items_list[i]) == TRUE) {
+							merge((char *)item_userptr(items_list[i]), protected);
+							menu_changed = true;
+						}
+					}
 				}
-				menu_driver(mymenu, REQ_FIRST_ITEM);
 				break;
-			// deselect all
-			case 'u':
-				menu_driver(mymenu, REQ_LAST_ITEM);
+			// delete update
+			case 'd':
+			case 'D':
 				for (i=0;i<item_count(mymenu);i++) {
-					set_item_value(current_item(mymenu), FALSE);
-					menu_driver(mymenu, REQ_UP_ITEM);
+					if (item_value(items_list[i]) == TRUE) {
+						assert(!unlink(item_userptr(items_list[i])));
+						*(char *)item_userptr(items_list[i]) = SKIP_ENTRY;
+						menu_changed = true;
+					}
 				}
-				menu_driver(mymenu, REQ_FIRST_ITEM);
 				break;
-			// invert selection
-			case 'i':
-				menu_driver(mymenu, REQ_LAST_ITEM);
-				for (i=0;i<item_count(mymenu);i++) {
-					menu_driver(mymenu, REQ_TOGGLE_ITEM);
-					menu_driver(mymenu, REQ_UP_ITEM);
-				}
-				menu_driver(mymenu, REQ_FIRST_ITEM);
-				break;
+		}
+		if (menu_changed) {
+			// TODO: re-create menu
 		}
 		touchwin(inner);
 		wrefresh(inner);
 	}
 	endwin();
-	unpost_menu(mymenu);
-	// TODO: free all items
-	free_menu(mymenu);
+	remove_menu(mymenu);
 	exit(EXIT_SUCCESS);
 }
