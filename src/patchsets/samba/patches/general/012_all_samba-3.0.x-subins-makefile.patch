@@ -1,6 +1,6 @@
---- source/Makefile.in.ORIG	2006-01-01 18:58:09.000000000 -0500
-+++ source/Makefile.in	2006-01-01 19:56:21.000000000 -0500
-@@ -25,6 +25,7 @@
+--- source/Makefile.in.orig	2006-07-12 09:44:38.000000000 +0200
++++ source/Makefile.in	2006-07-12 09:52:41.000000000 +0200
+@@ -29,6 +29,7 @@
  PYTHON=@PYTHON@
  PERL=@PERL@
  
@@ -8,7 +8,7 @@
  TERMLDFLAGS=@TERMLDFLAGS@
  TERMLIBS=@TERMLIBS@
  PRINT_LIBS=@PRINT_LIBS@
-@@ -72,6 +73,9 @@
+@@ -81,6 +82,9 @@
  # The permissions to give the executables
  INSTALLPERMS = 0755
  
@@ -18,36 +18,25 @@
  # set these to where to find various files
  # These can be overridden by command line switches (see smbd(8))
  # or in smb.conf (see smb.conf(5))
-@@ -136,6 +140,8 @@
- 	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ \
- 	bin/smbcquotas@EXEEXT@ bin/eventlogadm@EXEEXT@
+@@ -136,7 +140,7 @@
  
-+SUBIN_PROGS = @EXTRA_SUBIN_PROGS@
-+
- TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
- 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
- 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@
-@@ -584,6 +590,10 @@
+ SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROGS@
  
- UMOUNT_OBJ = client/smbumount.o
+-ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@
++SUBIN_PROGS = @CIFSMOUNT_PROGS@ @EXTRA_SUBIN_PROGS@
  
-+MCIFS_OBJ = client/mount.cifs.o
-+
-+UMCIFS_OBJ = client/umount.cifs.o
-+
- NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(LIBNMB_OBJ) \
-                $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
- 
-@@ -740,7 +750,7 @@
+ BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
+ 	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ bin/smbget@EXEEXT@
+@@ -765,7 +769,7 @@
  ######################################################################
  # now the rules...
  ######################################################################
--all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
-+all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SUBIN_PROGS) $(SHLIBS) \
- 	$(MODULES) @EXTRA_ALL_TARGETS@
+-all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
++all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SUBIN_PROGS) \
+ 	$(SHLIBS) $(MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
  
- pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
-@@ -927,11 +937,19 @@
+ pam_modules : $(PAM_MODULES)
+@@ -953,19 +957,19 @@
  
  bin/smbmnt@EXEEXT@: $(MNT_OBJ) bin/.dummy
  	@echo Linking $@
@@ -58,32 +47,48 @@
  	@echo Linking $@
 -	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 +	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS) $(LAZYLDFLAGS)
-+
-+client/mount.cifs@EXEEXT@: $(MCIFS_OBJ) bin/.dummy
-+	@echo Linking $@
-+	@$(CC) $(FLAGS) -o $@ $(MCIFS_OBJ) $(DYNEXP) $(LDFLAGS) $(LAZYLDFLAGS)
-+
-+client/umount.cifs@EXEEXT@: $(UMCIFS_OBJ) bin/.dummy
-+	@echo Linking $@
-+	@$(CC) $(FLAGS) -o $@ $(UMCIFS_OBJ) $(DYNEXP) $(LDFLAGS) $(LAZYLDFLAGS)
+ 
+ bin/mount.cifs@EXEEXT@: $(CIFS_MOUNT_OBJ) bin/.dummy
+ 	@echo Linking $@
+-	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(CIFS_MOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
++	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(CIFS_MOUNT_OBJ) $(DYNEXP) $(LDFLAGS) $(LAZYLDFLAGS)
+ 
+ bin/umount.cifs@EXEEXT@: $(CIFS_UMOUNT_OBJ) bin/.dummy
+ 	@echo Linking $@
+-	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
++	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS) $(LAZYLDFLAGS)
  
  bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
  	@echo Linking $@
-@@ -1389,7 +1407,7 @@
+@@ -1410,7 +1414,7 @@
+ 	@echo Linking $@
+ 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) script/tests/timelimit.o
  
- bin/t_snprintf@EXEEXT@: lib/snprintf.c
- 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) -DTEST_SNPRINTF lib/snprintf.c -lm
--install: installbin installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@
-+install: installbin installsubin installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@
+-install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@
++install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@ installsubin
  
  install-everything: install installmodules
  
-@@ -1411,6 +1429,8 @@
- 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
- 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
+@@ -1431,9 +1435,12 @@
+ installbin: all installdirs
+ 	@$(SHELL) script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(BINDIR) $(BIN_PROGS)
  
 +installsubin: all installdirs
-+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLSUPERMS) $(DESTDIR) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SUBIN_PROGS)
++	@$(SHELL) script/installbin.sh $(INSTALLSUPERMS) $(DESTDIR) $(prefix) $(BINDIR) $(SUBIN_PROGS)
++
+ installcifsmount: @CIFSMOUNT_PROGS@
+ 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(ROOTSBINDIR)
+-	@$(SHELL) script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
++	@$(SHELL) script/installbin.sh $(INSTALLSUPERMS) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
  
  # Some symlinks are required for the 'probing' of modules. 
  # This mechanism should go at some point..
+@@ -1595,7 +1602,7 @@
+ 
+ clean: delheaders python_clean
+ 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
+-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
++		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(SUBIN_PROGS) \
+ 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) \
+ 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBMSRPC) \
+ 		.headers.stamp */src/*.o */src/*.@PICSUFFIX@
