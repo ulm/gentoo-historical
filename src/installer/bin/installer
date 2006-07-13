@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Header: /var/cvsroot/gentoo/src/installer/bin/installer,v 1.1 2006/03/13 17:00:21 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/installer/bin/installer,v 1.2 2006/07/13 14:22:52 wolf31o2 Exp $
 #
 # This is the installer script that we will use to determine whether or not
 # we are running in X or as root.  A good portion of this script was ripped
@@ -10,7 +10,7 @@
 installer_root=/opt/installer
 
 # Allow X
-xhost + 2>/dev/null
+xhost +localhost 2>/dev/null
 
 # patching utf-8 locales
 if test ! ${UTF8FIX} ; then
@@ -23,8 +23,18 @@ cd $installer_root/bin
 
 # call installer with -auth when ran through su/xsu/sudo
 auth=0
-if [ "$1" = "-auth" ]; then
+if [ "${1}" == "-auth" ]; then
 	auth=1
+	shift
+fi
+
+# we see if we were called with a specific front-end
+launch=
+if [ "${1}" == "gtk" ]; then
+	launch=gtk
+	shift
+elif [ "${1}" =="dialog" ]; then
+	launch=dialog
 	shift
 fi
 
@@ -93,16 +103,25 @@ if [ "$auth" -eq 0 ]; then
 		fi
 	fi
 fi
-
-# Try to run the installer
-try_run /usr/bin/installer-gtk $args $*
-status=$?
-if [ $status -eq 1 ]; then
-	try_run /usr/bin/installer-dialog $args $* || {
+if [ -z "${launch}" ]; then
+	# Try to run the gtk installer
+	try_run /usr/bin/installer-gtk $args $*
+	status=$?
+	if [ $status -eq 1 ]; then
+		try_run /usr/bin/installer-dialog $args $* || {
+			if [ $status -ne 2 ]; then
+				echo "The setup program seems to have failed"
+			fi
+			status=1
+		}
+	fi
+else
+	# Try to run the installer script asked for when launched
+	try_run /usr/bin/installer-${launch} $args $* || {
 		if [ $status -ne 2 ]; then
 			echo "The setup program seems to have failed"
 		fi
 		status=1
 	}
-fi		
+fi
 exit $status
