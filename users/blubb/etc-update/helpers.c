@@ -96,6 +96,8 @@ struct node *fold_updates(char **list) {
 	root->children = malloc(sizeof(struct node *));
 	root->ct_children = 0;
 	root->parent = NULL;
+	root->dir = true;
+	root->link = NULL;
 	
 	for (i=0;!is_last_entry(list[i]);i++) {
 		if (is_valid_entry(list[i])) {
@@ -121,6 +123,15 @@ struct node *fold_updates(char **list) {
 					// mynode is the parent of the new to be inserted node
 					newnode = malloc(sizeof(struct node));
 					newnode->name = strdup(curtok);
+					if (!strcmp(curtok,list[i])) {
+						// it's the file
+						newnode->dir = false;
+						newnode->link = &list[i];
+					} else {
+						newnode->name = strdup(curtok);
+						newnode->dir = true;
+						newnode->link = NULL;
+					}
 					newnode->children = malloc(sizeof(struct node *));
 					newnode->ct_children = 0;
 					newnode->parent = mynode;
@@ -195,7 +206,6 @@ void draw_legend(WINDOW *inner) {
 	wattron(inner, COLOR_PAIR(2));
 	wattron(inner, A_BOLD);
 	box(inner, 0, 0);
-	// again, TODO from above
 	for (i=1;i<LINES-5;i++) {
 		mvwhline(inner, i, 1, ' ', COLS-6);
 	}
@@ -235,7 +245,7 @@ void draw_background() {
 	
 	attron(A_BOLD);
 	attron(COLOR_PAIR(1));
-	// TODO: why does clear() not work here?
+	// why does clear() not work here?
 	for (i=0;i<LINES;i++) {
 		mvhline(i, 0, ' ', COLS);
 	}
@@ -306,9 +316,21 @@ void build_item_array(ITEM **item_array, struct node *root) {
 		i++;
 	}
 	item_array[i] = new_item(get_indent_name(root), "");
-	set_item_userptr(item_array[i], root->name);
+	set_item_userptr(item_array[i], root->link);
 	
 	for (i=0;i<root->ct_children;i++) {
 		build_item_array(item_array, root->children[i]);
 	}
+}
+void free_folded(struct node *root) {
+	int i;
+	
+	for (i=0;i<root->ct_children;i++) {
+		free_folded(root->children[i]);
+	}
+	if (root->dir) {
+		free(root->name);
+	}
+	free(root->children);
+	free(root);
 }

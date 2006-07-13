@@ -10,10 +10,13 @@ struct node *find_node(struct node *root, char *path);
 char *get_indent_name(struct node *update);
 void build_item_array(ITEM **item_array, struct node *root);
 int count_array_items(struct node *root);
+void free_folded(struct node *root);
 
 struct node {
 	char *name;
 	struct node **children;
 	int ct_children;
 	struct node *parent;
+	bool dir;
+	char **link;
 };

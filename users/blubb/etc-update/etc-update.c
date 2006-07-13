@@ -6,8 +6,9 @@ int main() {
 	char *cmd;
 	char *myfile;
 	char *highest;
-	char *name;
-	char *myname;
+	const char *name;
+	const char *myname;
+	char **myupdate;
 	int indent;
 	int myindent;
 	bool cont;
@@ -198,11 +199,11 @@ int main() {
 	draw_legend(inner);
 	
 	menu_win = subwin(inner, LINES - 7 - 6, COLS - 4 - 5, 8, 5);
+
 	mymenu = create_menu(protected);
 	items_list = menu_items(mymenu);
 	set_menu_win(mymenu, inner);
 	set_menu_sub(mymenu, menu_win);
-	set_menu_format(mymenu, LINES - 7 - 6, 1);
 	
 	post_menu(mymenu);
 	touchwin(inner);
@@ -288,7 +289,9 @@ int main() {
 			// disp diff
 			case '\n':
 				endwin();
-				show_diff(item_userptr(current_item(mymenu)));
+				if (item_userptr(current_item(mymenu))) {
+					show_diff(*((char **)item_userptr(current_item(mymenu))));
+				}
 				reset_prog_mode();
 				break;
 			// merge update
@@ -300,9 +303,10 @@ int main() {
 				 * 0000 and therefore 0000 gets removed
 				 */
 				for (i=item_count(mymenu)-1;i>=0;i--) {
-					if (is_valid_entry((char *)item_userptr(items_list[i]))) {
-						if (item_value(items_list[i]) == TRUE) {
-							merge((char *)item_userptr(items_list[i]), protected);
+					if (item_value(items_list[i]) == TRUE || (current_item(mymenu) == items_list[i] && item_userptr(items_list[i]))) {
+						myupdate = (char **)item_userptr(items_list[i]);
+						if (is_valid_entry(*myupdate)) {
+							merge(*myupdate, protected);
 							menu_changed = true;
 						}
 					}
@@ -312,16 +316,36 @@ int main() {
 			case 'd':
 			case 'D':
 				for (i=0;i<item_count(mymenu);i++) {
-					if (item_value(items_list[i]) == TRUE) {
-						assert(!unlink(item_userptr(items_list[i])));
-						*(char *)item_userptr(items_list[i]) = SKIP_ENTRY;
+					if (item_value(items_list[i]) == TRUE || (current_item(mymenu) == items_list[i] && item_userptr(items_list[i]))) {
+						myupdate = (char **)item_userptr(items_list[i]);
+						assert(!unlink(*(myupdate)));
+						free(*myupdate);
+						*myupdate = SKIP_ENTRY;
+						menu_changed = true;
+					}
+				}
+				break;
+			// merge interactively
+			case 'v':
+			case 'V':
+				for (i=0;i<item_count(mymenu);i++) {
+					if (item_value(items_list[i]) == TRUE || (current_item(mymenu) == items_list[i] && item_userptr(items_list[i]))) {
+						// TODO: interactive merges
 						menu_changed = true;
 					}
 				}
 				break;
 		}
 		if (menu_changed) {
-			// TODO: re-create menu
+			remove_menu(mymenu);
+			
+			draw_legend(inner);
+			mymenu = create_menu(protected);
+			items_list = menu_items(mymenu);
+			set_menu_win(mymenu, inner);
+			set_menu_sub(mymenu, menu_win);		
+			post_menu(mymenu);			
+			menu_changed = false;
 		}
 		touchwin(inner);
 		wrefresh(inner);

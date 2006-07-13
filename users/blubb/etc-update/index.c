@@ -1,6 +1,7 @@
 #include "etc-update.h"
 
 char **find_updates(char *searchdir) {
+	// TODO: find something more efficient
 	char *cmd = calloc(strlen("find % -name '._cfg????_*' 2>/dev/null") + strlen(searchdir), sizeof(char));
 	char **listing;
 	char *myfile;
@@ -55,7 +56,6 @@ MENU *create_menu(char **protected) {
 		arraycount++;
 	}
 	qsort(protected, arraycount, sizeof(char *), compare_updates);
-	// TODO: fold
 	struct node *folded_protected = fold_updates(protected);
 	item_array = (ITEM **)calloc(count_array_items(folded_protected) + 1, sizeof(ITEM *));
 	build_item_array(item_array, folded_protected);
@@ -68,7 +68,8 @@ MENU *create_menu(char **protected) {
 	set_menu_grey(mymenu, A_STANDOUT);
 	set_menu_back(mymenu, A_STANDOUT);
 	
-	// free folded_protected
+	free_folded(folded_protected);
+	set_menu_format(mymenu, LINES - 7 - 6, 1);
 	return mymenu;
 }
 
