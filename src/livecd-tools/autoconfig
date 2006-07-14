@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.62 2006/06/23 21:01:30 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.63 2006/07/14 02:25:10 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -115,8 +115,8 @@ get_info() {
 
 	if [ ! -z "${1}" -a ! -z "${2}" ]
 	then
-#		tmp=$(grep "^$1[[:space:]]\+:" /proc/cpuinfo | head -n 1 | cut -d" " -f3-)
-		tmp=$([[ $'\n'$(</proc/cpuinfo) =~ $'\n''$1[[:space:]]\+:' ]] | head -n 1 | cut -d" " -f3-)
+		tmp=$(grep "^$1[[:space:]]\+:" /proc/cpuinfo | head -n 1 | cut -d" " -f3-)
+#		tmp=$([[ $'\n'$(</proc/cpuinfo) =~ $'\n''$1[[:space:]]\+:' ]] | head -n 1 | cut -d" " -f3-)
 		eval "$2='${tmp}'"
 	fi
 }
@@ -146,11 +146,14 @@ detect_mips() {
 }
 
 detect_x86_amd64_ia64() {
-	[ "$1" = "ia64" ] \
-		&& get_info "family" cpuinfo \
-		|| get_info "model name" cpuinfo
+	if [ "${1}" = "ia64" ]
+	then
+		get_info "family" cpuinfo
+	else
+		get_info "model name" cpuinfo
+	fi
 	get_info "cpu MHz" mhz
-	mhz="~${mhz%%.*}MHz"
+	mhz="${mhz%%.*}MHz"
 
 	PC="Detected ${numcpu} ${cpuinfo} CPU(s) @ ${mhz} each"
 }
@@ -223,8 +226,8 @@ start() {
 	if [ "${DETECT}" = "yes" ]
 	then
 		ebegin "Hardware detection started"
-#			local numcpu="$(grep -c '^processor[[:space:]]\+:' /proc/cpuinfo)"
-			local numcpu=$([[ $'\n'$(</proc/cpuinfo) =~ $'\n''processor[[:space:]]\+:' ]] | wc -l)
+			local numcpu="$(grep -c '^processor[[:space:]]\+:' /proc/cpuinfo)"
+#			local numcpu=$([[ $'\n'$(</proc/cpuinfo) =~ $'\n''processor[[:space:]]\+:' ]] | wc -l)
 			local arch="$(uname -m)"
 
 			case ${arch} in
@@ -234,7 +237,7 @@ start() {
 					APM="no"
 					IDEDMA="no"
 				;;
-				i?86|x86_64)
+				i?86|x86_64|ia64)
 					detect_x86_amd64_ia64
 				;;
 				alpha)
@@ -438,7 +441,7 @@ start() {
 		touch /etc/init.d/.noxdm
 	fi
 
-	[ -n "${XDESC}" ] && einfo "VideoCard:   ${HILITE}${XDESC}${NORMAL}"
+#	[ -n "${XDESC}" ] && einfo "VideoCard:   ${HILITE}${XDESC}${NORMAL}"
 
 	killall hwsetup 2>/dev/null
 	echo "6" > /proc/sys/kernel/printk
