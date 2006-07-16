@@ -208,7 +208,8 @@ int main() {
 	post_menu(mymenu);
 	touchwin(inner);
 	wrefresh(inner);
-	menu_changed = false;
+	menu_changed = FALSE;
+	// 27 = ESC
 	while ((c = wgetch(inner)) != 'q' && c != 27 && c != 'Q') {
 		switch(c) {
 			// navigation 1up/down
@@ -242,7 +243,7 @@ int main() {
 					while (name[indent] == INDENT_CHAR) {
 						indent++;
 					}
-					cont = true;
+					cont = TRUE;
 					while (cont) {
 						menu_driver(mymenu, REQ_DOWN_ITEM);
 						myname = item_name(current_item(mymenu));
@@ -256,7 +257,7 @@ int main() {
 							}
 						} else {
 							menu_driver(mymenu, REQ_UP_ITEM);
-							cont = false;
+							cont = FALSE;
 						}
 					}
 				} else {
@@ -288,11 +289,12 @@ int main() {
 				
 			// disp diff
 			case '\n':
-				endwin();
+			case KEY_ENTER:
 				if (item_userptr(current_item(mymenu))) {
+					endwin();
 					show_diff(*((char **)item_userptr(current_item(mymenu))));
+					reset_prog_mode();
 				}
-				reset_prog_mode();
 				break;
 			// merge update
 			case 'm':
@@ -307,7 +309,7 @@ int main() {
 						myupdate = (char **)item_userptr(items_list[i]);
 						if (is_valid_entry(*myupdate)) {
 							merge(*myupdate, protected);
-							menu_changed = true;
+							menu_changed = TRUE;
 						}
 					}
 				}
@@ -321,19 +323,32 @@ int main() {
 						assert(!unlink(*(myupdate)));
 						free(*myupdate);
 						*myupdate = SKIP_ENTRY;
-						menu_changed = true;
+						menu_changed = TRUE;
 					}
 				}
 				break;
 			// merge interactively
-			case 'v':
-			case 'V':
+			case 'i':
+			case 'I':
 				for (i=0;i<item_count(mymenu);i++) {
 					if (item_value(items_list[i]) == TRUE || (current_item(mymenu) == items_list[i] && item_userptr(items_list[i]))) {
 						// TODO: interactive merges
-						menu_changed = true;
+						menu_changed = TRUE;
 					}
 				}
+				break;
+			case KEY_RESIZE:
+				draw_background();
+				remove_menu(mymenu);
+				delwin(menu_win);
+				delwin(inner);
+				inner = newwin(LINES - 4, COLS - 4, 2, 2);
+				draw_legend(inner);
+				menu_win = subwin(inner, LINES - 7 - 6, COLS - 4 - 5, 8, 5);
+				mymenu = create_menu(protected);
+				set_menu_win(mymenu, inner);
+				set_menu_sub(mymenu, menu_win);	
+				post_menu(mymenu);
 				break;
 		}
 		if (menu_changed) {
@@ -345,12 +360,29 @@ int main() {
 			set_menu_win(mymenu, inner);
 			set_menu_sub(mymenu, menu_win);		
 			post_menu(mymenu);			
-			menu_changed = false;
+			menu_changed = FALSE;
 		}
 		touchwin(inner);
 		wrefresh(inner);
 	}
 	endwin();
 	remove_menu(mymenu);
+	for (i=0;!is_last_entry(protected[i]);i++) {
+		if (is_valid_entry(protected[i])) {
+			free(protected[i]);
+		}
+	}
+	free(protected);
+	if (config.pager) { 
+		free(config.pager);
+	}
+	if (config.diff_tool) {
+		free(config.diff_tool);
+	}
+	if (config.merge_tool) {
+		free(config.merge_tool);
+	}
+	free(config_protect);
+	free(config_protect_mask);
 	exit(EXIT_SUCCESS);
 }

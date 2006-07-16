@@ -13,9 +13,7 @@
 #include <openssl/md5.h>
 #include <curses.h>
 #include <menu.h>
-
-#define true 1
-#define false 0
+#include <dirent.h>
 
 #define MD5SUM_INDEX "/var/lib/etc-update/md5sum_index"
 #define MD5SUM_INDEX_DIR "/var/lib/etc-update/"

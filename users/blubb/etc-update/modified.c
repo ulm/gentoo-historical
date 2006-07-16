@@ -8,9 +8,9 @@ bool user_modified(char *file) {
 	char *md5sum;
 	char filemd5[MD5_DIGEST_LENGTH];
 	char hexdigest[32];
-	bool user_mod = true;
+	bool user_mod = TRUE;
 	if (access(MD5SUM_INDEX, R_OK) != 0) {
-		return true;
+		return TRUE;
 	} else {
 		assert( indexpipe = fopen(MD5SUM_INDEX, "r") );
 		while ((read = getline(&line, &len, indexpipe)) != -1) {
@@ -21,7 +21,7 @@ bool user_modified(char *file) {
 					MD5(filedump, strlen(filedump), filemd5);
 					md52hex(filemd5, hexdigest);
 					if (!strncmp(md5sum, hexdigest, 32)) {
-						user_mod = false;
+						user_mod = FALSE;
 					}
 				}
 				fclose(filepipe);

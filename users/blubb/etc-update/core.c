@@ -34,17 +34,17 @@ char *get_highest_update(char **index, char *update) {
 
 bool is_last_entry(const char *entry) {
 	if (entry == LAST_ENTRY) {
-		return true;
+		return TRUE;
 	} else {
-		return false;
+		return FALSE;
 	}
 }
 
 bool is_valid_entry(const char *entry) {
 	if (entry == LAST_ENTRY || entry == SKIP_ENTRY) {
-		return false;
+		return FALSE;
 	} else {
-		return true;
+		return TRUE;
 	}
 }
 

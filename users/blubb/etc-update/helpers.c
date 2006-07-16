@@ -38,6 +38,7 @@ char **get_listing(const char *cmd, const char *delim) {
                         pclose(pipe);
                         return listing;
                 } else {
+					pclose(pipe);
 					// wth is read = -1 when cmd didn't give any output?
 					listing = (char **)malloc(sizeof(char *));
 					listing[0] = LAST_ENTRY;
@@ -96,7 +97,7 @@ struct node *fold_updates(char **list) {
 	root->children = malloc(sizeof(struct node *));
 	root->ct_children = 0;
 	root->parent = NULL;
-	root->dir = true;
+	root->dir = TRUE;
 	root->link = NULL;
 	
 	for (i=0;!is_last_entry(list[i]);i++) {
@@ -125,11 +126,11 @@ struct node *fold_updates(char **list) {
 					newnode->name = strdup(curtok);
 					if (!strcmp(curtok,list[i])) {
 						// it's the file
-						newnode->dir = false;
+						newnode->dir = FALSE;
 						newnode->link = &list[i];
 					} else {
 						newnode->name = strdup(curtok);
-						newnode->dir = true;
+						newnode->dir = TRUE;
 						newnode->link = NULL;
 					}
 					newnode->children = malloc(sizeof(struct node *));
@@ -197,7 +198,12 @@ void sanity_checks() {
 		}
 	}
 	// TODO: check config.pager etc. too
-	// TODO: make sure /var/lib/etc-update/md5sum_index exists
+	
+	// TODO: this is crappy, fix the logic
+	if (access(MD5SUM_INDEX_DIR, R_OK)) {
+		mkdir (MD5SUM_INDEX_DIR, 0755);
+	}
+	fclose(fopen(MD5SUM_INDEX, "a"));
 }
 
 void draw_legend(WINDOW *inner) {
@@ -212,22 +218,21 @@ void draw_legend(WINDOW *inner) {
 	
 	wattroff(inner, A_BOLD);
 	wattron(inner, COLOR_PAIR(3));
-	mvwprintw(inner, 1, 3, "Select current: ??????? | ???ll | ???nselect all | ???nvert");
+	mvwprintw(inner, 1, 3, "Select current: ??????? | ???ll | ???nselect all");
 	mvwprintw(inner, 2, 3, "Show diff: ???????");
-	mvwprintw(inner, 3, 3, "Action shortcuts: ???erge | ???elete update | merge interacti???ely");
+	mvwprintw(inner, 3, 3, "Action shortcuts: ???erge | ???elete update | merge ???nteractively");
 	mvwprintw(inner, 4, 3, "Quit: ??? or ?????");
 	
 	wattron(inner, COLOR_PAIR(4) | A_BOLD);
 	mvwprintw(inner, 1, 3 + strlen("Select current: "), "[SPACE]");
 	mvwprintw(inner, 1, 3 + strlen("Select current: ??????? | "), "[A]");
 	mvwprintw(inner, 1, 3 + strlen("Select current: ??????? | ???ll | "), "[U]");
-	mvwprintw(inner, 1, 3 + strlen("Select current: ??????? | ???ll | ???nselect all | "), "[I]");
 	
 	mvwprintw(inner, 2, 3 + strlen("Show diff: "), "[ENTER]");
 	
 	mvwprintw(inner, 3, 3 + strlen("Action shortcuts: "), "[M]");
 	mvwprintw(inner, 3, 3 + strlen("Action shortcuts: ???erge | "), "[D]");
-	mvwprintw(inner, 3, 3 + strlen("Action shortcuts: ???erge | ???elete update | merge interacti"), "[V]");
+	mvwprintw(inner, 3, 3 + strlen("Action shortcuts: ???erge | ???elete update | merge "), "[I]");
 	
 	mvwprintw(inner, 4, 3 + strlen("Quit: "), "[Q]");
 	mvwprintw(inner, 4, 3 + strlen("Quit: ??? or "), "[ESC]");
@@ -261,9 +266,9 @@ void draw_background() {
 
 bool is_dir(const char *path) {
 	if (path[strlen(path)-1] == '/') {
-		return true;
+		return TRUE;
 	} else {
-		return false;
+		return FALSE;
 	}
 }
 char *get_indent_name(struct node *update) {
@@ -271,6 +276,8 @@ char *get_indent_name(struct node *update) {
 	struct node *mynode = update;
 	char *start, *name;
 	char *indent_name;
+	char number[] = "0000";
+	int num;
 	
 	while ((mynode = mynode->parent)) {
 		ct_indents++;
@@ -284,7 +291,9 @@ char *get_indent_name(struct node *update) {
 		}
 		strcat(indent_name, name);
 		strcat(indent_name, " (");
-		strncat(indent_name, start+strlen("._cfg"), 4);
+		strncpy(number, start+strlen("._cfg"), 4);
+		num = atoi(number) + 1;
+		snprintf(indent_name + strlen(indent_name), 4, "%d", num);
 		strcat(indent_name, ")");
 	} else {
 		start = strrchr(update->name, '/') + 1;
@@ -293,7 +302,6 @@ char *get_indent_name(struct node *update) {
 			strcat(indent_name, INDENT_STR);
 			ct_indents--;
 		}
-		
 		strcat(indent_name, start);
 		strcat(indent_name, "/");
 	}
@@ -333,4 +341,16 @@ void free_folded(struct node *root) {
 	}
 	free(root->children);
 	free(root);
+}
+
+int filter_updates(const struct dirent *dir) {
+	if (!strncmp(strrchr(dir->d_name, '/') + 1, "._cfg", strlen("._cfg"))) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+int compare_dirent_updates(const struct dirent **a, const struct dirent **b) {
+	return compare_updates((void *)(*a)->d_name, (void *)(*b)->d_name);
 }

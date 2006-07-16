@@ -11,6 +11,8 @@ char *get_indent_name(struct node *update);
 void build_item_array(ITEM **item_array, struct node *root);
 int count_array_items(struct node *root);
 void free_folded(struct node *root);
+int compare_dirent_updates(const struct dirent **a, const struct dirent **b);
+int filter_updates(const struct dirent *dir);
 
 struct node {
 	char *name;
