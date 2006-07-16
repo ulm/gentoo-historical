@@ -1,7 +1,7 @@
 #!/sbin/runscript
 # Copyright 1999-2005 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.64 2006/07/14 02:27:45 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/livecd-tools/autoconfig,v 1.65 2006/07/16 13:45:42 wolf31o2 Exp $
 
 DHCP="yes"
 DETECT="yes"
@@ -72,7 +72,7 @@ depend() {
 check_svc() {
 	if [ "${1}" = "yes" ]
 	then
-		if [ -x "/etc/init.d/$2" ]
+		if [ -x "/etc/init.d/${2}" ]
 		then
 			echo "${2}"
 		elif [ -n "${3}" -a -x "/etc/init.d/${3}" ]
@@ -117,7 +117,7 @@ get_info() {
 	then
 		tmp=$(grep "^$1[[:space:]]\+:" /proc/cpuinfo | head -n 1 | cut -d" " -f3-)
 #		tmp=$([[ $'\n'$(</proc/cpuinfo) =~ $'\n''$1[[:space:]]\+:' ]] | head -n 1 | cut -d" " -f3-)
-		eval "$2='${tmp}'"
+		eval "${2}='${tmp}'"
 	fi
 }
 
@@ -155,7 +155,7 @@ detect_x86_amd64_ia64() {
 	get_info "cpu MHz" mhz
 	mhz="${mhz%%.*}MHz"
 
-	PC="Detected ${numcpu} ${cpuinfo} CPU(s) @ ${mhz} each"
+	PC="Detected ${numcpu} ${cpuinfo} CPU(s) @ ${mhz}"
 }
 
 detect_alpha() {
@@ -324,16 +324,16 @@ start() {
 		source /etc/sysconfig/mouse
 		if [ -x /usr/sbin/gpm ]
 		then
-#			if [ $(grep "#MOUSE=${MOUSETYPE}" /etc/conf.d/gpm) ]
-			if [ $([[ $'\n'$(</etc/conf.d/gpm) =~ $'\n''#MOUSE=${MOUSETYPE}' ]]) ]
+			if [ $(grep "#MOUSE=${MOUSETYPE}" /etc/conf.d/gpm) ]
+#			if [ $([[ $'\n'$(</etc/conf.d/gpm) =~ $'\n''#MOUSE=${MOUSETYPE}' ]]) ]
 			then
 				sed -i "\@MOUSE=${MOUSETYPE}@s@^#@@" /etc/conf.d/gpm
 			else
 				echo "MOUSE=${MOUSETYPE}" >>/etc/conf.d/gpm
 			fi
 
-#			if [ $(grep "#MOUSEDEV=${DEVICE}" /etc/conf.d/gpm) ]
-			if [ $([[ $'\n'$(</etc/conf.d/gpm) =~ $'\n''#MOUSEDEV=${DEVICE}' ]]) ]
+			if [ $(grep "#MOUSEDEV=${DEVICE}" /etc/conf.d/gpm) ]
+#			if [ $([[ $'\n'$(</etc/conf.d/gpm) =~ $'\n''#MOUSEDEV=${DEVICE}' ]]) ]
 			then
 				sed -i "\@MOUSEDEV=${DEVICE}@s@^#@@" /etc/conf.d/gpm
 			else
@@ -428,6 +428,8 @@ start() {
 		ewarn "Skipping ALSA detection as requested on command line ..."
 	fi
 
+	[ -n "${XDESC}" ] && einfo "VideoCard:   ${HILITE}${XDESC}${NORMAL}"
+
 	if [ "${X11}" = "yes" ]
 	then
 		if [ -x /etc/init.d/x-setup ]
@@ -440,8 +442,6 @@ start() {
 	else
 		touch /etc/init.d/.noxdm
 	fi
-
-#	[ -n "${XDESC}" ] && einfo "VideoCard:   ${HILITE}${XDESC}${NORMAL}"
 
 	killall hwsetup 2>/dev/null
 	echo "6" > /proc/sys/kernel/printk
