@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIClientController.py,v 1.83 2006/04/03 03:23:24 agaffney Exp $
+$Id: GLIClientController.py,v 1.84 2006/07/17 18:18:27 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 Steps (based on the ClientConfiguration):
@@ -91,11 +91,16 @@ class GLIClientController(Thread):
 		if self._configuration == None and not interactive and not self._pretend:
 			print "You can not do a non-interactive install without a ClientConfiguration!"
 			sys.exit(1)
-			
+
 		# Write client configuration profile to disk for debugging purposes
 		configuration = open("/tmp/clientconfiguration.xml", "w")
 		configuration.write(self._configuration.serialize())
 		configuration.close()
+
+		# Log installer version
+		version_file = os.path.abspath(os.path.dirname(__file__)) + "/version-stamp"
+		installer_version = open(version_file, "r").readline().strip()
+		self._logger.log("Gentoo Linux Installer version " + installer_version)
 
 		steps = [self.load_kernel_modules, self.set_proxys, self.set_root_passwd, self.configure_networking, self.enable_ssh, self.start_portmap]
 		# Do Pre-install client-specific things here.
