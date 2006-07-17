@@ -83,6 +83,6 @@ void remove_menu(MENU *mymenu) {
 		free(item_name(item_list[i]));
 		free_item(item_list[i]);
 	}
-	//free(item_list);
+	free(item_list);
 	free_menu(mymenu);
 }

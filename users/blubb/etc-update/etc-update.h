@@ -17,6 +17,7 @@
 
 #define MD5SUM_INDEX "/var/lib/etc-update/md5sum_index"
 #define MD5SUM_INDEX_DIR "/var/lib/etc-update/"
+#define CONFIG_FILE "/etc/etc-update/etc-update.conf"
 
 #define SKIP_ENTRY (char *)1
 #define LAST_ENTRY (char *)2

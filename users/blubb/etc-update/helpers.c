@@ -176,12 +176,20 @@ struct node *find_node(struct node *root, char *path) {
 	}
 }
 void sanity_checks() {
+	extern struct configuration config;
 	unsigned int i;
+	int retval;
+	char *cmd = strdup("");
 	char *tools[] = {
 		"/usr/bin/diff",
 		"/usr/bin/find",
 		"/usr/bin/portageq",
-		"/bin/sed"
+		"/usr/bin/which"
+	};
+	char *conftools[] = {
+		config.pager,
+		config.merge_tool,
+		config.diff_tool
 	};
 	
 	#ifndef DEBUG
@@ -197,8 +205,18 @@ void sanity_checks() {
 			exit(EXIT_FAILURE);
 		}
 	}
-	// TODO: check config.pager etc. too
-	
+	for (i=0;i<sizeof(conftools)/sizeof(conftools[0]);i++) {
+		realloc(cmd, strlen("which  >/dev/null") + strlen(conftools[i]) + 1);
+		strcpy(cmd, "which ");
+		strncat(cmd, conftools[i], strchr(conftools[i], ' ') - conftools[i]);
+		strcat(cmd, " >/dev/null");
+		if ((retval = system(cmd)) == -1 || WEXITSTATUS(retval) == -1 || WEXITSTATUS(retval) > 0) {
+			fprintf(stderr, "etc-update: couldn't find necesary tool: %s\n", conftools[i]);
+			exit(EXIT_FAILURE);
+		}
+	}
+	free(cmd);
+
 	// TODO: this is crappy, fix the logic
 	if (access(MD5SUM_INDEX_DIR, R_OK)) {
 		mkdir (MD5SUM_INDEX_DIR, 0755);
