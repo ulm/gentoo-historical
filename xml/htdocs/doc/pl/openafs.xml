@@ -1,12 +1,12 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/openafs.xml,v 1.2 2005/09/29 01:42:32 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/openafs.xml,v 1.3 2006/07/18 16:37:04 rane Exp $ -->
 
 <!-- Orig revision: 1.20  -->
 <!-- Translator: Paweł Kwiatkowski <yarel@o2.pl> -->
 <!-- Status: Finished -->
 
-<!-- $Id: openafs.xml,v 1.2 2005/09/29 01:42:32 rane Exp $-->
+<!-- $Id: openafs.xml,v 1.3 2006/07/18 16:37:04 rane Exp $-->
 
 <guide link="/doc/pl/openafs.xml" lang="pl">
 <title>Konfiguracja OpenAFS w Gentoo Linux</title>
@@ -23,20 +23,26 @@
 <author title="Redaktor">
   <mail link="fnjordy@gmail.com">Steven McCoy</mail>
 </author>
+<author title="Redaktor">
+  <mail link="stefaan@gentoo.org">Stefaan De Roeck</mail>
+</author>
+<author title="Redaktor">
+  <mail link="fox2mike@gentoo.org">Shyam Mani</mail>
+</author>
 <author title="Tłumaczenie">
   <mail link="yarel@o2.pl">Paweł Kwiatkowski</mail>
 </author>
 
 <abstract>
-Przewodnik pokazuje jak zainstalować klienta i serwer openafs w Gentoo Linux
+Przewodnik pokazuje jak zainstalować klienta i serwer OpenAFS w Gentoo Linux.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.9</version>
-<date>2005-07-18</date>
+<version>1.1</version>
+<date>2005-11-10</date>
 
 <chapter>
 <title>Przegląd</title>
@@ -46,7 +52,7 @@ Przewodnik pokazuje jak zainstalować klienta i serwer openafs w Gentoo Linux
 
 <p>
 Dokument opisuje wszystkie potrzebne kroki, jakie należy przedsięwziąć by
-zainstalować serwer openafs w Gentoo Linux. Niektóre części dokumentu zostały
+zainstalować serwer OpenAFS w Gentoo Linux. Niektóre części dokumentu zostały
 zaczerpnięte z AFS FAQ oraz przewodnika "IBM Quick Beginnings guide on AFS". Nie
 wyważamy otwartych drzwi. :)
 </p>
@@ -122,7 +128,7 @@ FAQ</uri>.
 </p>
 
 <p>
-Strona główna Openafs, <uri link="http://www.openafs.org">www.openafs.org</uri>.
+Strona główna OpenAFS, <uri link="http://www.OpenAFS.org">www.OpenAFS.org</uri>.
 </p>
 
 <p>
@@ -150,6 +156,475 @@ dla wszystkich komend <c>bos</c>.
 </chapter>
 
 <chapter>
+<title>Aktualizacja ze starszych wersji</title>
+<section>
+<title>Wprowadzenie</title>
+<body>
+
+<p>
+Ta część dokumentu opisuje proces aktualizacji OpenAFS do wersji 1.4.0 i
+nowszych (lub 1.2.x zaczynając od 1.2.13. Druga opcja nie zostanie opisana
+szczegółowo, w związku z tym, że znakomita większość użytkowników i tak
+wybierze 1.4 ze względu na obsługę jąder 2.6, dużych plików i naprawę wielu
+błędów poprzednich wydań.
+</p>
+
+<p>
+Jeśli dopiero co został zainstalowany OpenAFS w wersji 1.4, można spokojnie
+pominąć ten rozdział. Jeśli jest to jednak aktualizacja, należy dokładnie go
+przeczytać. Skrypt zawarty w ebuildzie został zaprojektowany tak, aby możliwe
+było szybkie zainstalowanie nowej wersji i ponowne uruchomienie. Nie usunie on
+żadnych plikow konfiguracyjnych ani skryptów startowych. Nie zmieni
+automatycznie konfiguracji uruchamiania systemu, aby używała nowych skryptów.
+Warto również zauważyć, że nowsze jądra i stare wersje OpenAFS mogą prowadzić
+do poważnych błędów. Dlatego naprawdę warto dokonać tej aktualizacji.
+</p>
+
+<note>
+Ten rozdział został napisany z myślą o wielu różnych konfiguracjach. Możliwe
+jest jednak, że użytkownik dokonał takich zmian, że opisane tu procedury nie
+będą miały dla niego żadnego zastosowania. Doświadczeni użytkownicy mogą wybrać
+z poniższych działań te, które dotyczą ich systemu. Natomiast użytkownicy,
+którzy nie dokonywali zbyt wielu zmian w konfiguracji, będą narażeni na
+mniejszą ilość problemów.
+</note>
+
+</body>
+</section>
+<section>
+<title>Różnice pomiędzy wersjami</title>
+<body>
+
+<p>
+W przeszłości OpenAFS korzystał z pewnego schematu nazewnictwa podobnego do
+tego, z jakiego korzystali ludzie z laboratoriów IBM TransArc. W związku z tym
+stare instalacje OpenAFS wciąć te schematy wykorzystują. Nowsze wersje
+są zgodne ze standardem FHS i korzystają ze standardowych ścieżek systemu
+Linux. Poniższa tabela zawiera zestawienie różnic pomiędzy oboma standardami.
+</p>
+
+<table>
+<tr>
+  <th>Katalog</th>
+  <th>Wykorzystanie</th>
+  <th>Standard Transarc</th>
+  <th>Domyślnie</th>
+  <th>Gentoo</th>
+</tr>
+<tr>
+  <ti>viceetcdir</ti>
+  <ti>konfiguracja klienta</ti>
+  <ti>/usr/vice/etc</ti>
+  <ti>$(sysconfdir)/openafs</ti>
+  <ti>/etc/openafs</ti>
+</tr>
+<tr>
+  <ti>bez nazwy</ti>
+  <ti>binaria</ti>
+  <ti>brak</ti>
+  <ti>$(bindir)</ti>
+  <ti>/usr/bin</ti>
+</tr>
+<tr>
+  <ti>afsconfdir</ti>
+  <ti>konfiguracja serwera</ti>
+  <ti>/usr/afs/etc</ti>
+  <ti>$(sysconfdir)/openafs/server</ti>
+  <ti>/etc/openafs/server</ti>
+</tr>
+<tr>
+  <ti>afssrvdir</ti>
+  <ti>wewnętrzne binaria</ti>
+  <ti>/usr/afs/bin (servers)</ti>
+  <ti>$(libexecdir)/openafs</ti>
+  <ti>/usr/libexec/openafs</ti>
+</tr>
+<tr>
+  <ti>afslocaldir</ti>
+  <ti>status serwera</ti>
+  <ti>/usr/afs/local</ti>
+  <ti>$(localstatedir)/openafs</ti>
+  <ti>/var/lib/openafs</ti>
+</tr>
+<tr>
+  <ti>afsdbdir</ti>
+  <ti>Bazy danych Auth/serverlist/...</ti>
+  <ti>/usr/afs/db</ti>
+  <ti>$(localstatedir)/openafs/db</ti>
+  <ti>/var/lib/openafs/db</ti>
+</tr>
+<tr>
+  <ti>afslogdir</ti>
+  <ti>Logi</ti>
+  <ti>/usr/afs/logs</ti>
+  <ti>$(localstatedir)/openafs/logs</ti>
+  <ti>/var/lib/openafs/logs</ti>
+</tr>
+<tr>
+  <ti>afsbosconfig</ti>
+  <ti>Overseer config</ti>
+  <ti>$(afslocaldir)/BosConfig</ti>
+  <ti>$(afsconfdir)/BosConfig</ti>
+  <ti>/etc/openafs/BosConfig</ti>
+</tr>
+</table>
+
+<p>
+Są również inne niejasności, jak na przykład binaria umieszczane w katalogu
+<path>/usr/vice/etc</path> w standardzie Transarc. Powyższa lista nie jest
+dokładna. Jest raczej próbą krótkiego podsumowania najbardziej kluczowych
+pozycji.
+</p>
+
+<p>
+W związku ze zmianami ścieżek, domyślne miejsce cache zmieniło się z
+<path>/usr/vice/cache</path> na <path>/var/cache/openafs</path>.
+</p>
+
+<p>
+Co więcej skrypty startowe zostały podzielone na dwie grupy, te dla serwera i
+te dla klienta. Kiedyś był po prostu skrypt <path>/etc/init.d/afs</path>, teraz
+są dwa, <path>/etc/init.d/openafs-client</path> i
+<path>/etc/init.d/openafs-server</path>. Tak samo pliki konfiguracyjne z
+<path>/etc/conf.d/afs</path> zostały podzielone na
+<path>/etc/conf.d/openafs-client</path> i
+<path>/etc/conf.d/openafs-server</path>. Opcje w pliku, które
+<path>/etc/conf.d/afs</path> posiadały możliwość włączenia dla klienta i
+serwera zostały wyłączone.
+</p>
+
+<p>
+Kolejna zmiana w skrypcie startowym jest taka, że nie sprawdza on już
+konfiguracji cache na dysku. Starsze wersje domagały się osobnej partycji ext2
+zamontowanej w <path>/usr/vice/cache</path>, co powodowało szereg problemów:
+</p>
+
+<ul>
+  <li>
+    Chociaż to bardzo rozsądne rozwiązanie, posiadanie cache na osobnej
+    partycji nie powinno być obowiązkowe. Nowa konfiguracja jest w porządku,
+    dopóki ilość miejsca ustawiona w <path>/etc/openafs/cacheinfo</path> jest
+    naprawdę dostępna dla cache. Dlatego nie ma żadnych większych problemów z
+    ustawieniem cache tak, aby znajdowało się na partycji głównej.
+  </li>
+  <li>
+    Niektórzy korzystali z miękkich dowiązań wskazujących na prawdziwe miejsce
+    przechowywania cache. Skrypt startowy nie działał wtedy dobrze, ponieważ
+    taka lokacja nie była wyświetlana w <path>/proc/mounts</path>.
+  </li>
+  <li>
+    Wiele osób woli ext3 od ext2. Oba systemy plików mogą być używane dla
+    cache. Nie działa żaden inny system plików (Jeśli cache będzie ustawiony
+    na partycję, na przykład, reiserfs, pojawi się ostrzeżenie, a potem seria
+    błędów).
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Migracja na nowe ścieżki</title>
+<body>
+
+<p>
+Przede wszystkim, instalacja nowej wersji OpenAFS nie usunie żadnych starych
+plików konfiguracyjnych. Skrypt został zaprojektowany tak, że nie zmienia
+żadnych plików już obecnych w systemie. Zatem jeśli nawet konfiguracja była
+całkowicie zmieniona przez użytkownika, były w niej pomieszane nowe i stare
+ścieżki, skrypt wciąż nie przysporzy żadnych problemów. Jeśli zostanie wykryte,
+że w systemie wciąż działa serwer OpenAFS, instalacja zostanie przerwana,
+zapobiegając możliwym uszkodzeniom bazy danych.
+</p>
+
+<p>
+Istnieje jednak pewien problem. W Internecie krąży kilka ebuildów, które
+wyłączają domyślną ochronę jaką Gentoo zapewnia dla <path>/etc</path>. Te
+ebuildy nie były nigdy dostarczane jako część Gentoo. Przed przystąpieniem do
+dalszej pracy warto sprawdzić zmienną <c>CONFIG_PROTECT_MASK</c> za pomocą
+następującego polecenia:
+</p>
+
+<pre caption="Checking your CONFIG_PROTECT_MASK">
+# <i>emerge info | grep "CONFIG_PROTECT_MASK</i>
+CONFIG_PROTECT_MASK="/etc/gconf /etc/terminfo /etc/texmf/web2c /etc/env.d"
+</pre>
+
+<p>
+Nic co jest w ebuildzie nie powinno nawet dotknąć plików wewnątrz
+<path>/etc/afs</path>. Aktualizacja usunie natomiast cały katalog z poprzednią
+instalacją OpenAFS. Pliki ze zmiennej <c>CONFIG_PROTECT_MASK</c>, które należą
+do starej instalacji przestaną istnieć.
+</p>
+
+<p>
+Każdy użytkownik, który zmieniał konfigurację ręcznie, za pomocą dowiązań
+symbolicznych (np. kierując <path>/usr/afs/etc</path> do
+<path>/etc/openafs</path>) będzie miał możliwość korzystania z nowej wersji z
+użyciem starych plików konfiguracyjnych. W takim przypadku nie dojdzie do
+żadnego prawdziwego przejścia na nowe ścieżki a wyczyszczenie starej instalacji
+OpenAFS zepsuje wszystko.
+</p>
+
+<p>
+Teraz, gdy już wiemy mniej więcej co nie powinno się zdarzyć, warto dowiedzieć
+się co stanie się na pewno:
+</p>
+
+<ul>
+  <li>
+    <path>/usr/afs/etc</path> zostanie skopiowane do
+    <path>/etc/openafs/server</path>
+  </li>
+  <li>
+    <path>/usr/vice/etc</path> zostanie skopiowane do <path>/etc/openafs</path>
+  </li>
+  <li>
+    <path>/usr/afs/local</path> zostanie skopiowane do
+    <path>/var/lib/openafs</path>
+  </li>
+  <li>
+    <path>/usr/afs/local/BosConfig</path> zostanie skopiowane do
+    <path>/etc/openafs/BosConfig</path>, a wszystkie wystąpienia
+    <path>/usr/afs/bin/</path> zostaną zastąpione przez
+    <path>/usr/libexec/openafs</path>, <path>/usr/afs/etc</path> przez
+    <path>/etc/openafs/server</path>, a <path>/usr/afs/bin</path> (bez / na
+    końcu jak wcześniej) przez <path>/usr/bin</path>
+  </li>
+  <li>
+    <path>/usr/afs/db</path> zostanie skopiowane do
+    <path>/var/lib/openafs/db</path>
+  </li>
+  <li>
+    Plik konfiguracyjny <path>/etc/conf.d/afs</path> zostanie skopiowany do
+    <path>/etc/conf.d/openafs-client</path>, ponieważ wszystkie stare opcje
+    dotyczą jedynie klienta.
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Aktualizacja właściwa</title>
+<body>
+
+<p>
+W poprzednich rozdziałach wyjaśniliśmy co się stanie. Jeśli wciąż chcesz to
+zrobić, do roboty.
+</p>
+
+<p>
+Rozpoczynamy proces aktualizacji.
+</p>
+
+<p>
+Jeśli serwer wciąż działa, trzeba go teraz wyłączyć.
+</p>
+
+<pre caption="Zatrzymywanie serwera OpenAFS">
+# <i>/etc/init.d/afs stop</i>
+</pre>
+
+<p>
+A teraz aktualizacja.
+</p>
+
+<pre caption="Aktualizacja!">
+# <i>emerge -u openafs</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Ponowne uruchamianie OpenAFS</title>
+<body>
+
+<p>
+Zaczynamy od wyłączenia serwera.
+</p>
+
+<pre caption="Zatrzymywanie serwera po aktualizacji">
+# <i>/etc/init.d/afs stop</i>
+</pre>
+
+<p>
+Czas, kiedy serwer jest wyłączony powinien być możliwie krótki. Dlatego warto
+go od razu uruchomić ponownie.
+</p>
+
+<pre caption="Ponowne uruchamianie serwera OpenAFS">
+# <i>/etc/init.d/openafs-server start</i>
+</pre>
+
+<p>
+Można sprawdzić czy serwer działa prawidłowo za pomocą następującego polecenia:
+</p>
+
+<pre caption="Sprawdzanie serwera OpenAFS">
+# <i>/usr/bin/bos status localhost -localauth</i>
+</pre>
+
+<p>
+Przed ponownym uruchomieniem klientów OpenAFS, należy spędzić chwilę
+sprawdzając ustawienia cache. Są one zależne od
+<path>/etc/openafs/cacheinfo</path>. Aby ponownie uruchomić klienty, należy
+wpisać:
+</p>
+
+<pre caption="Ponowne uruchamianie klientów po aktualizacji">
+# <i>/etc/init.d/openafs-client start</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Sprzątanie po aktualizacji</title>
+<body>
+
+<p>
+Przed przystąpieniem do czyszczenia, należy się upewnić, że serwer działa bez
+problemów i że został ponownie uruchomiony (w innym wypadku stara instalacja
+może wciąż działać).
+</p>
+
+<impo>
+Należy się upewnić, że nie używa się <path>/usr/vice/cache</path> dla cache na
+dysku jeśli ma być skasowane <path>/usr/vice</path>!
+</impo>
+
+<p>
+Można bezpiecznie usunąć następujące katalogi:
+</p>
+
+<ul>
+  <li><path>/etc/afs</path></li>
+  <li><path>/usr/vice</path></li>
+  <li><path>/usr/afs</path></li>
+  <li><path>/usr/afsws</path></li>
+</ul>
+
+<p>
+Następujące pliki nie są już potrzebne?
+</p>
+
+<ul>
+  <li><path>/etc/init.d/afs</path></li>
+  <li><path>/etc/conf.d/afs</path></li>
+</ul>
+
+<pre caption="Usuwanie starych plików">
+# <i>tar czf /root/oldafs-backup.tgz /etc/afs /usr/vice /usr/afs /usr/afsws</i>
+# <i>rm -R /etc/afs /usr/vice /usr/afs /usr/afsws</i>
+# <i>rm /etc/init.d/afs /etc/conf.d/afs</i>
+</pre>
+
+<p>
+Jeśli wcześniej korzystano z ebuildów =openafs-1.2.13 lub =openafs-1.3.85,
+należy usunąć również następujące pliki:
+</p>
+
+<ul>
+  <li><path>/etc/init.d/afs-client</path></li>
+  <li><path>/etc/init.d/afs-server</path></li>
+  <li><path>/etc/conf.d/afs-client</path></li>
+  <li><path>/etc/conf.d/afs-server</path></li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>Zmiany w skryptach startowych</title>
+<body>
+
+<p>
+W tym momencie większość użytkowników ma system skonfigurowany tak, aby
+automatycznie uruchamiał serwer i klienta OpenAFS przy starcie. Ci, którzy nie
+mają takiej konfiguracji mogą pominąć ten rozdział. Jeśli system był wcześniej
+skonfigurowany tak, aby uruchamiał te skrypty, teraz trzeba skonfigurować go
+ponownie, gdyż skrypty te się zmieniły.
+</p>
+
+<pre caption="Ponowna konfiguracja skryptów startowych OpenAFS">
+# <i>rc-update del afs default</i>
+# <i>rc-update add openafs-client default</i>
+# <i>rc-update add openafs-server default</i>
+</pre>
+
+<p>
+Jeśli jest to aktualizacja z <c>=openafs-1.2.13</c> lub <c>=openafs-1.3.85</c>,
+konieczne będzie usunięcie <path>afs-client</path> i <path>afs-server</path> z
+domyślnego poziomu uruchomieniowego zamiast <path>afs</path>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Problemy, czyli co robić kiedy automatyczna aktualizacja zawiedzie</title>
+<body>
+
+<p>
+Przede wszystkim nie panikować. Nie doszło do straty żadnych danych ani plików
+konfiguracyjnych. Trzeba przeanalizować sytuację, a następnie zgłosić błąd na
+stronie <uri link="http://bugs.gentoo.org">bugs.gentoo.org</uri> z jak
+największą ilością informacji.
+</p>
+
+<p>
+Jeśli pojawią się problemy z uruchomieniem klienta, można zdiagnozować problem
+w następujący sposób.
+</p>
+
+<ul>
+  <li>
+    Należy uruchomić <c>dmesg</c>. To tam są wysyłane informacje o błędach
+    klienta.
+  </li>
+  <li>
+    Następnie należy sprawdzić <path>/etc/openafs/cacheinfo</path>. Powinien
+    mieć on postać: /afs:{path to disk cache}:{number of blocks for disk
+    cache}. Domyślnie cache znajduje się w <path>/var/cache/openafs</path>.
+  </li>
+  <li>
+    Należy również sprawdzić wyjście <c>lsmod</c> w poszukiwaniu linii
+    zaczynających się od słowa openafs.
+  </li>
+  <li><c>pgrep afsd</c> powie czy afsd działa czy nie</li>
+  <li>
+    <c>cat /proc/mounts</c> powinien wskazywać, że <path>/afs</path> jest
+    zamontowane
+  </li>
+</ul>
+
+<p>
+Jeśli pojawią się problemy z uruchomieniem serwera, poniższe wskazówki mogą
+pomóc:
+</p>
+
+<ul>
+  <li>
+    <c>pgrep bosserver</c> mówi o tym czy overseer jest uruchomiony czy nie.
+    Jeśli jest uruchomiony więcej niż jeden, coś musiało pójść źle. W takim
+    wypadku należy zamknąć serwer OpenAFS za pomocą polecenia <c>bos shutdown
+    localhost -localauth -wait</c>, sprawdzić rezultat tej czynności za pomocą
+    <c>bos status localhost -localauth</c>, zabić wszystkie pozostałe
+    procesy overseer, a następnie sprawdzić czy nie działa już żaden proces
+    serwera (<c>ls /usr/libexec/openafs</c> wyświetli ich listę). Następnie
+    należy wpisać <c>/etc/init.d/openafs-server zap</c> w celu zresetowania
+    statusu serwera i <c>/etc/init.d/openafs-server start</c>, aby go ponownie
+    uruchomić.
+  </li>
+  <li>
+    Jeśli korzysta się z systemu logowania OpenAFS (co jest domyślnym
+    ustawieniem), należy sprawdzić <path>/var/lib/openafs/logs/*</path>. Jeśli
+    natomiast korzysta się z sysloga, należy sprawdzić logi systemowe w celu
+    uzyskania informacji na temat tego co mogło źle pójść.
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
 <title>Dokumentacja</title>
 <section>
 <title>Pobieranie dokumentacji AFS</title>
@@ -165,6 +640,15 @@ administrowania serwerem AFS.
 # <i>emerge app-doc/afsdoc</i>
 </pre>
 
+<p>
+Istnieje również możliwość korzystania z dokumentacji dostarczanej wraz z
+OpenAFS. Jest ona instalowana, gdy włączona jest flaga <c>doc</c>. Dokumentacja
+znajduje się w katalogu <path>/usr/share/doc/openafs-*/</path>. W momencie
+pisania tego tekstu, dokumentacja ta była wciąż w fazie tworzenia. Z czasem
+jednak na pewno pojawią się tam opisy najnowszych funkcji, które nie zostały
+opisane w dokumentacji AFS IBM-a.
+</p>
+
 </body>
 </section>
 </chapter>
@@ -172,7 +656,7 @@ administrowania serwerem AFS.
 <chapter>
 <title>Instalacja klienta</title>
 <section>
-<title>Prace wstępne</title>
+<title>Budowanie klienta</title>
 <body>
 
 <note>
@@ -180,23 +664,103 @@ Wszystkie komendy należy wpisać w jednej linii! W tym dokumencie są one czase
 podzielone na dwie linie, by ułatwić czytanie.
 </note>
 
-<note>
-Niestety klient AFS do prawidłowego działania potrzebuje partycji ext2 na swoją
-pamięć podręczną, to ze względu na problemy z blokowaniem na reiserfs. Należy
-utworzyć partycję ext2 o rozmiarze ok. 200MB (więcej nie zaszkodzi) i zamontować ją
-jako <path>/usr/vice/cache</path>
-</note>
+<pre caption="Instalacja OpenAFS">
+# <i>emerge net-fs/openafs</i>
+</pre>
 
 <p>
-Przed zbudowaniem klienta afs należy dostosować dwa pliki: CellServDB i
-ThisCell. (Pliki te znajdują się w
-<path>/usr/portage/net-fs/openafs/files</path>.)
+Po zakończonej sukcesem kompilacji, możemy kontynuować.
+</p>
+
+</body>
+</section>
+<section>
+<title>Prosty sposób na instalację klienta globalnego</title>
+<body>
+
+<p>
+Jeśli nie jest się częścią komórki, którą zamierza się przeglądać i jeśli chce
+się po prostu przejrzeć wszystkie dostępne globalnie zasoby OpenAFS, nie trzeba
+zmieniać żadnej konfiguracji. Wystarczy po prostu uruchomić
+<path>/etc/init.d/openafs-client</path>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Łączenie się z konkretną komórką OpenAFS</title>
+<body>
+
+<p>
+Dostęp do konkretnej komórki wymaga tylko kilku drobnych zmian w konfiguracji.
+</p>
+
+<p>
+Po pierwsze trzeba zaktualizować <path>/etc/openafs/CellServDB</path> dodając
+serwery baz danych dla danej komórki. Zwykle informacji o nich dostarcza
+administrator.
+</p>
+
+<p>
+Po drugie, aby móc zagolować się do komórki, należy wpisać jej nazwę w
+pliku <path>/etc/openafs/ThisCell</path>.
 </p>
 
 <pre caption="Dostosowanie CellServDB i ThisCell">
 CellServDB:
->netlabs        #nazwa komórki
-10.0.0.1        #składowanie
+>netlabs        #Cell name
+10.0.0.1        #storage
+
+ThisCell:
+netlabs
+</pre>
+
+<warn>
+Przy edycji CelLServDB nie należy używać znaków tabulacji (zamiast nich,
+spacje), gdyż klient prawdopodobnie nie zadziała poprawnie.
+</warn>
+
+<p>
+Później wystarczy uruchomić <path>/etc/init.d/openafs/client</path> i użyć
+<c>klog</c>, aby się autoryzować i zacząć używać komórki. Automatyczne
+logowanie omówimy za chwilę.
+</p>
+
+</body>
+</section>
+<section>
+<title>Konfiguracja cache</title>
+<body>
+
+<note>
+Niestety klient AFS potrzebuje partycji ext2/3 na swój cache. Wciąż występują
+problemy z reiserfs.
+</note>
+
+<p>
+Cache może znajdować się zarówno w już istniejącym systemie plików (jeśli jest
+to ext2/3) lub na osobnej, stworzonej tylko w tym celu partycji. Domyślna
+lokacja dla cache to <path>/var/cache/openafs</path>, ale można ją zmienić
+edytując <path>/etc/openafs/cacheinfo</path>. Standardowy rozmiar dla cache to
+200 MB, ale więcej miejsca na pewno nie zaszkodzi.
+</p>
+
+</body>
+</section>
+<section>
+<title>Konfiguracja dostępu do komórki</title>
+<body>
+
+<p>
+Jeśli zwykły dostęp w trybie tylko do odczytu nie jest wystarczający, należy
+dokonać kilku poprawek w plikach CellServDB i ThisCell. Oba znajdują się w
+<path>/etc/openafs</path>.
+</p>
+
+<pre caption="Dostosowywanie konfiguracji CellServDB i ThisCell">
+CellServDB:
+>netlabs        #Cell name
+10.0.0.1        #storage
 
 ThisCell:
 netlabs
@@ -208,41 +772,26 @@ nich, spacje), gdyż klient prawdopodobnie nie zadziała poprawnie.
 </warn>
 
 <p>
-CellServDB mówi klientowi, z którymi serwerami należy kontaktować się w
-przypadku określonej komórki. Znaczenie ThisCell powinno być oczywiste.
-Zazwyczaj używamy nazwy, która jest unikalna w obrębie organizacji. Nasza
-(oficjalna) nazwa domeny może być dobrym wyborem.
+CellServDB mówi klientowi o tym z jakimi serwerami musi się połączyć.
+Zastosowanie ThisCell jest oczywiste. Zwykle używa się nazwy unikatowej, można
+też skorzystać z nazwy domeny.
 </p>
 
 </body>
 </section>
 <section>
-<title>Budowanie klienta</title>
-<body>
-
-<pre caption="Instalacja  openafs">
-# <i>emerge net-fs/openafs</i>
-</pre>
-
-<p>
-Po zakończonej sukcesem kompilacji, możemy kontynuować.
-</p>
-
-</body>
-</section>
-<section>
-<title>Uruchamianie afs podczas rozruchu systemu</title>
+<title>Uruchamianie AFS podczas rozruchu systemu</title>
 <body>
 
 <p>
-Następujące komendy utworzą odpowiednie dowiązania, tak by klient afs uruchamiał
+Następujące komendy utworzą odpowiednie dowiązania, tak by klient AFS uruchamiał
 się podczas rozruchu systemu.
 </p>
 
 <warn>
-Jeśli próbujemy uruchamiać klienta afs, to powinniśmy posiadać w domenie
-działający serwer afs. W przeciwnym razie, system nie uruchomi się przed upływem
-limitu czasu odpowiedzi od serwera afs. (zazwyczaj jest to całkiem długi
+Jeśli próbujemy uruchamiać klienta AFS, to powinniśmy posiadać w domenie
+działający serwer AFS. W przeciwnym razie, system nie uruchomi się przed upływem
+limitu czasu odpowiedzi od serwera AFS. (zazwyczaj jest to całkiem długi
 czas...)
 </warn>
 
@@ -265,7 +814,7 @@ Następujące komendy zainstalują binaria niezbędne do uruchomienia serwera
 <e>i</e> klienta AFS.
 </p>
 
-<pre caption="Instalacja openafs">
+<pre caption="Instalacja OpenAFS">
 # <i>emerge net-fs/openafs</i>
 </pre>
 
@@ -343,7 +892,7 @@ Nazwę komórki ustawiamy wydając polecenie <b>bos setcellname</b>:
 </p>
 
 <pre caption="Ustawienie nazwy komórki">
-# <i>/usr/afs/bin/bos setcellname &lt;server name&gt; &lt;cell name&gt; -noauth</i>
+# <i>bos setcellname &lt;serwer&gt; &lt;komórka&gt; -noauth</i>
 </pre>
 
 </body>
@@ -354,8 +903,8 @@ Nazwę komórki ustawiamy wydając polecenie <b>bos setcellname</b>:
 
 <p>
 Następnie używamy komendy <b>bos create</b> do utworzenie wpisów w pliku
-<path>/usr/afs/local/BosConfig</path>, dla czterech procesów serwerów baz
-danych. Te cztery procesy działają tylko na maszynach serwerowych.
+<path>/etc/openafs/BosConfig</path>, dla czterech procesów serwerów baz danych.
+Te cztery procesy działają tylko na maszynach serwerowych.
 </p>
 
 <table>
@@ -386,18 +935,19 @@ danych. Te cztery procesy działają tylko na maszynach serwerowych.
 </table>
 
 <pre caption="Tworzenie wpisów dla procesów bazodanowych">
-# <i>/usr/afs/bin/bos create &lt;server name&gt; kaserver simple /usr/afs/bin/kaserver -cell &lt;cell name&gt; -noauth</i>
-# <i>/usr/afs/bin/bos create &lt;server name&gt; buserver simple /usr/afs/bin/buserver -cell &lt;cell name&gt; -noauth</i>
-# <i>/usr/afs/bin/bos create &lt;server name&gt; ptserver simple /usr/afs/bin/ptserver -cell &lt;cell name&gt; -noauth</i>
-# <i>/usr/afs/bin/bos create &lt;server name&gt; vlserver simple /usr/afs/bin/vlserver -cell &lt;cell name&gt; -noauth</i>
+# <i>bos create &lt;server name&gt; kaserver simple /usr/libexec/openafs/kaserver -cell &lt;cell name&gt; -noauth</i>
+# <i>bos create &lt;server name&gt; buserver simple /usr/libexec/openafs/buserver -cell &lt;cell name&gt; -noauth</i>
+# <i>bos create &lt;server name&gt; ptserver simple /usr/libexec/openafs/ptserver -cell &lt;cell name&gt; -noauth</i>
+# <i>bos create &lt;server name&gt; vlserver simple /usr/libexec/openafs/vlserver -cell &lt;cell name&gt; -noauth</i>
 </pre>
 
 <p>
-Działanie wszystkich serwerów możemy zweryfikować wydając polecenie <b>bos status</b>:
+Działanie wszystkich serwerów możemy zweryfikować wydając polecenie <b>bos
+status</b>:
 </p>
 
 <pre caption="Sprawdzanie działania wszystkich serwerów">
-# <i>/usr/afs/bin/bos status &lt;server name&gt; -noauth</i>
+# <i>bos status &lt;server name&gt; -noauth</i>
 Instance kaserver, currently running normally.
 Instance buserver, currently running normally.
 Instance ptserver, currently running normally.
@@ -413,16 +963,16 @@ Instance vlserver, currently running normally.
 <p>
 Teraz zajmiemy się inicjalizowaniem mechanizmów bezpieczeństwa komórki.
 Zaczniemy od utworzenia następujących dwóch wpisów w bazie zawierającej dane
-uwierzytelniające (Authentication Database): główne konto administracyjne, nazwane
-zgodnie z konwencją <b>admin</b> oraz wpis dla procesów serwera AFS, zwany
-<b>afs</b>. Żaden użytkownik nie legitymuje się tożsamością <b>afs</b>, za
-wyjątkiem usługi TGS serwera uwierzytelniającego (Ticket Granting Service -
+uwierzytelniające (Authentication Database): główne konto administracyjne,
+nazwane zgodnie z konwencją <b>admin</b> oraz wpis dla procesów serwera AFS,
+zwany <b>afs</b>. Żaden użytkownik nie legitymuje się tożsamością <b>afs</b>,
+za wyjątkiem usługi TGS serwera uwierzytelniającego (Ticket Granting Service -
 usługa przydzielania biletów), która wykorzystuje to konto do szyfrowania
 biletów serwera, przyznawanych klientom AFS. Przypomina to bardzo Kerberosa :)
 </p>
 
 <p>
-Uruchamianie tryby interaktywnego <b>kas</b>
+Uruchamianie tryby interaktywnego <c>kas</c>.
 </p>
 
 <pre caption="Uruchamianie trbu interaktywnego">
@@ -440,7 +990,7 @@ key (0) cksum is 2651715259, last cpw: Mon Jun  4 20:49:30 2001
 password will never expire.
 An unlimited number of unsuccessful authentications is permitted.
 entry never expires.  Max ticket lifetime 100.00 hours.
-last mod on Mon Jun  4 20:49:30 2001 by $lt;none&gt;
+last mod on Mon Jun  4 20:49:30 2001 by &lt;none&gt;
 permit password reuse
 ka&gt; <i>setfields admin -flags admin</i>
 ka&gt; <i>examine admin</i>
@@ -450,32 +1000,32 @@ key (0) cksum is 2651715259, last cpw: Mon Jun  4 20:49:59 2001
 password will never expire.
 An unlimited number of unsuccessful authentications is permitted.
 entry never expires.  Max ticket lifetime 25.00 hours.
-last mod on Mon Jun  4 20:51:10 2001 by $lt;none&gt;
+last mod on Mon Jun  4 20:51:10 2001 by &lt;none&gt;
 permit password reuse
 ka&gt;
 </pre>
 
 <p>
-Użytkownika <b>admin</b> dodajemy do <path>/usr/afs/etc/UserList</path> przez
-wydanie komendy <b>bos adduser</b>.
+Użytkownika <b>admin</b> dodajemy do <path>/etc/openafs/server/UserList</path>
+przez wydanie komendy <b>bos adduser</b>.
 </p>
 
 <pre caption="Dodawanie użytkownika admin do UserList">
-# <i>/usr/afs/bin/bos adduser &lt;server name&gt; admin -cell &lt;cell name&gt; -noauth</i>
+# <i>bos adduser &lt;server name&gt; admin -cell &lt;cell name&gt; -noauth</i>
 </pre>
 
 <p>
-Klucz szyfrujący <path>/usr/afs/etc/KeyFile</path> dla serwera AFS definiujemy
-wywołując komendę <b>bos addkey</b>.
+Klucz szyfrujący dla serwera AFS definiujemy w pliku
+<path>/etc/openafs/server/KeyFile</path> wywołując komendę <c>bos addkey</c>.
 </p>
 
 <note>
 Na pytanie o podanie klucza podajemy hasło, które wprowadziliśmy przy tworzeniu
-konta afs przy użyciu <b>kas</b>.
+konta afs przy użyciu <c>kas</c>.
 </note>
 
 <pre caption="Wprowadzanie hasła">
-# <i>/usr/afs/bin/bos addkey  &lt;server name&gt; -kvno 0 -cell &lt;cell name&gt; -noauth</i>
+# <i>bos addkey  &lt;server name&gt; -kvno 0 -cell &lt;cell name&gt; -noauth</i>
 input key:
 Retype input key:
 </pre>
@@ -488,13 +1038,12 @@ w bazie bezpieczeństwa (Protection Database).
 <note>
 Serwer ochrony (Protection Server) standardowo przypisuje użytkownikowi
 <b>admin</b> AFS UID 1, gdyż jest to pierwszy użytkownik jakiego tworzymy. Jeśli
-lokalny plik haseł (/etc/passwd lub analogiczny) już zawiera wpis <b>admin</b>,
-który posiada inny UID, to używamy opcji <b>-id</b> do utworzenia
-odpowiadającego UIDa.
+lokalny plik haseł (<path>/etc/passwd</path> lub analogiczny) już zawiera wpis
+<b>admin</b>, który posiada inny UID, to używamy opcji <b>-id</b> do utworzenia
+odpowiadającego UID-a.
 </note>
 
-<pre caption="Tworzenie wpisu dla użytkownika bazodanowego w bazie
-bezpieczeństwa (Protection Database)">
+<pre caption="Tworzenie wpisu dla użytkownika bazodanowego w bazie bezpieczeństwa (Protection Database)">
 # <i>/usr/afs/bin/pts createuser -name admin -cell &lt;cell name&gt; [-id &lt;AFS UID&gt;] -noauth</i>
 </pre>
 
@@ -504,10 +1053,9 @@ system:administrators, zaś polecenia <b>pts membership</b>, by zweryfikować
 przynależność.
 </p>
 
-<pre caption="Przypisanie użytkownika admin do grupy administrators i
-weryfikacja">
-# <i>/usr/afs/bin/pts adduser admin system:administrators -cell &lt;cell name&gt; -noauth</i>
-# <i>/usr/afs/bin/pts membership admin -cell &lt;cell name&gt; -noauth</i>
+<pre caption="Przypisanie użytkownika admin do grupy administrators i weryfikacja">
+# <i>pts adduser admin system:administrators -cell &lt;cell name&gt; -noauth</i>
+# <i>pts membership admin -cell &lt;cell name&gt; -noauth</i>
 Groups admin (id: 1) is a member of:
 system:administrators
 </pre>
@@ -517,7 +1065,7 @@ Ponownie uruchamiamy wszystkie procesy serwera AFS.
 </p>
 
 <pre caption="Ponowne uruchamianie wszystkich procesów serwera AFS">
-# <i>/usr/afs/bin/bos restart &lt;server name&gt; -all -cell &lt;cell name&gt; -noauth</i>
+# <i>bos restart &lt;server name&gt; -all -cell &lt;cell name&gt; -noauth</i>
 </pre>
 
 </body>
@@ -527,12 +1075,12 @@ Ponownie uruchamiamy wszystkie procesy serwera AFS.
 <body>
 
 <p>
-Uruchamiamy proces <b>fs</b>, który składa się z serwera plików, serwera
+Uruchamiamy proces <c>fs</c>, który składa się z serwera plików, serwera
 woluminów i serwera Salvager (procesy fileserver, volserver i salvager).
 </p>
 
 <pre caption="Uruchamianie procesu fs">
-# <i>/usr/afs/bin/bos create &lt;server name&gt; fs fs /usr/afs/bin/fileserver /usr/afs/bin/volserver /usr/afs/bin/salvager -cell &lt;cell name&gt; -noauth</i>
+# <i>bos create &lt;server name&gt; fs fs /usr/libexec/openafs/fileserver /usr/libexec/openafs/volserver /usr/libexec/openafs/ salvager -cell &lt;cell name&gt; -noauth</i>
 </pre>
 
 <p>
@@ -540,33 +1088,33 @@ Sprawdzamy czy wszystkie procesy działają.
 </p>
 
 <pre caption="Sprawdzanie działania wszystkich procesów">
-# <i>/usr/afs/bin/bos status &lt;server name&gt; -long -noauth</i>
+# <i>bos status &lt;server name&gt; -long -noauth</i>
 Instance kaserver, (type is simple) currently running normally.
 Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
 Last exit at Mon Jun  4 21:07:17 2001
-Command 1 is '/usr/afs/bin/kaserver'
+Command 1 is '/usr/libexec/openafs/kaserver'
 
 Instance buserver, (type is simple) currently running normally.
 Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
 Last exit at Mon Jun  4 21:07:17 2001
-Command 1 is '/usr/afs/bin/buserver'
+Command 1 is '/usr/libexec/openafs/buserver'
 
 Instance ptserver, (type is simple) currently running normally.
 Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
 Last exit at Mon Jun  4 21:07:17 2001
-Command 1 is '/usr/afs/bin/ptserver'
+Command 1 is '/usr/libexec/openafs/ptserver'
 
 Instance vlserver, (type is simple) currently running normally.
 Process last started at Mon Jun  4 21:07:17 2001 (2 proc starts)
 Last exit at Mon Jun  4 21:07:17 2001
-Command 1 is '/usr/afs/bin/vlserver'
+Command 1 is '/usr/libexec/openafs/vlserver'
 
 Instance fs, (type is fs) currently running normally.
 Auxiliary status is: file server running.
 Process last started at Mon Jun  4 21:09:30 2001 (2 proc starts)
-Command 1 is '/usr/afs/bin/fileserver'
-Command 2 is '/usr/afs/bin/volserver'
-Command 3 is '/usr/afs/bin/salvager'
+Command 1 is '/usr/libexec/openafs/fileserver'
+Command 2 is '/usr/libexec/openafs/volserver'
+Command 3 is '/usr/libexec/openafs/salvager'
 </pre>
 
 <p>
@@ -586,7 +1134,7 @@ należy do zakresu a-z.
 </note>
 
 <pre caption="Tworzenie woluminu root.afs">
-# <i>/usr/afs/bin/vos create &lt;server name&gt; &lt;partition name&gt; root.afs -cell &lt;cell name&gt; -noauth</i>
+# <i>vos create &lt;server name&gt; &lt;partition name&gt; root.afs -cell &lt;cell name&gt; -noauth</i>
 </pre>
 
 <p>
@@ -600,13 +1148,13 @@ maszynie. W efekcie wszystkie niezbędne dane zostaną skopiowane na nowy serwer
 Jeśli polecenia zakończy się komunikatem "partition /vicepa does not exist on
 the server", to musimy się upewnić, że partycja jest montowana przed
 uruchomieniem serwerów OpenAFS lub montujemy katalog i ponownie uruchamiamy
-procesy używając <c>/usr/afs/bin/bos restart &lt;server name&gt; -all -cell &lt;cell
+procesy używając <c>bos restart &lt;server name&gt; -all -cell &lt;cell
 name&gt; -noauth</c>.
 </p>
 
 <pre caption="Synchronizacja VLDB">
-# <i>/usr/afs/bin/vos syncvldb &lt;server name&gt; -cell &lt;cell name&gt; -verbose -noauth</i>
-# <i>/usr/afs/bin/vos syncserv &lt;server name&gt; -cell &lt;cell name&gt; -verbose -noauth</i>
+# <i>vos syncvldb &lt;server name&gt; -cell &lt;cell name&gt; -verbose -noauth</i>
+# <i>vos syncserv &lt;server name&gt; -cell &lt;cell name&gt; -verbose -noauth</i>
 </pre>
 
 </body>
@@ -616,9 +1164,9 @@ name&gt; -noauth</c>.
 <body>
 
 <pre caption="Uruchamianie serwera update">
-# <i>/usr/afs/bin/bos create &lt;server name&gt;
-upserver simple "/usr/afs/bin/upserver
--crypt /usr/afs/etc -clear /usr/afs/bin"
+# <i>bos create &lt;server name&gt;
+upserver simple "/usr/libexec/openafs/upserver
+-crypt /etc/openafs/server -clear /usr/libexec/openafs"
 -cell &lt;cell name&gt; -noauth</i>
 </pre>
 
@@ -629,25 +1177,25 @@ upserver simple "/usr/afs/bin/upserver
 <body>
 
 <p>
-Na początek musimy ustawić kilka ACLi, tak by użytkownik mógł przeglądać
+Na początek musimy ustawić kilka ACL-i, tak by użytkownik mógł przeglądać
 <path>/afs</path>.
 </p>
 
 <pre caption="Ustawianie list kontroli dostępu">
-# <i>/usr/afs/bin/fs setacl /afs system:anyuser rl</i>
+# <i>fs setacl /afs system:anyuser rl</i>
 </pre>
 
 <p>
-Następnie tworzymy główny wolumin, montujemy go jako
-<path>/afs/&lt;cell name&gt;</path> w trybie tylko do odczytu i jako <path>/afs/.&lt;cell
+Następnie tworzymy główny wolumin, montujemy go jako <path>/afs/&lt;cell
+name&gt;</path> w trybie tylko do odczytu i jako <path>/afs/.&lt;cell
 name&gt;</path> w trybie do odczytu i zapisu.
 </p>
 
 <pre caption="Przygotowanie głównego woluminu">
-# <i>/usr/afs/bin/vos create &lt;server name&gt;&lt;partition name&gt; root.cell</i>
-# <i>/usr/afs/bin/fs mkmount /afs/&lt;cell name&gt; root.cell </i>
-# <i>/usr/afs/bin/fs setacl /afs/&lt;cell name&gt; system:anyuser rl</i>
-# <i>/usr/afs/bin/fs mkmount /afs/.&lt;cell name&gt; root.cell -rw</i>
+# <i>vos create &lt;server name&gt;&lt;partition name&gt; root.cell</i>
+# <i>fs mkmount /afs/&lt;cell name&gt; root.cell </i>
+# <i>fs setacl /afs/&lt;cell name&gt; system:anyuser rl</i>
+# <i>fs mkmount /afs/.&lt;cell name&gt; root.cell -rw</i>
 </pre>
 
 <p>
@@ -688,38 +1236,39 @@ kilka administracyjnych zadań.
 By korzystać z AFS musimy się uwierzytelnić na serwerze KA, jeśli korzystamy z
 implementacji AFS i Kerberos 4 lub w Kerberos 5 KDC, jeśli korzystamy z MIT,
 Heimdal lub ShiShi Kerberos5. Jednakże, by zalogować się na maszynę,
-potrzebujemy konta użytkownika. Może to być konto lokalne w /etc/passwd, NIS,
-LDAP (OpenLDAP) lub bazie Hesiod. W Gentoo PAM pozwala na powiązanie
-uwierzytelniania AFS z logowaniem na konto użytkownika.
+potrzebujemy konta użytkownika. Może to być konto lokalne w
+<path>/etc/passwd</path>, NIS, LDAP (OpenLDAP) lub bazie Hesiod. W Gentoo PAM
+pozwala na powiązanie uwierzytelniania AFS z logowaniem na konto użytkownika.
 </p>
 
 <p>
-Musimy zaktualizować /etc/pam.d/system-auth, które jest używane przez inne
-konfiguracje. "use_first_pass" sygnalizuje, że najpierw sprawdzany jest login
-użytkownika, zaś "ignore_root" sprawia, że super użytkownik jest ignorowany
-(podobnie jak każdy użytkownik z UID 0) w przypadku, gdy zawiedzie AFS lub sieć.
+Musimy zaktualizować <path>/etc/pam.d/system-auth</path>, które jest używane
+przez inne konfiguracje. "use_first_pass" sygnalizuje, że najpierw sprawdzany
+jest login użytkownika, zaś "ignore_root" sprawia, że super użytkownik jest
+ignorowany (podobnie jak każdy użytkownik z UID 0) w przypadku, gdy zawiedzie
+AFS lub sieć.
 </p>
 
 <pre caption="/etc/pam.d/system-auth">
-auth       required     /lib/security/pam_env.so
-auth       sufficient   /lib/security/pam_unix.so likeauth nullok
-auth       sufficient   /usr/afsws/lib/pam_afs.so.1 use_first_pass ignore_root
-auth       required     /lib/security/pam_deny.so
+auth       required     pam_env.so
+auth       sufficient   pam_unix.so likeauth nullok
+auth       sufficient   pam_afs.so.1 use_first_pass ignore_root
+auth       required     pam_deny.so
 
-account    required     /lib/security/pam_unix.so
+account    required     pam_unix.so
 
-password   required     /lib/security/pam_cracklib.so retry=3
-password   sufficient   /lib/security/pam_unix.so nullok md5 shadow use_authtok
-password   required     /lib/security/pam_deny.so
+password   required     pam_cracklib.so retry=3
+password   sufficient   pam_unix.so nullok md5 shadow use_authtok
+password   required     pam_deny.so
 
-session    required     /lib/security/pam_limits.so
-session    required     /lib/security/pam_unix.so
+session    required     pam_limits.so
+session    required     pam_unix.so
 </pre>
 
 <p>
-By zapobiec uzyskaniu dostępu AFS przez lokalnych użytkowników i by sudo
-zachowywało token rzeczywistego użytkownika, zmieniamy /etc/pam.d/su
-i następujący sposób:
+By zapobiec uzyskaniu dostępu AFS przez lokalnych użytkowników i by <c>sudo</c>
+zachowywało token rzeczywistego użytkownika, zmieniamy
+<path>/etc/pam.d/su</path> i następujący sposób:
 </p>
 
 <pre caption="/etc/pam.d/su">
@@ -748,24 +1297,22 @@ auth       sufficient   /lib/security/pam_rootok.so
 
 # Poniższa linię należy zakomentować, by pozwolić dowolnemu użytkownikowi, nawet
 # takiemu nie należącemu do grupy 'wheel', na wykonywanie komendy su.</comment>
-auth       required     /lib/security/pam_wheel.so use_uid
+auth       required     pam_wheel.so use_uid
 
-auth       required     /lib/security/pam_stack.so service=system-auth
+auth       required     pam_stack.so service=system-auth
 
-account    required     /lib/security/pam_stack.so service=system-auth
+account    required     pam_stack.so service=system-auth
 
-password   required     /lib/security/pam_stack.so service=system-auth
+password   required     pam_stack.so service=system-auth
 
-session    required     /lib/security/pam_stack.so service=system-auth
-session    optional     /lib/security/pam_xauth.so
+session    required     pam_stack.so service=system-auth
+session    optional     pam_xauth.so
 
-<comment># W tym miejscu zapobiegamy zrzuceniu tokena rzeczywistego id
-przez użytkownika</comment>
-session    optional     /usr/afsws/lib/pam_afs.so.1 no_unlog
+<comment># W tym miejscu zapobiegamy zrzuceniu tokena rzeczywistego id przez użytkownika</comment>
+session    optional     pam_afs.so.1 no_unlog
 </pre>
 
 </body>
 </section>
 </chapter>
-
 </guide>
