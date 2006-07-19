@@ -4,392 +4,475 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Id: hb-install-stage.xml,v 1.12 2006/07/19 10:13:46 neysx Exp $ -->
+<!-- $Id: hb-install-stage.xml,v 1.13 2006/07/19 22:46:18 neysx Exp $ -->
 
 <sections>
-  
-<version>2.20</version>
-<date>2006-07-13</date>
+
+<version>2.11</version>
+<date>2006-05-27</date>
 
 <section>
-<title>Chroot</title>
+<title>Menginstal sebuah Stage</title>
 <subsection>
-<title>Opsional: Memilih Mirror</title>
+<title>Set Tanggal/Waktu yang Benar</title>
 <body>
 
 <p>
-Untuk mendownload source code dengan cepat, anda dianjurkan untuk memilih
-sebuah mirror yang kencang. Portage akan memeriksa variable GENTOO_MIRRORS
-di <path>make.conf</path> anda dan menggunakan mirror yang tercantum. Anda
-bisa melihat <uri link="/main/en/mirrors.xml">daftar mirror</uri> kami dan
-mencari sebuah mirror (atau lebih) yang dekat dengan anda (karena biasanya
-inilah yang paling kencang), tapi kami menyediakan sebuah utilitas bernama
-<c>mirrorselect</c> yang menyediakan interface bagus bagi anda untuk memilih
-mirror yang anda inginkan.
+Sebelum anda melanjutkan, anda perlu memeriksa tanggal/waktu anda dan
+memperbaharuinya. Jam yang tidak terkonfigurasi dengan benar dapat
+menyebabkan hasil yang aneh nantinya!
 </p>
-
-<pre caption="Menggunakan mirrorselect untuk variabel GENTOO_MIRRORS">
-# <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
-</pre>
-
-<warn>
-Jangan memilih mirror IPv6 apapun. Stage kami untuk saat ini belum
-mendukung IPv6.
-</warn>
 
 <p>
-Setting kedua yang penting adalah SYNC di <path>make.conf</path>. Variabel
-ini berisi server rsync yang ingin anda gunakan ketika meng-update pohon
-Portage anda (kumpulan ebuild, skrip yang berisi seluruh informasi yang
-dibutuhkan Portage untuk mendownload dan menginstal software). Walaupun anda
-bisa saja memasukkan sebuah server SYNC secara manual, <c>mirrorselect</c>
-dapat memudahkannya untuk anda:
+Untuk memastikan tanggal/waktu saat ini, jalankan <c>date</c>:
 </p>
 
-<pre caption="Memilih mirror rsync dengan mirrorselect">
-# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+<pre caption="Memeriksa tanggal/waktu">
+# <i>date</i>
+Fri Mar 29 16:21:18 UTC 2005
 </pre>
 
 <p>
-Setelah menjalankan <c>mirrorselect</c>, anda dianjurkan untuk memeriksa
-kembali setting di <path>/mnt/gentoo/etc/make.conf</path> !
+Jika tanggal/waktu yang ditampilkan salah, update-lah menggunakan sintaks
+<c>date MMDDhhmmYYYY</c> (<b>M</b>onth, <b>D</b>ay, <b>h</b>our,
+<b>m</b>inute, dan <b>Y</b>ear). Untuk saat ini anda harus menggunakan
+waktu UTS. Anda dapat menentukan zona waktu anda nanti. Misalnya, untuk men-set
+tanggal menjadi 29 Maret, 16:21 di tahun 2005:
 </p>
 
-</body>
-</subsection>
-<subsection>
-<title>Copy Informasi DNS</title>
-<body>
-
-<p>
-Satu hal yang masih harus dilakukan sebelum kita memasuki lingkungan baru
-adalah meng-copy informasi DNS di file <path>/etc/resolv.conf</path>. Anda
-perlu melakukan langkah ini untuk memastikan koneksi jaringan anda tetap
-berfungsi setelah memasuki lingkungan baru. File <path>/etc/resolv.conf</path>
-mengandung nameserver-nameserver untuk jaringan anda.
-</p>
-
-<pre caption="Copy Informasi DNS">
-<comment>(Opsi "-L" diperlukan untuk memastikan kita tidak meng-copy link simbolik)</comment>
-# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+<pre caption="Set tanggal/waktu UTC">
+# <i>date 032916212005</i>
 </pre>
 
 </body>
 </subsection>
 <subsection>
-<title>Mount Filesystem /proc dan /dev</title>
+<title>Memutuskan Pilihan Anda</title>
 <body>
 
 <p>
-Mount filesystem <path>/proc</path> ke <path>/mnt/gentoo/proc</path> agar
-proses instalasi dapat menggunakan informasi dari kernel walaupun berada di
-lingkungan chroot, kemudian mount-bind filesystem <path>/dev</path>.
+Langkah selanjutnya yang perlu anda lakukan adalah menginstal tarbal
+<e>stage3</e> ke sistem anda. Anda memiliki pilihan untuk mendownload tarbal
+yang diperlukan lewat internet atau, jika anda boot dari salah satu
+CD Instalasi Universal Gentoo, copy stage tersebut dari CD. Jika anda
+memiliki sebuah CD Universal dan stage yang anda inginkan tersedia di CD,
+download lagi melalui internet hanya menyia-nyiakan bandwidth karena file
+stage tersebut biasanya sama. Perintah <c>uname -m</c> dapat digunakan
+untuk membantu anda memutuskan stage mana yang harus didownload.
 </p>
 
-<pre caption="Mount /proc dan /dev">
-# <i>mount -t proc none /mnt/gentoo/proc</i>
-# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+<ul>
+<li><uri link="#doc_chap2">Default: Menggunakan Stage dari Internet</uri></li>
+<li>
+  <uri link="#doc_chap3">Alternatif: Menggunakan Stage dari CD Instalasi</uri>
+</li>
+</ul>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Default: Menggunakan Stage dari Internet</title>
+<subsection>
+<title>Mendownload Tarbal Stage</title>
+<body>
+
+<p>
+Masuklah ke mountpoint Gentoo tempat anda me-mount filesystem anda
+(kemungkinan besar <path>/mnt/gentoo</path>):
+</p>
+
+<pre caption="Masuk ke mountpoint Gentoo">
+# <i>cd /mnt/gentoo</i>
+</pre>
+
+<p>
+Tergantung pada media instalasi anda, tersedia beberapa tool untuk
+mendownload sebuah stage. Jika program <c>links</c> tersedia, maka anda dapat
+langsung masuk ke <uri link="/main/en/mirrors.xml">daftar mirror Gentoo</uri>
+dan memilih sebuah mirror yang dekat dengan anda.
+</p>
+
+<p>
+Jika <c>links</c> tidak tersedia, anda seharusnya memiliki <c>lynx</c>. Jika
+anda harus melewati proxy, export-lah variabel <c>http_proxy</c> dan
+<c>ftp_proxy</c>:
+</p>
+
+<pre caption="Set informasi proxy untk lynx">
+# <i>export http_proxy="http://proxy.server.com:port"</i>
+# <i>export ftp_proxy="http://proxy.server.com:port"</i>
+</pre>
+
+<p>
+Sekarang kami anggap anda telah memiliki <c>links</c>.
+</p>
+
+<p>
+Masuk ke direktori <path>releases/</path>, diikuti oleh arsitektur anda
+(mis. <path>x86/</path>) dan versi Gentoo (<path>2006.0</path>), dan terakhir
+masuk ke direktori <path>stages/</path>. Di sana, anda seharusnya akan
+melihat semua file stage yang tersedia bagi arsitektur anda (mungkin disimpan
+di dalam subdirektori tiap sub arsitektur). Pilih satu dan tekan <c>D</c> untuk
+mendownloadnya. Setelah selesai, tekan <c>Q</c> untuk keluar dari browser.
+</p>
+
+<pre caption="Browse daftar mirror menggunakan links">
+# <i>links http://www.gentoo.org/main/en/mirrors.xml</i>
+
+ <comment>(Jika anda butuh dukungan proxy dengan links:)</comment>
+# <i>links -http-proxy proxy.server.com:8080 http://www.gentoo.org/main/en/mirrors.xml</i>
+</pre>
+
+<p>
+Pastikan anda mendownload sebuah tarbal <b>stage3</b> - instalasi dengan
+tarbal stage1 atau stage2 sudah tidak lagi didukung.
+</p>
+
+<p>
+Jika anda ingin memeriksa keadaan tarbal stage yang anda download, gunakan
+program <c>md5sum</c> dan bandingkan tampilannya dengan checksum MD5 yang
+disediakan di mirror. Sebagai contoh, untuk memeriksa keadaan tarbal stage x86:
+</p>
+
+<pre caption="Contoh pemeriksaan keadaan tarbal stage">
+# <i>md5sum -c stage3-x86-2006.0.tar.bz2.DIGESTS</i>
+stage3-x86-2006.0.tar.bz2: OK
 </pre>
 
 </body>
 </subsection>
 <subsection>
-<title>Memasuki Lingkungan Baru</title>
+<title>Mengekstrak Tarbal Stage</title>
 <body>
 
 <p>
-Setelah semua partisi tercipta dan lingkungan dasar terinstal, sekarang
-saatnya untuk memasuki lingkungan instalasi baru kita dengan melakukan
-<e>chroot</e> ke dalamnya. Artinya, kita berpindah tempat dari lingkungan
-instalasi kita saat ini (CD Instalasi atau media instalasi lain) ke sistem
-instalasi anda (yaitu partisi-partisi yang baru diciptakan).
+Sekarang ekstrak stage yang telah anda download ke sistem anda. Kita akan
+menggunakan <c>tar</c>, karena metode ini paling mudah:
 </p>
 
-<p>
-Proses chroot ini dilakukan dalam tiga langkah. Pertama, kita akan memindahkan
-root dari <path>/</path> (di media instalasi) ke <path>/mnt/gentoo</path>
-(di partisi anda) menggunakan perintah <c>chroot</c>. Lalu, kita akan
-menciptakan sebuah lingkungan baru menggunakan perintah <c>env-update</c>,
-yang akan menciptakan variabel-variabel lingkungan. Terakhir, kita akan
-me-load variabel-variabel tersebut menggunakan perintah <c>source</c>.
-</p>
-
-<pre caption = "Melakukan chroot ke lingkungan baru">
-# <i>chroot /mnt/gentoo /bin/bash</i>
-# <i>env-update</i>
->> Regenerating /etc/ld.so.cache...
-# <i>source /etc/profile</i>
-# <i>export PS1="(chroot) $PS1"</i>
+<pre caption="Mengekstrak stage">
+# <i>tar xvjpf stage3-*.tar.bz2</i>
 </pre>
 
 <p>
-Selamat! Anda sekarang berada di lingkungan Gentoo Linux anda. Tentu saja,
-ini masih jauh dari selesai, karena itu proses instalasi masih memiliki
-beberapa bagian lagi :-)
+Pastikan anda menggunakan opsi-opsi yang sama (<c>xvjpf</c>). Opsi <c>x</c>
+merupakan singkatan dari <e>Extract</e>, opsi <c>v</c> adalah <e>verbose</e>
+untuk melihat apa saja yang sedang terjadi ketika proses ekstrak berlangsung
+(opsional), opsi <c>j</c> adalah <e>Decompress with bz2</e>, opsi <c>p</c>
+adalah <e>Preserve permissions</e> dan opsi <c>f</c> artinya ekstrak sebuah
+file, bukan standard input.
+</p>
+
+<note>
+CD Instalasi dan imej boot untuk beberapa arsitektur (mis. MIPS) bergantung
+pada <c>tar</c> yang di-built di dalam BusyBox yang untuk saat ini belum
+mendukung opsi <c>v</c>. Untuk itu gunakan opsi <c>xjpf</c>.
+</note>
+
+<p>
+Setelah stage terinstal, lanjutkan ke <uri
+link="#installing_portage">Menginstal Portage</uri>.
 </p>
 
 </body>
 </subsection>
 </section>
-
 <section>
-<title>Mengkonfigurasi Portage</title>
+<title>Alternatif: Menggunakan Stage dari CD Instalasi</title>
 <subsection>
-<title>Update pohon Portage</title>
+<title>Ekstrak Tarbal Stage</title>
 <body>
 
+<impo>
+Jika anda menggunakan Installer LiveCD pada x86, anda <e>tidak</e> akan
+memiliki stage di CD anda. Anda harus mengikuti petunjuk di <uri
+link="#doc_chap2">Menggunakan sebuah tarbal stage dari Internet</uri>.
+</impo>
+
 <p>
-Sekarang anda harus meng-update pohon Portage anda ke versi yang paling baru.
-<c>emerge --sync</c> akan melakukannya untuk anda.
+Stage-stage di CD berada di direktori <path>/mnt/cdrom/stages</path>. Untuk
+menampilkan daftar stage-stage yang tersedia, gunakan perintah <c>ls</c>:
 </p>
 
-<pre caption="Update Portage tree">
-# <i>emerge --sync</i>
-<comment>(Jika anda menggunakan terminal (konsol) yang lambat seperti beberapa 
-konsol framebuffer atau sebuah konsol serial, anda dapat menambahkan opsi
---quiet untuk mempercepat proses ini:)</comment>
+<pre caption="Menampilkan stage-stage yang tersedia">
+# <i>ls /mnt/cdrom/stages</i>
 </pre>
 
 <p>
-Jika anda menggunakan firewall yang menghalangi jalur rsync, anda dapat
-menggunakan "emerge-webrsync" yang akan mendownload dan menginstal snapshot
-portage bagi anda.
+Jika sistem anda menampilkan pesan error, anda mungkin perlu me-mount
+CD-ROM anda dahulu:
+</p>
+
+<pre caption="Mount CD-ROM">
+# <i>ls /mnt/cdrom/stages</i>
+ls: /mnt/cdrom/stages: No such file or directory
+# <i>mount /dev/cdroms/cdrom0 /mnt/cdrom</i>
+# <i>ls /mnt/cdrom/stages</i>
+</pre>
+
+<p>
+Sekarang masuklah ke mountpoint Gentoo (biasanya <path>/mnt/gentoo</path>):
+</p>
+
+<pre caption="Masuk ke /mnt/gentoo">
+# <i>cd /mnt/gentoo</i>
+</pre>
+
+<p>
+Sekarang kita akan mengekstrak tarbal stage pilihan anda menggunakan
+<c>tar</c>. Pastikan anda menggunakan opsi-opsi yang sama (<c>-xvjpf</c>).
+Argumen <c>v</c> merupakan opsional dan tidak didukung di beberapa versi
+<c>tar</c>. Pada contoh berikut ini, kita mengekstrak tarbal stage
+<path>stage3-&lt;subarch&gt;-2006.0.tar.bz2</path>. Pastikan unuk mengganti
+nama tarbal tersebut dengan stage anda.
+</p>
+
+<pre caption="Mengekstrak tarbal stage">
+# <i>tar xvjpf /mnt/cdrom/stages/stage3-&lt;subarch&gt;-2006.0.tar.bz2</i>
+</pre>
+
+<p>
+Setelah stage terinstal, lanjutkan ke <uri
+link="#installing_portage">Menginstal Portage</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="installing_portage">
+<title>Menginstal Portage</title>
+<subsection>
+<title>Menginstal Snapshot Portage</title>
+<body>
+
+<p>
+Sekarang anda harus menginstal sebuah snapshot Portage, yaitu sebuah kumpulan
+file yang menginformasikan Portage software apa saja yang dapat anda instal,
+profile apa saja yang tersedia,dll
+</p>
+
+</body>
+</subsection>
+<subsection id="installing_from_Internet">
+<title>Download dan Instal Snapshot Portage</title>
+<body>
+
+<p>
+Masuklah ke mountpoint tempat anda me-mount filesystem anda. (biasanya di
+<path>/mnt/gentoo</path>):
+</p>
+
+<pre caption="Masuk ke mountpoint Gentoo">
+# <i>cd /mnt/gentoo</i>
+</pre>
+
+<p>
+Jalankan <c>links</c> (atau <c>lynx</c>) kemudian masuk ke <uri
+link="/main/en/mirrors.xml">daftar mirror Gentoo</uri>. Pilih sebuah mirror
+yang dekat dengan anda kemudian masuk ke direktori <path>snapshots/</path>.
+Dari sana, download-lah snapshot Portage terbaru dengan memilih, kemudian
+menekan <c>D</c>.
+</p>
+
+<pre caption="Browsing daftar mirror Gentoo">
+# <i>links http://www.gentoo.org/main/en/mirrors.xml</i>
+</pre>
+
+<p>
+Sekarang keluar dari browser dengan menekan <c>Q</c>. Anda telah memiliki
+snapshot Portage di <path>/mnt/gentoo</path>.
 </p>
 
 <p>
-Jika anda mendapat peringatan bahwa versi Portage yang lebih baru tersedia dan anda
-sebaiknya mengupdate Portage, anda harus melakukannya sekarang dengan perintah
-<c>emerge portage</c>.
+Jika anda ingin memeriksa integritas snapshot yang baru di-download, gunakan
+<c>md5sum</c> kemudian bandingkan output-nya dengan MD5 checksum yang tersedia
+di mirror.
+</p>
+
+<pre caption="Memeriksa integritas snapshot Portage">
+# <i>md5sum -c portage-latest.tar.bz2.md5sum</i>
+portage-latest.tar.bz2: OK
+</pre>
+
+<p>
+Di langkah selanjutnya, kita akan mengekstrak snapshot Portage ke filesystem
+anda. Pastikan anda menggunakan perintah yang sama; opsi terakhir merupakan
+huruf kapital <c>C</c>, bukan <c>c</c>.
+</p>
+
+<pre caption="Ekstrak snapshot Portage">
+<comment>(Ganti &lt;date&gt; dengan datestamp yang ada pada snapshot)</comment>
+# <i>tar xvjf /mnt/gentoo/portage-&lt;date&gt;.tar.bz2 -C /mnt/gentoo/usr</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section id="compile_options">
+<title>Mengkonfigurasi Opsi Kompilasi</title>
+<subsection>
+<title>Pendahuluan</title>
+<body>
+
+<p>
+Untuk mengoptimasi Gentoo, anda dapat mengeset beberapa variabel yang
+mengendalikan tingkah laku Portage. Variabel-variabel tersebut dapat diset
+sebagai variabel environment (menggunakan perintah <c>export</c>) tetapi
+tidak permanen. Untuk menyimpan setting anda, Portage menyediakan file
+<path>/etc/make.conf</path>, yaitu file konfigurasi Portage. File inilah yang
+akan kita edit sekarang.
+</p>
+
+<note>
+Daftar variabel-variabel lengkap yang ter-comment dapat ditemukan di file
+<path>/mnt/gentoo/etc/make.conf.example</path>. Agar proses instalasi
+Gentoo anda sukses, anda hanya perlu mengeset variabel-variabel yang
+dijelaskan di bawah ini.
+</note>
+
+<p>
+Jalankan editor favorit anda (di dokumentasi ini, kita menggunakan <c>nano</c>)
+agar kita dapat mengubah variabel-variabel optimasi yang akan kita jelaskan.
+</p>
+
+<pre caption="Membuka /etc/make.conf">
+# <i>nano -w /mnt/gentoo/etc/make.conf</i>
+</pre>
+
+<p>
+Seperti yang anda lihat, file <path>make.conf.example</path> diurutkan dengan
+cara yang umum: baris-baris yang ter-comment mulai dengan tanda "#",
+baris-baris lain mendefenisikan variabel menggunakan sintaks
+<c>VARIABLE="content"</c>. File <path>make.conf</path> menggunakan
+sintaks yang sama. Beberapa dari variabel tersebut akan kita diskusikan nanti.
 </p>
 
 </body>
 </subsection>
 <subsection>
-<title>Memilih Profil yang Benar</title>
+<title>CHOST</title>
 <body>
 
 <p>
-Pertama, penjelasan kecil tentang Profil
+Variabel <c>CHOST</c> mendefenisikan untuk arsitektur apa <c>gcc</c> harus
+mengkompilasi program. Variabel ini seharusnya telah diset dengan nilai yang
+benar.<brite>Jangan diedit</brite> karena bisa menrusak sistem anda. Jika
+menurut anda variabel <c>CHOST</c> tidak benar, anda mungkin menggunakan
+tarbal stage3 yang salah.
 </p>
-
-<p>
-Sebuah profil merupakan sebuah blok bangunan bagi sitem Gentoo. Profil
-tidak hanya menentukan nilai-nilai default untuk CHOST, CFLAGS dan variabel
-penting lainnya, tapi juga mengunci sistem di versi-versi paket dalam
-tingkatan tertentu.
-</p>
-
-<p>
-Sebelumnya, profil jarang sekali disentuh oleh user. Tapi, user x86, hppa dan
-alpha dapat memilih andata dua profil, satu untuk kernel 2.4 dan yang lainnya
-untuk kernel 2.6. Hal ini diadakan untuk meningkatkan integrasi kernel 2.6.
-Arsitektur ppc dan ppc64 juga memiliki beberapa profil yang tersedia. Kita
-akan membicarakannya nanti.
-</p>
-
-<p>
-Anda dapat melihat profil apa yang sedang anda gunakan sekarang dengan
-perintah berikut:
-</p>
-
-<pre caption="Memeriksa profil sistem">
-# <i>ls -FGg /etc/make.profile</i>
-lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2006.0/
-</pre>
-
-<p>
-Jika anda menggunakan salah satu dari tiga arsitektur tersebut di atas, maka
-profil default akan menyediakan sistem berbasis kernel 2.6 untuk anda. Inilah
-profil default, tapi anda juga memiliki opsi untuk memilih profil yang lain.
-</p>
-
-<p>
-Sebagian user mungkin ingin menggunakan sistem yang berbasis profil Linux 2.4
-yang lebih lama. Jika anda punya alasan baik untuk ini, maka pertama anda harus
-memeriksa apakah profil lain tersedia. Pada x86, kita bisa melakukannya dengan
-perintah berikut:
-</p>
-
-<pre caption="Memeriksa apakah profil lain tersedia">
-# <i>ls -d /usr/portage/profiles/default-linux/x86/no-nptl/2.4</i>
-/usr/portage/profiles/default-linux/x86/no-nptl/2.4
-</pre>
-
-<p>
-Contoh di atas menunjukkan bahwa profil 2.4 tersedia (karena tidak ada
-komplain tentang file atau direktori yang kurang). Anda dianjurkan untuk tetap
-menggunakan profil default, tapi jika anda ingin menggantinya, lakukan dengan
-seperti ini:
-</p>
-
-<pre caption="Pindah ke profil 2.4">
-<comment>(Pastikan anda menggunakan arsitektur yang benar, contoh di bawah ini untuk x86)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/x86/no-nptl/2.4 /etc/make.profile</i>
-<comment>(Melihat file di profil 2.4)</comment>
-# <i>ls -FGg /etc/make.profile/</i>
-total 12
--rw-r--r--  1 939 Dec 10 14:06 packages
--rw-r--r--  1 347 Dec  3  2004 parent
--rw-r--r--  1 573 Dec  3  2004 virtuals
-</pre>
-
-<p>
-Untuk ppc, ada beberapa profil baru yang tersedia di versi 2006.0
-</p>
-
-<pre caption="Profil-profil PPC">
-<comment>(Profil generic PPC, untuk semua mesin PPC, minimal)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0 /etc/make.profile</i>
-<comment>(Profil G3)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G3 /etc/make.profile</i>
-<comment>(Profil G3 Pegasos)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G3/Pegasos/ /etc/make.profile</i>
-<comment>(Profil G4 (Altivec))</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G4 /etc/make.profile</i>
-<comment>(Profil G4 (Altivec) Pegasos)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G4/Pegasos/ /etc/make.profile</i>
-</pre>
-
-<p>
-Untuk ppc64, ada beberapa profil baru yang tersedia di versi 2006.0
-</p>
-
-<pre caption="PPC64 Profiles">
-<comment>(Profil generic 64bit userland PPC64, untuk semua mesin PPC64)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/64bit-userland /etc/make.profile</i>
-<comment>(Profil generic 32bit userland PPC64, untuk semua mesin PPC64)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/32bit-userland /etc/make.profile</i>
-<comment>(Setiap tipe userland memiliki sub profil seperti di bawah ini, dengan (userland) digantikan oleh userland yang dipilih dari atas)</comment>
-<comment>(Profil 970 untuk JS20)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/970 /etc/make.profile</i>
-<comment>(Profil G5)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/970/pmac /etc/make.profile</i>
-<comment>(Profil POWER3)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power3 /etc/make.profile</i>
-<comment>(Profil POWER4)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power4 /etc/make.profile</i>
-<comment>(Profil POWER5)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power5 /etc/make.profile</i>
-<comment>(Profil multilib belum dianggap stabil di release ini.)</comment>
-</pre>
 
 </body>
 </subsection>
-<subsection id="configure_USE">
-<title>Konfigurasi Variabel USE</title>
+<subsection>
+<title>CFLAGS dan CXXFLAGS</title>
 <body>
 
 <p>
-<c>USE</c> merupakan salah satu variabel yang paling mengagumkan yang
-disediakan oleh Gentoo untuk para penggunanya. Beberapa program dapat
-dikompilasi dengan atau tanpa dukungan tambahan terhadap beberapa hal.
-Sebagai contoh, beberapa program dapat dikompilasi dengan dukungan gtk, atau
-dengan dukungan qt. Program-program lainnya dapat dikompilasi dengan atau
-tanpa dukungan SSL. Beberapa program bahkan dapat dikompilasi dengan dukungan
-framebuffer (svgalib) sebagai ganti X11 (X-server).
+Variabel <c>CFLAGS</c> dan <c>CXXFLAGS</c> mendefenisikan flag-flag optimasi
+untuk compiler C dan C++ <c>gcc</c> berturut-turut. Walaupun kita
+mendefenisikan variabel tersebut secara umum di sini, anda hanya akan
+mendapatkan performa maksimal jika anda mengoptimasi flag-flag ini untuk
+setiap program secara terpisah. Alasannya adalah karena setiap program
+berbeda.
 </p>
 
 <p>
-Kebanyakan distro linux mengkompilasi paket-paket mereka dengan dukungan
-sebanyak mungkin, sehingga meningkatkan ukuran program dan waktu yang
-diperlukan untuk menjalankan program tersebut, dan juga banyak sekali
-dependency yang diperlukan. Dengan Gentoo, anda dapat mendefenisikan
-opsi-opsi apa saja yang harus dikompilasi di sebuah paket. Di sinilah
-variabel <c>USE</c> berperan penting.
+Di file <path>make.conf</path>, anda sebaiknya mendefenisikan flag-flag
+optimasi yang anda rasa akan membuat sistem anda lebih responsif
+<e>secara umum</e>. Jangan menggunakan setting-setting percobaan ke
+variabel ini; optimasi yang terlalu tinggi dapat membuat program bertingkah
+laku aneh (crash, atau bahkan, tidak dapat berfungsi).
 </p>
 
 <p>
-Di variabel <c>USE</c>, anda mendefenisikan keyword-keyword yang tertuju
-ke opsi kompilasi. Sebagai contoh, <e>ssl</e> akan mengkompilasi dukungan
-ssl ke program yang mendukungnya. <e>-X</e> akan menonaktifkan dukungan
-X-server (perhatikan tanda minus di depannya). <e>gnome gtk -kde -qt</e> akan
-mengkompilasi program-program anda dengan dukungan gnome (dan gtk), tanpa
-dukungan kde (dan qt), sehingga sistem anda akan lebih ramping untuk GNOME.
+Kami tidak akan menjelaskan semua opsi-opsi optimasi. Jika anda ingin
+mengetahui opsi-opsi tersebut, baca <uri
+link="http://gcc.gnu.org/onlinedocs/">Manual Online GNU</uri>
+atau halaman info <c>gcc</c> (<c>info gcc</c> -- hanya berfungsi di sistem
+Linux). File <path>make.conf.example</path> sendiri memiliki banyak contoh
+dan informasi; jangan lupa untuk membaca file ini juga.
 </p>
 
 <p>
-Setting-setting <c>USE</c> default disimpan di file
-<path>/etc/make.profile/make.defaults</path>. Apa yang anda simpan di file
-<path>/etc/make.conf</path> dikalkulasi terhadap setting default. Jika anda
-menambahkan sebuah keyword ke setting <c>USE</c>, keyword tersebut akan
-ditambahkan ke daftar default. Jika anda menghapus sebuah keyword dari setting
-<c>USE</c> (dengan menambahkan tanda minus di depannya), keyword tersebut
-akan dihapus dari daftar default (tentu saja, jika sebelumnya keyword tersebut
-berada di daftar default). <e>Jangan pernah</e> mengubah sesuatu di dalam
-direktori <path>/etc/make.profile</path>; isi direktori tersebut ditimpa
-setiap kali anda mengupdate Portage!
+Setting pertama adalah flag <c>-march=</c>, yang mendefenisikan nama
+arsitektur. Opsi-opsi yang mungkin dipakai dijelaskan di file
+<path>make.conf.example</path> (sebagai komentar). Sebagai contoh, untuk
+arsitektur x86 Athlon XP:
 </p>
 
-<p>
-Deskripsi variabel <c>USE</c> yang lengkap dapat ditemukan di bagian dua
-Buku Panduan Gentoo, <uri link="?part=2&amp;chap=2">Flag USE</uri>.
-Deskripsi lengkap tentang flag-flag USE yang tersedia dapat ditemukan di
-sistem anda di file <path>/usr/portage/profiles/use.desc</path>. 
-</p>
-
-<pre caption="Melihat flag-flag USE yang tersedia">
-# <i>less /usr/portage/profiles/use.desc</i>
-<comment>(Anda dapat men-skrol menggunakan tanda panah, keluar dengan
-menekan 'q')</comment>
+<pre caption="Setting march GCC">
+<comment># Pengguna AMD64 yang ingin menggunakan sistem asli 64 bit sebaiknya menggunakan -march=k8</comment>
+<comment># Pengguna EM64T sebaiknya menggunakan -march=nocona</comment>
+-march=athlon-xp
 </pre>
 
 <p>
-Sebagai contoh, kita akan melihat setting <c>USE</c> untuk sistem berbasis
-KDE dengan dukungan DVD, ALSA dan CD-Recording:
+Yang kedua adalah flag <c>-O</c> (O adalah huruf besar O, bukan nol), yang
+mendefenisikan kelas optimasi <c>gcc</c>. Kelas-kelas yang tersedia adalah
+<c>s</c> (optimasi size/ukuran), <c>0</c> (nol - tidak dioptimasi), <c>1</c>,
+<c>2</c> atau <c>3</c> untuk optimasi kecepatan (setiap kelas memiliki
+flag-flag yang sama dari kelas sebelumnya, ditambah beberapa tambahan).
+Sebagai contoh, untuk optimasi kelas 2:
 </p>
 
-<pre caption="Membuka file /etc/make.conf">
-# <i>nano -w /etc/make.conf</i>
+<pre caption="setting O GCC">
+-O2
 </pre>
 
-<pre caption="Setting USE">
-USE="-gtk -gnome qt kde dvd alsa cdr"
+<p>
+Flag-flag optimasi populer lainnya adalah <c>-pipe</c> (gunakan pipe
+daripada file-file sementara untuk berkomunikasi antara berbagai stage
+sewaktu kompilasi).
+</p>
+
+<p>
+Kami ingatkan anda bahwa penggunaan <c>-fomit-frame-pointer</c> (tidak
+menyimpan pointer frame di register untuk function-function yang tidak
+memerlukannya) kemungkinan bisa berakibat serius ketika melakukan debugging
+pada beberapa aplikasi!
+</p>
+
+<p>
+Sewaktu anda mendefenisikan variabel <c>CFLAGS</c> dan <c>CXXFLAGS</c>,
+anda sebaiknya mengkombinasikan beberapa flag-flag optimasi, misalnya:
+</p>
+
+<pre caption="Defenisi variabel CFLAGS dan CXXFLAGS">
+CFLAGS="-march=athlon-xp -pipe -O2"   <comment># Pengguna AMD64 sebaiknya menggunakan -march=k8</comment>
+                                      <comment># Pengguna EM64T sebaiknya menggunakan -march=nocona</comment>
+CXXFLAGS="${CFLAGS}"                  <comment># Gunakan setting yang sama untuk kedua variabel</comment>
 </pre>
 
 </body>
 </subsection>
 <subsection>
-<title>Opsional: GLIBC Locales</title>
+<title>MAKEOPTS</title>
 <body>
 
 <p>
-Anda mungkin hanya ingin menggunakan satu atau dua locales di sistem anda.
-Sampai saat ini setelah mengkompilasi <c>glibc</c> sebuah set lengkap dari
-seluruh locales yang tersedia akan diciptakan. Sekarang anda bisa mengaktifkan
-flag USE untuk <c>userlocales</c> dan menentukan hanya locales yang anda
-butuhkan di <path>/etc/locales.build</path>. Lakukan ini jika anda benar-benar
-tahu locale apa yang harus dipilih.
+Di variabel <c>MAKEOPTS</c>, anda dapat mendefenisikan berapa banyak
+kompilasi paralel yang berjalan sewaktu anda menginstal sebuah paket. Pilihan
+yang bagus adalah banyak CPU di sistem anda tambah satu, tetapi aturan ini
+tidaklah selalu sempurna.
 </p>
 
-<pre caption="Mengaktifkan flag USE userlocales khusus untuk glibc">
-# <i>mkdir -p /etc/portage</i>
-# <i>echo "sys-libs/glibc userlocales" >> /etc/portage/package.use</i>
+<pre caption="MAKEOPTS untuk sistem 1 CPU umum">
+MAKEOPTS="-j2"
 </pre>
 
-<p>
-Sekarang tentukan locales yang ingin anda gunakan
-</p>
-
-<pre caption="membuka file /etc/locales.build">
-# <i>nano -w /etc/locales.build</i>
-</pre>
+</body>
+</subsection>
+<subsection>
+<title>Ready, Set, Go!</title>
+<body>
 
 <p>
-Locales di bawah ini merupakan contoh untuk mendapatkan locales English
-(United States) dan German (Germany) bersama format karakternya
-(seperti UTF-8).
-</p>
-
-<pre caption="Menentukan locales anda">
-en_US/ISO-8859-1
-en_US.UTF-8/UTF-8
-de_DE/ISO-8859-1
-de_DE@euro/ISO-8859-15
-</pre>
-
-<p>
-Sekarang lanjutkan ke <uri link="?part=1&amp;chap=7">Mengkonfigurasi
-Kernel</uri>
+Update file <path>/mnt/gentoo/etc/make.conf</path> sesuai keinginan anda
+dan simpan (pengguna <c>nano</c> akan menekan <c>Ctrl-X</c>). Anda sekarang
+dapat melanjutkan ke <uri
+link="?part=1&amp;chap=6">Menginstal Sistem Dasar Gentoo</uri>.
 </p>
 
 </body>

@@ -4,496 +4,693 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Id: hb-install-x86-disk.xml,v 1.6 2006/07/19 10:13:46 neysx Exp $ -->
+<!-- $Id: hb-install-x86-disk.xml,v 1.7 2006/07/19 22:46:18 neysx Exp $ -->
 
 <sections>
 
-<version>2.11</version>
-<date>2006-01-06</date>
+<version>2.5</version>
+<date>2006-01-01</date>
 
 <section>
-<title>Zona Waktu (Timezone)</title>
+<title>Pengenalan ke Block Device</title>
+<subsection>
+<title>Block Device</title>
 <body>
 
 <p>
-Pertama, anda perlu memilih zona waktu anda agar sistem anda tahu dimana
-dia berada. Carilah zona waktu anda di <path>/usr/share/zoneinfo</path>,
-kemudian copy ke <path>/etc/localtime</path>. Hindari penggunaan zona waktu
-<path>/usr/share/zoneinfo/Etc/GMT*</path> karena namanya tidak mengindikasikan
-zona yang diharapkan. <path>GMT-8</path> sesungguhnya adalah GMT+8.
+Kita akan melihat lebih dalam tentang aspek disk di Gentoo Linux
+dan linux pada umumnya, termasuk filesystem Linux, partisi dan block device.
+Lalu, setelah anda mulai mengenal disk dan filesystem luar dan dalam, anda
+akan dipandu dalam proses set up partisi dan filesystem untuk instalasi
+Gentoo Linux anda.
 </p>
 
-<pre caption="Mengatur zona waktu">
-# <i>ls /usr/share/zoneinfo</i>
-<comment>(Misalnya anda ingin menggunakan GMT)</comment>
-# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
-</pre>
+<p>
+Pertama-tama, kami akan memperkenalkan <e>block device</e>. Block device yang
+paling dikenal mungkin adalah device yang menunjukkan drive IDE pertama anda
+di sistem Linux, bernama <path>/dev/hda</path>. Jika sistem anda menggunakan
+drive SCSI atau SATA, maka drive pertama anda akan bernama
+<path>/dev/sda</path>.
+</p>
+
+<p>
+Block device di atas menunjukkan sebuah interface abstrak ke disk.
+Program-program dapat menggunakan block device tersebut untuk berinteraksi
+dengan disk anda tanpa perlu khawatir apakah drive anda adalah IDE, SCSI,
+atau yang lain. Program-program dapat dengan mudah menuliskan data ke disk
+sebagai susunan blok-blok 512 byte yang dapat diakses secara acak.
+</p>
 
 </body>
-</section>
-<section>
-<title>Instal Source</title>
+</subsection>
 <subsection>
-<title>Memilih Sebuah Kernel</title>
+<title>Partisi</title>
 <body>
 
 <p>
-Inti/Jantung dari semua distro adalah kernel Linux. Kernel merupakan sebuah
-lapisan antara program-program pengguna dengan perangkat keras sistem.
-Gentoo menyediakan beberapa kernel kepada para penggunanya. Sebuah daftar
-lengkap beserta penjelasannya dapat ditemui di <uri
-link="/doc/id/gentoo-kernel.xml">Panduan Kernel Gentoo</uri>.
+Walaupun secara teori anda dapat menggunakan seluruh disk anda untuk
+sistem Linux anda, hal ini hampir tidak pernah diterapkan. Tetapi,
+block device disk anda dipisah-pisahkan lagi menjadi block device yang
+lebih kecil, yang lebih mudah ditangani. Pada sistem x86, block
+device kecil tersebut dikenal sebagai <e>partisi</e>.
 </p>
 
 <p>
-Untuk sistem berbasis x86 Gentoo menyediakan, di antara kernel-kernel lainnya,
-<c>vanilla-sources</c> (kernel default yang dikembangkan oleh para developer
-kernel Linux), <c>gentoo-sources</c> (kernel yang telah dipatch dengan
-fitur-fitur peningkat performa),  ...
+Partisi dapat dibagi menjadi tiga jenis:
+<e>primary</e>, <e>extended</e>, dan <e>logical</e>.
 </p>
 
 <p>
-Pilihlah kernel anda dan instal menggunakan perintah <c>emerge</c>.
-<c>USE="-doc"</c> diperlukan untuk menghindari instalasi xorg-x11 atau
-dependensi lain untuk saat ini. <c>USE="symlink"</c> tidak diperlukan untuk
-instalasi baru tapi pastikan anda memciptakan symlink yang benar untuk
-<path>/usr/src/linux</path>
-</p>
-
-<pre caption="Instal sebuah kernel">
-# <i>USE="-doc symlink" emerge gentoo-sources</i>
-</pre>
-
-<p>
-Jika anda melihat ke direktori <path>/usr/src</path>, anda akan menemukan
-sebuah link simbolik (symlink) bernama <path>linux</path> yang menunjuk
-ke kernel <c>gentoo-sources-2.6.12-r10</c>. Versi anda mungkin berbeda, jadi
-ingatlah ini.
-</p>
-
-<pre caption="Melihat link simbolik kernel">
-# <i>ls -l /usr/src/linux</i>
- lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.12-gentoo-r10
-</pre>
-
-<p>
-Sekarang saatnya untuk mengkonfigurasi dan kompilasi kernel anda. Anda dapat
-menggunakan <c>genkernel</c> untuk melakukannya, yang akan menciptakan sebuah
-kernel generik seperti yang digunakan oleh CD Instalasi. Kami akan menjelaskan
-cara konfigurasi secara "manual" dahulu, karena cara ini adalah cara terbaik
-untuk mengoptimasi sistem anda.
+Partisi <e>primary</e> adalah sebuah partisi dimana informasinya tersimpan
+di MBR (Master Boot Record). Karena MBR sangat kecil (512 byte), hanya empat
+partisi primary yang dapat diciptakan (sebagai contoh, <path>/dev/hda1</path>
+sampai <path>/dev/hda4</path>).
 </p>
 
 <p>
-Jika anda ingin mengkonfigurasi kernel anda secara manual, lanjutkan ke
-<uri link="#manual">Default: Konfigurasi Manual</uri>. Jika anda ingin
-menggunakan <c>genkernel</c>, anda sebaiknya membaca bagian <uri
-link="#genkernel">Alternatif: Menggunakan genkernel</uri>.
+Partisi <e>extended</e> adalah partisi primary spesial (artinya partisi
+extended adalah salah satu dari empat partisi primary yang mungkin) yang
+berisi lebih banyak partisi di dalamnya. Partisi tersebut pada awalnya
+tidak ada, tetapi karena empat partisi dianggap sangat sedikit, maka
+partisi extended diciptakan untuk menambahkan skema partisi tanpa
+kehilangan kompatibilitas terhadap skema yang lama.
+</p>
+
+<p>
+Partisi <e>logical</e> adalah partisi di dalam partisi extended. Informasi
+partisi tersebut tidak tersimpan di MBR, tetapi didefenisikan di dalam partisi
+extended.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Advanced Storage</title>
+<body>
+
+<p>
+CD Instalasi x86 menyediakan dukungan untuk EVMS dan LVM2. EVMS dan LVM2
+meningkatkan fleksibilitas pada saat setup partisi anda. Selama proses
+instalasi, kami akan memfokuskan pada partisi "biasa", tetapi bagus juga untuk
+mengetahui bahwa EVMS dan LVM2 juga didukung.
 </p>
 
 </body>
 </subsection>
 </section>
-<section id="manual">
-<title>Default: Konfigurasi Manual</title>
+<section>
+<title>Merancang sebuah Skema Partisi</title>
+<subsection>
+<title>Skema Partisi Default</title>
+<body>
+
+<p>
+Jika anda tidak tertarik untuk merancang sebuah skema partisi anda sendiri
+bagi sistem anda, anda dapat menggunakan skema partisi yang kami
+gunakan di seluruh buku ini:
+</p>
+
+<table>
+<tr>
+  <th>Partisi</th>
+  <th>Filesystem</th>
+  <th>Besar</th>
+  <th>Penjelasan</th>
+</tr>
+<tr>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>ext2</ti>
+  <ti>32M</ti>
+  <ti>Partisi boot</ti>
+</tr>
+<tr>
+  <ti><path>/dev/hda2</path></ti>
+  <ti>(swap)</ti>
+  <ti>512M</ti>
+  <ti>Partisi swap</ti>
+</tr>
+<tr>
+  <ti><path>/dev/hda3</path></ti>
+  <ti>ext3</ti>
+  <ti>Sisa dari disk</ti>
+  <ti>Partisi root</ti>
+</tr>
+</table>
+
+<p>
+Jika anda tertarik untuk mengetahui seberapa besar sebuah partisi harusnya,
+atau tentang berapa banyak partisi yang anda perlukan, baca terus seksi
+selanjutnya. Jika tidak, lanjutkan dengan proses mem-partisi disk anda, dengan
+membaca <uri link="#fdisk">Menggunakan fdisk untuk mem-partisi disk anda</uri>:
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Berapa Banyak dan Berapa Besar?</title>
+<body>
+
+<p>
+Jumlah partisi sangat tergantung ke lingkungan anda. Sebagai contoh, jika
+anda memiliki banyak pengguna (user), anda mungkin sekali ingin menciptakan
+partisi <path>/home</path> yang terpisah untuk meningkatkan keamanan dan
+proses backup semakin mudah. Jika anda menginstal Gentoo sebagai server mail,
+partisi <path>/var</path> anda sebaiknya dipisahkan karena mail-mail anda
+disimpan di partisi <path>/var</path>. Pilihan filesystem yang tepat juga
+dapat meningkatkan performa. Server-server game sebaiknya memiliki partisi
+<path>/opt</path> yang terpisah karena kebanyakan server game diinstal di
+partisi tersebut. Alasan utamanya juga sama dengan partisi <path>/home</path>:
+keamanan dan backup. Anda pasti ingin menjaga <path>/usr</path> agar tetap
+luas: bukan hanya karena partisi ini menampung hampir semua aplikasi, tapi
+pohon Portage saja memerlukan space 500MB, belum termasuk berbagai macam
+paket source yang disimpan di dalamnya.
+</p>
+
+<p>
+Seperti yang anda lihat, jumlah partisi sangat tergantung kepada tujuan
+anda. Partisi-partisi yang terpisah memiliki beberapa keuntungan:
+</p>
+
+<ul>
+<li>
+  Anda dapat memilih filesystem yang paling tepat untuk setiap partisi
+</li>
+<li>
+  Seluruh sistem anda tidak akan kehabisan space jika sebuah aplikasi
+  secara terus-menerus menulis file-file ke sebuah partisi.
+</li>
+<li>
+  Waktu untuk memeriksa filesystem lebih cepat, karena beberapa pemeriksaan
+  dapat dijalankan secara bersamaan (walaupun keuntungan ini lebih dirasakan
+  oleh multi-disk daripada multi-partisi)
+</li>
+<li>
+  Keamanan dapat ditingkatkan dengan me-mount beberapa partisi read-only,
+  nosuid (setuid bit diabaikan), noexec (executable bit diabaikan), dll.
+</li>
+</ul>
+
+<p>
+Walaupun begitu, multi-partisi memiliki satu kelemahan utama: jika tidak
+dikonfigurasi dengan benar, anda akan berakhir dengan sistem yang memiliki
+banyak space di satu partisi dan kekurangan space di partisi yang lain. Untuk
+sistem SCSI dan SATA, terdapat batas partisi sebanyak 15.
+</p>
+
+<p>
+Di bawah ini adalah contoh tabel partisi disk 20 Gb, yang digunakan
+pada laptop (berisi webserver, mailserver, gnome, ...):
+</p>
+
+<pre caption="Contoh Penggunaan Filesystem">
+$ <i>df -h</i>
+Filesystem    Type    Size  Used Avail Use% Mounted on
+/dev/hda5     ext3    509M  132M  351M  28% /
+/dev/hda2     ext3    5.0G  3.0G  1.8G  63% /home
+/dev/hda7     ext3    7.9G  6.2G  1.3G  83% /usr
+/dev/hda8     ext3   1011M  483M  477M  51% /opt
+/dev/hda9     ext3    2.0G  607M  1.3G  32% /var
+/dev/hda1     ext2     51M   17M   31M  36% /boot
+/dev/hda6     swap    516M   12M  504M   2% &lt;not mounted&gt;
+<comment>(Sisa disk yang tidak terpartisi untuk penggunaan masa datang: 2 Gb)</comment>
+</pre>
+
+<p>
+Partisi <path>/usr</path> hampir penuh (terpakai 83%) pada contoh di atas,
+tetapi setelah seluruh software terinstal, partisi <path>/usr</path> tidak
+akan berkembang banyak lagi. Untuk partisi <path>/var</path>, Kelihatannya
+space yang dialokasikan terlalu banyak, ingatlah bahwa Portage secara default
+menggunakan partisi ini untuk mengkompliasi semua program-program. Jika anda
+ingin menjaga <path>/var</path> agar tetap memiliki ukuran yang cukup
+beralasan, misalnya 1GB, anda perlu mengganti variabel <c>PORTAGE_TMPDIR</c> di
+<path>/etc/make.conf</path> agar menunjuk ke sebuah pertisi yang memiliki ruang
+kosong yang cukup untuk mengkompilasi paket-paket besar seperti OpenOffice.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="fdisk">
+<title>Menggunakan fdisk untuk mem-partisi disk anda</title>
+<subsection>
+<body>
+
+<p>
+Bagian berikut ini menjelaskan tentang cara menciptakan contoh tabel partisi
+seperti yang dijabarkan sebelumnya, yaitu:
+</p>
+
+<table>
+<tr>
+  <th>Partisi</th>
+  <th>Penjelasan</th>
+</tr>
+<tr>
+  <ti><path>/dev/hda1</path></ti>
+  <ti>Partisi boot</ti>
+</tr>
+<tr>
+  <ti><path>/dev/hda2</path></ti>
+  <ti>Partisi swap</ti>
+</tr>
+<tr>
+  <ti><path>/dev/hda3</path></ti>
+  <ti>Partisi root</ti>
+</tr>
+</table>
+
+<p>
+Gantilah tabel partisi anda sesuka anda.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Menampilkan Tabel Partisi Saat ini</title>
+<body>
+
+<p>
+<c>fdisk</c> merupakan utilitas yang populer dan bagus untuk memisahkan
+disk anda menjadi beberapa partisi. Jalankan <c>fdisk</c> pada disk anda
+(di contoh ini, kita menggunakan <path>/dev/hda</path>):
+</p>
+
+<pre caption="Menjalankan fdisk">
+# <i>fdisk /dev/hda</i>
+</pre>
+
+<p>
+Setelah anda berada di dalam <c>fdisk</c>, anda akan menemui sebuah
+prompt seperti berikut:
+</p>
+
+<pre caption="prompt fdisk">
+Command (m for help):
+</pre>
+
+<p>
+Ketik <c>p</c> untuk menampilkan tabel partisi disk anda saat ini:
+</p>
+
+<pre caption="Contoh tabel partisi">
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 240 heads, 63 sectors, 2184 cylinders
+Units = cylinders of 15120 * 512 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+/dev/hda1             1        14    105808+  83  Linux
+/dev/hda2            15        49    264600   82  Linux swap
+/dev/hda3            50        70    158760   83  Linux
+/dev/hda4            71      2184  15981840    5  Extended
+/dev/hda5            71       209   1050808+  83  Linux
+/dev/hda6           210       348   1050808+  83  Linux
+/dev/hda7           349       626   2101648+  83  Linux
+/dev/hda8           627       904   2101648+  83  Linux
+/dev/hda9           905      2184   9676768+  83  Linux
+
+Command (m for help):
+</pre>
+
+<p>
+Disk tersebut berisi tujuh partisi Linux (setiap partisi dengan System
+tertulis sebagai "Linux") dan juga sebuah partisi swap (tertulis sebagai
+"Linux swap").
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Menghapus Semua Partisi</title>
+<body>
+
+<p>
+Pertama, kita akan menghapus semua partisi yang telah ada dari disk. Ketik
+<c>d</c> untuk menghapus sebuah partisi. Sebagai contoh, untuk menghapus
+partisi <path>/dev/hda1</path>:
+</p>
+
+<pre caption="Menghapus sebuah partisi">
+Command (m for help): <i>d</i>
+Partition number (1-4): <i>1</i>
+</pre>
+
+<p>
+Partisi tersebut telah dijadwalkan untuk dihapus. Partisi tersebut tidak akan
+lagi ditampilkan jika anda mengetik <c>p</c>, tetapi tidak akan juga dihapus
+sebelum anda menyimpan perubahan anda. Jika anda melakukan kesalahan dan
+ingin membatalkan tanpa menyimpan perubahan anda, segera ketik <c>q</c>
+dan tekan Enter, partisi anda tidak akan dihapus.
+</p>
+
+<p>
+Sekarang, anggap anda benar-benar ingin menghapus seluruh partisi-partisi
+anda, secara terus-menerus ketikkan <c>p</c> untuk menampilkan tabel
+partisi lalu diikuti oleh <c>d</c> dan nomor partisi untuk menghapusnya.
+Pada akhirnya, anda akan berakhir dengan sebuah tabel partisi kosong:
+</p>
+
+<pre caption="Sebuah tabel partisi kosong">
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+
+Command (m for help):
+</pre>
+
+<p>
+Setelah tabel partisi di memory telah kosong, anda telah siap untuk
+menciptakan partisi-partisi. Kita akan menggunakan skema partisi default
+seperti yang dijabarkan sebelumnya. Tentu saja, jangan ikuti instruksi ini
+secara persis jika anda tidak ingin menggunakan skema partisi yang sama!
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Menciptakan Partisi Boot</title>
+<body>
+
+<p>
+Pertama-tama, kita akan menciptakan sebuah partisi boot kecil. Ketik <c>n</c>
+untuk menciptakan sebuah partisi, lalu <c>p</c> untuk memilih partisi primary,
+diikuti oleh <c>1</c> untuk memilih partisi primary pertama. Jika anda ditanya
+silinder pertama, tekan Enter. Sewaktu ditanya silinder terakhir, ketik
+<c>+32M</c> untuk menciptakan sebuah partisi sebesar 32 Mbyte:
+</p>
+
+<pre caption="Menciptakan partisi boot">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+First cylinder (1-3876, default 1): <comment>(Hit Enter)</comment>
+Using default value 1
+Last cylinder or +size or +sizeM or +sizeK (1-3876, default 3876): <i>+32M</i>
+</pre>
+
+<p>
+Sekarang, jika anda ketik <c>p</c>, anda akan melihat tabel partisi seperti
+berikut:
+</p>
+
+<pre caption="Partisi boot yang telah dibuat">
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+/dev/hda1          1        14    105808+  83  Linux
+</pre>
+
+<p>
+Kita perlu membuat partisi tersebut bootable. Ketik <c>a</c> untuk mengaktifkan
+flag bootable pada partisi ini dan pilih <c>1</c>. Jika anda ketik <c>p</c>
+lagi, anda akan menemui tanda <path>*</path> di kolom "Boot".
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Menciptakan Partisi Swap</title>
+<body>
+
+<p>
+Sekarang marilah kita ciptakan partisi swap. Untuk melakukannya, ketik <c>n</c>
+untuk menciptakan sebuah partisi baru, lalu <c>p</c> untuk memberitah fdisk
+kalau anda menginginkan sebuah partisi primary. Lalu, ketik <c>2</c> untuk
+menciptakan partisi primary kedua, yaitu <path>/dev/hda2</path>. Jika anda
+ditanya silinder pertama, tekan Enter. Sewaktu ditanya silinder terakhir, ketik
+<c>+512M</c> untuk menciptakan partisi sebesar 512MB. Setelah itu, ketik
+<c>t</c> untuk mengeset tipe partisi, <c>2</c> untuk memilih partisi yang
+baru anda ciptakan, lalu ketikkan <c>82</c> untuk mengeset tipe partisi
+menjadi "Linux Swap". Setelah anda menyelesaikan langkah-langkah di atas,
+anda akan menemui tabel partisi seperti ini jika anda mengetik <c>p</c>:
+</p>
+
+<pre caption="Tabel partisi setelah partisi swap diciptakan">
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+/dev/hda1 *        1        14    105808+  83  Linux
+/dev/hda2         15        81    506520   82  Linux swap
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Menciptakan Partisi Root</title>
+<body>
+
+<p>
+Terakhir, mari kita ciptakan partisi root. Ketik <c>n</c> untuk menciptakan
+sebuah partisi baru, lalu <c>p</c> untuk memberitahu fdisk kalau anda
+menginginkan sebuah partisi primary. Lalu, ketik <c>3</c> untuk menciptakan
+partisi primary ketiga, yaitu <path>/dev/hda3</path>. Jika anda ditanya
+silinder pertama, tekan Enter. Sewaktu ditanya silinder terakhir, tekan Enter,
+untuk menciptakan sebuah partisi sebesar sisa disk anda. Setelah menyelesaikan
+langkah-langkah di atas, anda akan menemui tabel partisi seperti di bawah ini
+jika anda mengetik <c>p</c>:
+</p>
+
+<pre caption="Tabel partisi setelah partisi root diciptakan">
+Command (m for help): <i>p</i>
+
+Disk /dev/hda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+/dev/hda1 *        1        14    105808+  83  Linux
+/dev/hda2         15        81    506520   82  Linux swap
+/dev/hda3         82      3876  28690200   83  Linux
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Menyimpan Tabel Partisi</title>
+<body>
+
+<p>
+Untuk menyimpan tabel partisi dan keluar dari <c>fdisk</c>, ketik <c>w</c>.
+</p>
+
+<pre caption="Simpan dan keluar dari fdisk">
+Command (m for help): <i>w</i>
+</pre>
+
+<p>
+Sekarang setelah partisi-partisi anda tercipta, anda dapat melanjutkan ke
+<uri link="#filesystems">Menciptakan Filesystem</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="filesystems">
+<title>Menciptakan Filesystem</title>
 <subsection>
 <title>Pendahuluan</title>
 <body>
 
 <p>
-Konfigurasi kernel secara manual tampaknya adalah prosedur tersulit yang
-harus dijalankan oleh setiap pengguna Linux. Memang benar -- setelah
-mengkonfigurasi beberapa kernel, anda tidak akan lagi ingat bahwa cara
-tersebut sulit ;-)
-</p>
-
-<p>
-Bagaimanapun juga, satu hal <e>selalu</e> benar: anda harus mengenal sistem
-anda sebelum mulai mengkonfigurasi kernel secara manual. Kebanyakan informasi
-dapat ditemukan dengan menginstall pciutils (<c>emerge pciutils</c>) yang
-berisi <c>lspci</c>. Anda juga bisa menggunakan <c>lspci</c> dari dalam
-lingkungan chroot. Biarkan saja peringatan <e>pcilib</e> (seperti pcilib:
-cannot open /sys/bus/pci/devices) yang dikeluarkan oleh <c>lspci</c>. Anda
-dapat juga menggunakan <c>lspci</c> dari lingkungan <e>non-chroot</e>.
-Hasilnya sama saja. Anda dapat juga menjalankan <c>lsmod</c> untuk melihat
-modul kernel apa saja yang digunakan oleh CD Instalasi (tampilan tersebut
-mungkin memberi gambaran bagi anda apa saja yang harus diaktifkan).
-</p>
-
-<p>
-Sekarang, masuklah ke direktori kernel anda dan jalankan <c>make
-menuconfig</c>. Perintah ini akan menjalankan menu konfigurasi berbasis
-ncurses.
-</p>
-
-<pre caption="Menjalankan menuconfig">
-# <i>cd /usr/src/linux</i>
-# <i>make menuconfig</i>
-</pre>
-
-<p>
-Anda akan menemukan beberapa seksi konfigurasi. Kami pertama-tama akan
-menjelaskan beberapa opsi yang harus anda aktifkan (jika tidak, Gentoo tidak
-dapat berjalan dengan benar tanpa twek tambahan).
+Setelah semua partisi anda diciptakan, sekarang saatnya untuk menaruh
+filesystem di partisi tersebut. Jika anda tidak perduli filesystem apa yang
+ingin dipilih dan puas dengan apa yang kami gunakan di buku panduan ini,
+lanjutkan ke <uri link="#filesystems-apply">Menciptakan Filesystem di sebuah
+Partisi</uri>. Jika tidak, baca terus untuk mengetahui filesystem-filesystem
+yang tersedia...
 </p>
 
 </body>
 </subsection>
 <subsection>
-<title>Mengaktifkan Opsi-Opsi yang Diperlukan</title>
+<title>Filesystem?</title>
 <body>
 
 <p>
-Pertama, aktifkan penggunaan "development and experimental code/drivers".
-Anda memerlukannya, jika tidak, beberapa code/driver yang sangat penting
-tidak akan ditampilkan:
+Kernel Linux mendukung berbagai filesystem. Kami akan menjelaskan ext2,
+ext3, ReiserFS, XFS dan JFS karena filesystem tersebut adalah yang paling
+umum digunakan di sistem Linux.
 </p>
 
-<pre caption="Memilih code/driver eksperimental">
-Code maturity level options ---&gt;
-  [*] Prompt for development and/or incomplete code/drivers
-General setup  ---&gt;
-  [*] Support for hot-pluggable devices
+<p>
+<b>ext2</b> adalah filesystem yang asli dan telah dicoba/dipakai tetapi tidak
+memiliki journal metadata, yang berarti waktu yang diperlukan untuk memeriksa
+filesystem ext2 kadang bisa sangat lama. Saat ini telah ada beberapa filesystem
+journal generasi baru yang dapat diperiksa konsistensinya dengan cepat
+dan karena itu lebih dipilih daripada partisi non-journal. Journal filesystem
+menghindari waktu tunda sewaktu anda boot dari sistem dimana filesystem
+anda kebetulan berada pada saat inkonsisten.
+</p>
+
+<p>
+<b>ext3</b> adalah filesystem ext2 versi journal, memiliki journal metadata
+untuk pemulihan sistem yang cepat dan juga beberapa tambahan modus journal
+seperti journal data terstruktur dan data penuh. ext3 adalah filesystem yang
+sangat bagus dan dapat dihandalkan. Filesystem ini memiliki opsi "<e>hashed
+b-tree indexing</e>" tambahan yang menghasilkan performa yang tinggi di
+hampir semua situasi. Secara singkat, ext3 adalah filesystem yang handal.
+</p>
+
+<p>
+<b>ReiserFS</b> adalah filesystem berbasis B*-tree yang memiliki performa
+keseluruhan yang bagus dan performanya melebihi ext2 dan ext3 pada saat
+menangani file kecil (file yang besarnya kurang dari 4k), sering kali melebihi
+dalam faktor 10x-15x. ReiserFS juga berskala sangat bagus dan memiliki journal
+metadata. Setelah kernel 2.4.18+, ReiserFS telah mapan dan bagus
+untuk pemakaian umum atau kasus khusus seperti pembuatan filesystem yang
+besar, penggunaan file kecil yang banyak, file yang besar, dan directory yang
+mengandung puluhan ribu file. ReiserFS adalah filesystem yang kami
+rekomendasikan pada semua partisi non-boot.
+</p>
+
+<p>
+<b>XFS</b> adalah filesystem dengan journal metadata yang datang dengan
+fungsi fungsi mapan dan teroptimasi untuk skalabilitas. Kami hanya
+merekomendasikan anda menggunakan filesystem ini pada system Linux
+dengan disk SCSI kelas atas dan/atau disk fibre serta power supply yang tidak
+pernah terputus. Karena XFS meng-cache data yang lewat dengan agresif ke
+dalam RAM, data-data mungkin hilang pada saat program yang tidak didisain
+dengan benar (program-program yang tidak mengambil langkah yang aman
+sewaktu menulis ke disk, dan ada beberapa program seperti itu) berjalan dan
+sistem tiba-tiba mati.
+</p>
+
+<p>
+<b>JFS</b> adalah filesystem journal dengan performa tinggi dari IBM.
+Filesystem ini baru-baru ini menjadi filesystem yang siap pakai, dan sampai
+saat ini tidak banyak record tentang filesystem ini jadi kami tidak dapat
+berkomentar apakah filesystem ini bagus atau tidak dalam hal stabilitas, dll.
+</p>
+
+</body>
+</subsection>
+<subsection id="filesystems-apply">
+<title>Menciptakan Filesystem di sebuah Partisi</title>
+<body>
+
+<p>
+Untuk menciptakan filesystem di sebuah partisi, anda dapat menggunakan
+beberapa utilitas yang tersedia untuk setiap filesystem:
+</p>
+
+<table>
+<tr>
+  <th>Filesystem</th>
+  <th>Perintah</th>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mke2fs</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mke2fs -j</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkreiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+
+<p>
+Sebagai contoh, untuk menciptakan filesystem ext2 di partisi boot
+(<path>/dev/hda1</path> di contoh kita) dan ext3 di partisi root
+(<path>/dev/hda3</path> di contoh kita), anda perlu menjalankan:
+</p>
+
+<pre caption="Menciptakan filesystem di partisi">
+# <i>mke2fs /dev/hda1</i>
+# <i>mke2fs -j /dev/hda3</i>
 </pre>
 
 <p>
-Pastikan agar setiap driver yang diperlukan untuk mem-boot sistem anda
-(mis. SCSI Controller, ...) dikompilasi <e>di</e> kernel, dan bukan
-sebagai modul, jika tidak, sistem anda tidak akan bisa boot dengan sempurna.
+Sekarang ciptakan filesystem di seluruh partisi-partisi anda.
 </p>
+
+</body>
+</subsection>
+<subsection>
+<title>Mengaktifkan Partisi Swap</title>
+<body>
 
 <p>
-Sekarang tipe prosesor yang tepat:
+<c>mkswap</c> merupakan perintah untuk menciptakan partisi swap:
 </p>
 
-<pre caption="Memilih tipe prosesor yang tepat">
-Processor type and features ---&gt;
-  <comment>(Gantikan sesuai sistem anda)</comment>
-  (<i>Athlon/Duron/K7</i>) Processor family
+<pre caption="Menciptakan partisi swap">
+# <i>mkswap /dev/hda2</i>
 </pre>
 
 <p>
-Sekarang masuklah ke <c>File Systems</c> dan aktifkan dukungan terhadap
-filesystem yang anda gunakan. <e>Jangan</e> kompilasi dukungan tersebut
-sebagai modul, jika tidak, sistem Gentoo anda tidak akan dapat me-mount
-partisi-partisi anda. Serta, aktifkan juga <c>Virtual memory</c> dan <c>/proc
-file system</c>. Jika anda menggunakan kernel 2.4, anda perlu mengaktifkan
-<c>/dev file system</c> karena kernel 2.4 tidak mendukung <c>udev</c>.
+Untuk mengaktifkan partisi swap, gunakan <c>swapon</c>:
 </p>
 
-<pre caption="Memilih filesystem yang diperlukan">
-<comment>(Untuk kernel 2.4.x)</comment>
-File systems ---&gt;
-  [*] Virtual memory file system support (former shm fs)
-  [*] /proc file system support
-  [*] /dev file system support (EXPERIMENTAL)
-  [*]   Automatically mount at boot
-  [ ] /dev/pts file system for Unix98 PTYs
-
-<comment>(Untuk kernel 2.6.x)</comment>
-File systems ---&gt;
-  Pseudo Filesystems ---&gt;
-    [*] /proc file system support
-    [*] Virtual memory file system support (former shm fs)
-
-<comment>(Aktifkan satu atau lebih opsi-opsi berikut sesuai kebutuhan sistem anda)</comment>
-  &lt;*&gt; Reiserfs support
-  &lt;*&gt; Ext3 journalling file system support
-  &lt;*&gt; JFS filesystem support
-  &lt;*&gt; Second extended fs support
-  &lt;*&gt; XFS filesystem support
+<pre caption="Mengaktifkan partisi swap">
+# <i>swapon /dev/hda2</i>
 </pre>
 
 <p>
-Jika BIOS anda tidak dapat menangani harddrive besar dan anda melompati
-harddrive untuk melaporkan besar yang terbatas, anda harus mengaktifkan
-opsi berikut untuk mendapatkan akses ke seluruh harddrive anda:
+Ciptakan dan aktifkan swap seperti contoh di atas.
 </p>
 
-<pre caption="Memilih dukungan autogeometry resizing">
-<comment>(Hanya untuk kernel 2.4)</comment>
-ATA/IDE/MFM/RLL support ---&gt;
-  IDE, ATA and ATAPI Block devices ---&gt;
-    &lt;*&gt;   Include IDE/ATA-2 DISK support
-    [ ]     Use multi-mode by default
-    [*]     Auto-Geometry Resizing support
-</pre>
+</body>
+</subsection>
+</section>
+<section>
+<title>Mount</title>
+<body>
 
 <p>
-Jangan lupa mengaktifkan DMA untuk drive-drive anda:
+Setelah partisi-partisi anda memiliki filesystemnya masing-masing, sekarang
+saatnya untuk me-mount partisi-partisi tersebut. Gunakan perintah <c>mount</c>.
+Ingat untuk menciptakan direktori-direktori mount yang diperlukan untuk setiap
+partisi anda. Sebagai contoh, kita akan me-mount partisi root dan boot:
 </p>
 
-<pre caption="Aktifkan DMA">
-  Device Drivers ---&gt;
-  ATA/ATAPI/MFM/RLL support ---&gt;
-  [*] Generic PCI bus-master DMA support
-  [*]   Use PCI DMA by default when available
-</pre>
-
-<p>
-Jika anda menggunakan PPPoE untuk koneksi internet atau modem dial-up,
-anda memerlukan opsi-opsi berikut di kernel:
-</p>
-
-<pre caption="Memilih driver-driver PPPoE yang diperlukan">
-<comment>(Untuk kernel 2.4.x)</comment>
-Network device support ---&gt;
-  &lt;*&gt; PPP (point-to-point protocol) support
-  &lt;*&gt;   PPP support for async serial ports
-  &lt;*&gt;   PPP support for sync tty ports
-
-<comment>(Untuk kernel 2.6.x)</comment>
-Device Drivers ---&gt;
-  Networking support ---&gt;
-    &lt;*&gt; PPP (point-to-point protocol) support
-    &lt;*&gt;   PPP support for async serial ports
-    &lt;*&gt;   PPP support for sync tty ports
-</pre>
-
-<p>
-Kedua opsi-opsi kompresi tidak berbahaya tetapi tidak benar-benar diperlukan,
-begitu juga dengan opsi <c>PPP over Ethernet</c>, opsi-opsi tersebut mungkin
-hanya digunakan oleh <c>rp-pppoe</c> jika dikonfigurasi untuk melakukan
-modus kernel PPPoE.
-</p>
-
-<p>
-Jika anda memerlukannya, jangan lupa untuk mengikutsertakan dukungan kernel
-terhadap kartu ethernet anda.
-</p>
-
-<p>
-Jika anda memiliki prosesor Intel yang mendukung HyperThreading (tm), atau
-anda memiliki sistem multi-CPU, anda sebaiknya mengaktifkan "Symmetric
-multi-processing support":
-</p>
-
-<pre caption="Aktifkan dukungan SMP">
-Processor type and features  ---&gt;
-  [*] Symmetric multi-processing support
+<pre caption="Mount partisi">
+# <i>mount /dev/hda3 /mnt/gentoo</i>
+# <i>mkdir /mnt/gentoo/boot</i>
+# <i>mount /dev/hda1 /mnt/gentoo/boot</i>
 </pre>
 
 <note>
-Pada sistem multi-core, setiap core dianggap sebagai satu prosesor.
+Jika anda ingin <path>/tmp</path> anda diletakkan di partisi yang terpisah,
+pastikan untuk mengubah permission-nya setelah proses mount: <c>chmod 1777
+/mnt/gentoo/tmp</c>. Hal ini juga berlaku untuk <path>/var/tmp</path>.
 </note>
 
 <p>
-Jika anda menggunakan perangkat input USB (seperti Keyboard atau Mouse),
-jangan lupa untuk mengaktifkan dukungannya juga:
-</p>
-
-<pre caption="Aktifkan dukungan USB untuk Perangkat Input">
-USB Support ---&gt;
-  &lt;*&gt;   USB Human Interface Device (full HID) support
-</pre>
-
-<p>
-Para pengguna laptop yang menginginkan dukungan PCMCIA sebaiknya <e>tidak</e>
-menggunakan driver-driver PCMCIA jika mereka memilih menggunakan kernel 2.4.
-Driver-driver yang lebih baru tersedia di paket <c>pcmcia-cs</c> yang akan
-diinstal nanti. Sedangkan, para pengguna kernel 2.6 sebaiknya menggunakan
-driver-driver PCMCIA dari kernel.
+Kita juga perlu me-mount filesystem proc (penghubung kernel virtual) di
+<path>/proc</path>. Tetapi, pertama kita perlu menaruh file-file kita di
+partisi.
 </p>
 
 <p>
-Disamping mengkompilasi dukungan PCMCIA kernel 2.6 , jangan lupa juga untuk
-mengaktifkan dukungan untuk kartu bridge PCMCIA yang ada di sistem anda:
-</p>
-
-<pre caption="Enabling PCMCIA support for 2.6 kernels">
-Bus options (PCI, PCMCIA, EISA, MCA, ISA)  ---&gt;
-  PCCARD (PCMCIA/CardBus) support  ---&gt;
-    &lt;*&gt; PCCard (PCMCIA/CardBus) support
-<comment>(pilih 16 bit jika anda memerlukan dukungan untuk kartu PCMCIA lama. Kebanyakan orang menginginkan ini.)</comment>
-    &lt;*&gt;   16-bit PCMCIA support
-    [*]   32-bit CardBus support
-<comment>(pilih bridges yang sesuai di bawah ini)</comment>
-    --- PC-card bridges
-    &lt;*&gt; CardBus yenta-compatible bridge support (NEW)
-    &lt;*&gt; Cirrus PD6729 compatible bridge support (NEW)
-    &lt;*&gt; i82092 compatible bridge support (NEW)
-    &lt;*&gt; i82365 compatible bridge support (NEW)
-    &lt;*&gt; Databook TCIC host bridge support (NEW)
-</pre>
-
-<p>
-Setelah anda selesai mengkonfigurasi kernel, lanjutkan ke <uri
-link="#compiling">Kompilasi dan Instalasi</uri>.
+Lanjutkan ke <uri link="?part=1&amp;chap=5">Menginstal File-file
+Instalasi Gentoo</uri>.
 </p>
 
 </body>
-</subsection>
-<subsection id="compiling">
-<title>Kompilasi dan Instalasi</title>
-<body>
-
-<p>
-Setelah kernel anda dikonfigurasi, sekarang saatnya untuk mengkompilasi dan
-menginstalnya. Keluarlah dari menu konfigurasi dan mulailah proses kompilasi:
-</p>
-
-<pre caption="Kompilasi kernel">
-<comment>(Untuk kernel 2.4)</comment>
-# <i>make dep &amp;&amp; make bzImage modules modules_install</i>
-
-<comment>(Untuk kernel 2.6)</comment>
-# <i>make &amp;&amp; make modules_install</i>
-</pre>
-
-<p>
-Setelah kernel selesai dikompilasi, copy imej kernel tersebut ke
-<path>/boot</path>. Gunakan nama apapun yang anda rasa cocok untuk pilihan anda
-dan ingatlah karena anda akan memerlukannya nanti pada saat mengkonfigurasi
-bootloader. Jangan lupa untuk mengganti <path>&lt;versi-kernel&gt;</path>
-dengan nama dan versi kernel anda.
-</p>
-
-<pre caption="Instalasi kernel">
-# <i>cp arch/i386/boot/bzImage /boot/&lt;versi-kernel&gt;</i>
-</pre>
-
-<p>
-Sekarang lanjutkan ke <uri link="#kernel_modules">Modul-Modul Kernel</uri>.
-</p>
-
-</body>
-</subsection>
-</section>
-<section id="genkernel">
-<title>Alternatif: Menggunakan genkernel</title>
-<body>
-
-<p>
-Jika anda membaca bagian ini, berarti anda memilih untuk menggunakan skrip
-<c>genkernel</c> kami untuk mengkonfigurasi kernel bagi anda.
-</p>
-
-<p>
-Setelah source kernel anda terinstal, sekarang saatnya untuk mengkompilasi
-kernel anda menggunakan skrip <c>genkernel</c> kami untuk membangun
-sebuah kernel secara otomatis bagi anda. <c>genkernel</c> bekerja dengan
-mengkonfigurasi sebuah kernel yang hampir sama dengan cara kernel CD Instalasi
-kami dikonfigurasi. Hal ini berarti, jika anda menggunakan <c>genkernel</c>
-untuk membangun kernel anda, sistem anda akan secara umum mendeteksi
-semua perangkat keras anda pada saat boot, seperti yang dilakukan oleh
-CD Instalasi kami. Karena genkernel tidak memerlukan konfigurasi kernel secara
-manual, cara ini merupakan cara yang ideal bagi para pengguna yang tidak
-terbiasa mengkompilasi kernel mereka sendiri.
-</p>
-
-<p>
-Sekarang, marilah kita lihat cara menggunakan genkernel. Pertama, emerge
-paket genkernel:
-</p>
-
-<pre caption="Emerge genkernel">
-# <i>emerge genkernel</i>
-</pre>
-
-<p>
-Kemudian, jika anda akan mengkonfigurasi kernel 2.6, salinlah konfigurasi
-kernel yang digunakan oleh CD Instalasi ke lokasi yang akan diperiksa oleh
-genkernel sebagai konfigurasi default kernel.
-</p>
-
-<pre caption="Menyalin konfigurasi kernel CD Instalasi">
-<comment>(Lakukan ini hanya jika anda akan mengkonfigurasi kernel 2.6)</comment>
-# <i>zcat /proc/config.gz &gt; /usr/share/genkernel/x86/kernel-config-2.6</i>
-</pre>
-
-<p>
-Lalu, kompilasilah kernel anda dengan menjalankan perintah <c>genkernel
-all</c>. Perlu anda ketahui juga, karena <c>genkernel</c> mengkompilasi
-sebuah kernel yang mendukung hampir semua perangkat keras, kompilasi
-ini akan berjalan cukup lama!
-</p>
-
-<p>
-Catat juga, jika partisi boot anda tidak menggunakan ext2 atau ext3 sebagai
-filesystemnya, anda mungkin perlu mengkonfigurasi kernel anda secara manual
-menggunakan perintah <c>genkernel --menuconfig all</c> dan tambahkan dukungan
-terhadap filesystem anda <e>di</e> kernel (<e>bukan</e> sebagai modul).
-Pengguna EVMS2 atau LVM2 mungkin juga ingin menambahkan <c>--evms2</c> atau
-<c>--lvm2</c> sebagai argumen.
-</p>
-
-<pre caption="Menjalankan genkernel">
-# <i>genkernel all</i>
-</pre>
-
-<p>
-Setelah <c>genkernel</c> selesai, sebuah kernel, set lengkap modul, dan
-<e>initial root disk</e> (initrd) akan diciptakan. Kita akan menggunakan kernel
-dan initrd tersebut pada saat mengkonfigurasi bootloader nantinya. Catat nama
-kernel dan initrd anda karena anda akan memerlukannya nanti pada saat
-menulis file konfigurasi bootloader. initrd akan dijalankan secara otomatis pada
-saat boot untuk melakukan otodeteksi perangkat keras (hardware) (seperti
-CD Instalasi ) sebelum sistem "asli" dijalankan.
-</p>
-
-<pre caption="Memeriksa nama kernel dan initrd yang baru diciptakan">
-# <i>ls /boot/kernel* /boot/initramfs*</i>
-</pre>
-
-<p>
-Sekarang, mari kita jalankan satu langkah lagi untuk membuat sistem kita
-lebih persis dengan CD Instalasi -- mari emerge <c>coldplug</c>. Jika initrd
-melakukan otodeteksi perangkat keras yang diperlukan pada saat sistem anda
-boot, <c>coldplug</c> melakukan otodeteksi sisanya. Ketikkan perintah berikut
-untuk me-emerge dan mengaktifkan <c>coldplug</c>:
-</p>
-
-<pre caption="Emerge dan aktifkan coldplug">
-# <i>emerge coldplug</i>
-# <i>rc-update add coldplug boot</i>
-</pre>
-
-</body>
-</section>
-<section id="kernel_modules">
-<title>Modul-Modul Kernel</title>
-<subsection>
-<title>Konfigurasi Modul-Modul</title>
-<body>
-
-<p>
-Anda harus menuliskan semua modul-modul yang ingin anda load secara otomatis
-di file <path>/etc/modules.autoload.d/kernel-2.4</path> (atau
-<path>kernel-2.6</path>). Anda dapat juga menambahkan opsi-opsi tambahan
-pada modul-modul tersebut jika anda mau.
-</p>
-
-<p>
-Untuk melihat modul-modul yang tersedia, jalankan perintah <c>find</c> berikut.
-Jangan lupa untuk menggantikan "&lt;versi kernel&gt;" dengan versi kernel yang
-baru saja anda kompilasi:
-</p>
-
-<pre caption="Melihat modul-modul yang tersedia">
-# <i>find /lib/modules/&lt;versi kernel&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
-</pre>
-
-<p>
-Misalnya, untuk meload modul <c>3c59x.o</c> secara otomatis, edit file
-<path>kernel-2.4</path> atau <path>kernel-2.6</path> dan tuliskan nama
-modul tersebut di dalamnya.
-</p>
-
-<pre caption="Edit file /etc/modules.autoload.d/kernel-2.4">
-<comment>(Contoh untuk kernel-kernel 2.4)</comment>
-# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
-</pre>
-
-<pre caption="/etc/modules.autoload.d/kernel-2.4 atau kernel-2.6">
-3c59x
-</pre>
-
-<p>
-Lanjutkan proses instalasi dengan bab <uri
-link="?part=1&amp;chap=8">Mengkonfigurasi Sistem anda</uri>.
-</p>
-
-</body>
-</subsection>
 </section>
 </sections>
