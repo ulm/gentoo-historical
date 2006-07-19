@@ -2,428 +2,262 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- English doc rev. 1.49 -->
+<!-- $Id: hb-install-system.xml,v 1.7 2006/07/19 10:13:46 neysx Exp $ -->
 
 <sections>
+  
+<version>2.6</version>
+<date>2005-11-21</date>
+
 <section>
-<title>Chroot</title>
-<subsection>
-<title>Opsional: Memilih Mirror</title>
+<title>Device Manager</title>
 <body>
 
 <p>
-Jika anda boot menggunakan LiveCD Gentoo, anda dapat menggunakan utilitas
-<c>mirrorselect</c> untuk mengupdate file <path>/etc/make.conf</path> agar
-menggunakan mirror yang kencang bagi Portage dan source code (tentu saja
-hanya berlaku jika anda memiliki koneksi jaringan internet).
+Jika anda menggunakan kernel 2.4 <e>dan</e> menginstall Gentoo dari stage3,
+maka ada beberapa hal yang <e>perlu</e> anda lakukan. Karena Gentoo menggunakan
+udev sebagai default dan udev tidak didukung oleh kernel 2.4, maka anda harus
+menggunakan devfsd dan membuang udev.
 </p>
 
-<warn>
-Kesalahan dari mirrorselect dapat menghasilkan tampilan tak berguna setelah
-baris GENTOO_MIRRORS. Bukalah <path>/mnt/gentoo/etc/make.conf</path>
-dan hapus sampah-sampah pada akhir baris GENTOO_MIRRORS jika ada.
-</warn>
-
-<pre caption="Memilih mirror yang kencang">
- # <i>mirrorselect -a -s4 -o | grep 'GENTOO_MIRRORS=' &gt;&gt; /mnt/gentoo/etc/make.conf</i>
-</pre>
-
-<p>
-Jika <c>mirrorselect</c> gagal, jangan panik. Langkah ini hanyalah opsional.
-nilai default yang telah ada sudah cukup.
-</p>
-
-</body>
-</subsection>
-<subsection>
-<title>Copy Informasi DNS</title>
-<body>
-
-<p>
-Satu hal yang masih harus dilakukan sebelum kita memasuki lingkungan baru
-adalah meng-copy informasi DNS di file <path>/etc/resolv.conf</path>. Anda
-perlu melakukan langkah ini untuk memastikan koneksi jaringan anda tetap
-berfungsi setelah memasuki lingkungan baru. File <path>/etc/resolv.conf</path>
-mengandung nameserver-nameserver untuk jaringan anda.
-</p>
-
-<pre caption="Copy Informasi DNS">
-<comment>(Opsi "-L" diperlukan untuk memastikan kita tidak meng-copy link simbolik)</comment>
-# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+<pre caption="Instal devfsd">
+<comment>(Bagi yang melakukan instalasi kernel 2.4 dengan stage3)</comment>
+# <i>emerge --unmerge udev</i>
+# <i>emerge devfsd</i>
 </pre>
 
 </body>
-</subsection>
-<subsection>
-<title>Mount Filesystem proc</title>
+</section>
+
+<section>
+<title>Logger Sistem</title>
 <body>
 
 <p>
-Mount filesystem <path>/proc</path> ke <path>/mnt/gentoo/proc</path> agar
-proses instalasi dapat menggunakan informasi dari kernel walaupun berada di
-lingkungan chroot.
+Ada beberapa tool yang tidak terdapat di <e>stage3</e> karena sebagian
+paket yang lain  memiliki kegunaan yang sama. Sekarang anda bebas memilih
+tool mana yang ingin anda instal.
 </p>
 
-<pre caption="Mount /proc">
-# <i>mount -t proc none /mnt/gentoo/proc</i>
+<p>
+Tool pertama yang perlu anda pilih akan menyediakan fasilitas logging
+bagi sistem anda. Unix dan Linux memiliki sejarah yang baik sekali tentang
+kemampuan logging -- jika anda mau, anda dapat me-log segala hal yang
+berlangsung di sistem anda di sebuah file log. Hal ini dilakukan oleh
+<e>logger sistem</e>.
+</p>
+
+<p>
+Gentoo menyediakan beberapa logger sistem yang dapat anda pilih. Yaitu,
+<c>sysklogd</c>, yang merupakan logger sistem tradisional, <c>syslog-ng</c>,
+logger sistem advanced, dan <c>metalog</c> yang merupakan logger sistem
+yang sangat dapat dikonfigurasi. Logger-logger lainnya mungkin tersedia juga
+di Portage - jumlah paket-paket yang tersedia bertambah dalam hitungan hari.
+</p>
+
+<p>
+Jika anda berencana untuk menginstal <c>sysklogd</c> atau <c>syslog-ng</c>,
+anda juga mungkin ingin menginstal <c>logrotate</c> setelah itu karena
+logger-logger sistem ini tidak menyediakan mekanisme rotasi untuk file-file log.
+</p>
+
+<!--
+Even though syslog-ng does not rotate the logs, it does conform to the syslog
+RFC (http://www.faqs.org/rfcs/rfc3164.html) and is far more powerful than most
+other system loggers. That and some architectures really prefer syslog-ng
+above others (metalog for instance doesn't work nicely with sparc all the
+time).
+-->
+
+<p>
+Untuk menginstal logger sistem pilihan anda, <c>emerge</c>-lah logger tersebut
+dan masukkan ke dalam runlevel default menggunakan perintah <c>rc-update</c>.
+Contoh berikut ini menginstal <c>syslog-ng</c>. Tentu saja, gantikan dengan
+logger sistem pilihan anda:
+</p>
+
+<pre caption="Menginstal sebuah logger sistem">
+# <i>emerge syslog-ng</i>
+# <i>rc-update add syslog-ng default</i>
 </pre>
 
 </body>
-</subsection>
-<subsection>
-<title>Memasuki Lingkungan Baru</title>
+</section>
+<section>
+<title>Opsional: Cron Daemon</title>
 <body>
 
 <p>
-Setelah semua partisi tercipta dan lingkungan dasar terinstal, sekarang
-saatnya untuk memasuki lingkungan instalasi baru kita dengan melakukan
-<e>chroot</e> ke dalamnya. Artinya, kita berpindah tempat dari lingkungan
-instalasi kita saat ini (LiveCD atau media instalasi lain) ke sistem instalasi
-anda (yaitu partisi-partisi yang baru diciptakan).
+Berikutnya adalah cron daemon. Walaupun ini merupakan opsional dan tidak
+diperlukan oleh sistem anda, akan lebih bijaksana jika anda menginstalnya.
+Tetapi, apakah itu cron daemon? Cron daemon menjalankan perintah-perintah
+yang telah dijadwalkan. Tool ini sangat berguna jika anda perlu menjalankan
+beberapa program secara teratur (mis. per hari, per minggu, atau per bulan).
 </p>
 
 <p>
-Proses chroot ini dilakukan dalam tiga langkah. Pertama, kita akan memindahkan
-root dari <path>/</path> (di media instalasi) ke <path>/mnt/gentoo</path>
-(di partisi anda) menggunakan perintah <c>chroot</c>. Lalu, kita akan
-menciptakan sebuah lingkungan baru menggunakan perintah <c>env-update</c>,
-yang akan menciptakan variabel-variabel lingkungan. Terakhir, kita akan
-me-load variabel-variabel tersebut menggunakan perintah <c>source</c>.
+Gentoo menyediakan tiga cron daemon, yaitu: <c>dcron</c>, <c>fcron</c> dan
+<c>vixie-cron</c>. Cara menginstal tool tersebut sama dengan cara menginstal
+sebuah logger sistem. Walaupun begitu, <c>dcron</c> dan <c>fcron</c>
+membutuhkan perintah konfigurasi tambahan, yaitu <c>crontab /etc/crontab</c>.
+Jika anda tidak tahu ingin memilih yang mana, gunakanlah <c>vixie-cron</c>.
 </p>
 
-<pre caption = "Melakukan chroot ke lingkungan baru">
-# <i>chroot /mnt/gentoo /bin/bash</i>
-# <i>env-update</i>
- * Caching service dependencies...
-# <i>source /etc/profile</i>
+<p>
+Kami hanya menyediakan <c>vixie-cron</c> untuk instalasi tanpa jaringan.
+Jika anda menginginkan daemon cron lainnya, anda dapat menunggu dan
+menginstal paket tersebut nantinya.
+</p>
+
+<pre caption="Menginstal sebuah cron daemon">
+# <i>emerge vixie-cron</i>
+# <i>rc-update add vixie-cron default</i>
+<comment>(Hanya jalankan jika anda memilih dcron atau fcron)</comment> # <i>crontab /etc/crontab</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Opsional: Indexing File</title>
+<body>
+
+<p>
+Jika anda ingin meng-index file-file sistem anda agar anda dapat menemukannya
+dengan mudah menggunakan tool <c>locate</c>, anda perlu menginstal
+<c>sys-apps/slocate</c>.
+</p>
+
+<pre caption="Instalasi slocate">
+# <i>emerge slocate</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Tool File System</title>
+<body>
+
+<p>
+Tergantung pada filesystem yang anda gunakan, anda perlu menginstal tool
+filesystem yang diperlukan (untuk memeriksa integritas filesystem, menciptakan
+filesystem tambahan, dll.).
+</p>
+
+<p>
+Tabel berikut menjabarkan tool-tool yang perlu anda instal jika anda
+menggunakan filesystem tertentu:
+</p>
+
+<table>
+<tr>
+  <th>File System</th>
+  <th>Tool</th>
+  <th>Perintah Instalasi</th>
+</tr>
+<tr>
+  <ti>XFS</ti>
+  <ti>xfsprogs</ti>
+  <ti><c>emerge xfsprogs</c></ti>
+</tr>
+<tr>
+  <ti>ReiserFS</ti>
+  <ti>reiserfsprogs</ti>
+  <ti><c>emerge reiserfsprogs</c></ti>
+</tr>
+<tr>
+  <ti>JFS</ti>
+  <ti>jfsutils</ti>
+  <ti><c>emerge jfsutils</c></ti>
+</tr>
+</table>
+
+<p>
+Jika anda pengguna EVMS, anda juga perlu menginstal <c>evms</c>.
+</p>
+
+<pre caption="Instalasi tool EVMS">
+# <i>USE="-gtk" emerge evms</i>
 </pre>
 
 <p>
-Selamat! Anda sekarang berada di lingkungan Gentoo Linux anda. Tentu saja,
-ini masih jauh dari selesai, karena itu proses instalasi masih memiliki
-beberapa bagian lagi :-)
+<c>USE="-gtk"</c> akan mencegah instalasi dependensi. Jika anda ingin
+mengaktifkan tool grafikal <c>evms</c>, anda bisa mengkompilasi ulang
+<c>evms</c> nanti.
+</p>
+  
+<p>
+Jika anda tidak memerlukan tool lain yang berhubungan dengan network (mis.
+rp-pppoe atau klien dhcp), lanjutkan ke <uri
+link="?part=1&amp;chap=10">Mengkonfigurasi Bootloader</uri>.
 </p>
 
 </body>
-</subsection>
+</section>
+<section>
+<title>Tool Jaringan</title>
 <subsection>
-<title>Opsional: Update Portage tree</title>
+<title>Opsional: Instalasi Klien DHCP</title>
 <body>
 
 <p>
-Jika anda belum menginstal snapshot Portage di bab sebelumnya, anda harus
-mendownload Portage tree terbaru dari internet. <c>emerge sync</c> akan
-melakukan hal ini bagi anda. Pengguna-pengguna lain harus melewati bagian
-ini dah lanjutkan ke <uri link="#configure_USE">Konfigurasi Variabel USE</uri>.
+Jika anda ingin agar Gentoo mendapatkan alamat IP secara otomatis untuk
+interface jaringan anda, maka anda perlu menginstal <c>dhcpcd</c> (atau
+klien DHCP yang lain) di sistem anda. Jika anda tidak melakukan ini
+sekarang, mungkin anda tidak akan dapat melakukan koneksi internet setelah
+proses instalasi selesai!
 </p>
 
-<pre caption="Update Portage tree">
-# <i>emerge sync</i>
-</pre>
-
-<p>
-Portage menggunakan protokol RSYNC untuk mengupdate Portage tree. Jika
-perintah di atas gagal karena firewall anda, gunakan "emerge-webrsync" yang
-akan mendownload dan menginstal snapshot portage bagi anda melalui
-protokol HTTP biasa.
-</p>
-
-<pre caption="Update Portage tree menggunakan emerge-webrsync">
-# <i>emerge-webrsync</i>
-</pre>
-
-<p>
-Jika anda diperingati bahwa versi Portage yang lebih baru tersedia dan anda
-sebaiknya mengupdate Portage, anda sebaiknya mengabaikannya. Portage
-akan diupdate nantinya sewaktu proses instalasi berlangsung.
-</p>
-
-</body>
-</subsection>
-<subsection id="configure_USE">
-<title>Konfigurasi Variabel USE</title>
-<body>
-
-<p>
-<c>USE</c> merupakan salah satu variabel yang paling mengagumkan yang
-disediakan oleh Gentoo untuk para penggunanya. Beberapa program dapat
-dikompilasi dengan atau tanpa dukungan tambahan terhadap beberapa hal.
-Sebagai contoh, beberapa program dapat dikompilasi dengan dukungan gtk, atau
-dengan dukungan qt. Program-program lainnya dapat dikompilasi dengan atau
-tanpa dukungan SSL. Beberapa program bahkan dapat dikompilasi dengan dukungan
-framebuffer (svgalib) sebagai ganti X11 (X-server).
-</p>
-
-<p>
-Kebanyakan distro linux mengkompilasi paket-paket mereka dengan dukungan
-sebanyak mungkin, sehingga meningkatkan ukuran program dan waktu yang
-diperlukan untuk menjalankan program tersebut, dan juga banyak sekali
-dependency yang diperlukan. Dengan Gentoo, anda dapat mendefenisikan
-opsi-opsi apa saja yang harus dikompilasi di sebuah paket. Di sinilah dimana
-variabel <c>USE</c> berperan penting.
-</p>
-
-<p>
-Di variabel <c>USE</c>, anda mendefenisikan keyword-keyword yang tertuju
-ke opsi kompilasi. Sebagai contoh, <e>ssl</e> akan mengkompilasi dukungan
-ssl ke program yang mendukungnya. <e>-X</e> akan menonaktifkan dukungan
-X-server (perhatikan tanda minus di depannya). <e>gnome gtk -kde -qt</e> akan
-mengkompilasi program-program anda dengan dukungan gnome (dan gtk), tanpa
-dukungan kde (dan qt), sehingga sistem anda akan lebih ramping untuk GNOME.
-</p>
-
-<p>
-Setting-setting <c>USE</c> default disimpan di file
-<path>/etc/make.profile/make.defaults</path>. Apa yang anda simpan di file
-<path>/etc/make.conf</path> dikalkulasi terhadap setting default. Jika anda
-menambahkan sebuah keyword ke setting <c>USE</c>, keyword tersebut akan
-ditambahkan ke daftar default. Jika anda menghapus sebuah keyword dari setting
-<c>USE</c> (dengan menambahkan tanda minus di depannya), keyword tersebut
-akan dihapus dari daftar default (tentu saja, jika sebelumnya keyword tersebut
-berada di daftar default). <e>Jangan pernah</e> mengubah sesuatu di dalam
-direktori <path>/etc/make.profile</path>; isi direktori tersebut ditimpa
-setiap kali anda mengupdate Portage!
-</p>
-
-<p>
-Deskripsi variabel <c>USE</c> yang lengkap dapat ditemukan di bagian dua
-Buku Panduan Gentoo, <uri link="?part=2&amp;chap=1">Bab 1: Flag USE</uri>.
-Deskripsi lengkap tentang flag-flag USE yang tersedia dapat ditemukan di
-sistem anda di file <path>/usr/portage/profiles/use.desc</path>. 
-</p>
-
-<pre caption="Melihat flag-flag USE yang tersedia">
-# <i>less /usr/portage/profiles/use.desc</i>
-<comment>(Anda dapat men-skrol menggunakan tanda panah, keluar dengan
-menekan 'q')</comment>
-</pre>
-
-<p>
-Sebagai contoh, kita akan melihat setting <c>USE</c> untuk sistem berbasis
-KDE dengan dukungan DVD, ALSA dan CD-Recording:
-</p>
-
-<pre caption="Membuka file /etc/make.conf">
-# <i>nano -w /etc/make.conf</i>
-</pre>
-
-<pre caption="Setting USE">
-USE="-gtk -gnome qt kde dvd alsa cdr"
+<pre caption="Instalasi dhcpcd">
+# <i>emerge dhcpcd</i>
 </pre>
 
 </body>
 </subsection>
 <subsection>
-<title>Opsional: Menggunakan Kompilasi Terdistribusi</title>
+<title>Opsional: Instalasi Klien PPPoE</title>
 <body>
 
 <p>
-Jika anda tertarik untuk menggunakan beberapa sistem untuk membantu
-kompilasi sistem anda, anda mungkin ingin membaca <uri
-link="/doc/en/distcc.xml">Panduan DistCC</uri> kami. Dengan menggunakan
-<c>distcc</c>, anda dapat menggunakan tenaga kompilasi beberapa sistem
-untuk membantu instalasi anda.
+Jika anda memerlukan <c>rp-pppoe</c> untuk melakukan koneksi ke internet,
+anda perlu menginstalnya.
+</p>
+
+<pre caption="Menginstal rp-pppoe">
+# <i>USE="-X" emerge rp-pppoe</i>
+</pre>
+
+<p>
+Opsi <c>USE="-X"</c> akan mencegah xorg-x11 diinstal sebagai dependensi
+(<c>rp-pppoe</c> memiliki tool grafis; jika anda ingin mengaktifkannya,
+anda dapat mengkompilasi kembali <c>rp-pppoe</c> nantinya, atau anda dapat
+mengkompilasi xorg-x11 sekarang -- yang akan berlangsung cukup lama)
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Optional: Tool RAID untuk hardware IBM</title>
+<body>
+
+<p>
+Jika anda menggunakan RAID SCSI di sistem berbasis POWER5, anda harus
+pertimbangkan untuk menginstal <c>iprutils</c> agar anda bisa menggunakan
+array disk RAID, mendapatkan status pada disk di dalam array, mengupdate
+microcode, dll.
+</p>
+
+<pre caption="Instalasi iprutils">
+# <i>emerge iprutils</i>
+</pre>
+
+<p>
+Sekarang lanjutkan ke <uri link="?part=1&amp;chap=10">Mengkonfigurasi
+Bootloader</uri>.
 </p>
 
 </body>
 </subsection>
 </section>
-<section>
-<title>Perbedaan antara Stage1, Stage2, dan Stage3</title>
-<body>
-
-<p>
-Sekarang duduklah dan pikirkan kembali langkah-langkah yang anda ambil
-sebelumnya. Kami menanyakan anda untuk memilih <e>stage1</e>, <e>stage2</e>,
-atau <e>stage3</e> dan mengingatkan anda kalau pilihan anda penting untuk
-langkah-langkah instalasi selanjutnya. Nah, di sini merupakan tempat pertama
-dimana pilihan anda menentukan langkah-langkah selanjutnya.
-</p>
-
-<ul>
-<li>
-  Jika anda memilih <e>stage1</e>, maka anda harus mengikuti <e>kedua</e>
-  langkah-langkah di bab ini (mulai dari bagian <uri link="#doc_chap3">Memulai
-  dari Stage1 ke Stage2</uri>)
-</li>
-<li>
-  Jika anda memilih <e>stage2</e>, anda dapat melewati bagian pertama dan
-  langsung mulai di bagian ke dua (yaitu <uri link="#doc_chap4">Memulai dari
-  Stage2 ke Stage3</uri>)
-</li>
-<li>
-  Jika anda memilih <e>stage3</e> (dengan atau tanpa GRP), maka anda dapat
-  melewati kedua langkah-langkah di bawah dan melanjutkan ke <uri
-  link="?part=1&amp;chap=7">Mengkonfigurasi Kernel</uri>
-</li>
-</ul>
-
-</body>
-</section>
-<section>
-<title>Memulai dari Stage1 ke Stage2</title>
-<subsection>
-<title>Pengenalan ke Proses Bootstrap</title>
-<body>
-
-<p>
-Jadi, anda ingin mengkompilasi semuanya dari dasar? Baiklah :-)
-</p>
-
-<p>
-Di langkah ini, kita akan melakukan <e>proses bootstrap</e> pada sistem
-Gentoo anda. Proses ini berjalan cukup lama, tetapi hasil akhirnya adalah
-sebuah sistem yang dioptimasi penuh dari dasar sesuai mesin dan kebutuhan
-anda.
-</p>
-
-<p>
-<e>Proses bootstrap</e> artinya membangun pustaka GNU C (library), Koleksi
-Kompiler GNU (GCC), dan beberapa program-program sistem utama lain.
-</p>
-
-<p>
-Sebelum memulai proses bootstrap, kami akan memberikan beberapa pilihan
-yang mungkin anda inginkan atau tidak. Jika anda tidak ingin membaca
-pilihan-pilihan tersebut, lanjutkan ke <uri link="#bootstrap">
-Menjalankan Proses Bootstrap Sistem</uri>
-</p>
-
-</body>
-</subsection>
-<subsection>
-<title>Opsional: Mendownload Source Dahulu</title>
-<body>
-
-<p>
-Jika anda belum meng-copy seluruh source code sebelumnya, maka skrip
-bootstrap akan mendownload semua file-file yang diperlukan. Tentu saja, ini
-hanya berlaku jika anda memiliki koneksi jaringan internet :-) Jika anda ingin
-mendownload source code-nya dahulu dan nantinya melakukan proses bootstrap
-pada sistem anda (misalnya karena anda tidak ingin koneksi internet anda hidup
-sewaktu kompilasi), gunakan opsi <e>-f</e> pada skrip bootstrap, yang akan
-mendownload semua source code bagi anda.
-</p>
-
-<pre caption = "Mendownload source-source yang diperlukan">
-# <i>cd /usr/portage</i>
-# <i>scripts/bootstrap.sh -f</i>
-</pre>
-
-</body>
-</subsection>
-<subsection id="bootstrap">
-<title>Menjalankan Proses Bootstrap Sistem</title>
-<body>
-
-<p>
-Baiklah, ambil keyboard anda dan ketikkan perintah berikut ini untuk
-menjalankan proses bootstrap. Lalu, carilah kesibukan lain untuk dilakukan
-karena proses ini akan berlangsung cukup lama.
-</p>
-
-<pre caption = "Menjalankan proses bootstrap">
-# <i>cd /usr/portage</i>
-# <i>scripts/bootstrap.sh</i>
-</pre>
-
-<p>
-Sekarang, lanjutkan ke langkah berikutnya, <uri link="#doc_chap4">
-Memulai dari Stage2 ke Stage3</uri>.
-</p>
-
-</body>
-</subsection>
-</section>
-<section>
-<title>Memulai dari Stage2 ke Stage3</title>
-<subsection>
-<title>Pendahuluan</title>
-<body>
-
-<p>
-Jika anda membaca bagian ini, berarti anda telah memiliki sistem yang
-ter-bootstrap (karena anda melakukan proses bootstrap sebelumnya, atau
-anda menggunakan <e>stage2</e>). Maka sekarang saatnya untuk
-membangun semua paket-paket sistem.
-</p>
-
-<p>
-<e>Semua</e> paket-paket sistem? Tidak, sebenarnya tidak. Di langkah ini,
-anda akan membangun paket-paket sistem yang tidak memiliki alternatif lain.
-Beberapa paket sistem memiliki beberapa alternatif untuk dipilih (mis. logger
-sistem) dan karena Gentoo adalah tentang pilihan, kami tidak akan memaksakan
-kepada anda.
-</p>
-
-</body>
-</subsection>
-<subsection>
-<title>Opsional: Melihat apa yang akan dijalankan</title>
-<body>
-
-<p>
-Jika anda ingin mengetahui paket-paket apa saja yang akan diinstal, jalankan
-<c>emerge --pretend system</c>. Perintah tersebut akan menampilkan semua
-paket-paket yang akan dibangun. Karena tampilan tersebut cukup panjang, anda
-sebaiknya menggunakan sebuah pager mis. <c>less</c> atau <c>more</c>
-untuk naik atau turun tampilan tersebut.
-</p>
-
-<pre caption = "Melihat apa yang akan dilakukan 'emerge system'">
-# <i>emerge --pretend system | less</i>
-</pre>
-
-</body>
-</subsection>
-<subsection>
-<title>Opsional: Mendownload Source</title>
-<body>
-
-<p>
-Jika anda ingin <c>emerge</c> mendownload source-source yang diperlukan
-dahulu sebelum melanjutkan (mis. karena anda tidak ingin koneksi internet anda
-hidup sewaktu membangun semua paket-paket), anda dapat menggunakan opsi
-<e>--fetchonly</e> ke perintah <c>emerge</c> yang akan mendownload source
-bagi anda.
-</p>
-
-<pre caption = "Mendownload source-source">
-# <i>emerge --fetchonly system</i>
-</pre>
-
-</body>
-</subsection>
-<subsection>
-<title>Membangun Sistem</title>
-<body>
-
-<p>
-Untuk mulai membangun sistem anda, jalankan perintah <c>emerge system</c>.
-Lalu carilah kesibukan lain, karena langkah ini berlangsung cukup lama.
-</p>
-
-<pre caption = "Membangun Sistem">
-# <i>emerge system</i>
-</pre>
-
-<p>
-Sekarang, anda dapat dengan aman mengabaikan segala peringatan tentang file-file
-konfigurasi yang perlu diupdate (dan <c>etc-update</c>). Sewaktu sistem Gentoo
-anda selesai terinstal dan diboot dengan sukses, ingat untuk membaca
-dokumentasi kami tentang <uri link="?part=2&amp;chap=4#doc_chap1">
-Proteksi File Konfigurasi</uri>.
-</p>
-
-<p>
-Sewaktu proses tersebut selesai, lanjutkan ke <uri 
-link="?part=1&amp;chap=7">Mengkonfigurasi Kernel</uri>
-</p>
-
-</body>
-</subsection>
-</section>
-
 </sections>
