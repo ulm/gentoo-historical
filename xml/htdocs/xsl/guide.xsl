@@ -366,7 +366,7 @@
                     <br/>
              		    <a class="altlink" href="http://vendors.gentoo.org/">Supporting Vendors</a>
 		    <br/>
-                    <a class="altlink" href="http://viewcvs.gentoo.org/">View our CVS</a>
+                    <a class="altlink" href="http://sources.gentoo.org/">View our CVS</a>
 
                     <!--
                     <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
@@ -950,12 +950,12 @@
 
         <!-- Strip http://www.gentoo.org from links 
              Has no effect on actual www.g.o but helps when surfing on a local copy
-             Rewrite http://www.gentoo.org/cgi-bin/viewcvs/ to use viewcvs.gentoo.org
+             Rewrite http://www.gentoo.org/cgi-bin/viewcvs/ to use sources.gentoo.org/
           -->
         <xsl:variable name="llink">
           <xsl:choose>
-            <xsl:when test="starts-with($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi'))" /></xsl:when>
-            <xsl:when test="starts-with($thelink, '/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://viewcvs.gentoo.org', substring-after($thelink, '/cgi-bin/viewcvs.cgi'))" /></xsl:when>
+            <xsl:when test="starts-with($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://sources.gentoo.org/viewcvs.py', substring-after($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi'))" /></xsl:when>
+            <xsl:when test="starts-with($thelink, '/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://sources.gentoo.org/viewcvs.py', substring-after($thelink, '/cgi-bin/viewcvs.cgi'))" /></xsl:when>
             <xsl:when test="starts-with($thelink, 'http://www.gentoo.org/')"><xsl:value-of select="substring-after($thelink, 'http://www.gentoo.org')" /></xsl:when>
             <!-- Add catid to links to /doc/LL/index.xml -->
             <xsl:when test="$catid != '0' and starts-with($thelink, '/doc/') and (substring-after(substring-after($thelink, '/doc/'), '/')='' or substring-after(substring-after($thelink, '/doc/'), '/')='index.xml')">
