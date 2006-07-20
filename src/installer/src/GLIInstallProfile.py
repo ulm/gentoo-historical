@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.92 2006/06/22 19:46:06 codeman Exp $
+$Id: GLIInstallProfile.py,v 1.93 2006/07/20 22:32:53 wolf31o2 Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -577,7 +577,8 @@ class InstallProfile:
 	def get_install_package_list(self):
 		install_package_list = { 
 			'Desktop': ("Popular Desktop Applications",
-				{"bittorrent": "tool for distributing files via a distributed network of nodes",
+				{"audacious": "GTK music player",
+				"bittorrent": "tool for distributing files via a distributed network of nodes",
 				"evolution": "A GNOME groupware application, a Microsoft Outlook workalike",
 				"gaim": "GTK Instant Messenger client",
 				"gftp": "Gnome based FTP Client",
@@ -585,17 +586,18 @@ class InstallProfile:
 				"inkscape": "A SVG based generic vector-drawing program",
 				"k3b": "KDE CD Writing Software",
 				"koffice": "An integrated office suite for KDE, the K Desktop Environment",
-				"mozilla": "The Mozilla Web Browser",
+				"mozilla": "The Mozilla Suite",
 				"mozilla-firefox": "The Mozilla Firefox Web Browser",
 				"mozilla-thunderbird": "Thunderbird Mail Client",
 				"mplayer": "Media Player for Linux",
 				"openoffice": "OpenOffice.org, a full office productivity suite.",
 				"openoffice-bin": "Same as OpenOffice but a binary package (no compiling!)",
-# Removed because fetch-restriction would cause install to fail
-#				"realplayer": "Real Media Player",
+				"pan": "GTK news reader",
 				"rhythmbox": "Music management and playback software for GNOME",
+				"seamonkey": "Open replacement for the Mozilla Suite",
+				"sylpheed-claws": "A light weight email client and news reader",
 				"vlc": "VLC media player - Video player and streamer",
-				"xchat": "Graphical IRC Client",
+				"xchat": "GTK Graphical IRC Client",
 				"xine-ui": "Xine movie player",
 				"xmms": "X MultiMedia System"  }),
 			'Servers': ("Applications often found on servers.",
