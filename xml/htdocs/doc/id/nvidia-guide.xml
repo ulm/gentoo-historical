@@ -1,0 +1,629 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Id: nvidia-guide.xml,v 1.1 2006/07/27 10:02:28 neysx Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/id/nvidia-guide.xml" lang="id">
+<title>Panduan nVidia Gentoo Linux</title>
+
+<author title="Author">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Editor">
+  <mail link="curtis119@gentoo.org">M Curtis Napier</mail>
+</author>
+<author title="Editor">
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
+</author>
+<author title="Translator">
+  <mail link="dezzou@gmail.com">Dzikri Aziz</mail>
+</author>
+
+<abstract>
+Banyak pengguna Gentoo yang memiliki chipset nVidia di sistem mereka. nVidia
+menyediakan driver khusus Linux untuk meningkatkan performa kartu anda.
+Panduan ini akan menuntun anda dalam proses instalasi dan konfigurasi
+driver ini.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.26</version>
+<date>2006-07-25</date>
+
+<chapter>
+<title>Pendahuluan</title>
+<section>
+<body>
+
+<p>
+nVidia meluncurkan driver-driver Linux mereka yang menyediakan performa bagus
+dan akselerasi 3D penuh. Rilis driver ini dibagi menjadi dua:
+<c>nvidia-kernel</c> dan <c>nvidia-glx</c>.
+</p>
+
+<p>
+<c>nvidia-kernel</c> merupakan driver yang menangani komunikasi level rendah
+dengan perangkat video anda. Driver ini hanyalah sebuah modul kernel, bernama
+<c>nvidia</c>, yang akan terinstal ke source kernel anda dan perlu di-load
+ketika anda ingin menggunakan driver nvidia.
+</p>
+
+<p>
+Seperti halnya driver kernel, anda juga perlu menginstal GLX X11
+(<c>nvidia-glx</c>). Driver ini digunakan oleh X untuk me-render grafik,
+yang menggunakan driver kernel <c>nvidia-kernel</c> secara internal untuk
+berkomunikasi dengan perangkat video.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Mengkonfigurasi Kartu Anda</title>
+<section>
+<title>Konfigurasi Kernel</title>
+<body>
+
+<p>
+Seperti yang telah dijelaskan di atas, driver kernel nVidia terinstal dan
+dijalankan oleh kernel anda saat ini. Driver ini di-build sebagai modul, jadi
+sangat masuk akal jika kernel anda harus memiliki dukungan untuk me-load modul.
+Jika anda telah menggunakan <c>genkernel</c> untuk mengkonfigurasi kernel
+anda, berarti anda telah siap untuk melanjutkan. Jika tidak, periksa kembali
+apakah kernel anda memiliki dukungan ini:
+</p>
+
+<pre caption="Mengaktifkan Dukungan Kernel untuk Me-load Modul">
+Loadable module support ---&gt;
+  [*] Enable loadable module support
+</pre>
+
+<p>
+Anda juga perlu mengaktifkan <e>Memory Type Range Register</e> di kernel anda:
+</p>
+
+<pre caption="Mengaktifkan MTRR">
+Processor and Features ---&gt;
+  [*] MTRR (Memory Type Range Register) support
+</pre>
+
+<p>
+Anda juga harus menambahkan dukungan <c>agpgart</c> untuk kernel anda, bisa
+sebagai modul maupun dikompilasi di dalam kernel:
+</p>
+
+<pre caption="Mengaktifkan agpgart">
+Device Drivers ---&gt;
+Character devices ---&gt;
+&lt;*&gt; /dev/agpgart (AGP Support)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Catatan Khusus untuk Arsitektur Tertentu</title>
+<body>
+
+<impo>
+Untuk prosesor x86 dan AMD64, driver di dalam kernel akan konflik dengan binari
+dari nVidia. Jika anda akan mengkompilasi kernel untuk prosesor ini, anda harus
+meniadakan dukungan untuk driver di dalam kernel seperti yang ditunjukkan
+di bawah ini:
+</impo>
+
+<pre caption="Meniadakan dukungan driver di dalam kernel">
+Device Drivers ---&gt;
+Graphics Support ---&gt;
+&lt; &gt;   nVidia Framebuffer Support
+&lt; &gt;   nVidia Riva support
+</pre>
+
+<p>
+Alternatif framebuffer yang bagus adalah <c>VESA</c>:
+</p>
+
+<pre caption="Mengaktifkan dukungan VESA">
+Device Drivers ---&gt;
+Graphics Support ---&gt;
+&lt;*&gt;   VESA VGA graphics support
+</pre>
+
+<p>
+Kemudian, di bawah "VESA driver type" pilih <c>vesafb</c> atau
+<c>vesafb-tng</c>:
+</p>
+
+<pre caption="Pilih tipe framebuffer">
+( ) vesafb
+(X) vesafb-tng
+</pre>
+
+<p>
+Untuk info lebih lanjut, silahkan baca
+<path>/usr/src/linux/Documentation/fb/vesafb.txt</path> jika anda
+menggunakan <c>vesafb</c> atau cari dokumentasi framebuffer anda di
+<path>/usr/src/linux/Documentation/fb/</path>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Melanjutkan Konfigurasi Kernel</title>
+<body>
+
+<p>
+Modul-modul dan librari nVidia terbagi dalam dua paket: <c>nvidia-glx</c> dan
+<c>nvidia-kernel</c>. Paket pertama merupakan librari GLX X11, sedangkan yang
+kedua merupakan modul kernel.
+</p>
+
+<p>
+Ebuild <c>nvidia-kernel</c> secara otomatis mencari versi kernel anda
+berdasarkan symlink <path>/usr/src/linux</path>. Harap pastikan agar symlink
+ini menunjuk ke kernel yang benar dan telah dikonfigurasi. Silahkan membaca
+bagian Konfigurasi Kernel dari <uri link="/doc/id/handbook/">Buku Panduan
+Instalasi</uri> untuk penjelasan lebih mendalam tentang konfigurasi kernel.
+</p>
+
+<p>
+Jika anda menggunakan gentoo-sources-2.6.11-r6, direktori
+<path>/usr/src</path> anda akan terlihat seperti ini:
+</p>
+
+<pre caption="Periksa symlink /usr/src/linux anda">
+# <i>cd /usr/src</i>
+# <i>ls -l</i>
+<comment>(Pastikan agar linux menunjuk ke direktori yang benar)</comment>
+lrwxrwxrwx   1 root root   22 Apr 23 18:33 linux -&gt; linux-2.6.11-gentoo-r6
+drwxr-xr-x   4 root root  120 Apr  8 18:56 linux-2.4.26-gentoo-r4
+drwxr-xr-x  18 root root  664 Dec 31 16:09 linux-2.6.10
+drwxr-xr-x  18 root root  632 Mar  3 12:27 linux-2.6.11
+drwxr-xr-x  19 root root 4096 Mar 16 22:00 linux-2.6.11-gentoo-r6
+</pre>
+
+<p>
+Pada contoh di atas, anda akan melihat bahwa symlink <c>linux</c> menunjuk
+ke kernel <c>linux-2.6.11-gentoo-r6</c>.
+</p>
+
+<p>
+Jika symlink tidak menunjuk ke source kernel yang benar, anda perlu
+meng-update link tersebut seperti ini:
+</p>
+
+<pre caption="Menciptakan/Update symlink /usr/src/linux">
+# <i>cd /usr/src</i>
+# <i>ln -snf linux-2.6.11-gentoo-r6 linux</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Opsional: Periksa Dukungan untuk Kartu Jenis Lama</title>
+<body>
+
+<note>
+Sayangnya, beberapa kartu grafis lama tidak didukung oleh versi terbaru
+<c>nvidia-glx</c> dan <c>nvidia-kernel</c>. nVidia menyediakan sebuah <uri
+link="http://www.nvidia.com/object/IO_18897.html">daftar kartu yang
+didukung</uri>.Silahkan periksa daftar ini sebelum menginstal driver.
+</note>
+
+<p>
+Berikut ini adalah daftar kartu grafis yang <b>tidak didukung</b>:
+</p>
+
+<pre caption="Kartu-kartu yang tidak didukung">
+TNT2
+TNT2 Pro
+TNT2 Ultra
+TNT2 Model 64 (M64)
+TNT2 Model 64 (M64) Pro
+Vanta
+Vanta LT
+GeForce 256
+GeForce DDR
+GeForce2 GTS
+GeForce2 Pro
+GeForce2 Ti
+GeForce2 Ultra
+GeForce2 MX Integrated graphics
+Quadro
+Quadro2 Pro
+Quadro2 EX
+</pre>
+
+<p>
+Jika anda memiliki salah satu dari kartu-kartu grafis di atas, anda perlu
+melakukan mask untuk versi terbaru driver nVidia, lalu menginstal versi lama:
+</p>
+
+<pre caption="Mask driver baru">
+# <i>echo "&gt;media-video/nvidia-kernel-1.0.6629-r5" &gt;&gt; /etc/portage/package.mask</i>
+# <i>echo "&gt;media-video/nvidia-glx-1.0.6629-r7" &gt;&gt; /etc/portage/package.mask</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Instalasi Driver yang Tepat</title>
+<body>
+
+<p>
+Sekarang saatnya untuk menginstal <c>nvidia-kernel</c> dan <c>nvidia-glx</c>.
+Karena <c>nvidia-glx</c> bergantung pada <c>nvidia-kernel</c>, maka anda cukup
+menginstal <c>nvidia-glx</c>.
+</p>
+
+<pre caption="Instalasi modul nVidia">
+# <i>emerge nvidia-glx</i>
+</pre>
+
+<impo>
+Setiap kali anda <uri link="/doc/en/kernel-upgrade.xml">mengkompilasi kernel
+baru</uri> atau mengkompilasi ulang kernel anda saat ini, anda harus menjalankan
+<c>emerge nvidia-kernel</c> untuk menginstal ulang modul nVidia.
+<c>nvidia-glx</c> tidak terpengaruh oleh pergantian kernel, bahkan tidak perlu
+diinstal ulang ketika anda mengkompilasi ulang atau meng-upgrade X.
+</impo>
+
+<p>
+Ketika instalasi telah selesai, jalankan <c>modprobe nvidia</c> untuk me-load
+modul kernel ke memori.
+</p>
+
+<pre caption="Load modul kernel">
+# <i>modprobe nvidia</i>
+</pre>
+
+<p>
+Agar anda tidak perlu me-load modul ini setiap kali sistem dinyalakan, mungkin
+anda ingin agar modul ini di-load secara otomatis. Untuk itu, edit file
+<path>/etc/modules.autoload.d/kernel-2.6</path> (atau <path>kernel-2.4</path>,
+tergantung versi kernel yang anda gunakan) lalu tambahkan <c>nvidia</c>.
+Jangan lupa untuk menjalankan <c>modules-update</c> setelah selesai.
+</p>
+
+<impo>
+Jika anda mengkompilasi <c>agpgart</c> sebagai modul, anda perlu menambahkannya
+ke <path>/etc/modules.autoload.d/kernel-2.6</path> (atau <path>kernel-2.4</path>
+tergantung versi kernel yang anda gunakan).
+</impo>
+
+<pre caption="Menjalankan modules-update">
+# <i>modules-update</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Konfigurasi Server X</title>
+<body>
+
+<p>
+Jika driver yang benar telah terinstal, anda perlu mengkonfigurasi Server X
+(XFree86 atau Xorg) agar menggunakan driver <c>nvidia</c> sebagai ganti dari
+driver default, yaitu <c>nv</c>.
+</p>
+
+<p>
+Bukalah file <path>/etc/X11/xorg.conf</path> (atau
+<path>/etc/X11/XF86Config</path> jika anda masih menggunakan file konfigurasi
+lama) dengan editor favorit anda (mis. <c>nano</c> atau <c>vim</c>) lalu
+masuki seksi <c>Device</c>. Pada seksi ini, gantilah baris <c>Driver</c>:
+</p>
+
+<pre caption="Mengganti nv ke nvidia di konfigurasi Sever X">
+Section "Device"
+  Identifier "nVidia Inc. GeForce2"
+  <i>Driver     "nvidia"</i>
+  VideoRam   65536
+EndSection
+</pre>
+
+<p>
+Kemudian masuki seksi <c>Module</c> dan pastikan agar modul <c>glx</c>
+di-load, sedangkan <c>dri</c> tidak di-load:
+</p>
+
+<pre caption="Meng-update seksi Module">
+Section "Module"
+  <comment>(...)</comment>
+  <i># Load  "dri"
+  Load  "glx"</i>
+  <comment>(...)</comment>
+EndSection
+</pre>
+
+<p>
+Selanjutnya, di seksi <c>Screen</c>, pastikan agar <c>DefaultDepth</c>
+di-set ke 16 atau 24, atau, anda hanya memiliki sub-seksi <c>Display</c>
+dengan <c>Depth</c> di-set ke 16 atau 24. Tanpa setting ini, ekstensi
+nvidia-glx tidak akan berfungsi.
+</p>
+
+<pre caption="Meng-update seksi Screen">
+Section "Screen"
+  <comment>(...)</comment>
+  <i>DefaultDepth 16</i>
+  Subsection "Display"
+  <comment>(...)</comment>
+EndSection
+</pre>
+
+<p>
+Jalankan <c>eselect</c> agar Server X menggunakan librari GLX nVidia:
+</p>
+
+<pre caption="Menjalankan eselect">
+# <i>eselect opengl set nvidia</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Menambahakan User Anda ke Grup Video</title>
+<body>
+
+<p>
+Anda harus menambahkan user anda ke grup <c>video</c> agar ia bisa mengakses
+file perangkat nvidia:
+</p>
+
+<pre caption="Menambahakan user anda ke grup video">
+# <i>gpasswd -a nama-user video</i>
+</pre>
+
+<p>
+Langkah ini mungkin tidak terlalu diperlukan jika anda tidak menggunakan
+<c>udev</c>, tetapi juga tidak akan merusak sistem anda, malahan akan
+menjadikannya lebih handal :)
+</p>
+
+</body>
+</section>
+<section>
+<title>Mengetes Katu Anda</title>
+<body>
+
+<p>
+Untuk mengetes kartu nVidia anda, nyalakan X lalu jalankan perintah
+<c>glxinfo | grep direct</c>. Perintah ini seharusnya mengatakan bahwa
+"direct rendering" telah diaktifkan:
+</p>
+
+<pre caption="Memeriksa status direct rendering">
+$ <i>glxinfo | grep direct</i>
+direct rendering: Yes
+</pre>
+
+<p>
+Untuk me-monitor FPS anda, jalankan <c>glxgears</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Mengaktifkan Dukungan nvidia</title>
+<body>
+
+<p>
+Beberapa program seperti <c>mplayer</c> dan <c>xine-lib</c>, menggunakan flag
+USE lokal bernama "nvidia" yang akan mengaktifkan dukungan XvMCNVIDIA nvidia,
+berguna ketika anda memutar film dengan resolusi tinggi. Tambahkan "nvidia" ke
+variabel USE anda di file <path>/etc/make.conf</path> atau tambahkan sebagai
+flag USE untuk <c>media-video/mplayer</c> dan/atau <c>media-libs/xine-lib</c>
+di <path>/etc/portage/package.use</path>.
+</p>
+
+<p>
+Kemudian, jalankan <c>emerge -uD --newuse world</c> untuk menginstal ulang
+aplikasi yang terpengaruh dengan pergantian flag USE.
+</p>
+
+</body>
+</section>
+<section>
+<title>Menggunakan Utilitas NVidia Settings</title>
+<body>
+
+<p>
+Sejak driver versi 1.0.6106, nVidia juga menyediakan sebuah utilitas setting.
+Dengan utilitas ini, anda dapat merubah setting grafis tanpa harus me-restart
+server X. Tersedia di Portage dengan nama <c>media-video/nvidia-settings</c>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Troubleshooting</title>
+<section>
+<title>Mendapatkan akselerasi 2D di komputer dengan memori 4Gb atau lebih</title>
+<body>
+
+<p>
+Jika anda mendapatkan masalah dengan akselerasi 2D nVidia, kemungkinan besar
+anda tidak dapet men-setup write-combining range dengan MTRR. Untuk memastikan,
+periksa isi file <path>/proc/mtrr</path>:
+</p>
+
+<pre caption="Periksa apakah write-combining telah aktif">
+# <i>cat /proc/mtrr</i>
+</pre>
+
+<p>
+Setiap baris harus berisi "write-back" atau "write-combining". Jika anda
+melihat baris yang berisi "uncachable", anda harus memperbaiki setting BIOS.
+</p>
+
+<p>
+Reboot dan masuki BIOS, untuk mendapatkan setting MTRR (kemungkinan di dalam
+"CPU Settings"). Ganti settingnya dari "continuous" ke "discrete" lalu boot
+kembali ke Linux. Anda tidak akan menemukan lagi entri "uncachable", dan
+akselerasi 2D sekarang telah berfungsi dengan benar.
+</p>
+
+</body>
+</section>
+<section>
+<title>Saya mendapatkan peringatan tentang unsupported 4K stack sizes</title>
+<body>
+
+<p>
+Paket <c>nvidia-kernel</c> yang lebih lama dari versi 1.0.6106 hanya mendukung
+kernel yang menggunakan sebuah stack berukuran 8K. Kernel-kernel yang lebih
+baru (2.6.6 dan yang lebih baru) juga memiliki dukungan stack berukuran 4K.
+Jangan memilih "4K stack size" di konfigurasi kernel anda jika anda menggunakan
+paket <c>nvidia-kernel</c> di bawah versi 1.0.6106. Anda dapat menemukan opsi
+ini di seksi <c>Kernel Hacking</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>
+  Ketika saya mencoba untuk me-load modul kernel, saya mendapatkan
+  "no such device"
+</title>
+<body>
+
+<p>
+Masalah ini biasanya terjadi ketika anda tidak memiliki kartu grafis yang cocok
+dengan driver. Pastikan bahwa anda memiliki kartu grafis nVidia (anda dapat
+memeriksa ulang dengan menggunakan <c>lspci</c>).
+</p>
+
+<p>
+Jika anda yakin bahwa anda memiliki kartu nVidia, Periksa BIOS anda dan lihat
+apakah <e>Assign IRQ to VGA</e> telah di-set.
+</p>
+
+</body>
+</section>
+<section>
+<title>
+  Saya mendapatkan "no screens found" dan log mengatakan "Failed to initialize
+  the NVIDIA kernel module!"
+</title>
+<body>
+
+<p>
+Kemungkinan besar anda tidak memiliki file-file device
+<path>/dev/nvidia*</path>. Ciptakan file-file ini dengan
+menggunakan <c>NVmakedevices.sh</c>:
+</p>
+
+<pre caption="Menciptakan node device nvidia">
+# <i>/sbin/NVmakedevices.sh</i>
+</pre>
+
+<p>
+Jika anda kehilangan file device di <path>/dev/nvidia*</path> setiap kali anda
+reboot, ini disebabkan oleh udev yang tidak menciptakan node device yang benar
+secara otomatis. Anda dapat memperbaikinya dengan cara menjalankan
+<c>NVmakedevices.sh</c>, lalu edit <path>/etc/conf.d/rc</path> seperti ini:
+</p>
+
+<pre caption="Edit /etc/conf.d/rc">
+RC_DEVICE_TARBALL="yes"
+</pre>
+
+<p>
+Setting ini akan selalu menjaga node <path>/dev/nvidia*</path> walaupun anda
+telah reboot.
+</p>
+
+<note>
+Ada cara lain untuk mengatasi masalah ini, yaitu dengan meng-emerge
+<c>nvidia-kernel</c> dan <c>nvidia-glx</c> terbaru dari seri 8xxx. Saat
+dokumen ini ditulis, keduanya masih ditandai ~arch. Driver-driver ini sudah
+tidak lagi bergantung pada hotplug atau udev untuk menciptakan node device,
+jadi anda tidak perlu lagi menjalankan <c>NVmakedevices.sh</c>. Tetapi,
+driver X itu sendiri yang akan menciptakan file-file di
+<path>/dev/nvidia*</path> ketika anda menyalakan X. Bagaimanapun juga, cara ini
+mengharuskan anda untuk menginstal kernel baru (2.6.14 atau yang lebih baru).
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Konfigurasi Expert</title>
+<section>
+<title>Dokumentasi</title>
+<body>
+
+<p>
+Paket driver nVidia juga menyediakan dokumentasi lengkap. Dokumentasi ini
+terinstal di <c>/usr/share/doc</c> dan bisa anda baca dengan perintah berikut:
+</p>
+
+<pre caption="Membaca dokumentasi NVIDIA">
+# <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Parameter modul kernel</title>
+<body>
+
+<p>
+Modul kernel <c>nvidia</c> menerima sejumlah parameter (opsi) yang bisa anda
+dunakan untuk men-tweak tingkah laku driver. Kebanyakan dari parameter ini
+dijelaskan di dokumentasi. Untuk menambahkan atau mengganti parameter ini, edit
+file <c>/etc/modules.d/nvidia</c>. Jangan lupa untuk menjalankan
+<c>modules-update</c> setelah anda merubah isi file ini, dan ingat bahwa anda
+perlu me-load ulang modul nvidia agar setting baru anda dijalankan.
+</p>
+
+<pre caption="Merubah opsi nvidia">
+<comment>(Edit /etc/modules.d/nvidia dengan editor favorit anda)</comment>
+# <i>nano -w /etc/modules.d/nvidia</i>
+<comment>(Update informasi module)</comment>
+# <i>modules-update</i>
+<comment>(Unload modul nvidia ...)</comment>
+# <i>modprobe -r nvidia</i>
+<comment>(...lalu load kembali)</comment>
+# <i>modprobe nvidia</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Konfigurasi Advanced X</title>
+<body>
+
+<p>
+Layer GLX juga memiliki beberapa opsi yang bisa anda konfigurasi. Opsi ini
+mengendalikan konfigurasi untuk TV Out, dual display, deteksi frekuensi
+monitor, dll. Semua opsi yang tersedia juga dijelaskan di dokumentasi.
+</p>
+
+<p>
+Jika anda ingin menggunakan opsi-opsi ini, anda perlu mendaftarkannya di seksi
+Device di file konfigurasi X anda (biasanya <c>/etc/X11/xorg.conf</c>). Sebagai
+contoh, saya ingin menonaktifkan logo splash nVidia:
+</p>
+
+<pre caption="Konfigurasi advanced X di konfigurasi X">
+Section "Device"
+  Identifier "nVidia Inc. GeForce2"
+  Driver     "nvidia"
+  <i>Option     "NoLogo" "true"</i>
+  VideoRam   65536
+EndSection
+</pre>
+
+</body>
+</section>
+</chapter>
+
+</guide>
