@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.140 2006/05/24 12:11:33 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.141 2006/07/28 18:40:33 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -283,6 +283,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				part_sectors = long(newpart['mb']) * MEGABYTE / 512
 				end = start + part_sectors
 				self._logger.log("    End sector calculated to be " + str(end))
+			if newpart.is_logical() and end > extended_end:
+				end = extended_end
 			# Make sure end doesn't overlap next partition's existing start sector
 			nextminor = self._find_next_partition(newpart, newparts)
 			if nextminor:
