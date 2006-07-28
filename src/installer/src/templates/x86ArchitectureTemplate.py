@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.141 2006/07/28 18:40:33 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.142 2006/07/28 20:48:44 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -270,6 +270,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				start = newpart['start']
 				strict_start = True
 			else:
+				if newpart.is_logical() and start > extended_end:
+					start = extended_start + 1
 				self._logger.log("    Start sector calculated to be " + str(start))
 			if extended_end and not newpart.is_logical() and start <= extended_end:
 				self._logger.log("    Start sector for primary is less than the end sector for previous extended")
@@ -282,9 +284,9 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 			else:
 				part_sectors = long(newpart['mb']) * MEGABYTE / 512
 				end = start + part_sectors
+				if newpart.is_logical() and end > extended_end:
+					end = extended_end
 				self._logger.log("    End sector calculated to be " + str(end))
-			if newpart.is_logical() and end > extended_end:
-				end = extended_end
 			# Make sure end doesn't overlap next partition's existing start sector
 			nextminor = self._find_next_partition(newpart, newparts)
 			if nextminor:
