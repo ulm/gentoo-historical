@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.282 2006/06/17 04:55:04 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.283 2006/07/29 15:58:28 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1003,11 +1003,15 @@ class ArchitectureTemplate:
 #			self.configure_rc_conf()
 			etc_files = self._install_profile.get_etc_files()
 			for etc_file in etc_files:
+				# Skip entries with blank filenames
+				if not etc_file: continue
 				if self._debug: self._logger.log("DEBUG: update_config_files(): updating config file: "+etc_file)
 				if isinstance(etc_files[etc_file], dict):
 					self._edit_config(self._chroot_dir + "/etc/" + etc_file, etc_files[etc_file])
 				else:
 					for entry in etc_files[etc_file]:
+						# Skip blank entries
+						if not entry: continue
 						self._edit_config(self._chroot_dir + "/etc/" + etc_file, { "0": entry }, only_value=True)
 			self._logger.log("Config files updated using etc-update.  make.conf/fstab/rc.conf restored.")
 
