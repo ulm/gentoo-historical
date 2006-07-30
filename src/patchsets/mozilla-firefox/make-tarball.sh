@@ -1,4 +1,5 @@
 #!/bin/bash
+# $Header: /var/cvsroot/gentoo/src/patchsets/mozilla-firefox/make-tarball.sh,v 1.2 2006/07/30 10:44:28 redhatter Exp $
 
 if [[ $# -ne 2 ]] ; then
 	echo "Usage: $0 <firefox ver> <patch ver>"
