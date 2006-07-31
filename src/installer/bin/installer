@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Header: /var/cvsroot/gentoo/src/installer/bin/installer,v 1.5 2006/07/27 19:28:52 wolf31o2 Exp $
+# $Header: /var/cvsroot/gentoo/src/installer/bin/installer,v 1.6 2006/07/31 17:01:53 wolf31o2 Exp $
 #
 # This is the installer script that we will use to determine whether or not
 # we are running in X or as root.  A good portion of this script was ripped
@@ -23,18 +23,17 @@ then
 	shift
 fi
 
-# TODO: make this actually work
 # we see if we were called with a specific front-end
-#launch=
-#if [ "${1}" == "gtk" ]
-#then
-#	launch=gtk
-#	shift
-#elif [ "${1}" == "dialog" ]
-#then
-#	launch=dialog
-#	shift
-#fi
+launch=
+if [ "${1}" == "gtk" ]
+then
+	launch=gtk
+	shift
+elif [ "${1}" == "dialog" ]
+then
+	launch=dialog
+	shift
+fi
 
 # Find the installation program
 # try_run INSTALLER_NAME [PARAMETERS_PASSED]
@@ -56,13 +55,12 @@ then
 	if [ "${GOT_ROOT}" != "0" ]
 	then
 		# first we try sudo
-		try_run /usr/bin/sudo env DISPLAY=":0.0" su -c "${installer_root}/bin/installer -auth ${launch}"
+		try_run /usr/bin/sudo env DISPLAY=":0.0" ${installer_root}/bin/installer -auth ${launch} "$@"
 		status="${?}"
 		if [ "${status}" -eq 0 ]
 		then
 			exit 0
-		elif [ "${status}" -eq 1 ]
-		then
+		else
 			try_run /usr/bin/gnomesu -u root -c "sh ${installer_root}/bin/installer -auth ${launch}"
 			status="$?"
 			# If try_run successfully executed gnomesu, it will return
@@ -70,8 +68,7 @@ then
 			if [ "${status}" -eq 0 ]
 			then
 				exit 0
-			elif [ "${status}" -eq 1 ]
-			then
+			else
 				try_run /usr/bin/xsu -e -a -u root -c "sh ${installer_root}/bin/installer -auth ${launch}"
 				status="${?}"
 				# xsu returns 2 if ran and cancelled (i.e. the user 'doesn't
@@ -81,40 +78,31 @@ then
 				if [ "${status}" -eq 0 ]
 				then
 					exit 0
-				elif [ "${status}" -eq 1 ]
-				then
+				else
 					# xsu wasn't found, or failed to run
 					# if xsu actually ran and the auth was cancelled,
 					# $status is 2
 					echo "You need to run this installation as the super user."
-					echo "Please enter the root password."
-					try_run /bin/su root -c "export DISPLAY=${DISPLAY};sh ${installer_root}/bin/installer -auth ${launch}"
-					status="${?}"
-					if [ "${status}" -eq 0 ]
-					then
-						# the auth command was properly executed
-						exit 0
-					else
-						exit 1
-					fi
-				elif [ "${status}" -eq 3 ]
-				then
-					# the auth failed or was canceled
-					# we don't want to even start the setup if not root
-					echo "Please run this installation as the super user"
 					exit 1
+#					echo "Please enter the root password."
+#					try_run /bin/su root -c "export DISPLAY=${DISPLAY};sh ${installer_root}/bin/installer -auth ${launch}"
+#					status="${?}"
+#					if [ "${status}" -eq 0 ]
+#					then
+#						# the auth command was properly executed
+#						exit 0
+#					else
+#						echo "Please run this installation as the super user"
+#						exit 1
+#					fi
 				fi
-			elif [ "${status}" -eq 3 ]
-			then
-				echo "Please run this installation as the super user"
-				exit 1
 			fi
 		fi
 	fi
 fi
 
-#if [ -z "${launch}" ]
-#then
+if [ -z "${launch}" ]
+then
 	# Try to run the gtk installer
 	try_run /usr/bin/installer-gtk ${*}
 	status=${?}
@@ -128,12 +116,12 @@ fi
 			status=1
 		}
 	fi
-#else
+else
 	# Try to run the installer script asked for when launched
-#	try_run /usr/bin/installer-${launch} ${*} || {
-#		echo "The setup program seems to have failed"
-#		status=1
-#	}
-#fi
+	try_run /usr/bin/installer-${launch} ${*} || {
+		echo "The setup program seems to have failed"
+		status=1
+	}
+fi
 
 exit ${status}
