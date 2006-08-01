@@ -176,7 +176,7 @@
   </tr>
   <tr>
     <td colspan="2" align="right" class="infohead">
-      Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
+      Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments? <a class="highlight" href="/main/en/contact.xml">Contact us</a>.
     </td>
   </tr>
 </table>
@@ -302,6 +302,15 @@
           </xsl:otherwise>
         </xsl:choose>
         | <a class="menulink" href="http://planet.gentoo.org">Planet</a>
+        |
+        <xsl:choose>
+          <xsl:when test="/mainpage/@id='contact'">
+            <a class="highlight" href="/main/en/contact.xml">Contact</a>
+          </xsl:when>
+          <xsl:otherwise>
+            <a class="menulink" href="/main/en/contact.xml">Contact</a>
+          </xsl:otherwise>
+        </xsl:choose>
       </p>
     </td>
   </tr>
@@ -392,6 +401,7 @@
                     <a class="altlink" href="/main/en/projects.xml">Gentoo-hosted projects</a>
                     <br/>
                     <a class="altlink" href="/doc/en/articles/">IBM dW/Intel article archive</a>
+                    <!-- Moved below news items in main area 
                     <xsl:if test="/mainpage/@id='news'">
                     <br/><br/>
                       Older News:<br/>
@@ -401,6 +411,7 @@
                         <br/>
                       </xsl:for-each>
                     </xsl:if>
+                    -->
                   </p>
                   <br/><br />
                 </td>
@@ -431,6 +442,18 @@
                   <xsl:with-param name="link" select="."/>
                 </xsl:call-template>
               </xsl:for-each>
+              <!-- Links to older news below news items -->
+              <div class="news">
+               <p class="newshead" lang="en">
+                <b>Older News</b>
+               </p>
+               <ul>
+                <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&gt;$newsitemcount][position()&lt;20]/text()">
+                 <xsl:variable name="newsuri" select="."/>
+                 <li><b><a class="altlink" href="{$newsuri}"><xsl:value-of select="document(.)/news/title"/></a></b></li>
+                </xsl:for-each>
+               </ul>
+              </div>
               </xsl:when>
               <xsl:when test="/news">
                 <xsl:call-template name="newscontent">
@@ -460,7 +483,7 @@
   </tr>
   <tr lang="en">
     <td align="right" class="infohead" colspan="3">
-      Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments?  Email <a class="highlight" href="mailto:www@gentoo.org">www@gentoo.org</a>.
+      Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments? <a class="highlight" href="/main/en/contact.xml">Contact us</a>.
     </td>
   </tr>
 </table>
@@ -731,62 +754,6 @@
 </font>
 </xsl:template>
 
-<!-- Body inside email -->
-<!-- Can't find any use for this, will be deleted
-<xsl:template match="/email/body">
-<table border="0">
-  <tr>
-    <td>
-      <span class="content">
-        <p class="secthead">
-          Subject: <xsl:value-of select="/email/subject"/>
-        </p>
-        <p class="secthead">
-          <font color="#000000">
-            List: <xsl:value-of select="/email/list"/> at gentoo.org<br/>
-            Date: <xsl:value-of select="/email/date"/><br/>
-            From: <xsl:value-of select="/email/from"/><br/><br/>
-            <xsl:if test="/email/nav/prev">
-              <xsl:for-each select="/email/nav/prev[position()=1]/text()">
-                <xsl:variable name="navloc" select="."/>
-                <xsl:variable name="navfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
-                Previous: <a href="{$navfile}"><xsl:value-of select="document($navfile)/email/subject"/></a><br/>
-              </xsl:for-each>
-            </xsl:if>
-            <xsl:if test="/email/nav/next">
-              <xsl:for-each select="/email/nav/next[position()=1]/text()">
-                <xsl:variable name="navloc" select="."/>
-                <xsl:variable name="navfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
-                Next: <a href="{$navfile}"><xsl:value-of select="document($navfile)/email/subject"/></a><br/>
-              </xsl:for-each>
-            </xsl:if>
-            <xsl:if test="/email/in-reply-to">
-              <xsl:for-each select="/email/in-reply-to[position()=1]/text()">
-                <xsl:variable name="irtloc" select="."/>
-                <xsl:variable name="irtfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
-                In Reply To: <a href="{$irtfile}"><xsl:value-of select="document($irtfile)/email/subject"/></a><br/>
-              </xsl:for-each>
-            </xsl:if>
-            <xsl:if test="/email/replies">
-              <br/>Replies to this message:<br/>
-              <xsl:for-each select="/email/replies/reply/text()">
-                <xsl:variable name="rloc" select="."/>
-                <xsl:variable name="rfile">/dyn/lists/<xsl:value-of select="/email/list"/>/<xsl:value-of select="."/>.xml</xsl:variable>
-                &#160;<a href="{$rfile}"><xsl:value-of select="document($rfile)/email/subject"/></a><br/>
-              </xsl:for-each>
-            </xsl:if>
-          </font>
-        </p>
-      </span>
-      <pre>
-        <xsl:apply-templates/>
-      </pre>
-    </td>
-  </tr>
-</table>
-</xsl:template>
--->
-
 <!-- Body -->
 <xsl:template match="body">
 <xsl:param name="chid"/>
@@ -799,13 +766,6 @@
 <xsl:template match="c">
 <span class="code"><xsl:apply-templates/></span>
 </xsl:template>
-
-<!-- Box with small text -->
-<!-- Is this really used?
-<xsl:template match="box">
-<p class="infotext"><xsl:apply-templates/></p>
-</xsl:template>
--->
 
 <!-- Preserve whitespace, aka Code Listing -->
 <xsl:template match="pre">
