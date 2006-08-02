@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-config.xml,v 1.78 2006/05/27 13:02:15 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-config.xml,v 1.79 2006/08/02 21:28:12 neysx Exp $ -->
 
 <sections>
 
-<version>2.19</version>
-<date>2006-05-27</date>
+<version>2.20</version>
+<date>2006-07-28</date>
 
 <section>
 <title>Filesystem Information</title>
@@ -19,7 +19,7 @@
 
 <p>
 Under Linux, all partitions used by the system must be listed in
-<path>/etc/fstab</path>. This file contains the mountpoints of those partitions
+<path>/etc/fstab</path>. This file contains the mount points of those partitions
 (where they are seen in the file system structure), how they should be mounted
 and with what special options (automatically or not, whether users can mount
 them or not, etc.)
@@ -43,17 +43,17 @@ its own meaning:
   file)
 </li>
 <li>
-  The second field shows the <b>mountpoint</b> at which the partition should be
+  The second field shows the <b>mount point</b> at which the partition should be
   mounted
 </li>
 <li>
   The third field shows the <b>filesystem</b> used by the partition
 </li>
 <li>
-  The fourth field shows the <b>mountoptions</b> used by <c>mount</c> when it
-  wants to mount the partition. As every filesystem has its own mountoptions,
+  The fourth field shows the <b>mount options</b> used by <c>mount</c> when it
+  wants to mount the partition. As every filesystem has its own mount options,
   you are encouraged to read the mount man page (<c>man mount</c>) for a full
-  listing. Multiple mountoptions are comma-separated.
+  listing. Multiple mount options are comma-separated.
 </li>
 <li>
   The fifth field is used by <c>dump</c> to determine if the partition needs to
@@ -67,31 +67,39 @@ its own meaning:
 </li>
 </ul>
 
-<p>
+<impo>
 The default <path>/etc/fstab</path> file provided by Gentoo <e>is not a valid
-fstab file</e>, so start <c>nano</c> (or your favorite editor) to create your
-<path>/etc/fstab</path>:
-</p>
+fstab file</e>, You <b>have to create</b> your own <path>/etc/fstab</path>.
+</impo>
 
 <pre caption="Opening /etc/fstab">
 # <i>nano -w /etc/fstab</i>
 </pre>
 
-<p>
-Let us take a look at how we write down the options for the <path>/boot</path>
-partition. This is just an example, so if your architecture doesn't require a
-<path>/boot</path> partition (such as Apple <b>PPC</b> machines), don't copy it
-verbatim.
-</p>
+</body>
+<body test="func:keyval('/boot')">
 
 <p>
-In our default x86 partitioning example <path>/boot</path> is the
-<path>/dev/hda1</path> partition, with <c>ext2</c> as filesystem. 
-It needs to be checked during boot, so we would write down:
+Let us take a look at how we write down the options for the <path>/boot</path>
+partition. This is just an example, if you didn't or couldn't create a
+<path>/boot</path>, don't copy it.
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/hd')">
+In our default <keyval id="arch"/> partitioning example, <path>/boot</path> is
+usually the <path><keyval id="/boot"/></path> partition (or
+<path>/dev/sda*</path> if you use SCSI or SATA drives), with <c>ext2</c> as
+filesystem. It needs to be checked during boot, so we would write down:
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/sd')">
+In our default <keyval id="arch"/> partitioning example, <path>/boot</path> is
+usually the <path><keyval id="/boot"/></path> partition, with <c>ext2</c> as
+filesystem. It needs to be checked during boot, so we would write down:
 </p>
 
 <pre caption="An example /boot line for /etc/fstab">
-/dev/hda1   /boot     ext2    defaults        1 2
+<keyval id="/boot"/>   /boot     ext2    defaults        1 2
 </pre>
 
 <p>
@@ -101,42 +109,95 @@ substitute <c>defaults</c> with <c>noauto</c>. This does mean that you need to
 manually mount this partition every time you want to use it.
 </p>
 
-<p>
-Now, to improve performance, most users would want to add the <c>noatime</c>
-option as mountoption, which results in a faster system since access times
-aren't registered (you don't need those generally anyway):
+</body>
+<body>
+
+<p test="not(func:keyval('arch')='SPARC')">
+Add the rules that match your partitioning scheme and append rules for
+<path>/proc</path>, <c>tmpfs</c>, for your CD-ROM drive(s), and of course, if
+you have other partitions or drives, for those too.
 </p>
 
-<pre caption="An improved /boot line for /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime    1 2
+<p test="func:keyval('arch')='SPARC'">
+Add the rules that match your partitioning schema and append rules for
+<path>/proc/openprom</path>, <path>/proc</path>, <c>tmpfs</c> , for your CD-ROM
+drive(s), and of course, if you have other partitions or drives, for those too.
+</p>
+
+<p>
+Now use the <e>example</e> below to create your <path>/etc/fstab</path>:
+</p>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/hda2   none         swap    sw                   0 0
+/dev/hda3   /            ext3    noatime              0 1
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-If we continue with this, we would end up with the following three lines (for
-<path>/boot</path>, <path>/</path> and the swap partition):
-</p>
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='HPPA'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda3   none         swap    sw                   0 0
+/dev/sda4   /            ext3    noatime              0 1
 
-<pre caption="Three /etc/fstab lines">
-/dev/hda1   /boot     ext2    defaults,noatime  1 2
-/dev/hda2   none      swap    sw                0 0
-/dev/hda3   /         ext3    noatime           0 1
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-To finish up, you should add a rule for <path>/proc</path>, <c>tmpfs</c>
-(required) and for your CD-ROM drive (and of course, if you have other 
-partitions or drives, for those too):
-</p>
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda2   none         swap    sw                   0 0
+/dev/sda3   /            ext3    noatime              0 1
 
-<pre caption="A full /etc/fstab example">
-/dev/hda1   /boot     ext2    defaults,noatime     1 2
-/dev/hda2   none      swap    sw                   0 0
-/dev/hda3   /         ext3    noatime              0 1
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
-none        /proc     proc    defaults             0 0
-none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
 
-/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='SPARC'">
+/dev/sda1   /               ext3        noatime              0 1
+/dev/sda2   none            swap        sw                   0 0
+/dev/sda4   /usr            ext3        noatime              0 2
+/dev/sda5   /var            ext3        noatime              0 2
+/dev/sda6   /home           ext3        noatime              0 2
+
+none        /proc/openprom  openpromfs  defaults             0 0
+none        /proc           proc        defaults             0 0
+none        /dev/shm        tmpfs       nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom      auto        noauto,user          0 0
+</pre>
+
+<note test="func:keyval('arch')='PPC'">
+There are important variations between PPC machine types. Please make sure you
+adapt the following example to your system.
+</note>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='PPC'">
+/dev/hda4   /            ext3    noatime              0 1
+/dev/hda3   none         swap    sw                   0 0
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='PPC64'">
+/dev/sda4   /            ext3    noatime              0 1
+/dev/sda3   none         swap    sw                   0 0
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
 <p>
@@ -146,15 +207,10 @@ removable media as they can be created with one of many filesystems) and
 </p>
 
 <p>
-Now use the above example to create your <path>/etc/fstab</path>. If you are a
-<b>SPARC</b>-user, you should add the following line to your 
-<path>/etc/fstab</path>
-too:
+To improve performance, most users would want to add the <c>noatime</c>
+mount option, which results in a faster system since access times
+aren't registered (you don't need those generally anyway).
 </p>
-
-<pre caption="Adding openprom filesystem to /etc/fstab">
-none        /proc/openprom  openpromfs    defaults      0 0
-</pre>
 
 <p>
 Double-check your <path>/etc/fstab</path>, save and quit to continue.
@@ -166,7 +222,7 @@ Double-check your <path>/etc/fstab</path>, save and quit to continue.
 <section>
 <title>Networking Information</title>
 <subsection>
-<title>Hostname, Domainname etc.</title>
+<title>Host name</title>
 <body>
 
 <p>
@@ -177,38 +233,11 @@ choose can be changed afterwards. For all we care, you can just call your system
 <c>tux</c> and domain <c>homenetwork</c>. 
 </p>
 
-<p>
-We use these values in the next examples. First we set the hostname:
-</p>
-
-<pre caption="Setting the hostname">
+<pre caption="Setting the host name">
 # <i>nano -w /etc/conf.d/hostname</i>
 
-<comment>(Set the HOSTNAME variable to your hostname)</comment>
+<comment>(Set the HOSTNAME variable to your host name)</comment>
 HOSTNAME="<i>tux</i>"
-</pre>
-
-<p>
-Second we set the domainname:
-</p>
-
-<pre caption="Setting the domainname">
-# <i>nano -w /etc/conf.d/domainname</i>
-
-<comment>(Set the DNSDOMAIN variable to your domain name)</comment>
-DNSDOMAIN="<i>homenetwork</i>"
-</pre>
-
-<p>
-If you have a NIS domain (if you don't know what that is, then you don't have
-one), you need to define that one too:
-</p>
-
-<pre caption="Setting the NIS domainname">
-# <i>nano -w /etc/conf.d/domainname</i>
-
-<comment>(Set the NISDOMAIN variable to your NIS domain name)</comment>
-NISDOMAIN="<i>my-nisdomain</i>"
 </pre>
 
 </body>
@@ -334,7 +363,7 @@ use <c>ln</c> to do this:
 
 <p>
 You now need to inform Linux about your network. This is defined in
-<path>/etc/hosts</path> and helps in resolving hostnames to IP addresses for
+<path>/etc/hosts</path> and helps in resolving host names to IP addresses for
 hosts that aren't resolved by your nameserver.  You need to define your system.
 You may also want to define other systems on your network if you don't want to
 set up your own internal DNS system.
@@ -358,21 +387,17 @@ they need to have a static IP to be defined this way.)</comment>
 Save and exit the editor to continue.
 </p>
 
-<p>
+<p test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 If you don't have PCMCIA, you can now continue with <uri
-link="#doc_chap3">System Information</uri>. PCMCIA-users should read the
+link="#sysinfo">System Information</uri>. PCMCIA-users should read the
 following topic on PCMCIA.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 <title>Optional: Get PCMCIA Working</title>
 <body>
-
-<note>
-pcmcia-cs is only available for x86, amd64 and ppc platforms.
-</note>
 
 <p>
 PCMCIA-users should first install the <c>pcmcia-cs</c> package. This also
@@ -397,7 +422,8 @@ runlevel:
 </body>
 </subsection>
 </section>
-<section>
+
+<section id="sysinfo">
 <title>System Information</title>
 <subsection>
 <title>Root Password</title>
@@ -459,12 +485,15 @@ Take special care with the <c>KEYMAP</c> variable. If you select the wrong
 <c>KEYMAP</c>, you will get weird results when typing on your keyboard.
 </p>
 
-<note>
-Users of USB-based <b>SPARC</b> systems and <b>SPARC</b> clones might need to 
-select an i386 keymap (such as "us") instead of "sunkeymap". <b>PPC</b> uses x86
-keymaps on most systems. Users who want to be able to use ADB keymaps on boot
-have to enable ADB keycode sendings in their kernel and have to set a mac/ppc
-keymap in <path>/etc/conf.d/keymaps</path>.
+<note test="func:keyval('arch')='SPARC'">
+Users of USB-based SPARC systems and SPARC clones might need to select an i386
+keymap (such as "us") instead of "sunkeymap".
+</note>
+
+<note test="substring(func:keyval('arch'),1,3)='PPC'">
+PPC uses x86 keymaps on most systems. Users who want to be able to use ADB
+keymaps on boot have to enable ADB keycode sendings in their kernel and have to
+set a mac/ppc keymap in <path>/etc/conf.d/keymaps</path>.
 </note>
 
 <p>
@@ -493,25 +522,20 @@ When you're finished configuring <path>/etc/conf.d/clock</path>, save and
 exit. 
 </p>
 
-<p>
-If you are not installing Gentoo on IBM PPC64 hardware, continue with
-<uri link="?part=1&amp;chap=9">Installing Necessary System Tools</uri>.
+<p test="not(func:keyval('arch')='PPC64')">
+Please continue with <uri link="?part=1&amp;chap=9">Installing Necessary System
+Tools</uri>.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='PPC64'">
 <title>Configuring the Console</title>
 <body>
 
-<note>
-The following section applies to the IBM PPC64 hardware platforms.
-</note>
-
 <p>
-If you are running Gentoo on IBM PPC64 hardware and using a virtual console 
-you must uncomment the appropriate line in <path>/etc/inittab</path> for the 
-virtual console to spawn a login prompt.
+If you are using a virtual console, you must uncomment the appropriate line in
+<path>/etc/inittab</path> for the virtual console to spawn a login prompt.
 </p>
 
 <pre caption="Enabling hvc or hvsi support in /etc/inittab">
