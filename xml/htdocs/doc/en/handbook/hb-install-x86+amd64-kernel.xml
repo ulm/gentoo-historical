@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-x86+amd64-kernel.xml,v 1.1 2006/08/02 21:15:02 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-x86+amd64-kernel.xml,v 1.2 2006/08/02 21:15:52 neysx Exp $ -->
 
 <sections>
 
-<version>3.13</version>
-<date>2006-07-20</date>
+<version>3.14</version>
+<date>2006-07-26</date>
 
 <section>
 <title>Timezone</title>
@@ -45,11 +45,17 @@ available at the <uri link="/doc/en/gentoo-kernel.xml">Gentoo Kernel
 Guide</uri>. 
 </p>
 
-<p>
+<p test="func:keyval('arch')='x86'">
 For x86-based systems we have, amongst other kernels, <c>vanilla-sources</c>
 (the default kernel source as developed by the linux-kernel developers),
 <c>gentoo-sources</c> (kernel source patched with performance-enhancing
 features), ...
+</p>
+
+<p test="func:keyval('arch')='AMD64'">
+For AMD64-based systems we have <c>gentoo-sources</c> (kernel v2.6 source
+patched with amd64 specific fixes for stability, performance and hardware
+support).
 </p>
 
 <p>
@@ -67,20 +73,20 @@ symlink.
 <p>
 When you take a look in <path>/usr/src</path> you should see a symlink called
 <path>linux</path> pointing to your kernel source. In this case, the installed
-kernel source points to <c>gentoo-sources-2.6.12-r10</c>. Your version may be
-different, so keep this in mind.
+kernel source points to <c>gentoo-sources-<keyval id="kernel-version"/></c>.
+Your version may be different, so keep this in mind.
 </p>
 
 <pre caption="Viewing the kernel source symlink">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root      12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.12-gentoo-r10
+lrwxrwxrwx    1 root   root    12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
 </pre>
 
 <p>
-Now it is time to configure and compile your kernel source. You 
-can use <c>genkernel</c> for this, which will build a generic kernel as used 
-by the Installation CD. We explain the "manual" configuration first though, as 
-it is the best way to optimize your environment.
+Now it is time to configure and compile your kernel source. You can use
+<c>genkernel</c> for this, which will build a generic kernel as used by the
+Installation CD. We explain the "manual" configuration first though, as it is
+the best way to optimize your environment.
 </p>
 
 <p>
@@ -144,7 +150,7 @@ First of all, activate the use of development and experimental code/drivers.
 You need this, otherwise some very important code/drivers won't show up:
 </p>
 
-<pre caption="Selecting experimental code/drivers, General setup">
+<pre caption="Selecting experimental code/drivers">
 Code maturity level options ---&gt;
   [*] Prompt for development and/or incomplete code/drivers
 </pre>
@@ -154,6 +160,30 @@ Make sure that every driver that is vital to the booting of your system (such as
 SCSI controller, ...) is compiled <e>in</e> the kernel and not as a module,
 otherwise your system will not be able to boot completely.
 </p>
+
+</body>
+<body test="func:keyval('arch')='AMD64'">
+
+<p>
+We shall then select the exact processor type. The x86_64 kernel maintainer
+strongly recommends users enable MCE features so that they are able to be
+notified of any hardware problems. On x86_64, these errors are not printed to
+<c>dmesg</c> like on other architectures, but to <path>/dev/mcelog</path>. This
+requires the <c>app-admin/mcelog</c> package.
+</p>
+
+<pre caption="Selecting processor type and features">
+Processor type and features  --->
+   [ ] Intel MCE Features
+   [ ] AMD MCE Features
+  Processor family (AMD-Opteron/Athlon64)  --->
+    ( ) AMD-Opteron/Athlon64
+    ( ) Intel EM64T
+    ( ) Generic-x86-64
+</pre>
+
+</body>
+<body test="func:keyval('arch')='x86'">
 
 <p>
 Now select the correct processor family:
@@ -165,11 +195,21 @@ Processor type and features ---&gt;
   (<i>Athlon/Duron/K7</i>) Processor family
 </pre>
 
+</body>
+<body>
+
 <p>
 Now go to <c>File Systems</c> and select support for the filesystems you use.
 <e>Don't</e> compile them as modules, otherwise your Gentoo system will not be
 able to mount your partitions. Also select <c>Virtual memory</c> and <c>/proc
-file system</c>. If you are using a 2.4 kernel, you need to select <c>/dev file
+file system</c>.
+</p>
+
+</body>
+<body test="func:keyval('arch')='x86'">
+
+<p>
+If you are using a 2.4 kernel, you need to select <c>/dev file
 system</c> as 2.4 kernels do not support <c>udev</c>.
 </p>
 
@@ -197,9 +237,9 @@ File systems ---&gt;
 </pre>
 
 <p>
-If your BIOS can't handle large harddrives and you jumpered the harddrive to
-report a limited size you have to enable the following option to gain access
-to your whole harddrive:
+If your BIOS can't handle large hard drives and you jumpered the hard drive to
+report a limited size you have to enable the following option to gain access to
+your whole hard drive:
 </p>
 
 <pre caption="Selecting autogeometry resizing support">
@@ -210,6 +250,26 @@ ATA/IDE/MFM/RLL support ---&gt;
     [ ]     Use multi-mode by default
     [*]     Auto-Geometry Resizing support
 </pre>
+
+</body>
+<body test="func:keyval('arch')='AMD64'">
+
+<pre caption="Selecting necessary file systems">
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>(Select one or more of the following options as needed by your system)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+</body>
+<body>
 
 <p>
 Do not forget to enable DMA for your drives:
@@ -227,7 +287,15 @@ If you are using PPPoE to connect to the Internet or you are using a dial-up
 modem, you will need the following options in the kernel:
 </p>
 
-<pre caption="Selecting PPPoE necessary drivers">
+<pre caption="Selecting PPPoE necessary drivers" test="func:keyval('arch')='AMD64'">
+Device Drivers ---&gt;
+  Networking Support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<pre caption="Selecting PPPoE necessary drivers" test="func:keyval('arch')='x86'">
 <comment>(With a 2.4.x kernel)</comment>
 Network device support ---&gt;
   &lt;*&gt; PPP (point-to-point protocol) support
@@ -253,9 +321,14 @@ If you require it, don't forget to include support in the kernel for your
 ethernet card.
 </p>
 
-<p>
+<p test="func:keyval('arch')='x86'">
 If you have an Intel CPU that supports HyperThreading (tm), or you have a
 multi-CPU system, you should activate "Symmetric multi-processing support":
+</p>
+
+<p test="func:keyval('arch')='AMD64'">
+If you have a multi-CPU Opteron or a multi-core (e.g. AMD64 X2) system, you
+should activate "Symmetric multi-processing support":
 </p>
 
 <pre caption="Activating SMP support">
@@ -273,9 +346,13 @@ those as well:
 </p>
 
 <pre caption="Activating USB Support for Input Devices">
-USB Support ---&gt;
-  &lt;*&gt;   USB Human Interface Device (full HID) support
+Device Drivers ---&gt;
+  USB Support ---&gt;
+    &lt;*&gt;   USB Human Interface Device (full HID) support
 </pre>
+
+</body>
+<body test="func:keyval('arch')='x86'">
 
 <p>
 Laptop-users who want PCMCIA support should <e>not</e> use the PCMCIA drivers if
@@ -321,7 +398,7 @@ Now that your kernel is configured, it is time to compile and install it. Exit
 the configuration and start the compilation process:
 </p>
 
-<pre caption="Compiling the kernel">
+<pre caption="Compiling the kernel" test="func:keyval('arch')='x86'">
 <comment>(For 2.4 kernel)</comment>
 # <i>make dep &amp;&amp; make bzImage modules modules_install</i>
 
@@ -329,16 +406,20 @@ the configuration and start the compilation process:
 # <i>make &amp;&amp; make modules_install</i>
 </pre>
 
+<pre caption="Compiling the kernel" test="func:keyval('arch')='AMD64'">
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
 <p>
 When the kernel has finished compiling, copy the kernel image to
 <path>/boot</path>. Use whatever name you feel is appropriate for your kernel
 choice and remember it as you will need it later on when you configure your
-bootloader. Remember to replace <path>&lt;kernel-version&gt;</path> with the name and
-version of your kernel.
+bootloader. Remember to replace <c><keyval id="kernel-name"/></c> with the
+name and version of your kernel.
 </p>
 
 <pre caption="Installing the kernel">
-# <i>cp arch/i386/boot/bzImage /boot/&lt;kernel-version&gt;</i>
+# <i>cp arch/<keyval id="arch-sub"/>/boot/bzImage /boot/<keyval id="kernel-name"/></i>
 </pre>
 
 <p>
@@ -376,6 +457,9 @@ Now, let's see how to use genkernel. First, emerge the genkernel ebuild:
 # <i>emerge genkernel</i>
 </pre>
 
+</body>
+<body test="func:keyval('arch')='x86'">
+
 <p>
 Next, if you are going to configure a 2.6 kernel, copy over the kernel 
 configuration used by the Installation CD to the location where genkernel 
@@ -386,6 +470,9 @@ looks for the default kernel configuration:
 <comment>(Only do this if you are going to configure a 2.6 kernel)</comment>
 # <i>zcat /proc/config.gz &gt; /usr/share/genkernel/x86/kernel-config-2.6</i>
 </pre>
+
+</body>
+<body>
 
 <p>
 Now, compile your kernel sources by running <c>genkernel all</c>. Be aware
@@ -439,34 +526,37 @@ everything else. To emerge and enable <c>coldplug</c>, type the following:
 <title>Configuring the Modules</title>
 <body>
 
+<note test="func:keyval('arch')='x86'">
+If you chose a kernel 2.4, replace occurrences of <c>2.6</c> with <c>2.4</c> in
+this section.
+</note>
+
 <p>
-You should list the modules you want automatically loaded in 
-<path>/etc/modules.autoload.d/kernel-2.4</path> (or <path>kernel-2.6</path>). 
-You can add extra options to the modules too if you want.
+You should list the modules you want automatically loaded in
+<path>/etc/modules.autoload.d/kernel-2.6</path>. You can add extra options to
+the modules too if you want.
 </p>
 
 <p>
 To view all available modules, run the following <c>find</c> command. Don't
-forget to substitute "&lt;kernel version&gt;" with the version of the kernel you
-just compiled:
+forget to substitute <c><keyval id="kernel-version"/></c> with the version of
+the kernel you just compiled:
 </p>
 
 <pre caption="Viewing all available modules">
-# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
+# <i>find /lib/modules/<keyval id="kernel-version"/>/ -type f -iname '*.o' -or -iname '*.ko'</i>
 </pre>
 
 <p>
 For instance, to automatically load the <c>3c59x.o</c> module, edit the
-<path>kernel-2.4</path> or <path>kernel-2.6</path> file and enter the module
-name in it.
+<path>kernel-2.6</path> file and enter the module name in it.
 </p>
 
-<pre caption="Editing /etc/modules.autoload.d/kernel-2.4">
-<comment>(Example for 2.4 kernels)</comment>
-# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+<pre caption="Editing /etc/modules.autoload.d/kernel-2.6">
+# <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
 </pre>
 
-<pre caption="/etc/modules.autoload.d/kernel-2.4 or kernel-2.6">
+<pre caption="/etc/modules.autoload.d/kernel-2.6">
 3c59x
 </pre>
 
