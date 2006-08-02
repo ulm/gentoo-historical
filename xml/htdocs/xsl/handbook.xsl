@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
-                xmlns:func="http://exslt.org/functions" extension-element-prefixes="func" >
+                xmlns:dyn="http://exslt.org/dynamic"
+                xmlns:func="http://exslt.org/functions"
+                extension-element-prefixes="func dyn">
 
 <!-- Define global variables; if a user has
      already defined those, this is a NOP -->
@@ -258,7 +260,7 @@
     <xsl:if test="$FILE/sections/section/title">
       <b><xsl:value-of select="func:gettext('Content')"/>: </b>
       <ul>
-        <xsl:for-each select="$FILE/sections/section/title">
+        <xsl:for-each select="$FILE/sections/section[not(@test) or dyn:evaluate(@test)]/title">
           <xsl:variable name="pos" select="position()" />
           <li><a href="#doc_chap{$pos}" class="altlink"><xsl:value-of select="." /></a></li>
         </xsl:for-each>
@@ -268,13 +270,13 @@
 
   <xsl:choose>
     <xsl:when test="$full = 1">
-      <xsl:apply-templates select="$FILE/sections/section">
+      <xsl:apply-templates select="$FILE/sections/section[not(@test) or dyn:evaluate(@test)]">
         <xsl:with-param name="chapnum" select="$chapnum"/>
         <xsl:with-param name="partnum" select="$partnum"/>
       </xsl:apply-templates>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:apply-templates select="$FILE/sections/section">
+      <xsl:apply-templates select="$FILE/sections/section[not(@test) or dyn:evaluate(@test)]">
         <xsl:with-param name="chapnum" select="$chapnum"/>
       </xsl:apply-templates>
     </xsl:otherwise>
@@ -326,22 +328,24 @@
 
 <!-- Subsubsection inside a section -->
 <xsl:template match="/sections/section/subsection">
-  <xsl:param name="pos" select="position()"/>
-  <xsl:choose>
-    <xsl:when test="$full = 1">
-      <!-- We need two anchors, 1 for internal links, 1 for cross-chapters links -->
-      <a name="book_{generate-id(../../..)}_chap{$chpos}_sect{$pos}"/>
-      <a name="book_part{$partnum}_chap{$chapnum}__chap{$chpos}_sect{$pos}"/>
-    </xsl:when>
-    <xsl:otherwise>
-      <a name="doc_chap{$chpos}_sect{$pos}" />
-    </xsl:otherwise>
-  </xsl:choose>
-  <xsl:if test="@id">
-    <a name= "{@id}"/>
+ <xsl:param name="pos" select="position()"/>
+  <xsl:if test="not(@test) or dyn:evaluate(@test)">
+    <xsl:choose>
+      <xsl:when test="$full = 1">
+        <!-- We need two anchors, 1 for internal links, 1 for cross-chapters links -->
+        <a name="book_{generate-id(../../..)}_chap{$chpos}_sect{$pos}"/>
+        <a name="book_part{$partnum}_chap{$chapnum}__chap{$chpos}_sect{$pos}"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <a name="doc_chap{$chpos}_sect{$pos}" />
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:if test="@id">
+      <a name= "{@id}"/>
+    </xsl:if>
+    <p class="secthead"><xsl:value-of select="title" /></p>
+    <xsl:apply-templates select="body" />
   </xsl:if>
-  <p class="secthead"><xsl:value-of select="title" /></p>
-  <xsl:apply-templates select="body" />
 </xsl:template>
 
 </xsl:stylesheet>

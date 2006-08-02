@@ -2,7 +2,8 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
                 xmlns:exslt="http://exslt.org/common"
                 xmlns:func="http://exslt.org/functions"
-                extension-element-prefixes="exslt func" >
+                xmlns:dyn="http://exslt.org/dynamic"
+                extension-element-prefixes="exslt func dyn" >
 
 <xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN" doctype-system="http://www.w3.org/TR/html4/loose.dtd"/>
 
@@ -652,44 +653,50 @@
 
 <!-- Note -->
 <xsl:template match="note">
-<table class="ncontent" width="100%" border="0" cellspacing="0" cellpadding="0">
-  <tr>
-    <td bgcolor="#bbffbb">
-      <p class="note">
-        <b><xsl:value-of select="func:gettext('Note')"/>: </b>
-        <xsl:apply-templates/>
-      </p>
-    </td>
-  </tr>
-</table>
+ <xsl:if test="not(@test) or dyn:evaluate(@test)">
+  <table class="ncontent" width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td bgcolor="#bbffbb">
+        <p class="note">
+          <b><xsl:value-of select="func:gettext('Note')"/>: </b>
+          <xsl:apply-templates/>
+        </p>
+      </td>
+    </tr>
+  </table>
+ </xsl:if>
 </xsl:template>
 
 <!-- Important item -->
 <xsl:template match="impo">
-<table class="ncontent" width="100%" border="0" cellspacing="0" cellpadding="0">
-  <tr>
-    <td bgcolor="#ffffbb">
-      <p class="note">
-        <b><xsl:value-of select="func:gettext('Important')"/>: </b>
-        <xsl:apply-templates/>
-      </p>
-    </td>
-  </tr>
-</table>
+ <xsl:if test="not(@test) or dyn:evaluate(@test)">
+  <table class="ncontent" width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td bgcolor="#ffffbb">
+        <p class="note">
+          <b><xsl:value-of select="func:gettext('Important')"/>: </b>
+          <xsl:apply-templates/>
+        </p>
+      </td>
+    </tr>
+  </table>
+ </xsl:if>
 </xsl:template>
 
 <!-- Warning -->
 <xsl:template match="warn">
-<table class="ncontent" width="100%" border="0" cellspacing="0" cellpadding="0">
-  <tr>
-    <td bgcolor="#ffbbbb">
-      <p class="note">
-        <b><xsl:value-of select="func:gettext('Warning')"/>: </b>
-        <xsl:apply-templates/>
-      </p>
-    </td>
-  </tr>
-</table>
+ <xsl:if test="not(@test) or dyn:evaluate(@test)">
+  <table class="ncontent" width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td bgcolor="#ffbbbb">
+        <p class="note">
+          <b><xsl:value-of select="func:gettext('Warning')"/>: </b>
+          <xsl:apply-templates/>
+        </p>
+      </td>
+    </tr>
+  </table>
+ </xsl:if>
 </xsl:template>
 
 <!-- Code note -->
@@ -757,9 +764,11 @@
 <!-- Body -->
 <xsl:template match="body">
 <xsl:param name="chid"/>
-<xsl:apply-templates>
-  <xsl:with-param name="chid" select="$chid"/>
-</xsl:apply-templates>
+ <xsl:if test="not(@test) or dyn:evaluate(@test)">
+  <xsl:apply-templates>
+    <xsl:with-param name="chid" select="$chid"/>
+  </xsl:apply-templates>
+ </xsl:if>
 </xsl:template>
 
 <!-- Command or input, not to use inside <pre> -->
@@ -770,28 +779,30 @@
 <!-- Preserve whitespace, aka Code Listing -->
 <xsl:template match="pre">
 <xsl:param name="chid"/>
-<xsl:variable name="prenum"><xsl:number level="any" from="chapter" count="pre"/></xsl:variable>
-<xsl:variable name="preid">doc_chap<xsl:value-of select="$chid"/>_pre<xsl:value-of select="$prenum"/></xsl:variable>
-<a name="{$preid}"/>
-<table class="ntable" width="100%" cellspacing="0" cellpadding="0" border="0">
-  <tr>
-    <td bgcolor="#7a5ada">
-      <p class="codetitle">
-      <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>
-      <xsl:if test="@caption">
-        <xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
-      </xsl:if>
-      </p>
-    </td>
-  </tr>
-  <tr>
-    <td bgcolor="#eeeeff">
-      <pre>
-        <xsl:apply-templates/>
-      </pre>
-    </td>
-  </tr>
-</table>
+  <xsl:if test="not(@test) or dyn:evaluate(@test)">
+    <xsl:variable name="prenum"><xsl:number level="any" from="chapter" count="pre[not(ancestor-or-self::*[@test and not(dyn:evaluate(@test))])]"/></xsl:variable>
+    <xsl:variable name="preid">doc_chap<xsl:value-of select="$chid"/>_pre<xsl:value-of select="$prenum"/></xsl:variable>
+    <a name="{$preid}"/>
+    <table class="ntable" width="100%" cellspacing="0" cellpadding="0" border="0">
+      <tr>
+        <td bgcolor="#7a5ada">
+          <p class="codetitle">
+          <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>
+          <xsl:if test="@caption">
+            <xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
+          </xsl:if>
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#eeeeff">
+          <pre>
+            <xsl:apply-templates/>
+          </pre>
+        </td>
+      </tr>
+    </table>
+  </xsl:if>
 </xsl:template>
 
 <!-- Path -->
@@ -979,6 +990,7 @@
 <!-- Paragraph -->
 <xsl:template match="p">
 <xsl:param name="chid"/>
+ <xsl:if test="not(@test) or dyn:evaluate(@test)">
   <p>
     <!-- Keep this for old files with <p class="secthead"> -->
     <xsl:if test="@class">
@@ -997,6 +1009,7 @@
       <br/><br/><span class="episig">—<xsl:value-of select="@by"/></span><br/><br/>
     </xsl:if>
   </p>
+ </xsl:if>
 </xsl:template>
 
 <!-- Emphasize -->
@@ -1006,21 +1019,25 @@
 
 <!-- Table -->
 <xsl:template match="table">
-<table class="ntable">
-  <xsl:apply-templates/>
-</table>
+  <xsl:if test="not(@test) or dyn:evaluate(@test)">
+    <table class="ntable">
+      <xsl:apply-templates/>
+    </table>
+  </xsl:if>
 </xsl:template>
 
 <!-- Table Row -->
 <xsl:template match="tr">
-<tr>
-  <xsl:if test="@id">
-    <xsl:attribute name="id">
-      <xsl:value-of select="@id"/>
-    </xsl:attribute>
+  <xsl:if test="not(@test) or dyn:evaluate(@test)">
+    <tr>
+      <xsl:if test="@id">
+        <xsl:attribute name="id">
+          <xsl:value-of select="@id"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates/>
+    </tr>
   </xsl:if>
-  <xsl:apply-templates/>
-</tr>
 </xsl:template>
 
 <xsl:template match="tcolumn">
@@ -1066,23 +1083,29 @@
 
 <!-- Unnumbered List -->
 <xsl:template match="ul">
-<ul>
-  <xsl:apply-templates/>
-</ul>
+  <xsl:if test="not(@test) or dyn:evaluate(@test)">
+    <ul>
+      <xsl:apply-templates/>
+    </ul>
+  </xsl:if>
 </xsl:template>
 
 <!-- Ordered List -->
 <xsl:template match="ol">
-<ol>
-  <xsl:apply-templates/>
-</ol>
+  <xsl:if test="not(@test) or dyn:evaluate(@test)">
+    <ol>
+      <xsl:apply-templates/>
+    </ol>
+  </xsl:if>
 </xsl:template>
 
 <!-- List Item -->
 <xsl:template match="li">
-<li>
-  <xsl:apply-templates/>
-</li>
+  <xsl:if test="not(@test) or dyn:evaluate(@test)">
+    <li>
+      <xsl:apply-templates/>
+    </li>
+  </xsl:if>
 </xsl:template>
 
 <!-- Definition Lists -->

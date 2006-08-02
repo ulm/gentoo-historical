@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
                 xmlns:func="http://exslt.org/functions" 
+                xmlns:exslt="http://exslt.org/common"
                 xmlns:date="http://exslt.org/dates-and-times"
                 extension-element-prefixes="func date">
 
@@ -298,6 +299,23 @@
 </func:function>
 
 
+<!-- Eval dynamic test on conditional tags -->
+<func:function name="func:keyval">
+  <xsl:param name="key"/>
+  <func:result select="exslt:node-set($VALUES)/values/key[@id=$key]"/>
+</func:function>
+
+<!-- Handle key values -->
+<xsl:variable name="VALUES">
+  <xsl:if test="/*[1]/values">
+    <xsl:copy-of select="/*[1]/values"/>
+  </xsl:if>
+</xsl:variable>
+
+<xsl:template match="keyval">
+  <xsl:variable name="id" select="@id"/>
+  <xsl:value-of select="exslt:node-set($VALUES)/values/key[@id=$id]"/>
+</xsl:template>
 
 
 <!-- Define some globals that can be used throughout the stylesheets -->
