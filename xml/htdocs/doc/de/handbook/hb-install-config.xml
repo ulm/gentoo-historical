@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- English CVS Version: 1.78 -->
+<!-- English CVS Version: 1.79 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-config.xml,v 1.48 2006/06/19 01:20:42 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-config.xml,v 1.49 2006/08/03 15:35:59 grahl Exp $ -->
 
 <sections>
 
-<version>2.19</version>
-<date>2006-05-27</date>
+<version>2.20</version>
+<date>2006-07-28</date>
 
 <section>
 <title>Einträge in der Datei /etc/fstab</title>
@@ -31,7 +31,7 @@ erlauben für z.B. CD-Rom, Floppy, USB-Sticks usw.).
 </body>
 </subsection>
 <subsection>
-<title>Erstellen der /etc/fstab</title>
+<title>Erstellen von /etc/fstab</title>
 <body>
 
 <p>
@@ -73,32 +73,41 @@ eine bestimmte Bedeutung:
 </li>
 </ul>
 
-<p>
+<impo>
 Die Standard <path>/etc/fstab</path> Datei von Gentoo <e>ist keine valide fstab
-Datei</e>. Starten Sie <c>nano</c> (oder den Editor Ihrer Wahl) um die Datei
-<path>/etc/fstab</path> zu editieren:
-</p>
+Datei</e>. Sie müssen Ihre <b>eigene</b> <path>/etc/fstab</path> erstellen.
+</impo>
 
 <pre caption="Öffnen von /etc/fstab">
 # <i>nano -w /etc/fstab</i>
 </pre>
 
+</body>
+<body test="func:keyval('/boot')">
+
 <p>
 Schauen wir uns einmal die Optionen für die <path>/boot</path> Partition an.
-Das ist nur ein Beispiel, falls Ihr System keine <path>/boot</path>-Partition
-benötigt (wie z.B. Apples <b>PPC</b> Rechner), übernehmen Sie den Eintrag
-einfach nicht.
+Das ist nur ein Beispiel, wenn Sie keine <path>/boot</path> Partition erstellen
+konnten oder wollten, kopieren Sie dies nicht.
 </p>
 
-<p>
-In diesem Beispiel ist die <path>/boot</path>Partition auf
-<path>/dev/hda1</path> mit dem <c>ext2</c>-Dateisystem formatiert. Die
-Partition soll beim Systemstart geprüft werden. Also muss der Eintrag
-folgendermaßen aussehen:
+<p test="contains(func:keyval('/boot'), '/dev/hd')">
+In unserem Standard <keyval id="arch"/> Partitionierungsbeispiel ist
+<path>/boot</path> normalerweise die <path><keyval id="/boot"/></path>
+Partition (oder <path>/dev/sda*</path> wenn sie SCSI oder SATA Laufwerke
+verwenden), mit <c>ext2</c> als DAteisystem. Es muss währen des Bootvorgangs
+überprüft werden, daher würden wir aufschreiben:
 </p>
 
-<pre caption="Beispiel: /boot Partition in /etc/fstab">
-/dev/hda1   /boot     ext2    defaults        1 2
+<p test="contains(func:keyval('/boot'), '/dev/sd')">
+In unserem Standard <keyval id="arch"/> Partitionierungsbeispiel ist
+<path>/boot</path> normalerweise die <path><keyval id="/boot"/></path>
+Partition, mit <c>ext2</c> als Dateisystem. Es muss währen des Bootvorgangs
+überprüft werden, daher würden wir aufschreiben:
+</p>
+
+<pre caption="Eine Beispielszeile für /boot in /etc/fstab">
+<keyval id="/boot"/>   /boot     ext2    defaults        1 2
 </pre>
 
 <p>
@@ -109,45 +118,97 @@ dass Sie die Partition jedesmal händisch mounten müssen, wenn Sie sie benutzen
 möchten.
 </p>
 
-<p>
-Um die Zugriffsgeschwindigkeit zu erhöhen, werden manche Administratoren
-<c>noatime</c> als Mountoption hinzufügen. Dadurch wird beim Lesen die
-Inode-Accesstime nicht auf das Dateisystem geschrieben und das System kann
-eventuell schneller laufen. (In den meisten Fällen brauchen Sie diese Option
-nicht).
+</body>
+<body>
+
+<p test="not(func:keyval('arch')='SPARC')">
+Fügen Sie die Regeln hinzu, die zu Ihrem Partitionsschema passen und fügen Sie
+zusätzlich Regeln für <path>/proc</path>, <c>tmpfs</c>, für Ihr(e) CD-ROM
+Laufwerk(e) und natürlich für weitere Partitionen und Laufwerke, wenn Sie diese
+haben, hinzu.
 </p>
 
-<pre caption="/boot Partiton mit noatime in /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime    1 2
+<p test="func:keyval('arch')='SPARC'">
+Fügen Sie die Regeln hinzu, die zu Ihrem Partitionsschema passen und fügen Sie
+zusätzlich Regeln für <path>/proc/openrom</path>,<path>/proc</path>,
+<c>tmpfs</c>, für Ihr(e) CD-ROM Laufwerk(e) und natürlich für weitere
+Partitionen und Laufwerke, wenn Sie diese haben, hinzu.
+</p>
+
+<p>
+Benutzen Sie nun das folgende <e>Beispiel</e> um Ihre <path>/etc/fstab</path> zu erstellen:
+</p>
+
+<pre caption="Ein komplettes /etc/fstab Beispiel" test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/hda2   none         swap    sw                   0 0
+/dev/hda3   /            ext3    noatime              0 1
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-Wenn wir das Beispiel auf die Partitionen <path>/boot</path>,<path>/</path> und
-die Swap-Partiton übertragen, erhalten wir folgende 3 Zeilen in der fstab:
-</p>
+<pre caption="Ein komplettes /etc/fstab Beispiel" test="func:keyval('arch')='HPPA'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda3   none         swap    sw                   0 0
+/dev/sda4   /            ext3    noatime              0 1
 
-<pre caption="3 Zeilen in /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime    1 2
-/dev/hda2   none      swap    sw                0 0
-/dev/hda3   /         ext3    noatime           0 1
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-Um die <path>/etc/fstab</path> zu vervollständigen, fehlen noch Einträge für
-<path>/proc</path>,<c>tmpfs</c> (notwendig) und  für das CD-ROM-Laufwerk. Falls 
-Sie weitere Partitionen oder ein Diskettenlaufwerk haben, sollten Sie diese
-natürlich auch eintragen:
-</p>
+<pre caption="Ein komplettes /etc/fstab Beispiel" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda2   none         swap    sw                   0 0
+/dev/sda3   /            ext3    noatime              0 1
 
-<pre caption="Beispiel: Vollständige /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime      1 2
-/dev/hda2   none      swap    sw                  0 0
-/dev/hda3   /         ext3    noatime             0 1
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
-none        /proc     proc    defaults            0 0
-none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
 
-/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+<pre caption="Ein komplettes /etc/fstab Beispiel" test="func:keyval('arch')='SPARC'">
+/dev/sda1   /               ext3        noatime              0 1
+/dev/sda2   none            swap        sw                   0 0
+/dev/sda4   /usr            ext3        noatime              0 2
+/dev/sda5   /var            ext3        noatime              0 2
+/dev/sda6   /home           ext3        noatime              0 2
+
+none        /proc/openprom  openpromfs  defaults             0 0
+none        /proc           proc        defaults             0 0
+none        /dev/shm        tmpfs       nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom      auto        noauto,user          0 0
+</pre>
+
+<note test="func:keyval('arch')='PPC'">
+Es gibt wichtige Unterschiede zwischen PPC-Rechnertypen. Bitte stellen Sie
+sicher, dass Sie das folgende Beispiel entsprechend an Ihr System anpassen.
+</note>
+
+<pre caption="Ein komplettes /etc/fstab Beispiel" test="func:keyval('arch')='PPC'">
+/dev/hda4   /            ext3    noatime              0 1
+/dev/hda3   none         swap    sw                   0 0
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="Ein komplettes /etc/fstab Beispiel" test="func:keyval('arch')='PPC64'">
+/dev/sda4   /            ext3    noatime              0 1
+/dev/sda3   none         swap    sw                   0 0
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
 <p>
@@ -158,14 +219,11 @@ Usern das CD-ROM-Laufwerk zu mounten.
 </p>
 
 <p>
-Erstellen Sie nun anhand des Beispiel Ihre <path>/etc/fstab</path>. Falls Sie
-Gentoo auf einer <b>SPARC</b>-Architektur installieren, sollten Sie noch
-folgende Zeile hinzufügen:
+Um die Zugriffsgeschwindigkeit zu erhöhen, werden die meisten Benutzer
+<c>noatime</c> als Mountoption hinzufügen wollen. Dadurch werden beim Lesen
+Zugriffszeiten nicht auf das Dateisystem geschrieben (In den meisten Fällen
+brauchen Sie diese nicht).
 </p>
-
-<pre caption="openprom Dateisystem in /etc/fstab">
-none        /proc/openprom  openpromfs    defaults      0 0
-</pre>
 
 <p>
 Überprüfen Sie nochmal jeden Eintrag, da bei Tippfehlern Ihr System
@@ -177,9 +235,9 @@ Sie den Editor.
 </subsection>
 </section>
 <section>
-<title>Netzwerk-Konfiguration</title>
+<title>Netzwerkkonfiguration</title>
 <subsection>
-<title>Hostname, Domainname usw.</title>
+<title>Hostname</title>
 <body>
 
 <p>
@@ -191,39 +249,11 @@ jetzt keine großen Gedanken damit verschwenden, da Sie den Namen später noch
 Domain <c>homenetwork</c>.
 </p>
 
-<p>
-Zuerst tragen Sie den Hostnamen in die Datei <path>/etc/conf.d/hostname</path> ein:
-</p>
-
 <pre caption="Setzen des Hostnamens">
 # <i>nano -w /etc/conf.d/hostname</i>
 
 <comment>(Setzen Sie die HOSTNAME-Variable auf Ihren Hostnamen)</comment>
 HOSTNAME="<i>tux</i>"
-</pre>
-
-<p>
-Danach wird der Domainname in <path>/etc/conf.d/domainname</path> eingetragen:
-</p>
-
-<pre caption="Setzen des Domainnamens">
-# <i>nano -w /etc/conf.d/domainname</i>
-
-<comment>(Setzen Sie die DNSDOMAIN-Variable auf Ihren Domainnamen</comment>
-DNSDOMAIN="<i>homenetwork</i>"
-</pre>
-
-<p>
-Falls Ihr Rechner Mitglied einer NIS-Domain ist, müssen Sie diesen in
-<path>/etc/conf.d/domainname</path> eintragen (Falls Sie nicht wissen, was NIS ist,
-benötigen Sie diesen Eintrag sehr wahrscheinlich nicht):
-</p>
-
-<pre caption="Setzen des NIS-Domainnamens">
-# <i>nano -w /etc/conf.d/domainname</i>
-
-<comment>(Setzen Sie die NISDOMAIN-Variable auf Ihren Domainnamen</comment>
-NISDOMAIN="<i>my-nisdomain</i>"
 </pre>
 
 </body>
@@ -378,21 +408,17 @@ statische IP haben um auf diese Weise definiert zu werden.)</comment>
 Speichern Sie die Datei ab, um fortzufahren.
 </p>
 
-<p>
-Falls Sie keine PCMCIA-Netzwerkkarte haben, können Sie diesen Abschnitt
-überspringen und mit dem Kapitel <uri link="#doc_chap3">Systeminformationen</uri>
-fortfahren. PCMCIA-Benutzer sollten sich folgenden Abschnitt durchlesen.
+<p test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
+Falls Sie kein PCMCIA haben, können Sie nun mit den <uri
+link="#sysinfo">Systeminformationen</uri> fortfahren. PCMCIA-Benutzer sollten
+sich folgenden Abschnitt über PCMCIA durchlesen.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 <title>Optional: PCMCIA zum Laufen bekommen</title>
 <body>
-
-<note>
-pcmcia-cs ist nur für die Architekturen x86, amd64 und ppc verfügbar.
-</note>
 
 <p>
 Zuerst muss das <c>pcmcia-cs</c>-Paket installiert werden. Dies beinhaltet auch
@@ -417,7 +443,7 @@ Fügen Sie nach der Installation von <c>pcmcia-cs</c> <c>pcmcia</c> zu dem
 </body>
 </subsection>
 </section>
-<section>
+<section id="sysinfo">
 <title>Systeminformationen</title>
 <subsection>
 <title>Root-Passwort</title>
@@ -483,12 +509,15 @@ Sein Sie vorsichtig mit der <c>KEYMAP</c>-Variablen. Wenn Sie das falsche
 Tastatur tippen.
 </p>
 
-<note>
-Benutzer von USB-basierten SPARC-Systemen und SPARC-Clones sollten eine i386
-Keymap (wie "us") anstelle von "sunkeymap" auswählen. <b>PPC</b> benutzt auf den 
-meisten Systemen x86-keymaps. Benutzer die ADB-keymaps beim Boot zur 
-Verfügung haben möchten müssen ADB-Keycode in ihrem Kernel aktivieren und ein 
-Mac/PPC Keymap in <path>/etc/conf.d/keymaps</path> konfigurieren.
+<note test="func:keyval('arch')='SPARC'">
+Benutzer von USB-basierten SPARC-Systemen und SPARC-Clones müssen unter
+Umständen eine i386 Keymap (wie z.B. "us") anstelle von "sunkeymap" auswählen.
+</note>
+
+<note test="substring(func:keyval('arch'),1,3)='PPC'">
+PPC benutzt auf den meisten Systemen x86-keymaps. Benutzer die ADB-Keymaps beim
+Boot zur Verfügung haben möchten, müssen ADB-Keycode in Ihrem Kernel aktivieren
+und ein Mac/PPC-Keymap in <path>/etc/conf.d/keymaps</path> konfigurieren.
 </note>
 
 <p>
@@ -519,27 +548,22 @@ Nachdem Sie die Datei <path>/etc/conf.d/clock</path> editiert haben, speichern
 Sie diese und schließen Sie den Editor.
 </p>
 
-<p>
-Wenn Sie Gentoo nicht auf IBM-PPC64-Hardware installieren,fahren Sie mit der 
-<uri link="?part=1&amp;chap=9"> Installation notwendiger System Tools</uri> 
+<p test="not(func:keyval('arch')='PPC64')">
+Fahren Sie bitte mit der <uri link="?part=1&amp;chap=9"> Installation
+notwendiger System Tools</uri> 
 fort.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='PPC64'">
 <title>Konfigurieren der Konsole</title>
 <body>
 
-<note>
-Der folgende Abschnitt gilt nur für IBM-PPC64-Hardware-Plattformen.
-</note>
-
 <p>
-Wenn Sie Gentoo auf IBM-PPC64-Hardware laufen lassen und eine virtuelle
-Konsole verwenden, müssen Sie die passenden Zeilen in <path>/etc/inittab</path>
-entkommentieren, damit die virtuelle Konsole am Login-Prompt erzeugt werden
-kann.
+Wenn Sie eine virtuelle Konsole verwenden, müssen Sie die passenden Zeilen in
+<path>/etc/inittab</path> entkommentieren, damit die virtuelle Konsole an der
+Eingabezeile erzeugt werden kann.
 </p>
 
 <pre caption="Aktivieren von hvc oder hvsi Unterstützung in /etc/inittab">
