@@ -28,7 +28,7 @@
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="contains('|ca|cs|da|de|el|en|es|fi|fr|id|it|ko|lt|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_tw|',concat('|', $LANG,'|'))">
+    <xsl:when test="contains('|ca|cs|da|de|el|en|es|fi|fr|id|it|ko|lt|nl|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_tw|',concat('|', $LANG,'|'))">
       <xsl:variable name="insert" select="document(concat('/doc/', $LANG, '/inserts.xml'))/inserts/insert[@name=$str]"/>
       <xsl:choose>
         <xsl:when test="$insert">
