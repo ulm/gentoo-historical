@@ -234,6 +234,14 @@ class RunInstall(gtk.Window):
 #		print "delete event occurred"
 		# Change TRUE to FALSE and the main window will be destroyed with
 		# a "delete_event".
+		if not self.install_done and not self.install_fail:
+			msgdlg = gtk.MessageDialog(parent=self, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("Do you really want to exit the installer before the install is complete?"))
+			resp = msgdlg.run()
+			msgdlg.destroy()
+			if resp == gtk.RESPONSE_YES:
+				return False
+			else:
+				return True
 		return False
 
 	# Destroy callback

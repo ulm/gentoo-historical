@@ -331,7 +331,13 @@ class Installer:
 				errdlg.destroy()
 
 	def delete_event(self, widget, event, data=None):
-		return False
+		msgdlg = gtk.MessageDialog(parent=self.window, type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_YES_NO, message_format=_("Do you really want to exit the installer before the install is complete?"))
+		resp = msgdlg.run()
+		msgdlg.destroy()
+		if resp == gtk.RESPONSE_YES:
+			return False
+		else:
+			return True
 
 	def destroy(self, widget, data=None):
 		gtk.main_quit()
