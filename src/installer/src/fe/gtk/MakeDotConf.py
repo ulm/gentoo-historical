@@ -16,7 +16,9 @@ class Panel(GLIScreen.GLIScreen):
 	use_flags = []
 	use_desc = {}
 	columns = []
-	arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "nocona", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "k8", "opteron", "athlon64", "athlon-fx", "winchip-c6", "winchip2", "c3", "c3-2") }
+	arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "winchip-c6", "winchip2", "c3", "c3-2"),
+	               'amd64': ("k8", "opteron", "athlon64", "athlon-fx", "nocona")
+	             }
 	optimizations = ["-O0", "-O1", "-O2", "-Os", "-O3"]
 	_helptext = """
 <b><u>Make.conf</u></b>
@@ -164,7 +166,7 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(gtk.Label("Proc:"), expand=False, fill=False, padding=0)
 		self.proc_combo = gtk.combo_box_new_text()
-		for proc in self.arch_procs['x86']:
+		for proc in self.arch_procs[self.controller.client_profile.get_architecture_template()]:
 			self.proc_combo.append_text(proc)
 		self.proc_combo.set_active(0)
 		hbox.pack_start(self.proc_combo, expand=False, fill=False, padding=10)
