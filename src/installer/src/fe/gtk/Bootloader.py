@@ -112,6 +112,10 @@ a brief description beside it.
 
 	def loader_selected(self, widget, data=None):
 		self.active_selection = data
+		if data == "none":
+			self.check_install_in_mbr.set_sensitive(False)
+		else:
+			self.check_install_in_mbr.set_sensitive(True)
 
 	def mbr_selected(self, widget, data=None):
 		if self.check_install_in_mbr.get_active():
