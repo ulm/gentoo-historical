@@ -17,7 +17,7 @@ class Panel(GLIScreen.GLIScreen):
 	use_desc = {}
 	columns = []
 	arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "winchip-c6", "winchip2", "c3", "c3-2"),
-	               'amd64': ("k8", "opteron", "athlon64", "athlon-fx", "nocona")
+	               'amd64': ("athlon64", "opteron", "athlon-fx", "k8", "nocona")
 	             }
 	optimizations = ["-O0", "-O1", "-O2", "-Os", "-O3"]
 	_helptext = """
@@ -166,9 +166,9 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 		hbox = gtk.HBox(False, 0)
 		hbox.pack_start(gtk.Label("Proc:"), expand=False, fill=False, padding=0)
 		self.proc_combo = gtk.combo_box_new_text()
-		for proc in self.arch_procs[self.controller.client_profile.get_architecture_template()]:
-			self.proc_combo.append_text(proc)
-		self.proc_combo.set_active(0)
+#		for proc in self.arch_procs[self.controller.client_profile.get_architecture_template()]:
+#			self.proc_combo.append_text(proc)
+#		self.proc_combo.set_active(0)
 		hbox.pack_start(self.proc_combo, expand=False, fill=False, padding=10)
 		hbox.pack_start(gtk.Label("Optimizations:"), expand=False, fill=False, padding=0)
 		self.optimizations_combo = gtk.combo_box_new_text()
@@ -267,17 +267,11 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 		if not self.make_conf_values.has_key('CFLAGS') or not self.make_conf_values['CFLAGS']:
 			self.make_conf_values['CFLAGS'] = self.system_cflags
 		custom_cflags = ""
+		arch = ""
 		for flag in self.make_conf_values['CFLAGS'].split(" "):
 			flag = flag.strip()
 			if flag.startswith("-march="):
-				equal_pos = flag.find("=")
-				arch = flag[equal_pos+1:]
-				i = 0
-				for proc in self.arch_procs['x86']:
-					if proc == arch:
-						self.proc_combo.set_active(i)
-						break
-					i += 1
+				arch = flag[flag.find("=")+1:]
 			elif flag.startswith("-O"):
 				i = 0
 				for opt in self.optimizations:
@@ -287,6 +281,13 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 					i += 1
 			else:
 				custom_cflags = custom_cflags + " " + flag
+			self.proc_combo.get_model().clear()
+		for i, proc in enumerate(self.arch_procs[self.controller.client_profile.get_architecture_template()]):
+			self.proc_combo.append_text(proc)
+			if proc == arch:
+				self.proc_combo.set_active(i)
+		if self.proc_combo.get_active() == -1:
+			self.proc_combo.set_active(0)
 		self.custom_cflags_entry.set_text(custom_cflags.strip())
 		# Parsing ACCEPT_KEYWORDS
 		if not self.make_conf_values.has_key('ACCEPT_KEYWORDS') or not self.make_conf_values['ACCEPT_KEYWORDS']:
@@ -336,7 +337,7 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 			else:
 				temp_use += " -" + flag
 		self.make_conf_values['USE'] = temp_use
-		self.make_conf_values['CFLAGS'] = "-march=" + self.arch_procs['x86'][self.proc_combo.get_active()] + " " + self.optimizations[self.optimizations_combo.get_active()] + " " + self.custom_cflags_entry.get_text()
+		self.make_conf_values['CFLAGS'] = "-march=" + self.arch_procs[self.controller.client_profile.get_architecture_template()][self.proc_combo.get_active()] + " " + self.optimizations[self.optimizations_combo.get_active()] + " " + self.custom_cflags_entry.get_text()
 		if self.unstable_packages_check.get_active():
 			self.make_conf_values['ACCEPT_KEYWORDS'] = "~x86"
 		else:
