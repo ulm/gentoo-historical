@@ -115,7 +115,8 @@ a brief description beside it.
 		self.active_selection = self.controller.install_profile.get_kernel_source_pkg() or "gentoo-sources"
 		self.kernel_sources[self.active_selection].set_active(True)
 #		self.bootsplash_check.set_active(self.controller.install_profile.get_kernel_bootsplash())
-		if self.controller.install_type == "networkless":
+#		if self.controller.install_type == "networkless":
+		if self.controller.install_profile.get_grp_install():
 			self.active_selection = "livecd-kernel"
 			self.kernel_sources[self.active_selection].set_active(True)
 #			self.bootsplash_check.set_active(False)
