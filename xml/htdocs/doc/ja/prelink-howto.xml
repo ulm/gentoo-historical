@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/prelink-howto.xml,v 1.15 2006/03/06 17:32:22 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/prelink-howto.xml,v 1.16 2006/08/20 16:09:42 idani Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/ja/prelink-howto.xml" lang="ja">
 <title>Gentoo Linux Prelink ガイド</title>
@@ -22,14 +22,17 @@
 <author title="翻訳">
   <mail link="nakano@gentoo.org">中野正智</mail>
 </author>
+<author title="翻訳">
+  <mail link="murakami.taku@gmail.com">Taku Murakami</mail>
+</author>
 
 <abstract>このガイドはportage2.0.46以降でサポートしているprelinkの使い方について記述しています。</abstract>
 
 <license/>
 
-<version>1.12</version>
-<date>2005-04-21</date>
-<!-- Original revision: 1.37 -->
+<version>1.14</version>
+<date>2006-05-28</date>
+<!-- Original revision: 1.40 -->
 
 <chapter>
 <title>紹介</title>
@@ -52,6 +55,13 @@
 <p>
 prelinkはアプリケーションの起動時間を短縮できます。例えば、典型的なKDEプログラムの起動時間は50%も短縮することができます。prelinkの唯一必要なメンテナンスは、ライブラリをアップグレードしたときに毎回prelinkしている実行ファイルを再度prelinkすることです。
 </p>
+
+<warn>
+prelinkはHardened Gentooでは動作しないでしょう。これは、
+両プロジェクトが共有ライブラリにおけるアドレススペースのマッピングを変更しようとしているためです。
+しかし、prelinkを-Rオプションで使用すると、
+ライブラリのベースアドレスをランダム化しある程度防御を高めてくれます。
+</warn>
 
 </body>
 </section>
@@ -104,7 +114,8 @@ Tip: もしエラーが出たら、あなた自身で<c>prelink</c>のコンパ�
 </note>
    
 <p>
-他のシステム(マシン)で再びエラーがおきる場合には、<mail link="cretin@gentoo.org">Stefan Jones</mail>までlogファイルをメールしてください。
+他のシステム(マシン)で再びエラーがおきる場合には、<uri link="http://bugzilla.gentoo.org">Bugzilla</uri>をチェックし、
+まだレポートされていない場合にはバグレポートを作成して下さい。
 </p>
 
 </body>
@@ -112,12 +123,6 @@ Tip: もしエラーが出たら、あなた自身で<c>prelink</c>のコンパ�
 <section>
 <title>システムの準備</title>
 <body>
-
-<p>
-次に、<path>/etc/make.conf</path>で"pic"USEフラグを有効にする必要があります。
-このUSEフラグをシステム全体で有効にするために<c>emerge --update --deep --newuse world</c>
-を実行してください。
-</p>
 
 <p>
 また、CFLAGS/CXXFLAGSに-fPICが<e>入っていないこと</e>を確認してください。
@@ -197,6 +202,20 @@ PRELINK_PATH_MASK="/opt"
 </body>
 </section>
 <section>
+<title>prelink cronジョブ</title>
+<body>
+
+<p>
+<c>sys-devel/prelink-20060213</c>以降であれば、
+cronジョブを<path>/etc/cron.daily/prelink</path>にインストールします。
+有効にするには、設定ファイル<path>/etc/conf.d/prelink</path>を編集します。
+これによりprelinkが毎日バックグラウンドで実行され、必要に応じコマンドを手動で実行する手間がなくなります。
+</p>
+
+</body>
+</section>
+
+<section>
 <title>prelinkした後で、KDEのスピードアップ</title>
 <body>
 
@@ -217,7 +236,7 @@ KDEにprelinkのことを教えてあげてください。
 <chapter>
 <title>既知の問題と解決策</title>
 <section>
-<title>&quot;non-PIC共有ライブラリがprelinkできない&quot;</title>
+<title>"non-PIC共有ライブラリがprelinkできない"</title>
 <body>
 
 <p>
@@ -233,6 +252,10 @@ KDEにprelinkのことを教えてあげてください。
 </li>
 <li>
 media-video/mjpegtoolsの<path>/usr/lib/liblavfile-1.6.so.0</path>ライブラリ
+</li>
+<li>
+Nvidia OpenGlライブラリ<path>/usr/lib/opengl/nvidia/lib/libGL.so.*</path>。
+パフォーマンスの理由により、PICサポートなしでコンパイルされました。
 </li>
 </ul>
 
@@ -251,14 +274,14 @@ glibcが関係しているところでは、100% スタティックバイナリ�
 </p>
 
 <p>
-&quot;ダウンロードしたバイナリパッケージはすべてを自分自身に含んでいるため、ターゲットシステムのローカルライブラリに依存しないと考えます。しかしあいにくLinux、また他のGLIBCを使用したシステムで、これは完全に真ではありません。さまざまなデータベースへの認証、ネットワーク情報などの機能を提供する"libnss"(ネームサービススイッチライブラリ。
-ネットワークセキュリティシステムと呼ばれることもある)があります。これはそのマシンの実際のネットワークに依存しないアプリケーションプログラムを作ることができます。良い考えですが、GLIBCを変更するとロードするときに問題が置こる場合があります。"libnss"をスタティックリンクすることはできません。なぜならそれぞれのマシン個々で設定されているからです。その問題は主に他のGLIBCライブラリと静的にリンクれている場合に起こると考えます。特に"libnss"から個々に呼ばれる"libpthread"、"libm"、"libc"で起こります。&quot;
+"ダウンロードしたバイナリパッケージはすべてを自分自身に含んでいるため、ターゲットシステムのローカルライブラリに依存しないと考えます。しかしあいにくLinux、また他のGLIBCを使用したシステムで、これは完全に真ではありません。さまざまなデータベースへの認証、ネットワーク情報などの機能を提供する"libnss"(ネームサービススイッチライブラリ。
+ネットワークセキュリティシステムと呼ばれることもある)があります。これはそのマシンの実際のネットワークに依存しないアプリケーションプログラムを作ることができます。良い考えですが、GLIBCを変更するとロードするときに問題が置こる場合があります。"libnss"をスタティックリンクすることはできません。なぜならそれぞれのマシン個々で設定されているからです。その問題は主に他のGLIBCライブラリと静的にリンクれている場合に起こると考えます。特に"libnss"から個々に呼ばれる"libpthread"、"libm"、"libc"で起こります。"
 </p>
 
 </body>
 </section>
 <section>
-<title>Prelinkが&quot;prelink: dso.c:306: fdopen_dso: Assertion `j == k' failed.&quot; のメッセージを出して異常終了しました。</title>
+<title>Prelinkが"prelink: dso.c:306: fdopen_dso: Assertion `j == k' failed."のメッセージを出して異常終了しました。</title>
 <body>
 
 <p>
@@ -274,7 +297,7 @@ prelink-20021213の時点で、prelinkの最中にそのファイルを隠して
 <body>
 
 <p>
-randomized mmap() baseを使用するgresecurityを使用したシステム上でprelinkを行なうためには、
+randomized mmap() baseを使用するgrsecurityを使用したシステム上でprelinkを行なうためには、
 <path>/lib/ld-2.3.*.so</path>に関して"randomized mmap() base"をオフにする必要があります。
 これは<c>chpax</c>ユーティリティによって行なうことができますが、
 ファイルが使用中でないときに行なう必要があります(rescue CDを使用してbootするなどします)。
@@ -282,6 +305,32 @@ randomized mmap() baseを使用するgresecurityを使用したシステム上�
 
 </body>
 </section>    
+
+<section>
+<title>
+prelinkが"prelink: Can't walk directory tree XXXX: Too many levels of symbolic links"のエラーを出して失敗しました。
+</title>
+<body>
+
+<p>
+symlinkが深くネストされすぎています。これはsymlinkが自身をポイントしている場合に発生します。
+例えば、<path>/usr/lib/lib -&gt; lib</path>が最も一般的です。これを修正するには、
+そのsymlinkを手動で見つけるか、または<c>symlinks</c>パッケージで提供されているユーティリティを使用します。
+</p>
+
+<pre caption="symlinkの修正">
+# <i>emerge symlinks</i>
+# <i>symlinks -drv /</i>
+</pre>
+
+<p>
+より詳細な情報は、
+<uri link="http://bugs.gentoo.org/show_bug.cgi?id=82117">Bugzilla</uri>やこの<uri
+link="http://forums.gentoo.org/viewtopic-t-458144-highlight-prelink.html">フォーラムの投稿</uri>で見つかります。
+</p>
+
+</body>
+</section>
 
 </chapter>
 
