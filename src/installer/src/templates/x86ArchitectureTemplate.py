@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.142 2006/07/28 20:48:44 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.143 2006/08/21 14:40:50 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -212,7 +212,8 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				self._add_partition(parted_disk, start, end, tmptype, tmppart_new['type'], strict_start=True)
 				parted_disk.commit()
 
-			devnode = device + str(self._find_current_minor_for_part(device, start))
+			curminor = self._find_current_minor_for_part(device, start)
+			devnode = device + str(curminor)
 
 			# sleep a bit first
 			time.sleep(3)
@@ -234,7 +235,7 @@ class x86ArchitectureTemplate(ArchitectureTemplate):
 				if not GLIUtility.exitsuccess(ret):
 					raise GLIException("PartitionResizeError", 'fatal', 'partition', "could not resize NTFS filesystem on " + devnode)
 			elif type in ("linux-swap", "fat32", "fat16"):
-				parted_fs = parted_disk.get_partition(part).geom.file_system_open()
+				parted_fs = parted_disk.get_partition(curminor).geom.file_system_open()
 				resize_constraint = parted_fs.get_resize_constraint()
 				if total_sectors < resize_constraint.min_size or start != resize_constraint.start_range.start:
 					raise GLIException("PartitionError", 'fatal', 'partition', "New size specified for " + devnode + " is not within allowed boundaries (blame parted)")
