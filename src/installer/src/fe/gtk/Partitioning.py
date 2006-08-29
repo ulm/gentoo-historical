@@ -420,7 +420,7 @@ disk order.
 		for device in self.devices:
 			for tmppart in self.devices[device].get_partitions():
 				if tmppart.get_type() == "unknown":
-					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format="One of your disks (%s) contains a partition (minor %s) of a type that the installer cannot currently handle. If you continue, you risk damaging your partition table. You have been warned!" % (device, str(tmppart.get_minor()))
+					msgdlg = gtk.MessageDialog(parent=self.controller.window, type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format="One of your disks (%s) contains a partition (minor %s) of a type that the installer cannot currently handle. If you continue, you risk damaging your partition table. You have been warned!" % (device, str(tmppart.get_minor())))
 					msgdlg.run()
 					msgdlg.destroy()
 					return
