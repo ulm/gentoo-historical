@@ -25,7 +25,7 @@ Technical description of, and rationale for, the Gentoo Hardened Toolchain modif
 <license/>
 
 <version>1.0</version>
-<date>2006-05-15</date>
+<date>2006-08-30</date>
 
 
 <chapter id="introduction">
@@ -97,11 +97,11 @@ The Gentoo hardened GCC automatically builds PIEs when building application code
 </section>
 
 <section id="RELROintro">
-<title>Default relocation tables to read-only (RELRO)</title>
+<title>Default to marking read-only, sections that can be so marked after the loader is finished (RELRO)</title>
 <body>
 
 <p>
-The standard toolchain places the Global Offset Table (GOT) in a writable section of ELF files. Setting RELRO causes the toolchain to reorganise the layout of the ELF file so that as much as possible of the GOT can be marked read-only, to prevent an attacker from overwriting data in the tables. If <uri link="#NOWintro">BIND_NOW</uri> is also set then all of the all of the GOT can be set read-only, preventing various attack methods that involve overwriting it.
+There are several sections that need to be writable by the loader before the application starts, but do not need to be writable by the application itself later.  Setting relro instructs the linker to record which sections this applies to, and the loader will mark them read-only before passing or returning execution control to the application.  Typical sections affected include .ctors, .dtors, .jcr, .dynamic and .got, although the exact list varies according to arch.  If <uri link="#NOWintro">BIND_NOW</uri> is also set then on some arches all of the GOT (i.e. including the PLT) can be set read-only in this way, preventing various attack methods that involve overwriting it.
 </p>
 
 <p>
@@ -247,7 +247,7 @@ In both rules, there is an additional condition '!nopie' - this provides a mecha
 <p>
 Ideally, when building a static executable, or a shared library, or building without the standard gcc system files, PIE would not be automatically enabled.  Unfortunately, the options -static, -shared, -nostdlib and -nostartfiles are link options, so are usually only supplied to the link command of an executable and not to the compilation commands for individual objects.  In these cases, -fPIE will be added to the compilation commands when in fact it shouldn't be.  This is an unavoidable limitation, since it is impossible to know from a compilation command for an object exactly what the link command is going to be.  Indeed in some cases more than one link command can happen using the same objects.  Such cases have to be handled by the relevant ebuild on a case-by-case basis.  The -nostdlib and -nostartfiles options occur rarely.  The -shared option is usually used when the compilation commands have been performed with -fPIC, so the majority of such cases are not a problem.  Where an application builds libraries without -fPIC, it is necessary to modify the build process to avoid -fPIE being added by the compiler.  For packages that build only libraries, it is sufficient to do:
 </p>
-<pre caption="switch of automatic PIE for library ebuilds">
+<pre caption="switch off automatic PIE for library ebuilds">
 inherit flag-o-matic
 ...
 src_compile() {
@@ -275,14 +275,14 @@ Debugging PIEs with gdb is not workable as gdb does not support PIEs.  In order 
 
 
 <chapter id="RELRO">
-<title>Read-Only Relocation tables</title>
+<title>Mark Read-Only Appropriate Sections</title>
 
 <section id="RELROrationale">
 <title>Rationale for enabling RELRO globally</title>
 <body>
 
 <p>
-RELRO reorganises the information in an ELF object in such a way that most of the Global Offset Table (GOT) can be marked read-only (everything except the Procedure Linkage Table - PLT).  When combined with <uri link="#NOW">BIND_NOW</uri>, this means the whole GOT (including the PLT) can be marked read-only before control is passed to the executable.  This means that attacks that target the global offset table by overwriting it will fail.
+Various sections in an ELF file should be written only by the loader, and not by the application.  However in normal circumstances these sections remain read/write throughout the life of the process, and there are attack methods that exploit this to affect program execution flow.  Enabling RELRO causes the linker to include an extra header informing the loader which sections can be marked read-only after the loader has finished with them.  It also affects the layout of sections slightly, to avoid having RELRO sections and read-write sections on the same memory page.  Combining RELRO with BIND_NOW allows also the PLT to be managed this way on some arches.
 </p>
 
 </body>
@@ -309,7 +309,7 @@ RELRO is a link option ("-z relro") provided by the standard GNU toolchain.  To 
 %{!norelro: -z relro} %{relro: }
 </pre>
 <p>
-So a new option is introduced, "norelro", which can be used to prevent the hardened compiler from automatically switching on RELRO.
+So a new option is introduced, "norelro", which can be used to prevent the hardened compiler from automatically switching on RELRO.  However this is likely to be phased out, as newer binutils provide a "-z norelro" option which can be appended to LDFLAGS as "-Wl,z,norelro".
 </p>
 
 </body>
@@ -363,7 +363,7 @@ NOW binding is a link option ("-z now") provided by the standard GNU toolchain. 
 %{!nonow: -z now} %{now: }
 </pre>
 <p>
-So a new option is introduced, "nonow", which can be used to prevent the hardened compiler from automatically switching on NOW binding.
+So a new option is introduced, "nonow", which can be used to prevent the hardened compiler from automatically switching on NOW binding.  However this is likely to be phased out, as newer binutils provide a "-z lazy" option which can be appended to LDFLAGS as "-Wl,z,lazy".
 </p>
 
 </body>
