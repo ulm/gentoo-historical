@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.286 2006/09/01 23:04:18 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.287 2006/09/01 23:08:55 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -17,6 +17,10 @@ The only definitions that are filled in here are architecture independent.
 import GLIUtility, GLILogger, os, string, sys, shutil, re, time
 import GLIPortage
 from GLIException import *
+import parted
+import GLIStorageDevice
+
+MEGABYTE = 1024 * 1024
 
 class ArchitectureTemplate:
 	##

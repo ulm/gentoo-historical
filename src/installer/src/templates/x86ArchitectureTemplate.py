@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: x86ArchitectureTemplate.py,v 1.144 2006/09/01 23:04:18 agaffney Exp $
+$Id: x86ArchitectureTemplate.py,v 1.145 2006/09/01 23:08:55 agaffney Exp $
 Copyright 2004 Gentoo Technologies Inc.
 
 
@@ -15,10 +15,6 @@ This fills in x86 specific functions.
 import GLIUtility, string, time
 from GLIArchitectureTemplate import ArchitectureTemplate
 from GLIException import *
-import parted
-import GLIStorageDevice
-		
-MEGABYTE = 1024 * 1024
 
 class x86ArchitectureTemplate(ArchitectureTemplate):
 	def __init__(self,configuration=None, install_profile=None, client_controller=None):
