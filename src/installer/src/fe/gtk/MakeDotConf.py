@@ -17,7 +17,8 @@ class Panel(GLIScreen.GLIScreen):
 	use_desc = {}
 	columns = []
 	arch_procs = { 'x86': ("i386", "i486", "i586", "pentium", "pentium-mmx", "i686", "pentiumpro", "pentium2", "pentium3", "pentium3m", "pentium-m", "pentium4", "pentium4m", "prescott", "k6", "k6-2", "k6-3", "athlon", "athlon-tbird", "athlon-4", "athlon-xp", "athlon-mp", "winchip-c6", "winchip2", "c3", "c3-2"),
-	               'amd64': ("athlon64", "opteron", "athlon-fx", "k8", "nocona")
+	               'amd64': ("athlon64", "opteron", "athlon-fx", "k8", "nocona"),
+	               'ppc': ("G3", "G4", "G5", "power", "common", "powerpc")
 	             }
 	optimizations = ["-O0", "-O1", "-O2", "-Os", "-O3"]
 	_helptext = """
