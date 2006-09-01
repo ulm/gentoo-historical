@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIInstallProfile.py,v 1.94 2006/09/01 22:41:04 wolf31o2 Exp $
+$Id: GLIInstallProfile.py,v 1.95 2006/09/01 23:06:00 agaffney Exp $
 
 The GLI module contains all classes used in the Gentoo Linux Installer (or GLI).
 The InstallProfile contains all information related to the new system to be
@@ -624,7 +624,7 @@ class InstallProfile:
 				"fluxbox": "Fluxbox is an X11 window manager featuring tabs and an iconbar",
 				"icewm": "IceWM is designed for speed, size, and simplicity",
 				"windowmaker": "Windowmaker is a window manager featuring the look and feel of NEXTSTEP",
-				"xfce4": "XFCE Desktop Environment"
+				"xfce4": "XFCE Desktop Environment",
 				"xorg-x11": "An X11 implementation maintained by the X.Org Foundation" }),
 			'Misc': ("Miscellaneous Applications you may want.",
 				{"bittorrent": "tool for distributing files via a distributed network of nodes",
