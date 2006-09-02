@@ -9,7 +9,12 @@ import GLIStorageDevice
 import GLIUtility
 from GLIException import GLIException
 import gettext
-_ = gettext.gettext
+try:
+	gettext.install('gli-dialog', './languages')
+	translator = gettext.translation('gli-dialog', './languages')
+	_ = translator.gettext
+except:
+	_ = gettext.gettext
 #This is a parent class to centralize the code between UserGenCC and UserGenIP
 
 class GLIGen(object):
@@ -113,12 +118,12 @@ Enter the desired filename and path for the install log (the default is recommen
 		choice_list = []
 		for device in device_list:
 			choice_list.append((device, GLIUtility.get_interface_realname(device)))
-		choice_list.append(("Other",_(u"Type your own.")))
+		choice_list.append((_(u"Other"),_(u"Type your own.")))
 		cnet_string1 = _(u"In order to complete most installs, an active Internet connection is required.  Listed are the network devices already detected.  In this step you will need to setup one network connection for GLI to use to connect to the Internet.  If your desired device does not show up in the list, you can select Other and input the device name manually.")
 		code, interface = self._d.menu(cnet_string1, width=75, height=20, choices=choice_list)
 		if code != self._DLG_OK: 
 			return
-		if interface == "Other":
+		if interface == _(u"Other"):
 			code, interface = self._d.inputbox(_(u"Enter the interface (NIC) you would like to use for installation (e.g. eth0):"))
 			if code != self._DLG_OK: 
 				return
@@ -214,7 +219,7 @@ Enter the new LIVECD root password:	""")
 			cmodules_string1 = _(u"Here is a list of modules currently loaded on your machine.\n  Please look through and see if any modules are missing\n that you would like loaded.\n\n")
 			self._d.add_persistent_args(["--exit-label", _(u"Continue")])
 			self._d.scrollbox(cmodules_string1+output, height=20, width=70, title=_(u"Loaded Modules"))
-			cmodules_string2 = _(u"\nIf you have additional modules you would like loaded before the installation begins (ex. a network driver), enter them in a space-separated list.")
+			cmodules_string2 = _(u"If you have additional modules you would like loaded before the installation begins (ex. a network driver), enter them in a space-separated list.")
 			code, kernel_modules_list = self._d.inputbox(cmodules_string2, init="", width=60, height=12)
 			if code == self._DLG_OK:
 				try:
@@ -262,7 +267,7 @@ class GLIGenIP(GLIGen):
 				self._install_profile.set_cron_daemon_pkg(None, "vixie-cron", None)
 				self._install_profile.set_logging_daemon_pkg(None,"syslog-ng", None)
 			except:
-				self._d.msgbox("ERROR: Could not set networkless information in the profile")
+				self._d.msgbox(_(u"ERROR: Could not set networkless information in the profile"))
 				
 	def serialize(self):
 		return self._install_profile.serialize()
@@ -271,7 +276,7 @@ class GLIGenIP(GLIGen):
 	#---------------------------------------
 	
 	def set_partitions(self):
-		partitions_string1 = _("""The first thing on the new system to setup is the partitoning.
+		partitions_string1 = _(u"""The first thing on the new system to setup is the partitoning.
 You will first select a drive and then edit its partitions.
 No changes will be saved until the end of the step.
 No changes to your disk will be made until the installation.
@@ -373,12 +378,12 @@ on partitioning and the various filesystem types available in Linux.""")
 					("xfs", _(u"Don't use this unless you know you need it.")),
 					("reiserfs", _(u"B*-tree based filesystem. great performance. Only V3 supported.")),
 					("extended", _(u"Create an extended partition containing other logical partitions")),
-					("Other", _(u"Something else we probably don't support."))]
+					(_(u"Other"), _(u"Something else we probably don't support."))]
 					code, type = self._d.menu(_(u"Choose the filesystem type for this new partition."), height=20, width=77, choices=part_types)
 					if code != self._DLG_OK: continue
 										
 					# 'other' partition type
-					if type == "Other":
+					if type == _(u"Other"):
 						code, type = self._d.inputbox(_(u"Please enter the new partition's type:"))
 					if code != self._DLG_OK: continue
 					
@@ -512,7 +517,7 @@ on partitioning and the various filesystem types available in Linux.""")
 		stage3warning = ""
 		if code == self._DLG_OK:
 			if install_stage == "3+GRP":
-				stage3warning = "\nWARNING: Since you are doing a GRP install it is HIGHLY recommended you choose Create from CD to avoid a potentially broken installation."
+				stage3warning = _(u"WARNING: Since you are doing a GRP install it is HIGHLY recommended you choose Create from CD to avoid a potentially broken installation.")
 				try:
 					self._install_profile.set_grp_install(None, True, None)
 				except:
@@ -527,7 +532,7 @@ on partitioning and the various filesystem types available in Linux.""")
 			#Change the Yes/No buttons to new labels for this question.
 			self._d.add_persistent_args(["--yes-label", _(u"Create from CD")])
 			self._d.add_persistent_args(["--no-label", _(u"Specify URI")])
-			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?"+stage3warning), width=55) == self._DLG_YES:
+			if self._d.yesno(_(u"Do you want to generate a stage3 on the fly using the files on the LiveCD (fastest) or do you want to grab your stage tarball from the Internet?\n")+stage3warning, width=55) == self._DLG_YES:
 				#Generate on the FLY				
 				try:
 					self._install_profile.set_dynamic_stage3(None, True, None)
@@ -720,7 +725,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					cflags = make_conf['CFLAGS']
 				while 1:
 					choices_list = [
-					("CLEAR",_(u"Erase the current value and start over.")),
+					(_(u"CLEAR"),_(u"Erase the current value and start over.")),
 					("-mcpu",_(u"Add a CPU optimization (deprecated in GCC 3.4)")),
 					("-mtune",_(u"Add a CPU optimization (GCC 3.4+)")),
 					("-march",_(u"Add an Architecture optimization")),
@@ -732,7 +737,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					code, choice = self._d.menu(_(u"Choose a flag to add to the CFLAGS variable or Done to go back.  The current value is: ")+ cflags, choices=choices_list, cancel=_(u"Done"), width=70)
 					if code != self._DLG_OK:
 						break
-					if choice == "CLEAR":
+					if choice == _(u"CLEAR"):
 						cflags = ""
 					elif choice == _(u"Manual"):
 						code, cflags = self._d.inputbox(_(u"Enter new value for ") + menuitem)
@@ -1068,7 +1073,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 					choice_list.append((iface, _(u"Settings: DHCP. Options: ")+ interfaces[iface][1]))
 				else:
 					choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+_(u" Netmask: ")+interfaces[iface][2]))
-			choice_list.append(("Add",_(u"Add a new network interface")))
+			choice_list.append((_(u"Add"),_(u"Add a new network interface")))
 			code, iface_choice = self._d.menu(net_string1, choices=choice_list, cancel=_(u"Save and Continue"), height=18, width=77)
 			if code != self._DLG_OK:
 				try:
@@ -1076,7 +1081,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				except:
 					self_d.msgbox(_(u"ERROR! Could not set the network interfaces!"))
 				break  #This should hopefully move the user down to part two of set_networking
-			if iface_choice == "Add":
+			if iface_choice == _(u"Add"):
 				if self.local_install:
 					device_list = GLIUtility.get_eth_devices()
 					newchoice_list = []
@@ -1084,7 +1089,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 						if device not in interfaces:
 							newchoice_list.append((device, GLIUtility.get_interface_realname(device)))
 					newchoice_list.append((_(u"Other"),_(u"Type your own.")))
-					code, newnic = self._d.menu(_("Choose an interface from the list or Other to type your own if it was not detected."), choices=newchoice_list, width=75)
+					code, newnic = self._d.menu(_(u"Choose an interface from the list or Other to type your own if it was not detected."), choices=newchoice_list, width=75)
 				else:
 					newnic == _(u"Other")
 				if newnic == _(u"Other"):
@@ -1157,7 +1162,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				choice_list.append((iface, _(u"Settings: DHCP. Options: ")+ interfaces[iface][1],0))
 			else:
 				choice_list.append((iface, _(u"IP: ")+interfaces[iface][0]+_(u" Broadcast: ")+interfaces[iface][1]+_(u" Netmask: ")+interfaces[iface][2],0))
-		net_string3 = _("To be able to surf on the internet, you must know which host shares the Internet connection. This host is called the gateway.  It is usually similar to your IP address, but ending in .1\nIf you have DHCP then just select your primary Internet interface (no IP will be needed)  Start by choosing which interface accesses the Internet:")
+		net_string3 = _(u"To be able to surf on the internet, you must know which host shares the Internet connection. This host is called the gateway.  It is usually similar to your IP address, but ending in .1\nIf you have DHCP then just select your primary Internet interface (no IP will be needed)  Start by choosing which interface accesses the Internet:")
 		if choice_list:
 			code, gateway_iface = self._d.radiolist(net_string3, choices=choice_list, height=20, width=67)
 			if (code == self._DLG_OK) and gateway_iface:  #They made a choice.  Ask the IP if not DHCP.
@@ -1321,7 +1326,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		highlevel_menu = []
 		for group in package_list:
 			highlevel_menu.append( (group, package_list[group][0]) )
-		highlevel_menu.append( ("Manual", "Type your own space-separated list of packages.") )
+		highlevel_menu.append( (_(u"Manual"), "Type your own space-separated list of packages.") )
 
 		while 1:
 			extra_string1 = _(u"There are thousands of applications available to Gentoo users through Portage, Gentoo's package management system.  Select some of the more common ones below or add your own additional package list by choosing 'Manual'.")
@@ -1339,7 +1344,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			#pkgs = {}
 			
 			#Special case first.
-			if submenu == "Manual":
+			if submenu == _(u"Manual"):
 				code, tmp_install_packages = self._d.inputbox(_(u"Enter a space-separated list of extra packages to install on the system"), init=string.join(install_packages, ' '), width=70) 
 				if code == self._DLG_OK:
 					install_packages = tmp_install_packages.split()
@@ -1587,7 +1592,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			menu_list.sort()
 			menu_list.append(_(u"Add user"))
 			users_string1 = _(u"Working as root on a Unix/Linux system is dangerous and should be avoided as much as possible. Therefore it is strongly recommended to add a user for day-to-day use.  Choose a user to edit:")
-			code, menuitem = self._d.menu(users_string1, choices=self._dmenu_list_to_choices(menu_list), cancel="Save and Continue", height=19)
+			code, menuitem = self._d.menu(users_string1, choices=self._dmenu_list_to_choices(menu_list), cancel=_(u"Save and Continue"), height=19)
 			if code != self._DLG_OK:
 				#if self._d.yesno("Do you want to save changes?") == self._DLG_YES:
 				tmpusers = []
@@ -1708,12 +1713,12 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 	def show_settings(self):
 		settings = _(u"Look carefully at the following settings to check for mistakes.\nThese are the installation settings you have chosen:\n\n")
 		#Partitioning
-		settings += "Partitioning:  \n  Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.\n"
+		settings += _(u"Partitioning:  \n  Key: Minor, Pri/Ext, Filesystem, MkfsOpts, Mountpoint, MountOpts, Size.\n")
 		devices = self._install_profile.get_partition_tables()
 		drives = devices.keys()
 		drives.sort()
 		for drive in drives:
-			settings += "  Drive: " + drive + devices[drive].get_model() + "\n"
+			settings += _(u"  Drive: ") + drive + devices[drive].get_model() + "\n"
 			partlist = devices[drive].get_ordered_partition_list()
 			tmpparts = devices[drive] #.get_partitions()
 			for part in partlist:
@@ -1743,44 +1748,44 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			
 		#Network Mounts:
 		network_mounts = copy.deepcopy(self._install_profile.get_network_mounts())
-		settings += "\nNetwork Mounts: \n"
+		settings += _(u"\nNetwork Mounts: \n")
 		for mount in network_mounts:
 			settings += "  "+mount['host']+":"+mount['export']+"\n"
 			
 		#Install Stage:
-		settings += "\nInstall Stage: " + str(self._install_profile.get_install_stage()) + "\n"
+		settings += _(u"\nInstall Stage: ") + str(self._install_profile.get_install_stage()) + "\n"
 		if self._install_profile.get_dynamic_stage3():
-			settings += "  Tarball will be generated on the fly from the CD.\n"
+			settings += _(u"  Tarball will be generated on the fly from the CD.\n")
 		else:
-			settings += "  Tarball URI: " + self._install_profile.get_stage_tarball_uri() + "\n"
+			settings += _(u"  Tarball URI: ") + self._install_profile.get_stage_tarball_uri() + "\n"
 			
 		#Portage Tree Sync Type:
-		settings += "\nPortage Tree Sync Type: " + self._install_profile.get_portage_tree_sync_type() + "\n"
+		settings += _(u"\nPortage Tree Sync Type: ") + self._install_profile.get_portage_tree_sync_type() + "\n"
 		if self._install_profile.get_portage_tree_sync_type() == "snapshot":
-			settings += "  Portage snapshot URI: " + self._install_profile.get_portage_tree_snapshot_uri() + "\n"
+			settings += _(u"  Portage snapshot URI: ") + self._install_profile.get_portage_tree_snapshot_uri() + "\n"
 			
 		#Kernel Settings:
-		settings += "\nKernel Settings:\n"
-		settings += "  Kernel Sources: " + self._install_profile.get_kernel_source_pkg() + "\n"
+		settings += _(u"\nKernel Settings:\n")
+		settings += _(u"  Kernel Sources: ") + self._install_profile.get_kernel_source_pkg() + "\n"
 		if self._install_profile.get_kernel_source_pkg() != "livecd-kernel":
-			settings += "  Kernel Build Method: " + self._install_profile.get_kernel_build_method() + "\n"
+			settings += _(u"  Kernel Build Method: ") + self._install_profile.get_kernel_build_method() + "\n"
 			if self._install_profile.get_kernel_build_method() == "genkernel":
-				settings += "  Kernel Bootsplash Option: " + str(self._install_profile.get_kernel_bootsplash()) + "\n"
+				settings += _(u"  Kernel Bootsplash Option: ") + str(self._install_profile.get_kernel_bootsplash()) + "\n"
 		if self._install_profile.get_kernel_config_uri():
-			settings += "  Kernel Configuration URI: " + self._install_profile.get_kernel_config_uri() + "\n"
+			settings += _(u"  Kernel Configuration URI: ") + self._install_profile.get_kernel_config_uri() + "\n"
 				
 		#Bootloader Settings:
-		settings += "\nBootloader Settings:\n"
-		settings += "  Bootloader package: " + self._install_profile.get_boot_loader_pkg() + "\n"
+		settings += _(u"\nBootloader Settings:\n")
+		settings += _(u"  Bootloader package: ") + self._install_profile.get_boot_loader_pkg() + "\n"
 		if self._install_profile.get_boot_loader_pkg() != "none":
-			settings += "  Install bootloader to MBR: " + str(self._install_profile.get_boot_loader_mbr()) + "\n"
-			settings += "  Bootloader kernel arguments: " +self._install_profile.get_bootloader_kernel_args() + "\n"
+			settings += _(u"  Install bootloader to MBR: ") + str(self._install_profile.get_boot_loader_mbr()) + "\n"
+			settings += _(u"  Bootloader kernel arguments: ") +self._install_profile.get_bootloader_kernel_args() + "\n"
 			
 		#Timezone:
-		settings += "\nTimezone: " + self._install_profile.get_time_zone() + "\n"
+		settings += _(u"\nTimezone: ") + self._install_profile.get_time_zone() + "\n"
 		
 		#Networking Settings:
-		settings += "\nNetworking Settings: \n"
+		settings += _(u"\nNetworking Settings: \n")
 		interfaces = self._install_profile.get_network_interfaces()
 		for iface in interfaces:
 			if interfaces[iface][0] == 'dhcp':
@@ -1789,34 +1794,34 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				settings += "  " + iface + _(u"IP: ") + interfaces[iface][0] + _(u" Broadcast: ") + interfaces[iface][1] + _(u" Netmask: ") + interfaces[iface][2] + "\n"
 		default_gateway = self._install_profile.get_default_gateway()
 		if default_gateway:
-			settings += "  Default Gateway: " + default_gateway[0] + "/" + default_gateway[1] + "\n"
-		settings += "  Hostname: " + self._install_profile.get_hostname() + "\n"
+			settings += _(u"  Default Gateway: ") + default_gateway[0] + "/" + default_gateway[1] + "\n"
+		settings += _(u"  Hostname: ") + self._install_profile.get_hostname() + "\n"
 		if self._install_profile.get_domainname():
-			settings += "  Domainname: " +self._install_profile.get_domainname() + "\n"
+			settings += _(u"  Domainname: ") +self._install_profile.get_domainname() + "\n"
 		if self._install_profile.get_nisdomainname():
-			settings += "  NIS Domainname: " +self._install_profile.get_nisdomainname() + "\n"
+			settings += _(u"  NIS Domainname: ") +self._install_profile.get_nisdomainname() + "\n"
 		if self._install_profile.get_dns_servers():
 			for dns_server in self._install_profile.get_dns_servers():
-				settings += "  DNS Server: " +dns_server + "\n"
+				settings += _(u"  DNS Server: ") +dns_server + "\n"
 		if self._install_profile.get_http_proxy():
-			settings += "  HTTP Proxy: " +self._install_profile.get_http_proxy() + "\n"
+			settings += _(u"  HTTP Proxy: ") +self._install_profile.get_http_proxy() + "\n"
 		if self._install_profile.get_ftp_proxy():
-			settings += "  FTP Proxy: " +self._install_profile.get_ftp_proxy() + "\n"
+			settings += _(u"  FTP Proxy: ") +self._install_profile.get_ftp_proxy() + "\n"
 		if self._install_profile.get_rsync_proxy():
-			settings += "  RSYNC Proxy: " +self._install_profile.get_rsync_proxy() + "\n"
+			settings += _(u"  RSYNC Proxy: ") +self._install_profile.get_rsync_proxy() + "\n"
 			
 		#Cron Daemon:
-		settings += "\nCron Daemon: " + self._install_profile.get_cron_daemon_pkg() + "\n"
+		settings += _(u"\nCron Daemon: ") + self._install_profile.get_cron_daemon_pkg() + "\n"
 		
 		#Logger:
-		settings += "\nLogging Daemon: " + self._install_profile.get_logging_daemon_pkg() + "\n"
+		settings += _(u"\nLogging Daemon: ") + self._install_profile.get_logging_daemon_pkg() + "\n"
 		
 		#Extra packages:
 		if self._install_profile.get_install_packages():
 			install_packages = self._install_profile.get_install_packages()
 		else:
 			install_packages = []
-		settings += "\nExtra Packages: "
+		settings += _(u"\nExtra Packages: ")
 		for package in install_packages:
 			settings += package + " "
 		settings += "\n"
@@ -1825,37 +1830,37 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 			services = self._install_profile.get_services()
 		else:
 			services = []
-		settings += "\nAdditional Services: "
+		settings += _(u"\nAdditional Services: ")
 		for service in services:
 			settings += service + " "
 		settings += "\n"
 		
 		#Other Configuration Settings (rc.conf):
 		#Make.conf Settings:
-		settings += "\nConfiguration Files Settings:\n"
+		settings += _(u"\nConfiguration Files Settings:\n")
 		etc_files = self._install_profile.get_etc_files()
 		for etc_file in etc_files:
-			settings += "  File:" + etc_file + "\n"
+			settings += _(u"  File:") + etc_file + "\n"
 			if isinstance(etc_files[etc_file], dict):
 				for name in etc_files[etc_file]:
-					settings += "    Variable: " + name + "   Value: " + etc_files[etc_file][name] + "\n"
+					settings += _(u"    Variable: ") + name + _(u"   Value: ") + etc_files[etc_file][name] + "\n"
 			else:
 				for entry in etc_files[etc_file]:
-					settings += "    Value: "+ entry + "\n"
+					settings += _(u"    Value: ")+ entry + "\n"
 		
 		#Additional Users:
-		settings += "\nAdditional Users:\n"
+		settings += _(u"\nAdditional Users:\n")
 		users = {}
 		for user in self._install_profile.get_users():
 			users[user[0]] = (user[0], user[1], user[2], user[3], user[4], user[5], user[6])
 		for user in users:
-			settings += "  Username: " + user
-			settings += "\n    Group Membership: " + string.join(users[user][2], ",")
-			settings += "\n    Shell: " + users[user][3]
-			settings += "\n    Home Directory: " + users[user][4]
+			settings += _(u"  Username: ") + user
+			settings += _(u"\n    Group Membership: ") + string.join(users[user][2], ",")
+			settings += _(u"\n    Shell: ") + users[user][3]
+			settings += _(u"\n    Home Directory: ") + users[user][4]
 			if users[user][5]:
-				settings += "\n    User Id: " + users[user][5]
+				settings += _(u"\n    User Id: ") + users[user][5]
 			if users[user][6]:
-				settings += "\n    User Comment: " + users[user][6]
+				settings += _(u"\n    User Comment: ") + users[user][6]
 
 		self._d.scrollbox(settings, height=20, width=77, title=_(u"A Review of your settings"))
