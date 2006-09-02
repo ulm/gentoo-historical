@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/nvidia-guide.xml,v 1.30 2006/07/26 09:50:06 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/nvidia-guide.xml,v 1.31 2006/09/02 10:04:16 nightmorph Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/nvidia-guide.xml">
@@ -14,6 +14,9 @@
 <author title="Editor">
   <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
+<author title="Editor">
+  <mail link="wolf31o2@gentoo.org">Chris Gianelloni</mail>
+</author>
 
 <abstract>
 Many Gentooists have an nVidia chipset on their system. nVidia provides specific
@@ -25,8 +28,8 @@ to install and configure these drivers.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.26</version>
-<date>2006-07-25</date>
+<version>1.27</version>
+<date>2006-09-01</date>
 
 <chapter>
 <title>Introduction</title>
@@ -35,15 +38,18 @@ to install and configure these drivers.
 
 <p>
 nVidia release their own Linux drivers which provide good performance and full
-3D acceleration. The driver releases are split up into two parts:
-<c>nvidia-kernel</c> and <c>nvidia-glx</c>.
+3D acceleration. There are two sets of drivers in portage. The first set is an
+older set and split into two parts: <c>nvidia-kernel</c> and <c>nvidia-glx</c>.
+The second set is newer, and is split into <c>nvidia-drivers</c> and
+<c>nvidia-legacy-drivers</c>. If you are installing for the first time, you
+should use the newer set.
 </p>
 
 <p>
 <c>nvidia-kernel</c> is a kernel driver which handles the low-level
 communication with your video hardware. This is simply a kernel module, named
-<c>nvidia</c>, which installs against your kernel sources and needs to be loaded
-whenever you want to use the nvidia drivers.
+<c>nvidia</c>, which installs against your kernel sources and needs to be
+loaded whenever you want to use the nvidia drivers.
 </p>
 
 <p>
@@ -51,6 +57,19 @@ As well as the kernel driver, you need to install the X11 GLX layer
 (<c>nvidia-glx</c>). This is used by X to render graphics, which internally
 uses the <c>nvidia-kernel</c> kernel driver to interface with the hardware.
 </p>
+
+<p>
+The newer drivers have the functionality of both <c>nvidia-kernel</c> and
+<c>nvidia-glx</c> in a single unified ebuild, much like how nVidia themselves
+ship the drivers.
+</p>
+
+<note>
+Both <c>nvidia-kernel</c> and <c>nvidia-glx</c> are deprecated, and will be
+removed from the Portage tree in the future in favor of <c>nvidia-drivers</c>
+and <c>nvidia-legacy-drivers</c>.  If you use <c>nvidia-kernel</c> and
+<c>nvidia-glx</c>, then you should migrate to the newer packages.
+</note>
 
 </body>
 </section>
@@ -65,9 +84,9 @@ uses the <c>nvidia-kernel</c> kernel driver to interface with the hardware.
 <p>
 As mentioned above, the nVidia kernel driver installs and runs against your
 current kernel. It builds as a module, so it makes sense that your kernel must
-support the loading of kernel modules. If you used <c>genkernel</c> to configure
-the kernel for you then you're all set. If not, double check your kernel
-configuration so that this support is enabled:
+support the loading of kernel modules. If you used <c>genkernel</c> to
+configure the kernel for you then you're all set. If not, double check your
+kernel configuration so that this support is enabled:
 </p>
 
 <pre caption="Enabling the Loading of Kernel Modules">
@@ -85,8 +104,13 @@ Processor and Features ---&gt;
 </pre>
 
 <p>
-Also, you will have to add <c>agpgart</c> support to your kernel, either
-compiled in or as a module:
+Also, you can optionally enable <c>agpgart</c> support to your kernel, either
+compiled in or as a module. If you do not use the in-kernel agpgart, then the
+drivers will use their own <c>agpgart</c> implementation, called <c>NvAGP</c>.
+On certain systems, this performs better than the in-kernel agpgart, and on
+others, it performs worse. You will need to evaluate this on your own system to
+get the best performance. If you are unsure what to do, use the in-kernel
+agpgart:
 </p>
 
 <pre caption="Enabling agpgart">
@@ -126,12 +150,13 @@ Graphics Support ---&gt;
 
 <p>
 Then, under "VESA driver type" select either <c>vesafb</c> or
-<c>vesafb-tng</c>:
+<c>vesafb-tng</c>. If you are using an AMD64 processor, you should select
+<c>vesafb</c> rather than <c>vesafb-tng</c>:
 </p>
 
 <pre caption="Select framebuffer type">
-( ) vesafb
-(X) vesafb-tng
+(X) vesafb
+( ) vesafb-tng
 </pre>
 
 <p>
@@ -148,16 +173,11 @@ For more information, you can read up
 <body>
 
 <p>
-nVidia's modules and libraries are combined in two packages: <c>nvidia-glx</c>
-and <c>nvidia-kernel</c>. The former are the X11 GLX libraries while the latter
-are the kernel modules.
-</p>
-
-<p>
-The nvidia-kernel ebuild auto discovers your kernel version based on the
-<path>/usr/src/linux</path> symlink. Please ensure that you have this symlink
-pointing to the correct sources and that your kernel is correctly configured.
-Please refer to the Configuring the Kernel section of the <uri
+The <c>nvidia-kernel</c>, <c>nvidia-drivers</c>, and
+<c>nvidia-legacy-drivers</c> ebuilds automatically discover your kernel version
+based on the <path>/usr/src/linux</path> symlink. Please ensure that you have
+this symlink pointing to the correct sources and that your kernel is correctly
+configured.  Please refer to the Configuring the Kernel section of the <uri
 link="/doc/en/handbook/">Installation Handbook</uri> for details on configuring
 your kernel.
 </p>
@@ -201,9 +221,9 @@ like this:
 
 <note>
 Unfortunately, certain legacy video cards are not supported by the newer
-versions of <c>nvidia-glx</c> and <c>nvidia-kernel</c>. nVidia provides a <uri
-link="http://www.nvidia.com/object/IO_18897.html">list of supported cards</uri>.
-Please check the list before installing the drivers.
+versions of <c>nvidia-drivers</c>, <c>nvidia-glx</c> and <c>nvidia-kernel</c>.
+nVidia provides a <uri link="http://www.nvidia.com/object/IO_18897.html">list
+of supported cards</uri>. Please check the list before installing the drivers.
 </note>
 
 <p>
@@ -231,14 +251,9 @@ Quadro2 EX
 </pre>
 
 <p>
-If you own one of these cards, you will have to mask the newer versions of the
-nVidia drivers, and install an older version:
+If your card is listed in the legacy list, then you will be required to install
+the <c>nvidia-legacy-drivers</c> package to get 3D support.
 </p>
-
-<pre caption="Masking newer drivers">
-# <i>echo "&gt;media-video/nvidia-kernel-1.0.6629-r5" &gt;&gt; /etc/portage/package.mask</i>
-# <i>echo "&gt;media-video/nvidia-glx-1.0.6629-r7" &gt;&gt; /etc/portage/package.mask</i>
-</pre>
 
 </body>
 </section>
@@ -247,12 +262,20 @@ nVidia drivers, and install an older version:
 <body>
 
 <p>
-Now it's time to install <c>nvidia-kernel</c> and <c>nvidia-glx</c>. Since
-<c>nvidia-glx</c> depends on <c>nvidia-kernel</c>, installing <c>nvidia-glx</c>
-is sufficient.
+Now it's time to install the drivers. The newer drivers are unified, so you
+will only need to install a single package. The older drivers are split, so it
+will require two packages to be installed. Since <c>nvidia-glx</c> depends on
+<c>nvidia-kernel</c>, installing <c>nvidia-glx</c> is sufficient.
 </p>
 
-<pre caption="Installing the nVidia modules">
+<pre caption="Installing the nVidia drivers">
+<comment>(If you have a card not listed in the legacy list above)</comment>
+# <i>emerge nvidia-drivers</i>
+<comment>(If your card is listed in the legacy list)</comment>
+# <i>emerge nvidia-legacy-drivers</i>
+</pre>
+
+<pre caption="Installing the nVidia drivers (deprecated method)">
 # <i>emerge nvidia-glx</i>
 </pre>
 
@@ -261,15 +284,19 @@ Every time you <uri link="/doc/en/kernel-upgrade.xml">compile a new
 kernel</uri> or recompile the current one, you have to run <c>emerge
 nvidia-kernel</c> to reinstall the nVidia modules. <c>nvidia-glx</c> is
 unaffected by a kernel change and doesn't even need to be rebuilt when you
-recompile/upgrade X.
+recompile/upgrade X. If you are using the newer drivers, then you will need to
+run <c>emerge nvidia-drivers</c> or <c>emerge nvidia-legacy-drivers</c> to
+reinstall the nVidia modules.
 </impo>
 
 <p>
 Once the installation has finished, run <c>modprobe nvidia</c> to load the
-kernel module into memory.
+kernel module into memory. If this is an upgrade, you should remove the
+previous module first.
 </p>
 
 <pre caption="Loading the kernel module">
+# <i>lsmod | grep nvidia &amp;&amp; rmmod nvidia</i>
 # <i>modprobe nvidia</i>
 </pre>
 
@@ -299,8 +326,7 @@ depending on your kernel version).
 
 <p>
 Once the appropriate drivers are installed you need to configure your X Server
-(XFree86 or Xorg) to use the <c>nvidia</c> driver instead of the default
-<c>nv</c> driver.
+to use the <c>nvidia</c> driver instead of the default <c>nv</c> driver.
 </p>
 
 <p>
@@ -422,9 +448,10 @@ benefit from the USE flag change.
 <body>
 
 <p>
-Since NVidia released version 1.0.6106 it also provides you with a settings
-tool. This tool allows you to change graphical settings without restarting the X
-server and is available through Portage as <c>media-video/nvidia-settings</c>.
+Since nVidia released version 1.0.6106 it also provides you with a settings
+tool. This tool allows you to change graphical settings without restarting the
+X server and is available through Portage as
+<c>media-video/nvidia-settings</c>.
 </p>
 
 </body>
@@ -438,9 +465,9 @@ server and is available through Portage as <c>media-video/nvidia-settings</c>.
 <body>
 
 <p>
-If you are having troubles with the nVidia 2D acceleration it is likely that you
-are unable to set up a write-combining range with MTRR. To verify, check the
-contents of <path>/proc/mtrr</path>:
+If you are having troubles with the nVidia 2D acceleration it is likely that
+you are unable to set up a write-combining range with MTRR. To verify, check
+the contents of <path>/proc/mtrr</path>:
 </p>
 
 <pre caption="Checking if you have write-combining enabled">
@@ -468,9 +495,9 @@ and 2D acceleration now works without any glitches.
 <p>
 <c>nvidia-kernel</c> packages older than 1.0.6106 only support kernels using an
 8K stack size. More recent kernels (2.6.6 and higher) have support for 4K stack
-size's as well. Do not select 4K stack size in your kernel configuration if you
-are using such an <c>nvidia-kernel</c> package. You can find this option in the
-section <c>Kernel Hacking</c>.
+size's as well. Do not select 4K stack size in your kernel configuration if
+you are using such an <c>nvidia-kernel</c> package. You can find this option in
+the section <c>Kernel Hacking</c>.
 </p>
 
 </body>
@@ -532,7 +559,8 @@ still marked ~arch. These drivers no longer rely on hotplug or udev to create
 the proper device nodes, so you won't need to run <c>NVmakedevices.sh</c>.
 Instead, the X driver itself will create your <path>/dev/nvidia*</path> files
 when you start X. However, this will require you to use a recent kernel (2.6.14
-and greater).
+and greater). This is also true for all versions of <c>nvidia-drivers</c> and
+<c>nvidia-legacy-drivers</c>.
 </note>
 
 </body>
@@ -552,7 +580,12 @@ command:
 </p>
 
 <pre caption="Viewing the NVIDIA documentation">
-# <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
+<comment>(for nvidia-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-drivers-*/README.gz</i>
+<comment>(for nvidia-legacy-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-legacy-drivers-*/README.gz</i>
+<comment>(for nvidia-glx)</comment>
+$ <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
 </pre>
 
 </body>
