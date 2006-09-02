@@ -12,7 +12,13 @@ import GLIException, GLIInstallProfile, GLIClientConfiguration, GLIClientControl
 from GLIGenDialog import GLIGenCF,GLIGenIP
 import string, copy, time, re, glob, os, platform
 import gettext
-_ = gettext.gettext
+try:
+	gettext.install('gli-dialog', './languages')
+	translator = gettext.translation('gli-dialog', './languages')
+	_ = translator.gettext
+except:
+	_ = gettext.gettext
+
 
 class Setup_CConfig(GLIGenCF):
 	def __init__(self, client_profile, local_install, advanced_mode, networkless):
@@ -61,36 +67,36 @@ class Setup_InstallProfile(GLIGenIP):
 				self.set_additional_users()
 				self.show_settings()
 				#Reset the Yes/No labels.
-				d.add_persistent_args(["--yes-label", "Yes"])
-				d.add_persistent_args(["--no-label","No"])
+				d.add_persistent_args(["--yes-label", _(u"Yes")])
+				d.add_persistent_args(["--no-label",_(u"No")])
 				if d.yesno(_(u"Do you want to change any of your settings before starting the actual installation?")) == DLG_NO:
 					show_review_menu = False
 		if show_review_menu:
 			self._fn = (
-				{ 'text': "Partitioning", 'fn': self.set_partitions },
-				{ 'text': "Network mounts", 'fn': self.set_network_mounts },
-				{ 'text': "Install Stage", 'fn': self.set_install_stage },
-				{ 'text': "Portage Tree", 'fn': self.set_portage_tree },
-				{ 'text': "make.conf", 'fn': self.set_make_conf },
-				{ 'text': "distcc", 'fn': self.set_distcc },
-				{ 'text': "etc/portage/*", 'fn': self.set_etc_portage },
-				{ 'text': "Kernel", 'fn': self.set_kernel },
-				{ 'text': "Bootloader", 'fn': self.set_boot_loader },
-				{ 'text': "Timezone", 'fn': self.set_timezone },
-				{ 'text': "Networking", 'fn': self.set_networking },
-				{ 'text': "Cron daemon", 'fn': self.set_cron_daemon },
-				{ 'text': "Logging daemon", 'fn': self.set_logger },
-				{ 'text': "Extra packages", 'fn': self.set_extra_packages },
-				{ 'text': "Services", 'fn': self.set_services },
-				{ 'text': "Configuration Settings", 'fn': self.set_rc_conf },
-				{ 'text': "Root password", 'fn': self.set_root_password },
-				{ 'text': "Additional Users", 'fn': self.set_additional_users })
+				{ 'text': _(u"Partitioning"), 'fn': self.set_partitions },
+				{ 'text': _(u"Network mounts"), 'fn': self.set_network_mounts },
+				{ 'text': _(u"Install Stage"), 'fn': self.set_install_stage },
+				{ 'text': _(u"Portage Tree"), 'fn': self.set_portage_tree },
+				{ 'text': _(u"make.conf"), 'fn': self.set_make_conf },
+				{ 'text': _(u"distcc"), 'fn': self.set_distcc },
+				{ 'text': _(u"etc/portage/*"), 'fn': self.set_etc_portage },
+				{ 'text': _(u"Kernel"), 'fn': self.set_kernel },
+				{ 'text': _(u"Bootloader"), 'fn': self.set_boot_loader },
+				{ 'text': _(u"Timezone"), 'fn': self.set_timezone },
+				{ 'text': _(u"Networking"), 'fn': self.set_networking },
+				{ 'text': _(u"Cron daemon"), 'fn': self.set_cron_daemon },
+				{ 'text': _(u"Logging daemon"), 'fn': self.set_logger },
+				{ 'text': _(u"Extra packages"), 'fn': self.set_extra_packages },
+				{ 'text': _(u"Services"), 'fn': self.set_services },
+				{ 'text': _(u"Configuration Settings"), 'fn': self.set_rc_conf },
+				{ 'text': _(u"Root password"), 'fn': self.set_root_password },
+				{ 'text': _(u"Additional Users"), 'fn': self.set_additional_users })
 			self._menu_list = []
 			for item in self._fn:
 				self._menu_list.append(item['text'])
 			current_item = 0
 			while 1:
-				code, menuitem = self._d.menu("Choose an option", choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), height=23, menu_height=17, cancel="Done")
+				code, menuitem = self._d.menu(_(u"Choose an option"), choices=self._dmenu_list_to_choices(self._menu_list), default_item=str(current_item), height=23, menu_height=17, cancel=_(u"Done"))
 				if code != DLG_OK:
 					break
 				current_item = int(menuitem)
@@ -101,8 +107,8 @@ class Setup_InstallProfile(GLIGenIP):
 						current_item += 1
 			self.install_profile_xml_file = None
 		#Reset the Yes/No labels.
-		d.add_persistent_args(["--yes-label", "Yes"])
-		d.add_persistent_args(["--no-label","No"])
+		d.add_persistent_args(["--yes-label", _(u"Yes")])
+		d.add_persistent_args(["--no-label",_(u"No")])
 		if d.yesno(_(u"Do you want to save the InstallProfile XML file?")) == DLG_YES:
 			self.install_profile_xml_file = self.save_install_profile()
 
@@ -142,7 +148,7 @@ You can save your profile at any time by exiting the installer.
 You can also load a previously made profile at any time.\n
 If choosing expert mode, you will make a second profile with configuration settings for the livecd environment and the installer.\n
 Press OK to continue""")
-	d.msgbox(welcome_string, height=25, width=78, title="Welcome")
+	d.msgbox(welcome_string, height=25, width=78, title=_(u"Welcome"))
 
 	#Change the Yes/No buttons to new labels for this question.
 	d.add_persistent_args(["--yes-label", _(u"Simulate")])
@@ -154,8 +160,8 @@ Press OK to continue""")
 		cc._pretend = True
 	
 	#Set the Yes/No labels.
-	d.add_persistent_args(["--yes-label", "Standard"])
-	d.add_persistent_args(["--no-label","Advanced"])
+	d.add_persistent_args(["--yes-label", _(u"Standard")])
+	d.add_persistent_args(["--no-label",_(u"Advanced")])
 	advanced_string = _(u"""This installer has two modes, an advanced mode for those knowledgable with the inner details of their computer and a standard mode where many of the defaults will be chosen for the user for simplicity and to speed up the install process.  The advanced mode offers full customizability and is required for generating profiles to be used other computers. \nThe advanced mode is recommended by the developers.
 	""")
 	if d.yesno(advanced_string, width=55, height=15) == DLG_NO:
@@ -173,8 +179,8 @@ Press OK to continue""")
 
 
 #Reset the Yes/No labels.
-	d.add_persistent_args(["--yes-label", "Yes"])
-	d.add_persistent_args(["--no-label","No"])
+	d.add_persistent_args(["--yes-label", _(u"Yes")])
+	d.add_persistent_args(["--no-label",_(u"No")])
 	if advanced_mode:
 		#Local install affects the pre-selection of partitions on the local hard drives, amongst other things.
 		if d.yesno(_(u"Are the profiles being generated to be used for an install on the current computer?")) == DLG_NO:
@@ -216,8 +222,8 @@ Do you have a previously generated XML file for the ClientConfiguration?
 	cc.start_pre_install()
 	
 	#Reset the Yes/No labels.
-	d.add_persistent_args(["--yes-label", "Yes"])
-	d.add_persistent_args(["--no-label","No"])
+	d.add_persistent_args(["--yes-label", _(u"Yes")])
+	d.add_persistent_args(["--no-label",_(u"No")])
 	while 1:
 		if d.yesno(_(u"All of the installation settings are stored in an XML file, which we call the InstallProfile.  If you have previously saved a profile and would like to load it for this install, say Yes.  Otherwise say No.  Do you have a previously generated InstallProfile XML file?"), width=55, defaultno=1) == DLG_YES:
 			code, install_profile_xml_file = d.inputbox(_(u"Enter the filename of the XML file"))
@@ -259,21 +265,21 @@ Do you have a previously generated XML file for the ClientConfiguration?
 			data = notification.get_data()
 			if type_r == "exception":
 				#Reset the Yes/No labels.
-				d.add_persistent_args(["--yes-label", "Yes"])
-				d.add_persistent_args(["--no-label","No"])
+				d.add_persistent_args(["--yes-label", _(u"Yes")])
+				d.add_persistent_args(["--no-label",_(u"No")])
 				if d.yesno(_(u"There was an Exception received during the install that is outside of the normal install errors.  This is a bad thing. The error was:")+ str(data) + _(u"\nPlease submit a bug report (after searching to make sure it's not a known issue and verifying you didn't do something stupid) with the contents of /var/log/install.log and /tmp/installprofile.xml and the version of the installer you used\nDo you want to cleanup your system to attempt another install?"), width=70) == DLG_YES:
 					cc.start_failure_cleanup()
 			elif type_r == "progress":
 				#SECONDARY UPDATIN' GOIN ON IN HERE
 				diff = (data[0]*100)/num_steps
-				d.gauge_update(i+diff, "On step %d of %d. Current step: %s\n%s" % (num_steps_completed, num_steps, next_step, data[1]), update_text=1)
+				d.gauge_update(i+diff, _(u"On step %d of %d. Current step: %s\n%s") % (num_steps_completed, num_steps, next_step, data[1]), update_text=1)
 			elif type_r == "int":
 				if data == GLIClientController.NEXT_STEP_READY:
 					next_step_waiting = False
 					next_step = cc.get_next_step_info()
 					num_steps = cc.get_num_steps()
 					i = (num_steps_completed*100)/num_steps
-					d.gauge_update(i, "On step %d of %d. Current step: %s" % (num_steps_completed, num_steps, next_step), update_text=1)
+					d.gauge_update(i, _(u"On step %d of %d. Current step: %s") % (num_steps_completed, num_steps, next_step), update_text=1)
 					num_steps_completed += 1
 					#print "Next step: " + next_step
 					if cc.has_more_steps():
