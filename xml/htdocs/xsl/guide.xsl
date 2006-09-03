@@ -22,6 +22,18 @@
 <!-- Category from metadoc -->
 <xsl:param name="catid">0</xsl:param>
 
+<!-- Get the list of retired devs from the roll-call -->
+<xsl:variable name="RETIRED-DEVS" xmlns="">
+ <retired>
+  <xsl:for-each select="document('/proj/en/devrel/roll-call/userinfo.xml')/userlist/user[translate(status,'TIRED','tired')='retired']">
+    <user username="{@username}">
+     <xsl:copy-of select="realname"/>
+     <xsl:copy-of select="email[substring-after(text(),'@')!='gentoo.org']"/>
+    </user>
+  </xsl:for-each>
+ </retired>
+</xsl:variable>
+
 <!-- img tag -->
 <xsl:template match="img">
   <img src="{@src}" alt=""/>
@@ -512,10 +524,25 @@
 </xsl:template>
 
 <!-- Mail inside <author>...</author> -->
-<xsl:template match="/guide/author/mail|/book/author/mail">
-<b>
-  <a class="altlink" href="mailto:{@link}"><xsl:value-of select="."/></a>
-</b>
+<xsl:template match="/*[1]/author/mail">
+  <xsl:variable name="nick" select="substring-before(@link,'@gentoo.org')"/>
+  <xsl:choose>
+    <xsl:when test="substring-after(@link,'@')='gentoo.org' and exslt:node-set($RETIRED-DEVS)/retired/user[@username=$nick]">
+      <!-- @gentoo.org address of a retired dev, use another email from roll-call, or no email at all -->
+      <xsl:choose>
+        <xsl:when test="exslt:node-set($RETIRED-DEVS)/retired/user[@username=$nick]/email">
+          <b><a class="altlink" href="mailto:{exslt:node-set($RETIRED-DEVS)/retired/user[@username=$nick]/email[1]}"><xsl:value-of select="."/></a></b>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="."/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <b><a class="altlink" href="mailto:{@link}"><xsl:value-of select="."/></a></b>
+    </xsl:otherwise>
+  </xsl:choose>
+
 </xsl:template>
 
 <!-- Author -->
