@@ -1,0 +1,655 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-ia64-disk.xml,v 1.1 2006/09/03 05:02:44 vapier Exp $ -->
+
+<sections>
+
+<version>2.2</version>
+<date>2005-06-10</date>
+
+<section>
+<title>Introduction to Block Devices</title>
+<subsection>
+<title>Block Devices</title>
+<body>
+
+<p>
+We'll take a good look at disk-oriented aspects of Gentoo Linux
+and Linux in general, including Linux filesystems, partitions and block devices.
+Then, once you're familiar with the ins and outs of disks and filesystems,
+you'll be guided through the process of setting up partitions and filesystems
+for your Gentoo Linux installation.
+</p>
+
+<p>
+To begin, we'll introduce <e>block devices</e>. The most famous block device is
+probably the one that represents the first IDE drive in a Linux system, namely
+<path>/dev/hda</path>. If your system uses SCSI or SATA drives, then your
+first hard drive would be <path>/dev/sda</path>.
+</p>
+
+<p>
+The block devices above represent an abstract interface to the disk. User
+programs can use these block devices to interact with your disk without worrying
+about whether your drives are IDE, SCSI or something else. The program can
+simply address the storage on the disk as a bunch of contiguous,
+randomly-accessible 512-byte blocks.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Partitions</title>
+<body>
+
+<p>
+Although it is theoretically possible to use a full disk to house your Linux
+system, this is almost never done in practice. Instead, full disk block devices
+are split up in smaller, more manageable block devices. On <keyval id="arch"/>
+systems, these are called <e>partitions</e>. 
+</p>
+
+<p>
+Itanium systems use EFI, the Extensible Firmware Interface, for booting.  The
+partition table format that EFI understands is called GPT, or GUID Partition
+Table.  The partitioning program that understands GPT is called "parted", so
+that is the tool we will use below.  Additionally, EFI can only read FAT
+filesystems, so that is the format to use for the EFI boot partition, where the
+kernel will be installed by "elilo".
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Advanced Storage</title>
+<body>
+
+<p>
+The <keyval id="arch"/> Installation CDs provide support for EVMS and LVM2.
+EVMS and LVM2 increase the flexibility offered by your partitioning setup.
+During the installation instructions, we will focus on "regular" partitions,
+but it is still good to know EVMS and LVM2 are supported as well.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Designing a Partitioning Scheme</title>
+<subsection>
+<title>Default Partitioning Scheme</title>
+<body>
+
+<p>
+If you are not interested in drawing up a partitioning scheme for your system,
+you can use the partitioning scheme we use throughout this book:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Filesystem</th>
+  <th>Size</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>vfat</ti>
+  <ti>32M</ti>
+  <ti>EFI Boot partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>(swap)</ti>
+  <ti>512M</ti>
+  <ti>Swap partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ext3</ti>
+  <ti>Rest of the disk</ti>
+  <ti>Root partition</ti>
+</tr>
+</table>
+
+<p>
+If you are interested in knowing how big a partition should be, or even how
+many partitions you need, read on. Otherwise continue now with partitioning
+your disk by reading <uri link="#parted">Using parted to Partition your
+Disk</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>How Many and How Big?</title>
+<body>
+
+<p>
+The number of partitions is highly dependent on your environment. For instance,
+if you have lots of users, you will most likely want to have your
+<path>/home</path> separate as it increases security and makes backups easier.
+If you are installing Gentoo to perform as a mailserver, your
+<path>/var</path> should be separate as all mails are stored inside
+<path>/var</path>. A good choice of filesystem will then maximise your
+performance. Gameservers will have a separate <path>/opt</path> as most gaming
+servers are installed there. The reason is similar for <path>/home</path>:
+security and backups. You will definitely want to keep <path>/usr</path> big:
+not only will it contain the majority of applications, the Portage tree alone
+takes around 500 Mbyte excluding the various sources that are stored in it.
+</p>
+
+<p>
+As you can see, it very much depends on what you want to achieve. Separate
+partitions or volumes have the following advantages:
+</p>
+
+<ul>
+<li>
+  You can choose the best performing filesystem for each partition or volume
+</li>
+<li>
+  Your entire system cannot run out of free space if one defunct tool is
+  continuously writing files to a partition or volume
+</li>
+<li>
+  If necessary, file system checks are reduced in time, as multiple checks can
+  be done in parallel (although this advantage is more with multiple disks than
+  it is with multiple partitions)
+</li>
+<li>
+  Security can be enhanced by mounting some partitions or volumes read-only,
+  nosuid (setuid bits are ignored), noexec (executable bits are ignored) etc.
+</li>
+</ul>
+
+<p>
+However, multiple partitions have one big disadvantage: if not configured
+properly, you might result in having a system with lots of free space on one
+partition and none on another. There is also a 15-partition limit for SCSI and
+SATA.
+</p>
+
+<p>
+As an example partitioning, we show you one for a 20GB disk, used as a
+demonstration laptop (containing webserver, mailserver, gnome, ...):
+</p>
+
+<pre caption="Filesystem usage example">
+$ <i>df -h</i>
+Filesystem    Type    Size  Used Avail Use% Mounted on
+/dev/hda5     ext3    509M  132M  351M  28% /
+/dev/hda2     ext3    5.0G  3.0G  1.8G  63% /home
+/dev/hda7     ext3    7.9G  6.2G  1.3G  83% /usr
+/dev/hda8     ext3   1011M  483M  477M  51% /opt
+/dev/hda9     ext3    2.0G  607M  1.3G  32% /var
+/dev/hda1     ext2     51M   17M   31M  36% /boot
+/dev/hda6     swap    516M   12M  504M   2% &lt;not mounted&gt;
+<comment>(Unpartitioned space for future usage: 2 GB)</comment>
+</pre>
+
+<p>
+<path>/usr</path> is rather full (83% used) here, but once
+all software is installed, <path>/usr</path> doesn't tend to grow that much.
+Although allocating a few gigabytes of disk space for <path>/var</path> may
+seem excessive, remember that Portage uses this partition by default for
+compiling packages. If you want to keep <path>/var</path> at a more reasonable
+size, such as 1GB, you will need to alter your <c>PORTAGE_TMPDIR</c> variable
+in <path>/etc/make.conf</path> to point to the partition with enough free space
+for compiling extremely large packages such as OpenOffice.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="parted">
+<title>Using parted to Partition your Disk</title>
+<subsection>
+<body>
+
+<p>
+The following parts explain how to create the example partition layout
+described previously, namely:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>EFI Boot partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Swap partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Root partition</ti>
+</tr>
+</table>
+
+<p>
+Change your partition layout according to your own preference.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Viewing the Current Partition Layout</title>
+<body>
+
+<p>
+<c>parted</c> is the GNU partition editor.
+Fire up <c>parted</c> on your disk (in our example, we use
+<path>/dev/sda</path>):
+</p>
+
+<pre caption="Starting parted">
+# <i>parted /dev/sda</i>
+</pre>
+
+<p>
+Once in <c>parted</c>, you'll be greeted with a prompt that looks like this:
+</p>
+
+<pre caption="parted prompt">
+GNU Parted 1.6.22
+Copyright (C) 1998 - 2005 Free Software Foundation, Inc.
+This program is free software, covered by the GNU General Public License.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+Using /dev/sda
+(parted)
+</pre>
+
+<p>
+At this point one of the available commands is <c>help</c>, which you should use
+if you want to see the other available commands.  Another command is
+<c>print</c> which you should type next to display your disk's current partition
+configuration:
+</p>
+
+<pre caption="An example partition configuration">
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017    203.938  fat32                             boot
+2        203.938   4243.468  linux-swap
+3       4243.469  34724.281  ext3
+</pre>
+
+<p>
+This particular configuration is very similar to the one that we recommend
+above.  Note on the second line that the partition table is type is GPT.  If it
+is different, then the ia64 system will not be able to boot from this disk.
+For the sake of this guide we'll remove the partitions and create them anew.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Removing all Partitions</title>
+<body>
+
+<note>
+Unlike fdisk and some other partitioning programs which postpone committing
+changes until you give the write instruction, parted commands take effect
+immediately.  So once you start adding and removing partitions, you can't
+simply quit without writing them... they've already been written.
+</note>
+
+<p>
+The easy way to remove all partitions and start fresh, which guarantees that we
+are using the correct partition type, is to make a new partition table using the
+<c>mklabel</c> command.  After you do this, you will have an empty GPT partition
+table.
+</p>
+
+<pre caption="Creating a new partition table">
+(parted) <i>mklabel gpt</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+</pre>
+
+<p>
+Now that the partition table is empty, we're ready to create the
+partitions. We will use a default partitioning scheme as discussed previously.
+Of course, don't follow these instructions to the letter if you don't want the
+same partitioning scheme!
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Creating the EFI Boot Partition</title>
+<body>
+
+<p>
+We first create a small EFI boot partition. This is required to be a FAT
+filesystem in order for the ia64 firmware to read it.  Our example makes this
+32 megabytes, which is appropriate for storing kernels and elilo configuration.
+You can expect each ia64 kernel to be around 5 megabytes, so this configuration
+leaves you some room to grow and experiment.
+</p>
+
+<pre caption="Creating the boot partition">
+(parted) <i>mkpart primary fat32 0 32</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017     32.000  fat32
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Creating the Swap Partition</title>
+<body>
+
+<p>
+Let's now create the swap partition.  The classic size to make the swap
+partition was twice the amount of RAM in the system.  In modern systems with
+lots of RAM, this is no longer necessary.  For most desktop systems, a 512
+megabyte swap partition is sufficient.  For a server, you should consider
+something larger to reflect the anticipated needs of the server.
+</p>
+
+<pre caption="Creating the swap partition">
+(parted) <i>mkpart primary linux-swap 32 544</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017     32.000  fat32
+2         32.000    544.000
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Creating the Root Partition</title>
+<body>
+
+<p>
+Finally, let's create the root partition.  Our configuration will make the root
+partition to occupy the rest of the disk.  We default to ext3, but you can use
+ext2, jfs, reiserfs or xfs if you prefer.  The actual filesystem is not created
+in this step, but the partition table contains an indication of what kind of
+filesystem is stored on each partition, and it's a good idea to make the table
+match your intentions.
+</p>
+
+<pre caption="Creating the root partition">
+(parted) <i>mkpart primary ext3 544 34732.890</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017     32.000  fat32
+2         32.000    544.000
+3        544.000  34732.874
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Exiting parted</title>
+<body>
+
+<p>
+To quit from parted, type <c>quit</c>.  There's no need to take a separate step
+to save your partition layout since parted has been saving it all along.  As you
+leave, parted gives you reminder to update your <c>/etc/fstab</c>, which we'll
+do later in this guide.
+</p>
+
+<pre caption="Quit from parted">
+(parted) <i>quit</i>
+Information: Don't forget to update /etc/fstab, if necessary.
+</pre>
+
+<p>
+Now that your partitions are created, you can now continue with <uri
+link="#filesystems">Creating Filesystems</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="filesystems">
+<title>Creating Filesystems</title>
+<subsection>
+<title>Introduction</title>
+<body>
+
+<p>
+Now that your partitions are created, it is time to place a filesystem on them. 
+If you don't care about what filesystem to choose and are happy with what we use
+as default in this handbook, continue with <uri 
+link="#filesystems-apply">Applying a Filesystem to a Partition</uri>.
+Otherwise read on to learn about the available filesystems...
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Filesystems?</title>
+<body>
+
+<p>
+The Linux kernel supports various filesystems. We'll explain ext2, ext3,
+ReiserFS, XFS and JFS as these are the most commonly used filesystems on Linux
+systems.
+</p>
+
+<p>
+<b>vfat</b> is the MS-DOS filesystem, updated to allow long filenames.  It is
+also the only filesystem type that the EFI firmware on ia64 systems understand.
+The boot partition on ia64 systems should always be vfat, but for your data
+partitions you should use one of the other filesystems listed below.
+</p>
+
+<p>
+<b>ext2</b> is the tried and true Linux filesystem but doesn't have metadata
+journaling, which means that routine ext2 filesystem checks at startup time can
+be quite time-consuming. There is now quite a selection of newer-generation
+journaled filesystems that can be checked for consistency very quickly and are
+thus generally preferred over their non-journaled counterparts. Journaled
+filesystems prevent long delays when you boot your system and your filesystem
+happens to be in an inconsistent state.
+</p>
+
+<p>
+<b>ext3</b> is the journaled version of the ext2 filesystem, providing metadata
+journaling for fast recovery in addition to other enhanced journaling modes like
+full data and ordered data journaling. ext3 is a very good and reliable
+filesystem.
+</p>
+
+<p>
+<b>ReiserFS</b> is a B*-tree based filesystem that has very good overall 
+performance and greatly outperforms both ext2 and ext3 when dealing with small 
+files (files less than 4k), often by a factor of 10x-15x. ReiserFS also scales 
+extremely well and has metadata journaling. As of kernel 2.4.18+, ReiserFS is 
+solid and usable as both general-purpose filesystem and for extreme cases such 
+as the creation of large filesystems, the use of many small files, very large 
+files and directories containing tens of thousands of files. 
+</p>
+
+<p>
+<b>XFS</b> is a filesystem with metadata journaling which comes with a robust
+feature-set and is optimized for scalability. We only recommend using this
+filesystem on Linux systems with high-end SCSI and/or fibre channel storage and
+an uninterruptible power supply. Because XFS aggressively caches in-transit data
+in RAM, improperly designed programs (those that don't take proper precautions
+when writing files to disk and there are quite a few of them) can lose a good
+deal of data if the system goes down unexpectedly.
+</p>
+
+<p>
+<b>JFS</b> is IBM's high-performance journaling filesystem. It has recently 
+become production-ready and there hasn't been a sufficient track record to 
+comment positively nor negatively on its general stability at this point.
+</p>
+
+</body>
+</subsection>
+<subsection id="filesystems-apply">
+<title>Applying a Filesystem to a Partition</title>
+<body>
+
+<p>
+To create a filesystem on a partition or volume, there are tools available for 
+each possible filesystem:
+</p>
+
+<table>
+<tr>
+  <th>Filesystem</th>
+  <th>Creation Command</th>
+</tr>
+<tr>
+  <ti>vfat</ti>
+  <ti><c>mkdosfs</c></ti>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mke2fs</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mke2fs -j</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkreiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+
+<p>
+For instance, to have the boot partition (<path>/dev/sda1</path> in our
+example) as vfat and the root partition (<path>/dev/sda3</path> in our example)
+as ext3, you would run the following commands:
+</p>
+
+<pre caption="Applying a filesystem on a partition">
+# <i>mkdosfs /dev/sda1</i>
+mkdosfs 2.10 (22 Sep 2003)
+
+# <i>mke2fs -j /dev/sda3</i>
+mke2fs 1.36 (05-Feb-2005)
+Filesystem label=
+OS type: Linux
+Block size=4096 (log=2)
+Fragment size=4096 (log=2)
+4382336 inodes, 8752348 blocks
+437617 blocks (5.00%) reserved for the super user
+First data block=0
+268 block groups
+32768 blocks per group, 32768 fragments per group
+16352 inodes per group
+Superblock backups stored on blocks: 
+        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208, 
+        4096000, 7962624
+
+Writing inode tables: done                            
+Creating journal (8192 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+This filesystem will be automatically checked every 26 mounts or
+180 days, whichever comes first.  Use tune2fs -c or -i to override.
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Activating the Swap Partition</title>
+<body>
+
+<p>
+<c>mkswap</c> is the command that is used to initialize swap partitions:
+</p>
+
+<pre caption="Creating a Swap signature">
+# <i>mkswap /dev/sda2</i>
+</pre>
+
+<p>
+To activate the swap partition, use <c>swapon</c>:
+</p>
+
+<pre caption="Activating the swap partition">
+# <i>swapon /dev/sda2</i>
+</pre>
+
+<p>
+Create and activate the swap with the commands mentioned above.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Mounting</title>
+<body>
+
+<p>
+Now that your partitions are initialized and are housing a filesystem, it is
+time to mount those partitions. Use the <c>mount</c> command. Don't forget to
+create the necessary mount directories for every partition you created. As an
+example we mount the root and boot partition:
+</p>
+
+<pre caption="Mounting the root partition">
+# <i>mount /dev/sda3 /mnt/gentoo</i>
+</pre>
+
+<note>
+Unlike some of the other architectures supported by Gentoo, <path>/boot</path>
+is not mounted on ia64.  The reason for this is that the EFI boot partition will
+be automatically mounted and written by the elilo command each time that you run
+it.  Because of this, /boot resides on the root filesystem and is the storage
+place for the kernels referenced by your elilo configuration.
+</note>
+
+<note>
+If you want your <path>/tmp</path> to reside on a separate partition, be sure to
+change its permissions after mounting: <c>chmod 1777 /mnt/gentoo/tmp</c>. This
+also holds for <path>/var/tmp</path>.
+</note>
+
+<p>
+We will also have to mount the proc filesystem (a virtual interface with the 
+kernel) on <path>/proc</path>. But first we will need to place our files on the partitions.
+</p>
+
+<p>
+Continue with <uri link="?part=1&amp;chap=5">Installing the Gentoo
+Installation Files</uri>.
+</p>
+
+</body>
+</section>
+</sections>
