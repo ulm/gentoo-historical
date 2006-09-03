@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.287 2006/09/01 23:08:55 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.288 2006/09/03 19:59:17 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1401,11 +1401,11 @@ class ArchitectureTemplate:
 
 	def _check_table_changed(self, oldparts, newparts):
 		for part in newparts:
-			if not newparts[part]['origminor'] or not oldparts.get_partition(part):
-				return True
 			oldpart = oldparts[part]
 			newpart = newparts[part]
-			if oldpart['type'] == newpart['type'] and oldpart['mb'] == newpart['mb'] and not newpart['resized'] and not newpart['format']:
+			if not newparts[part]['origminor'] or not oldparts.get_partition(part):
+				return True
+			if oldpart['type'] == newpart['type'] and long(oldpart['mb']) == long(newpart['mb']) and not newpart['resized'] and not newpart['format']:
 				continue
 			else:
 				return True
@@ -1414,11 +1414,11 @@ class ArchitectureTemplate:
 	def _check_table_layout_changed(self, oldparts, newparts):
 		# This function is similar to the above function except it will see it as un-changed even if a partition is just being reformatted
 		for part in newparts:
-			if not newparts[part]['origminor'] or not oldparts.get_partition(part):
-				return True
 			oldpart = oldparts[part]
 			newpart = newparts[part]
-			if oldpart['type'] == newpart['type'] and oldpart['mb'] == newpart['mb'] and not newpart['resized']:
+			if not newparts[part]['origminor'] or not oldparts.get_partition(part):
+				return True
+			if oldpart['type'] == newpart['type'] and long(oldpart['mb']) == long(newpart['mb']) and not newpart['resized']:
 				continue
 			else:
 				return True
@@ -1683,7 +1683,6 @@ class ArchitectureTemplate:
 	def partition(self):
 		"""
 		TODO:
-		before step 3, wipe drive and use the default disklabel for arch
 		skip fixed partitions in all passes (in GLISD maybe?)
 		"""
 		parts_old = {}
