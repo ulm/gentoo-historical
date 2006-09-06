@@ -294,7 +294,7 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 		# Parsing ACCEPT_KEYWORDS
 		if not self.make_conf_values.has_key('ACCEPT_KEYWORDS') or not self.make_conf_values['ACCEPT_KEYWORDS']:
 			self.make_conf_values['ACCEPT_KEYWORDS'] = self.system_accept_keywords
-		if self.make_conf_values['ACCEPT_KEYWORDS'].find("~x86") != -1:
+		if self.make_conf_values['ACCEPT_KEYWORDS'][0] == "~":
 			self.unstable_packages_check.set_active(True)
 		else:
 			self.unstable_packages_check.set_active(False)
@@ -341,7 +341,7 @@ but this guideline isn't always perfect. The syntax for the MAKEOPTS varaible is
 		self.make_conf_values['USE'] = temp_use
 		self.make_conf_values['CFLAGS'] = "-march=" + self.arch_procs[self.controller.client_profile.get_architecture_template()][self.proc_combo.get_active()] + " " + self.optimizations[self.optimizations_combo.get_active()] + " " + self.custom_cflags_entry.get_text()
 		if self.unstable_packages_check.get_active():
-			self.make_conf_values['ACCEPT_KEYWORDS'] = "~x86"
+			self.make_conf_values['ACCEPT_KEYWORDS'] = "~" + self.controller.client_profile.get_architecture_template()
 		else:
 			self.make_conf_values['ACCEPT_KEYWORDS'] = ""
 		temp_features = ""
