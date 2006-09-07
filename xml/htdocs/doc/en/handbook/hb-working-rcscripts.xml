@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.25 2006/03/14 19:29:29 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.26 2006/09/07 08:23:02 nightmorph Exp $ -->
 
 <sections>
 
-<version>1.21</version>
-<date>2005-05-29</date>
+<version>1.22</version>
+<date>2006-09-07</date>
 
 <section>
 <title>Runlevels</title>
@@ -535,6 +535,19 @@ depend() {
 }
 </pre>
 
+<p>
+If your service must write to local disks, it should need <c>localmount</c>. If
+it places anything in <path>/var/run</path> such as a pidfile, then should
+start after <c>bootmisc</c>:
+</p>
+
+<pre caption="Example depend() function">
+depend() {
+  need localmount
+  after bootmisc
+}
+</pre>
+
 </body>
 </subsection>
 <subsection>
@@ -551,27 +564,79 @@ initialize your service. It is advisable to use the <c>ebegin</c> and
 <pre caption="Example start() function">
 start() {
   ebegin "Starting my_service"
-  start-stop-daemon --start --quiet --exec /path/to/my_service
+  start-stop-daemon --start --exec /path/to/my_service \
+    --pidfile /path/to/my_pidfile
   eend $?
 }
 </pre>
 
 <p>
-If you need more examples of the <c>start()</c> function, please read the source
-code of the available init scripts in your <path>/etc/init.d</path> directory.
-As for <c>start-stop-daemon</c>, there is an excellent man page available if you
-need more information:
+Both <c>--exec</c> and <c>--pidfile</c> should be used in start and stop
+functions. If the service does not create a pidfile, then use
+<c>--make-pidfile</c> if possible, though you should test this to be sure.
+Otherwise, don't use pidfiles. You can also add <c>--quiet</c> to the
+<c>start-stop-daemon</c> options, but this is not recommended unless the
+service is extremely verbose.  Using <c>--quiet</c> may hinder debugging if the
+service fails to start.
 </p>
 
-<pre caption="Getting the man page for start-stop-daemon">
-# <i>man start-stop-daemon</i>
-</pre>
+<note>
+Make sure that <c>--exec</c> actually calls a service and not just a shell
+script that launches services and exits -- that's what the init script is
+supposed to do.
+</note>
+
+<p>
+If you need more examples of the <c>start()</c> function, please read the
+source code of the available init scripts in your <path>/etc/init.d</path>
+directory.
+</p>
 
 <p>
 Other functions you can define are: <c>stop()</c> and <c>restart()</c>. You are
 not obliged to define these functions! Our init system is intelligent enough to
 fill these functions by itself if you use <c>start-stop-daemon</c>.
 </p>
+
+<p>
+Although you do not <e>have</e> to create a <c>stop()</c> function, here is an
+example:
+</p>
+
+<pre caption="Example stop() function">
+stop() {
+  ebegin "Stopping my_service"
+  start-stop-daemon --stop --exec /path/to/my_service \
+    --pidfile /path/to/my_pidfile
+  eend $?
+}
+</pre>
+
+<p>
+If your service runs some other script (for example, bash, python, or perl),
+and this script later changes names (for example, <c>foo.py</c> to <c>foo</c>),
+then you will need to add <c>--name</c> to <c>start-stop-daemon</c>. You must
+specify the name that your script will be changed to. In this example, a
+service starts <c>foo.py</c>, which changes names to <c>foo</c>:
+</p>
+
+<pre caption="A service that starts the foo script">
+start() {
+  ebegin "Starting my_script"
+  start-stop-daemon --start --exec /path/to/my_script \
+    --pidfile /path/to/my_pidfile --name foo
+  eend $?
+}
+</pre>
+
+<p>
+<c>start-stop-daemon</c> has an excellent man page available if you need more
+information:
+</p>
+
+<pre caption="Getting the man page for start-stop-daemon">
+$ <i>man start-stop-daemon</i>
+</pre>
 
 <p>
 Gentoo's init script syntax is based on the Bourne Again Shell (bash) so you are
