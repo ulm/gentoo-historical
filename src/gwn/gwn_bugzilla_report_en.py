@@ -96,50 +96,60 @@ total_open_bug_count = len(total_opened_report.split("\n")) - 1
 
 print """<chapter>
 <title>Bugzilla</title>
+
 <section>
 <title>Summary</title>
 <body>
-     <ul>
-          <li><uri link="#doc_chap1_sect2">Statistics</uri></li>
-          <li><uri link="#doc_chap1_sect3">Closed bug ranking</uri></li>
-          <li><uri link="#doc_chap1_sect4">New bug rankings</uri></li>
-     </ul>
+
+<ul>
+<li><uri link="#doc_chap1_sect2">Statistics</uri></li>
+<li><uri link="#doc_chap1_sect3">Closed bug ranking</uri></li>
+<li><uri link="#doc_chap1_sect4">New bug rankings</uri></li>
+</ul>
+
 </body>
 </section>
 
 <section>
 <title>Statistics</title>
 <body>
-     <p>
-      The Gentoo community uses Bugzilla (<uri
-      link="http://bugs.gentoo.org">bugs.gentoo.org</uri>) to record and track
-      bugs, notifications, suggestions and other interactions with the
-      development team.  Between %s
-      and %s, activity on the site has resulted in:
-     </p>
-     <ul>
-          <li>%d new bugs during this period</li>
-          <li>%d bugs closed or resolved during this period</li>
-          <li>%d previously closed bugs were reopened this period</li>
-     </ul>
-     <p>
-     Of the %d currently open bugs: %d are labeled 'blocker', %d are labeled 'critical', and %d are labeled 'major'.
-     </p>
+
+<p>
+The Gentoo community uses Bugzilla (<uri
+link="http://bugs.gentoo.org">bugs.gentoo.org</uri>) to record and track
+bugs, notifications, suggestions and other interactions with the
+development team.  Between %s
+and %s, activity on the site has resulted in:
+</p>
+
+<ul>
+<li>%d new bugs during this period</li>
+<li>%d bugs closed or resolved during this period</li>
+<li>%d previously closed bugs were reopened this period</li>
+</ul>
+
+<p>
+Of the %d currently open bugs: %d are labeled 'blocker', %d are labeled
+'critical', and %d are labeled 'major'.
+</p>
+
 </body>
 </section>
 
 <section>
 <title>Closed bug rankings</title>
 <body>
-     <p>
-       The developers and teams who have closed the most bugs during this period are:
-     </p>
-     <ul>""" % (date_from_display, date_to_display, new_bug_count, closed_bug_count, reopened_bug_count, total_open_bug_count, severities.get('"blocker"',0), severities.get('"critical"',0), severities.get('"major"',0))
+
+<p>
+The developers and teams who have closed the most bugs during this period are:
+</p>
+
+<ul>""" % (date_from_display, date_to_display, new_bug_count, closed_bug_count, reopened_bug_count, total_open_bug_count, severities.get('"blocker"',0), severities.get('"critical"',0), severities.get('"major"',0))
 
 for i in range(0,8):
-    print"""      <li><mail link=%s>%s</mail>, with %d
-        <uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=RESOLVED&amp;bug_status=CLOSED&amp;chfield=bug_status&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;resolution=FIXED&amp;assigned_to=%s">closed bugs</uri>
-      </li>""" % (groups_that_closed_most[i][0], strip(groups_that_closed_most[i][2][0]), groups_that_closed_most[i][1], date_from, date_to, strip(groups_that_closed_most[i][0]))
+    print"""<li><mail link=%s>%s</mail>, with %d
+<uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=RESOLVED&amp;bug_status=CLOSED&amp;chfield=bug_status&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;resolution=FIXED&amp;assigned_to=%s">closed bugs</uri>
+</li>""" % (groups_that_closed_most[i][0], strip(groups_that_closed_most[i][2][0]), groups_that_closed_most[i][1], date_from, date_to, strip(groups_that_closed_most[i][0]))
 print """</ul>
 </body>
 </section>
@@ -147,17 +157,19 @@ print """</ul>
 <section>
 <title>New bug rankings</title>
 <body>
-     <p>
-       The developers and teams who have been assigned the most new bugs during this period are:
-     </p>
-     <ul>"""
+
+<p>
+The developers and teams who have been assigned the most new bugs during this
+period are:
+</p>
+
+<ul>"""
 for i in range(0,8):
-    print"""      <li><mail link=%s>%s</mail>, with %d
-        <uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;chfield=assigned_to&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;assigned_to=%s">new bugs</uri>
-      </li>""" % (groups_that_opened_most[i][0], strip(groups_that_opened_most[i][2][0]), groups_that_opened_most[i][1], date_from, date_to, strip(groups_that_opened_most[i][0]))
+    print"""<li><mail link=%s>%s</mail>, with %d
+<uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;chfield=assigned_to&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;assigned_to=%s">new bugs</uri>
+</li>""" % (groups_that_opened_most[i][0], strip(groups_that_opened_most[i][2][0]), groups_that_opened_most[i][1], date_from, date_to, strip(groups_that_opened_most[i][0]))
 print """</ul>
 </body>
 </section>
+
 </chapter>"""
-
-
