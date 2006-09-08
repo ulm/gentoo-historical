@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Id: nvidia-guide.xml,v 1.1 2006/07/27 10:02:28 neysx Exp $ -->
+<!-- $Id: nvidia-guide.xml,v 1.2 2006/09/08 13:02:45 neysx Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -15,8 +15,11 @@
 <author title="Editor">
   <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
+<author title="Editor">
+  <mail link="wolf31o2@gentoo.org">Chris Gianelloni</mail>
+</author>
 <author title="Translator">
-  <mail link="dezzou@gmail.com">Dzikri Aziz</mail>
+  <mail link="kucrut.dz@gmail.com">Dzikri Aziz</mail>
 </author>
 
 <abstract>
@@ -30,8 +33,8 @@ driver ini.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.26</version>
-<date>2006-07-25</date>
+<version>1.27</version>
+<date>2006-09-02</date>
 
 <chapter>
 <title>Pendahuluan</title>
@@ -40,8 +43,12 @@ driver ini.
 
 <p>
 nVidia meluncurkan driver-driver Linux mereka yang menyediakan performa bagus
-dan akselerasi 3D penuh. Rilis driver ini dibagi menjadi dua:
-<c>nvidia-kernel</c> dan <c>nvidia-glx</c>.
+dan akselerasi 3D penuh. Terdapat dua set driver nVidia di Portage. Set yang
+pertama merupakan driver lama dan dibagi menjadi dua: <c>nvidia-kernel</c> dan
+<c>nvidia-glx</c>. Sedangkan set yang kedua adalah set driver yang baru, juga
+dibagi menjadi dua: <c>nvidia-drivers</c> dan <c>nvidia-legacy-drivers</c>.
+Jika anda menginstal driver nVidia untuk pertama kali, anda sebaiknya
+menggunakan set yang baru.
 </p>
 
 <p>
@@ -58,6 +65,20 @@ yang menggunakan driver kernel <c>nvidia-kernel</c> secara internal untuk
 berkomunikasi dengan perangkat video.
 </p>
 
+<p>
+Driver baru memiliki semua fungsionalitas yang ada di <c>nvidia-kernel</c> dan
+<c>nvidia-glx</c> dalam sebuah ebuild tunggal, persis seperti nVidia merilis
+driver mereka.
+</p>
+
+<note>
+<c>nvidia-kernel</c> dan <c>nvidia-glx</c> telah usang, dan akan dihapus dari
+pohon Portage untuk digantikan oleh <c>nvidia-drivers</c> dan
+<c>nvidia-legacy-drivers</c>. Jika anda masih menggunakan <c>nvidia-kernel</c>
+dan <c>nvidia-glx</c>, maka anda sebaiknya segera berpindah untuk menggunakan
+paket yang baru.
+</note>
+
 </body>
 </section>
 </chapter>
@@ -70,7 +91,7 @@ berkomunikasi dengan perangkat video.
 
 <p>
 Seperti yang telah dijelaskan di atas, driver kernel nVidia terinstal dan
-dijalankan oleh kernel anda saat ini. Driver ini di-build sebagai modul, jadi
+dijalankan oleh kernel anda saat ini. Driver ini dibangun sebagai modul, jadi
 sangat masuk akal jika kernel anda harus memiliki dukungan untuk me-load modul.
 Jika anda telah menggunakan <c>genkernel</c> untuk mengkonfigurasi kernel
 anda, berarti anda telah siap untuk melanjutkan. Jika tidak, periksa kembali
@@ -92,8 +113,13 @@ Processor and Features ---&gt;
 </pre>
 
 <p>
-Anda juga harus menambahkan dukungan <c>agpgart</c> untuk kernel anda, bisa
-sebagai modul maupun dikompilasi di dalam kernel:
+Anda juga boleh menambahkan dukungan <c>agpgart</c> untuk kernel anda, bisa
+sebagai modul maupun dikompilasi di dalam kernel. Jika anda tidak menggunakan
+agpgart dari kernel, maka driver akan menggunakan implementasi agpgart-nya
+sendiri, yang bernama <c>nVAGP</c>. Pada beberapa sistem, implementasi ini
+memberikan performa yang lebih baik, namun pada sistem yang lainnya lebih jelek.
+Anda perlu mencobanya masing-masing untuk mendapatkan performa terbaik. Jika
+anda kurang yakin, gunakan agpgart dari kernel:
 </p>
 
 <pre caption="Mengaktifkan agpgart">
@@ -134,12 +160,13 @@ Graphics Support ---&gt;
 
 <p>
 Kemudian, di bawah "VESA driver type" pilih <c>vesafb</c> atau
-<c>vesafb-tng</c>:
+<c>vesafb-tng</c>. Jika anda menggunakan AMD64, anda perlu memilih
+<c>vesafb</c>:
 </p>
 
 <pre caption="Pilih tipe framebuffer">
-( ) vesafb
-(X) vesafb-tng
+(X) vesafb
+( ) vesafb-tng
 </pre>
 
 <p>
@@ -156,13 +183,8 @@ menggunakan <c>vesafb</c> atau cari dokumentasi framebuffer anda di
 <body>
 
 <p>
-Modul-modul dan librari nVidia terbagi dalam dua paket: <c>nvidia-glx</c> dan
-<c>nvidia-kernel</c>. Paket pertama merupakan librari GLX X11, sedangkan yang
-kedua merupakan modul kernel.
-</p>
-
-<p>
-Ebuild <c>nvidia-kernel</c> secara otomatis mencari versi kernel anda
+Ebuild <c>nvidia-kernel</c>, <c>nvidia-drivers</c>, dan
+<c>nvidia-legacy-drivers</c> secara otomatis mencari versi kernel anda
 berdasarkan symlink <path>/usr/src/linux</path>. Harap pastikan agar symlink
 ini menunjuk ke kernel yang benar dan telah dikonfigurasi. Silahkan membaca
 bagian Konfigurasi Kernel dari <uri link="/doc/id/handbook/">Buku Panduan
@@ -208,7 +230,8 @@ meng-update link tersebut seperti ini:
 
 <note>
 Sayangnya, beberapa kartu grafis lama tidak didukung oleh versi terbaru
-<c>nvidia-glx</c> dan <c>nvidia-kernel</c>. nVidia menyediakan sebuah <uri
+<c>nvidia-drivers</c>, <c>nvidia-glx</c> dan <c>nvidia-kernel</c>. nVidia
+menyediakan sebuah <uri
 link="http://www.nvidia.com/object/IO_18897.html">daftar kartu yang
 didukung</uri>.Silahkan periksa daftar ini sebelum menginstal driver.
 </note>
@@ -239,13 +262,8 @@ Quadro2 EX
 
 <p>
 Jika anda memiliki salah satu dari kartu-kartu grafis di atas, anda perlu
-melakukan mask untuk versi terbaru driver nVidia, lalu menginstal versi lama:
+menginstal paket <c>nvidia-legacy-drivers</c> untuk mendapatkan dukungan 3D.
 </p>
-
-<pre caption="Mask driver baru">
-# <i>echo "&gt;media-video/nvidia-kernel-1.0.6629-r5" &gt;&gt; /etc/portage/package.mask</i>
-# <i>echo "&gt;media-video/nvidia-glx-1.0.6629-r7" &gt;&gt; /etc/portage/package.mask</i>
-</pre>
 
 </body>
 </section>
@@ -254,12 +272,20 @@ melakukan mask untuk versi terbaru driver nVidia, lalu menginstal versi lama:
 <body>
 
 <p>
-Sekarang saatnya untuk menginstal <c>nvidia-kernel</c> dan <c>nvidia-glx</c>.
-Karena <c>nvidia-glx</c> bergantung pada <c>nvidia-kernel</c>, maka anda cukup
-menginstal <c>nvidia-glx</c>.
+Sekarang saatnya untuk menginstal driver. Driver yang baru telah digabungkan
+dalam satu paket. Sedangkan driver yang lama dipisah, jadi anda perlu menginstal
+kedua-duanya. Karena <c>nvidia-glx</c> bergantung pada <c>nvidia-kernel</c>,
+maka anda cukup menginstal <c>nvidia-glx</c>.
 </p>
 
-<pre caption="Instalasi modul nVidia">
+<pre caption="Instalasi driver nVidia">
+<comment>(Jika anda memiliki kartu yang tidak tertera pada daftar di atas)</comment>
+# <i>emerge nvidia-drivers</i>
+<comment>(Jika kartu anda tertera pada daftar di atas)</comment>
+# <i>emerge nvidia-legacy-drivers</i>
+</pre>
+
+<pre caption="Instalasi driver nVidia (metode lama)">
 # <i>emerge nvidia-glx</i>
 </pre>
 
@@ -268,15 +294,20 @@ Setiap kali anda <uri link="/doc/en/kernel-upgrade.xml">mengkompilasi kernel
 baru</uri> atau mengkompilasi ulang kernel anda saat ini, anda harus menjalankan
 <c>emerge nvidia-kernel</c> untuk menginstal ulang modul nVidia.
 <c>nvidia-glx</c> tidak terpengaruh oleh pergantian kernel, bahkan tidak perlu
-diinstal ulang ketika anda mengkompilasi ulang atau meng-upgrade X.
+diinstal ulang ketika anda mengkompilasi ulang atau meng-upgrade X. Jika anda
+menggunakan paket driver baru, maka anda perlu menjalankan <c>emerge
+nvidia-drivers</c> atau <c>emerge nvidia-legacy-drivers</c> untuk menginstal
+kembali driver nVidia.
 </impo>
 
 <p>
 Ketika instalasi telah selesai, jalankan <c>modprobe nvidia</c> untuk me-load
-modul kernel ke memori.
+modul kernel ke memori. Jika anda melakukan upgrade, anda perlu membuang modul
+yang lama terlebih dahulu.
 </p>
 
 <pre caption="Load modul kernel">
+# <i>lsmod | grep nvidia &amp;&amp; rmmod nvidia</i>
 # <i>modprobe nvidia</i>
 </pre>
 
@@ -306,8 +337,8 @@ tergantung versi kernel yang anda gunakan).
 
 <p>
 Jika driver yang benar telah terinstal, anda perlu mengkonfigurasi Server X
-(XFree86 atau Xorg) agar menggunakan driver <c>nvidia</c> sebagai ganti dari
-driver default, yaitu <c>nv</c>.
+agar menggunakan driver <c>nvidia</c> sebagai ganti dari driver default, yaitu
+driver <c>nv</c>.
 </p>
 
 <p>
@@ -548,6 +579,7 @@ jadi anda tidak perlu lagi menjalankan <c>NVmakedevices.sh</c>. Tetapi,
 driver X itu sendiri yang akan menciptakan file-file di
 <path>/dev/nvidia*</path> ketika anda menyalakan X. Bagaimanapun juga, cara ini
 mengharuskan anda untuk menginstal kernel baru (2.6.14 atau yang lebih baru).
+Hal ini juga berlaku untuk <c>nvidia-drivers</c> dan <c>nvidia-legacy-drivers</c>.
 </note>
 
 </body>
@@ -566,7 +598,12 @@ terinstal di <c>/usr/share/doc</c> dan bisa anda baca dengan perintah berikut:
 </p>
 
 <pre caption="Membaca dokumentasi NVIDIA">
-# <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
+<comment>(untuk nvidia-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-drivers-*/README.gz</i>
+<comment>(untuk nvidia-legacy-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-legacy-drivers-*/README.gz</i>
+<comment>(untuk nvidia-glx)</comment>
+$ <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
 </pre>
 
 </body>
