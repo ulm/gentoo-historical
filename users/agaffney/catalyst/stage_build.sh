@@ -23,7 +23,7 @@ for i in 1 2 3; do
   if [ ${i} = 1 ]; then
     echo "source_subpath: ${STAGE1_SEED}" >> stage${i}.spec
   else 
-    echo "source_subpath: stage$(expr ${i} - 1)-${SUBARCH}-${VERSION_STAMP}" >> stage${i}.spec
+    echo "source_subpath: default/stage$(expr ${i} - 1)-${SUBARCH}-${VERSION_STAMP}" >> stage${i}.spec
   fi
 done
 
