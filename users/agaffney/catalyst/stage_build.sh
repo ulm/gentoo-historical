@@ -1,6 +1,5 @@
 #!/bin/bash
 
-BUILD_DIR="/root/catalyst/automated"
 PROFILE="default-linux/x86/2006.1"
 VERSION_STAMP="2007.0_pre"
 SUBARCH="i686"
@@ -11,7 +10,7 @@ STAGE1_SEED="default/stage3-i686-2006.1"
 DATE=`date +%Y%m%d`
 PID=$$
 
-cd ${BUILD_DIR}
+cd /tmp
 
 catalyst -s "${DATE}" &> /tmp/catalyst_build_snapshot.${PID}.log
 if [ $? != 0 ]; then
