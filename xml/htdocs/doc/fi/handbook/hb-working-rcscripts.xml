@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-working-rcscripts.xml,v 1.7 2006/03/28 15:46:00 flammie Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-working-rcscripts.xml,v 1.8 2006/09/08 15:17:28 flammie Exp $ -->
 
 <sections>
 
-<version>1.21</version>
-<date>2005-05-29</date>
+<version>1.22</version>
+<date>2006-09-07</date>
 
 <section>
 <title>Runlevelit</title>
@@ -548,6 +548,19 @@ komennot. On järkevää kertoa käyttäjälle tapahtumista käskyillä
 <c>ebegin</c> ja <c>eend</c>:
 </p>
 
+<p>
+Jos palvelun pitää kirjoittaa levylle, se tarvitsee <c>localmount</c>in. Jos
+palvelu kirjoittaa <path>/var/run</path>iin jotain, kuten pidin, se
+käynnistetään <c>bootmisc</c>in jälkeen:
+</p>
+
+<pre caption="depend()-esimerkki">
+depend() {
+  need localmount
+  after bootmisc
+}
+</pre>
+
 <pre caption="start()-esimerkki">
 start() {
   ebegin "Palvelu käynnistyy"
@@ -557,20 +570,70 @@ start() {
 </pre>
 
 <p>
-Lisää esimerkkejä funktiosta <c>start()</c> löytyy hakemiston
-<path>/etc/init.d</path> sisältämistä initskriptien lähdekoodeista. Komennolle
-<c>start-stop-daemon</c> on saatavilla myös loistava ohjesivu lisätietoa varten:
+Valitsimet <c>--exec</c> ja <c>--pidfile</c> yleensä tarvitaan sekä
+startissa että stopissa. Jos palvelu ei kirjoita pidiään tiedostoon, 
+valitsin <c>--make-pidfile</c> auttaa, mutta tämä kannattaa testata
+varmuuden varaksi. Muussa tapauksessa ei kannata käyttää pid-tiedostoja.
+<c>start-stop-daemon</c>ille voi myös antaa valitsimen <c>--quiet</c>,
+mutta tämä ei ole suositeltavaa, ellei palvelu tulosta suurta määrää
+tietoja. <c>--quiet</c>-valitsimen käyttö haittaa vianetsintää, jos
+palvelu ei käynnisty.
 </p>
 
-<pre caption="start-stop-daemonin man-sivun katselu">
-# <i>man start-stop-daemon</i>
-</pre>
+<note>
+Varmista, että <c>--exec</c> osoittaa palveluun, eikä esimerkiksi
+kuoriskriptiin, joka käynnistää palvelun ja loppuu, sillä se on 
+initskriptin tehtävä.
+</note>
+
+<p>
+Lisäesimerkkejä <c>start()</c>-funktion toteutuksista löytyy
+valmiista skripteistä hakemistossa <path>/etc/init.d/</path>.
+</p>
 
 <p>
 Muut määriteltävät funktiot ovat <c>stop()</c> ja <c>restart()</c>. Näitä
 ei ole pakko määritellä! Init-järjestelmämme pystyy täyttämään nämä kohdat
 itsekin jos komentoa <c>start-stop-daemon</c> on käytetty.
 </p>
+
+<p>
+Vaikka <c>stop()</c> ei ole pakollinen, tässä on esimerkki:
+</p>
+
+<pre caption="stop()-esimerkki">
+stop() {
+  ebegin "Stopping my_service"
+  start-stop-daemon --stop --exec /path/to/my_service \
+    --pidfile /path/to/my_pidfile
+  eend $?
+}
+</pre>
+
+<p>
+Jos palvelu suorittaa muita skriptejä (vaikkapa bashia, pythonia tai perliä)
+ja skripti muuttaa nimeään (vaikkapa <c>foo.py</c>:stä <c>foo</c>ksi), 
+lisää valitsin <c>--name</c> <c>start-stop-daemon</c>ille. Täsää kerrotaan
+nimi, joksi skripti muuttuu. Tässä esimerkissä palvelu käynnistyy 
+<c>foo.py</c>nä ja muuttuu <c>foo</c>ksi.
+</p>
+
+<pre caption="Palvelu joka käyttää foo-skriptiä">
+start() {
+  ebegin "Starting my_script"
+  start-stop-daemon --start --exec /path/to/my_script \
+    --pidfile /path/to/my_pidfile --name foo
+  eend $?
+}
+</pre>
+
+<p>
+<c>Start-stop-daemon</c>illa on loistava ohje-sivu:
+</p>
+
+<pre caption="Start-stop-daemonin ohjesivun lukeminen">
+$ <i>man start-stop-daemon</i>
+</pre>
 
 <p>
 Gentoon initskriptit ovat syntaksiltaan lähinnä bashia (Bourne Again Shell),
