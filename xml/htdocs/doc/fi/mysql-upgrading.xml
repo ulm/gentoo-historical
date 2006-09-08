@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/mysql-upgrading.xml,v 1.4 2006/09/05 18:38:31 flammie Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/mysql-upgrading.xml,v 1.5 2006/09/08 16:10:03 flammie Exp $ -->
 
 <guide link="/doc/fi/mysql-upgrading.xml">
 <title>Ohje MySQL 4.1.x -päivitykseen</title>
@@ -19,17 +19,52 @@
 </author>
 
 <abstract>
-MySQL-ryhmä ylpeänä ilmoittaa, että MySQL 4.1 löytyy nyt Gentoon portagepuusta
-epävaakaana versiona. Ryhmä toivoo, että siitä pian saataisiin vakaa ebuild,
-tässä on päivitysohje kaikille halukkaille testaajille.
+MySQL 5 löytyy pian Gentoon portagepuusta
+epävaakaana versiona. Tässä on päivitysohje kaikille halukkaille testaajille.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.8</version>
-<date>2006-09-04</date>
+<version>1.9</version>
+<date>2006-09-08</date>
+
+<chapter>
+<title>Suora päivitys, suositus välillä 4.1 ⇒ 5.0</title>
+<section>
+<body>
+
+<p>
+Myisam-engine MySQL 4.1:ssä on riittävän valmis suoraan päivitykseen
+major-versioiden välillä:
+</p>
+
+<pre caption="Suora päivitys">
+# <i>quickpkg dev-db/mysql</i>
+# <i>alias MYSQL="mysql --user=root --password=</i><comment>'your_password'</comment><i>"</i>
+# <i>DATADIR=$(MYSQL --batch --raw --silent --skip-column-names \</i>
+     <i>--execute='SHOW variables LIKE "datadir";' \</i>
+     <i>| sed -e 's|datadir[ \t]||')</i>
+# <i>MYSQL --execute="FLUSH TABLES WITH READ LOCK;"</i>
+# <i>tar -cjpvf ~/mysql.$(date +%F"T"%H-%M).tar.bz2 \</i>
+     <i>/etc/mysql/conf.d/mysql /etc/mysql/my.cnf "${DATADIR}"</i>
+# <i>MYSQL --execute="UNLOCK TABLES;"</i>
+# <i>tar -tjvf ~/mysql.*.tar.bz2</i>
+# <i>emerge -av "&gt;mysql-5.0"</i>
+# <i>dispatch-conf</i>
+# <i>revdep-rebuild</i>
+# <i>/etc/init.d/mysql restart</i>
+# <i>mysql_upgrade_shell --user=root --password=</i><comment>'your_password'</comment><i> \</i>
+     <i>--protocol=tcp --datadir="${DATADIR}"</i>
+# <i>/etc/init.d/mysql restart</i>
+# <i>unset DATADIR</i>
+# <i>unalias MYSQL</i>
+</pre>
+
+</body>
+</section>
+</chapter>
 
 <chapter>
 <title>MySQL-päivitys vanhasta versioista</title>
@@ -39,7 +74,8 @@ tässä on päivitysohje kaikille halukkaille testaajille.
 <p>
 Käyttäjien, jotka päivittävät vanhemmasta (&lt;4.0.24) MySQL-versiosta,
 täytyy ensin asentaa MySQL 4.0.25. Jos sinulla on jo käytössäsi tämä
-versio, voit jättää väliin tämän osan ja siirtyä seuraavaan.
+versio, voit jättää väliin tämän osan ja 
+<uri link="#backup">siirtyä seuraavaan</uri>.
 </p>
 
 <pre caption="Suora päivitys">
@@ -50,7 +86,7 @@ versio, voit jättää väliin tämän osan ja siirtyä seuraavaan.
 </section>
 </chapter>
 
-<chapter>
+<chapter id="backup">
 <title>Nykyisten tietojen varmuuskopiointi</title>
 <section>
 <body>
@@ -112,7 +148,7 @@ Nyt poistetaan nykyinen versio ja kaikki siihen liittyvät tieto:
 <pre caption="Poistetaan MySQL">
 # <i>/etc/init.d/mysql stop</i>
 # <i>emerge -C mysql</i>
-# <i>tar cjpvf ~/mysql.$(date +%F_%H-%M).tar.bz2 /etc/mysql/my.cnf /var/lib/mysql/</i>
+# <i>tar cjpvf ~/mysql.$(date +%F"T"%H-%M).tar.bz2 /etc/mysql/my.cnf /var/lib/mysql/</i>
 # <i>ls -l ~/mysql.*</i>
 # <i>rm -rf /var/lib/mysql/ /var/log/mysql</i>
 </pre>
@@ -132,7 +168,8 @@ uudelleen MySQL linkityksiä.
 
 <pre caption="Päivitetään binäärit">
 # <i>emerge -av "&gt;mysql-4.1"</i>
-# <i>dispatch-conf</i>
+<comment>(Myös dispatch-confia voi käyttää)</comment>
+# <i>etc-update</i>
 # <i>revdep-rebuild</i>
 </pre>
 
@@ -142,17 +179,36 @@ uudelleen.
 </p>
 
 <pre caption="Määrittele MySQL:n perusasetukset">
-# <i>emerge --config =mysql-4.1.&lt;mikroversio&gt;</i>
+# <i>emerge --config =mysql-4.1.<comment>&lt;mikroversio&gt;</comment></i>
 # <i>/etc/init.d/mysql start</i>
 </pre>
-
-<note>
-Varhennuksen jälkeen <e>saattaa</e> pitää suorittaa <c>revdep-rebuild</c>.
-</note>
 
 <p>
 Lopuksi voit tuoda varmuuskopiot, jotka loit kohdassa 2:
 </p>
+
+ 
+<impo>
+Oletuksena asetustiedostossa <path>/etc/mysql/my.cnf</path> on päällä
+binäärimuotoinen lokikirjoitus (<c>log-bin</c>). Tähän lokiin kirjoitetaan
+kaikki transaktiot, jotka voivat muuttaa dataa. Isoissa tietokannoissa 
+(yli 1 gigan) tämä luo nopeasti kookkaita lokeja. Jos levytilaa on vähän,
+lokien poistaminen käytöstä saattaa auttaa.
+</impo>
+
+<impo>
+Oletusmerkistö Gentoon MySQL:ssä 4.1:stä lähtien on <c>UTF-8</c>. Jos
+lähdedatassa oli ASCII-alueen ulkopuolisia merkkejä, tietokannan
+merkistö saattaa tarvita säilyttää vanhana korvaamalla <c>utf8</c>:t
+<c>latin1</c>:llä tiedostossa <path>/etc/mysql/my.cnf</path>. Lisää 
+aiheesta kerrotaan 
+<uri link="#On_charset_conversion">merkistömuunnos-kappaleessa</uri>.
+</impo>
+
+<impo>
+Ylläpidollisen <c>mysql</c>-kannan, joka sisältää käyttäjänimet ja
+salasanat, <e>pitää olla</e> UTF-8:na.
+</impo>
 
 <pre caption="Palautetaan SQL-varmuuskopio">
 # <i>cat BACKUP_MYSQL_4.0.SQL \</i>
@@ -170,7 +226,7 @@ Lopuksi voit tuoda varmuuskopiot, jotka loit kohdassa 2:
 
 <p>
 Jos nyt käynnistät uudelleen MySQL-palvelun ja kaikki on mennyt niinkuin
-pitikin, sinulla on nyt toimiva versio 4.1.x! :-)
+pitikin, sinulla on nyt toimiva versio 4.1.x!
 </p>
 
 <pre caption="Käynnistä MySQL uudelleen">
@@ -201,49 +257,173 @@ Jos et ole tyytyväinen MySQL 4.1:een, on mahdollista palata takaisin MySQL
 # <i>emerge -C mysql</i>
 # <i>rm -rf /var/lib/mysql/ /var/log/mysql</i>
 # <i>emerge --usepkgonly "&lt;mysql-4.1"</i>
-# <i>tar -xjpvf mysql.[tag] -C /</i>
+<comment>(korvaa &lt;aika&gt; sillä, mitä käytit varmuuskopiodessasi.)</comment>
+# <i>tar -xjpvf mysql.&lt;aika&gt;.tar.bz2 -C /</i>
 # <i>/etc/init.d/mysql start</i>
 </pre>
+
+<impo>
+Jos muita mysql-sovelluksia on asennettu päivityksen jälkeen, pitää
+suorittaa <c>revdep-rebuild</c>, joka varmistaa että ohjelmat linkittävät
+oikeaan mysqlclient.sohon.
+</impo>
 
 </body>
 </section>
 </chapter>
-
-<chapter>
-<title>Suora päivitys, ei suositella, vaarallinen</title>
+<chapter id="On_charset_conversion">
+<title>Merkistömuunnos</title>
 <section>
+<title>Johdanto</title>
 <body>
 
-<p>Jossain tietyssä tilanteessa, on mahdollista päivittää suoraan seuraavan
-suurempaan MySQL-versioon. Jos tiedät mitä olet tekemässä ja luulet, että
-se soveltuu sinun tapaukseesi, niin tässä on temppu, joka mahdollistaa
-suoran päivittämisen MySQL 4.1:een.
-
+<p>
+Tämä ei ole täydellinen opas muunnoksiin vaan lyhyt ohje, josta saa
+vähän tietoa mitä saattaa joutua tekemään.
+</p>
+ 
+<p>
+Tietokannan muunnos on monimutkainen tehtävä ja vaikenee datan
+monipuolistuessa. Sarjallistetut oliot ja binääridata ovat esimerkiksi
+vaikeasti hallittavia muunnoskohteita.
 </p>
 
-<pre caption="Suora päivitys">
-# <i>quickpkg dev-db/mysql</i>
-# <i>/etc/init.d/mysql stop</i>
-# <i>tar -cjpvf ~/mysql.$(date +%F_%H-%M).tar.bz2 /etc/mysql/my.cnf /var/lib/mysql/</i>
-# <i>ls -l ~/mysql.*</i>
-# <i>export MYSQL_STRAIGHT_UPGRADE=1</i>
-# <i>emerge -av "&gt;mysql-4.1"</i>
-# <i>unset MYSQL_STRAIGHT_UPGRADE</i>
-# <i>dispatch-conf</i>
-# <i>revdep-rebuild</i>
-# <i>/etc/init.d/mysql start</i>
-# <i>mysql_fix_privilege_tables --defaults-file=/etc/mysql/my.cnf \</i>
-      <i>-uroot --password=</i>'<comment>salasana</comment>'
-# <i>mysql --database=mysql -uroot -p</i>'<comment>salasana</comment>' <i>&lt; /tmp/new_pieces.sql</i>
-# <i>/etc/init.d/mysql restart</i> # just to be sure
+</body>
+</section>
+<section>
+<title>Indeksit</title>
+<body>
+
+<p>
+Jokainen UTF-8-merkki on indeksin kannalta 3 tavua. MySQL-indeksien ko’on
+yläraja on 1000 tavua (767 InnoDB-tauluissa). Huomaa, että rajat on annettu
+tavuissa, vaikka sarakkeiden koko lasketaan merkeissä.
+</p>
+
+<p>
+MySQL:ssä voi myös tehdä indeksejä sarakkeiden osista, josta voi olla apua.
+Alla muutama esimerkki:
+</p>
+
+<pre caption="Indeksointi prefikseillä">
+$ <i>mysql -uroot -p'<comment>salasana</comment>' test</i>
+
+mysql> <i>SHOW variables LIKE "version" \G</i>
+*************************** 1. row ***************************
+Variable_name: version
+    Value: <comment>5.0.24-log</comment>
+1 row in set (0.00 sec)
+
+mysql> <i>CREATE TABLE t1 (</i>
+  ->   <i>c1 varchar(255) NOT NULL default '',</i>
+  ->   <i>c2 varchar(255) NOT NULL default ''</i>
+  ->   <i>) ENGINE=MyISAM DEFAULT CHARSET=utf8;</i>
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> <i>ALTER TABLE t1</i>
+  ->   <i>ADD INDEX idx1 ( c1 , c2 );</i>
+<comment>ERROR 1071 (42000): Specified key was too long; max key length is 1000 bytes</comment>
+
+mysql> <i>ALTER TABLE t1</i>
+  ->   <i>ADD INDEX idx1 ( c1(165) , c2(165) );</i>
+Query OK, 0 rows affected (0.01 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> <i>CREATE TABLE t2 (</i>
+  ->   <i>c1 varchar(255) NOT NULL default '',</i>
+  ->   <i>c2 varchar(255) NOT NULL default ''</i>
+  ->   <i>) ENGINE=MyISAM DEFAULT CHARSET=sjis;</i>
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> <i>ALTER TABLE t2</i>
+  ->   <i>ADD INDEX idx1 ( c1(250) , c2(250) );</i>
+Query OK, 0 rows affected (0.03 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> <i>CREATE TABLE t3 (</i>
+  ->   <i>c1 varchar(255) NOT NULL default '',</i>
+  ->   <i>c2 varchar(255) NOT NULL default ''</i>
+  ->   <i>) ENGINE=MyISAM DEFAULT CHARSET=latin1;</i>
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> <i>ALTER TABLE t3</i>
+  ->   <i>ADD INDEX idx1 ( c1 , c2 );</i>
+Query OK, 0 rows affected (0.03 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+</pre>
+
+</body>
+</section>
+<section>
+<title>Ympäristö</title>
+<body>
+
+<p>
+Käyttöympäristö kannattaa pitää UTF-8:na muokkaimia myöten:
+</p>
+
+<pre caption="Ympäristömuuttujat kuorelle">
+LC_ALL=fi_FI.UTF-8
+LANG=fi_FI.UTF-8
+export LC_ALL LANG
 </pre>
 
 <p>
-Onnea! Jos jokin menee pieleen, älä sano, etteikö sinua varoitettu! ;-)
+Järjestelmän pitää tukea käytettyä UTF-8-lokaalia. Lisätietoja tästä löytää
+<uri link="/doc/en/utf-8.xml">UTF-8-oppaasta</uri> ja 
+<uri link="/doc/en/guide-localization.xml">Paikallisasetusoppaasta</uri>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Iconv</title>
+<body>
+
+<p>
+<c>Iconv</c>, kuuluu pakettiin <c>sys-libs/glibc</c>. Sitä käytetään 
+tekstitiedostojen muunnoksessa merkistöjen välillä. Myös pakettia
+<c>app-text/recode</c> voi käyttää.
+</p>
+
+<pre caption="Using iconv">
+<comment>(latin1:stä UTF-8:ksi)</comment>
+$ <i>iconv -f ISO-8859-15 -t UTF-8 file1.sql &gt; file2.sql</i>
+
+<comment>(japanista UTF-8:ksi)</comment>
+$ <i>iconv -f ISO2022JP -t UTF-8 file1.sql &gt; file2.sql</i>
+</pre>
+ 
+<p>
+<c>Iconv</c> muuntaa sql-kannan vaikka käyttöympäristö ei ole
+UTF-8-asetuksilla.
+</p>
+
+</body>
+</section>
+<section>
+<title>SQL-muunnokset</title>
+<body>
+
+<p>
+SQL-skripteissä voi käyttää <c>CONVERT()</c>- ja <c>CAST()</c>-funktioita
+muunnosten toteuttamiseen.
+</p>
+
+</body>
+</section>
+<section>
+<title>Apache</title>
+<body>
+
+<p>
+UTF-8:n käyttö apachessa vaatii asetuksia tiedostossa <path>httpd.conf</path>:
+AddDefaultCharset, CharsetDefault, CharsetSourceEnc.
+Jos lähdetiedostot eivät ole UTF-8:aa, nekin pitää muuntaa <c>iconv</c>illa
+tai <c>recode</c>lla.
 </p>
 
 </body>
 </section>
 </chapter>
-
 </guide>
