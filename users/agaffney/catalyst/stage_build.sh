@@ -30,7 +30,7 @@ done
 for i in 1 2 3; do
   catalyst -f stage${i}.spec &> /tmp/catalyst_build_stage${i}.${PID}.log
   if [ $? != 0 ]; then
-    echo -e "From: ${EMAIL_FROM}\r\nTo: ${EMAIL_TO}\r\nSubject: Catalyst build error - stage${i}\r\n\r\n$(</tmp/catalyst_build_stage${i}.${PID}.log)" | sendmail ${EMAIL_TO}
+    echo -e "From: ${EMAIL_FROM}\r\nTo: ${EMAIL_TO}\r\nSubject: Catalyst build error - stage${i}\r\n\r\n$(tail -n 200 /tmp/catalyst_build_stage${i}.${PID}.log)\r\n\r\nFull build log at /tmp/catalyst_build_stage${i}.${PID}.log" | sendmail ${EMAIL_TO}
     exit 1
   fi
 done
