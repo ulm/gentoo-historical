@@ -109,8 +109,13 @@ class Device:
 		parted_part = self._parted_disk.next_partition()
 		while parted_part:
 			part_mb = long((parted_part.geom.end - parted_part.geom.start + 1) * self._sector_bytes / MEGABYTE)
+			if not part_mb:
+				part_mb = 1
 			# Ignore metadata "partitions"...this will need to be changed for non-x86
-			if parted_part.num >= 1:
+			if parted_part.num in self._labelinfo['ignoredparts']:
+				parted_part = self._parted_disk.next_partition(parted_part)
+				continue
+			elif parted_part.num >= 1:
 				fs_type = ""
 				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
 				if parted_part.type == 2: fs_type = "extended"
