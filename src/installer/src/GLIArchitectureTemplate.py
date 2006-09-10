@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.289 2006/09/10 19:17:05 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.290 2006/09/10 20:22:13 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -50,7 +50,8 @@ class ArchitectureTemplate:
 		if os.path.islink(self._compile_logfile) and not os.path.exists(self._compile_logfile):
 			os.unlink(self._compile_logfile)
 
-		# cache the list of successfully mounted swap devices here
+		# cache the list of successfully mounted devices and swap devices here
+		self._mounted_devices = []
 		self._swap_devices = []
 
 		# These must be filled in by the subclass. _steps is a list of
@@ -443,6 +444,8 @@ class ArchitectureTemplate:
 			ret = GLIUtility.spawn("mount " + partition_type + mountopts + partition + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','mount_local_partitions','Could not mount a partition')
+			else:
+				self._mounted_devices.append(mountpoint)
 			# double check in /proc/mounts
 			# This current code doesn't work and needs to be fixed, because there is a case that it is needed for - robbat2
 			#ret, output = GLIUtility.spawn('awk \'$2 == "%s" { print "Found" }\' /proc/mounts | head -n1' % (self._chroot_dir + mountpoint), display_on_tty8=True, return_output=True)
@@ -476,7 +479,9 @@ class ArchitectureTemplate:
 				ret = GLIUtility.spawn("mount -t nfs " + mountopts + " " + host + ":" + export + " " + self._chroot_dir + mountpoint, display_on_tty8=True, logfile=self._compile_logfile, append_log=True)
 				if not GLIUtility.exitsuccess(ret):
 					raise GLIException("MountError", 'fatal','mount_network_shares','Could not mount an NFS partition')
-				self._logger.log("Mounted netmount at mountpoint: " + mountpoint)
+				else:
+					self._logger.log("Mounted netmount at mountpoint: " + mountpoint)
+					self._mounted_devices.append(mountpoint)
 			else:
 				self._logger.log("Netmount type " + netmount['type'] + " not supported...skipping " + netmount['mountpoint'])
 
@@ -1305,13 +1310,17 @@ class ArchitectureTemplate:
 		GLIUtility.spawn("cp /tmp/clientconfiguration.xml " + self._chroot_dir + "/root/clientconfiguration.xml")
 		
 		#Unmount mounted fileystems in preparation for reboot
-		mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
-		for mount in mounts:
-			GLIUtility.spawn("umount -l " + mount)
+		#mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
+		for mount in self._mounted_devices:
+			if self._debug: self._logger.log("DEBUG: finishing_cleanup(): running: umount -l " + mount)
+			ret = GLIUtility.spawn("umount -l " + mount)
+			if not GLIUtility.exitsuccess(ret):
+				self._logger.log("ERROR! : Could not unmount mountpoint %s" % mount)
 			
 		# now turn off all swap as well.
 		# we need to find the swap devices
 		for swap_device in self._swap_devices:
+			if self._debug: self._logger.log("DEBUG: finishing_cleanup(): running: swapoff "+swap_device)
 			ret = GLIUtility.spawn("swapoff "+swap_device)
 			if not GLIUtility.exitsuccess(ret):
 				self._logger.log("ERROR! : Could not deactivate swap ("+swap_device+")!")
@@ -1349,9 +1358,11 @@ class ArchitectureTemplate:
 	def install_failed_cleanup(self):
 		if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): gathering mounts to unmount")
 		mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
-		for mount in mounts:
+		for mount in self._mounted_devices:
 			if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): running: umount -l " + mount)
-			GLIUtility.spawn("umount -l " + mount)
+			ret = GLIUtility.spawn("umount -l " + mount)
+			if not GLIUtility.exitsuccess(ret):
+				self._logger.log("ERROR! : Could not unmount mountpoint %s" % mount)
 			
 		# now turn off all swap as well.
 		# we need to find the swap devices
@@ -1785,4 +1796,3 @@ class ArchitectureTemplate:
 			# All done for this device
 			self.notify_frontend("progress", (cur_progress / total_steps, "Done with partitioning for " + device))
 			cur_progress += 1
-
