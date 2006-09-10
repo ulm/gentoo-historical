@@ -23,9 +23,9 @@ supported_types = {
 }
 
 labelinfo = {
-  'msdos': { 'ignoredparts': None, 'extended': True },
-  'mac':   { 'ignoredparts': (1,), 'extended': False },
-  'sun':   { 'ignoredparts': (3,), 'extended': False }
+  'msdos': { 'ignoredparts': [], 'extended': True },
+  'mac':   { 'ignoredparts': [1], 'extended': False },
+  'sun':   { 'ignoredparts': [3], 'extended': False }
 }
 
 archinfo = {
