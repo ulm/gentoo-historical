@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.288 2006/09/03 19:59:17 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.289 2006/09/10 19:17:05 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1379,6 +1379,8 @@ class ArchitectureTemplate:
 			fsTypes[fs_type.name] = fs_type
 			fs_type = parted.file_system_type_get_next (fs_type)
 		fstype = None
+		if fs == "apple_bootstrap":
+			fs = "hfs"
 		if fs: fstype = fsTypes[fs]
 		newpart = disk.partition_new(types[type], fstype, start, end)
 		constraint = disk.dev.constraint_any()
@@ -1660,7 +1662,8 @@ class ArchitectureTemplate:
 				# some base options, place it here.
 				format_cmds = { 'linux-swap': "mkswap", 'fat16': "mkfs.vfat -F 16", 'fat32': "mkfs.vfat -F 32",
 				                'ntfs': "mkntfs", 'xfs': "mkfs.xfs -f", 'jfs': "mkfs.jfs -f",
-				                'reiserfs': "mkfs.reiserfs -f", 'ext2': "mkfs.ext2", 'ext3': "mkfs.ext3"
+				                'reiserfs': "mkfs.reiserfs -f", 'ext2': "mkfs.ext2", 'ext3': "mkfs.ext3",
+				                'hfs': "hformat", 'apple_bootstrap': "hformat"
 				              }
 				if newpart['type'] in format_cmds:
 					cmdname = format_cmds[newpart['type']]

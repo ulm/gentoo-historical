@@ -109,7 +109,7 @@ class Device:
 		parted_part = self._parted_disk.next_partition()
 		while parted_part:
 			part_mb = long((parted_part.geom.end - parted_part.geom.start + 1) * self._sector_bytes / MEGABYTE)
-			if not part_mb:
+			if not part_mb and parted_part.type_name != "free":
 				part_mb = 1
 			# Ignore metadata "partitions"...this will need to be changed for non-x86
 			if parted_part.num in self._labelinfo['ignoredparts']:
@@ -117,7 +117,13 @@ class Device:
 				continue
 			elif parted_part.num >= 1:
 				fs_type = ""
-				if parted_part.fs_type != None: fs_type = parted_part.fs_type.name
+				if parted_part.fs_type:
+					fs_type = parted_part.fs_type.name
+					if fs_type == "hfs" and parted_part.is_flag_available(1) and parted_part.get_flag(1):
+						fs_type = "apple_bootstrap"
+				else:
+					# Add additional partition identification code here
+					pass
 				if parted_part.type == 2: fs_type = "extended"
 				part_name = ""
 				if self._parted_disk.type.check_feature(parted.DISK_TYPE_PARTITION_NAME):

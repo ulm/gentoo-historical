@@ -27,7 +27,7 @@ class Panel(GLIScreen.GLIScreen):
 	active_part_cur_size = 0
 	active_part_start_cyl = 0
 	active_part_minor = 0
-	colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat16': '#3d07f9', 'fat32': '#3d07f9', 'reiserfs': '#f0ff00', 'linux-swap': '#12ff09', 'xfs': '#006600', 'jfs': '#ffb400', 'hfs': '#fdb0ff', 'hfs+': '#fdb0ff' }
+	colors = { 'ext2': '#0af2fe', 'ext3': '#0af2fe', 'unalloc': '#a2a2a2', 'unknown': '#ed03e0', 'free': '#ffffff', 'ntfs': '#f20600', 'fat16': '#3d07f9', 'fat32': '#3d07f9', 'reiserfs': '#f0ff00', 'linux-swap': '#12ff09', 'xfs': '#006600', 'jfs': '#ffb400', 'hfs': '#fdb0ff', 'hfs+': '#fdb0ff', 'apple_bootstrap': '#fdb0ff' }
 	supported_filesystems = ["ext2", "ext3", "linux-swap", "xfs", "jfs", "reiserfs", "fat16", "fat32", "ntfs", "hfs", "hfs+"]
 	_helptext = """
 <b><u>Partitioning</u></b>
