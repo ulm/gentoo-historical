@@ -194,7 +194,7 @@ Enter the desired filename and path for the install log (the default is recommen
 you will want to enter a new root password for the LIVECD.
 Note that this can be different from your new system's root password.
 Presss Enter twice to skip this step.
-Enter the new LIVECD root password:	""")
+Enter the new LIVECD root password (will not be echoed):	""")
 				code, passwd1 = self._d.passwordbox(livecd_password_string, width=60, height=16)
 				if code != self._DLG_OK: 
 					return
@@ -640,12 +640,24 @@ slow you down.
 The installer divides USE flag selection into two screens, one for
 global USE flags and one for local flags specific to each program.
 Please be patient while the screens load. It may take awhile."""), width=73, height=16)
-					
-		#First set the USE flags, this is a biggie.
+		
+		#First grab the system USE flags.  These will be used often.
+		system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
+		
+		#Now get any stored USE flags.
+		remove_from_system = {}
+		add_flags = []
 		if make_conf.has_key("USE"): 
-			system_use_flags = make_conf["USE"]
-		else:  #not a preloaded config.  this is the NORMAL case.
-			system_use_flags = GLIUtility.spawn("portageq envvar USE", return_output=True)[1].strip().split()
+			stored_use_flags = make_conf["USE"].split()
+			for flag in stored_use_flags:
+				if "-" in flag: #A subtraction of a flag in the system USE
+					remove_flag = flag[1:]
+					remove_from_system[remove_flag] = 1
+				else:
+					add_flags.append(flag)  #Add to checked list
+		
+		
+		#Load data.
 		use_flags = []
 		use_local_flags = []
 		use_desc = GLIUtility.get_global_use_flags()
@@ -655,22 +667,44 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		sorted_use = use_desc.keys()
 		sorted_use.sort()
 		for flagname in sorted_use:
-			use_flags.append((flagname, use_desc[flagname], int(flagname in system_use_flags)))
+			use_flags.append((flagname, use_desc[flagname], int((flagname in system_use_flags or flagname in add_flags) and not remove_from_system.has_key(flagname) )))
 		#present the menu
-		code, use_flags = self._d.checklist(_(u"Choose which *global* USE flags you want on the new system"), height=25, width=80,list_height=17, choices=use_flags)	
+		code, chosen_use_flags = self._d.checklist(_(u"Choose which *global* USE flags you want on the new system"), height=25, width=80,list_height=17, choices=use_flags)	
 		
 		#populate the chocies list
 		sorted_use = use_local_desc.keys()
 		sorted_use.sort()
 		for flagname in sorted_use:
-			use_local_flags.append((flagname, use_local_desc[flagname], int(flagname in system_use_flags)))
+			use_local_flags.append((flagname, use_local_desc[flagname], int((flagname in system_use_flags or flagname in add_flags) and not remove_from_system.has_key(flagname) )))
 		#present the menu
-		code, use_local_flags = self._d.checklist(_(u"Choose which *local* USE flags you want on the new system"), height=25, width=80,list_height=17, choices=use_local_flags)	
+		code, chosen_use_local_flags = self._d.checklist(_(u"Choose which *local* USE flags you want on the new system"), height=25, width=80,list_height=17, choices=use_local_flags)	
+		
+		
+		#Hash the chosen list for speed.
+		chosen_hash = {}
+		for flag in chosen_use_flags:
+			chosen_hash[flag] = 1
+		for flag in chosen_use_local_flags:
+			chosen_hash[flag] = 1
+		
+		#Create the new string.  Loop through ALL flags, look for match in hash then in USE
 		temp_use = ""
-		for flag in use_flags:
-			temp_use += flag + " "
-		for flag in use_local_flags:
-			temp_use += flag + " "
+		for flag in use_desc:
+			if chosen_hash.has_key(flag) and (flag in system_use_flags):
+				continue   #Already in USE, don't need to add.
+			elif chosen_hash.has_key(flag):
+				temp_use += flag + " "  #Checked.  Add.
+			elif not chosen_hash.has_key(flag) and (flag in system_use_flags):
+				temp_use += "-"+flag+" "   #Was unchecked.  add a -flag to USE
+			
+		for flag in use_local_desc:
+			if chosen_hash.has_key(flag) and (flag in system_use_flags):
+				continue   #Already in USE, don't need to add.
+			elif chosen_hash.has_key(flag):
+				temp_use += flag + " "  #Checked.  Add.
+			elif not chosen_hash.has_key(flag) and (flag in system_use_flags):
+				temp_use += "-"+flag+" "   #Was unchecked.  add a -flag to USE
+		#Store it!
 		make_conf["USE"] = temp_use
 		
 		if not self._install_profile.get_dynamic_stage3() and self.advanced_mode:
@@ -1611,11 +1645,17 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 				if newuser in users:
 					self._d.msgbox(_(u"A user with that name already exists"))
 					continue
-				code, passwd1 = self._d.passwordbox(_(u"Enter the new password for user ")+ newuser)
-				code, passwd2 = self._d.passwordbox(_(u"Enter the new password again for confirmation"))
-				if code == self._DLG_OK: 
-					if passwd1 != passwd2:
-						self._d.msgbox(_(u"The passwords do not match! Go to the menu and try again."))
+				match = False
+				while not match:
+					code, passwd1 = self._d.passwordbox(_(u"Enter the new password for user %s. (will not be echoed)") % newuser)
+					code, passwd2 = self._d.passwordbox(_(u"Enter the new password again for confirmation"))
+					if code == self._DLG_OK: 
+						if passwd1 != passwd2:
+							self._d.msgbox(_(u"The passwords do not match! Please try again."))
+						else:
+							match = True
+					else:
+						self._d.msgbox(_(u"You must enter a password for the user!  Even a blank password will do.  You can always edit it again later from the menu."));
 				#Create the entry for the new user
 				new_user = [newuser, GLIUtility.hash_password(passwd1), ('users',), '/bin/bash', '/home/' + newuser, '', '']
 				users[newuser] = new_user
