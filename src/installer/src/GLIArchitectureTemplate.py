@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.292 2006/09/11 01:06:07 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.293 2006/09/11 03:29:25 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1315,7 +1315,7 @@ class ArchitectureTemplate:
 		mounted_devices.reverse()
 		for mount in mounted_devices:
 			if self._debug: self._logger.log("DEBUG: finishing_cleanup(): running: umount -l " + mount)
-			ret = GLIUtility.spawn("umount -l " + mount)
+			ret = GLIUtility.spawn("umount -l " + self._chroot_dir + mount)
 			if not GLIUtility.exitsuccess(ret):
 				self._logger.log("ERROR! : Could not unmount mountpoint %s" % mount)
 			
@@ -1364,7 +1364,7 @@ class ArchitectureTemplate:
 		mounted_devices.reverse()
 		for mount in mounted_devices:
 			if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): running: umount -l " + mount)
-			ret = GLIUtility.spawn("umount -l " + mount)
+			ret = GLIUtility.spawn("umount -l " + self._chroot_dir + mount)
 			if not GLIUtility.exitsuccess(ret):
 				self._logger.log("ERROR! : Could not unmount mountpoint %s" % mount)
 			
