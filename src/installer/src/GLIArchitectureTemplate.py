@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.291 2006/09/11 00:35:26 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.292 2006/09/11 01:06:07 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1311,7 +1311,8 @@ class ArchitectureTemplate:
 		
 		#Unmount mounted fileystems in preparation for reboot
 		#mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
-		mounted_devices = self._mounted_devices.reverse()
+		mounted_devices = self._mounted_devices
+		mounted_devices.reverse()
 		for mount in mounted_devices:
 			if self._debug: self._logger.log("DEBUG: finishing_cleanup(): running: umount -l " + mount)
 			ret = GLIUtility.spawn("umount -l " + mount)
@@ -1359,7 +1360,8 @@ class ArchitectureTemplate:
 	def install_failed_cleanup(self):
 		if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): gathering mounts to unmount")
 		#mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
-		mounted_devices = self._mounted_devices.reverse()
+		mounted_devices = self._mounted_devices
+		mounted_devices.reverse()
 		for mount in mounted_devices:
 			if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): running: umount -l " + mount)
 			ret = GLIUtility.spawn("umount -l " + mount)
