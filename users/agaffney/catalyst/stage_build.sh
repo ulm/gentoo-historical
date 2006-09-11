@@ -1,9 +1,12 @@
 #!/bin/bash
 
+PID=$$
+
 profile=
 version_stamp=
 subarch=
 stage1_seed=
+snapshot=
 email_from="catalyst@localhost"
 email_to="root@localhost"
 verbose=0
@@ -26,6 +29,8 @@ Options:
   -v|--version-stamp  Sets the version stamp (required)
   -a|--arch           Sets the 'subarch' in the spec (required)
   -s|--stage1-seed    Sets the seed for the stage1 (required)
+  -S|--snapshot       Sets the snapshot name (if not given defaults to today's
+                      date)
   --verbose           Send output of commands to console as well as log
   -f|--email-from     Sets the 'From' on emails sent from this script (defaults
                       to catalyst@localhost)
@@ -91,6 +96,10 @@ do
       stage1_seed=$1
       shift
       ;;
+    -S|--snapshot)
+      snapshot=$1
+      shift
+      ;;
     --verbose)
       verbose=1
       ;;
@@ -120,19 +129,19 @@ if [ -z "${stage1_seed}" ]; then
   exit 1
 fi
 
-DATE=`date +%Y%m%d`
-PID=$$
-
 cd /tmp
 
-run_cmd "catalyst -s '${DATE}'" "/tmp/catalyst_build_snapshot.${PID}.log"
-if [ $? != 0 ]; then
-  send_email "Catalyst build error - snapshot" "$(</tmp/catalyst_build_snapshot.${PID}.log)"
-  exit 1
+if [ -z "${snapshot}" ]; then
+  snapshot=`date +%Y%m%d`
+  run_cmd "catalyst -s '${snapshot}'" "/tmp/catalyst_build_snapshot.${PID}.log"
+  if [ $? != 0 ]; then
+    send_email "Catalyst build error - snapshot" "$(</tmp/catalyst_build_snapshot.${PID}.log)"
+    exit 1
+  fi
 fi
 
 for i in 1 2 3; do
-  echo -e "subarch: ${subarch}\ntarget: stage${i}\nversion_stamp: ${version_stamp}\nrel_type: default\nprofile: ${profile}\nsnapshot: ${DATE}" > stage${i}.spec
+  echo -e "subarch: ${subarch}\ntarget: stage${i}\nversion_stamp: ${version_stamp}\nrel_type: default\nprofile: ${profile}\nsnapshot: ${snapshot}" > stage${i}.spec
   if [ ${i} = 1 ]; then
     echo "source_subpath: ${stage1_seed}" >> stage${i}.spec
   else 
