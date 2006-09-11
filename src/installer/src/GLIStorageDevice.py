@@ -15,11 +15,11 @@ MEGABYTE = 1024 * 1024
 FREE_MINOR_FRAC_PRI = 1.0/32.0
 FREE_MINOR_FRAC_LOG = 1.0/8.0
 
-supported_types = {
-  'all':   ( 'ext2', 'ext3', 'linux-swap' ),
-  'x86':   ( 'ntfs', 'fat16', 'fat32', 'xfs', 'jfs', 'reiserfs' ),
-  'amd64': ( 'ntfs', 'fat16', 'fat32', 'xfs', 'jfs', 'reiserfs' ),
-  'ppc':   ( 'reiserfs', 'apple-bootstrap', 'hfs', 'hfs+' )
+supported_filesystems = {
+  'all':   ( 'ext2', 'ext3', 'linux-swap', 'xfs', 'jfs', 'reiserfs' ),
+  'x86':   ( 'ntfs', 'fat16', 'fat32' ),
+  'amd64': ( 'ntfs', 'fat16', 'fat32' ),
+  'ppc':   ( 'reiserfs', 'apple_bootstrap', 'hfs' )
 }
 
 labelinfo = {
@@ -89,8 +89,8 @@ class Device:
 
 	##
 	# Returns list of supported filesystems based on arch
-	def get_supported_types(self):
-		return supported_types['all'] + supported_types[self._arch]
+	def get_supported_filesystems(self):
+		return supported_filesystems['all'] + supported_filesystems[self._arch]
 
 	##
 	# Sets disk geometry info from disk. This function is used internally by __init__()

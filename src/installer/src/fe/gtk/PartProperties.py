@@ -31,6 +31,7 @@ class PartProperties(gtk.Window):
 			self.min_size = self.cur_size
 			self.max_size = self.cur_size
 		self.sync_slider_to_text = True
+		self.supported_filesystems = self.controller.self.devices[self.device].get_supported_filesystems()
 
 		self.connect("delete_event", self.delete_event)
 		self.connect("destroy", self.destroy_event)
@@ -126,7 +127,8 @@ class PartProperties(gtk.Window):
 		info_partition_fs.set_alignment(0.0, 0.5)
 		part_info_table.attach(info_partition_fs, 0, 1, 3, 4)
 		self.resize_info_part_filesystem = gtk.combo_box_new_text()
-		for fs in self.controller.supported_filesystems:
+#		for fs in self.controller.supported_filesystems:
+		for fs in self.supported_filesystems:
 			self.resize_info_part_filesystem.append_text(fs)
 		self.resize_info_part_filesystem.set_active(0)
 		self.resize_info_part_filesystem.connect("changed", self.filesystem_changed)
@@ -194,7 +196,8 @@ class PartProperties(gtk.Window):
 				self.resize_info_part_type.set_active(1)
 			self.resize_info_part_type.set_sensitive(False)
 			self.resize_info_part_filesystem.set_sensitive(False)
-			for i, fs in enumerate(self.controller.supported_filesystems):
+#			for i, fs in enumerate(self.controller.supported_filesystems):
+			for i, fs in enumerate(self.supported_filesystems:
 				if fs == self.fstype:
 					self.resize_info_part_filesystem.set_active(i)
 					break
@@ -231,7 +234,7 @@ class PartProperties(gtk.Window):
 			resp = msgdlg.run()
 			msgdlg.destroy()
 			return
-		if self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()] == "linux-swap":
+		if self.supported_filesystems[self.resize_info_part_filesystem.get_active()] == "linux-swap":
 			self.part_mount_point_entry.set_text("")
 			self.part_mount_opts_entry.set_text("")
 		else:
@@ -247,7 +250,7 @@ class PartProperties(gtk.Window):
 			if self.resize_info_part_type.get_active() == 1 and self.controller.devices[self.device].get_extended_partition() == 0: # Logical and no extended partition
 				self.controller.devices[self.device].add_partition(self.minor, self.max_size, 0, 0, "extended")
 				self.minor = 4 + FREE_MINOR_FRAC_LOG
-			fstype = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
+			fstype = self.supported_filesystems[self.resize_info_part_filesystem.get_active()]
 			new_minor = self.controller.devices[self.device].add_partition(self.minor, part_size, 0, 0, fstype, mountpoint=self.part_mount_point_entry.get_text(), mountopts=self.part_mount_opts_entry.get_text())
 			self.controller.draw_part_box()
 			self.controller.part_selected(None, self.device, new_minor)
@@ -316,7 +319,7 @@ class PartProperties(gtk.Window):
 			self.resize_hpaned.set_position(self.resize_hpaned.get_position())
 
 	def filesystem_changed(self, widget, data=None):
-		fs = self.controller.supported_filesystems[self.resize_info_part_filesystem.get_active()]
+		fs = self.supported_filesystems[self.resize_info_part_filesystem.get_active()]
 		self.resize_part_space.set_colors(self.controller.colors[fs], self.controller.colors[fs])
 		if self.fstype == "free": self.resize_part_space.get_child().expose_event(None, None)
 		if fs == "linux-swap":
