@@ -32,6 +32,9 @@ Options:
   -t|--email-to       Sets the 'To' on emails sent from this script (defaults
                       to root@localhost)
   -h|--help           Show this message and quit
+
+Example:
+  stage_build -p default-linux/x86/2006.1 -v 2007.0_pre -a i686 -s default/stage3-i686-2006.1
 EOH
 }
 
