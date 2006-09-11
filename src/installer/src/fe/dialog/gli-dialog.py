@@ -267,8 +267,9 @@ Do you have a previously generated XML file for the ClientConfiguration?
 				#Reset the Yes/No labels.
 				d.add_persistent_args(["--yes-label", _(u"Yes")])
 				d.add_persistent_args(["--no-label",_(u"No")])
-				if d.yesno(_(u"There was an Exception received during the install that is outside of the normal install errors.  This is a bad thing. The error was:")+ str(data) + _(u"\nPlease submit a bug report (after searching to make sure it's not a known issue and verifying you didn't do something stupid) with the contents of /var/log/install.log and /tmp/installprofile.xml and the version of the installer you used\nDo you want to cleanup your system to attempt another install?"), width=70) == DLG_YES:
+				if d.yesno(_(u"There was an Exception received during the install that is outside of the normal install errors.  This is a bad thing. The error was:")+ str(data) + _(u"\nPlease submit a bug report (after searching to make sure it's not a known issue and verifying you didn't do something stupid) with the contents of /var/log/install.log and /tmp/installprofile.xml and the version of the installer you used\nDo you want to cleanup your system to attempt another install?"), width=77, height=22) == DLG_YES:
 					cc.start_failure_cleanup()
+					sys.exit(0)
 			elif type_r == "progress":
 				#SECONDARY UPDATIN' GOIN ON IN HERE
 				diff = (data[0]*100)/num_steps
