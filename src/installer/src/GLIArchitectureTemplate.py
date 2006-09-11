@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.293 2006/09/11 03:29:25 codeman Exp $
+$Id: GLIArchitectureTemplate.py,v 1.294 2006/09/11 03:42:59 codeman Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -326,6 +326,8 @@ class ArchitectureTemplate:
 		ret = GLIUtility.spawn("mount -t proc none "+self._chroot_dir+"/proc")
 		if not GLIUtility.exitsuccess(ret):
 			raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount /proc')
+		else:
+			self._mounted_devices.append("/proc")
 		bind_mounts = [ '/dev' ]
 		uname = os.uname()
 		if uname[0] == 'Linux' and uname[2].split('.')[1] == '6':
@@ -335,6 +337,8 @@ class ArchitectureTemplate:
 			ret = GLIUtility.spawn('mount -o bind %s %s%s' % (mount,self._chroot_dir,mount))
 			if not GLIUtility.exitsuccess(ret):
 				raise GLIException("MountError", 'fatal','prepare_chroot','Could not mount '+mount)
+			else:
+				self._mounted_devices.append(mount)
 		if self._debug: self._logger.log("DEBUG: copying logfile to new system!")
 		GLIUtility.spawn("mv " + self._compile_logfile + " " + self._chroot_dir + self._compile_logfile + " && ln -s " + self._chroot_dir + self._compile_logfile + " " + self._compile_logfile)
 		self._logger.log("Chroot environment ready.")
@@ -1312,6 +1316,7 @@ class ArchitectureTemplate:
 		#Unmount mounted fileystems in preparation for reboot
 		#mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
 		mounted_devices = self._mounted_devices
+		mounted_devices.sort()
 		mounted_devices.reverse()
 		for mount in mounted_devices:
 			if self._debug: self._logger.log("DEBUG: finishing_cleanup(): running: umount -l " + mount)
@@ -1361,6 +1366,7 @@ class ArchitectureTemplate:
 		if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): gathering mounts to unmount")
 		#mounts = GLIUtility.spawn(r"mount | sed -e 's:^.\+ on \(.\+\) type .\+$:\1:' | grep -e '^" + self._chroot_dir + "' | sort -r", return_output=True)[1].split("\n")
 		mounted_devices = self._mounted_devices
+		mounted_devices.sort()
 		mounted_devices.reverse()
 		for mount in mounted_devices:
 			if self._debug: self._logger.log("DEBUG: install_failed_cleanup(): running: umount -l " + mount)

@@ -836,7 +836,7 @@ Please be patient while the screens load. It may take awhile."""), width=73, hei
 		#Change the Yes/No buttons for this question.
 		self._d.add_persistent_args(["--yes-label", _(u"Yes")])
 		self._d.add_persistent_args(["--no-label", _(u"No")])
-		if self._d.yesno(_(u"Do you want to use distcc to compile your extra packages during the install and for future compilations as well?"), height=12, width=60) == self._DLG_YES:
+		if self._d.yesno(_(u"Do you want to use distcc to compile your extra packages during the install and for future compilations as well?"), height=12, width=60, defaultno=1) == self._DLG_YES:
 			#Add distcc to the services list.
 			if self._install_profile.get_services():
 				services = self._install_profile.get_services()
