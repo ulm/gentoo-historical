@@ -26,7 +26,7 @@ Options:
   -v|--version-stamp  Sets the version stamp (required)
   -a|--arch           Sets the 'subarch' in the spec (required)
   -s|--stage1-seed    Sets the seed for the stage1 (required)
-  --verbose           Be verbose about what this script is doing
+  --verbose           Send output of commands to console as well as log
   -f|--email-from     Sets the 'From' on emails sent from this script (defaults
                       to catalyst@localhost)
   -t|--email-to       Sets the 'To' on emails sent from this script (defaults
