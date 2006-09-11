@@ -1,38 +1,145 @@
 #!/bin/bash
 
-PROFILE="default-linux/x86/2006.1"
-VERSION_STAMP="2007.0_pre"
-SUBARCH="i686"
-EMAIL_FROM="root@kagome"
-EMAIL_TO="andrew@agaffney.org"
-STAGE1_SEED="default/stage3-i686-2006.1"
+profile=
+version_stamp=
+subarch=
+stage1_seed=
+email_from="catalyst@localhost"
+email_to="root@localhost"
+verbose=0
+
+usage() {
+  msg=$1
+
+  if [ -n "${msg}" ]; then
+    echo -e "${msg}\n";
+  fi
+
+  cat <<EOH
+Usage:
+  stage_build [-p|--profile <profile>] [-v|--version-stamp <stamp>]
+              [-a|--arch <arch>] [-s|--stage1-seed <seed>] [--verbose]
+              [-f|--email-from <from>] [-t|--email-to <to>] [-h|--help]
+
+Options:
+  -p|--profile        Sets the portage profile (required)
+  -v|--version-stamp  Sets the version stamp (required)
+  -a|--arch           Sets the 'subarch' in the spec (required)
+  -s|--stage1-seed    Sets the seed for the stage1 (required)
+  --verbose           Be verbose about what this script is doing
+  -f|--email-from     Sets the 'From' on emails sent from this script (defaults
+                      to catalyst@localhost)
+  -t|--email-to       Sets the 'To' on emails sent from this script (defaults
+                      to root@localhost)
+  -h|--help           Show this message and quit
+EOH
+}
+
+send_email() {
+  subject=$1
+  body=$2
+
+  echo -e "From: ${email_from}\r\nTo: ${email_to}\r\nSubject: ${subject}\r\n\r\n${body}\r\n" | sendmail ${email_to}
+}
+
+run_cmd() {
+  cmd=$1
+  logfile=$2
+
+  if [ $verbose = 1 ]; then
+    ${cmd} 2>&1 | tee ${logfile}
+  else
+    ${cmd} &> ${logfile}
+  fi
+}
+
+# Parse args
+params=${#}
+while [ ${#} -gt 0 ]
+do
+  a=${1}
+  shift
+  case "${a}" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -p|--profile)
+      profile=$1
+      shift
+      ;;
+    -v|--version-stamp)
+      version_stamp=$1
+      shift
+      ;;
+    -a|--arch)
+      subarch=$1
+      shift
+      ;;
+    -f|--email-from)
+      email_from=$1
+      shift
+      ;;
+    -t|--email-to)
+      email_to=$1
+      shift
+      ;;
+    -s|--stage1-seed)
+      stage1_seed=$1
+      shift
+      ;;
+    --verbose)
+      verbose=1
+      ;;
+    -*)
+      echo "You have specified an invalid option: ${a}"
+      usage
+      exit 1
+      ;;
+    esac
+done
+
+# Make sure all required values were specified
+if [ -z "${profile}" ]; then
+  usage "You must specify a profile."
+  exit 1
+fi
+if [ -z "${version_stamp}" ]; then
+  usage "You must specify a version stamp."
+  exit 1
+fi
+if [ -z "${subarch}" ]; then
+  usage "You must specify an arch."
+  exit 1
+fi
+if [ -z "${stage1_seed}" ]; then
+  usage "You must specify a stage1 seed."
+  exit 1
+fi
 
 DATE=`date +%Y%m%d`
 PID=$$
 
 cd /tmp
 
-catalyst -s "${DATE}" &> /tmp/catalyst_build_snapshot.${PID}.log
+run_cmd "catalyst -s '${DATE}'" "/tmp/catalyst_build_snapshot.${PID}.log"
 if [ $? != 0 ]; then
-  echo -e "From: ${EMAIL_FROM}\r\nTo: ${EMAIL_TO}\r\nSubject: Catalyst build error - snapshot\r\n\r\n$(</tmp/catalyst_build_snapshot.${PID}.log)" | sendmail ${EMAIL_TO}
+  send_email "Catalyst build error - snapshot" "$(</tmp/catalyst_build_snapshot.${PID}.log)"
   exit 1
 fi
 
 for i in 1 2 3; do
-  echo -e "subarch: ${SUBARCH}\ntarget: stage${i}\nversion_stamp: ${VERSION_STAMP}\nrel_type: default\nprofile: ${PROFILE}\nsnapshot: ${DATE}" > stage${i}.spec
+  echo -e "subarch: ${subarch}\ntarget: stage${i}\nversion_stamp: ${version_stamp}\nrel_type: default\nprofile: ${profile}\nsnapshot: ${DATE}" > stage${i}.spec
   if [ ${i} = 1 ]; then
-    echo "source_subpath: ${STAGE1_SEED}" >> stage${i}.spec
+    echo "source_subpath: ${stage1_seed}" >> stage${i}.spec
   else 
-    echo "source_subpath: default/stage$(expr ${i} - 1)-${SUBARCH}-${VERSION_STAMP}" >> stage${i}.spec
+    echo "source_subpath: default/stage$(expr ${i} - 1)-${subarch}-${version_stamp}" >> stage${i}.spec
   fi
-done
-
-for i in 1 2 3; do
-  catalyst -a -p -f stage${i}.spec &> /tmp/catalyst_build_stage${i}.${PID}.log
+  run_cmd "catalyst -a -p -f stage${i}.spec" "/tmp/catalyst_build_stage${i}.${PID}.log"
   if [ $? != 0 ]; then
-    echo -e "From: ${EMAIL_FROM}\r\nTo: ${EMAIL_TO}\r\nSubject: Catalyst build error - stage${i}\r\n\r\n$(tail -n 200 /tmp/catalyst_build_stage${i}.${PID}.log)\r\n\r\nFull build log at /tmp/catalyst_build_stage${i}.${PID}.log\r\n" | sendmail ${EMAIL_TO}
+    send_email "Catalyst build error - stage${i}" "$(tail -n 200 /tmp/catalyst_build_stage${i}.${PID}.log)\r\n\r\nFull build log at /tmp/catalyst_build_stage${i}.${PID}.log"
     exit 1
   fi
 done
 
-echo -e "From: ${EMAIL_FROM}\r\nTo: ${EMAIL_TO}\r\nSubject: Catalyst build success\r\n\r\nEverything finished successfully.\r\n" | sendmail ${EMAIL_TO}
+send_email "Catalyst build success" "Everything finished successfully."
