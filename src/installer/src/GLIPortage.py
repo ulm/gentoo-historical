@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.54 2006/07/10 05:56:31 agaffney Exp $
+$Id: GLIPortage.py,v 1.55 2006/09/13 16:50:23 agaffney Exp $
 """
 
 import re
@@ -51,6 +51,8 @@ class GLIPortage(object):
 					if self._debug: self._logger.log("get_deps(): adding " + tmppkg + " to pkglist")
 					pkglist.append(tmppkg)
 		if self._debug: self._logger.log("get_deps(): pkglist is " + str(pkglist))
+		if not pkglist:
+				raise GLIException("GetDepListError", 'fatal', 'get_deps', "Dep list is empty. This usually means there is no portage tree in the chroot")
 		return pkglist
 
 	def parse_vdb_contents(self, file):
