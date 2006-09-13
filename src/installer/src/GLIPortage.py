@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.56 2006/09/13 18:26:30 agaffney Exp $
+$Id: GLIPortage.py,v 1.57 2006/09/13 18:29:13 agaffney Exp $
 """
 
 import re
@@ -290,6 +290,8 @@ Options:
 
   -s|--stage3       Create a stage3 equivelant in the chroot directory by using
                     files from the LiveCD.
+
+  -k|--kernel       Install kernel and modules from LiveCD into the chroot
 
   -h|--help         Display this help
 """ % (progname)
