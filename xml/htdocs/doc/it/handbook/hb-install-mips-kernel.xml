@@ -4,12 +4,13 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-mips-kernel.xml,v 1.10 2006/03/13 21:34:49 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-mips-kernel.xml,v 1.11 2006/09/13 18:28:56 so Exp $ -->
+<!-- :vim:ts=2:sts=2:et:tw=80: -->
 
 <sections>
 
-<version>1.16</version>
-<date>2006-02-27</date>
+<version>7.0</version>
+<date>2006-08-30</date>
 
 <section>
 <title>Timezone</title>
@@ -30,6 +31,7 @@ rispettive zone. Per esempio <path>GMT-8</path> è GMT+8.
 
 </body>
 </section>
+
 <section>
 <title>Installare i sorgenti</title>
 <subsection>
@@ -47,12 +49,15 @@ Gentoo</uri>.
 </p>
 
 <p>
-Sistemi basati su MIPS devono scegliere i <c>mips-sources</c>. Sono
+Sistemi basati su MIPS devono scegliere i <c>mips-sources</c>. <!--Sono
 necessarie patch speciali per renderli funzionanti su alcuni sistemi. La
 tabella sotto visualizza le flag USE richieste per abilitare i patchset.
-Sistemi Indy, Indigo2 (R4k) e Challenge S non richiedono nessun patchset.
+Sistemi Indy, Indigo2 (R4k) e Challenge S non richiedono nessun patchset.-->
+La patchset differisce da quelle disponibili per altre architetture, e ha
+molte patch specifiche per MIPS.
 </p>
 
+<!--
 <table>
 <tr>
   <th>Flag USE</th>
@@ -74,54 +79,55 @@ Sistemi Indy, Indigo2 (R4k) e Challenge S non richiedono nessun patchset.
   <ti><c>ip30</c></ti>
   <ti>Supporto SGI Octane/Octane2 (1)</ti>
 </tr>
-</table>
+</table>-->
 
 <note>
 La <c>USE="-doc"</c> disabilita la generazione della documentazione kernel
 API, che entrerebbe in numerose dipendenze non richieste per questo passo.
 </note>
 
-<pre caption="Impostare le flag USE e emergere i sorgenti del kernel">
+<pre caption="Emergere i sorgenti del kernel">
+<!--
 <comment>(Sostituire cobalt con l'appropriata flag USE per il proprio sistema
 se richiesto)</comment>
 # <i>mkdir /etc/portage</i>
 # <i>echo "sys-kernel/mips-sources cobalt" &gt;&gt; /etc/portage/package.use</i>
-
+-->
 <comment>(Scompattare e installare i sorgenti del kernel)</comment>
 # <i>USE="-doc" emerge mips-sources</i>
 </pre>
 
 <impo>
-(1) Su Origin 200/2000, Indigo2 Impact (R10000), Octane/Octane2 e O2, è
+<!--(1)--> Su Origin 200/2000, Indigo2 Impact (R10000), Octane/Octane2 e O2, è
 richiesto un kernel 64 bit per avviare il sistema. Per questi, si dovrebbe
-passare al profilo <path>default-linux/mips/mips64/RELEASE</path> cambiando
-il symlink <path>/etc/make.profile</path>. Poi si può fare <c>emerge
+<!--passare al profilo <path>default-linux/mips/mips64/RELEASE</path> cambiando
+il symlink <path>/etc/make.profile</path>. Poi si può--> fare <c>emerge
 gcc-mips64</c> per creare un cross compiler per compilare i kernel 64 bit.
 </impo>
 
-<impo>
+<!--<impo>
 (2) Indigo2 Impact è un caso speciale che richiede una patch speciale da
 essere applicata a <c>gcc</c> prima di compilare un kernel IP28. La patch
 aggiunge supporto per la CFLAG <c>-mip28-cache-barriers</c>, usata nella
 compilazione del kernel. Questa flag USE può essere impostata in
 <path>/etc/make.conf</path>. Questo viene già fatto, impostando il proprio
 profilo a <path>default-linux/mips/mips64/ip28/RELEASE</path>.
-</impo>
+</impo>-->
 
-<pre caption="Cambiare profilo e installare gcc-mips64">
-<comment>(Si assume che PORTDIR sia nella solita posizione, /usr/portage)</comment>
+<pre caption="Installare kgcc64">
+<!--<comment>(Si assume che PORTDIR sia nella solita posizione, /usr/portage)</comment>
 # <i>rm /etc/make.profile</i>
 # <i>ln -s /usr/portage/profiles/default-linux/mips/mips64/2005.0</i> <comment>(o .../mips64/ip28/2005.0)</comment>
 
 <comment>(Installare il kernel toolchain 64 bit)</comment>
-# <i>emerge gcc-mips64</i>
+--># <i>emerge gcc-mips64</i>
 </pre>
 
 <p>
 Se si dà un'occhiata a <path>/usr/src</path>, si dovrebbe vedere un link
 simbolico chiamato <path>linux</path>, che punta al sorgente del kernel. In
 questo caso il sorgente del kernel installato punta a
-<c>mips-sources-2.4.24</c>. La versione potrebbe essere differente.
+<c>mips-sources-2.6.13.4</c>. La versione potrebbe essere differente.
 </p>
 
 <pre caption="Il link simbolico al sorgente del kernel">
@@ -286,6 +292,11 @@ compiler, specificare il prefisso usando la variabile <c>CROSS_COMPILE</c>
 come mostrato nella prossima sezione.
 </impo>
 
+<impo>
+C'è un problema conosciuto con JFS e ALSA su sistemi Octane, nei quali ALSA
+non funziona. E' raccomandato di non usare JFS.
+</impo>
+
 </body>
 </subsection>
 <subsection id="compiling">
@@ -352,11 +363,6 @@ Ricordarsi di fare <c>gzip -9</c> al file dopo che si è entrati in
 # <i>gzip -9v /boot/kernel-2.6.13.4</i>
 </pre>
 
-<!--
-<p>
-Se il sistema non avvia i kernel ELF, compilare il kernel con <c>make vmlinux.ecoff</c> invece di <c>make vmlinux</c>. L'immagine del kernel sarà salvata come <path>arch/mips/boot/vmlinux.ecoff</path>, invece di <path>vmlinux</path>.
-</p>
--->
 </body>
 </subsection>
 </section>
