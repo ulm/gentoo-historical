@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.295 2006/09/12 01:58:29 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.296 2006/09/13 13:28:55 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -1391,6 +1391,23 @@ class ArchitectureTemplate:
 
 	def _sectors_to_megabytes(self, sectors, sector_bytes=512):
 		return float((float(sectors) * sector_bytes)/ float(MEGABYTE))
+
+	def _wait_for_device_node(self, devnode):
+		if GLIUtility.is_file("/sbin/udevsettle"):
+			GLIUtility.spawn("/sbin/udevsettle")
+			time.sleep(1)
+			if not GLIUtility.is_file(devnode):
+				GLIUtility.spawn("/sbin/udevsettle")
+		else:
+			for i in range(0, 10):
+				if GLIUtility.is_file(devnode):
+					break
+				time.sleep(1)
+			time.sleep(1)
+			for i in range(0, 10):
+				if GLIUtility.is_file(devnode):
+					break
+				time.sleep(1)
 
 	def _add_partition(self, disk, start, end, type, fs, name="", strict_start=False, strict_end=False):
 		if self._debug: self._logger.log("_add_partition(): type=%s, fstype=%s" % (type, fs))
