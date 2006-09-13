@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIPortage.py,v 1.55 2006/09/13 16:50:23 agaffney Exp $
+$Id: GLIPortage.py,v 1.56 2006/09/13 18:26:30 agaffney Exp $
 """
 
 import re
@@ -307,6 +307,8 @@ if __name__ == "__main__":
 			mode = "grp"
 		elif arg == "-s" or arg == "--stage3":
 			mode = "stage3"
+		elif arg == "-k" or arg == "--kernel":
+			mode = "kernel"
 		elif arg == "-h" or arg == "--help":
 			usage(progname)
 			sys.exit(0)
@@ -384,6 +386,10 @@ if __name__ == "__main__":
 				gliportage.copy_pkg_to_chroot(tmppkg)
 			gliportage.add_pkg_to_world(pkg)
 		print "GRP install complete!"
+	elif mode == "kernel":
+		kernelpkg = gliportage.get_best_version_vdb("sys-kernel/livecd-kernel")
+		gliportage.copy_pkg_to_chroot(kernelpkg)
+		print "LiveCD kernel installed!"
 	else:
 		print "You must specify an operating mode (-g or -s)!"
 		usage(progname)
