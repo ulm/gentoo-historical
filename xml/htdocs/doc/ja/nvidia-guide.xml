@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/nvidia-guide.xml,v 1.14 2006/08/20 15:28:55 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/nvidia-guide.xml,v 1.15 2006/09/15 18:17:59 idani Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/ja/nvidia-guide.xml" lang="ja">
@@ -14,8 +14,14 @@
 <author title="Editor">
   <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
+<author title="Editor">
+  <mail link="wolf31o2@gentoo.org">Chris Gianelloni</mail>
+</author>
 <author title="翻訳">
   <mail link="solidsneak@hyper.cx">小林弘樹</mail>
+</author>
+<author title="翻訳">
+  <mail link="murakami.taku@gmail.com">Taku Murakami</mail>
 </author>
 
 <abstract>
@@ -28,10 +34,10 @@ nVidiaはカードのパフォーマンスを向上させる特定のLinuxドラ
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.25</version>
-<date>2006-05-26</date>
+<version>1.27</version>
+<date>2006-09-02</date>
 
-<!-- Original revision: 1.29 -->
+<!-- Original revision: 1.32 -->
 
 <chapter>
 <title>はじめに</title>
@@ -40,7 +46,10 @@ nVidiaはカードのパフォーマンスを向上させる特定のLinuxドラ
 
 <p>
 nVidiaは素晴らしいパフォーマンスと完全な3Dアクセラレーションを提供するLinux向けのドライバを公開しています。
-ドライバは、<c>nvidia-kernel</c>と<c>nvidia-glx</c>の2つに分かれて公開されています。
+Portageには2種類のドライバが存在し、まず1つめは古いタイプのもので、
+<c>nvidia-kernel</c>と<c>nvidia-glx</c>の2つに分かれています。
+2つめは新しいタイプのもので、<c>nvidia-drivers</c>と<c>nvidia-legacy-drivers</c>に分かれています。
+初めてインストールするのであれば、新しいものを使用する方が良いでしょう。
 </p>
 
 <p>
@@ -52,6 +61,19 @@ nVidiaは素晴らしいパフォーマンスと完全な3Dアクセラレーシ
 カーネルドライバと同様に、X11 GLXレイヤ(<c>nvidia-glx</c>)もインストールする必要があります。
 これはXがグラフィックを描画するのに使われ、ハードウェアとの通信に<c>nvidia-kernel</c>が内部的に使用されています。
 </p>
+
+<p>
+なお、新しいドライバでは<c>nvidia-kernel</c>と<c>nvidia-glx</c>両方の機能を含んでおり、
+nVidia自身でドライバを提供している方法と同じように、1つのebuildにまとめられています。
+</p>
+
+<note>
+<c>nvidia-kernel</c>と<c>nvidia-glx</c>の両方は廃止される予定です。また、
+その役目が<c>nvidia-drivers</c>と<c>nvidia-legacy-drivers</c>へと引き継がれ、
+Portageツリーから将来削除されることになるでしょう。なお、
+<c>nvidia-kernel</c>と<c>nvidia-glx</c>を使用している場合には、
+新しいパッケージへ移行すべきです。
+</note>
 
 </body>
 </section>
@@ -85,7 +107,13 @@ Processor and Features ---&gt;
 </pre>
 
 <p>
-カーネルに<c>agpgart</c>サポートを組み込むか、モジュールとして追加する必要もあります。
+また、オプションとして<c>agpgart</c>サポートをカーネルに組み込むかモジュールとして有効にすることができます。
+なお、agpgartをカーネルに組み込んで使用しなければ、
+ドライバが<c>NvAGP</c>と呼ばれる独自実装の<c>agpgart</c>を使用することになります。
+特定のシステムでは、これはagpgartをカーネルに組み込んだ場合よりもうまく動作しますが、
+動作しないこともあります。
+最高のパフォーマンスを得るには、ご自身のシステムでこれを評価する必要があるでしょう。
+どうしたらいいのか分からなければ、agpgartをカーネルに組み込んでください。
 </p>
 
 <pre caption="Enabling agpgart">
@@ -123,12 +151,13 @@ Graphics Support ---&gt;
 </pre>
 
 <p>
-その後、"VESA driver type"で<c>vesafb</c>か<c>vesafb-tng</c>のどちらかを選択します。
+その後、"VESA driver type"で<c>vesafb</c>か<c>vesafb-tng</c>のどちらかを選択します。なお、
+AMD64プロセッサを使用している場合には、<c>vesafb-tng</c>ではなく<c>vesafb</c>を選択してください。
 </p>
 
 <pre caption="フレームバッファの種類を選択">
-( ) vesafb
-(X) vesafb-tng
+(X) vesafb
+( ) vesafb-tng
 </pre>
 
 <p>
@@ -143,13 +172,11 @@ Graphics Support ---&gt;
 <body>
 
 <p>
-nVidiaのモジュールとライブラリは2つのパッケージから構成されています。<c>nvidia-glx</c>と<c>nvidia-kernel</c>です。
-前者はX11 GLXライブラリで、後者はカーネルモジュールです。
-</p>
-
-<p>
-nvidia-kernel ebuildは<path>/usr/src/linux</path>のシンボリックリンクに基づき、カーネルのバージョンを自動判別します。シンボリックリンクが正しいソースをさしていて、カーネルが正しく設定されているかを確認してください。
-カーネルの設定についての詳細は<uri link="/doc/en/handbook/">ハンドブック</uri>（<uri link="/doc/ja/handbook/">日本語訳</uri>）のカーネル設定の章を参照してください。
+<c>nvidia-kernel</c>、<c>nvidia-drivers</c>、そして<c>nvidia-legacy-drivers</c>のebuildは、
+<path>/usr/src/linux</path>のシンボリックリンクに基づき、カーネルのバージョンを自動判別します。
+従って、シンボリックリンクが正しいソースを指し、かつカーネルが正しく設定されているかを確認してください。
+カーネルの設定についての詳細は<uri link="/doc/en/handbook/">Installation Handbook</uri><uri 
+link="/doc/ja/handbook/">(日本語訳)</uri>のカーネル設定の章を参照してください。
 </p>
 
 <p>
@@ -187,7 +214,7 @@ drwxr-xr-x  19 root root 4096 Mar 16 22:00 linux-2.6.11-gentoo-r6
 <body>
 
 <note>
-不幸にも、いくつかのレガシービデオカードは新しいバージョンの<c>nvidia-glx</c>と<c>nvidia-kernel</c>ではサポートされていません。
+残念ながら、いくつかのレガシービデオカードは新しいバージョンの<c>nvidia-drivers</c>、<c>nvidia-glx</c>、そして<c>nvidia-kernel</c>ではサポートされていません。
 nVidiaは<uri link="http://www.nvidia.com/object/IO_18897.html">サポートするカードの一覧</uri>を提供しています。
 ドライバをインストールする前に一覧を確認してください。
 </note>
@@ -217,13 +244,9 @@ Quadro2 EX
 </pre>
 
 <p>
-これらのカードを使用しているのなら、nVidiaドライバの新しいバージョンをマスクし、古いバージョンをインストールします。
+カードがレガシーリストに載っていれば、
+3Dサポートを得るには<c>nvidia-legacy-drivers</c>パッケージをインストールする必要があります。
 </p>
-
-<pre caption="新しいドライバをマスク">
-# <i>echo "&gt;media-video/nvidia-kernel-1.0.6629-r5" &gt;&gt; /etc/portage/package.mask</i>
-# <i>echo "&gt;media-video/nvidia-glx-1.0.6629-r7" &gt;&gt; /etc/portage/package.mask</i>
-</pre>
 
 </body>
 </section>
@@ -232,24 +255,37 @@ Quadro2 EX
 <body>
 
 <p>
-では<c>nvidia-kernel</c>と<c>nvidia-glx</c>をインストールしましょう。
+では、ドライバをインストールしましょう。新しいドライバは1つにまとめられていますので、
+1つのパッケージをインストールするだけで済みます。古いドライバは分割されていますので、
+インストールには2つパッケージが必要になります。但し、
 <c>nvidia-glx</c>は<c>nvidia-kernel</c>に依存しているため、<c>nvidia-glx</c>をインストールするだけで十分です。
 </p>
 
-<pre caption="nVidiaモジュールのインストール">
+<pre caption="nVidiaドライバのインストール">
+<comment>(カードが上記レガシーリストに載っていなければ)</comment>
+# <i>emerge nvidia-drivers</i>
+<comment>(カードがレガシーリストに載っていれば)</comment>
+# <i>emerge nvidia-legacy-drivers</i>
+</pre>
+
+<pre caption="nVidiaドライバのインストール(廃止予定の方法)">
 # <i>emerge nvidia-glx</i>
 </pre>
 
 <impo>
 <uri link="/doc/en/kernel-upgrade.xml">新しいカーネルをコンパイル</uri>（<uri link="/doc/ja/kernel-upgrade.xml">日本語訳</uri>）したり、または現在のカーネルを再コンパイルする度に、<c>emerge nvidia-kernel</c>を実行し、nVidiaモジュールを再インストールする必要があります。
 <c>nvidia-glx</c>はカーネルの変更に影響されず、Xの再コンパイルや更新時でさえも再構築する必要はありません。
+なお、新しいドライバを使用している場合には、<c>emerge nvidia-drivers</c>あるいは<c>emerge nvidia-legacy-drivers</c>を実行して、
+nVidiaモジュールを再インストールする必要があるでしょう。
 </impo>
 
 <p>
 インストールが完了したら、<c>modprobe nvidia</c>を実行してカーネルモジュールをメモリに読み込みます。
+これがアップグレードの場合には、以前のモジュールを初めに削除してください。
 </p>
 
 <pre caption="カーネルモジュールの読み込み">
+# <i>lsmod | grep nvidia &amp;&amp; rmmod nvidia</i>
 # <i>modprobe nvidia</i>
 </pre>
 
@@ -274,7 +310,7 @@ Quadro2 EX
 <body>
 
 <p>
-適切なドライバがインストールされたなら、デフォルトの<c>nv</c>ドライバの代わりに<c>nvidia</c>ドライバを使用するように、Xサーバ（XFree86かXorg）の設定をする必要があります。
+適切なドライバがインストールされたなら、デフォルトの<c>nv</c>ドライバの代わりに<c>nvidia</c>ドライバを使用するように、Xサーバの設定をする必要があります。
 </p>
 
 <p>
@@ -385,7 +421,7 @@ FPSを評価するために、<c>glxgears</c>を実行します。
 <body>
 
 <p>
-NVidiaがバージョン1.0.6106をリリースしてから、設定ツールも配布されるようになりました。
+nVidiaがバージョン1.0.6106をリリースしてから、設定ツールも配布されるようになりました。
 このツールを使えば、Xサーバを再起動することなくグラフィカル設定の変更を行うことができます。
 これはPortageの<c>media-video/nvidia-settings</c>で利用することができます。
 </p>
@@ -468,7 +504,7 @@ nVidiaのカードを使用していると確信があるのなら、BIOSを確�
 </pre>
 
 <p>
-再起動する度に<path>/dev/nvidia</path>デバイスが消失するのであれば、もしかするとudevが適切なデバイスノードを自動的に作成していないのが原因かもしれません。
+再起動する度に<path>/dev/nvidia*</path>デバイスが消失するのであれば、もしかするとudevが適切なデバイスノードを自動的に作成していないのが原因かもしれません。
 <c>NVmakedevices.sh</c>を再実行することでこのバグを修正できたなら、<path>/etc/conf.d/rc</path>を以下のように編集することでこれを修正することが出来ます。
 </p>
 
@@ -477,15 +513,16 @@ RC_DEVICE_TARBALL="yes"
 </pre>
 
 <p>
-これは、再起動時でも<path>/dev/nvidia</path>ノードを保存します。
+これは、再起動時でも<path>/dev/nvidia*</path>ノードを保存します。
 </p>
 
 <note>
 そのほかに、8xxxシリーズの最新の<c>nvidia-kernel</c>と<c>nvidia-glx</c>のemergeを試してみたいかもしれません。
 これを書いている時点では、どちらも~archになっています。
 これらのドライバは適切なノードの作成にhotplugやudevにはもはや頼っていないので、<c>NVmakedevices.sh</c>を実行する必要はないでしょう。
-その代わり、Xの起動時にXドライバ自身が<path>/dev/nvidia</path>ファイルを作成します。
+その代わり、Xの起動時にXドライバ自身が<path>/dev/nvidia*</path>ファイルを作成します。
 ですが、これには最近のカーネル(2.6.14以降)の使用が必要です。
+また、<c>nvidia-drivers</c>と<c>nvidia-legacy-drivers</c>の全てのバージョンに関しても同様です。
 </note>
 
 </body>
@@ -504,7 +541,12 @@ nVidiaドライバパッケージには包括的なドキュメントも含ま�
 </p>
 
 <pre caption="NVIDIAドキュメントの閲覧">
-# <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
+<comment>(nvidia-driversに関して)</comment>
+$ <i>less /usr/share/doc/nvidia-drivers-*/README.gz</i>
+<comment>(nvidia-legacy-driversに関して)</comment>
+$ <i>less /usr/share/doc/nvidia-legacy-drivers-*/README.gz</i>
+<comment>(nvidia-glxに関して)</comment>
+$ <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
 </pre>
 
 </body>
