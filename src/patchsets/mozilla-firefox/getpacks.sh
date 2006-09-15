@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Header: /var/cvsroot/gentoo/src/patchsets/mozilla-firefox/getpacks.sh,v 1.3 2006/08/04 14:20:39 redhatter Exp ${app}/make-tarball.sh,v 1.2 2006/07/30 10:44:28 redhatter Exp $
+# $Header: /var/cvsroot/gentoo/src/patchsets/mozilla-firefox/getpacks.sh,v 1.4 2006/09/15 02:39:32 redhatter Exp ${app}/make-tarball.sh,v 1.2 2006/07/30 10:44:28 redhatter Exp $
 
 app=firefox
 
@@ -15,6 +15,9 @@ wget -P "langpacks-${ver}" -m -np -nd \
 
 cd "langpacks-${ver}"
 for f in *.xpi; do
-	mv -v "${f}" "${app}-$( basename "${f}" .xpi )-${ver}.xpi"
+	bn="$( basename "${f}" .xpi)"
+	locales="${locales} ${bn}"
+	mv -v "${f}" "${app}-${bn}-${ver}.xpi"
 done
 cd "${OLDPWD}"
+echo "Locales: ${locales}"
