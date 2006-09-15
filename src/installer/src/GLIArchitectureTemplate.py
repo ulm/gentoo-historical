@@ -5,7 +5,7 @@
 # of which can be found in the main directory of this project.
 Gentoo Linux Installer
 
-$Id: GLIArchitectureTemplate.py,v 1.296 2006/09/13 13:28:55 agaffney Exp $
+$Id: GLIArchitectureTemplate.py,v 1.297 2006/09/15 16:37:11 agaffney Exp $
 
 The ArchitectureTemplate is largely meant to be an abstract class and an 
 interface (yes, it is both at the same time!). The purpose of this is to create 
@@ -399,12 +399,7 @@ class ArchitectureTemplate:
 					break
 			time.sleep(1)
 			if tmp_minor == -1: continue
-			# now sleep until it exists
-			while not GLIUtility.is_file(tmp_partitions[minor]['devnode']):
-				if self._debug: self._logger.log("DEBUG: Waiting for device node " + tmp_partitions[minor]['devnode'] + " to exist...")
-				time.sleep(1)
-			# one bit of extra sleep is needed, as there is a blip still
-			time.sleep(1)
+			self._wait_for_device_node(tmp_partitions[minor]['devnode'])
 			for partition in tmp_partitions: #.get_ordered_partition_list():
 				mountpoint = tmp_partitions[partition]['mountpoint']
 				mountopts = tmp_partitions[partition]['mountopts']
@@ -1395,7 +1390,6 @@ class ArchitectureTemplate:
 	def _wait_for_device_node(self, devnode):
 		if GLIUtility.is_file("/sbin/udevsettle"):
 			GLIUtility.spawn("/sbin/udevsettle")
-			time.sleep(1)
 			if not GLIUtility.is_file(devnode):
 				GLIUtility.spawn("/sbin/udevsettle")
 		else:
@@ -1568,14 +1562,7 @@ class ArchitectureTemplate:
 			curminor = self._find_current_minor_for_part(device, start)
 			devnode = device + str(curminor)
 
-			# sleep a bit first
-			time.sleep(3)
-			# now sleep until it exists
-			while not GLIUtility.is_file(devnode):
-				self._logger.log("Waiting for device node " + devnode + " to exist before resizing")
-				time.sleep(1)
-			# one bit of extra sleep is needed, as there is a blip still
-			time.sleep(3)
+			self._wait_for_device_node(devnode)
 
 			if type in ("ext2", "ext3"):
 				resizecmd = "resize2fs %s %sK" % (devnode, str(int((total_bytes - (2 * MEGABYTE)) / 1024)))
