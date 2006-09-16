@@ -7,8 +7,8 @@
 
 <sections>
 
-<version>1.21</version>
-<date>2005-05-29</date>
+<version>1.22</version>
+<date>2005-09-07</date>
 
 <section>
 <title>Runlevel</title>
@@ -191,11 +191,10 @@ Anda memasuki atau meninggalkan suatu runlevel.
 </p>
 
 <p>
-Di dalam Gentoo, terdapat tujuh runlevel yang didefenisikan, tiga runlevel
-internal, dan empat runlevel yang didefenisikan user. Runlevel internal
-terdiri dari <e>sysinit</e>, <e>shutdown</e> dan <e>reboot</e> dan melakukan
-hal-hal yang sama dengan nama mereka: inisialisasi sistem, mematikan sistem
-dan reboot sistem.
+Di Gentoo, terdapat tujuh runlevel yang didefenisikan, tiga runlevel internal,
+dan empat runlevel yang didefenisikan user. Runlevel internal terdiri dari
+<e>sysinit</e>, <e>shutdown</e> dan <e>reboot</e> dan melakukan hal-hal yang
+sama dengan nama mereka: inisialisasi sistem, mematikan sistem dan reboot sistem.
 </p>
 
 <p>
@@ -563,6 +562,20 @@ depend() {
 }
 </pre>
 
+<p>
+Jika servis anda harus menulis ke disk lokal, servis tersebut harus memerlukan
+<c>localmount</c>. Jika servis tersebut menempatkan sesuatu pada
+<path>/var/run</path> sebagai sebuag pidfile, maka servis tersebut harus
+dijalankan setelah <c>bootmisc</c>:
+</p>
+
+<pre caption="Contoh fungsi depend()">
+depend() {
+  need localmount
+  after bootmisc
+}
+</pre>
+
 </body>
 </subsection>
 <subsection>
@@ -580,21 +593,33 @@ saja yang terjadi:
 <pre caption="Contoh fungsi start()">
 start() {
   ebegin "Starting my_service"
-  start-stop-daemon --start --quiet --exec /path/to/my_service
+  start-stop-daemon --start --quiet --exec /path/to/my_service \
+    --pidfile /path/to/my_pidfile
   eend $?
 }
 </pre>
 
 <p>
-Jika Anda memerlukan contoh lebih lanjut mengenai fungsi <c>start()</c>,
-silahkan membaca kode sumber dari skrip init yang tersedia di direktori 
-<path>/etc/init.d</path>. Untuk <c>start-stop-daemon</c>, tersedia halaman 
-manual yang sangat bagus jika Anda memerlukan informasi lebih lanjut:
+<c>--exec</c> dan <c>--pidfile</c> harus digunakan pada fungsi start dan stop.
+Jika servis tidak menciptakan sebuah pidfile, maka gunakan <c>--make-pidfile</c>
+jika memungkinkan, tetapi anda harus mencobanya untuk memastikan. Jika tidak,
+jangan gunakan pidfile. Anda juga dapat menambahkan <c>--quiet</c> pada opsi
+<c>start-stop-daemon</c>, tapi hal ini tidak dianjurkan kecuali servis tersebut
+sangat verbose. Penggunaan <c>--quiet</c> dapat menghalangu proses debugging
+jika servic tersebut gagal dimulai.
 </p>
 
-<pre caption="Membaca halaman manual untuk start-stop-daemon">
-# <i>man start-stop-daemon</i>
-</pre>
+<note>
+Pastikan agar <c>--exec</c> benar-benar memanggil sebuah servis, bukannya skrip
+shell yang menjalankan servis kemudian berhenti -- inilah yang seharusnya
+dijalankan oleh skrip init.
+</note>
+
+<p>
+Jika Anda memerlukan contoh lebih lanjut mengenai fungsi <c>start()</c>,
+silahkan membaca kode sumber dari skrip init yang tersedia di direktori 
+<path>/etc/init.d</path>.
+</p>
 
 <p>
 Fungsi lain yang dapat Anda defenisikan adalah: <c>stop()</c> dan 
@@ -602,6 +627,48 @@ Fungsi lain yang dapat Anda defenisikan adalah: <c>stop()</c> dan
 Sistem init kita cukup cerdas untuk mengisi fungsi-fungsi ini secara otomatis
 jika Anda menggunakan <c>start-stop-daemon</c>.
 </p>
+
+<p>
+Walaupun anda tidak <e>harus</e> menciptakan fungsi <c>stop()</c>, berikut ini
+merupakan sebuah contoh:
+</p>
+
+<pre caption="Contoh fungsi stop()">
+stop() {
+  ebegin "Stopping my_service"
+  start-stop-daemon --stop --exec /path/to/my_service \
+    --pidfile /path/to/my_pidfile
+  eend $?
+}
+</pre>
+
+<p>
+Jika servis anda menjalankan skrip lain (mis. bash, python, atau perl), dan
+skrip ini nantinya akan mengganti nama-nama (mis. <c>foo.py</c> ke <c>foo</c>),
+maka anda perlu menambahkan <c>--name</c> ke <c>start-stop-daemon</c>. Anda
+harus menentukan nama yang akan diganti oleh skrip anda. Pada contoh ini,
+sebuah servis menjalankan <c>foo.py</c>, yang kemudian berganti nama menjadi
+<c>foo</c>:
+</p>
+
+<pre caption="A service that starts the foo script">
+start() {
+  ebegin "Starting my_script"
+  start-stop-daemon --start --exec /path/to/my_script \
+    --pidfile /path/to/my_pidfile --name foo
+  eend $?
+}
+</pre>
+
+<p>
+<c>start-stop-daemon</c> menyediakan halaman manual yang sangat bagus jika
+Anda memerlukan informasi lebih lanjut:
+</p>
+
+<pre caption="Membaca halaman manual untuk start-stop-daemon">
+# <i>man start-stop-daemon</i>
+</pre>
+
 
 <p>
 Sintaks skrip init Gentoo berbasis Bourne Again Shell (bash), jadi anda bebas
@@ -668,7 +735,7 @@ file yang diasosiasikan dengan dependensi itu (seperti
 <body>
 
 <p>
-Banyak pengguna laptop mengetahui situasi ini: di rumah Anda perlu memulai
+Banyak pengguna laptop yang mengetahui situasi ini: di rumah Anda perlu memulai
 <c>net.eth0</c> sementara di perjalanan, Anda tidak ingin memulai
 <c>net.eth0</c> (karena tidak ada network yang tersedia). Dengan Gentoo,
 Anda dapat mengubah tingkah laku runlevel sesuai keinginan anda.
