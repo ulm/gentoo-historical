@@ -1,0 +1,127 @@
+Backport FreeBSD/amd64 support to 2.16.1
+
+http://bugs.gentoo.org/138475
+
+--- binutils-2.16.1/bfd/config.bfd
++++ binutils-2.16.1/bfd/config.bfd
+@@ -536,8 +536,8 @@
+     ;;
+ #ifdef BFD64
+   x86_64-*-freebsd* | x86_64-*-kfreebsd*-gnu)
+-    targ_defvec=bfd_elf64_x86_64_vec
+-    targ_selvecs="bfd_elf32_i386_vec i386coff_vec bfd_efi_app_ia32_vec"
++    targ_defvec=bfd_elf64_x86_64_freebsd_vec
++    targ_selvecs="bfd_elf32_i386_freebsd_vec i386coff_vec bfd_efi_app_ia32_vec"
+     ;;
+   x86_64-*-netbsd* | x86_64-*-openbsd*)
+     targ_defvec=bfd_elf64_x86_64_vec
+--- binutils-2.16.1/bfd/configure.in
++++ binutils-2.16.1/bfd/configure.in
+@@ -692,6 +692,7 @@
+     bfd_elf64_tradbigmips_vec)	tb="$tb elf64-mips.lo elf64.lo elfxx-mips.lo elf32.lo $elf ecofflink.lo"; target_size=64 ;;
+     bfd_elf64_tradlittlemips_vec) tb="$tb elf64-mips.lo elf64.lo elfxx-mips.lo elf32.lo $elf ecofflink.lo"; target_size=64 ;;
+     bfd_elf64_x86_64_vec)	tb="$tb elf64-x86-64.lo elf64.lo $elf"; target_size=64 ;;
++    bfd_elf64_x86_64_freebsd_vec) tb="$tb elf64-x86-64.lo elf64.lo $elf"; target_size=64 ;;
+     bfd_mmo_vec)		tb="$tb mmo.lo" target_size=64 ;;
+     bfd_powerpc_pe_vec)         tb="$tb pe-ppc.lo peigen.lo cofflink.lo" ;;
+     bfd_powerpc_pei_vec)        tb="$tb pei-ppc.lo peigen.lo cofflink.lo" ;;
+--- binutils-2.16.1/bfd/elf64-x86-64.c
++++ binutils-2.16.1/bfd/elf64-x86-64.c
+@@ -2874,3 +2874,33 @@
+ 	elf64_x86_64_section_from_shdr
+ 
+ #include "elf64-target.h"
++
++/* FreeBSD support.  */
++
++#undef TARGET_LITTLE_SYM
++#define        TARGET_LITTLE_SYM               bfd_elf64_x86_64_freebsd_vec
++#undef TARGET_LITTLE_NAME
++#define        TARGET_LITTLE_NAME              "elf64-x86-64-freebsd"
++
++/* The kernel recognizes executables as valid only if they carry a
++   "FreeBSD" label in the ELF header.  So we put this label on all
++   executables and (for simplicity) also all other object files.  */
++
++static void
++elf_x86_64_post_process_headers (bfd *abfd,
++                                struct bfd_link_info *info ATTRIBUTE_UNUSED)
++{
++  Elf_Internal_Ehdr *i_ehdrp;
++
++  i_ehdrp = elf_elfheader (abfd);
++
++  /* Put an ABI label supported by FreeBSD >= 4.1.  */
++  i_ehdrp->e_ident[EI_OSABI] = ELFOSABI_FREEBSD;
++}
++
++#undef elf_backend_post_process_headers
++#define        elf_backend_post_process_headers        elf_x86_64_post_process_headers
++#undef elf64_bed
++#define        elf64_bed                               elf64_x86_64_fbsd_bed
++
++#include "elf64-target.h"
+--- binutils-2.16.1/bfd/targets.c
++++ binutils-2.16.1/bfd/targets.c
+@@ -646,6 +646,7 @@
+ extern const bfd_target bfd_elf64_tradbigmips_vec;
+ extern const bfd_target bfd_elf64_tradlittlemips_vec;
+ extern const bfd_target bfd_elf64_x86_64_vec;
++extern const bfd_target bfd_elf64_x86_64_freebsd_vec;
+ extern const bfd_target bfd_mmo_vec;
+ extern const bfd_target bfd_powerpc_pe_vec;
+ extern const bfd_target bfd_powerpc_pei_vec;
+@@ -952,6 +953,7 @@
+ 	&bfd_elf64_tradbigmips_vec,
+ 	&bfd_elf64_tradlittlemips_vec,
+ 	&bfd_elf64_x86_64_vec,
++	&bfd_elf64_x86_64_freebsd_vec,
+ 	&bfd_mmo_vec, 
+ #endif
+ 	&bfd_powerpc_pe_vec,
+--- binutils-2.16.1/gas/config/tc-i386.c
++++ binutils-2.16.1/gas/config/tc-i386.c
+@@ -5113,7 +5113,7 @@
+ 
+ 	list = bfd_target_list ();
+ 	for (l = list; *l != NULL; l++)
+-	  if (strcmp (*l, "elf64-x86-64") == 0)
++	  if (strcmp (*l, ELF64_TARGET_FORMAT) == 0)
+ 	    {
+ 	      default_arch = "x86_64";
+ 	      break;
+@@ -5183,7 +5183,7 @@
+       {
+ 	if (flag_code == CODE_64BIT)
+ 	  use_rela_relocations = 1;
+-	return flag_code == CODE_64BIT ? "elf64-x86-64" : ELF_TARGET_FORMAT;
++	return flag_code == CODE_64BIT ? ELF64_TARGET_FORMAT : ELF_TARGET_FORMAT;
+       }
+ #endif
+     default:
+--- binutils-2.16.1/gas/config/tc-i386.h
++++ binutils-2.16.1/gas/config/tc-i386.h
+@@ -61,11 +61,16 @@
+ 
+ #ifdef TE_FreeBSD
+ #define ELF_TARGET_FORMAT	"elf32-i386-freebsd"
++#define ELF64_TARGET_FORMAT	"elf64-x86-64-freebsd"
+ #endif
+ #ifndef ELF_TARGET_FORMAT
+ #define ELF_TARGET_FORMAT	"elf32-i386"
+ #endif
+ 
++#ifndef ELF64_TARGET_FORMAT
++#define ELF64_TARGET_FORMAT	"elf64-x86-64"
++#endif
++
+ #if ((defined (OBJ_MAYBE_COFF) && defined (OBJ_MAYBE_AOUT)) \
+      || defined (OBJ_ELF) || defined (OBJ_MAYBE_ELF))
+ extern const char *i386_target_format PARAMS ((void));
+--- binutils-2.16.1/ld/emulparams/elf_x86_64_fbsd.sh
++++ binutils-2.16.1/ld/emulparams/elf_x86_64_fbsd.sh
+@@ -1,2 +1,4 @@
+ . ${srcdir}/emulparams/elf_x86_64.sh
+ . ${srcdir}/emulparams/elf_fbsd.sh
++
++OUTPUT_FORMAT="elf64-x86-64-freebsd"
