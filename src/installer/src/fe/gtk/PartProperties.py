@@ -197,7 +197,7 @@ class PartProperties(gtk.Window):
 			self.resize_info_part_type.set_sensitive(False)
 			self.resize_info_part_filesystem.set_sensitive(False)
 #			for i, fs in enumerate(self.controller.supported_filesystems):
-			for i, fs in enumerate(self.supported_filesystems:
+			for i, fs in enumerate(self.supported_filesystems):
 				if fs == self.fstype:
 					self.resize_info_part_filesystem.set_active(i)
 					break
