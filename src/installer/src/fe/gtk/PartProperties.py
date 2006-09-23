@@ -31,7 +31,7 @@ class PartProperties(gtk.Window):
 			self.min_size = self.cur_size
 			self.max_size = self.cur_size
 		self.sync_slider_to_text = True
-		self.supported_filesystems = self.controller.self.devices[self.device].get_supported_filesystems()
+		self.supported_filesystems = self.controller.devices[self.device].get_supported_filesystems()
 
 		self.connect("delete_event", self.delete_event)
 		self.connect("destroy", self.destroy_event)
