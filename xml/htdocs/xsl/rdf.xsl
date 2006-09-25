@@ -14,13 +14,12 @@
 		<title><xsl:value-of select="title" /></title>
 		<link><xsl:value-of select="link" /></link>
 		<description><xsl:value-of select="description" /></description>
-		<dc:creator>rajiv@gentoo.org</dc:creator>
+		<dc:creator>www@gentoo.org</dc:creator>
 		<dc:language>en-US</dc:language>
-		<admin:errorReportsTo rdf:resource="mailto:rajiv@gentoo.org" />
+		<admin:errorReportsTo rdf:resource="mailto:www@gentoo.org" />
 		<items>
 			<rdf:Seq>
 				<xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;11]/text()">
-					<xsl:sort select="position()" order="ascending" /> 
 					<rdf:li>
 						<xsl:attribute name="rdf:resource">http://www.gentoo.org<xsl:value-of select="." /></xsl:attribute>
 					</rdf:li>
