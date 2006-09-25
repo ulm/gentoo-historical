@@ -75,6 +75,8 @@ header = {"Cookie" : "COLUMNLIST=bug_severity assigned_to assigned_to_realname b
 
 #3.  Pass off the queries we care about to bugzilla
 closed_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=RESOLVED&bug_status=CLOSED&chfield=bug_status&resolution=FIXED&ctype=csv&chfieldfrom=%s&chfieldto=%s" % (date_from, date_to), header)
+closed_nofix_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=RESOLVED&bug_status=CLOSED&chfield=bug_status&resolution=NEEDINFO&resolution=WONTFIX&resolution=CANTFIX&resolution=INVALID&resolution=UPSTREAM&ctype=csv&chfieldfrom=%s&chfieldto=%s" % (date_from, date_to), header)
+duplicate_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=RESOLVED&bug_status=CLOSED&chfield=bug_status&resolution=DUPLICATE&ctype=csv&chfieldfrom=%s&chfieldto=%s" % (date_from, date_to), header)
 opened_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&chfield=assigned_to&ctype=csv&chfieldfrom=%s&chfieldto=%s" % (date_from, date_to), header)
 new_report = get_page("bugs.gentoo.org", "/buglist.cgi?chfield=[Bug+creation]&chfieldfrom=%s&chfieldto=%s&ctype=csv" % (date_from, date_to), header)
 reopened_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=REOPENED&chfield=bug_status&chfieldfrom=%s&chfieldto=%s&ctype=csv" % (date_from, date_to), header)
@@ -90,6 +92,8 @@ severities = dict([(result[0],result[1]) for result in group_results(total_opene
 new_bug_count = len(new_report.split("\n")) - 1
 closed_bug_count = len(closed_report.split("\n")) - 1
 reopened_bug_count = len(reopened_report.split("\n")) - 1
+duplicate_bug_count = len(duplicate_report.split("\n")) - 1
+closed_nofix_bug_count = len(closed_nofix_report.split("\n")) - 1
 total_open_bug_count = len(total_opened_report.split("\n")) - 1
 
 #6.  We have every value we need, now build the report
@@ -126,6 +130,8 @@ and %s, activity on the site has resulted in:
 <li>%d new bugs during this period</li>
 <li>%d bugs closed or resolved during this period</li>
 <li>%d previously closed bugs were reopened this period</li>
+<li>%d closed as NEEDINFO/WONTFIX/CANTFIX/INVALID/UPSTREAM during this period</li>
+<li>%d bugs marked as duplicates during this period</li>
 </ul>
 
 <p>
@@ -144,7 +150,7 @@ Of the %d currently open bugs: %d are labeled 'blocker', %d are labeled
 The developers and teams who have closed the most bugs during this period are:
 </p>
 
-<ul>""" % (date_from_display, date_to_display, new_bug_count, closed_bug_count, reopened_bug_count, total_open_bug_count, severities.get('"blocker"',0), severities.get('"critical"',0), severities.get('"major"',0))
+<ul>""" % (date_from_display, date_to_display, new_bug_count, closed_bug_count, reopened_bug_count, closed_nofix_bug_count, duplicate_bug_count, total_open_bug_count, severities.get('"blocker"',0), severities.get('"critical"',0), severities.get('"major"',0))
 
 for i in range(0,8):
     print"""<li><mail link=%s>%s</mail>, with %d

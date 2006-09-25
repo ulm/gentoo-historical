@@ -27,7 +27,7 @@ try:
 		processedtext=processedtext[j2+6:]
 except ValueError:
 	newtext=newtext+processedtext
-xsltout,xsltin=popen2.popen2('xsltproc ~/Gentoo/GWN/email2.xsl -|fold -s -w75')
+xsltout,xsltin=popen2.popen2('xsltproc ~/scripts/email2.xsl -|fold -s -w75')
 xsltin.write(newtext)
 xsltin.close()
 newtext=xsltout.read()
