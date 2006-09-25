@@ -6,12 +6,12 @@
 <!-- Текст этого документа распространяется на условиях лицензии CC-BY-SA -->
 <!-- См. http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-config.xml,v 1.13 2006/09/19 20:07:38 achumakov Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-config.xml,v 1.14 2006/09/25 20:35:24 achumakov Exp $ -->
 
 <sections>
 
-<version>2.18</version>
-<date>2006-03-28</date>
+<version>7.3</version>
+<date>2006-09-12</date>
 
 <section>
 <title>Параметры файловых систем</title>
@@ -72,31 +72,41 @@
 </li>
 </ul>
 
-<p>
+<impo>
 Вариант файла <path>/etc/fstab</path> по умолчанию, входящий в Gentoo, <e>не 
-является работоспособным</e>, поэтому необходимо создать собственный 
-<path>/etc/fstab</path>, запустив <c>nano</c> (или ваш любимый редактор).
-</p>
+является работоспособным</e>. Вам <b>потребуется создать</b> свой собственный 
+<path>/etc/fstab</path>.
+</impo>
 
 <pre caption="Открытие /etc/fstab">
 # <i>nano -w /etc/fstab</i>
 </pre>
 
-<p>
-Рассмотрим, как указываются параметры загрузочного раздела <path>/boot</path>. 
-Это лишь пример, и если в вашей архитектуре не требуется раздел 
-<path>/boot</path> (например, как в машинах Apple <b>PPC</b>), не копируйте 
-пример дословно.
-</p>
+</body>
+<body test="func:keyval('/boot')">
 
 <p>
-Для примера возьмем архитектуру x86, <path>/boot</path> &mdash; это раздел
-устройства <path>/dev/hda1</path> с файловой системой <c>ext2</c>. При загрузке 
-требуется его проверка. Напишем следующее:
+Рассмотрим, как указываются параметры загрузочного раздела <path>/boot</path>. 
+Это лишь пример, и если вам не нужно или вы не можете создать раздел 
+<path>/boot</path>, не копируйте пример дословно.
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/hd')">
+В нашем примере разбивки для <keyval id="arch"/> по умолчанию,
+<path>/boot</path> &mdash; это обычно раздел <path><keyval id="/boot"/></path>
+(или <path>/dev/sda*</path> при использовании дисков SCSI или SATA) с файловой
+системой <c>ext2</c>. При загрузке требуется его проверка. Напишем следующее:
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/sd')">
+В нашем примере разбивки для <keyval id="arch"/> по умолчанию,
+<path>/boot</path> &mdash; это обычно раздел <path><keyval id="/boot"/></path>
+с файловой системой <c>ext2</c>. При загрузке требуется его проверка. Напишем
+следующее:
 </p>
 
 <pre caption="Пример строки /boot в /etc/fstab">
-/dev/hda1   /boot     ext2    defaults        1 2
+<keyval id="/boot"/>   /boot     ext2    defaults        1 2
 </pre>
 
 <p>
@@ -106,43 +116,97 @@
 вручную каждый раз, когда он потребуется.
 </p>
 
-<p>
-Теперь, чтобы повысить быстродействие, большинству пользователей стоит добавить 
-параметр <c>noatime</c> в параметры подключения, что приведет к ускорению за 
-счет отключения регистрации отметки времени доступа к файлам (обычно в ней все 
-равно нет необходимости):
+</body>
+<body>
+
+<p test="not(func:keyval('arch')='SPARC')">
+Укажите правила, соответствующие вашей схеме разбивки, и добавьте правила для
+<path>/proc</path>, для <c>tmpfs</c>, для своих дисководов CD-ROM
+(если есть другие разделы или устройства, их тоже можно указать).
 </p>
 
-<pre caption="Улучшенная строка /boot в /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime    1 2
+<p test="func:keyval('arch')='SPARC'">
+Укажите правила, соответствующие вашей схеме разбивки, и добавьте правила для
+<path>/proc/openprom</path>, <path>/proc</path>, <c>tmpfs</c>, для своих
+дисководов CD-ROM (если есть другие разделы или устройства, их тоже можно
+указать).
+</p>
+
+<p>
+Теперь на основе приведенного <e>примера</e> создайте собственный файл 
+<path>/etc/fstab</path>:
+</p>
+
+<pre caption="Пример полного /etc/fstab" test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/hda2   none         swap    sw                   0 0
+/dev/hda3   /            ext3    noatime              0 1
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-Продолжая в том же духе, добавим следующие три строки (для <path>/boot</path>, 
-<path>/</path>, и раздела подкачки):
-</p>
+<pre caption="Пример полного /etc/fstab" test="func:keyval('arch')='HPPA'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda3   none         swap    sw                   0 0
+/dev/sda4   /            ext3    noatime              0 1
 
-<pre caption="Еще три строки в /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime  1 2
-/dev/hda2   none      swap    sw                0 0
-/dev/hda3   /         ext3    noatime           0 1
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-И наконец, добавим правила для <path>/proc</path>, <c>tmpfs</c> (обязательно), 
-а также для дисковода CD-ROM (если есть другие разделы или устройства, их
-тоже можно указать):
-</p>
+<pre caption="Пример полного /etc/fstab" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda2   none         swap    sw                   0 0
+/dev/sda3   /            ext3    noatime              0 1
 
-<pre caption="Пример полного /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime     1 2
-/dev/hda2   none      swap    sw                   0 0
-/dev/hda3   /         ext3    noatime              0 1
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
-none        /proc     proc    defaults             0 0
-none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
 
-/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+<pre caption="Пример полного /etc/fstab" test="func:keyval('arch')='SPARC'">
+/dev/sda1   /               ext3        noatime              0 1
+/dev/sda2   none            swap        sw                   0 0
+/dev/sda4   /usr            ext3        noatime              0 2
+/dev/sda5   /var            ext3        noatime              0 2
+/dev/sda6   /home           ext3        noatime              0 2
+
+none        /proc/openprom  openpromfs  defaults             0 0
+none        /proc           proc        defaults             0 0
+none        /dev/shm        tmpfs       nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom      auto        noauto,user          0 0
+</pre>
+
+<note test="func:keyval('arch')='PPC'">
+Среди типов машин PPC есть важные различия. Пожалуйста, адаптируйте следующий
+пример к своей системе.
+</note>
+
+<pre caption="Пример полного  /etc/fstab" test="func:keyval('arch')='PPC'">
+/dev/hda4   /            ext3    noatime              0 1
+/dev/hda3   none         swap    sw                   0 0
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="Пример полного /etc/fstab" test="func:keyval('arch')='PPC64'">
+/dev/sda4   /            ext3    noatime              0 1
+/dev/sda3   none         swap    sw                   0 0
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
 <p>
@@ -153,14 +217,11 @@ none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
 </p>
 
 <p>
-Теперь на основе приведенного примера создайте собственный файл 
-<path>/etc/fstab</path>. Если вы &mdash; пользователь <b>SPARC</b>, также 
-добавьте в него следующую строку:
+Чтобы повысить быстродействие, большинству пользователей стоит добавить 
+параметр <c>noatime</c> в параметры подключения, что приведет к ускорению за 
+счет отключения регистрации отметки времени доступа к файлам (обычно в ней все 
+равно нет необходимости):
 </p>
-
-<pre caption="Добавление в /etc/fstab файловой системы openprom">
-none        /proc/openprom  openpromfs    defaults      0 0
-</pre>
 
 <p>
 Перепроверьте свой файл <path>/etc/fstab</path>, сохраните его, и 
@@ -184,11 +245,6 @@ none        /proc/openprom  openpromfs    defaults      0 0
 бы просто назвать свою систему <c>tux</c>, а домен &mdash; <c>homenetwork</c>.
 </p>
 
-<p>
-Такие значения мы будем использовать в следующих примерах. Во-первых, установим
-имя сетевого узла (hostname):
-</p>
-
 <pre caption="Установка имени узла">
 # <i>nano -w /etc/conf.d/hostname</i>
 
@@ -197,14 +253,14 @@ HOSTNAME="<i>tux</i>"
 </pre>
 
 <p>
-Во-вторых, установим имя домена (domainname):
+Во-вторых, установим имя домена (domainname) в <path>/etc/conf.d/net</path>:
 </p>
 
 <pre caption="Установка имени домена">
-# <i>nano -w /etc/conf.d/domainname</i>
+# <i>nano -w /etc/conf.d/net</i>
 
 <comment>(присвойте переменной DNSDOMAIN имя своего домена)</comment>
-DNSDOMAIN="<i>homenetwork</i>"
+dns_domain_lo="<i>homenetwork</i>"
 </pre>
 
 <p>
@@ -213,7 +269,10 @@ DNSDOMAIN="<i>homenetwork</i>"
 </p>
 
 <pre caption="Установка имени NIS-домена">
-# <i>echo nis.homenetwork &gt; /etc/nisdomainname</i>
+# <i>nano -w /etc/conf.d/net</i>
+
+<comment>(укажите название своего домена NIS переменной nis_domain)</comment>
+nis_domain_lo="<i>my-nisdomain</i>"
 </pre>
 
 </body>
@@ -245,7 +304,10 @@ Gentoo</uri>.
 </p>
 
 <p>
-По умолчанию используется DHCP, а дальнейшая настройка не требуется.
+По умолчанию используется DHCP. Чтобы DHCP заработал, требуется установить
+DHCP-клиент, как описано далее в разделе <uri
+link="?part=1&amp;chap=9#networking-tools">Установка нужных системных
+средств</uri>. Не забудьте установить DHCP-клиент.
 </p>
 
 <p>
@@ -332,7 +394,7 @@ dhcp_eth0="nodns nontp nonis"
 
 <pre caption="Создание дополнительных сценариев инициализации">
 # <i>cd /etc/init.d</i>
-# <i>ln -s net.eth0 net.eth1</i>
+# <i>ln -s net.lo net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 </pre>
 
@@ -345,10 +407,9 @@ dhcp_eth0="nodns nontp nonis"
 <p>
 Теперь расскажем системе Linux о вашей сети. Эти сведения указываются в 
 <path>/etc/hosts</path>, и помогают разрешению имен в IP-адреса для узлов, не 
-обрабатываемых сервером имен. Например, если внутренняя сеть состоит из трех 
-компьютеров, названных <c>jenny</c> (192.168.0.5), <c>benny</c> (192.168.0.6) и 
-<c>tux</c> (192.168.0.7 &mdash; рассматриваемая система), нужно, открыв
-<path>/etc/hosts</path>, ввести такие значения:
+обрабатываемых сервером имен. Требуется определить вашу систему. Также можно
+определить другие системы в сети, если вы не собираетесь устанавливать
+собственную систему DNS.
 </p>
 
 <pre caption="Открытие /etc/hosts">
@@ -356,41 +417,31 @@ dhcp_eth0="nodns nontp nonis"
 </pre>
 
 <pre caption="Указание сведений об узлах сети">
-127.0.0.1     localhost
+<comment>(определение текущей системы)</comment>
+127.0.0.1     tux.homenetwork tux localhost
+
+<comment>(определите другие машины в своей сети,
+для этого у них должен быть статический IP-адрес.)</comment>
+
 192.168.0.5   jenny.homenetwork jenny
 192.168.0.6   benny.homenetwork benny
-192.168.0.7   tux.homenetwork tux
-</pre>
-
-<p>
-Если ваша система &mdash; единственная (или разрешение имен полностью 
-осуществляется серверами имен), хватит и одной строки. Например, если вы 
-назвали свою систему <c>tux</c>:
-</p>
-
-<pre caption="/etc/hosts для автономных или полностью встроенных систем">
-127.0.0.1     localhost tux
 </pre>
 
 <p>
 Чтобы продолжить настройку, сохраните файл и выйдите из редактора.
 </p>
 
-<p>
+<p test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 Если у вас нет PCMCIA, можете перейти к разделу <uri 
-link="#doc_chap3">параметры системы</uri>. Пользователям PCMCIA рекомендуется
+link="#sysinfo">параметры системы</uri>. Пользователям PCMCIA рекомендуется
 прочитать следующий раздел, посвященный PCMCIA.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 <title>Дополнительно: запуск PCMCIA</title>
 <body>
-
-<note>
-pcmcia-cs существует только на платформах x86, amd64 and ppc.
-</note>
 
 <p>
 Прежде всего, пользователям PCMCIA нужно установить пакет <c>pcmcia-cs</c>. Это 
@@ -415,7 +466,7 @@ pcmcia-cs существует только на платформах x86, amd64
 </body>
 </subsection>
 </section>
-<section>
+<section id="sysinfo">
 <title>Параметры системы</title>
 <subsection>
 <title>Пароль root</title>
@@ -481,14 +532,17 @@ pcmcia-cs существует только на платформах x86, amd64
 результат при попытке ввода с клавиатуры.
 </p>
 
-<note>
-Пользователям систем SPARC, снабженных USB, и клонов SPARC может потребоваться 
-вместо раскладки &laquo;sunkeymap&raquo; указать раскладку i386 (например, 
-американскую &mdash; &laquo;us&raquo;). На большинстве систем <b>PPC</b> 
-используются раскладки x86. Пользователям, желающим при загрузке иметь 
-возможность использования раскладок клавиатуры ADB, необходимо разрешить 
-обработку клавиатурных кодов ADB в ядре, и установить раскладку mac/ppc в 
-<path>/etc/conf.d/keymaps</path>.
+<note test="func:keyval('arch')='SPARC'">
+Пользователям систем <b>SPARC</b>, снабженных USB, и клонов <b>SPARC</b> может
+потребоваться вместо раскладки &laquo;sunkeymap&raquo; указать раскладку i386
+(например, американскую &mdash; &laquo;us&raquo;).
+</note>
+
+<note test="substring(func:keyval('arch'),1,3)='PPC'">
+На большинстве систем <b>PPC</b> используются раскладки x86. Пользователям,
+желающим при загрузке иметь возможность использования раскладок клавиатуры ADB,
+необходимо разрешить обработку клавиатурных кодов ADB в ядре, и установить
+раскладку mac/ppc в <path>/etc/conf.d/keymaps</path>.
 </note>
 
 <p>
@@ -505,10 +559,7 @@ pcmcia-cs существует только на платформах x86, amd64
 <p>
 Если аппаратные часы вашей системы настроены не на часовой пояс UTC (Гринвич), 
 в файл необходимо добавить строку <c>CLOCK="local"</c>. В противном случае 
-вы заметите сдвиг часового пояса. Более того, в Windows принято, что аппаратные 
-часы установлены на местное время, и если вы собираетесь пользоваться двойной 
-загрузкой, нужно соответственно определить эту переменную; в противном случае 
-ваши часы &laquo;сойдут с ума&raquo;!
+вы заметите сдвиг часового пояса.
 </p>
 
 <p>
@@ -516,14 +567,14 @@ pcmcia-cs существует только на платформах x86, amd64
 и выйдите из редактора.
 </p>
 
-<p>
-Если вы устанавливаете Gentoo не на оборудование типа IBM PPC64, переходите к
-<uri link="?part=1&amp;chap=9">установке нужных системных средств</uri>.
+<p test="not(func:keyval('arch')='PPC64')">
+Переходите к <uri link="?part=1&amp;chap=9">установке нужных системных
+средств</uri>.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='PPC64'">
 <title>Настройка консоли</title>
 <body>
 
@@ -560,9 +611,9 @@ hvsi:12345:respawn:/sbin/agetty -L 19200 hvsi0
 
 <!-- *$Localization:
 target-language: Russian
-target-version: 2.18-r3
-target-date: 2006-09-19
-source-cvs-revision: 1.76
+target-version: 7.3-r1
+target-date: 2006-09-25
+source-cvs-revision: 1.84
 translated-by: (unknown); Alexey Chumakov [achumakov@gentoo.org]
 edited-by:  Alexey Chumakov
 -->
