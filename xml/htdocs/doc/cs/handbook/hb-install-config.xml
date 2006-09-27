@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/cs/handbook/hb-install-config.xml,v 1.16 2006/06/17 12:22:01 jkt Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/cs/handbook/hb-install-config.xml,v 1.17 2006/09/27 18:11:03 jkt Exp $ -->
 
 <sections>
 
-<version>2.19</version>
-<date>2006-05-27</date>
+<version>7.3</version>
+<date>2006-09-12</date>
 
 <section>
 <title>Informace o souborových systémech</title>
@@ -66,30 +66,41 @@ tabulátor,...). Každé políčko má vlastní význam:
 </li>
 </ul>
 
-<p>
+<impo>
 Výchozí <path>/etc/fstab</path>, který je obsažen v&nbsp;Gentoo, <e>není
-přímo použitelný</e>, takže spusťte svůj oblíbený editor (použijeme
-<c>nano</c>), abyste mohli nastavení upravit podle svého systému:
-</p>
+přímo použitelný</e>, budete si muset vytvořit vlastní.
+</impo>
 
 <pre caption="Otevření /etc/fstab">
 # <i>nano -w /etc/fstab</i>
 </pre>
 
-<p>
-Pojďme se podívat, jak zapsat volby pro oddíl <path>/boot</path>. Je to pouze
-příklad, takže pokud Vaše architektura nevyžaduje oddělený <path>/boot</path>
-(jako například stroje Apple <b>PPC</b>), neberte instrukce doslovně.
-</p>
+</body>
+<body test="func:keyval('/boot')">
 
 <p>
-V&nbsp;našem výchozím rozdělení je <path>/boot</path> umístěn na oddílu
-<path>/dev/hda1</path> a je použit systém souborů <c>ext2</c>. Během spouštění
-systému je navíc požadovaná jeho kontrola, napíšeme tedy:
+Pojďme se podívat, jak zapsat volby pro oddíl <path>/boot</path>. Je to pouze
+příklad, takže pokud jste <path>/boot</path> nevytvářeli nebo nemohli vytvořit,
+směle tuto část ignorujte.
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/hd')">
+V&nbsp;našem výchozím rozdělení pro <keyval id="arch"/> je <path>/boot</path>
+umístěn na oddílu <path><keyval id="/boot"/></path> (případně
+<path>/dev/sda*</path>, pokud používáte SATA nebo SCSI zařízení) a je použit
+systém souborů <c>ext2</c>. Během spouštění systému je navíc požadovaná jeho
+kontrola, napíšeme tedy:
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/sd')">
+V&nbsp;našem výchozím rozdělení pro <keyval id="arch"/> je <path>/boot</path>
+umístěn na oddílu <path><keyval id="/boot"/></path> a je použit
+systém souborů <c>ext2</c>. Během spouštění systému je navíc požadovaná jeho
+kontrola, napíšeme tedy:
 </p>
 
 <pre caption="Ukázkový řádek o /boot v /etc/fstab">
-/dev/hda1   /boot     ext2    defaults        1 2
+<keyval id="/boot"/>   /boot     ext2    defaults        1 2
 </pre>
 
 <p>
@@ -99,43 +110,94 @@ klíčovým slovem <c>noauto</c>. Učiníte-li tak, budete muset tento oddíl
 připojit vždy, když ho budete chtít použít.
 </p>
 
-<p>
-Abychom zlepšili výkon, přidejme volbu <c>noatime</c>. Dosáhneme tím
-rychlejšího souborového systému, protože se nebudou muset aktualizovat
-informace o času posledního přístupu k&nbsp;souborům, které většinou ani nejsou
-potřeba:
+</body>
+<body>
+
+<p test="not(func:keyval('arch')='SPARC')">
+Nakonec přidáme pravidla pro <path>/proc</path>, <c>tmpfs</c> a pro CD-ROM
+mechaniku, a samozřejmě pokud máte další disky nebo oddíly, tak i pro ně.
 </p>
 
-<pre caption="Vylepšený řádek pro /boot v /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime    1 2
+<p test="func:keyval('arch')='SPARC'">
+Nakonec přidáme pravidla pro <path>/proc/openprom</path>, <path>/proc</path>,
+<c>tmpfs</c> a pro CD-ROM mechaniku, a samozřejmě pokud máte další disky nebo
+oddíly, tak i pro ně.
+</p>
+
+<p>
+Pojme tedy vytvořit soubor <path>/etc/fstab</path>:
+</p>
+
+<pre caption="Kompletní příklad /etc/fstab" test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/hda2   none         swap    sw                   0 0
+/dev/hda3   /            ext3    noatime              0 1
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-Budeme-li pokračovat, měli bychom dostat následující tři řádky (pro
-<path>/boot</path>, <path>/</path> a oddíl pro swap):
-</p>
+<pre caption="Kompletní příklad /etc/fstab" test="func:keyval('arch')='HPPA'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda3   none         swap    sw                   0 0
+/dev/sda4   /            ext3    noatime              0 1
 
-<pre caption="Tři řádky v /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime  1 2
-/dev/hda2   none      swap    sw                0 0
-/dev/hda3   /         ext3    noatime           0 1
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-Nakonec přidáme pravidla pro <path>/proc</path>, <c>tmpfs</c> (vyžadováno pro
-chod systému) a pro CD-ROM mechaniku, a samozřejmě pokud máte další disky nebo
-oddíly, tak i pro ně:
-</p>
+<pre caption="Kompletní příklad /etc/fstab" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda2   none         swap    sw                   0 0
+/dev/sda3   /            ext3    noatime              0 1
 
-<pre caption="Kompletní příklad /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime     1 2
-/dev/hda2   none      swap    sw                   0 0
-/dev/hda3   /         ext3    noatime              0 1
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
-none        /proc     proc    defaults             0 0
-none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
 
-/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+<pre caption="Kompletní příklad /etc/fstab" test="func:keyval('arch')='SPARC'">
+/dev/sda1   /               ext3        noatime              0 1
+/dev/sda2   none            swap        sw                   0 0
+/dev/sda4   /usr            ext3        noatime              0 2
+/dev/sda5   /var            ext3        noatime              0 2
+/dev/sda6   /home           ext3        noatime              0 2
+
+none        /proc/openprom  openpromfs  defaults             0 0
+none        /proc           proc        defaults             0 0
+none        /dev/shm        tmpfs       nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom      auto        noauto,user          0 0
+</pre>
+
+<note test="func:keyval('arch')='PPC'">
+Nastavení pro platformu PPC závisí na konkrétním typu stroje. Příklad si,
+prosím, patřičně upravte.
+</note>
+
+<pre caption="Kompletní příklad /etc/fstab" test="func:keyval('arch')='PPC'">
+/dev/hda4   /            ext3    noatime              0 1
+/dev/hda3   none         swap    sw                   0 0
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="Kompletní příklad /etc/fstab" test="func:keyval('arch')='PPC64'">
+/dev/sda4   /            ext3    noatime              0 1
+/dev/sda3   none         swap    sw                   0 0
+
+none        /proc        proc    defaults             0 0
+none        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
 <p>
@@ -145,14 +207,10 @@ možnostmi. Volba <c>user</c> umožňuje připojit CD i pro obyčejné uživatel
 </p>
 
 <p>
-Použijte výše uvedený příklad pro vytvoření svého souboru
-<path>/etc/fstab</path>. Používáte-li <b>SPARC</b>, měli byste navíc přidat i
-tento řádek:
+Pro zlepšení výkonu je dobré přidate volbu <c>noatime</c>. Při přistupu
+k&nbsp;souborům nebude muset docházet k&nbsp;aktualizaci informace o času
+posledního přístupu, která většinou ani není potřeba.
 </p>
-
-<pre caption="Přidání filesystému openprom do /etc/fstab">
-none        /proc/openprom  openpromfs    defaults      0 0
-</pre>
 
 <p>
 Soubor po sobě překontrolujte, uložte a ukončete editor.
@@ -183,14 +241,14 @@ HOSTNAME="<i>tux</i>"
 </pre>
 
 <p>
-Nyní jméno domény:
+Nyní jméno domény, tebtokrát v&nbsp;<path>/etc/conf.d/net</path>:
 </p>
 
 <pre caption="Natavení jména domény">
-# <i>nano -w /etc/conf.d/domainname</i>
+# <i>nano -w /etc/conf.d/net</i>
 
-<comment>(Nastavte proměnnou DNSDOMAIN na jméno domény)</comment>
-DNSDOMAIN="<i>domacisit</i>"
+<comment>(Nastavte proměnnou dns_domain na jméno domény)</comment>
+dns_domain_lo="<i>domacisit</i>"
 </pre>
 
 <p>
@@ -198,10 +256,10 @@ Máte-li NIS doménu (pokud nevíte, co to je, tak ji nemáte), nastavte ji:
 </p>
 
 <pre caption="Nastavení jména NIS domény">
-# <i>nano -w /etc/conf.d/domainname</i>
+# <i>nano -w /etc/conf.d/net</i>
 
 <comment>(Nastavte proměnnou NISDOMAIN na jméno NIS domény)</comment>
-NISDOMAIN="<i>my-nisdomain</i>"
+nis_domain_lo="<i>my-nisdomain</i>"
 </pre>
 
 </body>
@@ -231,8 +289,10 @@ naleznete v&nbsp;souboru <path>/etc/conf.d/net.example</path>.
 </p>
 
 <p>
-Výchozí volba je nastavení přes DHCP, pokud jej tedy používáte, nemusíte nic
-konfigurovat.
+Výchozí volba je nastavení přes DHCP, abyste jej však mohli používat, budete si
+muset nainstalovat DHCP klienta. Instrukce naleznete v&nbsp;části o <uri
+link="?part=1&amp;chap=9#networking-tools">instalaci nezbytných systémových
+nástrojů</uri>. Nezapomeňte DHCP klienta nainstalovat.
 </p>
 
 <p>
@@ -315,7 +375,7 @@ příkaz <c>ln</c>:
 
 <pre caption="Vytvoření dalších initskriptů">
 # <i>cd /etc/init.d</i>
-# <i>ln -s net.eth0 net.eth1</i>
+# <i>ln -s net.lo net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 </pre>
 
@@ -350,20 +410,16 @@ Lze použít pouze pevné IP adresy.)</comment>
 Změny uložte a ukončete editor.
 </p>
 
-<p>
+<p test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 Nemáte-li ve svém systému PCMCIA, můžete nyní pokračovat <uri
-link="#doc_chap3">systémovými informacemi</uri>, jinak čtěte dále.
+link="#sysinfo">systémovými informacemi</uri>, jinak čtěte dále.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 <title>Volitelně: zprovoznění PCMCIA</title>
 <body>
-
-<note>
-pcmcia-cs je dostupná pouze na platformách x86, amd64 a ppc.
-</note>
 
 <p>
 Uživatelé PCMCIA by měli nejprve nainstalovat balíček <c>pcmcia-cs</c>. Platí
@@ -388,7 +444,7 @@ runlevelu:
 </body>
 </subsection>
 </section>
-<section>
+<section id="sysinfo">
 <title>Systémové informace</title>
 <subsection>
 <title>Heslo superuživatele root</title>
@@ -453,10 +509,13 @@ Dejte pozor na správnou hodnotu <c>KEYMAP</c>, jinak může psaní na klávesni
 dopadnout podivně.
 </p>
 
-<note>
-Uživatelé systémů <b>SPARC</b> (a jeho klonů) založených na USB možná budou
-muset vybrat klávesovou mapu i386 (například "us") místo "sunkeymap". <b>PPC</b>
-používá na většině systémů klávesové mapy x86. Uživatelé, kteří
+<note test="func:keyval('arch')='SPARC'">
+Uživatelé systémů SPARC (a jeho klonů) založených na USB možná budou muset
+vybrat klávesovou mapu i386 (například "us") místo "sunkeymap".
+</note>
+
+<note test="substring(func:keyval('arch'),1,3)='PPC'">
+PPC používá na většině systémů klávesové mapy x86. Uživatelé, kteří
 chtějí používat klávesové mapy ADB, musí povolit ADB posílání klávesových kódů
 v&nbsp;jádře a v&nbsp;souboru <path>/etc/conf.d/keymaps</path> nastavit
 klávesovou mapu mac/ppc.
@@ -478,9 +537,7 @@ Nastavení voleb ovlivňujících hodiny je v&nbsp;souboru
 
 <p>
 Neběží-li Vaše hardwarové hodiny v&nbsp;UTC, je potřeba navíc přidat řádek
-<c>CLOCK="local"</c>, jinak mohou být posunuté. Plánujete-li používat Windows,
-měli byste nastavit lokální čas, protože Windows jej od hardwarových hodin
-očekávají; pokud tak neučiníte, riskujete, že uvidíte hodně divné údaje.
+<c>CLOCK="local"</c>, jinak mohou být posunuté.
 </p>
 
 <p>
@@ -488,25 +545,21 @@ Až budete hotovi s&nbsp;konfigurací souboru <path>/etc/conf.d/clock</path>, ul
 jej a ukončete editor.
 </p>
 
-<p>
-Pokud neinstalujete na systému typu IBM PPC64, pokračujte
-<uri link="?part=1&amp;chap=9">instalací nezbytných systémových nástrojů</uri>.
+<p test="not(func:keyval('arch')='PPC64')">
+Pokračujte <uri link="?part=1&amp;chap=9">instalací nezbytných systémových
+nástrojů</uri>.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='PPC64'">
 <title>Konfigurace konzole</title>
 <body>
 
-<note>
-Tato sekce se vztahuje k&nbsp;platformám IBM PPC64.
-</note>
-
 <p>
-Provozujete-li Gentoo na systému typu IBM PPC64 spolu s&nbsp;virtuální konzolí,
-musíte odkomentovat příslušný řádek v&nbsp;souboru <path>/etc/inittab</path>, aby
-se na ní zobrazil dialog pro přihlášení:
+Používáte-li virtuální konzoli, musíte odkomentovat příslušný řádek
+v&nbsp;souboru <path>/etc/inittab</path>, aby se na ní zobrazil dialog pro
+přihlášení:
 </p>
 
 <pre caption="Podpora hvc či hvsi v /etc/inittab">
