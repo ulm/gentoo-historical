@@ -47,7 +47,7 @@ send_email() {
   subject="[${subarch}] $1"
   body=$2
 
-  echo -e "From: ${email_from}\r\nTo: ${email_to}\r\nSubject: ${subject}\r\n\r\nArch: ${subarch}\r\nProfile: ${profile}\r\nVersion stamp: ${version_stamp}\r\nStage1 seed: ${stage1_seed}\r\nSnapshot: ${snapshot}\r\n\r\n${body}\r\n" | sendmail ${email_to}
+  echo -e "From: ${email_from}\r\nTo: ${email_to}\r\nSubject: ${subject}\r\n\r\nArch: ${subarch}\r\nProfile: ${profile}\r\nVersion stamp: ${version_stamp}\r\nStage1 seed: ${stage1_seed}\r\nSnapshot: ${snapshot}\r\n\r\n${body}\r\n" | sendmail -f ${email_from} ${email_to}
 }
 
 run_cmd() {
