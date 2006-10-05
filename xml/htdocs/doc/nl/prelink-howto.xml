@@ -1,439 +1,427 @@
 <?xml version='1.0' encoding="UTF-8"?>
+<!-- $Id: prelink-howto.xml,v 1.12 2006/10/05 14:54:36 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-
-<!-- $Id: prelink-howto.xml,v 1.11 2006/09/01 17:39:28 neysx Exp $ -->
-
-<!-- 
-  Sync: 1.21
--->
-
-<guide link="/doc/nl/prelink-howto.xml">
+<guide link="/doc/nl/prelink-howto.xml" lang="nl">
 <title>Gentoo Linux Prelink Gids</title>
-<author title="Author"><mail link="cretin@gentoo.org">Stefan Jones</mail>
+
+<author title="Auteur">
+  <mail link="cretin@gentoo.org">Stefan Jones</mail>
 </author>
-<author title="Editor"><!-- zhen@gentoo.org -->
-John P. Davis
+<author title="Redacteur"><!-- zhen@gentoo.org -->
+  John P. Davis
 </author>
-<author title="Editor"><mail link="peesh@gentoo.org">Jorge Paulo</mail>
+<author title="Redacteur">
+  <mail link="peesh@gentoo.org">Jorge Paulo</mail>
 </author>
-<author title="Editor"><mail link="swift@gentoo.org">Sven Vermeulen</mail>
+<author title="Redacteur">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
-<author title="Translator"><mail link="blubber@gentoo.org">Tiemo Kieft</mail>
+<author title="Redacteur">
+  <mail link="erwin@gentoo.org">Erwin</mail>
+</author>
+<author title="Vertaler">
+  <mail link="diox@swords.be">Dimitry Bradt</mail>
 </author>
 
 <abstract>
-Deze gids legt je uit hoe je gebruik kan maken van de prelink ondersteuning in
-Portage 2.0.46 en later.
+Deze gids legt uit hoe je gebruik kunt maken van de prelink ondersteuning in
+Portage 2.0.46 en nieuwer.
 </abstract>
 
 <license/>
 
-<version>1.4</version>
-<date>7 September 2003</date>
+<version>1.14</version>
+<date>2006-05-28</date>
 
 <chapter>
 <title>Inleiding</title>
 <section>
-<title>Wat is prelinken en hoe kan het mij helpen?</title>
+<title>Wat is Prelink en hoe kan het me helpen ?</title>
 <body>
 
 <p>
-De meest algemene programmas maken gebruik van gedeelde bibliotheekbestanden.
-Deze moeten tijdens de uitvoering in het geheugen geladen worden en de
-verschillende symbolische referenties dienen gemapped te worden naar hun
-werkelijke adreswaarden. Voor de meeste kleine programmas is dit dynamisch
-linken zeer snel. Maar programmas die geschreven zijn in C++ en die veel
-bibliotheek-afhankelijkheden hebben ondervinden een langdurige pauze tijdens
-het laden van deze bibliotheekbestanden.
+De meest voorkomende applicaties maken gebruiken van gedeelde bibliotheken.
+Deze gedeelde bibliotheken moeten in het geheugen geladen worden als die worden
+gestart en verschillende symbolische referenties worden gemaakt. Voor het
+kleinste programma is deze dynamische link erg snel gemaakt. Maar voor
+programma's die in C++ zijn geschreven en die veel bibliotheek afhankelijkheden
+hebben, kan de dynamische links wel wat tijd in beslag nemen.
 </p>
 
 <p>
-Op de meeste systemen worden deze bibliotheekbestanden niet vaak aangepast, en
-wanneer een programma uitgevoerd wordt zijn de operaties die moeten ondernomen
-worden om het programma te linken zeer vaak dezelfde. <c>prelink</c> maakt 
-hiervan gebruik door deze linking-informatie op te slaan in het uitvoerbaar 
-bestand, daarom ook de naam &quot;prelinking&quot;. Opdat de linker, 
-ld-linux.so, prelinking ondersteunt moet je glibc &gt;= 2.3 hebben.
+Op de meeste systemen, zijn bibliotheken niet vaak veranderd, en zijn de
+ondernomen taken om een programma te starten vaak dezelfde. Prelink neemt
+daaruit een voordeel, door het koppelen uit te voeren en het op te slaan in de
+uitvoerbaar bestand, dus een prelink maken.
 </p>
 
 <p>
-Prelinking kan de opstarttijd van programma's verbeteren. Een typisch voorbeeld
-is een KDE programma wiens laadtijd tot 50% kan verbeterd worden. Het enige
-onderhoud die nodig is hiervoor is het heruitvoeren van prelink telkens een
-bibliotheek van een gepre-linked programma geupgrade is.
+Prelinking kan de opstarttijd van applicaties fel verminderen. Bijvoorbeeld,
+een typische KDE programma's laadtijd kan voor 50% verminderen. Het enige wat
+men moet doen is iedere keer een bibliotheek is geupgrade, de prelink
+herstarten, om het uitvoerbaar bestand aangepast te hebben.
 </p>
+
+<warn>
+Prelink zal niet werken met Hardened Gentoo. Dit is omdat bijde projecten
+proberen het <e>adress space mapping</e> of gedeelde bibliotheken te
+veranderen. Maar prelink met de -R optie verdeelt willekeurig basis bibliotheek
+adressen, die enige verlaging van hardened bescherming oplevert.
+</warn>
 
 </body>
 </section>
 <section>
-<title>Samenvatting</title>
+<title>Omschrijving</title>
 <body>
+
 <ul>
-<li>
-Prelinking gebeurt via een programma genaamd <c>prelink</c>. Het verandert het 
-bestand zodat deze sneller opstart.
-</li>
-
-<li>
-Indien een bibliotheekbestand aangepast werd na het prelinken moet je de
-applicatie opnieuw herprelinken, anders zal je geen snelheidswinst verkrijgen.
-</li>
-
-<li>
-De aanpassing in het bestand is volledig reversibel. <c>prelink</c> heeft een
-&quot;undo&quot; functie.
-</li>
-
-<li>
-Nieuwe versies van Portage herkennen de verandering van md5ums en mtimes van de
-binaries indien deze door <c>prelink</c> toegepast werden.
-</li>
-
-<li>
-Je moet glibc-2.3 of later hebben samen met de binaries van
-binutils-2.13.90.0.xx.
-</li>
+  <li>
+    Prelinking wordt gebeurd via een programma die, verrassend, <c>prelink</c>
+    heet. De veranderingen in het binair bestand om het sneller te laten
+    starten.
+  </li>
+  <li>
+    Als een applicatie afhangelijke bibliotheken veranderen na het prelinken,
+    moet je de applicatie opnieuw prelinken, anders zal je het
+    snelheidsvoordeel verliezen. Dit wil zeggen dat iedere keer je een
+    pakket download via de portage, je die bibliotheken update, ze moeten
+    her-prelinkt worden.
+  </li>
+  <li>
+    De verandering aan het binair bestand is volledig omkeerbaar.
+    <c>prelink</c> heeft een ongedaan functie.
+  </li>
+  <li>
+    De huidige versies van de portage kunnen omgaan, via <c>prelink</c>, met
+    het veranderen van MD5sums en mtimes van de binaire bestanden.
+  </li>
+  <li>
+    Je hoeft <c>FEATURES="prelink"</c> niet in stellen in je
+    <path>make.conf</path> bestand; de Portage zal die automatisch gaan
+    ondersteunen als prelink het binair bestand kan vinden.
+  </li>
 </ul>
+
 </body>
 </section>
-
 </chapter>
 
 <chapter>
-<title>Prelink instellen</title>
+<title>Instellen van Prelink</title>
 <section>
-<title>De programmas installeren</title>
+<title>Installaren van Programmas</title>
 <body>
-<note>
-We veronderstellen dat je een Gentoo-1.4 systeem hebt en dat deze gecompileerd
-werd met gcc-3.2 of later en via binutils-2.13.90.0.xx. Dit is vereist opdat de
-bestanden kunnen geprelinked worden.
-</note>
-
-<warn>
-Je <e>moet</e> glibc-2.3.1 of later hebben, anders zal <c>prelink</c> al je 
-binaries naar de wip helpen!
-</warn>
-
 
 <p>
-Update eerst je Portage-structuur, aangezien veel van de nodige applicaties
-nieuw zijn en er constant patches toegevoegd worden.
-</p>
-<pre caption = "De Portage-structuur updaten">
-# <i>emerge sync</i>
-</pre>
-
-<p>
-Zorg er nu voor dat je Portage-2.0.46 of later geinstalleerd staan hebt. Dit is
-noodzakelijk opdat portage de geprelinkede bestanden herkent en deze correct
-verwijdert wanneer dat gevraagd wordt. Dit is omdat prelinking de md5sum's van
-de bestanden aanpast. 
+Eerst en vooral moet je het <c>prelink</c> hulpmiddel installeren. Het emerge
+proces zal automatisch controleren dat je systeem prelink veilig kunt
+gebruiken.
 </p>
 
-<pre caption = "De Portage versie controleren en indien nodig upgraden">
-# <i>emerge ">=portage-2.0.46"</i>
-</pre>
-
-<p>
-Nu kan je de prelinking-tool emergen. Het proces zal zelf controleren of je
-systeem veilig kan geprelinked worden.
-</p>
-
-<pre caption = "Prelink installeren">
+<pre caption = "Installeren van Prelink">
 # <i>emerge prelink</i>
 </pre>
 
 <p>
-Een klein aantal mensen kregen errors tijdens het emergen van <c>prelink</c> 
-wegens de falende tests. Deze testen zijn er voor veiligheidsredenen, 
-<c>prelink</c>'s gedrag is namelijk niet controleerbaar indien je deze 
-testen uitschakelt. De emerge errors zijn meestal enkel afhankelijk van de 
-core packages; binutils, gcc en glibc. Probeer deze packages in die volgorde 
-te heremergen.
+Een groep mensen krijgen fouten bij het installeren van prelink omdat ze dat ze
+niet slagen bij de systeem-testen. De testen zijn ingevoegt uit
+veiligheidsredenen, prelink's gedrag is niet ingesteld als je ze uitschakelt.
+De emerge fouten zijn meestal enkel afhangend van kern-pakketten; binutils, gcc
+en glibs. Probeer ze in die volgorde opnieuw te installeren.
 </p>
 
 <note>
-Tip: Indien je een fout krijgt probeer dan <c>prelink</c> zelf te compileren
-(./configure; make; make check). Indien dit faalt kan je de *.log bestanden in
-de testsuite directorie lezen. Deze kunnen interessante zaken bevatten.
-</note>
+Tip: als je een fout krijgt, probeer <c>prelink</c> dan zelf te compileren en
+te testen. (<c>./configure</c> ; <c>make</c> ; <c>make check</c> ). Bij een
+fout kun je dan de *.log bestanden bekijken in de testsuite map. Ze kunnen
+handige hints opleveren.</note>
 
 <p>
-Indien je een aantal stappen hebt die je kan reproduceren op een ander systeem,
-gelieve deze dan door te mailen naar <mail link="cretin@gentoo.org">Stefan
-Jones</mail>.
+Als je een aantal stappen hebt die een emerge probleem genereren op een ander
+systeem, gelieve <uri link="http://bugzilla.gentoo.org">Bugzilla</uri> te
+controleren en een bug report aan te maken als dit nog niet is gebeurd.
 </p>
 
 </body>
 </section>
+<section>
+<title>Voorbereiden van je systeem</title>
+<body>
 
+<p>
+Controleer ook dat -fPIC <e>niet</e> hebt in gesteld in je CFLAGS/CXXFLAGS. Als
+je dit doet, zal je heel je system moeten herbouwen zonder deze instelling.
+</p>
+
+</body>
+</section>
 <section>
 <title>Configuratie</title>
 <body>
 
 <p>
-Portage zal vanzelf het <path>/etc/prelink.conf</path> bestand aanmaken waarin
-vermeld wordt welke bestanden <c>prelink</c> mag prelinken.
-</p>
-<p>
-Jammergenoeg kan je geen programmas prelinken die door oudere versies van
-binutils zijn gecompileerd. Het merendeel van deze applicaties komen van
-voorgecompileerde, binaire packages die in /opt geinstalleerd staan. Het
-volgende bestand zal <c>prelink</c> vragen om niet aan die bestanden te komen.
+Het uitvoeren van <c>env-update</c> zal het <path>/etc/prelink.conf</path>
+bestand genereren en <path>prelink</path> zeggen welke files hij moet
+prelinken.
 </p>
 
-<pre caption="/etc/env.d/99prelink">
+<pre caption="uitvoeren van env-update">
+# <i>env-update</i>
+</pre>
+
+<p>
+Jammer genoeg kun je nie prelink bestanden die compileerd werden door oudere
+versies van binutils. De meeste aplicaties komen van voorgecompileerde, binaire
+pakketten die geinstalleerd zijn in <path>/opt</path>. Door volgend bestand te
+maken vertel je prelink geen aanstalten te maken om ze te prelinken.
+</p>
+
+<pre caption="/etc/env.d/60prelink">
 PRELINK_PATH_MASK="/opt"
 </pre>
 
 <note>
-Je kan extra directories toevoegen door ze onderling via &quot;:&quot; te
-scheiden.
+Je kunt meerdere of mindere mappen aan de dubbelpunt gescheiden lijst.
 </note>
 
 </body>
 </section>
 </chapter>
 
-
-
-
 <chapter>
-<title>Prelinking</title>
+<title>Prelinken</title>
 <section>
-<title>Prelink gebruik</title>
+<title>Prelink Gebruik</title>
 <body>
+
 <p>
-De auteur gebruikt het volgende commando om alle binaries in de gegeven
-directories (vermeld in <path>/etc/prelink.conf</path>) te prelinken:
+Ik gebruik het volgende commando om alle binaire bestanden in de mappen in
+<path>/etc/prelink.conf</path> te prelinken.
 </p>
 
-<pre caption = "De nodige bestanden prelinken">
-# <i>prelink -afmR</i>
+<pre caption = "Prelinken van de lijst van bestanden">
+# <i>prelink -amR</i>
 </pre>
 
 <warn>
-Men heeft al opgemerkt dat, indien je weinig vrije ruimte hebt op je schijf, en
-je begint met de bestanden te prelinken, dat sommige bestanden afgeknipt worden
-(en dus niet meer functioneren). Maak gebruik van het <c>file</c> of
-<c>readelf</c> commando om de status van een bestand te controleren. Of 
-controleer van te voren hoeveel ruimte je vrij hebt op je harde schijf 
-doormiddel van <c>df -h</c>.
+Men heeft opgemerkt dat als u op schijf bijna vol is en u prelinkt uw volledig
+systeem kan er een mogelijkheid zijn dat uw binaire bestanden beknot kunnen
+worden. Dit kan resulteren in een gebroken systeem. Gebruik het <c>file</c> of
+<c>readelf</c> commando om de staat van de binaire bestanden te controleren.
+Alternatief, controleer de hoeveelheid vrije schrije ruimte op de harde schijf
+met <c>df -h</c>.
 </warn>
 
+<table>
+<tr>
+  <th>De opties uitgelegt:</th>
+</tr>
+<tr>
+  <th>-a</th>
+  <ti>"Alle": prelinks alle binaire bestanden</ti>
+</tr>
+<tr>
+  <th>-m</th>
+  <ti>
+    Behoud de virtueel geheugenruimte. Dit is nodig als u heel wat bibliotheken
+    hebt die moeten zijn geprelinked.
+  </ti>
+</tr>
+<tr>
+  <th>-R</th>
+  <ti>
+    Willekeurig -- het verdelen van adres opdrachten in willekeurige volgorde,
+    verbetert de veiligheid tegen bufferoverstromingen.
+  </ti>
+</tr>
+</table>
+
+<note>
+Voor meer opties en details, raadpleeg <c>man prelink</c>.
+</note>
+
+</body>
+</section>
+<section>
+<title>Prelink Cron Taken</title>
+<body>
+
 <p>
-Uitleg over de opties:
+<c>sys-devel/prelink-20060213</c> en later installeren een cron taak in
+<path>/etc/cron.daily/prelink</path>. Om dit in te schakelen, pas het
+configuratie bestand <path>/etc/conf.d/prelink</path> aan. Dit zal prelink elke
+dag uitvoeren in de achtergrond, zoals nodig is geacht. Dit bespaard je de
+moeite het manueel te moeten starten.
 </p>
 
-<p><b>-a</b></p><p>Allemaal, prelink alle binaries</p>
+</body>
+</section>
 
-<p><b>-f</b></p><p>
-Verplicht <c>prelink</c> om al geprelinkede binaries opnieuw te prelinken. Dit 
-is nodig aangezien prelink stopt wanneer ze al geprelinkede binaries tegenkomt
-terwijl hun bibliotheekbestandafhankelijkheden veranderd zijn.
-</p>
+<section>
+<title>De snelheid van KDE opdreiven na het Prelinken</title>
+<body>
 
-<p><b>-m</b></p><p>
-Hou rekening met de beschikbare virtuele ruimte. Dit is nodig indien je veel
-bibliotheekbestanden hebt die geprelinked dienen te worden.
-</p>
-
-<p><b>-R</b></p><p>
-Random, maak de adres-ordening random; dit verbetert de bescherming tegen
-buffre overflows
+<p>
+KDE's laadtijd kan goed worden verkleint na het prelinken. Als je KDE
+informeerd dat prelink is uitgevoert zal deze het laden van <c>kdeinit</c>
+(omdat het niet meer verplicht is) die KDE nog sneller kan mekan.
 </p>
 
 <p>
-Voor meer opties en details, zie <c>man prelink</c>.
+Stel <c>KDE_IS_PRELINKED="true"</c> in, in <path>/etc/env.d/99kde-env</path> om
+KDE te informeren over de prelink.
 </p>
 
 </body>
 </section>
 </chapter>
+
 <chapter>
 <title>Gekende problemen en oplossingen</title>
-
 <section>
-<title>&quot;Kan niet prelinken tegen niet-PIC gedeelde bibliotheken&quot;</title>
+<title>"Cannot prelink against non-PIC shared library"</title>
 <body>
+
 <p>
-De reden hiervan zijn slecht gecompileerde bibliotheken die met gcc's -fPIC
-optie zijn gecompileerd.
+De oorzaak van dit probleem is van een slecht gecompileerde bibliotheek die
+werd gecompileerd zonder de -fPIC gcc optie voor al zijn object bestanden.
 </p>
 
 <p>
-Het volgende is een lijst van probleembibliotheken en packages die je moet
-heremergen indien je bovenstaande fout krijgt:
-</p>
-
-<pre caption = "Oplossingen">
-<comment>(Voor de ORBit bibliotheek: /usr/lib/libIIOP.so.0.5.17)</comment>
-emerge ">=sys-apps/tcp-wrappers-7.6-r4" ORBit
-<comment>(Voor de libz bibliotheek: usr/lib/libz.so.1.1.4)</comment>
-emerge ">=sys-libs/zlib-1.1.4"
-<comment>(Voor svgalib: /usr/lib/libsvga.so.xx)</comment>
-emerge ">=media-libs/svgalib-1.9.16"
-<comment>(Voor de XFree openGL library: libGLU.so.1)</comment>
-emerge ">=x11-base/xfree-4.2.1-r2"
-<comment>(Voor libpcap.so.0.6)</comment>
-emerge ">=net-libs/libpcap-0.7.1-r2"
-<comment>(Voor de lcms library: /usr/lib/liblcms.so.1)</comment>
-emerge ">=media-libs/lcms-1.09"
-</pre>
-
-<note>
-Veel bibliotheken linken statisch tegen zlib en/of tcp-wrappers, dus moet je
-deze ook heremergen.
-</note>
-
-<p>
-Indien je problemen verkrijgt bij het prelinken van QT/KDE, upgrade dan eerst
-naar >=x11-base/xfree-4.2.1-r2 en >=x11-libs/qt-3.1.0-r1. Indien QT nog steeds
-faalt probeer dan QT te compileren zonder xinerama ondersteuning door
-myconf="-no-xinerama ${myconf}" in de qt ebuild toe te voegen.
-</p>
-
-<p>
-Hier is een lijst van bibliotheken die niet gefixed werden of kunnen gefixed
+Hier zijn de bibliotheken die niet zijn opgelost of niet kunnen opgelost
 worden:
 </p>
+
 <ul>
-<li>De bibliotheken in de Wine package, inclusief winex. Het zou de MS Windows uitvoerbare bestanden toch niet versnellen.</li>
-<li>De bibliotheek van media-video/mjpegtools, /usr/lib/liblavfile-1.6.so.0</li>
+  <li>
+    De bibliotheek in het wine pakket, waaronder winex. Prelinken kan de
+    snelheid van MS Windows uitvoerbare bestanden niet verbeteren.
+  </li>
+  <li>
+    De bibliotheek in media-video/mjpegtools,
+    <path>/usr/lib/liblavfile-1.6.so.0</path>.
+  </li>
+  <li>
+    Nvidia OpenGl bibliotheken,
+    <path>/usr/lib/opengl/nvidia/lib/libGL.so.*</path>.  Door prestatie redenen
+    werden ze gecompileerd zonder PIC ondersteuning.
+  </li>
 </ul>
 
 <p>
-Indien je problemen ondervindt met een bibliotheek die hier niet vermeld werd,
-rapporteer deze dan met, indien mogelijk, een patch om <c>-fPIC</c> toe te
-voegen aan de relevante CFLAGS.
+Als je probleem bibliotheek hieronder niet vermeld is, gelieve dit te melden
+met, bij voorkeur, een patch om <c>-fPIC</c> toe te voegen aan de relevante
+CFLAGS.
 </p>
 
 </body>
 </section>
+<section>
+<title>Wanneer ik mijn systeem prelink, willen enkele staties binaire bestanden
+niet meer werken.</title>
+<body>
 
+<p>
+Waar glibc betrokken is, is er niet siets als een 100% statisch binair bestand.
+Als je een binair bestand statisch compileert met glibc, kan het nog steeds
+afhangen van een ander systeem bestand(en). Hieronder is een verklaring door
+Dick Howell,
+</p>
+
+<p>
+"Ik veronderstel dat het idee is dat alles in het gedownload bestand zal zijn,
+dus hangt er niets af van lokale bibliotheken in het doel systeem. Jammer
+genoeg met linux, en ik denk alles die GLIBC gebruikt, kan dit niet mogelijk
+zijn. Daar is dit "libnss" (name service switch, sommige mensen noemen het
+network security system) die functies levert om verschillende authenticatie
+databasesn, netwerk informatie en andere dingen te raadplegen. Het wordt
+verondersteld om programmas onafhankelijk te maken van de gescheiden
+geconfigureerde echte netwerk omgeving van de machine. Een goed idee, maar
+veranderingen aan GLIBC kan leiden tot problemen bij het laden. Je kunt
+"libnss" ok niet statisch koppelen, omdat dit voor iedere machine anders is
+geconfigureerd. Het probleem komt er, denk ik, bij het statisch koppelen van
+andere GLIBC bibliotheken, waaronder "libpthread", "libm", en "libc", van welke
+imcompabiliteit is tegenover "libnss" functies."
+</p>
+
+</body>
+</section>
+<section>
+<title>Prelink breekt af bij "prelink: dso.c:306: fdopen_dso: Assertion
+`j == k' failed."</title>
+<body>
+
+<p>
+Dit is een gekend probleem, en goed gediagnostiseerd <uri
+link="http://bugs.gentoo.org/show_bug.cgi?id=13878">hier</uri>. Prelink kan
+niet werken met UPX-gecompreseerde uitvoerbare bestanden. Vanaf
+prelink-20021213 is er geen andere oplossing dan de uitvoerbare bestanden te
+verbergen wanneer je prelinkt. Raadpleeg het <uri
+link="#doc_chap2_sect2">Configuratie hoofdstuk</uri> hierboven om dit op een
+gemakkelijke manier op te lossen.
+</p>
+
+</body>
+</section>
+<section>
+<title>Ik gebruik grsecurity en het blijkt dat prelink niet werkt.</title>
+<body>
+
+<p>
+Om prelink op een systeem met grsecurite, die gebruikt maakt van een
+<e>randomized mmap() base</e>, is het nodig om <e>"randomized mmap()
+base"</e> uit te schakelen voor <path>/lib/ld-2.3.*.so</path>. Dit kan worden
+bereikt met het <c>chpax</c> hulpmiddel, maar het moet gedaan worden wanneer
+het bestand niet in gebruik is (start bijvoorbeeld met een herstelCD)
+</p>
+
+</body>
+</section>
 <section>
 <title>
-Gestopt tijdens prelinken van een bestand, zoals &quot;1631 Aborted ....&quot;
+Prelink gaat de mist in met de foutmelding "prelink: Can't walk directory tree
+XXXX: Too many levels of symbolic links"
 </title>
 <body>
 
 <p>
-Je moet de <c>-f</c> optie meegeven aan <c>prelink</c>, ie reprelink het ganse
-systeem. Probeer <c>prelink -af</c>.
+Je snelkoppelingen zijn te diep genest. Dit gebeurd waneer een snelkoppeling
+wijst naar zichzelf. Bijvoorbeeld is <path>/usr/lib/lib -&gt; lib</path> de
+meest voorkomende. Om dit op te lossen, kun je deze snelkoppeling manueel
+vinden of door gebruik te maken van het <c>symlinks</c> pakket.
+</p>
+
+<pre caption="Verbeteren van symlinks">
+# <i>emerge symlinks</i>
+# <i>symlinks -drv /</i>
+</pre>
+
+<p>
+Meer details kunnen gevonden worden op de volgende locaties: <uri
+link="http://bugs.gentoo.org/show_bug.cgi?id=82117">Bugzilla</uri> en dit <uri
+link="http://forums.gentoo.org/viewtopic-t-458144-highlight-prelink.html">forum
+bericht</uri>.
 </p>
 
 </body>
 </section>
-
-<section>
-<title>&quot;&lt;file&gt;: error while loading shared libraries: unexpected reloc type...&quot;</title>
-<body>
-<p>
-Dit is opgelost in <c>sys-libs/glibc-2.3.1-r2</c> op 2002/11/18, heremerge
-glibc indien jouw versie ouder is.
-</p>
-
-<p>
-Het uitvoeren van <c>prelink -u -a -m; prelink -a -m</c> helpt soms ook. Indien
-ook dit mislukt probeer dan gewoon <c>prelink -u &lt;file&gt;</c>
-</p>
-
-</body>
-</section>
-
-<section>
-<title>
-Ik heb problemen met NVidia OpenGL bibliotheken
-</title>
-<body>
-<p>
-De geaccelereerde OpenGL bibliotheken die bij nvidia-glx zitten zijn volgens
-een niet-standaard manier gecompileerd waardoor prelinken waarschuwingen geeft.
-Hier moet je je niet echt zorgen over maken - je kan het ook niet voorkomen,
-enkel de mensen van NVidia zelf kunnen dat. Je kan altijd terugkeren naar de
-xfree versie van libGL.so indien je geen 3D-acceleratie nodig hebt. De nvidia
-xfree driver werkt echter perfect.
-</p> 
-</body>
-</section>
-
-<section>
-<title>
-Wanneer ik mijn systeem prelink werken sommige statische binaries niet meer
-</title>
-<body>
-
-<p>
-Voor zover we over glibc bezig zijn bestaat er niet zo iets als een 100%
-statische binarie. Indien je een programma statisch compileert met glibc dan
-kan/zal het nog steeds afhangen van andere systeembestanden. Hieronder vind je
-een (vertaalde) uitleg van Dick Howell.
-</p>
-<p>
-&quot;Ik veronderstel dat het idee is dat alles in dat ene bestand staat, dus
-dat er niets meer afhangt van lokale bibliotheken op het systeem. Jammergenoeg
-is dit bij Linux, en ik denk zelfs bij alles wat GLIBC gebruikt, niet het
-geval. Er is wat heet "libnss" (name service switch, sommige mensen noemen het
-network security system) die bepaalde functies aanbiedt voor het bereiken van
-verschillende databases voor identiteits verificatie, netwerkinformatie en 
-andere zaken. De bedoeling ervan was om programmas onafhankelijk te maken van 
-de apart geconfigureerde netwerkomgeving van de machine. Een goed idee, maar
-veranderingen aan GLIBC kunnen echter leiden tot problemen wanneer je dit
-laadt. En je kan "libnss" niet statisch linken, want het is individueel
-afhankelijk van systeem tot systeem. Ik denk dat de problemen komen van het 
-statisch linken van andere GLIBC-bibliotheken, vooral "libpthread", "libm" en 
-"libc", van waaruit incompatibele calls komen naar de "libnss" functies.&quot;
-</p>
-
-</body>
-</section>
-
-<section>
-<title>
-Prelink stopt met &quot;prelink: dso.c:306: fdopen_dos: Assertion `j == k'
-failed.&quot;
-</title>
-<body>
-<p>
-Dit is een gekend probleem wat mooi uitgelegd staat op <uri
-link="http://bugs.gentoo.org/show_bug.cgi?id=13878">deze pagina</uri>. Prelink
-kan niet werken met UPX-gecomprimeerde uitvoerbare bestanden. Vanaf
-prelink-20021213 is er geen oplossing behalve het verbergen van de bestanden 
-terwijl je aan het prelinken bent. Zie de uitleg over de configuratie van
-prelink hierboven voor meer informatie over hoe je dat doet.
-</p>
-</body>
-</section>
-
-<section>
-<title>Ik gebruik grsecurity en het lijkt erop dat prelink niet werkt</title>
-<body>
-<p>Om een systeem te prelinken waar grsecurity op draait gebruikmakend van
-randomized mmap() base, is het nodig om &quot;randomized mmap() base&quot; uit
-te schakellen voor <path>/lib/lid-2.3.*.so</path>. Dit kan gedaan worden met
-<c>chpax</c>, maar moet gedaan worden zonder dat het bestand in gebruik is
-(m.a.w. starten van een liveCD).</p>
-</body>
-</section>
-
 </chapter>
 
 <chapter>
 <title>Conclusie</title>
 <section>
 <body>
+
 <p>
-Prelinken kan de start-tijd van verschillende grote programmas enorm
-verbeteren. Ondersteuning hiervoor zit in Portage. Prelinking is tevens veilig
-aangezien je altijd je aanpassingen kan terugschroeven voor eender welk
-bestand indien je op problemen stoot. 
-Veel geluk nog!
+Prelink kan de opstartsneleheid drastisch verhogen voor vele programma's.
+Ondersteuning is ingebouwd in de Portage. Prelinken is ook veilig aangezien je
+dit altijd kunt ongedaan maken voor een binair bestand als je er een tegen komt
+met problmen. Denk eraan dat je <path>prelink</path> moet herstarten als je
+glibc of een andere bibliotheek update! Veel succes!
 </p>
 
 </body>
 </section>
-
 </chapter>
-
 </guide>
