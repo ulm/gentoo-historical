@@ -1,5 +1,5 @@
-﻿<?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/nvidia-guide.xml,v 1.4 2006/02/10 22:22:43 so Exp $ -->
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/nvidia-guide.xml,v 1.5 2006/10/06 13:48:26 so Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/it/nvidia-guide.xml" lang="it">
@@ -8,14 +8,20 @@
 <author title="Autore">
   <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
-<author title="Autore">
+<author title="Redattore">
   <mail link="curtis119@gentoo.org">M Curtis Napier</mail>
 </author>
-<author title="Autore">
-  <mail link="jackdark@gmail.com">Joshua Saddler</mail>
+<author title="Redattore">
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
+</author>
+<author title="Redattore">
+  <mail link="wolf31o2@gentoo.org">Chris Gianelloni</mail>
 </author>
 <author title="Traduzione">
     <mail link="gianx@email.it">Gianluca Mazza</mail>
+</author>
+<author title="Traduzione">
+	Davide Cendron
 </author>
 
 <abstract>
@@ -29,8 +35,8 @@ driver.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.19</version>
-<date>2006-01-21</date>
+<version>1.27</version>
+<date>2006-09-02</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -39,8 +45,11 @@ driver.
 
 <p>
 nVidia rilascia i propri driver Linux che forniscono buone performance e
-piena accelerazione 3D.  I rilasci di driver sono divisi in due parti:
-<c>nvidia-kernel</c> e <c>nvidia-glx</c>.
+piena accelerazione 3D. Ci sono due serie di driver in Portage. La prima serie
+è quella vecchia, suddivisa in <c>nvidia-kernel</c> e <c>nvidia-glx</c>. La
+seconda serie è più recente, e si suddivide in <c>nvidia-drivers</c> e
+<c>nvidia-legacy-drivers</c>. Se si sta effettuando l'installazione per la
+prima volta, si dovrebbe usare la serie più recente.
 </p>
 
 <p>
@@ -53,10 +62,24 @@ nvidia.
 
 <p>
 Così come i driver del kernel, si devono installare le librerie X11 GLX
-(<c>nvidia-glx</c>). Che viene usata da X per la renderizzazione grafica, che
-usa internamente <c>nvidia-kernel</c> driver del kernel che si interfacciano
-con l'hardware.
+(<c>nvidia-glx</c>). Esse vengono usate da X per la renderizzazione grafica, che
+a sua volta usa internamente il driver del kernel <c>nvidia-kernel</c> per
+interfacciarsi con l'hardware.
 </p>
+
+<p>
+I driver più recenti includono sia le funzionalità di <c>nvidia-kernel</c> sia
+di <c>nvidia-glx</c> in un singolo ebuild unificato, similmente alla modalità
+di rilascio dei driver da parte di nVidia stessa.
+</p>
+
+<note>
+Sia <c>nvidia-kernel</c> che <c>nvidia-glx</c> sono deprecati, e in
+futuro verranno rimossi dall'albero di Portage in favore di
+<c>nvidia-drivers</c> e <c>nvidia-legacy-drivers</c>. Se si sta usando
+<c>nvidia-kernel</c> e <c>nvidia-glx</c> è consigliabile migrare ai nuovi
+pacchetti.
+</note>
 
 </body>
 </section>
@@ -69,11 +92,12 @@ con l'hardware.
 <body>
 
 <p>
-Come detto prima, i driver nVidia si installano e girano nel kernel in uso.
-Vengono compilati come modulo, per cui è necessario che il kernel supporti il
-caricamento dei moduli.  Se si usa <c>genkernel</c> per configuare il kernel
-è già impostato. In caso contrario, verificare che il kernel sia abilitato al
-supporto. 
+Come accennato in precedenza, i driver nVidia si installano e girano nel kernel
+in uso. Vengono compilati come modulo, per cui è necessario che il kernel
+supporti il caricamento dei moduli.  Se si ha usato <c>genkernel</c> per
+configurare automaticamente il kernel, il supporto sarà sicuramente abilitato.
+In caso contrario, verificare attentamente che il kernel sia abilitato a questo
+supporto:
 </p>
 
 <pre caption="Abilitare il caricamento dei moduli del kernel">
@@ -91,18 +115,84 @@ Processor and Features ---&gt;
 </pre>
 
 <p>
-I moduli e le librerie nVidia sono organizzate in due pacchetti:
-<c>nvidia-glx</c> e <c>nvidia-kernel</c>. Il primo è la libreria X11 e GLX
-mentre il secondo è modulo del kernel.
+Inoltre, si può opzionalmente abilitare il supporto <c>agpgart</c> al proprio
+kernel, compilandolo internamente o come modulo. Se non si usa il supporto
+agpgart interno al kernel, allora i driver useranno la propria implementazione
+<c>agpgart</c>, chiamata <c>NvAGP</c>. In certi sistemi ciò comporta un
+miglioramento delle prestazioni, mentre in altri un peggioramento delle stesse.
+Si dovranno valutare personalmente le due opzioni sul proprio sistema, per
+ottenere i risultati migliori. Se non si è sicuri su che supporto usare, si usi
+l'agpgart interno del kernel:
 </p>
 
+<pre caption="Abilitare agpgart">
+Device Drivers ---&gt;
+Character devices ---&gt;
+&lt;*&gt; /dev/agpgart (AGP Support)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Note specifiche per le architetture</title>
+<body>
+
+<impo>
+Per i processori x86 e AMD64, i driver interni al kernel vanno in conflitto con
+i driver binari forniti da nVidia. Se si compilerà il kernel per queste CPU, si
+deve rimuovere completamente il supporto ai driver interni del kernel come
+mostrato:
+</impo>
+
+<pre caption="Rimuovere i driver interni del kernel">
+Device Drivers ---&gt;
+Graphics Support ---&gt;
+&lt; &gt;   nVidia Framebuffer Support
+&lt; &gt;   nVidia Riva support
+</pre>
+
 <p>
-L' ebuild nvidia-kernel rileva automaticamente la versione del kernel
-basandosi sul link simbolico <path>/usr/src/linux</path>. Assicurarsi di
-avere questo link simbolico che punti ai sorgenti corretti e che il kernel
-sia configurato correttamente.  Consultare la sezione di configurazione del
-kernel di <uri link="/doc/it/handbook/">Manuale di installazione</uri> per i
-dettagli di configurazione
+Una buona alternativa per il framebuffer è <c>VESA</c>:
+</p>
+
+<pre caption="Abilitare il supporto a VESA">
+Device Drivers ---&gt;
+Graphics Support ---&gt;
+&lt;*&gt;   VESA VGA graphics support
+</pre>
+
+<p>
+Poi, sotto "VESA driver type" si scelga o <c>vesafb</c> o <c>vesafb-tng</c>. Se
+si sta usando un processore AMD64 si potrà scegliere <c>vesafb</c> piuttosto
+che <c>vesafb-tng</c>:
+</p>
+
+<pre caption="Selezionare il tipo di framebuffer">
+(X) vesafb
+( ) vesafb-tng
+</pre>
+
+<p>
+Per ulteriori informazioni, si legga
+<path>/usr/src/linux/Documentation/fb/vesafb.txt</path> se si sta usando
+<c>vesafb</c> o si guardi nella documentazione del framebuffer in
+<path>/usr/src/linux/Documentation/fb/</path>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Continuare con la configurazione del Kernel</title>
+<body>
+
+<p>
+Gli ebuild <c>nvidia-kernel</c>, <c>nvidia-drivers</c>
+e <c>nvidia-legacy-drivers</c> rilevano automaticamente la versione del kernel
+basandosi sul link simbolico <path>/usr/src/linux</path>. Assicurarsi che questo
+link simbolico punti ai sorgenti corretti e che il kernel sia configurato
+correttamente.  Consultare la sezione di configurazione del kernel di <uri
+link="/doc/it/handbook/">Manuale di installazione</uri> per i dettagli di
+configurazione
 </p>
 
 <p>
@@ -144,9 +234,10 @@ link in questo modo:
 
 <note>
 Sfortunatamente, alcune schede video obsolete non sono supportate dalla nuova
-versione di <c>nvidia-glx</c> e <c>nvidia-kernel</c>. nVidia fornisce una
-<uri link="http://www.nvidia.com/object/IO_18897.html">lista delle schede
-supportate</uri>.  Controllate la lista prima di installare il driver
+versione di <c>nvidia-drivers</c>, <c>nvidia-glx</c> e <c>nvidia-kernel</c>.
+nVidia fornisce una <uri link="http://www.nvidia.com/object/IO_18897.html">lista
+delle schede supportate</uri>. Si controlli la lista prima di installare il
+driver
 </note>
 
 <p>
@@ -174,14 +265,9 @@ Quadro2 EX
 </pre>
 
 <p>
-Se avete una di queste schede, dovete mascherare la versione più nuova
-dei driver nVidia, e installare una versione più vecchia:
+Se la vostra scheda è presente nell'elenco di quelle obsolete, si dovrà
+installare il pacchetto <c>nvidia-legacy-driver</c> per ottenere il supporto 3D.
 </p>
-
-<pre caption="Mascherare le versioni più nuove dei driver">
-# <i>echo "&gt;media-video/nvidia-kernel-1.0.6629-r4" &gt;&gt; /etc/portage/package.mask</i>
-# <i>echo "&gt;media-video/nvidia-glx-1.0.6629-r7" &gt;&gt; /etc/portage/package.mask</i>
-</pre>
 
 </body>
 </section>
@@ -190,12 +276,21 @@ dei driver nVidia, e installare una versione più vecchia:
 <body>
 
 <p>
-E' arrivato il momento di installare <c>nvidia-kernel</c> e
-<c>nvidia-glx</c>.  Visto che <c>nvidia-glx</c> dipende da
-<c>nvidia-kernel</c>, è sufficiente installare <c>nvidia-glx</c>:
+A questo punto si devono installare i driver. I nuovi driver sono unificati,
+per cui basterà installare solamente un singolo pacchetto. I vecchi driver sono
+divisi, e necessitano di due pacchetti separati per l'installazione. Dal
+momento che <c>nvidia-glx</c> dipende da <c>nvidia-kernel</c>. è sufficiente
+installare <c>nvidia-glx</c>.
 </p>
 
-<pre caption="Installare i moduli nVidia">
+<pre caption="Installare i driver nVidia">
+<comment>(Se si ha una scheda non elencata tra quelle obsolete nell'elenco precedente)</comment>
+# <i>emerge nvidia-drivers</i>
+<comment>(Se si ha una scheda tra quelle obsolete)</comment>
+# <i>emerge nvidia-legacy-drivers</i>
+</pre>
+
+<pre caption="Installare i driver nVidia (metodo deprecato)">
 # <i>emerge nvidia-glx</i>
 </pre>
 
@@ -203,29 +298,38 @@ E' arrivato il momento di installare <c>nvidia-kernel</c> e
 <impo>
 Ogni qual volta <uri link="/doc/it/kernel-upgrade.xml"> si compilerà un nuovo
 kernel</uri> o si ricompilerà quello corrente, sarà necessario lanciare
-<c>emerge nvidia-kernel</c> per reinstallare i moduli nvidia.
+<c>emerge nvidia-kernel</c> per reinstallare i moduli nVidia.
 <c>nvidia-glx</c> non risente dei cambiamenti di kernel e non necessita di
-essere reinstallato quando si ricompila/aggiorna X.
+essere reinstallato quando si ricompila/aggiorna X. Se si stanno utilizzando i
+nuovi driver, bisogna eseguire <c>emerge nvidia-drivers</c> o <c>emerge
+nvidia-legacy-drivers</c> per reinstallare i moduli nVidia.
 </impo>
 
 <p>
 Una volta completata l'installazione, lanciare <c>modprobe</c> per caricare il
-modulo del kernel in memoria.
+modulo del kernel in memoria. Se si ha effettuato un aggiornamento, si deve
+prima rimuovere il modulo precedente.
 </p>
 
 <pre caption="Caricare il modulo del kernel">
+# <i>lsmod | grep nvidia &amp;&amp; rmmod nvidia</i>
 # <i>modprobe nvidia</i>
 </pre>
 
 <p>
 Per evitare di dover caricare manualmente il modulo ad agni avvio, si vorrà
 probabilmente fare in modo che che questo avvenga in automatico ad ogni
-accensione del sistema, per cui editare
+accensione del sistema, per cui si dovrà aggiungere la voce <c>nvidia</c> a
 <path>/etc/modules.autoload.d/kernel-2.6</path> (oppure
-<path>kernel-2.4</path>, in realzione alla versione di kernel usata) e
-aggiungere <c>nvidia</c>.  Non dimenticarsi di lanciare <c>modules-update</c>
-dopo 
+<path>kernel-2.4</path>, in relazione alla versione di kernel usata).
+Non dimenticarsi di lanciare <c>modules-update</c> subito dopo.
 </p>
+
+<impo>
+Se si ha compilato <c>agpgart</c> come modulo, si dovrà aggiungerlo a
+<path>/etc/modules.autoload.d/kernel-2.6</path> (o <path>kernel-2.4</path>, in
+base alla propria versione del kernel).
+</impo>
 
 <pre caption="Lanciare modules-update">
 # <i>modules-update</i>
@@ -239,15 +343,14 @@ dopo
 
 <p>
 Una volta che i driver appropriati sono installati è necessario configurare
-il server X (Xfree86 o Xorg) per usare i driver <c>nvidia</c> al posto dei
-driver di default 
+il server X per usare i driver <c>nvidia</c> al posto dei driver di default
 <c>nv</c>.
 </p>
 
 <p>
 Aprire <path>/etc/X11/xorg.conf</path> (oppure
 <path>/etc/X11/XF86Config</path> se si usa ancora la vecchia
-configurazione)con l'editor preferito (per esempio <c>nano</c> o <c>vim</c>)
+configurazione) con l'editor preferito (per esempio <c>nano</c> o <c>vim</c>)
 e andare alla sezione <c>Device</c>. In quella sezione , cambiare cambiare la
 linea <c>Driver</c>:
 </p>
@@ -292,11 +395,11 @@ EndSection
 </pre>
 
 <p>
-Lanciare <c>opengl-update</c> in modo che X server usi le librerie nVidia GLX:
+Lanciare <c>eselect </c> in modo che X server usi le librerie nVidia GLX:
 </p>
 
-<pre caption="Lanciare opengl-update">
-# <i>opengl-update nvidia</i>
+<pre caption="Lanciare eselect">
+# <i>eselect opengl set nvidia</i>
 </pre>
 
 </body>
@@ -315,8 +418,8 @@ ai file della periferica nvidia.
 </pre>
 
 <p>
-Questo potrebbe non essere necessario se non si usa <c>udev</c> ma neanche
-danneggiare il sistema e renderlo a prova di futuro :)
+Questo potrebbe non essere necessario se non si usa <c>udev</c>, ma non arreca
+nessun danno e rende la configurazione già pronta per futuri aggiornamenti :)
 </p>
 
 </body>
@@ -336,7 +439,7 @@ direct rendering: Yes
 </pre>
 
 <p>
-Per monitorare l' FPS, lanciare <c>glxgears</c>
+Per monitorare gli FPS (Frame Per Second), lanciare <c>glxgears</c>
 </p>
 
 </body>
@@ -346,9 +449,9 @@ Per monitorare l' FPS, lanciare <c>glxgears</c>
 <body>
 
 <p>
-Alcuni tools come <c>mplayer</c> e <c>xine-lib</c> usano una USE flag
-chiamata "nvidia" che abilita il supporto XvMCNVIDIA, utile quando si
-guardano film ad alta risoluzione. Aggiungere "nvidia" tra le USE presenti in
+Alcuni strumenti come <c>mplayer</c> e <c>xine-lib</c> usano una USE flag
+chiamata "nvidia" che abilita il supporto XvMCNVIDIA, utile quando si guardano
+film ad alta risoluzione. Aggiungere "nvidia" tra le USE presenti in
 <path>/etc/make.conf</path> oppure aggiungerlo come USE flag a
 <c>media-video/mplayer</c> e/o <c>media-libs/xine-lib</c> in
 <path>/etc/portage/package.use</path>.
@@ -366,9 +469,9 @@ che beneficeranno dal cambiamento delle USE flag.
 <body>
 
 <p>
-Dalla versione 1.0.6106 NVvdia  fornisce un tool di settaggio.  Questo tool
-permette di cambiare le impostazioni grafiche senza riavviare X server e è
-presente nel portage in <c>media-video/nvidia-settings</c>
+Dalla versione 1.0.6106 NVvdia  fornisce un strumento di configurazione,
+che permette di cambiare le impostazioni grafiche senza riavviare X server ed è
+presente in Portage come <c>media-video/nvidia-settings</c>
 </p>
 
 </body>
@@ -398,10 +501,10 @@ una linea con "uncachable" sarà necessario cambiare l' impostazione del BIOS.
 
 
 <p>
-Riavviare e entrare nel BIOS,  e cercare le impostazioni MTRR (probabilmente
+Riavviare ed entrare nel BIOS,  e cercare le impostazioni MTRR (probabilmente
 sotto "Impostazioni della CPU"). Cambiare le impostazioni da "continuo" a
-"discreto" e avviare Linux.  Ora si troverà che non c'è più "uncachable" e
-l'accelerazione 2D funziona senza errori.
+"discreto" e avviare Linux. Ora si troverà che non c'è più "uncachable" e
+l'accelerazione 2D funzionerà senza errori.
 </p>
 
 </body>
@@ -412,24 +515,25 @@ l'accelerazione 2D funziona senza errori.
 
 <p>
 I pacchetti  <c>nvidia-kernel</c>  più vecchi di 1.0.6106 supportano solo
-kernel che usano 8K stack size.  I kernel più recenti (2.6.6 e superiori)
-hanno il supporto per lo stack size 4K.  Non selezionare 4K stack size nel
-kernel se si usano pachetti <c>nvidia-kernel</c>.  Questa opzione si trova
-nella sezione <c>Kernel Hacking</c>.
+kernel che usano stack grandi 8K. I kernel più recenti (2.6.6 e superiori)
+hanno il supporto per lo stack di 4K. Non selezionare 4K stack size nel kernel
+se si usano pachetti <c>nvidia-kernel</c>.  Questa opzione si trova nella
+sezione <c>Kernel Hacking</c>.
 </p>
 
 </body>
 </section>
 <section>
 <title>
-Mi aspettavo che venisse caricato il modulop del kernel e ho ricevuto "no such device"
+Mi aspettavo che venisse caricato il modulo del kernel e ho ricevuto "no such
+device"
 </title>
 <body>
 
 <p>
-Questo accade generalmente quando si una scheda video non compatibile.
-Assicursi di avere una scheda grafica NVidia-powered (lo si può veficare
-usando <c>lspci</c>
+Questo accade generalmente quando si ha una scheda video non compatibile.
+Assicurarsi di avere una scheda grafica NVidia-powered (lo si può verificare
+usando <c>lspci</c>)
 </p>
 
 <p>
@@ -443,18 +547,45 @@ che la direttiva <e>Assign IRQ to VGA</e> sia settata.
 <section>
 <title>
 Ho il messaggio "no screen found" e dal log leggo "Failed to initialize the NVIDIA
-kernel module!" 
+kernel module!"
 </title>
 <body>
 
 <p>
-Molto probabilmente si sono persi il file di dispostivo
-<path>/dev/nvidia*</path>.  Createli usando <c>NVmakedevices.sh</c>: 
+Molto probabilmente si sono persi il file di dispositivo
+<path>/dev/nvidia*</path>.  Si possono creare usando <c>NVmakedevices.sh</c>:
 </p>
 
 <pre caption="Creare i device nodes nvidia">
 # <i>/sbin/NVmakedevices.sh</i>
 </pre>
+
+<p>
+Se i dispositivi <path>/dev/nvidia*</path> continuano a mancare ad ogni
+riavvio, la causa sta nel fatto che udev non crea in automatico i file di
+dispositivo necessari. Si può ovviare a questo problema rieseguendo
+<c>NVmakedevices.sh</c>, e modificando <path>/etc/conf.d/rc</path> come
+mostrato:
+</p>
+
+<pre caption="Modificare /etc/conf.d/rc">
+RC_DEVICE_TARBALL="yes"
+</pre>
+
+<p>
+Questo preserverà i dispositivi <path>/dev/nvidia*</path> ad ogni riavvio.
+</p>
+
+<note>
+In alternativa, si può provare ad installare i pacchetti <c>nvidia-kernel</c> e
+<c>nvidia-glx</c> più recenti, della seria 8xxx. Al momento della stesura di
+questa guida, entrambi sono marcati come instabili (~arch). Questi driver non
+si appoggiano più ad hotplug o udev per la creazione dei file di dispositivo
+necessari, per cui non è più necessario eseguire <c>NVmakedevices.sh</c>. Sarà
+invece il driver X stesso a creare i file <path>/dev/nvidia*</path> all'avvio di
+X. Comunque è necessario l'uso di un kernel recente (2.6.14 o successivi). Lo
+stesso discorso vale per <c>nvidia-drivers</c> e <c>nvidia-legacy-drivers</c>.
+</note>
 
 </body>
 </section>
@@ -474,7 +605,12 @@ consultata con il seguente comando:
 </p>
 
 <pre caption="Consultare la documentazione NVIDIA">
-# <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
+<comment>(per nvidia-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-drivers-*/README.gz</i>
+<comment>(per nvidia-legacy-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-legacy-drivers-*/README.gz</i>
+<comment>(per nvidia-glx)</comment>
+$ <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
 </pre>
 
 </body>
@@ -514,15 +650,16 @@ effetto.
 
 <p>
 Le librerie GLX contengono una serie di opzioni che possono essere
-configurate.  Questi controllano la configurazione dell uscita TV, il dual
+configurate.  Questi controllano la configurazione dell'uscita TV, il dual
 display, la rilevazione della frequenza del monitor etc...Anche per queste
 esiste una documentazione dettagliata.
 </p>
 
 <p>
-Se si desidera usare una di queste opzioni , nella relativa sezione Device
-del file di configurazione di X (generalmente <c>/etc/X11/xorg.conf</c>).
-Per esempio, supponiamo di voler disabilare il logo allo splash:
+Se si desidera usare una di queste opzioni, la si deve specificare nella
+relativa sezione Device del file di configurazione di X (generalmente
+<c>/etc/X11/xorg.conf</c>). Per esempio, supponiamo di voler disabilitare il
+logo di avvio:
 </p>
 
 <pre caption="Configurazione avanzata nvidia nella configurazione di X">
