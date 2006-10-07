@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/nvidia-guide.xml,v 1.21 2006/07/31 23:17:22 cam Exp $ -->
+<!-- $Id: nvidia-guide.xml,v 1.22 2006/10/07 16:56:59 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
 <guide link="/doc/fr/nvidia-guide.xml" lang="fr">
+
 <title>Guide nVidia pour Linux Gentoo</title>
 
 <author title="Auteur">
@@ -13,11 +15,17 @@
 <author title="Correcteur">
   <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
+<author title="Correcteur">
+  <mail link="wolf31o2@gentoo.org">Chris Gianelloni</mail>
+</author>
 <author title="Traducteur">
   <mail link="cam@gentoo.org">Camille Huot</mail>
 </author>
 <author title="Traducteur">
   <mail link="koppatroopa@yahoo.fr">Bertrand Coppa</mail>
+</author>
+<author title="Traducteur">
+  <mail link="nuage_oort@hotmail.com">Sophie Leroy</mail>
 </author>
 
 <abstract>
@@ -30,8 +38,8 @@ carte. Ce guide vous explique comment installer et configurer ces pilotes.
 <!-- See http://createivecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.26</version>
-<date>2006-07-25</date>
+<version>1.27</version>
+<date>2006-09-02</date>
 
 <chapter>
 <title>Introduction</title>
@@ -40,9 +48,11 @@ carte. Ce guide vous explique comment installer et configurer ces pilotes.
 
 <p>
 La société nVidia propose ses propres pilotes graphiques. Ceux-ci offrent de
-bonnes performances et une accélération 3D complète. Les distributions des
-pilotes comprennent deux composants&nbsp;: <c>nvidia-kernel</c> et
-<c>nvidia-glx</c>.
+bonnes performances et une accélération 3D complète. Il y a deux ensembles de
+pilotes dans portage. Le premier, plus ancien, est composé de 2 paquets&nbsp;:
+<c>nvidia-kernel</c> et <c>nvidia-glx</c>. Le deuxième, nouveau, est divisé en
+<c>nvidia-drivers</c> et <c>nvidia-legacy-drivers</c>. Si c'est votre première
+installation, vous devriez utiliser ce dernier.
 </p>
 
 <p>
@@ -59,6 +69,20 @@ En plus du pilote du noyau, vous devez installer le composant GLX pour X11
 fait par le biais du pilote <c>nvidia-kernel</c>, ce dernier servant
 d'interface vers le matériel.
 </p>
+
+<p>
+Les nouveaux pilotes ont les mêmes fonctionnalités que <c>nvidia-kernel</c> et
+<c>nvidia-glx</c> réunies dans un seul ebuild unifié, assez similaire à la
+façon dont la société nVidia elle-même fournit ses pilotes.
+</p>
+
+<note>
+Les deux paquets <c>nvidia-kernel</c> et <c>nvidia-glx</c> sont obsolètes et
+seront retirés de l'arbre de Portage dans le futur au profit de
+<c>nvidia-drivers</c> et <c>nvidia-legacy-drivers</c>. Si vous utilisez
+<c>nvidia-kernel</c> et <c>nvidia-glx</c>, vous devriez migrer vers les
+nouveaux paquets.
+</note>
 
 </body>
 </section>
@@ -95,8 +119,13 @@ Processor and Features ---&gt;
 </pre>
 
 <p>
-Il vous faut aussi ajouter le support d'<c>agpgart</c> dans le noyau, soit en
-dur, soit en module&nbsp;:
+Vous pouvez aussi, optionnellement, activer le support d'<c>agpgart</c> dans le
+noyau, soit en dur, soit en module. Si vous n'utilisez pas le agppart du noyau,
+les pilotes utiliseront leur propre implémentation, appelée <c>NvAGP</c>. Sur
+certains systèmes, cette implémentation est plus performante que le agppart du
+noyau, et sur d'autres systèmes, elle l'est moins. Pour obtenir la performance
+maximale, vous devrez évaluer l'une ou l'autre de ces option sur vote propre
+système. Si vous n'êtes pas sûr, utiliser la version agppart du noyau&nbsp;:
 </p>
 
 <pre caption="Activer agpgart">
@@ -137,12 +166,13 @@ Graphics Support ---&gt;
 
 <p>
 Ensuite, dans la section «&nbsp;VESA driver type&nbsp;», choisissez entre
-<c>vesafb</c> ou <c>vesafb-tng</c>&nbsp;:
+<c>vesafb</c> ou <c>vesafb-tng</c>. Si vous avez un processeur AMD64,
+choisissez <c>vesafb</c> plutôt que <c>vesafb-tng</c>&nbsp;:
 </p>
 
 <pre caption="Choisir un type de framebuffer">
-( ) vesafb
-(X) vesafb-tng
+(X) vesafb
+( ) vesafb-tng
 </pre>
 
 <p>
@@ -159,16 +189,10 @@ répertoire <path>/usr/src/linux/Documentation/fb/</path>.
 <body>
 
 <p>
-Les bibliothèques et les modules de nVidia sont disponibles dans deux paquets
-séparés&nbsp;: <c>nvidia-glx</c> et <c>nvidia-kernel</c>. Le premier contient
-les bibliothèques GLX pour X11 tandis que le second contient les modules du
-noyau.
-</p>
-
-<p>
-L'ebuild <c>nvidia-kernel</c> trouve automatiquement la version de votre noyau
+Les ebuilds <c>nvidia-kernel</c>, <c>nvidia-drivers</c> et
+<c>nvidia-legacy-drivers</c> trouvent automatiquement la version de votre noyau
 grâce au lien symbolique <path>/usr/src/linux</path>. Assurez-vous que ce lien
-pointe vers les bonnes sources et que le noyau a été configuré correctement.
+pointe vers les bonnes sources et que votre noyau a été configuré correctement.
 Référez-vous à la section «&nbsp;Configurer le noyau&nbsp;» du <uri
 link="/doc/fr/handbook/">Manuel Gentoo Linux</uri> pour obtenir des
 instructions détaillées sur la configuration de votre noyau.
@@ -208,16 +232,16 @@ jour comme suit&nbsp;:
 </body>
 </section>
 <section>
-<title>Facultatif : Vérification du support pour les anciennes cartes</title>
+<title>Facultatif&nbsp;: Vérification du support pour les anciennes cartes</title>
 <body>
 
 <note>
-Malheureusement, certains cartes graphiques un peu anciennes ne sont plus
-supportées par les dernières versions de <c>nvidia-glx</c> et
-<c>nvidia-kernel</c>. nVidia fournit une <uri
+Malheureusement, certaines cartes graphiques un peu anciennes ne sont plus
+supportées par les dernières versions de <c>nvidia-drivers</c>,
+<c>nvidia-glx</c> et <c>nvidia-kernel</c>. nVidia fournit une <uri
 link="http://www.nvidia.com/object/IO_18897.html">liste des cartes
 supportées</uri>. Veuillez vérifier que votre carte s'y trouve bien avant
-d'installer ce pilote.
+d'installer les pilotes.
 </note>
 
 <p>
@@ -245,14 +269,9 @@ Quadro2 EX
 </pre>
 
 <p>
-Si vous possédez une de ces cartes, vous devrez masquer les nouvelles versions
-des pilotes nVidia et installer une ancienne version&nbsp;:
+Si votre carte est dans cette liste, vous devrez installer le paquet
+<c>nvidia-legacy-drivers</c> pour avoir le support 3D.
 </p>
-
-<pre caption="Masquer les pilotes récents">
-# <i>echo "&gt;media-video/nvidia-kernel-1.0.6629-r5" &gt;&gt; /etc/portage/package.mask</i>
-# <i>echo "&gt;media-video/nvidia-glx-1.0.6629-r7" &gt;&gt; /etc/portage/package.mask</i>
-</pre>
 
 </body>
 </section>
@@ -261,12 +280,21 @@ des pilotes nVidia et installer une ancienne version&nbsp;:
 <body>
 
 <p>
-Il est maintenant temps d'installer <c>nvidia-kernel</c> et <c>nvidia-glx</c>.
-Puisque <c>nvidia-glx</c> dépend de <c>nvidia-kernel</c>, installer le premier
+Il est maintenant temps d'installer les pilotes. Les nouveaux pilotes sont
+unifiés, et vous n'aurez besoin d'installer qu'un seul paquet. Les anciens
+pilotes sont séparés et vous aurez besoin d'installer deux paquets. Puisque
+<c>nvidia-glx</c> dépend de <c>nvidia-kernel</c>, installer <c>nvidia-glx</c>
 est suffisant.
 </p>
 
 <pre caption="Installation des modules nVidia">
+<comment>(Si votre carte n'est pas dans la liste des cartes obsolètes :)</comment>
+# <i>emerge nvidia-drivers</i>
+<comment>(Si votre carte est listée parmi les cartes obsolètes :)</comment>
+# <i>emerge nvidia-legacy-drivers</i>
+</pre>
+
+<pre caption="Installation des modules nVidia (ancienne méthode)">
 # <i>emerge nvidia-glx</i>
 </pre>
 
@@ -276,15 +304,18 @@ noyau</uri> ou que vous recompilez votre noyau courant, vous devez exécuter
 <c>emerge nvidia-kernel</c> pour installer les modules nVidia pour ce noyau.
 <c>nvidia-glx</c> n'est pas affecté par les changements du noyau&nbsp;; il
 n'est même pas nécessaire de le réinstaller lorsque vous mettez à jour (ou
-recompilez) X.
+recompilez) X. Si vous utilisez les nouveaux pilotes, vous devrez exécuter
+<c>emerge nvidia-drivers</c> ou <c>emerge nvidia-legacy-drivers</c> pour
+réinstaller les modules nVidia.
 </impo>
 
 <p>
 Lorsque l'installation est finie, lancez <c>modprobe nvidia</c> pour charger le
-module du noyau en mémoire.
+module du noyau en mémoire. S'il s'agit d'une mise à jour, vous devez auparavant supprimer le module précédent.
 </p>
 
 <pre caption="Chargement du module du noyau">
+# <i>lsmod | grep nvidia &amp;&amp; rmmod nvidia</i>
 # <i>modprobe nvidia</i>
 </pre>
 
@@ -314,8 +345,8 @@ selon la version du noyau).
 
 <p>
 Une fois que les pilotes sont installés, vous devez configurer votre serveur X
-(Xorg ou XFree86) pour qu'il utilise le pilote <c>nvidia</c> au lieu du pilote
-<c>nv</c> par défaut.
+pour qu'il utilise le pilote <c>nvidia</c> au lieu du pilote <c>nv</c> par
+défaut.
 </p>
 
 <p>
@@ -562,7 +593,8 @@ marqués ~arch. Ces pilotes ne se servent plus de hotplug ou udev pour créer le
 fichiers de périphérique, il n'est donc pas nécessaire de lancer
 <c>NVmakedevices.sh</c>. À la place, le pilote de X créera lui-même les
 fichiers <path>/dev/nvidia*</path> lorsque vous lancerez X. Cependant, il faut
-utiliser un noyau récent (2.6.14 ou plus récent.)
+utiliser un noyau récent (2.6.14 ou plus récent). C'est aussi le cas pour
+toutes les versions de <c>nvidia-drivers</c> et <c>nvidia-legacy-drivers</c>.
 </note>
 	 
 </body>
@@ -582,7 +614,12 @@ consultée avec la commande suivante&nbsp;:
 </p>
 
 <pre caption="Consulter la documentation de nVidia">
-# <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
+<comment>(Pour nvidia-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-drivers-*/README.gz</i>
+<comment>(Pour nvidia-legacy-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-legacy-drivers-*/README.gz</i>
+<comment>(Pour nvidia-glx)</comment>
+$ <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
 </pre>
 
 </body>
