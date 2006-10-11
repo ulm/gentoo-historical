@@ -1,0 +1,171 @@
+<?xml version='1.0' encoding="utf-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/en/hardened/selinux/selinux20061-upg.xml" lang="en" disclaimer="draft">
+<title>Gentoo SELinux 2006.1 Upgrade Guide</title>
+
+<author title="Author"><mail link="pebenito@gentoo.org">Chris PeBenito</mail></author>
+
+<abstract>
+This guide describes the upgrade path from SELinux 2005.1 to 2006.1.
+</abstract>
+
+<version>0.9</version>
+<date>5 Sep 2006</date>
+
+<chapter><title>Introduction</title>
+<section><body>
+<warn>
+The hardened profiles are not currently supported due to the unavailability of
+hardened glibc 2.4.
+</warn>
+<impo>
+The app-portage/portage-utils package will be needed in this install, please make sure it is installed.
+It can be removed at the end of the upgrade.
+</impo>
+<impo>
+This upgrade should be performed in permissive mode as root/sysadm_r.
+</impo>
+<p>
+The 2006.1 SELinux policy is now based on the new SELinux Reference Policy, and new management infrastructure (libsemanage/semodule/semanage).
+</p>
+</body></section>
+</chapter>
+
+<chapter><title>Change to 2006.1 profile</title>
+<section>
+<body>
+<p>First switch your profile to the SELinux profile for your architecture:</p>
+
+<pre caption="Switch profiles">
+# <i>rm -f /etc/make.profile</i>
+
+<comment>x86:</comment>
+# <i>ln -sf /usr/portage/profiles/selinux/x86/2006.1 /etc/make.profile</i>
+<comment>AMD64:</comment>
+# <i>ln -sf /usr/portage/profiles/selinux/amd64/2006.1 /etc/make.profile</i>
+<comment>G3 PPC:</comment>
+# <i>ln -sf /usr/portage/profiles/selinux/ppc/ppc32/2006.1/G3 /etc/make.profile</i>
+<comment>G4 PPC:</comment>
+# <i>ln -sf /usr/portage/profiles/selinux/ppc/ppc32/2006.1/G4 /etc/make.profile</i>
+<comment>SPARC:</comment>
+# <i>ln -sf /usr/portage/profiles/selinux/sparc/sparc64/2006.1 /etc/make.profile</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter><title>Merge new SELinux userland and base policy</title>
+<section>
+<body>
+<p>
+  The new policies require current SELinux userland components.
+  Also, since the new reference policy has a new portage policy domain (portage_t.merge),
+  we must temporarily force portage to use the old domain (portage_t)
+  until the new selinux-base-policy is installed.
+</p>
+<pre caption="Update userland">
+# <i>PORTAGE_T="portage_t" emerge -u1 libsepol libselinux libsemanage checkpolicy policycoreutils selinux-base-policy</i>
+</pre>
+</body>
+</section>
+
+<section><title>Choose the policy type</title>
+<body>
+<p>
+New in 2006.1, users now have the choice between the strict policy and the
+targeted policy.
+</p>
+<p>
+The old policy was strict; all processes are confined.  Strict policy is
+suggested for servers.  Gentoo does not support the strict policy on desktops.
+</p>
+<p>
+The targeted policy differs with strict, as only network-facing services are
+confined and local users are unconfined.  Gentoo only supports desktops with
+the targeted policy.  This policy can also be used on servers.
+</p>
+<p>
+Edit the /etc/selinux/config file to set the policy type.
+</p>
+<pre caption="/etc/selinux/config contents">
+# This file controls the state of SELinux on the system on boot.
+
+# SELINUX can take one of these three values:
+#       enforcing - SELinux security policy is enforced.
+#       permissive - SELinux prints warnings instead of enforcing.
+#       disabled - No SELinux policy is loaded.
+SELINUX=permissive <comment>(This should be set permissive for the remainder of the upgrade)</comment>
+
+# SELINUXTYPE can take one of these two values:
+#       targeted - Only targeted network daemons are protected.
+#       strict - Full SELinux protection.
+SELINUXTYPE=strict <comment>(Set this as strict or targeted)</comment>
+</pre>
+</body>
+</section>
+</chapter>
+
+<chapter><title>Merge remaining policies</title>
+<section>
+<body>
+<p>Merge the updated daemon policies.</p>
+<pre caption="Update remaining policies">
+# <i>emerge -u `qlist -IC sec-policy`</i>
+</pre>
+</body>
+</section>
+</chapter>
+
+<chapter><title>Relabel Reboot Relabel</title>
+<section>
+<body>
+<p>
+There was a problem with the old portage policies.  When udev was
+merged, reference devices made in /lib/udev/devices were not able
+to be created, and instead regular files were created.  These should
+be removed if they exist.
+</p>
+<pre caption="Purge udev lib devices">
+# <i>rm -f /lib/udev/devices/*</i>
+</pre>
+<p>
+The system will still function correctly, but if you want to be sure,
+remerge udev.
+</p>
+<p>
+Relabel the system, then reboot, and log in as root/sysadm_r and relabel the system again.
+Since the policy sources are no longer installed, relabeling can be done with the rlpkg tool.
+</p>
+<pre caption="rlpkg syntax for relabeling the system">
+# <i>rlpkg -a -F</i>
+</pre>
+</body>
+</section>
+</chapter>
+
+<chapter><title>Add user login mappings</title>
+<section>
+<body>
+<p>
+If you previously had SELinux identities configured in your users file, there
+is a new way to manage this, see the <uri link="selinux-handbook.xml?part=3&amp;chap=1#doc_chap3">SELinux Overview</uri>
+for more details.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter><title>Conclusion</title>
+<section>
+<body>
+<p>
+There are several changes with SELinux that have been mentioned in this guide.
+Please refer to the <uri link="selinux-handbook.xml">SELinux Handbook</uri> for more information on these features and tools.
+</p>
+</body>
+</section>
+</chapter>
+
+</guide>

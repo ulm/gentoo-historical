@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-loglocal.xml,v 1.5 2006/09/07 10:37:46 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-loglocal.xml,v 1.6 2006/10/11 04:48:51 pebenito Exp $ -->
 
 <sections>
 <version>1.4</version>
@@ -40,11 +40,25 @@
   First, verify that init is labeled correctly, refer to the sestatus's output
   for /sbin/init.  If it is not <c>system_u:object_r:init_exec_t</c>, relabel sysvinit.
 </p>
-<pre caption="">
+<pre caption="Fix init context">
 # <i>rlpkg sysvinit</i>
 </pre>
 </body></subsection>
-<subsection><title>Verify Available Policy</title><body>
+<subsection><title>Verify Available Policy (2006.1+)</title><body>
+<p>
+  You must be in <c>sysadm_r</c> to perform this action.
+</p>
+<p>
+  A binary policy must be available in  /etc/selinux/{strict,targeted}/policy.
+  If it is missing, then install the policy.
+</p>
+<pre caption="Install binary policy">
+# <i>semodule -n -B</i>
+</pre>
+</body>
+</subsection>
+
+<subsection><title>Verify Available Policy (pre 2006.1)</title><body>
 <p>
   An appropriate binary policy version must also be available in 
   /etc/security/selinux.  For example, for policy version 17,
@@ -52,7 +66,7 @@
   the policy <uri link="?part=4&amp;chap=1#doc_chap6_sect3">Makefile</uri>.
   Then compile and install the policy.
 </p>
-<pre caption="">
+<pre caption="Install binary policy">
 # <i>cd /etc/security/selinux/src/policy</i>
 # <i>make clean</i>
 # <i>make install</i>
@@ -64,7 +78,7 @@
   The final check is to ensure init can load the policy.  Run <c>ldd</c> on
   init, and if libselinux is not in the output, remerge sysvinit.
 </p>
-<pre caption="">
+<pre caption="Check init linking">
 # <i>ldd /sbin/init</i>
   linux-gate.so.1 =>  (0xffffe000)
   <comment>libselinux.so.1 => /lib/libselinux.so.1 (0x40025000)</comment>
@@ -84,7 +98,7 @@
   for /sbin/agetty.  If it is not <c>system_u:object_r:getty_exec_t</c>, relabel
   util-linux.  Then restart all gettys.
 </p>
-<pre caption="">
+<pre caption="Fix agetty context">
 # <i>rlpkg util-linux</i>
 # <i>killall agetty</i> <comment>(they will respawn)</comment>
 </pre>
@@ -99,10 +113,10 @@
 <section><title>Incorrect Login Context</title>
 <subsection><body>
 <p>
-  The login program (/bin/login) is not labeled correctly.  Relabel pam-login.
+  The login program (/bin/login) is not labeled correctly.  Relabel shadow.
 </p>
-<pre caption="">
-# <i>rlpkg pam-login</i>
+<pre caption="Relabel shadow">
+# <i>rlpkg shadow</i>
 </pre>
 <p>
   /bin/login should now be <c>system_u:object_r:login_exec_t</c>.
@@ -119,7 +133,7 @@
   checking program (/sbin/unix_chkpwd) must be labeled correctly so
   sshd can transition to the password checking context.  Relabel PAM.
 </p>
-<pre caption="">
+<pre caption="Fix unix_chkpwd context">
 # <i>rlpkg pam</i>
 </pre>
 <p>
@@ -136,7 +150,7 @@
   be labeled correctly, otherwise PAM will not be able to
   authenticate your user.  Relabel the files.
 </p>
-<pre caption="">
+<pre caption="Fix shadow context">
 # <i>restorecon /etc/passwd /etc/shadow</i>
 </pre>
 <p>
@@ -153,7 +167,7 @@
   Bash must be labeled correctly so the user can transition into the user
   domain when logging in.  Relabel bash.
 </p>
-<pre caption="">
+<pre caption="Fix bash context">
 # <i>rlpkg bash</i>
 </pre>
 <p>

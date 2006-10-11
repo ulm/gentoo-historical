@@ -4,18 +4,27 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-howto.xml,v 1.3 2006/09/07 10:37:46 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-howto.xml,v 1.4 2006/10/11 04:48:51 pebenito Exp $ -->
 
 <sections>
 <version>1.2</version>
 <date>2004-11-16</date>
 
 <section><title>Load policy into a running SELinux kernel</title>
-<subsection><body>
+<subsection><title>Managed policy (2006.1+)</title><body>
 <p>
   This requires you to be in the <c>sysadm_r</c> role.
 </p>
-<pre caption="">
+<pre caption="Semodule command">
+# <i>semodule -B</i>
+</pre>
+</body></subsection>
+
+<subsection><title>Unmanaged policy (pre 2006.1)</title><body>
+<p>
+  This requires you to be in the <c>sysadm_r</c> role.
+</p>
+<pre caption="Load policy">
 # <i>cd /etc/security/selinux/src/policy</i>
 # <i>make load</i>
 </pre>
@@ -28,21 +37,37 @@
   This requires your user have access to the target role.  This example
   is for changing to the <c>sysadm_r</c> role.
 </p>
-<pre caption="">
+<pre caption="Newrole">
 # <i>newrole -r sysadm_r</i>
 </pre>
 </body></subsection>
 </section>
 
 <section><title>Specify available roles for a user</title>
-<subsection><body>
+<subsection><title>Managed policy (2006.1+)</title><body>
+<p>
+  There is a mapping of linux users to SELinux identities.  The policy has
+  generic SELinux users for relevant configurations of roles.  For example, to
+  map the user <c>pebenito</c> to the SELinux identity staff_u, run:
+</p>
+<pre caption="Map pebenito to staff_u">
+# <i>semanage login -a -s staff_u pebenito</i>
+</pre>
+<p>
+  The policy does not need to be reloaded.
+</p>
+</body></subsection>
+
+<subsection><title>Unmanaged policy (pre 2006.1)</title><body>
 <p>
   The SELinux identity determines the roles available to a user.  Modify the
   users file (/etc/security/selinux/src/policy/users).  For example, to allow
   the user <c>pebenito</c> the ability to have roles <c>staff_r</c> and <c>sysadm_r</c>,
   add to the file:
 </p>
-<pre caption="">user pebenito roles { staff_r sysadm_r };</pre>
+<pre caption="User line">
+user pebenito roles { staff_r sysadm_r };
+</pre>
 <p>
   Then <uri link="#doc_chap1">load</uri> the policy.  See the 
   SELinux Overview for additional information on SELinux identities.
@@ -51,11 +76,20 @@
 </section>
 
 <section><title>Relabel filesystems</title>
-<subsection><body>
+<subsection><title>Managed policy (2006.1+)</title><body>
 <p>
   This requires you to be in the <c>sysadm_r</c> role.
 </p>
-<pre caption="">
+<pre caption="Relabel">
+# <i>rlpkg -a</i>
+</pre>
+</body></subsection>
+
+<subsection><title>Unmanaged policy (pre 2006.1)</title><body>
+<p>
+  This requires you to be in the <c>sysadm_r</c> role.
+</p>
+<pre caption="Relabel">
 # <i>cd /etc/security/selinux/src/policy</i>
 # <i>make relabel</i>
 </pre>
@@ -69,11 +103,28 @@
    can be relabeled.  This requires you to be in the <c>sysadm_r</c> role.
 </p>
 <pre caption="rlpkg example">
-# <i>rlpkg pam-login sash</i>
+# <i>rlpkg shadow sash</i>
 </pre>
 <p>
    The script rlpkg is used, and any number of packages can be specified
    on the command line.
+</p>
+</body></subsection>
+</section>
+
+<section><title>Scan for libraries with text relocations (2006.1+ only)</title>
+<subsection><body>
+<p>
+  SELinux has improved memory protections.  One feature supported is
+  the permission for ELF text relocations.  The libraries with text relocations
+  have a special label, and the <c>rlpkg</c> tool has an option to scan for
+  these libraries.
+</p>
+<pre caption="TEXTREL Scan">
+# <i>rlpkg -t</i>
+</pre>
+<p>
+  This will also be done by automatically after a full relabel.
 </p>
 </body></subsection>
 </section>
@@ -128,16 +179,27 @@ Password:
 # <i>echo 0 > /selinux/enforce</i>
 </pre>
 <p>
-  The old SELinux API had commands <c>avc_enforcing</c> and <c>avc_toggle</c>
-  for querying the current mode and toggling between modes, respectively.
-  <c>avc_toggle</c> will display the mode that the machine is switching to
-  (not the former mode).  For backwards compatability, scripts that replicate
-  these programs are installed by policycoreutils.
-</p>
-<p>
   A machine with development support turned on can be started in enforcing
   mode by adding <c>enforcing=1</c> to the kernel command line, in the
   bootloader (GRUB, lilo, etc).
+</p>
+</body></subsection>
+
+<subsection><title>Managed policy (2006.1+)</title><body>
+<p>
+  In addition to the above kernel options, the mode at boot can be
+  set by the <c>/etc/selinux/config</c> file.
+</p>
+<pre caption="/etc/selinux/config">
+# SELINUX can take one of these three values:
+#       enforcing - SELinux security policy is enforced.
+#       permissive - SELinux prints warnings instead of enforcing.
+#       disabled - No SELinux policy is loaded.
+SELINUX=<comment>permissive</comment>
+</pre>
+<p>
+  The setting in this file will be overridden by the kernel command line
+  options described above.
 </p>
 </body></subsection>
 </section>

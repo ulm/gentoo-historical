@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-overview.xml,v 1.6 2006/09/07 10:37:46 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-overview.xml,v 1.7 2006/10/11 04:48:51 pebenito Exp $ -->
 
 <sections>
 <version>1.5</version>
@@ -53,7 +53,7 @@
    domains that a user can be in is determined by their role.  If a role is not
    allowed to have a certain domain, a transition to that domain will be denied,
    even if the type enforcement rules allow the domain transition.  A role is
-   generally suffixed with a &#39;_r&#39;, such as <c>portage_r</c>.
+   generally suffixed with a &#39;_r&#39;, such as <c>system_r</c>.
 </p>
 </body></subsection>
 </section>
@@ -71,7 +71,44 @@
 </p>
 </body></subsection>
 
-<subsection><title>Configuring SELinux Identities</title><body>
+<subsection><title>Configure SELinux Identity Mapping (2006.1+)</title><body>
+<p>
+   The SELinux policy has several generic SELinux identities that should
+   be sufficient for all users.  This mapping only needs to be configured
+   on the strict policy.  The identity mapping for the targeted policy
+   need not be configured, as the default identity (user_u) is sufficient
+   in all cases.
+</p>
+<p>
+   When a user logs in, the SELinux identity used is determined by this mapping.
+</p>
+<table>
+<tr><th>SELinux Identity</th>
+    <th>Roles</th>
+    <th>Description</th></tr>
+<tr><ti>system_u</ti>
+    <ti>system_r</ti>
+    <ti>System (non-interactive) processes.  Should not be used on users.</ti></tr>
+<tr><ti>user_u</ti>
+    <ti>user_r</ti>
+    <ti>Generic unprivileged users.  The default identity mapping.</ti></tr>
+<tr><ti>staff_u</ti>
+    <ti>staff_r, sysadm_r</ti>
+    <ti>System administrators that also log in to do regular user activties.</ti></tr>
+<tr><ti>sysadm_u</ti>
+    <ti>sysadm_r</ti>
+    <ti>System administrators that only log in to do administrative tasks.  It is not suggested that this identity is used.</ti></tr>
+<tr><ti>root</ti>
+    <ti>staff_r, sysadm_r</ti>
+    <ti>Special identity for root.  Other users should use staff_u instead.</ti></tr>
+</table>
+<p>
+   See the <uri link="selinux-handbook.xml?part=3&amp;chap=2#doc_chap3">SELinux HOWTO</uri>
+   for semanage syntax for configuring SELinux identity mappings.
+</p>
+</body></subsection>
+
+<subsection><title>Configuring SELinux Identities (pre 2006.1)</title><body>
 <p>
    SELinux identities are contained in the users file in the policy directory.
    The syntax for the file is simple.  For example, to allow the user
@@ -177,7 +214,7 @@ drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
 </section>
 
 <section>
-<title>SELinux Policy Files</title>
+<title>SELinux Policy Files (pre 2006.1)</title>
 <subsection><body>
 <p>
    The SELinux policy usually resides in <c>/etc/security/selinux/src/policy</c>.
@@ -357,14 +394,45 @@ drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
 </section>
 
 <section>
-<title>Policy Database Versions</title>
+<title>SELinux Policy Files (2006.1+)</title>
 <subsection><body>
 <p>
-   When compiling the policy, the resultant binary policy is versioned.  The
-   first version that was merged into 2.6, and also is in the 2.4 backports is
-   version 15.  The version number is only incremented generally when new
-   features are added that require changes to the structure of the compiled
-   policy.  For example, in 2.6.5, conditional policy extensions were added.
+   The SELinux policy source files are no longer installed onto the system.
+   In the <c>/usr/share/selinux/{strict,targeted}</c> directory there are a
+   collection of policy packages and headers for building local modules.
+   The policy files are processed by m4, and then the policy compiler <c>checkmodule</c>
+   verifies that there are no syntactic errors, and a policy module is created.
+   Then a policy package is created with with the <c>semodule_package</c>
+   program, using the policy module and the module file contexts.
+   The policy packaged then can be loaded into a running SELinux kernel
+   by inserting it into the module store.
+</p>
+</body></subsection>
+
+<subsection><title>*.pp</title><body>
+<p>
+   Policy packages for this policy.  These must be inserted into the module
+   store so they can be loaded into the policy.  Inside the package
+   there is a loadable policy module, and optionally a file context file.
+</p>
+</body></subsection>
+
+<subsection><title>include/</title><body>
+<p>
+   Policy headers for this policy.
+</p>
+</body></subsection>
+
+</section>
+
+<section>
+<title>Binary Policy Versions</title>
+<subsection><body>
+<p>
+   When compiling the policy, the resultant binary policy is versioned.
+   The first version that was merged into 2.6 was version 15.
+   The version number is only incremented generally when new features are added that require changes to the structure of the compiled policy.
+   For example, in 2.6.5, conditional policy extensions were added.
    This required the policy version to be incremented to version 16.
 </p>
 </body></subsection>
@@ -377,8 +445,12 @@ drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
    kernel can also load a version 16 policy.  However, this compatibility
    code may be removed in the future.
 </p>
+<note>
+  The policy management infrastructure (libsemanage) will automatically
+  create and use the correct version policies.  No extra steps need be taken. (2006.1+)
+</note>
 </body></subsection>
-<subsection><title>Compiling the Right Version Policy</title>
+<subsection><title>Compiling the Right Version Policy (pre 2006.1)</title>
 <body>
 <p>
    The only adjustment needed is in the policy Makefile.  There is a line
@@ -398,10 +470,7 @@ POLICYCOMPAT = -c 15
 <subsection><title>Policy Versions</title>
 <body>
 <p>
-   The following table contains the policy versions in vanilla 2.6.
-   Other 2.6 kernels, such as gentoo-sources,
-   will have the SELinux version of the vanilla kernel version
-   it is based on.
+   The following table contains the policy versions in 2.6 kernels.
 </p>
 <table>
 <tr><th>Version</th>
@@ -422,11 +491,14 @@ POLICYCOMPAT = -c 15
     <ti>Fine-grained netlink socket support added.</ti>
     <ti>2.6.8 - 2.6.11</ti></tr>
 <tr><ti>19</ti>
-    <ti>Policy-enabled Multi-level security.</ti>
+    <ti>Enhanced multi-level security.</ti>
     <ti>2.6.12 - 2.6.13</ti></tr>
 <tr><ti>20</ti>
     <ti>Access vector table size optimizations.</ti>
-    <ti>2.6.14 - current</ti></tr>
+    <ti>2.6.14 - 2.6.18</ti></tr>
+<tr><ti>21</ti>
+    <ti>Object classes in range transitions.</ti>
+    <ti>2.6.19 - current</ti></tr>
 </table>
 </body></subsection>
 </section>
@@ -484,6 +556,12 @@ user_ping: active
 </p>
 <pre caption="Example setsebool command">
 # setsebool user_ping 0
+</pre>
+<p>
+  To set the value of a boolean, and make it the devault value, use the <c>-P</c> option.  (2006.1+)
+</p>
+<pre caption="Change default value (2006.1+)">
+# setsebool -P user_ping 1
 </pre>
 </body></subsection>
 </section>
@@ -546,6 +624,19 @@ AVC: 12 messages suppressed.
 </p>
 
 </body></subsection>
+
+<subsection><title>Other kernel messages</title>
+<body>
+<pre caption="inode_doinit_with_dentry">
+inode_doinit_with_dentry:  context_to_sid(system_u:object_r:bar_t) returned 22 for dev=hda3 ino=517610
+</pre>
+<p>
+   This means that the file on /dev/hda3 with inode number 517610 has the context
+   system_u:object_r:bar_t, which is invalid.  Objects with an invalid context
+   are treated as if they had the system_u:object_r:unlabeled_t context.
+</p>
+</body></subsection>
+
 </section>
 
 <section><title>Dissecting a Denial</title>
