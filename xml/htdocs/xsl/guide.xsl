@@ -1299,7 +1299,7 @@
   <xsl:variable name="link">
     <xsl:value-of select="/*[1]/@link"/>
   </xsl:variable>
-  <xsl:if test="starts-with($link, '/doc/') and not(starts-with($link, '/doc/en/')) and $glang != ''">
+  <xsl:if test="starts-with($link, '/doc/') and not(starts-with($link, '/doc/en/')) and $glang != ''  and not (//*[1]/@metadoc = 'yes')">
     <!-- We have a translation, is it up-to-date? -->
     <xsl:variable name="metadoc" select="document(concat('/doc/', $glang, '/metadoc.xml'))"/>
     <xsl:variable name="fileid" select="$metadoc/metadoc/files/file[text()=$link]/@id"/>
