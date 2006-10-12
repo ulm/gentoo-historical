@@ -1,7 +1,7 @@
 GLEP: xx+1
 Title: Security of distribution of Gentoo software - Infrastructure to User distribution
-Version: $Version$
-Last-Modified: $Date: 2006/10/11 06:36:50 $
+Version: $Revision: 1.2 $
+Last-Modified: $Date: 2006/10/12 12:06:31 $
 Author: Robin Hugh Johnson <robbat2@gentoo.org>, 
 Status: Draft
 Type: Standards Track
@@ -39,6 +39,11 @@ and profiles are not protected at this time. The directories of
 packages and distfiles are NOT covered by this, as they are not
 distributed by rsync.
 
+This portion of the tree-signing work provides only the following
+guarantee: A user can prove that the tree from the Gentoo infrastructure
+has not been tampered with since leaving the Gentoo infrastructure.
+No other guarantees, either implicit or explicit are made.
+
 Specification
 =============
 For lack of a better name, the following solution should be known as the
@@ -52,16 +57,11 @@ Manifest files. If the Manifest itself is correct, we know that by
 tracking the hash of the Manifest, we can be assured that the contents
 are protected.
 
-The MetaManifest file follows the Manifest2 format, adding two new entry
-types. 'MANIFEST' indicates that this is the hash of another Manifest
-file, which thus comprises nested Manifests (the source of the
-MetaManifest name). 'EXEC' is used to indicate directly executable code,
-such as the contents of scripts/ and all eclasses. The MetaManifest file
-is still named 'Manifest' and is located at the root of each
-repository. (TODO: Talk to portage team/genone, ferringb, ciaramn about
-this).
+In the following, the MetaManifest file is a file named 'Manifest',
+located at the root of a repository.
 
 Procedure for creating the MetaManifest file:
+---------------------------------------------
 1. Start at the root of the Gentoo Portage tree (gentoo-x86, although
    this procedure applies to overlays as well).
 2. Initialize a list, empty. This will contain the relative paths of
@@ -75,18 +75,27 @@ Procedure for creating the MetaManifest file:
      the list, and repeat item #3 for every child directory.
 4. Your list now contains every Manifest in the tree, as well as all
    items that are not contained in any other manifest.
-5. If an existing Manifest file is present, remove it.
-6. For each item in the list, create a Manifest2-style MISC entry, and
-   append into Manifest file, located at the root of the
-   repository.
+5. If an existing MetaManifest file is present, remove it.
+6. For each item in the list:
+6.1. If the item is an existing Manifest, the Manifest2 type is
+     'MANIFEST' - this is a specialization of the 'AUX' type.
+6.2. If the item is under licenses, scripts, or metadata, the Manifest2
+     type is 'MISC'.
+6.3. If the item is under eclasses or profiles, the Manifest2 type is
+     'AUX'.
+6.4. All other items (category metadata.xml, skel.*) are of Manifest2
+      type 'MISC'.
+7. For each item in the list (they all have types now), produce the
+   hashes, and add to the MetaManifest file.
 
 The above does not conflict the proposal contained in GLEP33, which
 restructure eclasses to include subdirectories and Manifest files, as
 the Manifest rules above still provide indirect verification for all
 files after the GLEP33 restructuring if it comes to pass.
 
-If per-category Manifests are added, they should be MetaManifests that
-nest to allow full verification.
+If per-category Manifests are added, the size of the MetaManifest will
+be greatly reduced, and this specification was written with such a
+possible future addition in mind.
 
 MetaManifest generation will take place as part of the existing process
 by infrastructure that takes the contents of CVS and prepares it for
@@ -107,9 +116,27 @@ compromise checking the file length, and that the hashes match.
 
 TODO(from ciaranm): Deal with excludes properly - a missing package.mask
 SHOULD be treated as an error.
-TODO: talk to genone re Manifest2 hashes
+TODO: talk to genone re Manifest2 hashes, and AUX stripping/adding 'files/'
+
+Brief overview of Manifest2 verification:
+-----------------------------------------
+Excluding the Manifest1 compatibility data (lines starting with the name
+of a hash), each line is in the following format:
+FILETYPE FILENAME LEN (HASHNAME HASH)+
+Filetype behavior, where the filename is relative to, and behavior when
+an entry in the Manifest2 is not present:
+|--------|-----------|------------|
+|Filetype|Relative to|Missing-fail|
+|--------|-----------|------------|
+|MISC    |Manifest-bd|NO          |
+|AUX     |$FILESDIR  |YES         |
+|DIST    |$DISTDIR   |N/A         |
+|EBUILD  |Manifest-bd|YES         |
+|--------|-----------|------------|
+Manifest-bd = basedir(Manifest)
 
 Procedure for verifying an item in the MetaManifest:
+----------------------------------------------------
 1. Check the GnuPG signature on the MetaManifest [TODO-robbat2], see
    GLEPxx+3 for details regarding verification of GnuPG signatures. Do
    not continue if the signature check fails.
@@ -132,10 +159,20 @@ Notes:
 eclass, as it stores patches under eclass/ELT-patches, and as such that
 would not be picked up by any tracing of the inherit function.
 
+Implementation Notes
+====================
+For this portion of the tree-signing work, no actions are required of
+the individual Gentoo developers. They will continue to develop and
+commit as they do presently, and the MetaManifest is added by
+Infrastructure during the tree generation process, and distributed to
+users.
+
 Backwards Compatibility
 =======================
 There are no backwards compatibility issues, as old versions of Portage
 do not look for a Manifest file at the top level of the tree.
+Manifest2-aware versions of Portage ignore entries that they are not
+certain how to handle.
 
 Thanks
 ======
