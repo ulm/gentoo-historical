@@ -6,7 +6,7 @@ if [ $# -ne 1 ]; then
 fi
 pver=$1
 
-tar=netcat-0.17-patches-${pver}.tar.bz2
+tar=netkit-rsh-0.17-patches-${pver}.tar.bz2
 
 rm -r tmp
 mkdir -p tmp/patch
