@@ -133,11 +133,15 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
   <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
-    <!-- Just remove this bit if http refresh is too annoying -->
       <xsl:if test="/*[1][@redirect]">
+        <!-- HTML refresh in case redirect is not supported -->
         <meta http-equiv="Refresh">
           <xsl:attribute name="content"><xsl:value-of select="concat('15; URL=', /*[1]/@redirect)"/></xsl:attribute>
         </meta>
+        <xsl:message>
+          <!-- Redirect using http header when supported -->
+          <xsl:value-of select="concat('%%GORG%%Redirect=',/*[1]/@redirect)"/>
+        </xsl:message>
       </xsl:if>    
 
 <title>
