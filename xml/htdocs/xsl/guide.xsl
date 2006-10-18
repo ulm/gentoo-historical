@@ -859,10 +859,10 @@
         <!-- Handbook link pointing to another part/chapter, normal case -->
         <xsl:choose>
           <xsl:when test="$style != 'printable'">
-            <a href="{$LINK}{@link}"><xsl:apply-templates/></a>
+            <a href="{$link}{@link}"><xsl:apply-templates/></a>
           </xsl:when>
           <xsl:otherwise>
-            <a href="{$LINK}{@link}&amp;style=printable"><xsl:apply-templates/></a>
+            <a href="{$link}{@link}&amp;style=printable"><xsl:apply-templates/></a>
           </xsl:otherwise>
         </xsl:choose>
       </xsl:when>
@@ -1300,9 +1300,6 @@
 
 <xsl:template name="outdated-translation">
   <!-- Add mention that translation is outdated whenever possible -->
-  <xsl:variable name="link">
-    <xsl:value-of select="/*[1]/@link"/>
-  </xsl:variable>
   <xsl:if test="starts-with($link, '/doc/') and not(starts-with($link, '/doc/en/')) and $glang != ''  and not (//*[1]/@metadoc = 'yes')">
     <!-- We have a translation, is it up-to-date? -->
     <xsl:variable name="metadoc" select="document(concat('/doc/', $glang, '/metadoc.xml'))"/>
@@ -1359,7 +1356,7 @@
 <!-- Right-hand column with date/authors/ads -->
   <table border="0" cellspacing="4px" cellpadding="4px">
     <!-- Add a "printer-friendly" button when link attribute exists -->
-    <xsl:if test="/book/@link or /guide/@link">
+    <xsl:if test="/book or /guide">
      <tr>
       <td class="topsep" align="center">
         <p class="altmenu">
@@ -1367,15 +1364,15 @@
           <xsl:variable name="href">
             <xsl:choose>
               <xsl:when test="/book and $full != 0">
-                <xsl:value-of select="concat(@link, '?full=1&amp;style=printable')"/>
+                <xsl:value-of select="concat($link, '?full=1&amp;style=printable')"/>
               </xsl:when>
               <xsl:when test="/book">
-                <xsl:value-of select="concat(@link, '?style=printable')"/>
+                <xsl:value-of select="concat($link, '?style=printable')"/>
                 <xsl:if test="$part != '0'">&amp;part=<xsl:value-of select="$part"/></xsl:if>
                 <xsl:if test="$chap != '0'">&amp;chap=<xsl:value-of select="$chap"/></xsl:if>
               </xsl:when>
               <xsl:when test="/guide">
-                <xsl:value-of select="concat(@link, '?style=printable')"/>
+                <xsl:value-of select="concat($link, '?style=printable')"/>
               </xsl:when>
             </xsl:choose>
           </xsl:variable>

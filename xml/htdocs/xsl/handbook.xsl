@@ -166,7 +166,7 @@
           [ &lt;&lt; ]
         </xsl:when>
         <xsl:otherwise>
-          [ <a href="?part={$prevpart}">&lt;&lt;</a> ]
+          [ <a href="{concat($link, '?part=', $prevpart)}">&lt;&lt;</a> ]
         </xsl:otherwise>
       </xsl:choose>
       <!-- Previous Chapter -->
@@ -175,17 +175,17 @@
           [ &lt; ]
         </xsl:when>
         <xsl:otherwise>
-          [ <a href="?part={$part}&amp;chap={$prevchap}">&lt;</a> ]
+          [ <a href="{concat($link, '?part=', $part, '&amp;chap=', $prevchap)}">&lt;</a> ]
         </xsl:otherwise>
       </xsl:choose>
       <!-- Content -->
-      [ <a href="?part=0"><xsl:value-of select="func:gettext('Home')"/></a> ]
+      [ <a href="{$link}"><xsl:value-of select="func:gettext('Home')"/></a> ]
       <!-- Next Chapter -->
       <xsl:if test="name() = 'book'">
-        [ <a href="?part=1">&gt;</a> ]
+        [ <a href="{concat($link, '?part=1')}">&gt;</a> ]
       </xsl:if>
       <xsl:if test="name() = 'part'">
-        [ <a href="?part={$part}&amp;chap=1">&gt;</a> ]
+        [ <a href="{concat($link, '?part=', $part, '&amp;chap=1')}">&gt;</a> ]
       </xsl:if>
       <xsl:if test="name() = 'chapter'">
         <xsl:choose>
@@ -193,13 +193,13 @@
             [ &gt; ]
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="?part={$part}&amp;chap={$nextchap}">&gt;</a> ]
+            [ <a href="{concat($link, '?part=', $part, '&amp;chap=', $nextchap)}">&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
       <!-- Next Part -->
       <xsl:if test="name() = 'book'">
-        [ <a href="?part={$nextpart}">&gt;&gt;</a> ]
+        [ <a href="{concat($link, '?part=', $nextpart)}">&gt;&gt;</a> ]
       </xsl:if>
       <xsl:if test="name() = 'part'">
         <xsl:choose>
@@ -207,7 +207,7 @@
             [ &gt;&gt; ]
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="?part={$nextpart}">&gt;&gt;</a> ]
+            [ <a href="{concat($link, '?part=', $nextpart)}">&gt;&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
@@ -217,7 +217,7 @@
             [ &gt;&gt; ] 
           </xsl:when>
           <xsl:otherwise>
-            [ <a href="?part={$nextpart}">&gt;&gt;</a> ]
+            [ <a href="{concat($link, '?part=', $nextpart)}">&gt;&gt;</a> ]
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>

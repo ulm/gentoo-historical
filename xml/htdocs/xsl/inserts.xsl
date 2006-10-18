@@ -324,18 +324,13 @@
 <xsl:param name="TTOP"><xsl:value-of select="name(//*[1])" /></xsl:param>
 
 <!-- Value of top element's link attribute e.g. "handbook.xml" -->
-<xsl:param name="LINK"><xsl:value-of select="//*[1]/@link" /></xsl:param>
+<xsl:param name="link"><xsl:value-of select="//*[1]/@link" /></xsl:param>
 
 <!-- Value of top element's lang attribute e.g. "pt_br" -->
 <xsl:param name="glang"><xsl:value-of select="//*[1]/@lang" /></xsl:param>
 
 
 <xsl:template match="/">
-  <!-- For Debugging:
-   <xsl:message>TTOP: <xsl:value-of select="$TTOP" /> </xsl:message>
-   <xsl:message>LANG: <xsl:value-of select="$glang" /> </xsl:message>
-   <xsl:message>LINK: <xsl:value-of select="$LINK" /> </xsl:message>
-  -->
   <xsl:apply-templates/>
 </xsl:template>
 
