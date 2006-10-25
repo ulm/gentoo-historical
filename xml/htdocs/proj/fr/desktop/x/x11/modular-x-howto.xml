@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/fr/desktop/x/x11/modular-x-howto.xml,v 1.12 2006/07/16 10:55:10 neysx Exp $ -->
-
+<!-- $Id: modular-x-howto.xml,v 1.13 2006/10/25 09:27:49 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/proj/fr/desktop/x/x11/modular-x-howto.xml" lang="fr">
@@ -91,7 +90,9 @@ absolument crucial, mais cela aidera à assurer une migration sans accroc.
 
 <p>
 Vous voudrez certainement une copie de sauvegarde du xorg-x11 monolithique au
-cas où les choses tourneraient mal.
+cas où les choses tourneraient mal et que vous voulez retourner vers la version
+6.x. Vous pouvez aussi installer un navigateur en mode texte tel que links ou
+lynx pour consulter ce guide lorsque X ne sera pas disponible.
 </p>
 
 <pre caption="Sauvegarder l'ancien xorg-x11">
@@ -133,52 +134,6 @@ pouvoir installer le paquet <c>xkeyboard-config</c>.
 <section>
 <title>Seconde étape&nbsp;: installer le X modulaire</title>
 <body>
-
-<p>
-Si vous utilisez un système stable (c-à-d. pas ~architecture) et que la version
-modulaire de X que vous désirez n'est pas encore marquée stable sur votre
-architecture, ajoutez les paquets nécessaires dans le fichier
-<path>/etc/portage/package.keywords</path>. Téléchargez le fichier <uri
-link="/proj/en/desktop/x/x11/modular-x-packages.txt">package list</uri> et
-ouvrez-le dans votre éditeur de texte favori. Copiez-collez la liste complète
-des paquets pour X modulaire dans <path>package.keywords</path>. Si tout ceci
-vous semble incompréhensible, lisez <uri
-link="/doc/fr/handbook/handbook-x86.xml?part=3&amp;chap=3"> la section
-concernant le masquage dans le manuel</uri>.
-</p>
-
-<note>
-Ne faites pas cette manipulation si vous utilisez des pilotes binaires ou s'il
-n'y a aucune raison spécifique pour laquelle il vous faudrait X.org 7.1 plutôt
-que 7.0. Les pilotes binaires ne sont pas encore compatibles avec X.org 7.1.
-</note>
-
-<table>
-  <tr>
-    <th>
-      Autres paquets pouvant avoir besoin de package.keywords pour les
-      utilisateurs de la branche stable
-    </th>
-  </tr>
-  <tr>
-    <ti>&gt;=sys-apps/portage-2.1_pre4</ti>
-  </tr>
-  <tr>
-    <ti>=sys-apps/man-1.6b-r2</ti>
-  </tr>
-  <tr>
-    <ti>app-admin/eselect-opengl</ti>
-  </tr>
-  <tr>
-    <ti>&gt;=app-admin/eselect-1.0_rc1</ti>
-  </tr>
-  <tr>
-    <ti>media-video/nvidia-kernel</ti>
-  </tr>
-  <tr>
-    <ti>media-video/nvidia-glx</ti>
-  </tr>
-</table>
 
 <p>
 Pour avoir accès au «&nbsp;direct rendering&nbsp;», vérifiez que votre variable
@@ -422,11 +377,75 @@ la 7.0. De nouvelles sont aussi apparues. En voici la description&nbsp;:
 </body>
 </section>
 <section>
+<title>Qu'est-il advenu des fichiers de configurations&nbsp;?</title>
+<body>
+  	 
+<p>
+Dans le paquet X.Org 6.8 de Gentoo, tous les fichiers de configuration et les
+scripts étaient dans le répertoire <path>/etc/X11</path>. Dans X.Org modulaire,
+l'emplacement par défaut de ces fichiers a changé, c'est-à-dire que les
+fichiers de configuration sont toujours dans <path>/etc/X11</path>, mais les
+scripts et les configurations par défaut se trouvent maintenant dans
+<path>/usr/lib/X11</path> (ou <path>lib64</path>) et
+<path>/usr/share/X11</path>.
+</p>
+
+<p>
+À cause de la protection des configurations (CONFIG_PROTECT), vous aurez
+certainement encore tous vos vieux fichiers de configuration de X.Org 6.8 dans
+<path>/etc/X11</path>, prennant de la place et semblant utiles.
+</p>
+
+<p>
+Puisque ces répertoires ne sont pas dans CONFIG_PROTECT, il est important que
+tout changement à la configuration par défaut soit fait en copiant les fichiers
+concernés dans <path>/etc/X11</path> et en faisant le changement là. Une autre
+méthode qui n'est pas recommandée est d'ajouter le nouvel emplacement dans
+CONFIG_PROTECT. Ci-dessous se trouvent deux exemples&nbsp;:
+</p>
+
+<pre caption="Personnaliser l'initialisation de XDM">
+<comment>(D'abord, copiez le fichier Xsetup_0 dans /etc pour qu'il soit protégé.)</comment>
+# <i>cp -a /usr/lib/X11/xdm/Xsetup_0 /etc/X11/xdm/</i>
+<comment>(Modifiez le fichier comme cela vous convient.
+Puis modifiez xdm-config pour changer le chemin vers ce fichier.)</comment>
+# <i>nano /etc/X11/xdm/xdm-config</i>
+<comment>(Changez ceci :)</comment>
+! The following three resources set up display :0 as the console.
+DisplayManager._0.setup:        /usr/lib/X11/xdm/Xsetup_0
+DisplayManager._0.startup:      /usr/lib/X11/xdm/GiveConsole
+DisplayManager._0.reset:        /usr/lib/X11/xdm/TakeConsole
+<comment>(en cela :)</comment>
+! The following three resources set up display :0 as the console.
+<i>DisplayManager._0.setup:        /etc/X11/xdm/Xsetup_0</i>
+DisplayManager._0.startup:      /usr/lib/X11/xdm/GiveConsole
+DisplayManager._0.reset:        /usr/lib/X11/xdm/TakeConsole
+</pre>
+
+<note>
+Sur les systèmes 64-bits multilib avec le profil no-symlink, il faut changer
+lib en lib64.
+</note>
+
+<pre caption="Personnaliser app-defaults/XTerm-color">
+<comment>(Je n'ai pas réussi à trouver où le chemin vers app-defaults est défini dans
+les fichiers de configuration du répertoire /etc/X11, donc pour protéger mes
+changements faits XTerm-color, on va protéger /usr/share/X11/app-defaults en
+modifiant /etc/make.conf.)</comment>
+# <i>nano /etc/make.conf</i>
+<comment>(et régler CONFIG_PROTECT de façon adéquate)</comment>
+CONFIG_PROTECT="/usr/share/X11/app-defaults"
+</pre>
+
+</body>
+</section>
+
+<section>
 <title>Problèmes de pilotes</title>
 <body>
 
 <p>
-On m'a rapporté que&nbsp;:
+Il a été rapporté que&nbsp;:
 </p>
 
 <ul>
@@ -434,14 +453,11 @@ On m'a rapporté que&nbsp;:
   <li>
     vga donne un affichage très étrange, l'écran étant divisé en quatre.
   </li>
-  <li>
-    Les pilotes binaires ne fonctionnent pas avec X.org 7.1. Cependant, ils
-    fonctionnent avec X.org 7.0.
-  </li>
 </ul>
 
 </body>
 </section>
+
 <section>
 <title>Faire fonctionner l'accélération 3D</title>
 <body>
@@ -476,7 +492,8 @@ cela risque de ne pas fonctionner. Il vous faudra alors spécifier <c>Protocol
 </body>
 </section>
 <section>
-<title>Un message d'erreur me dit que libbitmap ou libpcidata est introuvable</title>
+<title>Un message d'erreur me dit que libbitmap ou libpcidata est
+introuvable</title>
 <body>
 
 <p>
@@ -552,10 +569,10 @@ passez dans le sous-répertoire pc/)</comment>
 <comment>(Ensuite, on cherche une variante xkb_symbols qui s'appelle dvorak.)</comment>
 # <i>grep xkb_symbols.*dvorak us</i>
  xkb_symbols "dvorak" {
-<comment>(Cela signifie qu'il faut Option "XkbLayout" "us"</comment>
-<comment>et Option "XkbVariant" "dvorak" dans xorg.conf.)</comment>
+<comment>(Cela signifie qu'il faut Option "XkbLayout" "us"
+et Option "XkbVariant" "dvorak" dans xorg.conf.)
 
-<comment>(Mais lorsqu'on essaie avec setxkbmap, on obtient encore une erreur :)</comment>
+(Mais lorsqu'on essaie avec setxkbmap, on obtient encore une erreur:)</comment>
 # <i>setxkbmap -model logibik -layout us -variant dvorak -option "ctrl:swapcaps"</i>
 <comment>(Peut-être que le modèle a aussi changé.)</comment>
 # <i>cd /usr/share/X11/xkb/rules/</i>
@@ -580,7 +597,7 @@ passez dans le sous-répertoire pc/)</comment>
 <comment>(Génial !
 Le modèle « logiik » semble similaire, essayons-le donc avec setxkbmap.)</comment>
 # <i>setxkbmap -model logiik -layout us -variant dvorak -option "ctrl:swapcaps"</i>
-<comment>(Ça marche, donc faites correspondre la valeur de XkbModel
+<comment>(Ça marche, donc faites correspondre la valeur de XkbModel.
 Maintenant, tout fonctionne)</comment>
 </pre>
 
