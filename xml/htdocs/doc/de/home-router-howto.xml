@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/home-router-howto.xml,v 1.10 2006/04/16 03:25:03 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/home-router-howto.xml,v 1.11 2006/10/26 15:08:05 grahl Exp $ -->
 
-<!-- English CVS Version: 1.44 -->
+<!-- English CVS Version: 1.53 -->
 
 <guide link="/doc/de/home-router-howto.xml" lang="de">
 <title>Home Router Guide</title>
@@ -25,8 +25,8 @@ verwandelt, um das eigene Heimnetzwerk mit dem Internet zu verbinden.
 <!-- The content of this document is released into the public domain -->
 <license/>
 
-<version>1.27</version>
-<date>2006-04-09</date>
+<version>1.32</version>
+<date>2006-10-21</date>
 
 <chapter>
 <title>Einleitung</title>
@@ -179,6 +179,8 @@ Networking options  ---&gt;
 <note>
 Manches in einem 2.6er Kernel mag sich leicht von einem 2.4er unterscheiden,
 allerdings sollte es Ihnen möglich sein, die Unterschiede herauszufinden :).
+Sogar innerhalb der 2.6er Kernel haben diese Optionen die Tendenz, ihren
+Platz zu verändern. Viel Glück!
 </note>
 
 </body>
@@ -430,7 +432,7 @@ die dies möglich macht. Für mehr Informationen über NAT können Sie bei
 <note>
 Bevor wir starten, überprüfen Sie bitte, ob Sie iptables auf Ihrem System
 installiert haben. Obgleich es normalerweise automatisch auf den meisten
-Systemen installiert wird, könnte es Bei Ihnen nicht dabei sein. Wenn das der
+Systemen installiert wird, könnte es bei Ihnen nicht dabei sein. Wenn das der
 Fall ist, führen Sie einfach <c>emerge iptables</c> aus.
 </note>
 
@@ -465,7 +467,7 @@ Fall ist, führen Sie einfach <c>emerge iptables</c> aus.
 # <i>iptables -I FORWARD -i ${LAN} -d 192.168.0.0/255.255.0.0 -j DROP</i>
 # <i>iptables -A FORWARD -i ${LAN} -s 192.168.0.0/255.255.0.0 -j ACCEPT</i>
 # <i>iptables -A FORWARD -i ${WAN} -d 192.168.0.0/255.255.0.0 -j ACCEPT</i>
-# <i>iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE</i>
+# <i>iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE</i>
 <comment>Sagen Sie dem Kernel, dass IP-Forwarding in Ordnung ist</comment>
 # <i>echo 1 > /proc/sys/net/ipv4/ip_forward</i>
 # <i>for f in /proc/sys/net/ipv4/conf/*/rp_filter ; do echo 1 > $f ; done</i>
@@ -477,12 +479,24 @@ Fall ist, führen Sie einfach <c>emerge iptables</c> aus.
 <comment>Fügen Sie die folgende Zeilen hinzu oder entfernen Sie die Kommentare:</comment>
 net.ipv4.ip_forward = 1
 net.ipv4.conf.default.rp_filter = 1
+
+<comment>Wenn Sie eine dynamische IP-Adresse haben, möchten Sie das wahrscheinlich aktivieren:</comment>
+net.ipv4.ip_dynaddr = 1
 </pre>
 
 <p>
 Nachdem Sie das alles eingetippt haben, sollte die restlichen Nutzer Ihres
 Netzwerks in der Lage sein, das Internet zu benutzen, als wenn sie alle selbst
 direkt damit verbunden wären.
+</p>
+
+<p>
+Die Option ip_dynaddr ist nützlich für Dial-On-Demand Systeme bzw. für den
+Fall, dass Ihr Internet Service Provider dynamische Adressen vergibt.
+Damit verhindert man Verbindungsversuche, solange die Netzwerkkarte für das
+Internet noch nicht vollständig hochgefahren ist. Im Grunde genommen sorgt
+man für einen reibungslosen Netzwerkverkehr für die Nutzer hinter Ihrem
+Router.
 </p>
 
 </body>
@@ -752,7 +766,7 @@ als auch die Bandbreite der Gentoo-rsync-Server. Das geht relativ einfach.
 
 <note>
 Für eine tiefergehende rsync-Anleitung schauen Sie bitte in die offizielle
-<uri link="/doc/de/rsync.xml#doc_chap4">rsync Anleitung</uri>
+<uri link="/doc/de/rsync.xml#local">rsync Anleitung</uri>
 </note>
 
 <p>
@@ -976,7 +990,7 @@ Blick auf die folgenden Tools (Sie finden sie alle in der Portage-Kategorie
   <th>Beschreibung</th>
 </tr>
 <tr>
-  <ti>ethereal</ti>
+  <ti>wireshark</ti>
   <ti>
     Grafisches Tool, mit dem jeglicher Netzwerkverkehr gemäß definierter 
     Filter angezeigt werden kann
@@ -984,7 +998,8 @@ Blick auf die folgenden Tools (Sie finden sie alle in der Portage-Kategorie
 </tr>
 <tr>
   <ti>tcpdump</ti>
-  <ti>Kommandozeilen-Tool, Funktion wie ethereal</ti>
+  <ti>Kommandozeilen-Tool, mit dem jeglicher Netzwerkverkehr gemäß 
+    definierter Filter ausgegeben werden kann</ti>
 </tr>
 <tr>
   <ti>iptraf</ti>
@@ -1019,7 +1034,7 @@ informiert werden.
 Der Trick besteht darin, zu wissen, wo dhcpd seine Ausgaben hinschickt.
 Bewegen Sie sich dazu nach <path>/var/log</path> und lesen Sie die
 Protokolldateien. Da der Name der Protokolldatei von dem von Ihnen verwendeten
-syslog-Paket abhängt, sollten Sie versuchen die Kandidaten mittels 
+syslog-Paket abhängt, sollten Sie versuchen die Kandidaten mittels
 <c>grep -Rl dhcpd /var/log</c> einzugrenzen. Vielleicht haben Sie nur einen
 Tippfehler in den Konfigurationsdateien gemacht. Darüber hinaus
 sollten Sie versuchen, den Dienst über <c>dhcpd -d -f</c> (kurz für debug /
@@ -1053,6 +1068,23 @@ die MTU beträgt bei 100 MBit Ethernet <c>1500</c>, während Sie bei PPPoE nur
 <c>1492</c> beträgt. Für weitere Informationen sollten Sie Kapitel 15 des <uri 
 link="http://lartc.org/howto/">Linux Advanced Routing &amp; Traffic Control
 HOWTO</uri> lesen.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Keine Möglichkeit, zwei Maschinen direkt zu verbinden</title>
+<body>
+
+<p>
+Wenn (aus welchem Grund auch immer) Sie versuchen, zwei Maschinen direkt
+ohne Hub oder Switch zu verbinden, wird ein normales Ethernet-Kabel nicht
+funktionieren, sofern Sie keine Auto MDI/MDI-X Netzwerkkarten (auch bekannt
+als "autosensing") besitzen. Sie brauchen dazu ein anderes Kabel, genannt
+Crossover-Kabel. Dieser <uri
+link="http://de.wikipedia.org/wiki/Crossoverkabel">Wikipedia</uri> Artikel
+beschreibt die Details.
 </p>
 
 </body>
