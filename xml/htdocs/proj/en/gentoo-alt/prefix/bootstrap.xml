@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/bootstrap.xml,v 1.8 2006/10/20 13:44:53 grobian Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/bootstrap.xml,v 1.9 2006/10/27 22:32:15 grobian Exp $ -->
 
 <guide link="/proj/en/gentoo-alt/prefix/bootstrap.xml" lang="en">
   <title>Gentoo Prefixed Portage Techdocs</title>
@@ -19,7 +19,7 @@
   <license/>
 
   <version>1.0</version>
-  <date>2006-10-18</date>
+  <date>2006-10-27</date>
 
   <chapter>
     <title>Bootstrapping in general</title>
@@ -81,19 +81,42 @@
           (yet) supported.
         </p>
         <p>
-          First, download the bootstrap script from
+          The first step is to chose a path to install into.  We refer
+          to this path as "prefix path", and use
+          <path>/Library/Gentoo</path>.  Everywhere you see this path,
+          replace it with your own choice.  Prepend a few paths in this
+          prefix to your <c>PATH</c> environment variable to make them
+          available later on in the process.  While this seems a bit
+          premature at this stage, it is absolutely necessary for users
+          without Python 2.3.1 or higher.  Add the following paths:
+          <path>/Library/Gentoo/tmp/bin</path>,
+          <path>/Library/Gentoo/tmp/usr/bin</path>,
+          <path>/Library/Gentoo/bin</path> and
+          <path>/Library/Gentoo/usr/bin</path>.  For example for a
+          <c>bash</c> shell:
+        </p>
+        <pre caption="Add prefix paths to your PATH">
+$ <i>export PATH="/Library/Gentoo/tmp/bin:/Library/Gentoo/tmp/usr/bin:/Library/Gentoo/bin:/Library/Gentoo/usr/bin:$PATH"</i>
+        </pre>
+        <p>
+          Now the path is set, start with downloading the bootstrap
+          script from
           <uri>http://overlays.gentoo.org/proj/alt/browser/trunk/prefix-overlay/scripts/bootstrap-prefix.sh?format=txt</uri>.
-          In this document we will use <path>/Library/Gentoo</path> as
-          prefix, but you are free to chose this yourself.  From the
-          point where the bootstrap script is stored execute the
-          following commands:
+          From the point where the bootstrap script is stored execute
+          the following commands:
         </p>
         <pre caption="Use the bootstrap script">
 $ <i>chmod 755 bootstrap-prefix.sh</i>
 $ <i>./bootstrap-prefix.sh /Library/Gentoo tree</i>
+$ <i>./bootstrap-prefix.sh /Library/Gentoo/tmp wget</i>
+<comment>(the following is only for Panther users a requirement)</comment>
+$ <i>./bootstrap-prefix.sh /Library/Gentoo/tmp python</i>
 $ <i>./bootstrap-prefix.sh /Library/Gentoo portage</i>
-$ <i>./bootstrap-prefix.sh /Library/Gentoo wget</i>
         </pre>
+        <note>Please note that <c>wget</c> and <c>python</c> are
+          installed in <path>/Library/Gentoo/tmp</path>!</note>
+        <warn><c>python</c> only has to be emerged for Panther
+          users</warn>
         <p>
           The script will setup the <path>/Library/Gentoo</path>
           directory, download a portage tree snapshot, unpack it and
@@ -102,13 +125,11 @@ $ <i>./bootstrap-prefix.sh /Library/Gentoo wget</i>
           finishes.
         </p>
         <p>
-          At this point it might be handy to prepend
-          <path>/Library/Gentoo/bin</path> and
-          <path>/Library/Gentoo/usr/bin</path> to your <c>PATH</c>,
-          otherwise emerge won't be available, e.g.:
+          Next, we have to enable the binaries we installed in the
+          <path>tmp</path> directory of our prefix:
         </p>
-        <pre caption="Add prefix paths to your PATH">
-$ <i>export PATH="/Library/Gentoo/bin:/Library/Gentoo/usr/bin:$PATH"</i>
+        <pre caption="change DEFAULT_PATH">
+$ <i>sed -i -e '/DEFAULT_PATH/s|="|="/Library/Gentoo/tmp/bin:/Library/Gentoo/tmp/usr/bin:|' /Library/Gentoo/etc/make.conf</i>
         </pre>
         <p>
           The next step is to forcefully install some packages to make
@@ -120,43 +141,44 @@ $ <i>export PATH="/Library/Gentoo/bin:/Library/Gentoo/usr/bin:$PATH"</i>
 $ <i>env FEATURES="-collision-protect" emerge --nodeps portage</i>
         </pre>
         <p>
-          Next, because we injected <c>wget</c>, let's also get it in
-          the prefix.  On Panther this will fail, and you'll have to do
-          it after emerging of autotools below.
-        </p>
-        <pre caption="emerge wget">
-$ <i>env FEATURES="-collision-protect" emerge --nodeps wget</i>
-        </pre>
-        <p>
-          From this point our prefix should be clean from any "foreign"
-          files.  We continue adding some necessary tools which
-          will deal with the many errors and warnings you might have
-          seen during emerging.
+          We continue adding some necessary tools which will deal with
+          many errors and warnings you might see during emerging.
         </p>
         <pre caption="emerge sed">
-$ <i>emerge =sed-4.1.4-r1</i>
-$ <i>emerge -u sed</i>
+$ <i>emerge sed</i>
         </pre>
-        <p>
-          Here, we have to emerge <c>4.1.4-r1</c> first, because later versions
-          need a better sed then OS X by default has.
-        </p>
         <p>
           We continue getting some autotools stuff into our prefix.
         </p>
         <pre caption="emerge autotools">
 $ <i>emerge --nodeps "=autoconf-2.13*" "=autoconf-2.59*" "autoconf-wrapper"</i>
-$ <i>emerge --nodeps "=automake-1.4*" "=automake-1.5*" "=automake-1.6*" "=automake-1.7*" "=automake-1.8*" "=automake-1.9*" "=automake-wrapper-1*"</i>
-$ <i>emerge --nodeps libtool</i>
+$ <i>emerge --nodeps "=automake-1.4*" "=automake-1.5*" "=automake-1.6*" "=automake-1.7*" "=automake-1.8*" "=automake-wrapper-1*"</i>
+        </pre>
+        <note><c>automake-1.9</c> and <c>libtool</c> are not (yet)
+          installed at this stage.</note>
+        <p>
+          Next, we have to get some tools in order to finalise getting
+          the autotools in our prefix.  Because we installed <c>wget</c>
+          in a temporary location, let's not forget to install it
+          properly by emerging it now:
+        </p>
+        <pre caption="emerge wget">
+$ <i>emerge --nodeps wget</i>
         </pre>
         <p>
-          On Panther <c>automake-1.9.6</c> fails.  Be sure <e>NOT</e>
-          to emerge the <c>automake-wrapper</c> though, or else
-          <c>libtool</c> won't compile either.  This is the right moment
-          for Panther users to emerge <c>wget</c>.  After that, emerge
-          <c>texinfo</c> and retry emerging <c>automake-1.9.6</c> and
-          <c>automake-wrapper</c>.
+          After this we can emerge texinfo, which <c>automake-1.9</c>
+          needs.
         </p>
+        <pre caption="emerge texinfo">
+$ <i>emerge --nodeps texinfo</i>
+        </pre>
+        <p>
+          Now we can finish installing the autotools:
+        </p>
+        <pre caption="finalise emerge autotools">
+$ <i>emerge --nodeps "=automake-1.9*"</i>
+$ <i>emerge --nodeps libtool</i>
+        </pre>
         <p>
           Now we have some decent autotooling stuff around, we can get
           some decent core utilities in our prefix.
@@ -178,7 +200,32 @@ $ <i>emerge gawk</i>
           versions of these tools that portage expects ;)
         </p>
         <p>
-          Now continue with the first <c>emerge system</c>:
+          Now we are almost ready to continue with the first <c>emerge
+            system</c>.  But before we do, we have to remove the stuff
+          installed in the temporary directory in the prefix.  For
+          Panther users this means that Python will disappear, hence it
+          has to be emerged in the prefix first.  Because the system is
+          not yet set up correctly, a few correcting measures have to be
+          taken afterwards:
+        </p>
+        <pre caption="emerge python">
+<comment>(these steps are only required for Panther users)</comment>
+$ <i>emerge --nodeps python</i>
+$ <i>( cd /Library/Gentoo/usr/bin &amp;&amp; ln -s python2.4 python )</i>
+$ <i>sed -i -e 's|^#!/Library/Gentoo/tmp/usr/bin/python|#!/Library/Gentoo/usr/bin/python|' /Library/Gentoo/usr/bin/emerge</i>
+        </pre>
+        <p>
+          We remove the temporary directory and its use:
+        </p>
+        <pre caption="remove tmp directory">
+$ <i>rm -Rf /Library/Gentoo/tmp/*</i>
+$ <i>sed -i -e '/DEFAULT_PATH/s|/Library/Gentoo/tmp/bin:/Library/Gentoo/tmp/usr/bin:||' /Library/Gentoo/etc/make.conf</i>
+$ <i>export PATH=`echo $PATH | sed 's|/Library/Gentoo/tmp/bin:/Library/Gentoo/tmp/usr/bin:||'`</i>
+        </pre>
+        <p>
+          Next, we do the real work where all packages get reemerged in
+          such an order that they make use of packages in the prefix
+          itself.
         </p>
         <pre caption="emerge system">
 $ <i>emerge -e system</i>
@@ -187,12 +234,6 @@ $ <i>emerge -e system</i>
           This will happily install a lot of stuff and reinstall what
           you emerged before.  This is necessary to avoid compilation
           failures due to dependencies.
-          <!--  !! should be fixed by the -e
-          You may encounter
-          problems with <c>popt</c>.  They have something to do with
-          <c>perl</c>.  Reemerging all <c>autoconf</c>s,
-          <c>automake</c>s and <c>libtool</c>, fixes this.
-          -->
         </p>
         <p>
           Since we have some basic stuff now, we might want to benefit
