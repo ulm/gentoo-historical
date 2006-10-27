@@ -1424,13 +1424,20 @@
         </tr>
       </xsl:when>
     </xsl:choose>
-    <xsl:if test="/book/abstract[normalize-space(.)] or /guide/abstract[normalize-space(.)]">
+    <xsl:if test="abstract or document(include/@href)/*[1]/abstract">
       <tr>
         <td align="left" class="topsep">
           <p class="alttext">
             <!-- Abstract (summary) of the document -->
             <b><xsl:value-of select="func:gettext('Summary')"/>: </b>
-            <xsl:apply-templates select="abstract"/>
+            <xsl:choose>
+              <xsl:when test="abstract">
+                <xsl:value-of select="abstract" />
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="document(include/@href)/*[1]/abstract" />
+              </xsl:otherwise>
+            </xsl:choose>
           </p>
         </td>
       </tr>

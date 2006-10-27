@@ -86,10 +86,16 @@
                   <b><a href="#book_part{$curpart}_chap{$curchap}"><xsl:value-of select="title" /></a></b>
                 </xsl:otherwise>
               </xsl:choose>
-              <xsl:if test="abstract">
-                <br/>
-                <xsl:value-of select="abstract" />
-              </xsl:if>
+              <xsl:choose>
+                <xsl:when test="abstract">
+                  <br/>
+                  <xsl:value-of select="abstract" />
+                </xsl:when>
+                <xsl:otherwise>
+                  <br/>
+                  <xsl:value-of select="document(include/@href)/*[1]/abstract" />
+                </xsl:otherwise>
+              </xsl:choose>
             </li>
           </xsl:for-each>
         </ol>
@@ -139,9 +145,16 @@
       <xsl:if test="title">
         <li>
           <b><a href="?part={$part}&amp;chap={$curpos}"><xsl:value-of select="title" /></a></b>
-          <xsl:if test="abstract">
-            <br/><xsl:value-of select="abstract" />
-          </xsl:if>
+          <xsl:choose>
+            <xsl:when test="abstract">
+              <br/>
+              <xsl:value-of select="abstract" />
+            </xsl:when>
+            <xsl:otherwise>
+              <br/>
+              <xsl:value-of select="document(include/@href)/*[1]/abstract" />
+            </xsl:otherwise>
+          </xsl:choose>
         </li>
       </xsl:if>
     </xsl:for-each>
