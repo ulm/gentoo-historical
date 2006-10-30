@@ -1,5 +1,5 @@
-<?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/diskless-howto.xml,v 1.27 2006/10/22 23:23:04 nightmorph Exp $ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/diskless-howto.xml,v 1.28 2006/10/30 16:39:22 cam Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/diskless-howto.xml">
@@ -27,8 +27,8 @@ This HOWTO will help you create setup diskless nodes with Gentoo Linux
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.22</version>
-<date>2006-10-22</date>
+<version>1.23</version>
+<date>2006-10-30</date>
 
 <chapter>
 <title>Introduction</title>
@@ -515,11 +515,24 @@ between items. A good example of <path>dhcpd.conf</path> looks like this:
 </p>
 
 <pre caption="Sample dhcpd.conf">
-# DHCP configuration file for DHCP ISC 3.0
- 
+#
+# Sample dhcpd.conf for diskless clients
+#
+
+# Disable dynamic DNS
 ddns-update-style none;
- 
-# Definition of PXE-specific options
+
+# Assume one default gateway for IP traffic will do
+option routers 192.168.1.1;
+
+# Provide DNS info to clients
+option domain-name-servers 192.168.1.1;
+option domain-name "mydomain.com";
+
+# Specify the TFTP server to be used
+next-server 192.168.1.1;
+
+# Declare a vendor-specific option buffer for PXE clients:
 # Code 1: Multicast IP address of boot file server
 # Code 2: UDP port that client should monitor for MTFTP responses
 # Code 3: UDP port that MTFTP servers are using to listen for MTFTP requests
@@ -527,7 +540,7 @@ ddns-update-style none;
 #         to start a new MTFTP transfer
 # Code 5: Number of seconds a client must listen before trying to restart
 #         a MTFTP transfer
- 
+
 option space PXE;
 option PXE.mtftp-ip               code 1 = ip-address;
 option PXE.mtftp-cport            code 2 = unsigned integer 16;
@@ -536,68 +549,36 @@ option PXE.mtftp-tmout            code 4 = unsigned integer 8;
 option PXE.mtftp-delay            code 5 = unsigned integer 8;
 option PXE.discovery-control      code 6 = unsigned integer 8;
 option PXE.discovery-mcast-addr   code 7 = ip-address;
- 
+
+# Declare the subnet where our diskless nodes will live
 subnet 192.168.1.0 netmask 255.255.255.0 {
- 
-  
-  class "pxeclients" {
-    match if substring (option vendor-class-identifier, 0, 9) = "PXEClient";
-    option vendor-class-identifier "PXEClient";
+
+  # Provide PXE clients with appropriate information
+  class "pxeclient" {
+    match if substring(option vendor-class-identifier, 0, 9) = "PXEClient";
     vendor-option-space PXE;
- 
+
     # At least one of the vendor-specific PXE options must be set in
     # order for the client boot ROMs to realize that we are a PXE-compliant
     # server.  We set the MCAST IP address to 0.0.0.0 to tell the boot ROM
-    # that we can't provide multicast TFTP (address 0.0.0.0 means no
-    # address).
- 
+    # that we can't provide multicast TFTP.
+
     option PXE.mtftp-ip 0.0.0.0;
- 
+
     # This is the name of the file the boot ROMs should download.
     filename "pxelinux.0";
-    # This is the name of the server they should get it from.
-    <comment># Use the master's IP</comment>
-    next-server 192.168.1.1;
   }
 
-  <comment># If you are using etherboot with a non specific image </comment>
+  # Provide Etherboot clients with appropriate information
   class "etherboot" {
-        if substring (option vendor-class-identifier, 0, 9) = "Etherboot" {
-        filename "/diskless/vmlinuz";
-        }
+    match if substring(option vendor-class-identifier, 0, 9) = "Etherboot";
+    filename "vmlinuz_arch";
   }
-  
-  pool {
-    max-lease-time 86400;
-    default-lease-time 86400;
-    <comment># This prevents unlisted machines from getting an IP</comment>
-    deny unknown-clients;
-  }
- 
+
+  # Add one host declaration for each diskless host
   host slave21 {
-       <comment># Use your slave's MAC address</comment>
-       hardware ethernet                00:40:63:C2:CA:C9;
-       <comment># Give your slave a static IP</comment>
-       fixed-address                    192.168.1.21;
-       server-name                      "master";
-       <comment># Use your gateway IP, if required</comment>
-       option routers                   192.168.1.1;
-       <comment># Use your DNS IP, if required</comment>
-       option domain-name-servers       192.168.1.1;
-       option domain-name               "mydomain.com";
-       <comment># Use your slave hostname</comment>
-       option host-name                 "slave21";
-       
-       
-       <comment># Etherboot and pxe boot with a mac specific image</comment>
-       option root-path                 "/diskless/192.168.1.21";
-       
-       if substring (option vendor-class-identifier, 0, 9) = "Etherboot" {
-                        filename "/vmlinuz_arch";
-        } else if substring (option vendor-class-identifier, 0,9) ="PXEClient" {
-                        filename "/pxelinux.0";
-        }
-                                                               
+    hardware ethernet 00:02:A5:04:3B:66;
+    fixed-address 192.168.1.21;
   }
 }
 </pre>
@@ -616,8 +597,7 @@ the same as the master's IP address.  The <c>filename</c> is relative to the
 options which will be covered later).  Inside the <c>host</c> block, the 
 <c>hardware ethernet</c> option specifies a MAC address, and 
 <c>fixed-address</c> assigns a fixed IP address to that particular MAC address.
-The <c>host-name</c> option is probably a good idea to include and is just the 
-hostname of a particular slave.  There is a pretty good man page on 
+There is a pretty good man page on 
 <path>dhcpd.conf</path> with options that are beyond the scope of this HOWTO.
 You can read it by typing:
 </p>
