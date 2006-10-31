@@ -106,15 +106,15 @@ print """<chapter>
 <body>
 
 <ul>
-<li><uri link="#doc_chap1_sect2">Statistics</uri></li>
-<li><uri link="#doc_chap1_sect3">Closed bug ranking</uri></li>
-<li><uri link="#doc_chap1_sect4">New bug rankings</uri></li>
+<li><uri link="#bug-stats">Statistics</uri></li>
+<li><uri link="#closed-bugs">Closed bug ranking</uri></li>
+<li><uri link="#new-bugs">New bug rankings</uri></li>
 </ul>
 
 </body>
 </section>
 
-<section>
+<section id="bug-stats">
 <title>Statistics</title>
 <body>
 
@@ -142,7 +142,7 @@ Of the %d currently open bugs: %d are labeled 'blocker', %d are labeled
 </body>
 </section>
 
-<section>
+<section id="closed-bugs">
 <title>Closed bug rankings</title>
 <body>
 
@@ -160,7 +160,7 @@ print """</ul>
 </body>
 </section>
 
-<section>
+<section id="new-bugs">
 <title>New bug rankings</title>
 <body>
 
