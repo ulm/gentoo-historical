@@ -106,9 +106,9 @@ print """<chapter>
 <body>
 
 <ul>
-<li><uri link="#bug-stats">Statistics</uri></li>
-<li><uri link="#closed-bugs">Closed bug ranking</uri></li>
-<li><uri link="#new-bugs">New bug rankings</uri></li>
+<li><uri link="#bugs-stats">Statistics</uri></li>
+<li><uri link="#bugs-closed">Closed bug ranking</uri></li>
+<li><uri link="#bugs-new">New bug rankings</uri></li>
 </ul>
 
 </body>
@@ -142,7 +142,7 @@ Of the %d currently open bugs: %d are labeled 'blocker', %d are labeled
 </body>
 </section>
 
-<section id="closed-bugs">
+<section id="bugs-closed">
 <title>Closed bug rankings</title>
 <body>
 
@@ -160,7 +160,7 @@ print """</ul>
 </body>
 </section>
 
-<section id="new-bugs">
+<section id="bugs-new">
 <title>New bug rankings</title>
 <body>
 
