@@ -270,7 +270,16 @@
     <xsl:when test="$vpart">
       <xsl:choose>
         <xsl:when test="$vchap">
-          <xsl:value-of select="document($link)/book/part[position()=$vpart]/chapter[position()=$vchap]/abstract"/>
+          <xsl:variable name="master-hb" select="document($link)"/>
+          <xsl:choose>
+            <xsl:when test="$master-hb/book/part[position()=$vpart]/chapter[position()=$vchap]/abstract">
+              <xsl:value-of select="$master-hb/book/part[position()=$vpart]/chapter[position()=$vchap]/abstract"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <!-- No abstract in HB master file, get it from the included file -->
+              <xsl:value-of select="document($master-hb/book/part[position()=$vpart]/chapter[position()=$vchap]/include/@href)/*[1]/abstract"/>
+            </xsl:otherwise>
+          </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
           <xsl:value-of select="document($link)/book/part[position() = $vpart]/abstract"/>
@@ -472,7 +481,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.32 2006/10/12 11:21:53 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.33 2006/11/01 21:29:09 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -495,7 +504,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.32 2006/10/12 11:21:53 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.33 2006/11/01 21:29:09 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:when test="string-length($pv)=0">?!?</xsl:when>
