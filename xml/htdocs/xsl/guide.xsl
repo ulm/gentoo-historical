@@ -838,7 +838,7 @@
 
 <!-- Path -->
 <xsl:template match="path">
-<span class="path"><xsl:value-of select="."/></span>
+<span class="path"><xsl:apply-templates/></span>
 </xsl:template>
 
 <!-- Url -->
