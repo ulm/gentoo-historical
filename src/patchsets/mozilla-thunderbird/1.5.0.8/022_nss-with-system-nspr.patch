@@ -1,0 +1,44 @@
+Index: security/manager/Makefile.in
+===================================================================
+RCS file: /cvsroot/mozilla/security/manager/Makefile.in,v
+retrieving revision 1.59
+diff -u -r1.59 Makefile.in
+--- security/manager/Makefile.in	2 Nov 2005 21:50:36 -0000	1.59
++++ security/manager/Makefile.in	23 Nov 2005 23:11:01 -0000
+@@ -76,12 +76,32 @@
+ endif
+ endif
+ 
++ABS_DIST := $(shell cd $(DIST) && pwd)
++ifeq ($(HOST_OS_ARCH),WINNT)
++ifdef CYGDRIVE_MOUNT
++ABS_DIST := $(shell cygpath -w $(ABS_DIST) | sed -e 's|\\\\|/|g')
++endif
++endif
++NSPR_INCLUDE_DIR = $(firstword $(filter -I%,$(NSPR_CFLAGS)))
++ifneq (,$(strip $(NSPR_INCLUDE_DIR)))
++NSPR_INCLUDE_DIR := $(subst -I,,$(subst -I$(DIST),-I$(ABS_DIST),$(NSPR_INCLUDE_DIR)))
++else
++NSPR_INCLUDE_DIR = $(ABS_DIST)/include/nspr
++endif
++NSPR_LIB_DIR = $(firstword $(filter -L%,$(NSPR_LIBS)))
++ifneq (,$(strip $(NSPR_LIB_DIR)))
++NSPR_LIB_DIR := $(subst -L,,$(subst -L$(DIST),-L$(ABS_DIST),$(NSPR_LIB_DIR)))
++else
++NSPR_LIB_DIR = $(ABS_DIST)/lib
++endif
+ # NSS makefiles are not safe for parallel execution.
+ DEFAULT_GMAKE_FLAGS = MAKE="$(MAKE) -j1" -j1
+ DEFAULT_GMAKE_FLAGS += CC="$(CC)"
+-DEFAULT_GMAKE_FLAGS += MOZILLA_INCLUDES="-I$(MOZ_BUILD_ROOT)/dist/include/nspr -I$(MOZ_BUILD_ROOT)/dist/include/dbm"
+-DEFAULT_GMAKE_FLAGS += SOURCE_MD_DIR=$(MOZ_BUILD_ROOT)/dist
+-DEFAULT_GMAKE_FLAGS += DIST=$(MOZ_BUILD_ROOT)/dist
++DEFAULT_GMAKE_FLAGS += MOZILLA_INCLUDES=-I$(ABS_DIST)/include/dbm
++DEFAULT_GMAKE_FLAGS += SOURCE_MD_DIR=$(ABS_DIST)
++DEFAULT_GMAKE_FLAGS += DIST=$(ABS_DIST)
++DEFAULT_GMAKE_FLAGS += NSPR_INCLUDE_DIR=$(NSPR_INCLUDE_DIR)
++DEFAULT_GMAKE_FLAGS += NSPR_LIB_DIR=$(NSPR_LIB_DIR)
+ DEFAULT_GMAKE_FLAGS += MOZILLA_CLIENT=1
+ DEFAULT_GMAKE_FLAGS += NO_MDUPDATE=1
+ ABS_topsrcdir   := $(shell cd $(topsrcdir); pwd)
+
