@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-portage-files.xml,v 1.5 2006/05/23 14:57:17 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-portage-files.xml,v 1.6 2006/11/12 10:38:49 chiguire Exp $ -->
 
 <sections>
 
-<version>1.7</version>
-<date>2005-06-27</date>
+<version>1.8</version>
+<date>2006-11-03</date>
 
 <section>
 <title>Ficheros de Portage</title>
@@ -294,12 +294,127 @@ imágenes compiladas.
 <body>
 
 <p>
-Portage puede crear un registro por ebuild, pero solamente cuando la variable
-PORT_LOGDIR esté configurada y apuntando a una dirección con permisos de 
-escritura para Portage (usuario Portage). De manera predeterminada está
-variable está desactivada.
+Portage puede crear un registro por ebuild, pero solamente cuando la
+variable PORT_LOGDIR esté configurada y apuntando a una dirección con
+permisos de escritura para Portage (usuario Portage). De manera
+predeterminada está variable está desactivada. Si no configura
+PORT_LOGDIR no recibirá los registros con el sistema de registro
+actual, aunque tal vez reciba algún registro del nuevo <c>elog</c>. Si
+no tiene definido PORT_LOGDIR y usa elog, recibirá los registros de
+construcción de paquetes y cualquier otro registro salvado por elog,
+como se explica a continuación.
 </p>
 
+<p>
+Portage ofrece un control de grano fino sobre el registro de sistema
+mediante el uso de <c>elog</c>:
+</p>
+  	 
+<ul>
+  <li>
+    PORTAGE_ELOG_CLASSES: Es donde se define cuáles mensajes serán
+    registrados. Puede utilizarse cualquier cualquier combinación
+    separada por espaciones en blanco
+    de <c>info</c>, <c>warn</c>, <c>error</c>, and <c>log</c>.
+  </li>
+  <li>
+    <ul>
+      <li>info: Registra los mensajes "einfo" generados por un ebuild</li>
+      <li>warn: Registra los mensajes "ewarn"  generados por un ebuild</li>
+      <li>error: Registra los mensajes "eerror" generados por un ebuild</li>
+      <li>log: Registra los mensajes "elog" encontrados en algunos ebuilds</li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_SYSTEM: Selecciona el (los) módulos para procesar los
+    mensajes de registro. Si se deja sin definir, se desactiva la
+    función de registro. Puede usar cualquier combinación separada por
+    espacios en blanco de <c>save</c>, <c>custom</c>, <c>syslog</c>,
+    y <c>mail</c>. Debe seleccionar al menos un módulo para poder usar
+    elog.
+  </li>
+  <li>
+    <ul>
+      <li>
+        save: Almacena un registro por paquete
+        en <path>$PORT_LOGDIR/elog</path>,
+        o <path>/var/log/portage/elog</path> si $PORT_LOGDIR no está
+        definido.
+      </li>
+      <li>
+        custom: Pasa todos los mensajes a cun comando definido por el
+  	usuario en $PORTAGE_ELOG_COMMAND; esto se discutirá más adelante.
+      </li>
+      <li>syslog: Envía todos los mensajes al gestor de registro de
+      sistema instalado.
+      </li>
+      <li>
+        mail: Pasa todos los mensaje a un servidor de correo definido
+  	por el usuario en $PORTAGE_ELOG_MAILURI; esto se discutirá más
+  	adelante. Las características de correo de elog requieren
+  	&gt;=<c>portage-2.1.1</c>.
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_COMMAND: Esto solamente se usa al activarse el módulo
+    <c>custom</c>. Aquí podemos especificar un comando con el cual
+    procesar los mensajes de registro. Note quepuede hacer uso dedos
+    variables de entorno: ${PACKAGE} es el nombre del paquete y la
+    versión, mientras que ${LOGFILE} es la trayectoria absoluta al
+    archivo de registro. Aquí hay un posible uso:
+  </li>
+  <li>
+    <ul>
+      <li>
+        PORTAGE_ELOG_COMMAND="/trayectoria/al/gestor -p '\${PACKAGE}' -f '\${LOGFILE}'"
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILURI: Contiene la configuración del
+    módulo <c>mail</c>, tal como dirección, usuario, contraseña,
+    servidor de correo y número de puerto. Por defecto está
+    configurado a "root@localhost localhost".
+  </li>
+  <li>
+    Aquí presentamos un ejemplo para un servidor smtp que requiere
+    autentificación con nombre de usuario y contraseña en un puerto en
+    particular (el puerto por defecto es el 25):
+  </li>
+  <li>
+    <ul>
+      <li>
+        PORTAGE_ELOG_MAILURI="user@some.domain username:password@smtp.some.domain:995"
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILFROM: Permite configurar la dirección "from" de los
+    correos de registro; su valor por defecto es "portage".
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILSUBJECT: Permite la creación de una línea de
+    asunto para los correos de registro. Note que puede hacer uso de
+    dos variables de entorno: ${PACKAGE} mostrará el nombre y la
+    versión del paquete, mientras que ${HOST} es el nombre del dominio
+    completo del anfitrión donde está corriendo Portage.
+  </li>
+  <li>Aquí está un posible uso:</li>
+  <li>
+    <ul>
+      <li>
+        PORTAGE_ELOG_MAILSUBJECT="El paquete \${PACKAGE} fue instalado
+        en \${HOST} con algunos mensajes"
+      </li>
+    </ul>
+  </li>
+</ul>
+  	 
+<impo>
+Si ha hecho uso de <c>enotice</c> con Portage-2.0.*, debe remover
+completamente enotice, ya que es incompatible con elog.
+</impo>
 </body>
 </subsection>
 </section>
