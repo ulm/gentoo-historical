@@ -3,9 +3,17 @@
                 xmlns:exslt="http://exslt.org/common"
                 xmlns:func="http://exslt.org/functions"
                 xmlns:dyn="http://exslt.org/dynamic"
+
+                xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/"
+                exclude-result-prefixes="opensearch"
+
                 extension-element-prefixes="exslt func dyn" >
 
-<xsl:output encoding="UTF-8" method="html" indent="yes" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN" doctype-system="http://www.w3.org/TR/html4/loose.dtd"/>
+<xsl:output encoding="UTF-8"
+            method="html"
+            indent="yes"
+            doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"
+            doctype-system="http://www.w3.org/TR/html4/loose.dtd"/>
 
 <!-- Include external stylesheets -->
 <xsl:include href="content.xsl" />
@@ -133,16 +141,24 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
   <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
-      <xsl:if test="/*[1][@redirect]">
-        <!-- HTML refresh in case redirect is not supported -->
-        <meta http-equiv="Refresh">
-          <xsl:attribute name="content"><xsl:value-of select="concat('15; URL=', /*[1]/@redirect)"/></xsl:attribute>
-        </meta>
-        <xsl:message>
-          <!-- Redirect using http header when supported -->
-          <xsl:value-of select="concat('%%GORG%%Redirect=',/*[1]/@redirect)"/>
-        </xsl:message>
-      </xsl:if>    
+
+  <!-- Support for opensearch - ->
+  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/forums-gentoo-org.xml" title="Gentoo Forums"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
+  -->
+  
+  <xsl:if test="/*[1][@redirect]">
+    <!-- HTML refresh in case redirect is not supported -->
+    <meta http-equiv="Refresh">
+      <xsl:attribute name="content"><xsl:value-of select="concat('15; URL=', /*[1]/@redirect)"/></xsl:attribute>
+    </meta>
+    <xsl:message>
+      <!-- Redirect using http header when supported -->
+      <xsl:value-of select="concat('%%GORG%%Redirect=',/*[1]/@redirect)"/>
+    </xsl:message>
+  </xsl:if>    
 
 <title>
   <xsl:choose>
@@ -204,6 +220,13 @@
 </html>
 </xsl:template>
 
+
+<xsl:template match="/devaway|/uris|/inserts|/glsa-index|opensearch:OpenSearchDescription">
+ <xsl:message>
+  <xsl:value-of select="concat('%%GORG%%Redirect=',$link,'?passthru=1')"/>
+ </xsl:message>
+</xsl:template>
+
 <!-- Guide template -->
 <xsl:template match="/guide">
 <xsl:call-template name="doclayout" />
@@ -219,6 +242,13 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
   <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
+
+  <!-- Support for opensearch - ->
+  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/forums-gentoo-org.xml" title="Gentoo Forums"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
+  -->
   
   <xsl:if test="/mainpage/@id='news'">
     <link rel="alternate" type="application/rss+xml" title="Gentoo Linux News RDF" href="http://www.gentoo.org/rdf/en/gentoo-news.rdf" />
