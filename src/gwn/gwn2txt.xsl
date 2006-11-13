@@ -280,11 +280,11 @@
     <xsl:apply-templates/>
   </xsl:variable>
 
-  <xsl:text>  *</xsl:text>
+  <xsl:text>  * </xsl:text>
   <xsl:call-template name="wrap-text">
     <xsl:with-param name="txt" select="normalize-space($li)"/>
     <xsl:with-param name="indent" select="'4'"/>
-    <xsl:with-param name="curcol" select="'3'"/>
+    <xsl:with-param name="curcol" select="'4'"/>
   </xsl:call-template>
   <xsl:text>&#xA;</xsl:text>
 </xsl:template>
@@ -505,6 +505,7 @@
 
 <xsl:template name="wrap-text">
 <xsl:param name="txt"/>
+<xsl:param name="firstword" select="'1'"/>
 <xsl:param name="curcol" select="'0'"/>
 <xsl:param name="indent" select="'0'"/>
 <xsl:param name="wrap-at" select="$wrap-pos"/>
@@ -527,20 +528,14 @@
     </xsl:variable>
 
     <xsl:variable name="space">
-      <xsl:if test="number($curcol) > 0">
+      <xsl:if test="not($firstword='1')">
         <xsl:text> </xsl:text>
       </xsl:if>
     </xsl:variable>
 
-    <xsl:if test="number($curcol) = 0">
-      <xsl:call-template name="repeat">
-        <xsl:with-param name="N" select="$indent"/>
-        <xsl:with-param name="txt" select="' '"/>
-      </xsl:call-template>
-    </xsl:if>
-
     <xsl:choose>
-      <xsl:when test="((number($indent) + number($curcol) + string-length($space) + string-length($word)) >= $wrap-at) and (number($curcol) > 0)">
+      <xsl:when test="((number($indent) + number($curcol) + string-length($space) + string-length($word)) >= $wrap-at) and not($firstword='1')">
+        <!-- Insert line break -->
         <xsl:text>&#xA;</xsl:text>
         <xsl:call-template name="repeat">
           <xsl:with-param name="N" select="$indent"/>
@@ -548,6 +543,7 @@
         </xsl:call-template>
         <xsl:value-of select="$word"/>
         <xsl:call-template name="wrap-text">
+          <xsl:with-param name="firstword" select="'0'"/>
           <xsl:with-param name="txt" select="$rest"/>
           <xsl:with-param name="curcol" select="string-length($word)"/>
           <xsl:with-param name="indent" select="$indent"/>
@@ -557,6 +553,7 @@
       <xsl:otherwise>
         <xsl:value-of select="concat($space, $word)"/>
         <xsl:call-template name="wrap-text">
+          <xsl:with-param name="firstword" select="'0'"/>
           <xsl:with-param name="txt" select="$rest"/>
           <xsl:with-param name="curcol" select="number($curcol)+string-length(concat($space,$word))"/>
           <xsl:with-param name="indent" select="$indent"/>
