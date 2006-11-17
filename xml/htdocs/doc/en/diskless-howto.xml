@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/diskless-howto.xml,v 1.29 2006/10/30 16:58:27 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/diskless-howto.xml,v 1.30 2006/11/17 23:09:42 nightmorph Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/diskless-howto.xml">
@@ -26,8 +26,8 @@ This HOWTO will help you create setup diskless nodes with Gentoo Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.23</version>
-<date>2006-10-30</date>
+<version>1.24</version>
+<date>2006-11-17</date>
 
 <chapter>
 <title>Introduction</title>
@@ -1200,46 +1200,6 @@ The reason for rsync -avz instead of cp is to maintain symlinks and permissions.
 <body>
 
 <p>
-The default scripts will try to run <e>checkroot</e> which does not make sense
-on your slave nodes. The hard way out is to manually edit the
-<path>/diskless/192.168.1.21/sbin/rc</path> script but this is cumbersome,
-dangerous and could break if you decided to sync your node file system again and
-forgot to leave this script alone.  The trick is to have a
-<path>/fastboot</path> file when your system boots. This file tells
-<e>checkroot</e> not to run any file system check. But it will also erase the
-file when it has finished the initialisation process. That is why we need to
-create this file again at the end of the init process like this:
-</p>
-
-<pre caption="Preventing init scripts from running a file system check">
-<comment>(Create the /fastboot file for next reboot)</comment>
-# <i>touch /diskless/192.168.1.21/fastboot</i>
-<comment>(Create the /fastboot file on each boot)</comment>
-# <i>echo "touch /fastboot" &gt;&gt; /diskless/192.168.1.21/etc/conf.d/local.start</i>
-</pre>
-
-<p>
-Since the unmounting of network filesystems should be done as late as possible,
-you have to edit your <path>/etc/init.d/netmount</path> and have it read:
-</p>
-
-<pre caption="Editing /etc/init.d/netmount">
-depend() {
-    <i>before *</i>
-</pre>
-
-<note>
-Baselayout version 1.11.* and later does not need this.
-</note>
-
-<p>
-If you do this on a live system, don't forget to run <c>depscan.sh</c> to fix
-the service dependencies. You can safely ignore any warning about the collision
-with /etc/init.d/checkroot, since you are disabling it via the fastboot file you
-set up in the previous paragraph.
-</p>
-
-<p>
 You need as many init scripts under
 <path>/diskless/192.168.1.21/etc/runlevels</path> as you need services on your
 diskless nodes. It all depends on what you want your slaves to do.
@@ -1366,7 +1326,6 @@ above:
 /etc/hostname$$IP=192.168.1.21$$<comment> (Name your slaves)</comment>
 /etc/mtab$$IP=192.168.1.21$$
 /etc/runlevels$$CLIENT$$<comment> (Clean separation between master and slave boot scripts)</comment>
-/fastboot$$CLIENT$$
 /tmp$$IP=192.168.1.21$$
 /var$$IP=192.168.1.21$$<comment> (Create subdirs as in /var)</comment>
 </pre>
@@ -1385,11 +1344,6 @@ above:
         start-stop-daemon - -start - -quiet - -exec \
                 $mountd - - $RPCMOUNTDOPTS 1&gt;&amp;2
         eend $? "Error starting NFS mountd"
-</pre>
-
-<pre caption="Editing /etc/conf.d/local.start$$CLIENT$$">
-<comment>(Add this line)</comment>
-touch /fastboot\$\$CLIENT\$\$
 </pre>
 
 </body>
