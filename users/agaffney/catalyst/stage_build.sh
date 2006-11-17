@@ -9,6 +9,7 @@ stage1_seed=
 snapshot=
 email_from="catalyst@localhost"
 email_to="root@localhost"
+config_file="/etc/catalyst/catalyst.conf"
 verbose=0
 
 usage() {
@@ -23,6 +24,7 @@ Usage:
   stage_build [-p|--profile <profile>] [-v|--version-stamp <stamp>]
               [-a|--arch <arch>] [-s|--stage1-seed <seed>] [--verbose]
               [-f|--email-from <from>] [-t|--email-to <to>] [-h|--help]
+              [-c|--config <config file>]
 
 Options:
   -p|--profile        Sets the portage profile (required)
@@ -36,6 +38,8 @@ Options:
                       to catalyst@localhost)
   -t|--email-to       Sets the 'To' on emails sent from this script (defaults
                       to root@localhost)
+  -c|--config         Sets the config file that catalyst should use (defaults
+                      to /etc/catalyst/catalyst.conf)
   -h|--help           Show this message and quit
 
 Example:
@@ -100,6 +104,10 @@ do
       snapshot=$1
       shift
       ;;
+    -c|--config)
+      config_file=$1
+      shift
+      ;;
     --verbose)
       verbose=1
       ;;
@@ -133,7 +141,7 @@ cd /tmp
 
 if [ -z "${snapshot}" ]; then
   snapshot=`date +%Y%m%d`
-  run_cmd "catalyst -s '${snapshot}'" "/tmp/catalyst_build_snapshot.${PID}.log"
+  run_cmd "catalyst -c '${config_file}' -s '${snapshot}'" "/tmp/catalyst_build_snapshot.${PID}.log"
   if [ $? != 0 ]; then
     send_email "Catalyst build error - snapshot" "$(</tmp/catalyst_build_snapshot.${PID}.log)"
     exit 1
@@ -147,7 +155,7 @@ for i in 1 2 3; do
   else 
     echo "source_subpath: default/stage$(expr ${i} - 1)-${subarch}-${version_stamp}" >> stage${i}.spec
   fi
-  run_cmd "catalyst -a -p -f stage${i}.spec" "/tmp/catalyst_build_stage${i}.${PID}.log"
+  run_cmd "catalyst -c '${config_file}' -a -p -f stage${i}.spec" "/tmp/catalyst_build_stage${i}.${PID}.log"
   if [ $? != 0 ]; then
     send_email "Catalyst build error - stage${i}" "$(tail -n 200 /tmp/catalyst_build_stage${i}.${PID}.log)\r\n\r\nFull build log at /tmp/catalyst_build_stage${i}.${PID}.log"
     exit 1
