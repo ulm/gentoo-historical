@@ -1,13 +1,13 @@
 GLEP: 23
 Title: Portage handling of ACCEPT_LICENSE
-Version: $Revision: 1.3 $
-Last-Modified: $Date: 2004/10/26 00:21:28 $
-Author:	Jason Stubbs <jstubbs@gentoo.org>,
+Version: $Revision: 1.4 $
+Last-Modified: $Date: 2006/11/18 07:27:47 $
+Author:	Jason Stubbs <jstubbs@gentoo.org>, Marius Mauch <genone@gentoo.org>
 Status: Accepted
 Type: Standards Track
 Content-Type: text/x-rst
 Created: 9-Mar-2004
-Post-History: 8-Mar-2004 10-Mar-2004 25-Oct-2004
+Post-History: 8-Mar-2004 10-Mar-2004 25-Oct-2004 18-Nov-2006
 
 
 Abstract
@@ -22,7 +22,8 @@ Status Update
 =============
 
 Repoman has been updated to check for the LICENSE syntax.
- 
+A development portage branch with support for ACCEPT_LICENSE
+and license groups exists.
 
 Motivation
 ==========
@@ -81,6 +82,23 @@ At a minimum, there needs to be the groups ``GPL-COMPATIBLE``,
 acceptance for to be considered legally binding.  This is the current 
 behaviour of portage.
 
+These groups are defined in a new file ``license_groups`` in 
+the ``profiles`` subdirectory of the tree (or overlays).
+The format of this file is
+
+::
+	
+	<groupname> <license1> <license2> ... <licenseN>
+
+Also any line starting with # is ignored and may be used for comments.
+License groups may not contain negated elements, so a group
+
+::
+	
+	mygroup foo -bar -bla
+
+is illegal.
+
 
 ACCEPT_LICENSE
 --------------
@@ -102,25 +120,20 @@ character "``@``".  For example:
 
 	ACCEPT_LICENSE="-* @FSF-APPROVED"
 
+License groups may be negated with the result that all elements of that group
+are also negated.
 
-Emerge Behaviour
-----------------
+Portage Behaviour
+-----------------
 
-At a minimum, emerge must handle unaccepted licenses the same way that 
-it handles blockers.  That is, with the --pretend flag the 
-not-yet-accepted license should be listed in the output.  Without the 
---pretend flag, emerge should stop before any software is installed.
+Unaccepted licenses will be treated like any other masked package, that is
+emerge will display a message listing any license that has to be accepted
+before the package can be merged with a pointer to the exact license text.
 
-This GLEP proposes that, unlike blockers, dependencies for software 
-should be checked regardless of license acceptance.  Doing so will allow 
-the user to review all necessary licenses before initiating an actual 
-emerge.
-
-It is also proposed that the --ask option will display an unaccepted 
-license and ask for acceptance, but not update any configuration files 
-at this stage.  Finally, the --verbose option should also list the 
-licenses accepted for each package.
-
+Past versions of this document proposed to handle license-masked packages
+like blockers, but this would be inconsistent with other visibility 
+filters as well as the current blocker system (as a blocker affects two 
+packages) and be more complicated to implement.
 
 Rationale
 =========
@@ -132,7 +145,7 @@ to regulate their software without affecting those that don't.
 Reference Implementation
 ========================
 
-TODO
+Available in portage svn repository under main/branches/license-masking
 
 
 Backwards Compatibility
@@ -143,8 +156,8 @@ explicitly choosing to do so.  This mandates that the
 configuration variable be named ``ACCEPT_LICENSE`` as some users may 
 already have it set due to ebuilds using ``eutil.eclass``'s 
 implementation.  It also mandates that the default ``ACCEPT_LICENSE`` be 
-set to ``@NON-INTERACTIVE``.
-
+set to ``@NON-INTERACTIVE`` in the main gentoo repository as there will
+be no internal default in portage.
 
 References
 ==========
