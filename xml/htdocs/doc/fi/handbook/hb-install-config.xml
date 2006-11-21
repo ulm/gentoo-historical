@@ -4,12 +4,17 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-install-config.xml,v 1.23 2006/09/08 15:17:28 flammie Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-install-config.xml,v 1.24 2006/11/21 02:22:54 flammie Exp $ -->
 
 <sections>
 
-<version>7.2</version>
-<date>2006-09-08</date>
+<abstract>
+Tässä kappaleessa luodaan yleiskatsaus
+asennustiedostojen muokkaamiseen.
+</abstract>
+
+<version>7.5</version>
+<date>2006-11-02</date>
 
 <section>
 <title>Tiedostojärjestelmän tiedot</title>
@@ -81,13 +86,20 @@ järjestelmässäsi ole osiota <path>/boot</path> (esimerkiksi Apple <b>PPC</b> 
 tällainen), älä kopioi asetuksia esimerkistä sellaisenaan.
 </p>
 
-<p>
-Oletusarvoisessa x86-osiointimallissamme <c>ext2</c>-tiedostojärjestelmä
-<path>/boot</path> liittyi osioon <path>/dev/hda1</path>. Tämä järjestelmä pitää tarkistaa käynnistyksen yhteydessä, joten kirjoitamme seuraavaa:
+<p test="contains(func:keyval('/boot'), '/dev/hd')">
+Oletusarvoisessa <keyval id="arch"/>-osioinnissa <path>/boot</path> on
+yleensä <path><keyval id="/boot"/></path>-osio (tai <path>/dev/sda*</path>
+jos käytössä on SCSI- tai SATA-levyjä) <c>ext2</c>-tiedostojärjestelmällä:
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/sd')">
+Oletusarvoisessa <keyval id="arch"/>-osioinnissa <path>/boot</path> on
+yleensä <path><keyval id="/boot"/></path>-osio
+<c>ext2</c>-tiedostojärjestelmällä:
 </p>
 
 <pre caption="esimerkki-/boot-osion rivi /etc/fstabissa">
-/dev/hda1   /boot     ext2    defaults        1 2
+<keyval id="/boot"/>   /boot     ext2    defaults        1 2
 </pre>
 
 <p>Jotkin käyttäjät eivät
@@ -117,21 +129,88 @@ Samalla tavalla jatkamalla saamme aikaan kolme riviä (osioille
 /dev/hda3   /         ext3    noatime           0 1
 </pre>
 
-<p>
-Lopuksi lisätään säännöt hakemistolle <path>/proc</path>,
-tiedostojärjestelmälle <c>tmpfs</c> (pakollisia) ja  cd-asemille (sekä muille
-vastaaville tietenkin):
+<p test="not(func:keyval('arch')='SPARC')">
+Lisää säännöt, jotka sopivat osiointiisi ja säännöt 
+<path>/proc</path>ille, <c>tmpfs</c>:lle, ja CD-asemille sekä kaikille
+muille asemille tai tallennusmuisteille joita käytät.
 </p>
 
-<pre caption="Täysimittainen /etc/fstab-esimerkki">
-/dev/hda1   /boot     ext2    defaults,noatime    1 2
-/dev/hda2   none      swap    sw                0 0
-/dev/hda3   /         ext3    noatime           0 1
+<p test="func:keyval('arch')='SPARC'">
+Lisää säännöt, jotka sopivat osiointiisi ja säännöt
+<path>/proc/openprom</path>ille, <path>/proc</path>ille, <c>tmpfs</c>:lle ja
+CD-asemille sekä kaikille muille asemille tai tallennusmuisteille joita käytät.
+</p>
 
-none        /proc     proc    defaults          0 0
-none        /dev/shm  tmpfs   defaults          0 0
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/hda2   none         swap    sw                   0 0
+/dev/hda3   /            ext3    noatime              0 1
 
-/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='HPPA'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda3   none         swap    sw                   0 0
+/dev/sda4   /            ext3    noatime              0 1
+
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda2   none         swap    sw                   0 0
+/dev/sda3   /            ext3    noatime              0 1
+
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='SPARC'">
+/dev/sda1   /               ext3        noatime              0 1
+/dev/sda2   none            swap        sw                   0 0
+/dev/sda4   /usr            ext3        noatime              0 2
+/dev/sda5   /var            ext3        noatime              0 2
+/dev/sda6   /home           ext3        noatime              0 2
+
+openprom    /proc/openprom  openpromfs  defaults             0 0
+proc        /proc           proc        defaults             0 0
+shm         /dev/shm        tmpfs       nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom      auto        noauto,user          0 0
+</pre>
+
+<note test="func:keyval('arch')='PPC'">
+PPC-tyyppien välillä on eroja. Muista mukauttaa seuraava esimerkki
+järjestelmääsi.
+</note>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='PPC'">
+/dev/hda4   /            ext3    noatime              0 1
+/dev/hda3   none         swap    sw                   0 0
+
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='PPC64'">
+/dev/sda4   /            ext3    noatime              0 1
+/dev/sda3   none         swap    sw                   0 0
+
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
 <p>
@@ -148,7 +227,7 @@ Ylläolevan esimerkin mukaan voit nyt luoda <path>/etc/fstab</path>in.
 </p>
 
 <pre caption="Openprom-tiedostojärjstelmän lisäys fstabiin">
-none        /proc/openprom  openpromfs    defaults      0 0
+openprom    /proc/openprom  openpromfs    defaults      0 0
 </pre>
 
 <p>
@@ -204,6 +283,11 @@ sellaista) sekin pitää määrittää:
 <comment>(Aseta NISDOMAINiksi verkkonimi)</comment>
 NISDOMAIN="<i>my-nisdomain</i>"
 </pre>
+
+<note>
+Lisätietoja DNS- ja NIS-asetuksista saa tiedoston 
+<path>/etc/conf.d/net.example</path> esimerkeistä.
+</note>
 
 </body>
 </subsection>
