@@ -59,9 +59,9 @@ run_cmd() {
   logfile=$2
 
   if [ $verbose = 1 ]; then
-    ${cmd} 2>&1 | tee ${logfile}
+    eval "${cmd}" 2>&1 | tee ${logfile}
   else
-    ${cmd} &> ${logfile}
+    eval "${cmd}" &> ${logfile}
   fi
 }
 
