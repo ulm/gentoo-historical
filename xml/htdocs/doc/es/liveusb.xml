@@ -1,12 +1,12 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/liveusb.xml,v 1.5 2006/05/14 10:40:44 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/liveusb.xml,v 1.6 2006/11/27 18:29:30 chiguire Exp $ -->
 
 <guide link="/doc/es/liveusb.xml" lang="es">
 <title>COMO (HOWTO): LiveUSB en Gentoo Linux</title>
 
 <author title="Autor">
-  <mail link="brix@gentoo.org">Henrik Brix Andersen</mail>
+  <mail link="henrik@brixandersen.dk">Henrik Brix Andersen</mail>
 </author>
 <author title="Traductor">
   <mail link="anpereir@gentoo.org">Andrés Pereira</mail>
@@ -22,8 +22,8 @@ usando un llavero USB.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.3</version>
-<date>2006-04-25</date>
+<version>1.6</version>
+<date>2006-09-18</date>
 
 <chapter>
 <title>Introducción</title>
@@ -44,9 +44,9 @@ al CD de instalación de Gentoo Linux usando un llavero USB, deberían
 funcionar para cualquier dispositivo de bloques siempre y cuando
 ajuste los nombres de dispositivos como corresponde.
 </p>
-
 </body>
 </section>
+
 <section>
 <title>Prerrequisitos</title>
 <body>
@@ -70,7 +70,6 @@ También va a necesitar acceso a lo siguiente para crear el LiveUSB:
     distribución de Linux)
   </li>
 </ul>
-
 </body>
 </section>
 </chapter>
@@ -108,9 +107,9 @@ Units = cylinders of 2013 * 512 = 1030656 bytes
    Device Boot      Start         End      Blocks   Id  System
 /dev/sda1   *           1        1017     1023580    b  W95 FAT32
 </pre>
-
 </body>
 </section>
+
 <section>
 <title>Crear el sistema de ficheros</title>
 <body>
@@ -125,9 +124,9 @@ Cree un sistema de ficheros FAT32 en el llavero USB usando <c>mkdosfs</c>:
 # <i>mkdosfs -F 32 /dev/sda1</i>
 mkdosfs 2.11 (12 Mar 2005)
 </pre>
-
 </body>
 </section>
+
 <section>
 <title>Instalar el Registro de Arranque Maestro (Master Boot Record)</title>
 <body>
@@ -144,7 +143,6 @@ en el llavero USB:
 0+1 records in
 0+1 records out
 </pre>
-
 </body>
 </section>
 </chapter>
@@ -154,6 +152,12 @@ en el llavero USB:
 <section>
 <title>Montar el CD de instalación de Gentoo Linux</title>
 <body>
+
+<warn>
+Esta guía está diseñada solamente para ser usada con Gentoo 2006.0. No
+intente usar un CD 2006.1 CD o más nuevo ya que acabará con una unidad
+de la cual no podrá arrancar.
+</warn>
 
 <p>
 Descargue el fichero <path>install-x86-minimal-2006.0.iso</path> desde su
@@ -172,9 +176,9 @@ Si obtiene el mensaje de error <e>Could not find any loop device</e> cuando
 monte el fichero ISO, tiene que activar la opción <c>Loopback device support</c>
 en la configuración de su núcleo.
 </note>
-
 </body>
 </section>
+
 <section>
 <title>Montar el LiveUSB</title>
 <body>
@@ -189,9 +193,9 @@ indica abajo:
 # <i>mkdir -p /mnt/usb</i>
 # <i>mount -t vfat /dev/sda1 /mnt/usb/</i>
 </pre>
-
 </body>
 </section>
+
 <section>
 <title>Copiar los ficheros</title>
 <body>
@@ -219,9 +223,9 @@ Ahora puede desmontar la imagen ISO:
 <pre caption="Desmontar la imagen ISO">
 # <i>umount /mnt/cdrom/</i>
 </pre>
-
 </body>
 </section>
+
 <section>
 <title>Ajustar la configuración del gestor de arranque</title>
 <body>
@@ -247,6 +251,49 @@ desenchufar el llavero USB. No active esto a menos que la computadora objetivo
 tenga a lo menos 128MB RAM.
 </note>
 
+<!--
+(arreglo para el CD 2006.1) posteado por nightmorph
+
+NdT: Aunque hemos incorporado este texto al cuerpo de la guía, no la 
+pensamos traducir hasta que no forme parte del documento de manera oficial.
+
+Background:
+After some lengthy discussion with Robin Johnson (robbat2) on IRC, it turns out
+that the reason why 2006.1 fails to work with this guide is because inside the
+initramfs, it specifies -t iso9660..but usb flash isn't this filetype, it's
+vfat. 2006.0 was much better and just specified mount -t auto. so the thing is
+to install an ~arch version of genkernel (3.4.4, still ~arch as of 2006-11-04)
+and reconfigure syslinux.config to point at the renamed files.
+
+Obviously, unmasking an ~arch version is never desirable in documentation, so we
+need some more alternatives...since 3.4.4 was only created at the end of
+october; not likely to go stable all that soon.
+
+Procedure:
+After adjusting the parameters, and before the disk is unmounted/bootloader
+installed, the following must be done for ~arch genkernel. Please replace (dash)
+with an actual - , since the damned xmllint throws a "comment not terminated"
+error.
+
+# echo "sys-kernel/genkernel" &gt;&gt; /etc/portage/package.keywords
+# genkernel (dash)(dash)bootdir=/mnt/usb (dash)(dash)install all
+(not sure if syslinux has been installed previously yet)
+# nano -w syslinux.cfg
+(Edit it to point at the new filenames installed by genkernel)
+(might be worth renaming to the ones normally used by syslinux, as
+if the kernel name is too long, "vfat might bite")
+
+(might need to re-run syslinux as specified below to pick up the new names, 
+though maybe this renaming step should be in the section below?)
+# syslinux /dev/sda1
+
+TODO:
+- if/when this document changes, brix requested some time ago that he be renamed
+"Original Author" and be moved to the bottom of the credits list.
+- if/when this fix goes in, robbat2 deserves credit: this is his solution after
+  all, and it works.
+
+-->
 </body>
 </section>
 </chapter>
@@ -264,9 +311,9 @@ Asegúrese de desmontar el llavero USB antes de instalar el gestor de arranque:
 <pre caption="Desmontar el llavero USB">
 # <i>umount /mnt/usb/</i>
 </pre>
-
 </body>
 </section>
+
 <section>
 <title>Instalar syslinux</title>
 <body>
@@ -284,7 +331,6 @@ Tendrá que ejecutar nuevamente <c>syslinux /dev/sda1</c> cada vez que modifique
 el fichero <path>syslinux.cfg</path> para que los cambios de configuración
 tomen efecto.
 </impo>
-
 </body>
 </section>
 </chapter>
@@ -306,7 +352,6 @@ De aquí en adelante debería ser capaz de seguir las instrucciones de
 instalación presentes en el <uri link="/doc/es/handbook/">Manual de
 Gentoo</uri>.
 </p>
-
 </body>
 </section>
 </chapter>
