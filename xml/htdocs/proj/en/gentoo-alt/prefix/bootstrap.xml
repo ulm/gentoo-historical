@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/bootstrap.xml,v 1.18 2006/11/26 09:44:51 grobian Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/bootstrap.xml,v 1.19 2006/11/29 21:58:33 grobian Exp $ -->
 
 <guide link="/proj/en/gentoo-alt/prefix/bootstrap.xml" lang="en">
   <title>Gentoo Prefixed Portage Bootstrap Process</title>
@@ -91,19 +91,22 @@
         <p>
           The first step is to chose a path to install into.  We refer
           to this path as "prefix path", and use
-          <path>/Library/Gentoo</path>.  Everywhere you see this path,
+          <path>~/Gentoo</path>.  Everywhere you see this path,
           you may replace it with your own choice.  Prepend this path to
           your <c>PATH</c> environment variable to make them available
           later on in the process.
-          <path>/Library/Gentoo/tmp/bin</path>,
-          <path>/Library/Gentoo/tmp/usr/bin</path>,
-          <path>/Library/Gentoo/bin</path> and
-          <path>/Library/Gentoo/usr/bin</path>.  For example for a
+          <path>~/Gentoo/bin</path>,
+          <path>~/Gentoo/usr/bin</path>,
+          <path>~/Gentoo/tmp/bin</path> and
+          <path>~/Gentoo/tmp/usr/bin</path>.  For example for a
           <c>bash</c> shell:
         </p>
         <pre caption="Add prefix paths to your PATH">
-$ <i>export PATH="/Library/Gentoo/tmp/bin:/Library/Gentoo/tmp/usr/bin:/Library/Gentoo/bin:/Library/Gentoo/usr/bin:$PATH"</i>
+$ <i>export PATH="~/Gentoo/bin:~/Gentoo/usr/bin:~/Gentoo/tmp/bin:~/Gentoo/usr/tmp/bin:$PATH"</i>
         </pre>
+        <note>We rely on <path>~</path> pointing to your home directory.
+          If you use a shell which doesn't expand <path>~</path>,
+          replace it manually.</note>
         <p>
           This may seem a bit premature at this stage, but it is
           absolutely necessary for users without the necessary versions
@@ -116,36 +119,24 @@ $ <i>export PATH="/Library/Gentoo/tmp/bin:/Library/Gentoo/tmp/usr/bin:/Library/G
         </p>
         <pre caption="Use the bootstrap script">
 $ <i>chmod 755 bootstrap-prefix.sh</i>
-$ <i>./bootstrap-prefix.sh /Library/Gentoo tree</i>
-$ <i>./bootstrap-prefix.sh /Library/Gentoo/tmp wget</i>
-$ <i>./bootstrap-prefix.sh /Library/Gentoo/tmp sed</i>
-$ <i>./bootstrap-prefix.sh /Library/Gentoo/tmp python</i>
-$ <i>./bootstrap-prefix.sh /Library/Gentoo portage</i>
+$ <i>./bootstrap-prefix.sh ~/Gentoo tree</i>
+$ <i>./bootstrap-prefix.sh ~/Gentoo/tmp wget</i>
+$ <i>./bootstrap-prefix.sh ~/Gentoo/tmp sed</i>
+$ <i>./bootstrap-prefix.sh ~/Gentoo/tmp python</i>
+$ <i>./bootstrap-prefix.sh ~/Gentoo portage</i>
         </pre>
         <note>Please note that <c>wget</c>, <c>sed</c> and <c>python</c> are
-          installed in <path>/Library/Gentoo/tmp</path>!</note>
+          installed in <path>~/Gentoo/tmp</path>!</note>
         <p>
-          The script will setup the <path>/Library/Gentoo</path>
+          The script will setup the <path>~/Gentoo</path>
           directory, download a portage tree snapshot, unpack it and
           download and install portage.  Afterwards it will try to setup
           some sane defaults.  On OS X this always successfully
-          finishes.
+          finishes.  Because we installed some new applications, we will
+          instruct bash to reconsider all paths we have:
         </p>
-        <p>
-          Next, we have to enable the binaries we installed in the
-          <path>tmp</path> directory of our prefix:
-        </p>
-        <pre caption="change DEFAULT_PATH">
-$ <i>sed -i -e '/DEFAULT_PATH/s|="|="/Library/Gentoo/tmp/bin:/Library/Gentoo/tmp/usr/bin:|' /Library/Gentoo/etc/make.conf</i>
-        </pre>
-        <p>
-          The next step is to forcefully install some packages to ensure
-          that all ebuilds from <c>system</c> will succeed.  First
-          update to the latest <c>portage</c> version, overwriting the
-          one bootstrap installed:
-        </p>
-        <pre caption="emerge portage">
-$ <i>env FEATURES="-collision-protect" emerge --nodeps portage</i>
+        <pre caption="rehash in bash">
+$ <i>hash -r</i>
         </pre>
         <p>
           We continue adding some necessary tools which will deal with
@@ -166,7 +157,7 @@ $ <i>emerge bash</i>
           We continue getting some autotools stuff into our prefix.
         </p>
         <pre caption="emerge autotools">
-$ <i>emerge --nodeps "=autoconf-2.13*" "=autoconf-2.60*" "autoconf-wrapper"</i>
+$ <i>emerge --nodeps "=autoconf-2.1*" "=autoconf-2.6*" "autoconf-wrapper"</i>
 $ <i>emerge --nodeps "=automake-1.4*" "=automake-1.5*" "=automake-1.6*" "=automake-1.7*" "=automake-1.8*" "automake-wrapper"</i>
         </pre>
         <note><c>automake-1.9</c> and <c>libtool</c> are not (yet)
@@ -199,34 +190,38 @@ $ <i>emerge --nodeps libtool</i>
           some decent core utilities in our prefix.
         </p>
         <pre caption="emerge coreutils">
-$ <i>emerge --nodeps coreutils</i>
+$ <i>emerge --nodeps "=sys-apps/coreutils-6.4*"</i>
         </pre>
         <p>
-          Finally, we get GNU <c>awk</c>, as most ebuild expect this
+          All packages before (and including) coreutils might generate
+          some errors like about <c>xargs</c> not understanding all its
+          arguments.  After coreutils this issue is fixed, as coreutils
+          provides the versions of these tools that portage expects ;)
+        </p>
+        <p>
+          Next, we get GNU <c>awk</c>, as most ebuild expect this
           <c>awk</c> when they use it.
         </p>
         <pre caption="emerge gawk">
 $ <i>emerge gawk</i>
         </pre>
         <p>
-          All packages before (and including) coreutils generate some
-          errors like about xargs not understanding all its arguments.
-          After coreutils this issue is fixed, as coreutils provides the
-          versions of these tools that portage expects ;)
-        </p>
-        <p>
-          Now we are almost ready to continue with the first <c>emerge
-            system</c>.  But before we do, we have to remove the stuff
-          installed in the temporary directory in the prefix.  This
-          means that Python will disappear, hence it has to be emerged
-          into the prefix first.  Because the system is not yet set up
-          correctly, a few corrective measures have to be taken
-          afterwards:
+          Finally we emerge python in our prefix.  This is the last
+          package that we temporarily installed to bootstrap our system.
         </p>
         <pre caption="emerge python">
 $ <i>emerge --nodeps python</i>
-$ <i>( cd /Library/Gentoo/usr/bin &amp;&amp; ln -s python2.4 python )</i>
-$ <i>sed -i -e 's|^#!/Library/Gentoo/tmp/usr/bin/python|#!/Library/Gentoo/usr/bin/python|' /Library/Gentoo/usr/bin/emerge</i>
+        </pre>
+        <p>
+          Before we continue to emerge all ebuilds from <c>system</c>,
+          we first install <c>portage</c>.  We need to overwrite the
+          version that was installed by the bootstrap script.
+          Installing a new portage will make sure it uses the tools
+          provided by the prefix, and forget about the temporary
+          installed tools.
+        </p>
+        <pre caption="emerge portage">
+$ <i>env FEATURES="-collision-protect" emerge --nodeps portage</i>
         </pre>
         <p>
           We remove the temporary directory and its use:
@@ -234,8 +229,6 @@ $ <i>sed -i -e 's|^#!/Library/Gentoo/tmp/usr/bin/python|#!/Library/Gentoo/usr/bi
         <pre caption="remove tmp directory">
 $ <i>rm -Rf /Library/Gentoo/tmp/*</i>
 $ <i>hash -r</i>
-$ <i>sed -i -e '/DEFAULT_PATH/s|/Library/Gentoo/tmp/bin:/Library/Gentoo/tmp/usr/bin:||' /Library/Gentoo/etc/make.conf</i>
-$ <i>export PATH=`echo $PATH | sed 's|/Library/Gentoo/tmp/bin:/Library/Gentoo/tmp/usr/bin:||'`</i>
         </pre>
         <p>
           Next, we do the real work where all packages get reemerged in
