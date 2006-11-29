@@ -1,0 +1,927 @@
+<?xml version='1.0' encoding="UTF-8"?>
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/id/gentoo-x86+raid+lvm2-quickinstall.xml" lang="id">
+<title>Panduan Instalasi Cepat Gentoo Linux x86 dengan Raid Software dan LVM2</title>
+
+<author title="Author">
+  <mail link="neysx@gentoo.org">Xavier Neys</mail>
+</author>
+<author title="Author">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Author">Steven Wagner</author>
+<author title="Translator">
+  <mail link="kucrut.dz@gmail.com">Dzikri Aziz</mail>
+</author>
+
+<abstract>
+Panduan instalasi cepat ini menjelaskan proses instalasi Gentoo tanpa rincian.
+Tujuannya adalah agar user dapat melakukan instalasi stage3 dengan RAID software
+dan LVM2 dalam waktu singkat. User sebelumnya harus sudah memiliki pengalaman
+menginstal Gentoo Linux jika ingin mengikuti panduan ini.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>4</version>
+<date>2006-10-18</date>
+
+<chapter>
+<title>Pendahuluan</title>
+<section>
+<body>
+
+<p>
+Panduan ini berisi seluruh perintah yang harus anda gunakan untuk menyelesaikan
+instalasi stage3 termasuk LVM2 di atas RAID software. Panduan ini ditujukan
+untuk user yang sudah berpengalaman. Anda memerlukan koneksi internet untuk
+mendownload stage3 dan snapshot Portage.
+</p>
+
+<p>
+Output waktu diikutsertakan pada akhir setiap perintah yang memerlukan waktu
+lebih dari beberapa detik untuk selesai. Perintah-perintah di sini diukur
+waktu eksekusinya pada PC AMD 2000 1.66 Ghz PC dengan RAM sebesar 512 MB dan
+dua disk SATA yang terhubung ke controller hardware yang dikonfigurasi sebagai
+JBOD (dilihat sebagai dua harddisk terpisah oleh Gentoo). Jika anda memiliki
+controller "hardware" pada motherboard anda, kemungkinan besar controller ini
+<b>bukanlah</b> controller hardware.
+</p>
+
+<pre caption="Spesifikasi komputer percobaan">
+<comment>(Spesifikasi dan informasi waktu berikut ini dapat membantu anda
+untuk memperkirakan waktu yang dibutuhkan untuk menyelesaikan instalasi
+anda)</comment>
+
+# <i>grep bogo /proc/cpuinfo</i>
+bogomips       : 3337.81
+
+# <i>hdparm -tT /dev/sda /dev/sdb</i>
+/dev/sda:
+reads:   1048 MB in  2.00 seconds = 524.00 MB/sec
+ Timing buffered disk reads:  152 MB in  3.01 seconds =  50.50 MB/sec
+
+/dev/sdb:
+ Timing cached reads:   1048 MB in  2.00 seconds = 524.00 MB/sec
+ Timing buffered disk reads:  152 MB in  3.01 seconds =  50.50 MB/sec
+
+# <i>grep MemTotal /proc/meminfo</i>
+MemTotal:       509248 kB
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Panduan Instalasi Cepat</title>
+<section>
+<title>Media Instalasi</title>
+<body>
+
+<p>
+Download CD dari salah satu <uri link="/main/en/mirrors.xml">mirror</uri>
+kami. Anda dapat menemukan ISO CD minimal di
+<path>releases/x86/&lt;release&gt;/installcd</path> ISO LiveCD di
+<path>releases/x86/&lt;release&gt;/livecd</path>. CD Instalasi <e>minimal</e>
+hanya berguna untuk instalasi dengan koneksi internet. Anda dapat menggunakan
+<e>LiveCD</e> untuk menjalankan instalasi tanpa internet seperti yang
+didokumentasikan di <uri link="/doc/id/handbook/2006.1/handbook-x86.xml">Buku
+Panduan Instalasi Gentoo x86 2006.1</uri>. Kami menganjurkan penggunaan CD
+minimal.
+</p>
+
+<p>
+<uri link="/doc/id/faq.xml#isoburning">Burn</uri> CD lalu boot.
+</p>
+
+</body>
+</section>
+<section>
+<title>Boot CD</title>
+<body>
+
+<p>
+Tekan <c>F2</c> pada layar boot untuk mengetahui opsi-opsi boot yang tersedia.
+Anda dapat menjalankan <c>gentoo</c> atau <c>gentoo-nofb</c>, pilihan kedua
+akan menonaktifkan framebuffer. Jika anda mem-boot LiveCD, jangan lupa untuk
+menambahkan opsi <c>nox</c> untuk mencegah dijalankannya lingkungan grafis X.
+Jika semua berjalan dengan baik, hardware anda akan dideteksi dan semua modul
+akan di-load. Jika kernel gagal boot, atau jika komputer anda hang ketika
+prosedur boot sedang dijalankan, anda mungkin perlu bereksperimen dengan opsi
+yang berbeda. Mungkin cara paling aman ialah dengan menggunakan opsi
+<c>nodetect</c> lalu me-load sendiri modul-modul yang diperlukan.
+</p>
+
+<pre caption="Boot CD minimal">
+Gentoo Linux Installation LiveCD                     http://www.gentoo.org
+Enter to Boot; F1 for kernels  F2 for options.
+boot: <i>gentoo-nofb</i>
+  <comment>(jika terdapat masalah)</comment>
+boot: <i>gentoo-nofb nodetect</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Opsional: load modul</title>
+<body>
+
+<p>
+Jika anda menggunakan opsi <c>nodetect</c>, ketika telah selesai boot, load
+modul-modul yang diperlukan. Anda perlu mengaktifkan jaringan dan memiliki
+akses ke harddisk anda. Perintah <c>lspci</c> dapat membantu anda untuk
+mengidentifikasi hardware anda.
+</p>
+
+<pre caption="Load modul-modul yang diperlukan">
+livecd root # <i>lspci</i>
+<comment>(Gunakan output lspci untuk mengetahui modul yang diperlukan)</comment>
+
+<comment>(Berikut ini hanyalah contoh, sesuaikan dengan hardware anda)</comment>
+livecd root # <i>modprobe 3w-9xxx</i>
+livecd root # <i>modprobe r8169</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Konfigurasi Jaringan</title>
+<body>
+
+<p>
+Jika jaringan anda belum berfungsi, anda dapat menggunakan <c>net-setup</c>
+untuk mengkonfigurasi jaringan anda. Anda mungkin perlu me-load modul untuk
+kartu jaringan anda dengan <c>modprobe</c> sebelum mulai mengkonfigurasi. Jika
+anda menggunakan ADSL, gunakan <c>pppoe-setup</c> dan <c>pppoe-start</c>.
+Jika anda menggunakan router ADSL, router tersebut telah menyediakan koneksi
+untuk anda dan anda tidak perlu menjalankan skrip-skrip tadi. Untuk dukungan
+PPTP, pertama editlah <path>/etc/ppp/chap-secrets</path> dan
+<path>/etc/ppp/options.pptp</path> lalu gunakan <c>pptp
+&lt;server&nbsp;ip&gt;</c>.
+</p>
+
+<p>
+Untuk akses wireless, gunakan <c>iwconfig</c> untuk mengeset parameter wireless
+lalu gunakan <c>net-setup</c> kembali atau jalankan <c>ifconfig</c>,
+<c>dhcpcd</c> dan/atau <c>route</c> secara manual.
+</p>
+
+<p>
+Jika anda berada di belakang proxy, jangan lupa untuk menginisialisasi sistem
+anda dengan <c>export http_proxy</c>, <c>ftp_proxy</c> dan <c>RSYNC_PROXY</c>.
+</p>
+
+<pre caption="Konfigurasi jaringan dengan panduan">
+livecd root # <i>net-setup eth0</i>
+</pre>
+
+<p>
+Atau, anda dapat menyiapkan jaringan secara manual. Contoh berikut ini
+memberikan alamat IP 192.168.1.10 to untuk PC anda dan mendefinisikan 192.168.1.1
+sebagai router dan name server.
+</p>
+
+<pre caption="Konfigurasi jaringan secara manual">
+livecd root # <i>ifconfig eth0 192.168.1.10/24</i>
+livecd root # <i>route add default gw 192.168.1.1</i>
+livecd root # <i>echo nameserver 192.168.1.1 > /etc/resolv.conf</i>
+</pre>
+
+<p>
+Dengan CD instalasi anda dapat menjalankan server <c>sshd</c>, menambahkan
+user, menjalankan <c>irssi</c> (sebuah klien chat berbasis perintah) dan
+menjelajahi web dengan <c>lynx</c> atau <c>links</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Opsional: melakukan koneksi ke komputer baru anda lewat ssh</title>
+<body>
+
+<p>
+Fitur paling menarik pastinya adalah <c>sshd</c>. Anda dapat menjalankannya
+lalu melakukan koneksi dari komputer lain untuk menyalin perintah-perintah
+dari panduan ini.
+</p>
+
+<pre caption="Menjalankan sshd">
+livecd root # <i>time /etc/init.d/sshd start</i>
+ * Generating hostkey ...
+<comment>(sshd menciptakan key dan menampilkan output lain)</comment>
+ * starting sshd ...                            [ok]
+
+real   0m13.688s
+user   0m9.420s
+sys    0m0.090s
+</pre>
+
+<p>
+Sekarang, set password root di LiveCD agar anda dapat melakukan koneksi dari
+PC lain. Perlu dicatat bahwa mengizinkan root untuk melakukan koneksi lewat
+ssh tidaklah dianjurkan untuk keadaan normal. Jika anda tidak dapat mempercayai
+jaringan lokal anda, gunakan password yang panjang dan rumit, anda hanya perlu
+menggunakannya sekali saja karena password ini akan terhapus ketika anda
+melakukan reboot untuk pertama kali.
+</p>
+
+<pre caption="Set password root">
+livecd root # <i>passwd</i>
+New UNIX password: <comment>ketikkan_password</comment>
+Retype new UNIX password: <comment>ketikkan_password</comment>
+passwd: password updated successfully
+</pre>
+
+<p>
+Sekarang, anda dapat menggunakan sebuah terminal dari PC lain dan melakukan
+koneksi ke komputer baru anda, ikuti kelanjutan dari panduan ini di jendela
+lain, lalu salinlah perintah-perintahnya.
+</p>
+
+<pre caption="Melakukan koneksi dari komputer lain ke PC anda">
+<comment>(Gunakan alamat IP komputer baru anda)</comment>
+$ <i>ssh root@192.168.1.10</i>
+The authenticity of host '192.168.1.10 (192.168.1.10)' can't be established.
+RSA key fingerprint is 96:e7:2d:12:ac:9c:b0:94:90:9f:40:89:b0:45:26:8f.
+Are you sure you want to continue connecting (yes/no)? <i>yes</i>
+Warning: Permanently added '192.168.1.10' (RSA) to the list of known hosts.
+Password: <comment>masukkan_password</comment>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Mempersiapkan Disk</title>
+<body>
+
+<p>
+Load modul RAID software dan LVM2.
+</p>
+
+<pre caption="Load modul RAID dan LVM2">
+livecd ~ # <i>modprobe raid0</i>
+livecd ~ # <i>modprobe raid1</i>
+<comment>(raid5, raid6 dan raid10 juga tersedia)</comment>
+
+livecd ~ # <i>modprobe dm-mod</i>
+</pre>
+
+<p>
+Gunakan <c>fdisk</c> atau <c>cfdisk</c> untuk menciptakan layout partisi anda.
+Nama device biasanya adalah <path>/dev/sda</path> dan <path>/dev/sdb</path>
+untuk disk SATA atau SCSI, atau <path>/dev/hda</path> dan <path>/dev/hdb</path>
+untuk disk IDE. Kami menggunakan layout berikut pada panduan ini:
+</p>
+
+<table>
+  <tr>
+    <ti/>
+    <th><path>/dev/sda</path></th>
+    <th><path>/dev/sdb</path></th>
+    <th>Tipe</th>
+  </tr>
+  <tr>
+    <th><path>/dev/md1</path></th>
+    <th><path>/boot</path></th>
+    <th><path>/boot</path></th>
+    <ti>Raid-1 (mirroring)</ti>
+  </tr>
+  <tr>
+    <th/>
+    <th>swap</th>
+    <th>swap</th>
+    <ti>Partisi normal</ti>
+  </tr>
+  <tr>
+    <th><path>/dev/md3</path></th>
+    <th><path>/</path></th>
+    <th><path>/</path></th>
+    <ti>Raid-1 (mirroring)</ti>
+  </tr>
+  <tr>
+    <th><path>/dev/md4</path></th>
+    <th colspan="2">LVM2 volumes</th>
+    <ti>Raid-0 (striped)</ti>
+  </tr>
+</table>
+
+<warn>
+Partisi yang anda gunakan untuk boot tidak boleh di-strip. Tidak boleh berupa
+raid-5 atau raid-0.
+</warn>
+
+<note>
+Di sisi lain, jika anda menginginkan stabilitas lebih, pertimbangkan untuk
+menggunakan raid-1 (atau bahkan raid-5) untuk partisi swap anda agar kegagalan
+hardware tidak akan merusak ruang swap anda dan menghancurkan aplikasi yang
+sedang menggunakannya. Tetapi jika anda menginginkan performa lebih, biarkan
+saja kernel menggunakan partisi swap biasa karena kernel akan melakukan strip
+secara default.
+</note>
+
+<pre caption="Menciptakan Partisi">
+livecd ~ # <i>fdisk /dev/sda</i>
+<comment>(Pastikan anda menggunakan tipe fd)</comment>
+
+<comment>(Sisa panduan ini menggunakan skema partisi berikut)</comment>
+livecd ~ # <i>fdisk -l /dev/sda</i>
+
+Disk /dev/sda: 299.9 GB, 299989204992 bytes
+255 heads, 63 sectors/track, 36471 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1          11       88326   fd  Linux raid autodetect
+/dev/sda2              12          61      401625   82  Linux swap / Solaris
+/dev/sda3              62         311     2008125   fd  Linux raid autodetect
+/dev/sda4             312       36471   290455200   fd  Linux raid autodetect
+
+<comment>(Buatlah partisi pada disk ke dua sama persis dengan disk pertama)</comment>
+livecd ~ # <i>fdisk /dev/sdb</i>
+</pre>
+
+<p>
+Kemudian ciptakan node device dan device RAID:
+</p>
+
+<pre caption="Menciptakan node device dan device">
+livecd ~ # <i>mknod /dev/md1 b 9 1</i>
+livecd ~ # <i>mknod /dev/md3 b 9 3</i>
+livecd ~ # <i>mknod /dev/md4 b 9 4</i>
+
+livecd ~ # <i>mdadm --create /dev/md1 --level=1 --raid-devices=2 /dev/sda1 /dev/sdb1</i>
+mdadm: array /dev/md1 started.
+livecd ~ # <i>mdadm --create /dev/md3 --level=1 --raid-devices=2 /dev/sda3 /dev/sdb3</i>
+mdadm: array /dev/md3 started.
+livecd ~ # <i>mdadm --create /dev/md4 --level=0 --raid-devices=2 /dev/sda4 /dev/sdb4</i>
+mdadm: array /dev/md4 started.
+
+<comment>(Tunggu sampai semua unit siap)</comment>
+livecd ~ # <i>cat /proc/mdstat</i>
+Personalities : [raid0] [raid1]
+md4 : active raid0 sdb4[1] sda4[0]
+581006592 blocks 64k chunks
+
+md3 : active raid1 sdb3[1] sda3[0]
+1959808 blocks [2/2] [UU]
+
+md1 : active raid1 sdb1[1] sda1[0]
+88256 blocks [2/2] [UU]
+</pre>
+
+<p>
+Kemudian ciptakan volum LVM2 di <path>/dev/md4</path>. Skema berikut ini
+digunakan sebagai <b>contoh</b>:
+</p>
+
+<table>
+<tr>
+  <th>Direktori</th>
+  <th>Ukuran</th>
+  <th>Filesystem</th>
+</tr>
+<tr>
+  <ti>/usr</ti>
+  <ti>8 GB</ti>
+  <ti>ext3</ti>
+</tr>
+<tr>
+  <ti>/usr/portage</ti>
+  <ti>2 GB</ti>
+  <ti>ext2, ukuran blok kecil, banyak inode</ti>
+</tr>
+<tr>
+  <ti>/usr/portage/distfiles</ti>
+  <ti>4 GB</ti>
+  <ti>ext2, ukuran blok besar, sedikit inode</ti>
+</tr>
+<tr>
+  <ti>/home</ti>
+  <ti>10 GB</ti>
+  <ti>ext3</ti>
+</tr>
+<tr>
+  <ti>/opt</ti>
+  <ti>4 GB</ti>
+  <ti>ext3</ti>
+</tr>
+<tr>
+  <ti>/var</ti>
+  <ti>4 GB</ti>
+  <ti>ext3</ti>
+</tr>
+<tr>
+  <ti>/var/tmp</ti>
+  <ti>6 GB</ti>
+  <ti>ext2</ti>
+</tr>
+<tr>
+  <ti>/tmp</ti>
+  <ti>2 GB</ti>
+  <ti>ext2</ti>
+</tr>
+</table>
+
+<pre caption="Menciptakan volum LVM2">
+livecd ~ # <i>vgscan</i>
+  Reading all physical volumes.  This may take a while...
+  No volume groups found
+livecd ~ # <i>vgchange -a y</i>
+  No volume groups found
+
+<comment>(Ciptakan volum fisikal, kita hanya memiliki satu pada contoh kita)</comment>
+livecd ~ # <i>pvcreate /dev/md4</i>
+  Physical volume "/dev/md4" successfully created
+
+<comment>(Ciptakan grup volum, lagi, kita hanya memiliki satu pada contoh kita)</comment>
+livecd ~ # <i>vgcreate vg /dev/md4</i>
+  Volume group "vg" successfully created
+
+<comment>(Ciptakan volum logikal)</comment>
+livecd ~ # <i>lvcreate -L8G -nusr vg</i>
+  /dev/cdrom: open failed: Read-only file system
+  Logical volume "usr" created <comment>(Pesan-pesan seperti ini selanjutnya tidak ditampilkan)</comment>
+livecd ~ # <i>lvcreate -L2G -nportage vg</i>
+livecd ~ # <i>lvcreate -L4G -ndistfiles vg</i>
+livecd ~ # <i>lvcreate -L10G -nhome vg</i>
+livecd ~ # <i>lvcreate -L4G -nopt vg</i>
+livecd ~ # <i>lvcreate -L4G -nvar vg</i>
+livecd ~ # <i>lvcreate -L6G -nvartmp vg</i>
+livecd ~ # <i>lvcreate -L2G -ntmp vg</i>
+
+<comment>(Menampilkan grup volum dan volum logikal)</comment>
+livecd ~ # <i>vgs</i>
+  VG   #PV #LV #SN Attr  VSize   VFree
+  vg     1   8   0 wz--n 554.09G 514.09G
+livecd ~ # <i>lvs</i>
+  LV        VG   Attr   LSize  Origin Snap%  Move Copy%
+  distfiles vg   -wi-a-  4.00G
+  home      vg   -wi-a- 10.00G
+  opt       vg   -wi-a-  4.00G
+  portage   vg   -wi-a-  2.00G
+  tmp       vg   -wi-a-  2.00G
+  usr       vg   -wi-a-  8.00G
+  var       vg   -wi-a-  4.00G
+  vartmp    vg   -wi-a-  6.00G
+</pre>
+
+<p>
+Gunakan <c>mke2fs</c>, <c>mke2fs -j</c>, <c>mkreiserfs</c>, <c>mkfs.xfs</c> dan
+<c>mkfs.jfs</c> untuk menciptakan filesystem. Inisialisasikan swap dengan
+<c>mkswap</c> dan <c>swapon</c>.
+</p>
+
+<pre caption="Menciptakan filesystem dan mengaktifkan swap">
+<comment>(Anda hanya memerlukan ext untuk partisi /boot)</comment>
+livecd ~ # <i>mke2fs /dev/md1</i>
+
+<comment>(Mari kita gunakan ext3 pada partisi root)</comment>
+livecd ~ # <i>mke2fs -j /dev/md3</i>
+
+<comment>(Ciptakan filesystem pada volum logikal)</comment>
+livecd ~ # <i>mke2fs -b 4096 -T largefile /dev/vg/distfiles</i>
+livecd ~ # <i>mke2fs -j /dev/vg/home</i>
+livecd ~ # <i>mke2fs -j /dev/vg/opt</i>
+livecd ~ # <i>mke2fs -b 1024 -N 200000 /dev/vg/portage</i>
+livecd ~ # <i>mke2fs /dev/vg/tmp</i>
+livecd ~ # <i>mke2fs -j /dev/vg/usr</i>
+livecd ~ # <i>mke2fs -j /dev/vg/var</i>
+livecd ~ # <i>mke2fs /dev/vg/vartmp</i>
+
+<comment>(Ciptakan dan aktifkan swap)</comment>
+livecd ~ # <i>mkswap /dev/sda2 &amp;&amp; mkswap /dev/sdb2</i>
+livecd ~ # <i>swapon -p 1 /dev/sda2 &amp;&amp; swapon -p 1 /dev/sdb2</i>
+<comment>(Periksa agar semu partisi swap memiliki prioritas yang sama)</comment>
+livecd ~ # <i>swapon -v -s</i>
+Filename                   Type            Size    Used    Priority
+/dev/sda2                  partition       401616  0       1
+/dev/sdb2                  partition       401616  0       1
+</pre>
+
+<p>
+Mount filesystem yang baru saja kita ciptakan di <path>/mnt/gentoo</path>.
+Ciptakan direktori untuk mount point lain lalu mount.
+</p>
+
+<pre caption="Mount filesystem">
+livecd ~ # <i>mount /dev/md3 /mnt/gentoo</i>
+livecd ~ # <i>cd /mnt/gentoo</i>
+livecd gentoo # <i>mkdir boot home usr opt var tmp</i>
+livecd gentoo # <i>mount /dev/md1 /mnt/gentoo/boot</i>
+livecd gentoo # <i>mount /dev/vg/usr /mnt/gentoo/usr</i>
+livecd gentoo # <i>mount /dev/vg/home /mnt/gentoo/home</i>
+livecd gentoo # <i>mount /dev/vg/opt /mnt/gentoo/opt</i>
+livecd gentoo # <i>mount /dev/vg/tmp /mnt/gentoo/tmp</i>
+livecd gentoo # <i>mount /dev/vg/var /mnt/gentoo/var</i>
+livecd gentoo # <i>mkdir usr/portage var/tmp</i>
+livecd gentoo # <i>mount /dev/vg/vartmp /mnt/gentoo/var/tmp</i>
+livecd gentoo # <i>mount /dev/vg/portage /mnt/gentoo/usr/portage</i>
+livecd gentoo # <i>mkdir usr/portage/distfiles</i>
+livecd gentoo # <i>mount /dev/vg/distfiles /mnt/gentoo/usr/portage/distfiles</i>
+
+<comment>(Set perizinan yang benar pada direktori tmp)</comment>
+livecd gentoo # <i>chmod 1777 /mnt/gentoo/tmp /mnt/gentoo/var/tmp</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Tahap Persiapan</title>
+<body>
+
+<p>
+Pertama pastikan tanggal dan jam anda telah diatur dengan benar menggunakan
+<c>date MMDDhhmmYYYY</c>. Gunakan waktu UTC.
+</p>
+
+<pre caption="Mengatur tanggal dan waktu UTC">
+<comment>(Periksa jam)</comment>
+livecd gentoo # <i>date</i>
+Mon Mar  6 00:14:13 UTC 2006
+
+<comment>(Atur tanggal dan waktu saat ini jika diperlukan)</comment>
+livecd ~ # <i>date 030600162006</i> <comment>(Formatnya adalah MMDDhhmmYYYY)</comment>
+Mon Mar  6 00:16:00 UTC 2006
+</pre>
+
+<p>
+Kemudian, download sebuah stage dari salah satu <uri
+link="/main/en/mirrors.xml">mirror</uri> kami. Masuk ke <path>/mnt/gentoo</path>
+lalu ekstrak stage tersebut dengan <c>tar xjpf &lt;tarbal stage3&gt;</c>.
+</p>
+
+<pre caption="Download sebuah arsip stage3">
+livecd gentoo # <i>links http://www.gentoo.org/main/en/mirrors.xml</i>
+<comment>(Pilih sebuah mirror, masuk ke direktori releases/x86/current/stages
+pilih stage3 anda, mungkin stage3-i686-2006.1.tar.bz2 lalu tekan D untuk
+mendownloadnya)</comment>
+
+<comment>(<b>Atau</b> download langsung dengan wget tanpa memilih mirror terdekat)</comment>
+livecd gentoo # <i>wget http://gentoo.osuosl.org/releases/x86/current/stages/stage3-i686-2006.1.tar.bz2</i>
+</pre>
+
+<pre caption="Ekstrak arsip stage3">
+livecd gentoo # <i>time tar xjpf stage3*</i>
+
+real  1m14.157s
+user  1m2.920s
+sys   0m7.530s
+</pre>
+
+<p>
+Instal snapshot Portage terbaru. Lakukan seperti arsip stage3: pilih mirror
+terdekat dari <uri link="/main/en/mirrors.xml">daftar</uri> mirror kami,
+download snapshot terbaru kemudian ekstrak.
+</p>
+
+<pre caption="Download snapshot Portage terbaru">
+livecd gentoo # <i>cd /mnt/gentoo/usr</i>
+livecd usr # <i>links http://www.gentoo.org/main/en/mirrors.xml</i>
+<comment>(Pilih sebuah mirror, masuk ke direktori snapshots/, pilih
+<b>portage-latest.tar.bz2</b> lalu tekan D untuk mendownloadnya)</comment>
+
+<comment>(<b>Atau</b> download langsung dengan wget tanpa memilih mirror terdekat)</comment>
+livecd gentoo # <i>cd /mnt/gentoo/usr</i>
+livecd usr # <i>wget http://gentoo.osuosl.org/snapshots/portage-latest.tar.bz2</i>
+</pre>
+
+<pre caption="Ekstrak snapshot Portage">
+livecd usr # <i>time tar xjf portage-lat*</i>
+
+real  0m40.523s
+user  0m28.280s
+sys   0m8.240s
+</pre>
+
+</body>
+</section>
+<section>
+<title>Melakukan Chroot</title>
+<body>
+
+<p>
+Mount filesystem <path>/proc</path>, salin file <path>/etc/resolv.conf</path>,
+lalu chroot ke lingkungan Gentoo anda.
+</p>
+
+<pre caption="Chroot">
+livecd usr # <i>cd /</i>
+livecd / # <i>mount -t proc proc /mnt/gentoo/proc</i>
+livecd / # <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/</i>
+livecd / # <i>chroot /mnt/gentoo /bin/bash</i>
+livecd / # <i>env-update &amp;&amp; source /etc/profile</i>
+>>> Regenerating /etc/ld.so.cache...
+</pre>
+
+</body>
+</section>
+<section>
+<title>Mengatur Zona Waktu Anda</title>
+<body>
+
+<p>
+Atur informasi zona waktu anda dengan menyalin file yang sesuai dari
+<path>/usr/share/zoneinfo</path> ke file <path>/etc/localtime</path>.
+</p>
+
+<pre caption="Menyalin file zona waktu anda">
+<comment>(Menggunakan Brussels sebagai contoh)</comment>
+livecd / # <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
+livecd / # <i>date</i>
+Wed Mar  8 00:46:05 CET 2006
+</pre>
+
+</body>
+</section>
+<section>
+<title>Mengatur Nama Host dan Domain</title>
+<body>
+
+<p>
+Atur nama host anda di <path>/etc/conf.d/hostname</path> dan
+<path>/etc/hosts</path>. Pada contoh berikut ini, kami menggunakan <c>mybox</c>
+sebagai nama host dan <c>at.myplace</c> sebagai nama domain. Anda boleh mengedit
+file konfigurasi dengan <c>nano</c> atau menggunakan perintah berikut ini:
+</p>
+
+<pre caption="Mengatur nama host dan domain">
+livecd / # <i>cd /etc</i>
+livecd etc # <i>echo "127.0.0.1 mybox.at.myplace mybox localhost" > hosts</i>
+livecd etc # <i>sed -i -e 's/HOSTNAME.*/HOSTNAME="mybox"/' conf.d/hostname</i>
+<comment>(Gunakan nama host yang telah didefinisikan lalu periksa)</comment>
+livecd etc # <i>hostname mybox</i>
+livecd etc # <i>hostname -f</i>
+mybox.at.myplace
+</pre>
+
+</body>
+</section>
+<section>
+<title>Konfigurasi Kernel</title>
+<body>
+
+<p>
+Instal sebuah source kernel (biasanya <c>gentoo-sources</c> atau
+<c>vanilla-sources</c>), konfigurasikan, kompilasi, lalu salin file
+<path>arch/i386/boot/bzImage</path> ke <path>/boot</path>.
+</p>
+
+<pre caption="Instal sebuah source kernel, kompilasi, lalu instal">
+livecd etc # <i>time emerge gentoo-sources</i>
+
+real  3m3.110s
+user  1m2.320s
+sys   0m34.990s
+livecd etc # <i>cd /usr/src/linux</i>
+livecd linux # <i>make menuconfig</i>
+
+<comment>(Konfigurasikan kernel anda seperti biasa dan pastikan agar modul
+raid dan lvm yang anda butuhkan dikompilasi di dalam kernel, yakni <b>bukan</b>
+sebagai modul. Hal ini juga berlaku untuk driver disk dan filesystem..)</comment>
+Multi-device support (RAID and LVM)  --->
+[*] Multiple devices driver support (RAID and LVM)
+  &lt;*&gt;   RAID support
+  &lt; &gt;     Linear (append) mode (NEW)
+  &lt;*&gt;     RAID-0 (striping) mode
+  &lt;*&gt;     RAID-1 (mirroring) mode
+  &lt; &gt;     RAID-10 (mirrored striping) mode (EXPERIMENTAL) (NEW)
+  &lt; &gt;     RAID-4/RAID-5 mode (NEW)
+  &lt; &gt;     RAID-6 mode (NEW)
+  &lt; &gt;     Multipath I/O support (NEW)
+  &lt; &gt;     Faulty test module for MD (NEW)
+  &lt;*&gt;   Device mapper support
+  &lt; &gt;     Crypt target support (NEW)
+  &lt; &gt;     Snapshot target (EXPERIMENTAL) (NEW)
+  &lt; &gt;     Mirror target (EXPERIMENTAL) (NEW)
+  &lt; &gt;     Zero target (EXPERIMENTAL) (NEW)
+  &lt; &gt;     Multipath target (EXPERIMENTAL) (NEW)
+  &lt; &gt;     Bad Block Relocation Device Target (EXPERIMENTAL) (NEW)
+
+livecd linux # <i>time make -j2</i>
+
+<comment>(Waktu yang dibutuhkan sangat tergantung kepada opsi-opsi yang anda pilih)</comment>
+real  5m5.869s
+user  4m32.320s
+sys   0m32.930s
+
+livecd linux # <i>make modules_install</i>
+livecd linux # <i>cp arch/i386/boot/bzImage /boot/kernel</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Konfigurasi Sistem</title>
+<body>
+
+<p>
+Edit <path>/etc/fstab</path> anda lalu ganti <c>BOOT</c>, <c>ROOT</c> dan
+<c>SWAP</c> dengan nama partisi yang sebenarnya. Jangan lupa untuk memeriksa
+filesystem yang anda gunakan agar sesuai dengan instalasi anda.
+</p>
+
+<pre caption="Contoh fstab">
+livecd linux # <i>cd /etc</i>
+livecd etc # <i>nano -w fstab</i>
+/dev/<i>md1</i>          /boot                   ext2  noauto,noatime  1 2
+/dev/<i>md3</i>          /                       ext3  noatime         0 1
+/dev/<i>sda2</i>         none                    swap  sw,pri=1        0 0
+/dev/<i>sdb2</i>         none                    swap  sw,pri=1        0 0
+/dev/vg/usr       /usr                    ext3  noatime         1 2
+/dev/vg/portage   /usr/portage            ext2  noatime         1 2
+/dev/vg/distfiles /usr/portage/distfiles  ext2  noatime         1 2
+/dev/vg/home      /home                   ext3  noatime         1 2
+/dev/vg/opt       /opt                    ext3  noatime         1 2
+/dev/vg/tmp       /tmp                    ext2  noatime         1 2
+/dev/vg/var       /var                    ext3  noatime         1 2
+/dev/vg/vartmp    /var/tmp                ext2  noatime         1 2
+</pre>
+
+<p>
+Konfigurasikan jaringan anda di <path>/etc/conf.d/net</path>. Tambahkan
+skrip init <c>net.eth0</c> ke runlevel default. Jika anda memiliki beberapa
+kartu jaringan, ciptakan symlink ke skrip init <c>net.eth0</c> lalu tambahkan
+juga ke runlevel default. Anda boleh menggunakan <c>nano</c> untuk mengedit
+<path>/etc/conf.d/net</path> with <c>nano</c> atau menggunakan perintah
+berikut ini:
+</p>
+
+<pre caption="Konfigurasi jaringan">
+livecd etc # <i>cd conf.d</i>
+livecd conf.d # <i>echo 'config_eth0=( "192.168.1.10/24" )' >> net</i>
+livecd conf.d # <i>echo 'routes_eth0=( "default via 192.168.1.1" )' >> net</i>
+livecd conf.d # <i>rc-update add net.eth0 default</i>
+<comment>(Jika anda mengkompilasi driver kartu jaringan anda sebagai modul,
+tambahkan ke /etc/modules.autoload.d/kernel-2.6)</comment>
+livecd conf.d # <i>echo r8169 >> /etc/modules.autoload.d/kernel-2.6</i>
+<comment>(Jika anda ingin melakukan koneksi ulang lewat ssh setelah melakukan reboot:)</comment>
+livecd conf.d # <i>rc-update add sshd default</i>
+</pre>
+
+<note>
+Emerge <c>pcmcia-cs</c> lalu tambahkan ke runlevel default jika anda
+memerlukannya.
+</note>
+
+<p>
+Tentukan password root dengan <c>passwd</c>.
+</p>
+
+<pre caption="Menentukan password root">
+livecd conf.d # <i>passwd</i>
+New UNIX password: <comment>masukkan_password</comment>
+Retype new UNIX password: <comment>masukkan_password_lagi</comment>
+passwd: password updated successfully
+</pre>
+
+<p>
+Periksa konfigurasi sistem di <path>/etc/rc.conf</path>,
+<path>/etc/conf.d/rc</path>, <path>/etc/conf.d/keymaps</path>,
+<path>/etc/conf.d/clock</path> lalu edit jika diperlukan.
+</p>
+
+<pre caption="Opsional: edit beberapa file konfigurasi">
+livecd conf.d # <i>nano -w /etc/rc.conf</i>
+livecd conf.d # <i>nano -w /etc/conf.d/rc</i>
+livecd conf.d # <i>nano -w /etc/conf.d/keymaps</i>
+livecd conf.d # <i>nano -w /etc/conf.d/clock</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Instalasi Utilitas Sistem</title>
+<body>
+
+<p>
+Instal utilitas RAID dan LVM2.
+</p>
+
+<pre caption="Instal tool RAID &amp; LVM2">
+livecd conf.d # <i>emerge mdadm lvm2</i>
+</pre>
+
+<p>
+Instal sebuah logger sistem seperti <c>syslog-ng</c> dan sebuah daemon cron
+seperti <c>vixie-cron</c>, lalu tambahkan ke runlevel default.
+</p>
+
+<note>
+Daemon cron bergantung kepada MTA. <c>mail-mta/ssmtp</c> akan diinstal sebagai
+dependensi. Jika anda ingin menggunakan MTA yang lebih advance, anda mungkin
+perlu menginstalnya sekarang. Jika anda sedang tergesa-gesa, biarkan ssmtp
+diinstal lalu buang nanti ketika anda akan menginstal MTA pilihan anda.
+</note>
+
+<pre caption="Instal sebuah syslogger dan sebuah daemon cron">
+livecd conf.d # <i>time emerge syslog-ng vixie-cron</i>
+
+real  1m54.099s
+user  1m2.630s
+sys   0m34.620s
+livecd conf.d # <i>rc-update add syslog-ng default</i>
+livecd conf.d # <i>rc-update add vixie-cron default</i>
+</pre>
+
+<p>
+Instal utilitas filesystem yang diperlukan (<c>xfsprogs</c>, <c>reiserfsprogs</c>
+atau <c>jfsutils</c>) dan utilitas jaringan (<c>dhcpcd</c> atau <c>rp-pppoe</c>)
+jika anda membutuhkannya.
+</p>
+
+<pre caption="Instal utilitas tambahan jika diperlukan">
+livecd conf.d # <i>emerge xfsprogs</i>           <comment>(Jika anda menggunakan filesystem XFS)</comment>
+livecd conf.d # <i>emerge jfsutils</i>           <comment>(Jika anda menggunakan filesystem JFS)</comment>
+livecd conf.d # <i>emerge reiserfsprogs</i>      <comment>(Jika anda menggunakan filesystem Reiser)</comment>
+livecd conf.d # <i>emerge dhcpcd</i>             <comment>(Jika anda membutuhkan klien DHCP)</comment>
+livecd conf.d # <i>USE="-X" emerge rp-pppoe</i>  <comment>(Jika anda menggunakan koneksi PPPoE ADSL)</comment>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Konfigurasi Bootloader</title>
+<body>
+
+<p>
+Emerge <c>grub</c> lalu konfigurasikan.
+</p>
+
+<pre caption="Emerge grub lalu edit file konfigurasinya">
+livecd conf.d # <i>time emerge grub</i>
+
+real  1m4.634s
+user  0m39.460s
+sys   0m15.280s
+livecd conf.d # <i>nano -w /boot/grub/grub.conf</i>
+</pre>
+
+<pre caption="Contoh grub.conf">
+default 0
+timeout 10
+
+title=Gentoo
+root (hd0,0)
+kernel /boot/kernel root=/dev/md3
+</pre>
+
+<pre caption="Instal grub pada kedua disk">
+livecd conf.d # <i>grub</i>
+Probing devices to guess BIOS drives. This may take a long time.
+
+grub> <i>root (hd0,0)</i>
+ Filesystem type is ext2fs, partition type 0x83
+
+grub> <i>setup (hd0)</i>
+ Checking if "/boot/grub/stage1" exists... yes
+ Checking if "/boot/grub/stage2" exists... yes
+ Checking if "/boot/grub/e2fs_stage1_5" exists... yes
+ Running "embed /boot/grub/e2fs_stage1_5 (hd0)"...  16 sectors are embedded.
+succeeded
+ Running "install /boot/grub/stage1 (hd0) (hd0)1+16 p (hd0,0)/boot/grub/stage2 /boot/
+grub/menu.lst"... succeeded
+Done.
+
+grub> <i>root (hd1,0)</i>
+ Filesystem type is ext2fs, partition type 0x83
+
+grub> <i>setup (hd1)</i>
+
+grub> <i>quit</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Reboot</title>
+<body>
+
+<p>
+Keluar dari lingkungan chroot, unmount semua filesystem lalu reboot:
+</p>
+
+<pre caption="Reboot">
+livecd conf.d # <i>exit</i>
+livecd / # <i>umount /mnt/gentoo/usr/portage/distfiles /mnt/gentoo/usr/portage /mnt/gentoo/usr</i>
+livecd / # <i>umount /mnt/gentoo/var/tmp /mnt/gentoo/tmp /mnt/gentoo/var /mnt/gentoo/opt</i>
+livecd / # <i>umount /mnt/gentoo/proc /mnt/gentoo/home /mnt/gentoo/boot /mnt/gentoo</i>
+livecd / # <i>reboot</i>
+<comment>(Jangan lupa untuk mengeluarkan CD)</comment>
+</pre>
+
+<p>
+Silakan ikuti bagian <uri
+link="gentoo-x86-quickinstall.xml#after-reboot">Menyelesaikan
+Instalasi</uri> pada panduan instalasi cepat x86 untuk menyelesaikan
+instalasi anda.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
