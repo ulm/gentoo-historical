@@ -29,7 +29,7 @@ cpv=$(cat ${2} | grep -v "^#" | grep -v "^[[:space:]]*#")
 packages=$(cat ${2} | grep -v "^#" | grep -v "^[[:space:]]*#" | cut -d" " -f1 | sort -u)
 
 echo "${cpv}" > /tmp/cpv.txt
-#echo "${packages}" > /tmp/packages.txt
+echo "${packages}" > /tmp/packages.txt
 
 # We actually make two passes.  Pass #1 is where we do our initial KEYWORDS.
 # This is so repoman doesn't find broken *DEPEND if our input file is not
@@ -44,7 +44,7 @@ do
 		if [ $(echo ${1} | grep '^~') ]
 		then
 			ekeyword ${1} ${ebuild}.ebuild
-		elif [ -n "$(grep "~${1}" ${ebuild}.ebuild)" ]
+		elif [ -n "$(grep "~${1}" ${ebuild}.ebuild | grep -v ~x86-fbsd)" ]
 		then
 			ekeyword ${1} ${ebuild}.ebuild
 		fi
@@ -99,13 +99,5 @@ done
 
 if [ -n "${failed_packages}" ]
 then
-_email="From: ${EMAIL}
-This email is to let you know that the following packages failed.
-You will need to fix these packages manually.
-
-${failed_packages}
-
-Thanks, kcommit."
-CMD="echo ${_email} |mail -s 'Failed packages from kcommit run!' ${EMAIL}"
-eval ${CMD}
+	echo -e "From: ${EMAIL}\r\nTo: ${EMAIL}\r\nSubject: Failed commits\r\n\r\nThis email is to let you know that the following packages failed.\r\nYou will need to fix these packages manually.\r\n${failed_packages}\r\n" | sendmail -f ${EMAIL} ${EMAIL}
 fi
