@@ -26,6 +26,7 @@ synopsis = dom.getElementsByTagName('synopsis') [0]
 print "<p>"
 print getText(synopsis.childNodes)
 print "</p>"
+print ""
 
 id = dom.getElementsByTagName('glsa') [0].getAttribute('id')
 
@@ -37,4 +38,4 @@ print "</p>"
 print ""
 print "</body>"
 print "</section>"
-
+print ""
