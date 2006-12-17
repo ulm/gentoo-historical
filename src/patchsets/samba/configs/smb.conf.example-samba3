@@ -3,6 +3,14 @@
 # here. Samba has a huge number of configurable options (perhaps too
 # many!) most of which are not shown in this example
 #
+# For a step to step guide on installing, configuring and using samba,
+# read the Samba-HOWTO-Collection. This may be obtained from:
+#  http://www.samba.org/samba/docs/Samba-HOWTO-Collection.pdf
+#
+# Many working examples of smb.conf files can be found in the
+# Samba-Guide which is generated daily and can be downloaded from:
+#  http://www.samba.org/samba/docs/Samba-Guide.pdf
+#
 # Any line which starts with a ; (semi-colon) or a # (hash) 
 # is a comment and is ignored. In this example we will use a #
 # for commentry and a ; for parts of the config file that you
@@ -16,7 +24,7 @@
 
 # 1. Server Naming Options:
 # workgroup = NT-Domain-Name or Workgroup-Name
-   workgroup = WORKGROUP
+   workgroup = MYGROUP
 
 # netbios name is the name you will see in "Network Neighbourhood",
 # but defaults to your hostname
@@ -24,10 +32,6 @@
 
 # server string is the equivalent of the NT Description field
    server string = Samba Server %v
-
-# Message command is run by samba when a "popup" message is sent to it.
-# The example below is for use with LinPopUp:
-; message command = /usr/bin/linpopup "%f" "%m" %s; rm %s
 
 # 2. Printing Options:
 # CHANGES TO ENABLE PRINTING ON ALL CUPS PRINTERS IN THE NETWORK
@@ -40,16 +44,6 @@
 # yours is non-standard. Currently supported print systems include:
 # bsd, sysv, plp, lprng, aix, hpux, qnx, cups
    printing = cups
-
-# Samba 3.x supports the Windows NT-style point-and-print feature. To
-# use this, you need to be able to upload print drivers to the samba
-# server. The printer admins (or root) may install drivers onto samba.
-# Note that this feature uses the print$ share, so you will need to 
-# enable it below.
-# printer admin = @<group> <user>
-   printer admin = @adm
-# This should work well for winbind:
-;   printer admin = @"Domain Admins"
 
 # 3. Logging Options:
 # this tells Samba to use a separate log file for each machine
@@ -234,7 +228,7 @@
 # The script must work from the command line when replacing the macros,
 # or the operation will fail. Check that groups exist if forcing a group.
 # Script for domain controller for adding machines:
-; add machine script = /usr/sbin/useradd -d /dev/null -g machines -c 'Machine Account' -s /bin/false -M '%u'
+; add machine script = /usr/sbin/useradd -d /dev/null -g machines -c 'Machine Account' -s /bin/false '%u'
 # Script for domain controller with LDAP backend for adding machines (You need
 # the IDEALX scripts, and to configure the smbldap_conf.pm first):
 ; add machine script = /usr/share/samba/scripts/smbldap-useradd.pl -w -d /dev/null -g machines -c 'Machine Account' -s /bin/false '%u'
@@ -243,17 +237,17 @@
 # Domain groups are now configured by using the 'net groupmap' tool
 
 # Samba Password Database configuration:
-# Samba now has runtime-configurable password database backends. Multiple
-# passdb backends may be used, but users will only be added to the first one
-# Default:
-; passdb backend = smbpasswd guest
-# TDB backen with fallback to smbpasswd and guest
-; passdb backend = tdbsam smbpasswd guest
+# Samba now has runtime-configurable password database backends.
+# smbpasswd is for backwards compatibility only Default (not recommended),
+# new installations should use tdbsam or ldap.
+; passdb backend = smbpasswd
+# TDB backend 
+; passdb backend = tdbsam
 # LDAP with fallback to smbpasswd guest
 # Enable SSL by using an ldaps url, or enable tls with 'ldap ssl' below.
-; passdb backend = ldapsam:ldaps://ldap.mydomain.com smbpasswd guest
+; passdb backend = ldapsam:ldaps://ldap.mydomain.com
 # Use the samba2 LDAP schema:
-; passdb backend = ldapsam_compat:ldaps://ldap.mydomain.com smbpasswd guest
+; passdb backend = ldapsam_compat:ldaps://ldap.mydomain.com
 
 # idmap uid account range:
 # This is a range of unix user-id's that samba will map non-unix RIDs to,
@@ -298,7 +292,7 @@
 # The example below excludes use of name resolution for machines that are NOT
 # on the local network segment
 # - OR - are not deliberately to be known via lmhosts or via WINS.
-; name resolve order = wins lmhosts bcast
+; name resolve order = wins host lmhosts bcast
 
 # Windows Internet Name Serving Support Section:
 # WINS Support - Tells the NMBD component of Samba to enable it's WINS Server
@@ -385,20 +379,10 @@
    comment = All Printers
    path = /var/spool/samba
    browseable = no
-# to allow user 'guest account' to print.
-   guest ok = yes
+# set to yes to allow user 'guest account' to print.
+   guest ok = no
    writable = no
    printable = yes
-   create mode = 0700
-# =====================================
-# print command: see above for details.
-# =====================================
-   print command = lpr-cups -P %p -o raw %s -r   # using client side printer drivers.
-;   print command = lpr-cups -P %p %s # using cups own drivers (use generic PostScript on clients).
-# The following two commands are the samba defaults for printing=cups
-# change them only if you need different options:
-;   lpq command = lpq -P %p
-;   lprm command = cancel %p-%j
 
 # This share is used for Windows NT-style point-and-print support.
 # To be able to install drivers, you need to be either root, or listed
