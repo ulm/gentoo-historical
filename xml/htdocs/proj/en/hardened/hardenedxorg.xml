@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/hardenedxorg.xml,v 1.9 2005/10/07 23:30:21 solar Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/hardenedxorg.xml,v 1.10 2006/12/21 22:02:35 phreak Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="hardenedxorg.xml">
@@ -13,13 +13,19 @@
 <author title="Contributor">
   <mail link="solar@gentoo.org">Ned Ludd</mail>
 </author>
+<author title="Contributor">
+  <mail link="phreak@gentoo.org">Christian Heim</mail>
+</author>
+<author title="Contributor">
+  <mail link="zaid_a@users.sourceforge.net">Zaid A.</mail>
+</author>
 
 <abstract>
 How to install and use Xorg on Hardened Gentoo
 </abstract>
 
-<version>1.4</version>
-<date>2005-06-01</date>
+<version>1.5</version>
+<date>2006-11-11</date>
 
 <chapter>
 <title>Background</title>
@@ -60,8 +66,41 @@ X loader could be modified to use that instead of home-brewing its own loader.  
 exists - dlopen(3) et. al. - and this is exactly what the dlloader uses.
 </p>
 
+<note>Starting with Xorg 7.0, dlloader is the default module loader for X.</note>
+	
 </body>
 </section>
+</chapter>
+
+<chapter>
+<title>Kernel Configuration options</title>
+<section>
+<title>CONFIG_PAX_KERNEXEC</title>
+<body>
+
+<p>
+The option 'CONFIG_PAX_KERNEXEC' is the kernel land equivalent of PAGEEXEC and MPROTECT. By enabling this option, it will get
+harder to inject and execute 'foreign' code in kernel memory itself. This option may also give you some strange experiences on
+a hardened Xorg setup (being the Mouse pointer being stuck on the left side of the screen). 
+Suggestion therefore is, to turn this option of by deselecting in in your config.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>CONFIG_GRKERNSEC_IO</title>
+<body>
+
+<p>
+Enabling this option will result in all ioperm(2) and iopl(2) calls returning an error messge. ioperm(2) and iopl(2) might be
+used to modify the running kernel. As you wish to run a Xorg server on top of your hardened kernel (mostly GRsecurity), you'll
+have to disable this config option, in order to get the XServer up and running.
+</p>
+
+</body>
+</section>
+
 </chapter>
 
 <chapter>
@@ -71,60 +110,13 @@ exists - dlopen(3) et. al. - and this is exactly what the dlloader uses.
 <body>
 
 <p>
-Now that you have seen the problems that elfloader has handling PIC modules, you must decide
-which route you would like to take to avoid using elfloader:
+Since Xorg 7.0 and up uses the dlloader instead of the elfloader by default, there is no need to do anything special to get Xorg
+compiling and working on a hardened profile.
 </p>
 
 </body>
 </section>
 
-<section>
-<title>Compile Xorg Statically</title>
-<body>
-
-<p>
-Compiling Xorg as a statically linked executable is the easiest solution to this problem at the moment since you
-can avoid the elfloader verses dlloader debate entirely.  If you choose to install Xorg this way then execute
-the following command:
-</p>
-
-<pre caption="Install Staticly Linked Xorg">
-echo "x11-base/xorg-x11 static" >> /etc/portage/package.use
-emerge x11-base/xorg-x11
-</pre>
-
-</body>
-</section>
-<section>
-<title>Use The dlloader</title>
-<body>
-
-<p>
-By compiling the X server with USE=dlloader
-</p>
-
-<p>
-The X server can be made to use a dlopen() based
-loader to handle modules and dependancies.  This is
-the newer, preferred way of installing Xorg.  To install using this 
-method execute the following command:
-</p>
-
-<pre caption="Use dlloader and Xorg">
-echo "x11-base/xorg-x11 dlloader" >> /etc/portage/package.use
-echo "x11-base/xorg-x11 ~x86" >> /etc/portage/package.keywords
-emerge x11-base/xorg-x11
-</pre>
-
-<impo>
-Although dlloader is a USE flag option for earlier versions of Xorg in portage, it only works on
-versions of Xorg greather than or equal to 6.8.0-r4.
-</impo>
-
-<note>USE=dlloader is now the default in the hardened profile.</note>
-
-</body>
-</section>
 </chapter>
 
 <chapter>
@@ -146,13 +138,8 @@ Configuration HOWTO found at:
 <chapter>
 <title>Known Issues</title>
 <section>
-<title>USE=dlloader Experiences</title>
+<title>The dlloader Experiences</title>
 <body>
-
-<p>
-Due to the nature of the dlloader along with the current state of development, you
-can expect to have varying degrees of success.
-</p>
 
 <p>
 Hardened Gentoo makes the default link strategy to resolve all symbols at load time, and enforces
@@ -162,13 +149,6 @@ dependencies and other issues that mean they cannot load unless lazy symbol reso
 around this issue, currently Gentoo compiles the Xorg modules and the server itself with the -nonow gcc flag.
 This fixes the "dlopen: undefined symbol" errors so previous methods of manually detecting and loading modules are
 no longer needed.
-</p>
-
-<p>
-To track current development, watch
-<uri>http://freedesktop.org/bugzilla/show_bug.cgi?id=400</uri>.  Also
-check <uri>http://freedesktop.org/~ajax/dlloader-status.txt</uri>
-for the latest dlloader problems.
 </p>
 
 <impo>
@@ -184,8 +164,8 @@ logs and configs.
 <body>
 
 <p>
-This is a known issue that can only be resolved by upstream vendors.
-Most notably, neither the binary Nvidia nor ATI drivers work currently with the dlloader.
+Binary drivers are currently not supported on the hardened profile and you are encouraged to use the
+opensource drivers instead.
 </p>
 
 </body>
@@ -196,20 +176,8 @@ Most notably, neither the binary Nvidia nor ATI drivers work currently with the 
 <body>
 
 <p>
-The PaX flag -M (MPROTECT) does not seem to work with Xorg as it causes a major
-slowdown.
+The PaX flags -P (PAGEEXEC), -S (SEGMEXEC), -M (MPROTECT) as well as -R (RANDMMAP) now work with Xorg. 
 </p>
-
-<p>
-The PaX flags -SP (non-executable stack), as well as -R (RANDMMAP) now work with
-Xorg.  In order to have these flags stay once you set them you will need to
-edit your <c>/etc/conf.d/chpax</c> file as shown below:
-</p>
-
-<pre caption="chpax file changes">
-PS_EXEC_EXEMPT="${PSE_misc} ${xine} ${wine} ${java} ${openoffice} ${mplayer}"
-RANDMMAP_EXEMPT="${java}"
-</pre>
 
 </body>
 </section>
