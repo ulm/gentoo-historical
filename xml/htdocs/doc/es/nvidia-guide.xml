@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/nvidia-guide.xml,v 1.16 2006/06/02 12:23:18 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/nvidia-guide.xml,v 1.17 2006/12/31 12:26:06 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/es/nvidia-guide.xml" lang="es">
@@ -13,6 +13,9 @@
 </author>
 <author title="Editor">
   <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
+</author>
+<author title="Editor">
+  <mail link="wolf31o2@gentoo.org">Chris Gianelloni</mail>
 </author>
 <author title="Traductor">
   <mail link="bass@gentoo.org">José Alberto Suárez López</mail>
@@ -34,8 +37,8 @@ tarjeta. Esta guía informa cómo instalar y configurar estos controladores.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.25</version>
-<date>2006-05-26</date>
+<version>1.28</version>
+<date>2006-10-23</date>
 
 <chapter>
 <title>Introducción</title>
@@ -43,23 +46,21 @@ tarjeta. Esta guía informa cómo instalar y configurar estos controladores.
 <body>
 
 <p>
-nVidia libera sus propios controladores de Linux que proveen buen rendimiento y
-aceleración 3D completa. Las versiones de los controladores se dividen hasta en
-dos partes: <c>nvidia-kernel</c> y <c>nvidia-glx</c>.
+nVidia libera sus propios controladores de Linux que proporcionan buen
+rendimiento y aceleración 3D completa. Hay dos manejadores en
+Portage, <c>nvidia-drivers</c> es para las tarjetas gráficas nVidia
+más recientes, mientras que <c>nvidia-legacy-drivers</c> soporta las
+tarjetas más viejas.
 </p>
 
-<p>
-<c>nvidia-kernel</c> es un controlador para el núcleo que maneja la comunicación
-a bajo nivel con su hardware de video. Simplemente es un módulo del núcleo,
-llamado <c>nvidia</c>, que se instala contra sus fuentes del núcleo y necesita
-ser cargado siempre y cuando quiera usar los controladores de nvidia.
-</p>
-
-<p>
-Así como el controlador para el núcleo, necesitará instalar la capa GLX de X11
-(<c>nvidia-glx</c>). Esta la usa X para renderear gráficos y que internamente
-usa el controlador del núcleo <c>nvidia-kernel</c> como interfaz al hardware.
-</p>
+<note>
+Previamente, Gentoo proporcionaba ebuilds por separado para el módulo
+nVidia del kernel (<c>nvidia-kernel</c>) y para las librerías GLX para
+X11 (<c>nvidia-glx</c>). Estos ebuilds han sido sustituidos en el árbol
+Portage por <c>nvidia-drivers</c> y <c>nvidia-legacy-drivers</c>. Si
+está usando <c>nvidia-kernel</c> y <c>nvidia-glx</c>, debe migrar a
+los nuevos paquetes.
+</note>
 </body>
 </section>
 </chapter>
@@ -73,7 +74,7 @@ usa el controlador del núcleo <c>nvidia-kernel</c> como interfaz al hardware.
 <p>
 Los controladores nVidia incluyen módulos para integrarlos a su núcleo actual.
 Para poder hacer esto, el núcleo debe soportar la carga de módulos. Si ha
-usado <c>genkernel</c> al configurar su núcleo entonces está listo, sino
+usado <c>genkernel</c> para configurar su núcleo entonces está listo, sino
 revise su configuración del núcleo para que el soporte esté habilitado:
 </p>
 
@@ -92,9 +93,14 @@ Processor and Features ---&gt;
   [*] MTRR (Memory Type Range Register) support
 </pre>
 
-<p>
-También, tendrá que agregar soporte para <c>agpgart</c> a su núcleo, ya sea
-compilado en él o como módulo.
+<p>Además, si tiene una tarjeta gráfica AGP, puede escoger activar el
+soporte <c>agpgart</c> del kernel, bien sea compilado o como
+módulo. Si no usa el agpgart del kernel, los manejadores usarán su
+propia implementación de <c>agpgart</c>, llamada <c>NvAGP</c>. En
+ciertos sistema se puede obtener mejor desempeño que la del kernel y
+en otros peor. Hará falta evaluar en el propio sistema para saber cual
+es el mejor desempeño. Si no está seguro qué hacer, use el agpgart del
+kernel.
 </p>
 
 <pre caption="Activar agpgart">
@@ -102,9 +108,9 @@ Device Drivers ---&gt;
 Character devices ---&gt;
 &lt;*&gt; /dev/agpgart (AGP Support)
 </pre>
-
 </body>
 </section>
+
 <section>
 <title>Observaciones específicas a la arquitectura</title>
 <body>
@@ -135,12 +141,13 @@ Graphics Support ---&gt;
 
 <p>
 Luego, debajo de "VESA driver type" seleccione <c>vesafb</c> o
-<c>vesafb-tng</c>:
+<c>vesafb-tng</c>. Si está usando un procesador AMD64, debe
+seleccionar <c>vesafb</c> en vez de <c>vesafb-tng</c>:
 </p>
 
 <pre caption="Seleccionar el tipo de framebuffer">
-( ) vesafb
-(X) vesafb-tng
+(X) vesafb
+( ) vesafb-tng
 </pre>
 
 <p>
@@ -149,26 +156,21 @@ Para mayor información, puede leer
 <c>vesafb</c> o busque la documentación para su framebuffer en
 <path>/usr/src/linux/Documentation/fb/</path>.
 </p>
-
 </body>
 </section>
+
 <section>
 <title>Continuar con la configuración del núcleo</title>
 <body>
 
 <p>
-Los módulos y bibliotecas nVidia están combinados en dos paquetes:
-<c>nvidia-glx</c> y <c>nvidia-kernel</c>. El primero son las bibliotecas GLX
-mientras que el segundo son los módulos del kernel.
-</p>
-
-<p>
-El ebuild nvidia-kernel descubre automáticamente su versión del núcleo basándose
-en el enlace simbólico <path>/usr/src/linux</path>. Por favor, asegúrese que
-tiene dicho enlace apuntando a las fuentes correctas y que su núcleo esté
-correctamente configurado. Vea la sección Configurando el Núcleo del <uri
-link="/doc/es/handbook/">Manual de Instalación</uri> para más detalles sobre
-configuración de su núcleo.
+Los ebuilds <c>nvidia-drivers</c> y <c>nvidia-legacy-drivers</c>
+automáticamente descubren su versión del núcleo basándose en el enlace
+simbólico <path>/usr/src/linux</path>. Por favor, asegúrese que tiene
+dicho enlace apuntando a las fuentes correctas y que su núcleo esté
+correctamente configurado. Vea la sección Configurando el Núcleo
+del <uri link="/doc/es/handbook/">Manual de Instalación</uri> para más
+detalles sobre configuración de su núcleo.
 </p>
 
 <p>
@@ -209,10 +211,11 @@ actualizar el enlace así:
 <body>
 
 <note>
-Desafortunadamente, ciertas tarjetas de vídeo antiguas no son soportadas por
-las nuevas versiones de <c>nvidia-glx</c> y <c>nvidia-kernel</c>. nVidia
-proporciona una <uri link="http://www.nvidia.com/object/IO_18897.html">lista de
-tarjetas soportadas</uri>. Por favor, chequee la lista antes de instalar los
+Desafortunadamente, ciertas tarjetas de video antiguas no son
+soportadas por las nuevas versiones de <c>nvidia-drivers</c>. nVidia
+proporciona
+una <uri link="http://www.nvidia.com/object/IO_18897.html">lista de
+tarjetas soportadas</uri>. Por favor, revísela antes de instalar los
 controladores.
 </note>
 
@@ -242,45 +245,42 @@ Quadro2 EX
 </pre>
 
 <p>
-Si posee una de estas tarjetas, tendrá que enmascarar las nuevas versiones de
-los controladores de nVidia e instalar una versión más antigua:
+Si su tarjeta aparece en esta lista, tendrá que instalar el
+paquete <c>nvidia-legacy-drivers</c> paquete para obtener soporte 3D.
 </p>
-
-<pre caption="Enmascarar los controladores más nuevos">
-# <i>echo "&gt;media-video/nvidia-kernel-1.0.6629-r5" &gt;&gt; /etc/portage/package.mask</i>
-# <i>echo "&gt;media-video/nvidia-glx-1.0.6629-r7" &gt;&gt; /etc/portage/package.mask</i>
-</pre>
-
 </body>
 </section>
+
 <section>
 <title>Instalar los controladores apropiados</title>
 <body>
 
 <p>
-Ahora es tiempo de instalar <c>nvidia-kernel</c> y <c>nvidia-glx</c>. Ya que
-<c>nvidia-glx</c> depende de <c>nvidia-kernel</c>, es suficiente instalar
-<c>nvidia-glx</c>.
+Ahora es tiempo de instalar los controladores.
 </p>
 
 <pre caption="Instalar los módulos nVidia">
-# <i>emerge nvidia-glx</i>
+<comment>(Si su tarjeta no aparece en la lista anterior de tarjetas viejas)</comment>
+# <i>emerge nvidia-drivers</i>
+<comment>(Si su tarjeta está en la lista)</comment>
+# <i>emerge nvidia-legacy-drivers</i>
 </pre>
 
 <impo>
 Cada vez que <uri link="/doc/es/kernel-upgrade.xml">compile un nuevo
-núcleo</uri> o recompile el actual, debe ejecutar <c>emerge nvidia-kernel</c>
-para reinstalar los módulos nVidia. <c>nvidia-glx</c> no se ve afectado por un
-cambio del núcleo e incluso no necesita ser reconstruido cuando
-actualiza/recompila X.
+núcleo</uri> o recompile el actual, debe ejecutar <c>emerge
+nvidia-drivers</c> o <c>emerge nvidia-legacy-drivers</c> para
+reinstalar los módulos nVidia.
 </impo>
 
 <p>
-Al concluir la instalación, ejecute <c>modprobe nvidia</c> para cargar el
-módulo del núcleo a la memoria.
+Al concluir la instalación, ejecute <c>modprobe nvidia</c> para cargar
+el módulo del núcleo a la memoria. Si es una actualización, primero
+debe remover el módulo anterior.
 </p>
 
 <pre caption="Cargar el módulo del kernel">
+# <i>lsmod | grep nvidia &amp;&amp; rmmod nvidia</i>
 # <i>modprobe nvidia</i>
 </pre>
 
@@ -308,15 +308,14 @@ dependiendo de la versión de su núcleo).
 <body>
 
 <p>
-Una vez que los controladores apropiados estén cargados, hará falta configurar
-su servidor X (XFree86 o Xorg) para que use el controlador <c>nvidia</c> en
+Una vez que los controladores apropiados estén cargados, hará falta
+configurar su servidor X para que use el controlador <c>nvidia</c> en
 vez del controlador <c>nv</c>.
 </p>
 
 <p>
-Abra <path>/etc/X11/xorg.conf</path> (o <path>/etc/X11/XF86Config</path> si
-todavía usa la antigua ubicación del archivo de configuración) con su editor
-de texto preferido (como <c>nano</c> o <c>vim</c>) y busque la sección
+Abra el archivo <path>/etc/X11/xorg.conf</path> con su editor de texto
+preferido (como <c>nano</c> o <c>vim</c>) y busque la sección
 <c>Device</c>. Allí cambie la línea <c>Driver</c>:
 </p>
 
@@ -383,7 +382,7 @@ acceso a los archivos de dispositivo nvidia:
 
 <p>
 Esto tal vez no sea totalmente necesario si no está usando <c>udev</c>, pero no
-hace daño alguno, ya que es una actualización a futuro :)
+hace daño alguno, ya que es una actualización a futuro.
 </p>
 </body>
 </section>
@@ -426,20 +425,19 @@ la variable USE a su <path>/etc/make.conf</path> o agréguela a
 Hecho esto, ejecute <c>emerge -uD --newuse world</c> para recompilar las
 aplicaciones que se benefician de este cambio en la variables USE.
 </p>
-
 </body>
 </section>
+
 <section>
 <title>Usar la herramienta de configuración de nVidia</title>
 <body>
 
 <p>
-Desde que nVidia liberó la versión 1.0.6106 de su controlador también le
-proporciona una herramienta de configuración. Esta le permite cambiar la
-configuración gráfica sin necesidad de reiniciar el servidor X y está
+Desde que nVidia liberó la versión 1.0.6106 de su controlador también
+proporciona una herramienta de configuración que permite cambiar la
+configuración gráfica sin necesidad de reiniciar el servidor X. Está
 disponible en Portage como <c>media-video/nvidia-settings</c>.
 </p>
-
 </body>
 </section>
 </chapter>
@@ -478,20 +476,6 @@ a "discrete" y reinicie Linux. Deberá poder comprobar que no hay entradas
 </section>
 
 <section>
-<title>Recibo advertencias acerca de pilas de 4K no soportadas</title>
-<body>
-
-<p>
-Los paquetes <c>nvidia-kernel</c> previos a la versión 1.0.6106 sólo soportan
-núcleos que usen pilas de 8K. Los núcleos más recientes (del 2.6.6 en adelante)
-soportan pilas de 4K también. No seleccione pilas de 4K en su configuración del
-núcleo si está usando un paquete <c>nvidia-kernel</c> de ésta versión. Puede
-encontrar esta opción bajo la sección <c>Kernel Hacking</c>.
-</p>
-
-</body>
-</section>
-<section>
 <title>
   Cuando intento cargar el módulo del núcleo recibo el mensaje "no such device"
 (no hay tal dispositivo)
@@ -510,52 +494,6 @@ directiva <e>Assign IRQ to VGA</e> (Asignar IRQ a VGA) está activada.
 </p>
 </body>
 </section>
-<section>
-<title>
-  Obtengo el mensaje "no screens found" y las bitácoras (logs) mencionan
-  "Failed to initialize the NVIDIA kernel module!"
-</title>
-<body>
-
-<p>
-Lo más probable es que falten los archivos de dispositivo
-<path>/dev/nvidia*</path>. Los puede crear usando <c>NVmakedevices.sh</c>:
-</p>
-
-<pre caption="Crear los nodos de dispositivo nvidia">
-# <i>/sbin/NVmakedevices.sh</i>
-</pre>
-
-<p>
-Si sus dispositivos <path>/dev/nvidia</path> siguen estando ausentes
-cada vez que reinicia, entonces lo más probable es que udev no esté creando
-automáticamente los nodos de dispositivos apropiados. Puede corregir esto
-ejecutando nuevamente <c>NVmakedevices.sh</c> y posteriormente edite el
-fichero <path>/etc/conf.d/rc</path> como se muestra a continuación:
-</p>
-
-<pre caption="Editar /etc/conf.d/rc">
-RC_DEVICE_TARBALL="yes"
-</pre>
-
-<p>
-Esto hará que se conserven sus nodos <path>/dev/nvidia</path> incluso en caso de
-que reinicie.
-</p>
-
-<note>
-De forma alternativa puede intentar reinstalar los últimos <c>nvidia-kernel</c>
-y <c>nvidia-glx</c> a partir la serie 8xxx. Al momento de redacción de este
-documento, ambos todavía estaban marcados ~arch (i.e. en la rama de pruebas).
-Estos controladores ya no dependen de hotplug o udev para crear los nodos de
-dispositivo apropiados, así que no necesitará ejecutar <c>NVmakedevices.sh</c>.
-En cambio, el controlador X creará por si mismo sus ficheros
-<path>/dev/nvidia</path> cuando inicie el servidor X. Sin embargo, esto requiere
-que use una versión reciente del núcleo (2.6.14 o superior).
-</note>
-
-</body>
-</section>
 </chapter>
 
 <chapter>
@@ -571,7 +509,10 @@ ver con el siguiente comando:
 </p>
 
 <pre caption="Ver la documentación de NVIDIA">
-# <i>less /usr/share/doc/nvidia-glx-*/README.txt.gz</i>
+<comment>(para nvidia-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-drivers-*/README.gz</i>
+<comment>(para nvidia-legacy-drivers)</comment>
+$ <i>less /usr/share/doc/nvidia-legacy-drivers-*/README.gz</i>
 </pre>
 </body>
 </section>
@@ -629,7 +570,6 @@ Section "Device"
   VideoRam   65536
 EndSection
 </pre>
-
 </body>
 </section>
 </chapter>
