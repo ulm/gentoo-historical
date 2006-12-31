@@ -3,9 +3,9 @@
 import sys
 import config
 import cgi
-import ebuilddb
 import gentoo
 import os
+import re
 from MySQLdb import escape_string
 
 form = cgi.FieldStorage()
@@ -32,7 +32,24 @@ def query_to_dict(q):
 	return pkginfo
 
 def write_to_cache(s):
-	open(cachefile,'w').write(s)
+    try:
+        open(cachefile,'w').write(s)
+    except IOError:
+        pass
+
+def sort_by_weight(a, b):
+    """Right now we just sort based on whether the sstring is in the name"""
+    a_name = a['name']
+    b_name = b['name']
+    
+    a_match = re.search(sstring, a_name, re.IGNORECASE)
+    b_match = re.search(sstring, b_name, re.IGNORECASE)
+    
+    if a_match and b_match:
+        return 0
+    if a_match:
+        return -1
+    return 1
 
 # if it's in the cache, just write that out
 qs = sys.argv[1]
@@ -45,9 +62,10 @@ if os.path.exists(cachefile):
 escaped = escape_string(sstring)
 query = ('SELECT category,name,homepage,description,license '
 	'FROM package WHERE name REGEXP "%s" or description REGEXP "%s" '
-	'LIMIT %s,%s' 
+	'ORDER BY category LIMIT %s,%s' 
 	% (escaped,escaped,offset,config.MAXPERPAGE))
 
+import ebuilddb
 db = ebuilddb.db_connect()
 c = db.cursor()
 try:
@@ -62,24 +80,23 @@ if not results:
 	' cellspacing="0"><tr><td colspan="3" class="fields">'
 	'Nothing found.<br></td></tr>\n'
 	'<tr><td class="item" colspan="3">'
-	'<img '
-	'src="%s/?category=generic"'
-	'align="right" alt=""> <p>I could not find any ebuild that match'
+	'<p>I could not find any ebuild that match'
 	' your query.  Try a different query or check the'
 	' <a HREF="%s">'
-	'fresh ebuilds main page</a>.</p></td></tr></table>\n'
-	'</div>\n' % (config.ICONS,config.FEHOME))
+	'packages.gentoo.org main page</a>.</p></td></tr></table>\n'
+	'</div>\n' % config.FEHOME)
 	sys.stdout.write(s)
 	write_to_cache(s)
 	sys.exit(0)
 
 pkgs = [ query_to_dict(i) for i in results ]
+pkgs.sort(sort_by_weight)
 
-s = ''
-for pkg in pkgs:
-	#print pkg
-	html = gentoo.package_to_html(pkg,db)
-	s = '%s\n%s<br>\n<br>\n' % (s,gentoo.package_to_html(pkg,db))
+s = '\n'.join([gentoo.package_to_html(pkg,db) for pkg in pkgs])
+#for pkg in pkgs:
+#	#print pkg
+#	html = gentoo.package_to_html(pkg,db)
+#	s = '%s\n%s' % (s,gentoo.package_to_html(pkg,db))
 
 if offset != "0":
 	s = '%s<a href="?sstring=%s;offset=%s">[Previous]</a> ' % (s,sstring,int(offset) - config.MAXPERPAGE)

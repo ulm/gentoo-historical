@@ -1,4 +1,4 @@
-#!/usr/bin/python -OO
+#!/usr/bin/python -O
 
 import sys
 import config
@@ -18,7 +18,7 @@ def error():
 	'<tr><td class="fields">Error in request</td></tr><br>\n'
 	'<tr><td class="item"><img src="%s/?category=generic" align="right" alt="">'
 	'<p>An error was encountered processing your request.  Request a '
-	'different page or check the <a href="%s">fresh ebuilds main page</a>.'
+	'different page or check the <a href="%s">packages.gentoo.org main page</a>.'
 	'</p></td></tr>'
 	'</table>'
 	'</div>') % (config.ICONS,config.FEHOME)
@@ -73,13 +73,17 @@ c = db.cursor()
 
 extra = ''
 if arch:
-	if branch == 'stable':
-		extra = ' AND ebuild.arch REGEXP "^%s| %s" ' % (arch,arch)
-	elif branch == 'testing':
-		extra = ' AND ebuild.arch REGEXP "^~%s| ~%s" ' % (arch,arch)
-	else:
-		extra = ' AND ebuild.arch LIKE "%%%s%%" ' % arch
-		
+    stable_extra = ('FIND_IN_SET("%s", ebuild.arch) > 0 AND '
+        'FIND_IN_SET("%s", ebuild.prevarch) = 0 ' % (arch, arch))
+    testing_extra = ('FIND_IN_SET("~%s", ebuild.arch) > 0 AND '
+        'FIND_IN_SET("%s", ebuild.prevarch) = 0 ' % (arch, arch))
+    if branch == 'stable':
+        extra = ' AND (%s) ' % stable_extra
+    elif branch == 'testing':
+        extra = ' AND (%s) ' % testing_extra
+    else:
+        extra = ' AND ((%s) OR (%s)) ' % (stable_extra, testing_extra)
+
 query = ('SELECT ebuild.category,'
 	'ebuild.name,'
 	'version,'
@@ -88,9 +92,9 @@ query = ('SELECT ebuild.category,'
 	'changelog,'
 	'arch,'
 	'homepage,'
-	'license '
+	'license, is_masked '
 	'FROM ebuild,package '
-	'WHERE TO_DAYS(when_found) = TO_DAYS("%s-%02d-%02d") '
+	'WHERE SUBSTRING(when_found FROM 1 FOR 8) = "%s%02d%02d" '
 	'AND ebuild.name = package.name '
 	'AND ebuild.category = package.category %s'
 	'ORDER BY when_found desc' %
@@ -109,4 +113,4 @@ print s
 if today[:3] != (year,month,day):
 	filename = os.path.join(config.LOCALHOME,'daily','cache',
 		'%d%02d%02d-%s-%s.html' % (year,month,day,arch,branch))
-	open(filename,'w').write(s)	
+	open(filename,'w').write(s)

@@ -16,7 +16,7 @@ def delete_package(db,package):
     category, name = package[:2]
     c = db.cursor()
     query = ('DELETE FROM package WHERE name="%s" AND category="%s"' %
-        (category,name))
+        (name,category))
     #print query
     c.execute(query)
 
