@@ -33,28 +33,26 @@ def head():
         s+= '<link type="image/x-icon" href="%s" rel="shortcut icon">\n' \
                 % config.FAVICON
     s+= ('<link rel="alternate" type="application/rss+xml" title="Portage '
-        'Updates" href="%s/gentoo.rss">\n' % config.FEHOME).replace('//',
-                '/')
+        'Updates" href="/gentoo.rss">\n')
     s+= ('<link rel="alternate" type="application/rss-xml" '
-        'title="Most Recently Introduced Packages" href="%s/feeds/new.rss">\n'
-        % config.FEHOME).replace('//', '/')
+        'title="Most Recently Introduced Packages" href="/feeds/new.rss">\n')
 
     for arch in archList:
         s+= (
             '<link rel="alternate" type="application/rss+xml" title="Portage '
-            'Updates for %s" href="%s/archs/%s/gentoo.rss">\n'
-            % (arch, config.FEHOME, arch)
-            ).replace('//', '/')
+            'Updates for %s" href="/archs/%s/gentoo.rss">\n'
+            % (arch, arch)
+            )
         s+= (
             '<link rel="alternate" type="application/rss+xml" title="Portage '
-            'Updates for %s (stable)" href="%s/archs/%s/stable/gentoo.rss">\n'
-            % (arch, config.FEHOME, arch)
-            ).replace('//', '/')
+            'Updates for %s (stable)" href="/archs/%s/stable/gentoo.rss">\n'
+            % (arch, arch)
+            )
         s+= (
             '<link rel="alternate" type="application/rss+xml" title="Portage '
-            'Updates for %s (testing)" href="%s/archs/%s/testing/gentoo.rss">\n'
-            % (arch, config.FEHOME, arch)
-            ).replace('//', '/')
+            'Updates for %s (testing)" href="/archs/%s/testing/gentoo.rss">\n'
+            % (arch, arch)
+            )
     s+= '<title>Gentoo Online Package Database</title>\n</head>\n'
     return s
 
