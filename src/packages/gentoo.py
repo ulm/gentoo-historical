@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.16 $"
+__revision__ = "$Revision: 1.16.2.1 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -222,25 +222,7 @@ def general_info_to_html(pkg):
 def create_similar_pkgs_link(pkg):
     """Create a link to similar packages"""
 
-    def strip_chars(mystring):
-        newstring = ''
-        for char in mystring:
-            if char not in string.punctuation:
-                newstring = newstring + char
-            else:
-                newstring = newstring + ' '
-        return newstring
-
-    description = strip_chars(pkg['description'].lower())
-
-    words = [word for word in description.split()
-        if word and len(word)>2 and word not in config.EXCLUDED_FROM_SIMILAR]
-    words = words[:config.SIMILAR_MAX_WORDS] + [pkg['name']]
-    #query = ['[[:<:]]%s[[:>:]].*' % word for word in words]
-    query = ['[[:<:]]%s.*' % word for word in words]
-    query = '(%s){%s,}' % ('|'.join(query), config.SIMILAR_MIN_MATCHES)
-    url = '%ssearch/?sstring=%s' % (config.FEHOME, escape(query))
-    return '<a href="%s">Similar</a>' % url
+    return '<a href="/similar/?package=%(category)s/%(name)s">Similar</a>' % pkg
 
 def create_related_bugs_link(pkg):
     """Create a link to related bugs"""
@@ -299,9 +281,9 @@ def get_most_recent(db, max=config.MAXPERPAGE, arch="", branch="", new = False):
     if new:
         extra = ('%s AND package.new=1 ' % extra)
 
-    query = """SELECT ebuild.category,ebuild.name,version,when_found,description,
+    query = """SELECT ebuild.category,ebuild.name,version,ebuild.when_found,description,
     changelog,arch,homepage,license,is_masked FROM ebuild,package WHERE ebuild.name=\
-    package.name AND ebuild.category=package.category %s ORDER by when_found DESC \
+    package.name AND ebuild.category=package.category %s ORDER by ebuild.when_found DESC \
     LIMIT %s""" % (extra,max)
     c.execute(query)
     results = c.fetchall()
