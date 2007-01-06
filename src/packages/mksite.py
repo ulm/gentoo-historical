@@ -61,6 +61,7 @@ def do_arch():
 
     # create arch dirs
     arch_dir = config.LOCALHOME + '/archs'
+    index = open(config.FELIB + '/index.shtml', 'r').read()
     for arch in ['.'] + archList:
         either = arch_dir + '/' + arch
         stable = either + '/stable'
@@ -78,9 +79,13 @@ def do_arch():
         open(stable + '/archnav.html', 'w').write(archbar)
         archbar = genarchbar(config.FEHOME, arch, 'testing')
         open(testing + '/archnav.html', 'w').write(archbar)
+        
+        # index.shtml
+        open(either + '/index.shtml', 'w').write(index)
+        open(stable + '/index.shtml', 'w').write(index)
+        open(testing + '/index.shtml', 'w').write(index)
 
     # main /arch dir
-    index = open(config.FELIB + '/index.shtml', 'r').read()
     archbar = genarchbar(config.FEHOME, '', '')
     open(arch_dir + '/archnav.html', 'w').write(archbar)
     open(arch_dir + '/index.shtml', 'w').write(index)
