@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.16.2.1 $"
+__revision__ = "$Revision: 1.16.2.2 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -60,8 +60,8 @@ def license_to_html(license):
     license = license.replace('(', '')
     license = license.replace(')', '')
     pieces = license.split()
-    html = ['<a href="http://www.gentoo.org/cgi-bin/viewcvs.cgi/*checkout*/'
-        'licenses/%s">%s</a>' % (piece, piece) for piece in pieces]
+    html = ['<a href="http://sources.gentoo.org/viewcvs.py/*checkout*/'
+        'gentoo-x86/licenses/%s">%s</a>' % (piece, piece) for piece in pieces]
     return '<br>\n'.join(html)
 
 def package_to_html(pkginfo, db, full=False):
@@ -183,8 +183,8 @@ def general_info_to_html(pkg):
 
     import forums
 
-    changelogurl = ('http://www.gentoo.org/cgi-bin/viewcvs.cgi/*checkout*/'
-        '%s/%s/ChangeLog' % (pkg['category'],pkg['name']))
+    changelogurl = ('http://sources.gentoo.org/viewcvs.py/*checkout*/'
+        'gentoo-x86/%s/%s/ChangeLog' % (pkg['category'],pkg['name']))
     cat_header = '<th class="category">Category</th>'
     license_header = '<th class="license">License</th>'
     category = ('<td class="category">'
