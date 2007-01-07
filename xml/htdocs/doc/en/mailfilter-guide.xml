@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/mailfilter-guide.xml,v 1.16 2006/12/10 04:51:21 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/mailfilter-guide.xml,v 1.17 2007/01/07 18:06:34 nightmorph Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/en/mailfilter-guide.xml">
@@ -23,8 +23,8 @@ SPF.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.10</version>
-<date>2006-05-22</date>
+<version>0.11</version>
+<date>2007-01-07</date>
 
 <chapter>
 <title>Introduction</title>
@@ -292,10 +292,13 @@ smtp-amavis     unix -        -       n     -       2  smtp
 </pre>
 
 <note>
-The <c>smtp-amavis</c> line specifies that a maximum of two of these
-processes may run at any time. If you need a greater degree of
-concurrency tune this number to fit your needs. Remember that to match
-the number with <c>$max_servers</c> in <path>amavisd.conf</path>
+The <c>smtp-amavis</c> line specifies that a maximum of two of these processes
+may run at any time. If you need a greater degree of concurrency tune this
+number to fit your needs. Remember that to match the number with
+<c>$max_servers</c> in <path>amavisd.conf</path>. Keep in mind that
+<c>amavisd-new</c> is quite memory-intensive and raising the amount of
+<c>amavisd-new</c> processes too high can easily lead to memory starvation and
+heavy swapping, which leads to drastically reduced performance.
 </note>
 
 <note>
@@ -1635,7 +1638,7 @@ Your MySQL connection id is 78 to server version: 4.0.18-log
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 mysql> <i>create database maildb;</i>
-mysql> <i>GRANT ALL PRIVILEGES ON maildb.* TO 'mail'@'localhost' IDENTIFIED BY 'very_secret_password';</i>
+mysql> <i>GRANT INSERT,UPDATE,DELETE,SELECT ON maildb.* TO 'mail'@'localhost' IDENTIFIED BY 'very_secret_password';</i>
 mysql> <i>use maildb;</i>
 </pre>
 
@@ -1809,9 +1812,10 @@ $sql_select_policy = 'SELECT *,users.id FROM users,policy'.
 <body>
 
 <p>
-As of Spamassassin 3.0 it is possible to store the Bayes and AWL
-data in a MySQL database. Here I will show how to easily
-accomplish this.
+As of Spamassassin 3.0 it is possible to store the Bayes and AWL data in a MySQL
+database. We will use MySQL as the backend as it can generally outperform other
+databases. Also, using MySQL for both sets of data makes system management much
+easier. Here I will show how to easily accomplish this.
 </p>
 
 <p>
@@ -1827,7 +1831,7 @@ Your MySQL connection id is 78 to server version: 4.0.18-log
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 mysql> <i>create database dbname;</i>
-mysql> <i>GRANT ALL PRIVILEGES ON dbname.* TO 'dbuser'@'localhost' IDENTIFIED BY 'another_very_secret_password';</i>
+mysql> <i>GRANT INSERT,UPDATE,DELETE,SELECT ON dbname.* TO 'dbuser'@'localhost' IDENTIFIED BY 'another_very_secret_password';</i>
 mysql> <i>use dbname;</i>
 </pre>
 
@@ -1920,26 +1924,34 @@ to keep it follow these instructions:
 </pre>
 
 <note>
-Note that the last step should only be performed after the MySQL database
-and <path>local.cf</path> has been updated.
+Note that the last step should only be performed after the MySQL database and
+<path>secrets.cf</path> have been updated.
 </note>
 
 <p>
 Now give Spamassassin the required info:
 </p>
 
-<pre caption="Modifying /etc/mail/spamassassin/local.cf">
-<comment>(Tell Spamassissin to use MySQL for bayes data</comment>
+<pre caption="Modifying /etc/mail/spamassassin/secrets.cf">
+<comment>(Tell Spamassassin to use MySQL for bayes data</comment>
 bayes_store_module              Mail::SpamAssassin::BayesStore::SQL
 bayes_sql_dsn                   DBI:mysql:sa_bayes:localhost:3306
 bayes_sql_username              db_name
 bayes_sql_password              another_very_secret_password
 
-<comment>(Tell Spamassissin to use MySQL for AWL data</comment>
+<comment>(Tell Spamassassin to use MySQL for AWL data</comment>
 auto_whitelist_factory          Mail::SpamAssassin::SQLBasedAddrList
 user_awl_dsn                    DBI:mysql:sa_bayes:localhost:3306
 user_awl_sql_username           db_name
 user_awl_sql_password           another_very_secret_password
+</pre>
+
+<p>
+Next, change its permissions for proper security:
+</p>
+
+<pre caption="Changing permissions">
+# <i>chmod 400 /etc/mail/spamassassin/secrets.cf</i>
 </pre>
 
 <note>
