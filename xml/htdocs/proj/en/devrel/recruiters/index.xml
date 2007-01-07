@@ -128,56 +128,361 @@
 	<extrachapter>
 	<title>Steps for adding a new developer</title>
 	<section>
+	<title>1. Adding the new developer to LDAP</title>
 	<body>
-	<p>Make sure that the new developer has operator status in #gentoo-dev.</p>
-	<p>Add the developer's account to dev.gentoo.org
-	(toucan.gentoo.org).  Check <c>/etc/passwd</c> for the last
-	<b>developer</b> account.  Please note that other types of accounts
-	exist and they have UIDs in different ranges.  Run
-	<c>sudo /usr/sbin/superadduser</c>.  The UID should be the most recent
-	incremented by one (760 if the last was 759).  The rest of the fields
-	can be just defaults, other than the real name.  Set a password so that
-	the user can login and change it for mail purposes.  Run
-	<c>sudo /usr/bin/rvim /home/(new developer name)/.ssh/authorized_keys</c>
-	and paste their SSH public key there. Have them confirm that they can
-	login via SSH.  If there are problems, doublecheck the SSH key.
-	The developer should be told to change their password from the one you
-	assigned, and then pointed to the
-	<uri link="http://www.gentoo.org/proj/en/infrastructure/dev-email.xml">
-	developer email how-to</uri> to set up email.</p>
+	<p>At first, start adding the new developer to LDAP. This requires you to
+	<c>ssh</c> to <i>roadrunner.gentoo.org</i> and use the <c>perl_ldap</c> script to create the new
+	account.</p>
 
-	<p>If you have the permissions to do so, login to the CVS box
-	and run: <c>sudo /usr/sbin/superadduser</c> and give them the same UID
-	as on the dev box.  Also make sure to add them to the <c>cvs</c> group
-	(and leave them in the default users group). If you do not have access
-	to the CVS server, contact kingtaco or kloeri.</p>
+	<pre caption="Creating the initial UID in LDAP">
+<comment>phreak</comment>@celsius ~ <comment>#</comment> ssh roadrunner.gentoo.org
+<comment>phreak</comment>@roadrunner ~ <comment>#</comment> perl_ldap -b recruiters -c
+Enter LDAP Password:
+
+LDAP Perl interface v1.0
+[ou=devs] >> A hyakuhei
+Adding LDAP user hyakuhei
+Enter First Name: Robert
+Enter Last Name: Clark
+Enter LDAP Password:
+
+done!</pre>
+
+	<p>Afterwards, the new developer should look like this:</p>
+
+	<pre caption="Informations present in LDAP after addition">
+[ou=devs] >> s hyakuhei
+Searching...
+------------------------------------------------------------------------
+dn:uid=hyakuhei,ou=devs,dc=gentoo,dc=org
+
+             uid: hyakuhei
+              cn: Robert Clark
+       givenName: Robert
+              sn: Clark
+    userPassword: {crypt}$1$HP/3wW0V$XUMrrFeQDHiMSGDOIUAbi/
+shadowLastChange: 13520
+       shadowMax: 99999
+   shadowWarning: 15
+      loginShell: /bin/bash
+   homeDirectory: /home/hyakuhei
+           gecos: Robert Clark
+  shadowInactive: 15
+    shadowExpire: 14883
+       gidNumber: 100
+       uidNumber: 2159
+        birthday: undefined
+  gentooLocation: undefined
+     gentooRoles: undefined
+      gentooJoin: 07 January 2007
+            herd: undefined
+    gentooStatus: active
+          gpgkey: undefined
+  gpgfingerprint: undefined
+     objectClass: top
+                  person
+                  organizationalPerson
+                  gentooDev
+                  inetOrgPerson
+                  posixAccount
+                  shadowAccount
+                  ldapPublicKey</pre>
+
+	<p>Next step is to fill the remaining informations needed, for example <c>birthday</c>,
+	<i>gentooLocation</i> and those others listed as <i>undefined</i>.</p>
+
+	<pre caption="Updating the attribute gentooLocation">
+[ou=devs] >> u hyakuhei
+[hyakuhei, ou=devs] >> M gentooLocation "Wales, UK"
+Modifying LDAP user hyakuhei
+done!</pre>
+
+	<p>Same scheme applies to all those other <i>undefined</i> elements.</p>
+
+	<p>Afterwards it should look like this:</p>
+	<pre caption="Completely filled informations">
+[ou=devs] >> s hyakuhei
+Searching...
+------------------------------------------------------------------------
+dn:uid=hyakuhei,ou=devs,dc=gentoo,dc=org
+
+             uid: hyakuhei
+              cn: Robert Clark
+       givenName: Robert
+              sn: Clark
+    userPassword: {crypt}$1$HP/3wW0V$XUMrrFeQDHiMSGDOIUAbi/
+shadowLastChange: 13520
+       shadowMax: 99999
+   shadowWarning: 15
+      loginShell: /bin/bash
+   homeDirectory: /home/hyakuhei
+           gecos: Robert Clark
+  shadowInactive: 15
+    shadowExpire: 14883
+       gidNumber: 100
+       uidNumber: 2159
+      gentooJoin: 07 January 2007
+            herd: undefined
+    gentooStatus: active
+     objectClass: top
+                  person
+                  organizationalPerson
+                  gentooDev
+                  inetOrgPerson
+                  posixAccount
+                  shadowAccount
+                  ldapPublicKey
+  gentooLocation: Wales, UK
+        birthday: 29 June 1984
+     gentooRoles: Security/log monitoring apps, Auditing
+          gpgkey: 0x2217D168
+  gpgfingerprint: 4C01 D375 8AEF CB2D 3AED  3B2D 119C 7E35 2217 D168</pre>
+
+	<p>Last step in the LDAP procedure is to create the <i>sshPublicKey</i> attribute.</p>
+
+	<p>This first method requires the public ssh-key of the developer somewhere on
+	<i>roadrunner</i> in order to import it this way into LDAP.</p>
+
+	<pre caption="Creating the attribute sshPublicKey (file method)">
+<comment>phreak</comment>@roadrunner ~ <comment>#</comment> perl_ldap -b recruiters -M sshPublicKey "$(&lt;hyakuhei.pub)" hyakuhei
+Modifying LDAP user hyakuhei
+done!</pre>
+
+	<pre caption="Creating the attribute sshPublicKey (copy+paste method)">
+[hyakuhei, ou=devs] >> C sshPublicKey "ssh-dss AAAAB3NzaC1kc3MAAACBAKmRjZ21SqPHwRXgkWDVuLfSZ5FOSV26xaV3Fnsc68r9caDWMZyD8PAJfXUeDXYOcUt4F3ZB+VL3DQSGg4ZEf4XVoNIOVnu87QaQyMJYT+u2EPsTJv99HZJM+tGT/ng6JfnRMWYdEDAUJ6iKZLNPKt+KWH7KprlHxRUJzd1MpbsVAAAAFQD9i0iTAesG4A1PJwT232+6IxtDlwAAAIEAoVtcO/ef4pd5WdJaeneOlmaFEF+P3lBbkaomT5oFv4GI+0BS3b+C9gOV+akDpu3Fn5JREwN665P+Cnid2y3FVZY77CazbfHBpVX6elTndo1wxRYE02GxMkhqWpuMkcMChdRjhRrcLHzAh6wO64r/wd5ofciBxuP2+ilWT151frgAAACAda4optpsYWmoSwIiLqfjr+Akxvzn9LWDcJ4LI4U8wakiHgBEGlhiIE7zrmS4ZEp8vGKv/Rhk3fOU96eUsoWFyMYtYFtCv5hQBJrqhC5Ur3dvjVzbracSZytn2xrTc+AEngPXu55WN2ebq/LMMTQV0Sq2wbDc7g9Jkxr4apAGDIM= hyakuhei@gentoo.org"
+Modifying LDAP user hyakuhei
+done!</pre>
+
+	<p>We are done now with adding the developer to LDAP, lets quit now.</p>
+
+	<pre caption="Quitting">
+[hyakuhei, ou=devs] >> quit</pre>
+
+	<p>Next step is to create the <i>userinfo.xml</i> entry for the developer. This
+	is where <c>perl_ldap</c> comes in handy again.</p>
+
+	<pre caption="Exporting information for userinfo.xml">
+<comment>phreak</comment>@roadrunner ~ <comment>#</comment> perl_ldap -U hyakuhei
+</pre>
+
+	<p>This will create a file called <i>xml</i>, that contains the formatted content 
+	for <i>userinfo.xml</i>. Add this to your local copy of <i>userinfo.xml</i> 
+	(that is located in <path>gentoo/xml/htdocs/proj/en/devrel/roll-call/</path>)
+	and commit the changes to the tree.</p>
+
+	</body>
+	</section>
+
+	<section>
+	<title>2. Setting up the developer's gentooAccess</title>
+	<body>
 	
-	<p>Subscribe them to the gentoo-core developer-only mailing list.
-	Additionally, if they are presently subscribed to any Gentoo mailing
-	lists, they should unsubscribe and resubscribe with their Gentoo
-	address.</p>
+	<p>In preparation of granting access to cvs and/or svn, the gentoo-core 
+	mailing-list or changing his bugzilla login name, you will need to poke one
+	of the leads to setup the developer's <i>gentooAccess</i>. This is needed,
+	otherwise he/she won't be able to login to the machines we use in the
+	development process (dev.gentoo.org and cvs.gentoo.org for example).</p>
 
-	<p>Edit their current Bugzilla login and change it to their gentoo
-	account.  While you're in there, make sure their real
-	name is in the Name field.  <b>Do not change their Bugzilla
-	password.</b> If you do not have access to edit users in Bugzilla,
-	contact avenj.</p>
+	<p>After a senior devrel member added the <i>gentooAccess</i> portion, you can
+	go ahead with the next steps.</p>
 
-	<p>Ping a forum administrator in #gentoo-forums or contact
-	forum-mods@gentoo.org to update their status on
-	the <uri link="http://forums.gentoo.org">Gentoo Forums,</uri>
-	if applicable. Forums accounts are not required.</p>
+	</body>
+	</section>
 
-	<p>Add them to roll-call/userinfo.xml. Contact christel for assistance.</p>
+	<section>
+	<title>3. Granting svn/cvs access</title>
+	<body>
 
-	<p>Finally, send an email to the
-	<uri link="http://www.gentoo.org/main/en/lists.xml">gentoo-dev mailing list</uri>
-	to introduce them to the developer and user community.  In your
-	introduction, feel free to be funny, but please explicitly state their
-	reason for being a developer (primary herds, other gentoo related
-	projects, etc).
-	</p>
+	<p>In order to grant access to cvs/svn to the newly added developer, you will
+	need to <c>ssh</c> to <i>lark.gentoo.org</i> and add the UID to the
+	appropriate groups.</p>
 
+	<pre caption="Adding a developer to the groups cvs and svn">
+<comment>phreak</comment>@celsius ~ <comment>#</comment> ssh roadrunner.gentoo.org
+<comment>phreak</comment>@lark ~ <comment>#</comment> gpasswd -a hyakuhei cvs
+Adding user hyakuhei to group cvs
+<comment>phreak</comment>@lark ~ <comment>#</comment> gpasswd -a hyakuhei svn
+Adding user hyakuhei to group svn</pre>
+
+	</body>
+	</section>
+
+	<section>
+	<title>4. Creating the developer's account on dev.gentoo.org</title>
+	<body>
+
+	<p>Now get the developer to <c>ssh</c> to <i>dev.gentoo.org</i> as the first
+	login will trigger the creation of his account. Also tell him, to put his
+	public ssh-key into <path>~/.ssh/authorized_keys</path>. Otherwise he won't
+	be able to checkout/commit anything with his developer access.</p>
+
+	</body>
+	</section>
+
+	<section>
+	<title>5. Changing the developer's bugzilla login</title>
+	<body>
+
+	<p>After the developer logged in successfully, you can proceed with the
+	recruiter process. Login to bugzilla, choose <i>Users</i> in the Row
+	<b>Edit</b>. Supplement the developers current eMail adress (the one he used
+	for bugzilla).</p>
+
+	<p>Change his current <i>Login name</i> to read <b>handle-name@gentoo.org</b>
+	(in the present case that is <b>hyakuhei@gentoo.org</b>). Hit <i>Update</i>
+	once you're finished with the modifications.</p>
+
+	</body>
+	</section>
+
+	<section>
+	<title>6. Subscribing the developer to gentoo-core</title>
+	<body>
+
+	<p>Every developer needs to be subscribed to gentoo-core. It's the only gentoo
+	mailing-list only devrel/recruiters members can subscribe/remove other devs.</p>
+
+	<p>Point your browser at <uri>https://lists.gentoo.org/mlmmj/</uri>. Fill in
+	the developer's <i>@gentoo.org</i> Email adress and hit <b>Subscribe</b>.</p>
+
+	</body>
+	</section>
+
+	<section>
+	<title>7. Giving the developer operator status in #gentoo-dev</title>
+	<body>
+
+	<p>Every developer gets operator status (+o) in <i>#gentoo-dev</i>. In order to do
+	that, you'll have to use FreeNode's ChanServ.</p>
+
+	<p>Here is a list of the current access levels for <i>#gentoo-dev</i>:</p>
+	<table>
+	  <tr>
+	    <th>Index</th>
+		<th>Level</th>
+		<th>Type</th>
+		<th>Description</th>
+	  </tr>
+	  <tr>
+	    <ti>1</ti>
+		<ti>-1</ti>
+		<ti>AUTODEOP</ti>
+		<ti>Automatic deop/devoice</ti>
+	  </tr>
+	  <tr>
+	    <ti>2</ti>
+		<ti>9</ti>
+		<ti>AUTOVOICE</ti>
+		<ti>Automatic voice</ti>
+	  </tr>
+	  <tr>
+	    <ti>3</ti>
+		<ti>14</ti>
+		<ti>CMDVOICE</ti>
+		<ti>Use of command VOICE</ti>
+	  </tr>
+	  <tr>
+	    <ti>4</ti>
+		<ti>30</ti>
+		<ti>ACCESS</ti>
+		<ti>Allow ACCESS modification</ti>
+	  </tr>
+	  <tr>
+	    <ti>5</ti>
+		<ti>5</ti>
+		<ti>CMDINVITE</ti>
+		<ti>Use of command INVITE</ti>
+	  </tr>
+	  <tr>
+	    <ti>6</ti>
+		<ti>20</ti>
+		<ti>AUTOOP</ti>
+		<ti>Automatic op</ti>
+	  </tr>
+	  <tr>
+	    <ti>7</ti>
+		<ti>30</ti>
+		<ti>CMDOP</ti>
+		<ti>Use of command OP</ti>
+	  </tr>
+	  <tr>
+	    <ti>8</ti>
+		<ti>10</ti>
+		<ti>CMDUNBAN</ti>
+		<ti>Use of command UNBAN</ti>
+	  </tr>
+	  <tr>
+	    <ti>9</ti>
+		<ti>15</ti>
+		<ti>AUTOKICK</ti>
+		<ti>Allow AKICK modification</ti>
+	  </tr>
+	  <tr>
+	    <ti>10</ti>
+		<ti>20</ti>
+		<ti>CMDCLEAR</ti>
+		<ti>Use of command CLEAR</ti>
+	  </tr>
+	  <tr>
+	    <ti>11</ti>
+		<ti>25</ti>
+		<ti>SET</ti>
+		<ti>Modify channel SETs</ti>
+	  </tr>
+	  <tr>
+	    <ti>12</ti>
+		<ti></ti>
+		<ti></ti>
+		<ti></ti>
+	  </tr>
+	  <tr>
+	    <ti>13</ti>
+		<ti></ti>
+		<ti></ti>
+		<ti></ti>
+	  </tr>
+	  <tr>
+	    <ti>14</ti>
+		<ti>10</ti>
+		<ti>TOPIC</ti>
+		<ti>Change the channel topic</ti>
+	  </tr>
+	  <tr>
+	    <ti>15</ti>
+		<ti>50</ti>
+		<ti>LEVEL</ti>
+		<ti>Use of command LEVEL</ti>
+	  </tr>
+	</table>
+
+	<p>New developer's get <c>LEVEL 20</c> for <i>#gentoo-dev</i> and that is done
+	by using the following command:</p>
+
+	<pre caption="Adding the developer to ChanServ's access list">
+[(status)] /msg -freenode ChanServ access #gentoo-dev add hyakuhei 20</pre>
+
+	<p>You will see him getting <b>+o</b> by ChanServ. In order to make sure, the 
+	<i>AUTOOP</i> is working, kick the new developer from <i>#gentoo-dev</i> and wait till he
+	rejoins. <br/>If everything is working as it should, he will get the <b>+o</b> on
+	join by ChanServ.</p>
+
+	</body>
+	</section>
+
+	<section>
+	<title>8. Introducing the developer on gentoo-dev</title>
+	<body>
+	
+	<p>In order to announce the new developer, you as recruiter have the honour
+	to introduce him to the Developer community. Write a short, but brief
+	introduction containing some details about your recruitee.</p>
+
+	</body>
+	</section>
+
+	<section>
+	<title>Remaining tasks</title>
+	<body>
 	<p>Please follow up with the developer during their first month to
 	make sure they are adapting well and to address any concerns.</p>
 	</body>
