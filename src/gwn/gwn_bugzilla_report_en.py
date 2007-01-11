@@ -63,6 +63,24 @@ def group_results(result, group_by, details):
     count_by_group = [[group, bug_count, [detailDict[group][detailKey] for detailKey in details]] for bug_count, group in count_by_group]
     return count_by_group
 
+def sum_results(result):
+    '''Given a CSV generated from reports.cgi will return a dictionary
+       with the sum for each row. The grand total will also be added
+       to the 'Total' entry.'''
+    
+    lines = result.split("\n")
+    
+    result_dict = {}
+    total = 0
+
+    for line in lines[1:]:
+        split_list = line.split(',')
+        summed = sum(map(lambda x: int(x), split_list[1:]))
+        total += summed
+        result_dict[split_list[0]] = summed
+    result_dict['Total'] = total
+    
+    return result_dict
 
 #1.  Set up the dates we care about...a 7 day window that ends yesterday
 date_to = time.strftime("%Y-%m-%d",time.gmtime(time.time() - (60 * 60 * 24 * 1)))
@@ -80,13 +98,13 @@ duplicate_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=RESOLVED
 opened_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&chfield=assigned_to&ctype=csv&chfieldfrom=%s&chfieldto=%s" % (date_from, date_to), header)
 new_report = get_page("bugs.gentoo.org", "/buglist.cgi?chfield=[Bug+creation]&chfieldfrom=%s&chfieldto=%s&ctype=csv" % (date_from, date_to), header)
 reopened_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=REOPENED&chfield=bug_status&chfieldfrom=%s&chfieldto=%s&ctype=csv" % (date_from, date_to), header)
-total_opened_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&ctype=csv", header)
+total_opened_report = get_page("bugs.gentoo.org", "/report.cgi?x_axis_field=bug_status&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&format=table&action=wrap&ctype=csv", header)
+severities_report = get_page("bugs.gentoo.org", "/report.cgi?x_axis_field=bug_status&y_axis_field=bug_severity&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&bug_severity=blocker&bug_severity=critical&bug_severity=major&format=table&action=wrap&ctype=csv", header)
 
 #4.  In a few cases, we want more than just counts.  So, we group
-#    opened and closed bugs by assigned to, and open bugs by severity.
+#    opened and closed bugs by assigned to.
 groups_that_closed_most = group_results(closed_report, "\"assigned_to\"", ["\"assigned_to_realname\""])
 groups_that_opened_most = group_results(opened_report, "\"assigned_to\"", ["\"assigned_to_realname\""])
-severities = dict([(result[0],result[1]) for result in group_results(total_opened_report, "\"bug_severity\"", [])])
 
 #5.  For bug counts, just counting the lines that were returned is sufficient
 new_bug_count = len(new_report.split("\n")) - 1
@@ -94,9 +112,13 @@ closed_bug_count = len(closed_report.split("\n")) - 1
 reopened_bug_count = len(reopened_report.split("\n")) - 1
 duplicate_bug_count = len(duplicate_report.split("\n")) - 1
 closed_nofix_bug_count = len(closed_nofix_report.split("\n")) - 1
-total_open_bug_count = len(total_opened_report.split("\n")) - 1
 
-#6.  We have every value we need, now build the report
+#6.  For the total open bugs and severities we need to sum the results
+#	 generated from reports.cgi
+total_open_bug_count = sum_results(total_opened_report).get('Total', 0)
+severities = sum_results(severities_report)
+
+#7.  We have every value we need, now build the report
 
 print """<chapter>
 <title>Bugzilla</title>
@@ -157,6 +179,7 @@ for i in range(0,8):
 <uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=RESOLVED&amp;bug_status=CLOSED&amp;chfield=bug_status&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;resolution=FIXED&amp;assigned_to=%s">closed bugs</uri>
 </li>""" % (groups_that_closed_most[i][0], strip(groups_that_closed_most[i][2][0]), groups_that_closed_most[i][1], date_from, date_to, strip(groups_that_closed_most[i][0]))
 print """</ul>
+
 </body>
 </section>
 
@@ -175,6 +198,7 @@ for i in range(0,8):
 <uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;chfield=assigned_to&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;assigned_to=%s">new bugs</uri>
 </li>""" % (groups_that_opened_most[i][0], strip(groups_that_opened_most[i][2][0]), groups_that_opened_most[i][1], date_from, date_to, strip(groups_that_opened_most[i][0]))
 print """</ul>
+
 </body>
 </section>
 
