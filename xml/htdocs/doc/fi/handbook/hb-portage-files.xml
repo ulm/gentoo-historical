@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-portage-files.xml,v 1.4 2006/11/21 02:22:54 flammie Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-portage-files.xml,v 1.5 2007/01/14 12:50:55 flammie Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Tässä kappaleessa kerrotaan tarkemmin, missä Portage säilyttää tiedostojaa
 ja muuta dataansa.
 </abstract>
 
-<version>1.7</version>
-<date>2005-06-27</date>
+<version>1.8</version>
+<date>2006-11-03</date>
 
 <section>
 <title>Portagen käyttämät tiedostot</title>
@@ -296,9 +296,113 @@ luominen.
 Portage luo ebuild-kohtaisesti lokitiedostoja, mutta vain jos
 PORT_LOGDIR-muuttuja on asetettu siten, että se osoittaa paikkaan,
 johon Portage (portage-käyttäjätunnus) voi kirjoittaa. Oletusarvoisesti
-tämä muuttuja on tyhjä, eli kytketty pois päältä.
+tämä muuttuja on tyhjä, eli kytketty pois päältä. Jos PORT_LOGDIRiä ei ole
+asetettu, lokeja ei tehdä ollenkaan. Kuitenkin <c>elog</c>ilta tulevia
+tietoja saattaa olla saatavilla. Jos PORT_LOGDIR on olemassa ja, elogilta
+tulevat viestit tallennetaan myös kuten jäljempänä on kuvattu.
 </p>
 
+<p>
+Portagessa on tehokas lokiominaisuus, jota kutsutaan <c>elog</c>iksi:
+</p>
+
+<ul>
+  <li>
+    PORTAGE_ELOG_CLASSES: Muuttuja määrittää mitä viestejä otetaan talteen. 
+    Mahdolliset arvot ovat välein eroteltuja yhdistelmiä luokista <c>info</c>,
+    <c>warn</c>, <c>error</c> ja <c>log</c>:
+  </li>
+  <li>
+    <ul>
+      <li>info: einfo-viestit</li>
+      <li>warn: ewarn-viestit</li>
+      <li>error: eerror-viestit</li>
+      <li>log: elog-viestit</li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_SYSTEM: Muuttuja määrittää moduulit, joilla loki hoidetaan.
+    Tyhjä arvo poistaa lokin käytöstä. Muut mahdolliset arvot ovat
+    välilyönnein eroteltuja yhdistelmiä arvoista <c>save</c>, <c>custom</c>,
+    <c>syslog</c> ja <c>mail</c>. Ainakin yhtä pitää käyttää, että elog 
+    toimisi.
+  </li>
+  <li>
+    <ul>
+      <li>
+        save: Tallentaa tiedostoja hakemistoon <path>$PORT_LOGDIR/elog</path>,
+        tai hakemistoon <path>/var/log/portage/elog</path> jos $PORT_LOGDIR
+        on asettamatta.
+      </li>
+      <li>
+        custom: Lähettää lokitiedot komennolle $PORTAGE_ELOG_COMMAND,
+        jonka käytöstä lisää tuonnempana.
+      </li>
+      <li>syslog: Lähettää lokidataa syslogille.</li>
+      <li>
+        mail: Lähettää lokit viestien muodossa osoitteeseen
+        $PORTAGE_ELOG_MAILURI, josta lisää tuonnempana. Tämä ominaisuus
+        on uusi Portageissa &gt;=<c>portage-2.1.1</c>.
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_COMMAND: Tätä käytetään jos <c>custom</c> on valittu
+    lokiasetuksista. Tässä määritellään komento, joka osaa käsitellä
+    lokiviestit. Komennolle voi antaa kaksi muuttujaa: ${PACKAGE} on
+    paketin nimi ja ${LOGFILE} on absoluuttinen tiedostonimi.
+    Esimerkiksi:
+  </li>
+  <li>
+    <ul>
+      <li>
+        PORTAGE_ELOG_COMMAND="/hakemisto/lokijuttu -p '\${PACKAGE}' -f '\${LOGFILE}'"
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILURI: sisältää <c>mail</c>-asetuksen asetukset:
+    osoitteen, käyttäjä, salasanan, palvelimen ja portin. Oletusasetus on
+    root@localhost localhost.
+  </li>
+  <li>
+    Esimerkiksi smtp-palvelin, jolla on käyttäjätunnus ja salasana eri
+    portissa kuin oletuksessa 25:
+  </li>
+  <li>
+    <ul>
+      <li>
+        PORTAGE_ELOG_MAILURI="user@some.domain 
+        username:password@smtp.some.domain:995"
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILFROM: sisältää käytetyn viestin lähettäjän eli 
+    From-otsakkeen tiedot. Oletusarvo on portage.
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILSUBJECT: sisältää käytetyn viestin aiheen eli
+    Subject-otsakkeen tiedot. Tässä on mahdollista käyttää kahta muuttujaa:
+    ${PACKAGE} on paketin nimi ja versio ja ${HOST} FQDN, jolta Portagea
+    ajetaan.
+  </li>
+  <li>Esimerkkinä:</li>
+  <li>
+    <ul>
+      <li>
+        PORTAGE_ELOG_MAILSUBJECT="Paketti \${PACKAGE} päivitetty koneella 
+        \${HOST}"
+      </li>
+    </ul>
+  </li>
+</ul>
+   
+<impo>
+Jos käytit <c>enotice</c>-sovellusta vanhan Portagen kanssa, se pitää poistaa,
+sillä se ei toimi elogin kanssa.
+</impo>
+ 
 </body>
 </subsection>
 </section>
