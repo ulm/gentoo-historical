@@ -52,22 +52,6 @@ except IndexError:
 if branch not in ('','stable','testing'):
 	branch = ''
 	
-# see if we're cached, if so write the cache and exit
-if today[:3] == (year,month,day):
-	# today is always cached ;-)
-	archnav = os.path.join(config.LOCALHOME,arch,branch,'archnav.html')
-	filename = os.path.join(config.LOCALHOME,arch,branch,'main.shtml')
-	sys.stdout.write(open(archnav,'r').read())
-	sys.stdout.write('<br>\n')
-	sys.stdout.write(open(filename,'r').read())
-	sys.exit(0)
-else:
-	filename = os.path.join(config.LOCALHOME,'daily','cache',
-		'%d%02d%02d-%s-%s.html' % (year,month,day,arch,branch))
-if os.path.exists(filename):
-	sys.stdout.write(open(filename,'r').read())
-	sys.exit(0)
-	
 db = ebuilddb.db_connect()
 c = db.cursor()
 
@@ -94,7 +78,7 @@ query = ('SELECT ebuild.category,'
 	'homepage,'
 	'license, is_masked '
 	'FROM ebuild,package '
-	'WHERE SUBSTRING(when_found FROM 1 FOR 8) = "%s%02d%02d" '
+	'WHERE DATE(when_found) = "%s-%02d-%02d" '
 	'AND ebuild.name = package.name '
 	'AND ebuild.category = package.category %s'
 	'ORDER BY when_found desc' %
@@ -108,9 +92,3 @@ for result in results:
 	ebuild = gentoo.query_to_dict(result)
 	s = s + gentoo.ebuild_to_html(ebuild) + '<br>\n'
 print s
-
-# cache to file, if not todays date
-if today[:3] != (year,month,day):
-	filename = os.path.join(config.LOCALHOME,'daily','cache',
-		'%d%02d%02d-%s-%s.html' % (year,month,day,arch,branch))
-	open(filename,'w').write(s)
