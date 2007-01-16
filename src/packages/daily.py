@@ -1,6 +1,5 @@
 #!/usr/bin/python -O
 
-import sys
 import config
 import ebuilddb
 import gentoo
