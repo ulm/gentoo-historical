@@ -4,8 +4,6 @@ import sys
 import config
 import cgi
 import gentoo
-import os
-import re
 from MySQLdb import escape_string
 
 form = cgi.FieldStorage()
@@ -33,12 +31,6 @@ def query_to_dict(q):
 		except IndexError:
 			continue
 	return pkginfo
-
-def write_to_cache(s):
-    try:
-        open(cachefile,'w').write(s)
-    except IOError:
-        pass
 
 def sort_by_weight(a, b):
     """Right now we just sort based on whether the sstring is in the name"""
@@ -79,16 +71,6 @@ def sort_by_weight(a, b):
                 
     return cmp(b['score'], a['score'])
 
-
-
-# if it's in the cache, just write that out
-qs = sys.argv[1]
-cachefile = os.path.join(config.LOCALHOME,'search/cache',qs)
-if os.path.exists(cachefile):
-	#sys.stdout.write('<div class="centerpage">using cached results</div>\n')
-	sys.stdout.write(open(cachefile,'r').read())
-	sys.exit(0)
-
 words = sstring.split()
 criteria = ''
 for word in words:
@@ -103,9 +85,6 @@ db = ebuilddb.db_connect()
 c = db.cursor()
 c.execute(query)
 total_rows = c.rowcount
-
-# now run the query again with LIMITS
-#query = '%s LIMIT %s,%s' % (query, offset, config.MAXPERPAGE)
 
 try:
 	c.execute(query)
@@ -125,7 +104,6 @@ if not results:
 	'packages.gentoo.org main page</a>.</p></td></tr></table>\n'
 	'</div>\n' % config.FEHOME)
 	sys.stdout.write(s)
-	write_to_cache(s)
 	sys.exit(0)
 
 pkgs = [ query_to_dict(i) for i in results ]
@@ -148,4 +126,3 @@ if int(offset) + lresults < total_rows:
 	s = '%s<a href="?sstring=%s;offset=%s">[Next]</a> ' % (s,sstring,int(offset) + config.MAXPERPAGE)
 
 sys.stdout.write(s)
-write_to_cache(s)
