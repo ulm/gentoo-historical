@@ -133,6 +133,8 @@
 
 <!-- Layout for documentation -->
 <xsl:template name="doclayout">
+  <xsl:param name="chapnum"/>
+  <xsl:param name="partnum"/>
 <html>
   <xsl:if test="string-length($glang)>1">
     <xsl:attribute name="lang"><xsl:value-of select="translate($glang,'_','-')"/></xsl:attribute>
@@ -179,7 +181,10 @@
     <!-- Insert the node-specific content -->
 <body bgcolor="#ffffff">
     <xsl:call-template name="show-disclaimer"/>
-    <xsl:call-template name="content"/>
+    <xsl:call-template name="content">
+      <xsl:with-param name="chapnum" select="$chapnum"/>
+      <xsl:with-param name="partnum" select="$partnum"/>
+    </xsl:call-template>
 </body>
   </xsl:when>
   <xsl:otherwise>
@@ -197,7 +202,10 @@
           <td width="99%" class="content" valign="top" align="left">
             <!-- Insert the node-specific content -->
             <xsl:call-template name="show-disclaimer"/>
-            <xsl:call-template name="content"/>
+            <xsl:call-template name="content">
+              <xsl:with-param name="chapnum" select="$chapnum"/>
+              <xsl:with-param name="partnum" select="$partnum"/>
+            </xsl:call-template>
           </td>
           <td width="1%" bgcolor="#dddaec" valign="top">
             <xsl:call-template name="rhcol"/>
@@ -903,26 +911,26 @@
         <xsl:choose>
           <xsl:when test="contains(@link, 'chap=') and contains(@link, '#doc_')">
             <!-- Link points inside a chapter  (Case 1a)-->
-            <xsl:param name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
-            <xsl:param name="linkchap" select="substring-before(substring-after(substring-after(@link, '&amp;'), '='), '#doc_')" />
-            <xsl:param name="linkanch" select="substring-after(@link, '#doc_')" />
+            <xsl:variable name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
+            <xsl:variable name="linkchap" select="substring-before(substring-after(substring-after(@link, '&amp;'), '='), '#doc_')" />
+            <xsl:variable name="linkanch" select="substring-after(@link, '#doc_')" />
             <a href="#book_part{$linkpart}_chap{$linkchap}__{$linkanch}"><xsl:apply-templates /></a>
           </xsl:when>
           <xsl:when test="contains(@link, 'chap=') and contains(@link, '#')">
             <!-- Link points inside a chapter via an ID (Case 1b)
                  (IDs are expected to be unique throughout a handbook) -->
-            <xsl:param name="linkanch" select="substring-after(@link, '#')" />
+            <xsl:variable name="linkanch" select="substring-after(@link, '#')" />
             <a href="#{$linkanch}"><xsl:apply-templates /></a>
           </xsl:when>
           <xsl:when test="contains(@link, 'chap=')">
             <!-- Link points to a chapter  (Case 2)-->
-            <xsl:param name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
-            <xsl:param name="linkchap" select="substring-after(substring-after(@link, '&amp;'), '=')" />
+            <xsl:variable name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
+            <xsl:variable name="linkchap" select="substring-after(substring-after(@link, '&amp;'), '=')" />
             <a href="#book_part{$linkpart}_chap{$linkchap}"><xsl:apply-templates /></a>
           </xsl:when>
           <xsl:otherwise>
             <!-- Link points to a part  (Case 3)-->
-            <xsl:param name="linkpart" select="substring-after(@link, '=')" />
+            <xsl:variable name="linkpart" select="substring-after(@link, '=')" />
             <a href="#book_part{$linkpart}"><xsl:apply-templates/></a>
           </xsl:otherwise>
         </xsl:choose>
@@ -936,7 +944,7 @@
              #anything_else_like_an_ID is left unchanged (IDs are expected to be unique throughout a handbook)-->
         <xsl:choose>
           <xsl:when test="starts-with(@link, '#doc_')">
-            <xsl:param name="locallink" select="substring-after(@link, 'doc_')" />
+            <xsl:variable name="locallink" select="substring-after(@link, 'doc_')" />
             <a href="#book_{generate-id(/)}_{$locallink}"><xsl:apply-templates /></a>
           </xsl:when>
           <xsl:otherwise>
