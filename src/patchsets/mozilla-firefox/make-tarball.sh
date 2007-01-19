@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Header: /var/cvsroot/gentoo/src/patchsets/mozilla-firefox/make-tarball.sh,v 1.3 2006/07/30 11:12:42 redhatter Exp ${app}/make-tarball.sh,v 1.2 2006/07/30 10:44:28 redhatter Exp $
+# $Header: /var/cvsroot/gentoo/src/patchsets/mozilla-firefox/make-tarball.sh,v 1.4 2007/01/19 08:00:42 redhatter Exp $
 
 app=mozilla-firefox
 
