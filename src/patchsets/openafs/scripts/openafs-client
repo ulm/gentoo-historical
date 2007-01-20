@@ -1,0 +1,124 @@
+#!/sbin/runscript
+# Copyright 1999-2005 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+depend() {
+	need net
+	after openafs-server
+	use logger dns
+}
+
+choose_afsdoptions() {
+	CACHESIZE=$(cut -d ':' -f 3 /etc/openafs/cacheinfo)
+	if [[ -z "$OPTIONS" || "$OPTIONS" = "AUTOMATIC" ]]; then
+		if [[ $CACHESIZE -lt 131072 ]]; then
+			OPTIONS=$SMALL
+		elif [[ $CACHESIZE -lt 524288 ]]; then
+			OPTIONS=$MEDIUM
+		elif [[ $CACHESIZE -lt 1048576 ]]; then
+			OPTIONS=$LARGE
+		elif [[ $CACHESIZE -lt 2097152 ]]; then
+			OPTIONS=$XLARGE
+		else
+			OPTIONS=$XXLARGE
+		fi
+	fi
+	AFSD_OPTIONS="$OPTIONS $VERBOSE"
+	[[ "$ENABLE_AFSDB" = "yes" ]] && AFSD_OPTIONS="$AFSD_OPTIONS -afsdb"
+	[[ "$ENABLE_DYNROOT" = "yes" ]] && AFSD_OPTIONS="$AFSD_OPTIONS -dynroot"
+}
+
+start() {
+	ebegin "Starting OpenAFS client"
+	failed=1
+
+	eindent
+
+	# Check if afsd is already running -> abort
+	if pgrep -u 0 afsd &> /dev/null; then
+		eerror "afsd already running, not attempting to restart"
+		eend 1
+	# Check if the openafs kernel module is loaded -> attempt unload
+	elif [[ -d /proc/fs/openafs ]]; then
+		ewarn "OpenAFS already active, trying to unload module"
+		if ! modprobe -r libafs; then
+			eerror "OpenAFS kernel module was loaded, unloading failed"
+			eend 1
+		else
+			cleanstart
+			failed=$?
+			eend $failed
+		fi
+	# Everything should be ok, start cleanly
+	else
+		cleanstart
+		failed=$?
+		eend $failed
+	fi
+		
+	eoutdent
+
+	if [[ $failed != 0 ]]; then
+		return 1
+	fi
+}
+
+cleanstart()
+{
+	# Make sure the mountpoint exists
+	mkdir /afs 2> /dev/null
+
+	# Start openafs: module and daemon
+	ebegin "Loading OpenAFS kernel module"
+	if ! modprobe libafs; then
+		eerror "Failed loading the afs kernel module"
+		eend 1
+		return 1
+	else
+		eend 0
+		ebegin "Starting OpenAFS daemon"
+		choose_afsdoptions
+		/usr/sbin/afsd ${AFSD_OPTIONS} &> /dev/null
+		failed=$?
+		eend $failed
+		return $failed
+	fi
+}
+
+stop() {
+	ebegin "Stopping OpenAFS client"
+	failed=1
+
+	eindent
+
+	# Three stage process: unmount / stop daemon / unload module
+	ebegin "Unmounting /afs"
+	if ! umount /afs; then
+		eend 1
+	else
+		eend 0
+		ebegin "Stopping OpenAFS daemon"
+		/usr/sbin/afsd -shutdown &> /dev/null
+		failed=$?
+		eend $failed
+		
+		if [[ $failed = 0 ]]; then
+			ebegin "Unloading OpenAFS module"
+			modprobe -r libafs
+			failed=$?
+			eend $failed
+		fi
+	fi
+
+	eoutdent
+
+	if [[ $failed != 0 ]]; then
+		return 1
+	fi
+
+	# Clean up: remove the mountpoint if it's an empty directory
+	rmdir /afs 2> /dev/null
+
+	return 0
+}
+
