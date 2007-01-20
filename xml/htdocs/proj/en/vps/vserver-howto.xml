@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/vps/vserver-howto.xml,v 1.4 2007/01/10 17:21:36 phreak Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/vps/vserver-howto.xml,v 1.5 2007/01/20 20:50:24 hollow Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/proj/en/vps/vserver-howto.xml">
@@ -21,8 +21,8 @@ Linux-VServer Technology
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.6</version>
-<date>2006-06-19</date>
+<version>1.7</version>
+<date>2007-01-20</date>
 
 <chapter>
 <title>Introduction</title>
@@ -94,7 +94,8 @@ contained within.
 
 <p>
 After the vserver-sources are installed it's time to configure them using
-<c>make menuconfig</c>.
+<c>make menuconfig</c>.. Below is a common configuration for 2.1.1 and above. If
+you are using 2.0.x some configuration options may not be present.
 </p>
 
 <pre caption="Configure vserver-sources">
@@ -102,14 +103,22 @@ After the vserver-sources are installed it's time to configure them using
 # <i>make menuconfig</i>
 
 Linux VServer ---&gt;
+<comment>(Do not enable the legacy options)</comment>
   [ ] Enable Legacy Kernel API
-  [*] Disable Legacy Networking Kernel API
-<comment>(Highly recommended)</comment>
+  [ ] Enable Legacy Networking Kernel API
+<comment>(Read help text)</comment>
+  [ ] Remap Source IP Address
+  [*] Enable COW Immutable Link Breaking
+  [ ] Enable Virtualized Guest Time
   [*] Enable Proc Security
   [*] Enable Hard CPU Limits
-  Persistent Inode Context Tagging (UID24/GID24)  ---&gt;
+  [*]   Avoid idle CPUs by skipping Time
+  [*]   Limit the IDLE task
+      Persistent Inode Tagging (UID24/GID24)  ---&gt;
   [ ] Tag NFSD User Auth and Files
-  [ ] Compile Debugging Code
+  [*] Enable Inode Tag Propagation
+  [*] Honor Privacy Aspects of Guests
+  [ ] VServer Debugging Code
 </pre>
 
 <note>
@@ -152,37 +161,24 @@ finally reboot to see if the kernel boots correctly.
 
 <p>
 To maintain your virtual servers you need the util-vserver package which
-contains all necessary programs and many useful features. Be aware that there
-is also a package called <c>vserver-utils</c>. It is a new incarnation of the
-user-space implementation of the VServer kernel API, but not yet usable for
-production use.
+contains all necessary programs and many useful features.
 </p>
 
-<note>
-This version of the howto requires features only available in
-<c>&gt;=sys-apps/util-vserver-0.30.210-r6</c>. You may have to keyword/upgrade
-it first.
-</note>
-
 <pre caption="Install util-vserver">
-# <i>emerge util-vserver</i>
+# <i>emerge >=sys-cluster/util-vserver-0.30.212</i>
 </pre>
 
 <p>
 You have to run the <c>vprocunhide</c> command after every reboot in order to
-setup <path>/proc</path> permissions correctly for vserver use. An init script
-has been installed by util-vserver. To use it you should add it to a runlevel:
+setup <path>/proc</path> permissions correctly for vserver guests. An init
+script has been installed by util-vserver. To use it you should add it to the
+default runlevel:
 </p>
 
-<pre caption="vserver init script">
-# <i>rc-update add vservers default</i>
-# <i>/etc/init.d/vservers start</i>
+<pre caption="vprocunhide init script">
+# <i>rc-update add vprocunhide default</i>
+# <i>/etc/init.d/vprocunhide start</i>
 </pre>
-
-<note>
-This init script will also start your default vservers. Read below for more
-information.
-</note>
 
 <p>
 The vshelper script is used to restart virtual servers correctly. You
@@ -199,22 +195,19 @@ have to tell the kernel where the vshelper script is located:
 </chapter>
 
 <chapter>
-<title>Creating a guest template</title>
+<title>Guest creation</title>
 <section>
-<title>Install a vserver stage3</title>
+<title>Using vserver stage3</title>
 <body>
 
 <p>
 You have to download a vserver prepared stage3 from one of
 <uri link="/main/en/mirrors.xml">our mirrors</uri>. Those stages are located
 under the <path>experimental/&lt;arch&gt;/vserver/</path> directory.
-Then use the <c>vserver-new</c> script to create the initial guest.
+Since a stage3 contains a complete root filesystem you can use the template
+build method of util-vserver. However, this method is only available since
+util-vserver-0.30.211, so make sure you have the right version installed.
 </p>
-
-<note>Please note that starting with util-vserver-0.30.212 the vserver-new script
-stopped existing, as the functionality got merged into UPSTREAM's release and is
-now integrated into util-vserver's swiss army knive <c>vserver</c>. It's now called
-via <c>vserver &lt;name&gt; build</c>.</note>
 
 <p>
 You have to choose a context ID for your vserver (dynamic context IDs are
@@ -228,11 +221,13 @@ The context ID should be 1 &lt; ID &lt; 49152.
 </note>
 
 <pre caption="Start stage3 installation">
-# <i>vserver-new gentoo-template \</i>
-  <i>--hostname gentoo \</i>
+# <i>vserver myguest build \</i>
   <i>--context 1253 \</i>
+  <i>--hostname gentoo \</i>
   <i>--interface eth0:192.168.1.253/24 \</i>
-  <i>stage3 /path/to/stage3-&lt;arch&gt;-&lt;date&gt;.tar.bz2 &lt;arch&gt;</i>
+  <i>-m template -- \</i>
+  <i>  -d gentoo \</i>
+  <i>  -t /path/to/stage3-&lt;arch&gt;-&lt;version&gt;.tar.bz2</i>
 </pre>
 
 <note>
@@ -245,50 +240,6 @@ link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=8#doc_chap2_sect4">chapt
 8.b.4</uri>. The rest of your virtual servers network setup will be
 done on the host.
 </note>
-
-</body>
-</section>
-<section>
-<title>Create the template tarball</title>
-<body>
-
-<p>
-You don't have to build a stage3 tarball for every guest. The <c>vserver-new</c>
-script supports templates. In order to use them you have to create a tarball of
-your vserver installation:
-</p>
-
-<pre caption="Create template tarball">
-# <i>cd /vservers/gentoo-template</i>
-# <i>tar cjvpf ../gentoo-template-&lt;arch&gt;-&lt;date&gt;.tar.bz2 ./</i>
-</pre>
-
-<p>
-To create a new guest using this tarball just use <c>vserver-new</c>:
-</p>
-
-<pre caption="Use template tarball">
-# <i>cd /vservers</i>
-# <i>vserver-new myguest \</i>
-  <i>--hostname myguest \</i>
-  <i>--context 1252 \</i>
-  <i>--interface eth0:192.168.1.252/24 \</i>
-  <i>template ./gentoo-template-&lt;arch&gt;-&lt;date&gt;.tar.bz2 &lt;arch&gt;</i>
-</pre>
-
-<note>
-You should use a shared portage tree to keep guests small in size. Edit
-<path>/etc/vservers/myguest/fstab</path> and uncomment the entries
-for <path>/usr/portage</path> and <path>/usr/portage/distfiles</path>. Guests
-will have read-only access to <path>/usr/portage</path> and read-write access
-to <path>/usr/portage/distfiles</path>.
-</note>
-
-</body>
-</section>
-<section>
-<title>Test the virtual server</title>
-<body>
 
 <p>
 You should be able to start and enter the vserver by using the commands below.
@@ -326,7 +277,7 @@ PID   TTY      STAT   TIME COMMAND
 <p>
 You can start certain guests during boot. Each guest can be assigned a MARK.
 Now everything you have to do is configure these MARKs in the guests
-configuration and tell the init script to run all MARKed guests.
+configuration and add the approriate init scripts to the default runlevel.
 </p>
 
 <pre caption="Configure MARKs for each guest">
@@ -335,24 +286,9 @@ configuration and tell the init script to run all MARKed guests.
 # <i>echo "default" > /etc/vservers/myguest/apps/init/mark</i>
 </pre>
 
-<note>
-Since all guests marked with "default" are started by default, nothing more has
-to be done. If you have different marks you should also update
-<path>/etc/conf.d/vservers</path>.
-</note>
-
-</body>
-</section>
-<section>
-<title>Gentoo goodies</title>
-<body>
-
-<p>
-The util-vserver ebuild has installed some goodies for Gentoo guests. You know
-<c>vserver-new</c> from the previous chapter. In this chapter, you will learn
-how to use <c>vesync</c> and <c>vemerge</c> to keep portage in sync as well as
-<c>vupdateworld</c> and <c>vdispatch-conf</c> to update guests.
-</p>
+<pre caption="Add init script to the default runlevel">
+# <i>rc-update add vservers.default default</i>
+</pre>
 
 </body>
 </section>
@@ -369,21 +305,15 @@ in sync. <c>vemerge</c> is a simple wrapper for <c>emerge</c> in guests.
 <comment>(Sync metadata for 'myguest')</comment>
 # <i>vesync myguest</i>
 <comment>(Sync metadata for all guests)</comment>
-# <i>vesync -a</i>
-<comment>(Sync metadata for all guests except 'myguest')</comment>
-# <i>vesync -a -e myguest</i>
+# <i>vesync --all</i>
 <comment>(Sync 'myoverlay' for all guests)</comment>
-# <i>vesync -a \</i>
+# <i>vesync --all \</i>
   <i>--overlay /usr/local/overlays/myoverlay \</i>
   <i>--overlay-host rsync://rsync.myhost.com/myoverlay \</i>
   <i>--overlay-only</i>
 <comment>(emerge app-editors/vim in 'myguest')</comment>
-# <i>vemerge myguest app-editors/vim -va</i>
+# <i>vemerge myguest -- app-editors/vim -va</i>
 </pre>
-
-<note>
-This script requires you to have a shared portage tree.
-</note>
 
 </body>
 </section>
@@ -413,11 +343,11 @@ depending on command line options.
 
 <pre caption="vupdateworld examples">
 <comment>(Pretend update for 'myguest')</comment>
-# <i>vupdateworld -p myguest</i>
+# <i>vupdateworld myguest -- -vp</i>
 <comment>(Update 'myguest' using binary packages)</comment>
-# <i>vupdateworld -k myguest</i>
+# <i>vupdateworld myguest -- -k</i>
 <comment>(Update all guests using binary packages)</comment>
-# <i>vupdateworld -ka</i>
+# <i>vupdateworld --all -- -k</i>
 </pre>
 
 <note>
@@ -435,7 +365,7 @@ behaves exactly the same.
 <comment>(Update configuration files for 'myguest')</comment>
 # <i>vdispatch-conf myguest</i>
 <comment>(Update configuration files for all guests)</comment>
-# <i>vdispatch-conf -a</i>
+# <i>vdispatch-conf --all</i>
 </pre>
 
 </body>
