@@ -46,7 +46,7 @@ However the time is currently \n\n%s.\n\n\
 def main():
 	args = sys.argv[:]
 	if len(args) < 2:
-		print "%s takes 1 argument (path to block_sync file)" % args[0]
+		print "%s /path/to/block_sync" % args[0]
 		sys.exit(2)
 
 	block_sync_path = args[1]
