@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/mysql-upgrading.xml,v 1.10 2006/12/08 13:02:34 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/mysql-upgrading.xml,v 1.11 2007/01/27 15:25:25 chiguire Exp $ -->
 
 <guide link="/doc/es/mysql-upgrading.xml" lang="es">
 <title>Guía de actualización a MySQL 4.* o 5.0.*</title>
@@ -25,8 +25,8 @@ y a 5.0.*.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.14</version>
-<date>2006-12-04</date>
+<version>1.16</version>
+<date>2007-01-06</date>
 
 <chapter>
 <title>Actualización convencional, indicada para migrar desde la 4.1 a la 5.0</title>
@@ -38,16 +38,39 @@ En la versión 4.1 el motor de almacenamiento MyISAM era ya suficientemente
 maduro para permitir una actualización total a la principal versión de MySQL.
 </p>
 
+<note>
+Esto no es cierto para tablas MERGE. Probablemente se tope con problemas si
+intenta una actualización directa para este (ráramente utilizado) tipo de
+tabla. Debería volcar y recrear estas tablas y restaurar sus contenidos en el
+proceso de actualización. Si no está seguro, debería empezar por la sección
+<uri link="#doc_chap2">Actualizar desde versiones antiguas de MySQL</uri>.
+</note>
+
+<p>
+Para llevar a cabo este paso, se requiere de dos líneas de comando ya que los
+bloqueos pertenecen a la sesión de mysql.
+</p>
+
 <pre caption="Actualización convencional desde la 4.1 a la 5.0.*">
 # <i>quickpkg dev-db/mysql</i>
 # <i>alias MYSQL="mysql --user=root --password=</i><comment>'su_contraseña'</comment><i>"</i>
 # <i>DATADIR=$(MYSQL --batch --raw --silent --skip-column-names \</i>
      <i>--execute='SHOW variables LIKE "datadir";' \</i>
      <i>| sed -e 's|datadir[ \t]||')</i>
-# <i>MYSQL --execute="FLUSH TABLES WITH READ LOCK;"</i>
+
+<comment>(El próximo paso debería llevarse a cabo en la segunda línea de comandos)</comment>
+# <i>mysql --user=root --password=</i><comment>'su_contraseña'</comment><i>"</i>
+mysql&gt; <i>FLUSH TABLES WITH READ LOCK;</i>
+
+<comment>(Regrese a la primera línea de comandos para ejecutar el siguiente comando)</comment>
 # <i>tar -cjpvf ~/mysql.$(date +%F"T"%H-%M).tar.bz2 \</i>
      <i>/etc/conf.d/mysql /etc/mysql/my.cnf "${DATADIR}"</i>
-# <i>MYSQL --execute="UNLOCK TABLES;"</i>
+
+<comment>(Los siguientes comandos deberían realizarse en la segunda línea de comandos)</comment>
+mysql&gt; <i>UNLOCK TABLES;</i>
+mysql&gt; <i>quit</i>
+
+<comment>(Regrese a la primera línea de comandos para el resto de la actualización)</comment>
 # <i>tar -tjvf ~/mysql.*.tar.bz2</i>
 # <i>emerge -av "&gt;dev-db/mysql-5.0"</i>
 # <i>dispatch-conf</i>
@@ -217,6 +240,21 @@ conjunto de caracteres</uri>.
 La base de datos <c>mysql</c> administrativa que contiene nombres de usuario,
 contraseñas, entre otras cosas, está y <b>debe</b> estar codificada en utf8.
 </impo>
+
+<p>
+Las versiones más antiguas de mysqldump puede que exporten tabñas en el orden
+equivocado cuando hayan claves foráneas de por medio. Para solucionar este
+problema, rodee el SQL con las siguientes declaraciones:
+</p>
+
+<pre caption="Corregir la comprobación de claves foráneas">
+SET FOREIGN_KEY_CHECKS=0
+SET FOREIGN_KEY_CHECKS=1
+</pre>
+
+<p>
+A continuación, importe la copia de seguridad.
+</p>
 
 <pre caption="Importar la copia de seguridad de los datos SQL">
 # <i>cat BACKUP_MYSQL_4.0.SQL \</i>
