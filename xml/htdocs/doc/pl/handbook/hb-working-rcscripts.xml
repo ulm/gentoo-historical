@@ -1,14 +1,20 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-working-rcscripts.xml,v 1.12 2006/06/24 22:47:13 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-working-rcscripts.xml,v 1.13 2007/01/30 20:52:45 shadoww Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>1.21</version>
-<date>2005-05-29</date>
+<abstract>
+Gentoo używa specjalnego formatu skryptów startowych, które pozwalają na
+budowanie zależności oraz zarządzanie wirtualnymi skryptami startowymi.
+Rozdział ten pokaże jak je tworzyć i jak nimi zarządzać.
+</abstract>
+
+<version>1.22</version>
+<date>2006-09-07</date>
 
 <section>
 <title>Poziomy działania</title>
@@ -551,6 +557,20 @@ depend() {
 }
 </pre>
 
+<p>
+Jeżeli nasza usługa musi posiadać prawo zapisywania na lokalnym dysku będzie
+potrzebowała <c>localmount</c>. Jeżeli zapisuje cokolwiek w katalogu
+<path>/var/run</path>, na przykład pliki pid, powinna zostać uruchomiona po
+<c>bootmisc</c>:
+</p>
+
+<pre caption="Przykładowa funkcja depend()">
+depend() {
+  need localmount
+  after bootmisc
+}
+</pre>
+
 </body>
 </subsection>
 <subsection>
@@ -568,28 +588,79 @@ momencie dzieje:
 <pre caption="Przykład funkcji start()">
 start() {
   ebegin "Uruchamiam moja_usługa"
-  start-stop-daemon --start --quiet --exec /path/to/moja_usługa
+  start-stop-daemon --start --exec /path/to/my_service \
+    --pidfile /path/to/my_pidfile
   eend $?
 }
 </pre>
 
 <p>
-Więcej przykładów użycia funkcji <c>start()</c> można odnaleźć w kodzie
-źródłowym dostępnych w systemie skryptów init, które znajdują się w katalogu
-<path>/etc/init.d</path>.  Jeśli chcemy zdobyć więcej informacji
-<c>start-stop-daemon</c> posiada znakomitą dokumentację, która dostępna jest w
-formacie podręcznika systemowego:
+Zarówno <c>--exec</c> jak i <c>--pidfile</c> powinny zostać użyte w funkcjach
+start i stop. Jeżeli usługa nie tworzy pliku pid, należy użyć parametru
+<c>--make-pidfile</c> jeśli jest to możliwe. Należy jednak dla pewności
+przetestować możliwość użycia tego parametru. Możemy również dodać parametr
+<c>--quite</c> do opcji <c>start-stop-daemon</c>, jednak nie jest to działanie
+zalecane. 
 </p>
 
-<pre caption="Uzyskiwanie informacji o start-stop-daemon">
-# <i>man start-stop-daemon</i>
-</pre>
+<note>
+Należy się upewnić, że parametr <c>--exec</c> wywołuje usługę, a nie skrypt
+bash, który po uruchomieniu tej usługi wyłącza sie. Tak zachowują się skrypty
+init.
+</note>
+
+<p>
+Jeżeli chcemy przejrzeć więcej przykładów funkcji <c>start()</c>, powinniśmy
+przeczytać kody źródłowe skryptów init dostępne w naszym katalogu
+<path>/etc/init.d</path>.
+</p>
 
 <p>
 Pozostałe funkcje jakie można definiować to: <c>stop()</c> i <c>restart()</c>.
 Nie są one jednak konieczne! System init jest dostatecznie inteligentny aby
 poradzić sobie z ich brakiem dzięki <c>start-stop-daemon</c>.
 </p>
+
+<p>
+Mimo że nie <e>musimy</e> tworzyć funkcji <c>stop()</c> poniżej znajdziemy
+przykład jak ją napisać:
+</p>
+
+<pre caption="Przykładowa funkcja stop()">
+stop() {
+  ebegin "Stopping my_service"
+  start-stop-daemon --stop --exec /path/to/my_service \
+    --pidfile /path/to/my_pidfile
+  eend $?
+}
+</pre>
+
+<p>
+Jeżeli nasza usługa uruchamia inny skrypt (na przykład, bash, pythona, perl), a
+ten skrypt w czasie działania zmienia nazwe (na przykład <c>foo.py</c> na
+<c>foo</c>), będziemy musieli dodać parametr <c>--name</c> do
+<c>start-stop-daemon</c>. Musimy określić nazwę jaką będzie miał skrypt po
+zmianie. W przykładzie usługa uruchamia skrypt <c>foo.py</c>, który później
+zmienia nazwę ma <c>foo</c>:
+</p>
+
+<pre caption="Usługa, która uruchamia skrypt foo">
+start() {
+  ebegin "Starting my_script"
+  start-stop-daemon --start --exec /path/to/my_script \
+    --pidfile /path/to/my_pidfile --name foo
+  eend $?
+}
+</pre>
+
+<p>
+<c>start-stop-daemon</c> posiada znakomity manual opisujący dokładnie wszelkie
+opcje:
+</p>
+
+<pre caption="Uruchamianie manuala dla start-stop-daemon">
+$ <i>man start-stop-daemon</i>
+</pre>
 
 <p>
 Składnia skryptów startowych Gentoo opierają się na bashu przez co można w nich
