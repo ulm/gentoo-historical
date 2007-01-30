@@ -1,15 +1,20 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-portage-files.xml,v 1.11 2006/06/18 13:05:18 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-portage-files.xml,v 1.12 2007/01/30 19:33:10 shadoww Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>1.7</version>
-<date>2005-06-27</date>
+<abstract>
+Omawiamy tu strukturę i miejsca przechowywania plików konfiguracyjnych
+używanych przez Portage.
+</abstract>
+
+<version>1.8</version>
+<date>2006-11-03</date>
 
 <section>
 <title>Pliki Portage</title>
@@ -292,8 +297,119 @@ gdy chcemy stworzyć nowe obrazy budowy.
 Portage może tworzyć osobne logi dla każdego ebuildu tylko wtedy, gdy zmienna
 PORT_LOGDIR wskazuje na katalog, do którego grupa portage (z której prawami
 uruchamiane są wszystkie procesy) ma prawa zapisu. Domyślnie zmienna ta nie jest
-ustawiona.
+ustawiona. Jeżeli nie ustawimy tej zmiennej, nie otrzymamy żadnych logów
+kompilacji z nowym systemem logowania mimo to możemy otrzymać logi z nowego 
+<c>elog</c>. Jeżeli jednak ustawimy tę zmienną będziemy otrzymywać logi
+kompilacji oraz wszystkie inne zapisane przez elog, w sposób w jaki 
+zostało to opisane poniżej.
 </p>
+
+<ul>
+  <li>
+    PORTAGE_ELOG_CLASSES: Zmienna ta służy do ustawiania jakiego typu
+    wiadomości mają być logowane. Wartości jakich możemy użyć to <c>info</c>,
+    <c>warn</c>, <c>error</c> oraz <c>log</c>. Do rozdzielenia kombinacji kilku
+    wartości używamy spacji.
+  </li>
+  <li>
+    <ul>
+      <li>info: Zapisuje wiadomości "einfo" wyświetlane przez ebuild</li>
+      <li>warn: Zapisuje wiadomości "ewarn" wyświetlane przez ebuild</li>
+      <li>error: Zapisuje wiadoomści "eerror" wyświetlane przez ebuild</li>
+      <li>log: Zapisuje wiadomości "elog" wyświetlane przez ebuild</li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_SYSTEM: W zmiennej tej ustawiamy moduł(y), które posłużą do
+    przetworzenia wiadomości z logów. Jeżeli nie ustawimy żadnej zmiennej,
+    logowanie zostanie wyłączone. Wartości jakich możemy użyć to <c>save</c>,
+    <c>custom</c>, <c>syslog</c> oraz <c>mail</c>. Musimy wybrać przynajmniej
+    jeden moduł, aby być w stanie korzystać z elog. Jeśli chcemy wybrać więcej,
+    rozdzielamy je spacją.
+  </li>
+  <li>
+    <ul>
+      <li>
+        save: Zapisuje jeden plik log na pakiet w pliku
+	<path>$PORT_LOGDIR/elog</path> lub <path>/var/log/portage/elog</path>
+	jeśli nie mamy zdefiniowanej zmiennej $PORT_LOGDIR.
+      </li>
+      <li>
+        custom: Przekazuje wszystkie komunikaty do zdefiniowanego przez
+	użytkownika polecenia podanego w zmiennej $PORTAGE_ELOG_COMMAND. Więcej
+	informacji na ten temat zostanie przedstawiona później.
+      </li>
+      <li>
+        syslog: Wysyła wszystkie komunikaty do zainstalowanego systemu
+	logującego.
+      </li>
+      <li>
+        mail: Przekazuje wszystkie komunikaty do zdefiniowanego przez
+	użytkownika w zmiennej $PORTAGE_ELOG_MAILURI serwera poczty
+	elektronicznej. Więcej informacji na ten temat zostanie przedstawiona
+	później. Funkcja ta wymaga zainstalowania &gt;=<c>portage-2.1.1</c>.
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_COMMAND: Zmienna ta jest używana jedynie w przypadku gdy
+    aktywny jest moduł <c>custom</c>. Ustawiamy w niej polecenie, za pomocą
+    którego przetwarzane będą wiadomości logów. Należy zauważyć, że możemy
+    tutaj użyć dwóch zmiennych: ${PACKAGE}, która podaje nam nazwę pakietu oraz
+    wersję, natomiast ${LOGFILE} zawiera ścieżkę do pliku log. Poniżej
+    przedstawiono wzór użycia tych zmiennych:
+  </li>
+  <li>
+    <ul>
+      <li>
+        PORTAGE_ELOG_COMMAND="/path/to/logger -p '\${PACKAGE}' -f '\${LOGFILE}'"
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILURI: Zawiera ustawienia dla modułu <c>mail</c> takie jak
+    adres, użytkownik, hasło, serwer poczty czy numer portu. Domyślnym
+    ustawieniem jest "root@localhost localhost".
+  </li>
+  <li>
+    Poniżej znajduje się przykład dla serwera smtp, który wymaga nazwy
+    użytkownika oraz hasła do autoryzacji na specyficznym porcie (domyślnym
+    portem jest 25):
+  </li>
+  <li>
+    <ul>
+      <li>
+        PORTAGE_ELOG_MAILURI="user@some.domain
+	username:password@smtp.some.domain:995"
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILFROM: Pozwala na ustawienie adresu "from" we wiadomościach
+    elektronicznych z logami. Domyślnie ta wartość nie jest ustawiana.
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILSUBJECT: Pozwala na tworzenie tematu we wiadomościach
+    elektronicznych z logami. Dodatkowo możemy użyć dwóch innych zmiennych:
+    ${PACKAGE}, która wyświetla nazwę oraz wersję pakietu, natomiast wartość
+    przechowywana w zmiennej ${HOST} jest nazwą domeny, na której uruchomione
+    jest Portage.
+  </li>
+  <li>Poniżej znajduje się przykładowe użycie tej zmiennej:</li>
+  <li>
+    <ul>
+      <li>
+        PORTAGE_ELOG_MAILSUBJECT="package \${PACKAGE} was merged on \${HOST}
+	with some messages"
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<impo>
+Jeżeli używaliśmy <c>enotice</c> z Portage-2.0.*, musimy go całkowicie usunąć
+gdyż nie jest on kompatybilny z elog.
+</impo>
 
 </body>
 </subsection>
