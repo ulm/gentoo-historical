@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.70 2006/11/02 18:24:36 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/alsa-guide.xml,v 1.71 2007/01/31 15:54:35 nightmorph Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -8,6 +8,12 @@
 
 <author title="Author">
   <mail link="fox2mike@gentoo.org">Shyam Mani</mail>
+</author>
+<author title="Author">
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
+</author>
+<author title="Contributor">
+  <mail link="flameeyes@gentoo.org">Diego Pettenò</mail>
 </author>
 
 <abstract>
@@ -18,8 +24,8 @@ This document helps a user setup ALSA on Gentoo Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.15</version>
-<date>2006-11-02</date>
+<version>2.16</version>
+<date>2007-01-31</date>
 
 <chapter>
 <title>Introduction</title>
@@ -76,17 +82,18 @@ The two options are :
 </p>
 
 <ol>
-  <li>
-  Use ALSA provided by your kernel. This is the preferred/recommended
-  method.
-  </li>
-  <li>
-  Use Gentoo's <c>media-sound/alsa-driver</c> package.
-  </li>
+  <li>Use ALSA provided by your kernel.</li>
+  <li>Use Gentoo's <c>media-sound/alsa-driver</c> package.</li>
 </ol>
 
 <p>
-We shall take a peek into both before finally deciding on one.
+The in-kernel drivers and the <c>alsa-driver</c> package can vary a little; it's
+possible that features and fixes found in one might not yet be incorporated into
+the other. The upstream developers are aware of this, but the two drivers are
+effectively separate branches of the ALSA project; they are not entirely
+identical. You should be aware that they might function slightly differently, so
+if one doesn't work for you, try the other! We shall take a peek into both
+before finally deciding on one.
 </p>
 
 <p>
@@ -101,7 +108,9 @@ cons :
 </tr>
 <tr>
   <th>+</th>
-  <ti>Pretty stable as drivers are integrated into kernel.</ti>
+  <ti>
+    No need to emerge yet another package; drivers are integrated into kernel.
+  </ti>
 </tr>
 <tr>
   <th>+</th>
@@ -109,7 +118,7 @@ cons :
 </tr>
 <tr>
   <th>-</th>
-  <ti>Might be a slightly older version than <c>alsa-driver</c>.</ti>
+  <ti>Might be a slightly different version than <c>alsa-driver</c>.</ti>
 </tr>
 </table>
 
@@ -124,7 +133,11 @@ And, if you were to use alsa-driver,
 </tr>
 <tr>
   <th>+</th>
-  <ti>Latest drivers from the ALSA Project.</ti>
+  <ti>Possibly the latest drivers from the ALSA Project.</ti>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>Useful if you intend to develop audio drivers.</ti>
 </tr>
 <tr>
   <th>-</th>
@@ -143,11 +156,11 @@ And, if you were to use alsa-driver,
 <body>
 
 <p>
-The main difference between using <c>alsa-driver</c> and ALSA that comes with 
-the kernel is that <c>alsa-driver</c> is generally more up to date than the 
-version in the kernel. Since this does not make any huge difference as 
-such, you are encouraged to use the ALSA provided by the kernel for ease of use.
-Before reporting any sound related issues to <uri
+The differences between <c>alsa-driver</c> and the in-kernel ALSA drivers are
+quite subtle, as mentioned earlier. Since there are not any huge differences,
+this guide will go through the process of using the ALSA provided by the kernel
+<e>first</e> for ease of use. However, if you run into problems, try switching
+to <c>alsa-driver</c>. Before reporting any sound related issues to <uri
 link="https://bugs.gentoo.org">Gentoo Bugzilla</uri>, please try to reproduce
 them using <c>alsa-driver</c> and file the bug report no matter what the
 result.
@@ -210,6 +223,20 @@ interested in detailed information, you can click on the link next to the
 "Details" and that will take you to the <c>emu10k1</c> specific page.
 </p>
 
+<p>
+If you intend to use MIDI, then you should add <c>midi</c> to your USE flags in
+<path>/etc/make.conf</path> before emerging any ALSA packages. Later in the
+guide, we will show you how to set up <uri link="#midi">MIDI support</uri>.
+</p>
+
+<pre caption="MIDI support in /etc/make.conf">
+<comment>(If you want MIDI support)</comment>
+USE="midi"
+
+<comment>(If you don't need MIDI)</comment>
+USE="-midi"
+</pre>
+
 </body>
 </section>
 <section id="kernel">
@@ -254,8 +281,8 @@ kernel to ensure proper ALSA support for our sound card.
 </p>
 
 <p>
-Please note that for the sake of ease, all examples show ALSA built as modules.
-It is advisable to follow the same as it then allows the use of <c>alsaconf</c>
+Please note that for ease of use, all examples show ALSA built as modules.  It
+is advisable to follow the same as it then allows the use of <c>alsaconf</c>
 which is a boon when you want to configure your card. Please do <e>not</e> skip
 the <uri link="#alsa-config">Configuration</uri> section of this document. If
 you still like to have options built-in, ensure that you make changes to your
@@ -393,8 +420,13 @@ Now all you have to do is type the magic words... and no, it's not abracadabra.
 </pre>
 
 <impo>
-Please note that you will have to run <c>emerge alsa-driver</c> after every 
-kernel (re)compile, as the earlier drivers are deleted.
+Please note that you will have to run <c>emerge alsa-driver</c> after every
+kernel (re)compile, as the earlier drivers are deleted. To make this task
+easier, you may want to emerge the <c>module-rebuild</c> package, which will
+keep track of module packages and rebuild them for you. First run <c>module
+rebuild populate</c> to create the list, and then after every kernel
+(re)compile, you just run <c>module-rebuild rebuild</c>, and your external
+modules will be rebuilt.
 </impo>
 
 </body>
@@ -431,14 +463,21 @@ to configure ALSA. This is made very easy by the existence of the
 <title>Configuration</title>
 <body>
 
+<p>
+Recent versions of <c>udev</c> (<c>>=udev-103</c>) provide some degree of
+kernel-level autoconfiguration of your sound card. If possible, try to rely on
+just letting your kernel automatically setup your sound card for you. Otherwise,
+use <c>alsaconf</c> to configure your card, as shown below.
+</p>
+
 <note>
 Please shut down any programs that <e>might</e> access the sound card while 
 running <c>alsaconf</c>.
 </note>
 
 <p>
-The easiest way to configure your sound card is to run <c>alsaconf</c>. Just 
-type <c>alsaconf</c> in a shell as root.
+Another way to configure your sound card is to run <c>alsaconf</c>. Just type
+<c>alsaconf</c> in a shell as root.
 </p>
 
 <pre caption="Invoking alsaconf">
@@ -511,25 +550,13 @@ Adding user &lt;username&gt; to group audio
 <body>
 
 <p>
-We've completed all the setups and pre-requisites, so let's fire up ALSA. If 
+We've completed all the setups and prerequisites, so let's fire up ALSA. If 
 you ran <c>alsaconf</c>, you can skip this step, since <c>alsaconf</c> already 
 does this for you.
 </p>
 
 <pre caption="Start the service">
-<comment>(ALSA as modules)</comment>
-# <i>/etc/init.d/alsasound start</i>
- * Loading ALSA modules ...
- * Loading: snd-card-0 ...        [ ok ]
- * Loading: snd-pcm-oss ...       [ ok ]
- * Loading: snd-seq ...           [ ok ]
- * Loading: snd-emu10k1-synth ... [ ok ]
- * Loading: snd-seq-midi ...      [ ok ]
- * Restoring Mixer Levels ...     [ ok ]
-<comment>(ALSA compiled in)</comment>
-# <i>/etc/init.d/alsasound start</i>
- * Loading ALSA modules ...
- * Restoring Mixer Levels ...     [ ok ]
+# <i>/etc/init.d/alsasound start</i> 
 </pre>
 
 <p>
@@ -815,9 +842,25 @@ that should take care of this issue.
 
 <chapter>
 <title>Other things ALSA</title>
-<section>
+<section id="midi">
 <title>Setting up MIDI support</title>
 <body>
+
+<p>
+First, check to make sure that you enabled the <c>midi</c> USE flag in
+<path>/etc/make.conf</path>.
+</p>
+
+<pre caption="MIDI support in /etc/make.conf">
+USE="midi"
+</pre>
+
+<p>
+If you didn't previously enable <c>midi</c>, go ahead and add it to
+<path>/etc/make.conf</path> now. You will also need to re-emerge any ALSA
+packages that use the <c>midi</c> flag, such as <c>alsa-lib</c>,
+<c>alsa-utils</c>, and <c>alsa-driver</c>.
+</p>
 
 <p>
 If your sound card is one of those that come with on-board MIDI synthesizers 
@@ -895,22 +938,23 @@ like <c>timidity++</c>. Installation is a breeze.
 </pre>
 
 <p>
-For timidity to play sounds, it needs a sound font. If you do not have any,
-install <c>timidity-eawpatches</c> or <c>timidity-shompatches</c> which will
-give you some sound fonts.  You can have multiple sound font configurations
-installed, and you can place your own in <path>/usr/share/timidity/</path>.
-To switch between different timidity configurations, you should use the
-<c>timidity-update</c> tool provided in the timidity++ package.
+For timidity to play sounds, it needs a sound font. Fortunately, the ebuild will
+install some sound font packages for you. There are a few other font packages
+available in Portage, such as <c>timidity-freepats</c> and
+<c>timidity-eawpatches</c>. You can have multiple sound font configurations
+installed, and you can place your own in <path>/usr/share/timidity/</path>.  To
+switch between different timidity configurations, you should use the
+<c>timidity-update</c> tool provided in the timidity++ package. In later
+versions of timidity, <c>eselect</c> is used to switch configurations.
 </p>
 
-<pre caption="Installing sound fonts">
-# <i>emerge timidity-eawpatches</i>
+<pre caption="Changing configurations">
+<comment>(replace eawpatches with the name of your sound font package)</comment>
 # <i>timidity-update -g -s eawpatches</i>
 
-<comment>(or)</comment>
-
-# <i>emerge timidity-shompatches</i>
-# <i>timidity-update -g -s shompatches</i>
+<comment>(Use eselect if you have installed >=timidity-2.13.2-r3)</comment>
+# <i>eselect timidity list</i>
+# <i>eselect timidity set eawpatches</i>
 </pre>
 
 <p>
@@ -934,18 +978,8 @@ You can now try out <uri link="#doc_chap4_pre3">Playing MIDI</uri> files.
 
 <p>
 Some specific sound cards can benefit from certain tools provided by the
-<c>alsa-tools</c> and <c>alsa-firmware</c> packages. If you need
-<c>alsa-tools</c>, be sure to define the ALSA_TOOLS variable in
-<path>/etc/make.conf</path> with the tools you require. For instance:
-</p>
-
-<pre caption="Selecting ALSA Tools in /etc/make.conf">
-ALSA_TOOLS="as10k1 ac3dec"
-</pre>
-
-<p>
-If the ALSA_TOOLS variable is not set, all available tools will be built. 
-Now, install the <c>alsa-tools</c> (and/or <c>alsa-firmware</c>) package(s):
+<c>alsa-tools</c> and <c>alsa-firmware</c> packages. You may install either with
+a simple <c>emerge</c>.
 </p>
 
 <pre caption="Installing ALSA Tools">
@@ -955,7 +989,57 @@ Now, install the <c>alsa-tools</c> (and/or <c>alsa-firmware</c>) package(s):
 </body>
 </section>
 <section>
-<title>A Big thank you to...</title>
+<title>Multiple sound cards</title>
+<body>
+
+<p>
+You can more than one sound card in your system simultaneously, provided that
+you have built ALSA as modules in your kernel (or have installed
+<c>alsa-driver</c> instead).  You just need to specify which should be started
+first in <path>/etc/modules.d/alsa</path>. Your cards are identified by their
+driver names inside this file. 0 is the first card, 1 is the second, and so on.
+Here's an example for a system with two sound cards.
+</p>
+
+<pre caption="Two sound cards in /etc/modules.d/alsa">
+options snd-emu10k1 index=0
+options snd-via82xx index=1
+</pre>
+
+<p>
+Or, if you have two cards that use the same driver, you specify them on the same
+line, using comma-separated numbers. Here's an example for a system with three
+sound cards, two of which are the same Intel High Definition Audio card.
+</p>
+
+<pre caption="Multiple sound cards in /etc/modules.d/alsa">
+options snd-ymfpci index=0
+options snd-hda-intel index=1,2
+</pre>
+
+</body>
+</section>
+<section>
+<title>Plugins</title>
+<body>
+
+<p>
+You may want to install some plugins for extra functionality.
+<c>alsa-plugins</c> is a collection of useful plugins, which include: PulseAudio
+output, a sample rate converter, jack (a low-latency audio server), and an
+encoder that lets you output 6-channel audio through digital S/PDIF connections
+(both optical and coaxial). You can choose which of its plugins you want
+installed by adding their USE flags to <path>/etc/portage/package.use</path>.
+</p>
+
+<pre caption="Installing alsa-plugins">
+# <i>emerge -avt alsa-plugins</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>A big thank you to...</title>
 <body>
 
 <p>
