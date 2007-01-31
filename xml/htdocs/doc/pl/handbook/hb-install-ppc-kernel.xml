@@ -1,15 +1,15 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-install-ppc-kernel.xml,v 1.21 2006/07/24 12:16:27 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-install-ppc-kernel.xml,v 1.22 2007/01/31 16:37:09 shadoww Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>2.18</version>
-<date>2006-07-20</date>
+<version>7.3</version>
+<date>2006-12-06</date>
 
 <section>
 <title>Strefa czasowa</title>
@@ -68,7 +68,7 @@ wersja, dlatego należy mieć to na uwadze.
 
 <pre caption="Podgląd dowiązania do źródeł kernela">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.15-gentoo
+lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.15
 </pre>
 
 <p>
@@ -121,16 +121,12 @@ okazać się cennym źródłem informacji. Do ich wyświetlania służy poleceni
 <p>
 Kiedy już zbierzemy wszystkie informacje przechodzimy do katalogu ze
 źródłami i konfigurujemy jądro. Polecamy wykonanie najpierw polecenia <c>make
-defconfig</c> (w przypadku wersji jądra 2.6.15 lub wcześniejszych) lub <c>make
-pmac32_deconfig</c> (w przypadku wersji jądra 2.6.16 i późniejszych). Później
-można uruchomić oparty na ncurses interfejs (<c>make menuconfig</c>) i
-dostosować ustawienia do konkretnego przypadku.
+pmac32_defconfig</c>. Później można uruchomić oparty na ncurses interfejs 
+(<c>make menuconfig</c>) i dostosować ustawienia do konkretnego przypadku.
 </p>
 
 <pre caption="Uruchamianie menuconfig">
 # <i>cd /usr/src/linux</i>
-<comment>Jeżeli używamy jądra w wersji niższej lub równej niż 2.6.15, zamiast
-pcmac32_deconfig używamy samego deconfig</comment>
 # <i>make pmac32_deconfig</i>
 # <i>make menuconfig</i>
 </pre>
@@ -153,7 +149,7 @@ fragmentów kodu jądra. Jeśli tego nie zrobimy, nawet nie zobaczymy kilku
 bardzo ważnych opcji.
 </p>
 
-<pre caption="Wybieranie opcji experimental code/drivers oraz generalnych ustawień">
+<pre caption="Wybieranie opcji experimental code/drivers">
 Code maturity level options ---&gt;
   [*] Prompt for development and/or incomplete code/drivers
 </pre>
@@ -164,7 +160,9 @@ plików, których zamierzamy używać. Jeśli o to nie zadbamy, Gentoo nie będz
 stanie zamontować partycji, a czasem nawet się nie uruchomi. Pamiętać należy
 również, aby włączać te sterowniki na stałe do jądra, w żadnym wypadku nie
 kompilujmy ich jako moduły. Przy okazji zaznaczamy też <c>Virtual memory</c> i
-<c>/proc file system</c>.
+<c>/proc file system</c>. Należy się upewnić, że włączyliśmy wsparcie dla
+partycji Amigi jeśli używamy Pegasosa, lub partycji Macintosha jeśli używamy
+komputera Apple.
 </p>
 
 <pre caption="Wybór potrzebnych systemów plików">
@@ -172,11 +170,14 @@ File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
+  Partition Types ---&gt;
+    [*] Amiga partition table support
+    [*] Macintosh partition map support
 
 <comment>(Wybieramy jedną lub kilka z tych opcji zależnie od używanych systemów plików.)</comment>
-  &lt;*&gt; Second extended fs support
-  &lt;*&gt; Ext3 journalling file system support
   &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; Second extended fs support
   &lt;*&gt; XFS filesystem support
 </pre>
 
@@ -223,8 +224,8 @@ radzimy</e> korzystać z tej opcji.
 </p>
 
 <pre caption="Upewnianie się, że wyłączono wywłaszczanie">
-Platform options ---&gt;
-  [ ] Preemptible Kernel
+Kernel options ---&gt;
+  Preemption Model (No Forced Preemption (Server))
 </pre>
 
 <p>
@@ -420,6 +421,21 @@ i dodajemy <c>MODULES_FIREWIRE="ieee1394 ohci1394 sbp2"</c> dla Firewire lub
 </p>
 
 <p>
+Przed kompilacją źródeł, musimy dokonać paru poprawek w fstab. Pozostała część
+tego pliku zostanie uzupełniona później więc nie należy się teraz tym
+przejmować. Jeżeli nie stworzyliśmy oddzielnej partycji boot (NIE bootstrap,
+jest to zupełnie co innego), należy usunąć wpis odnoszący się do /boot z 
+<path>/etc/fstab</path>. Krok ten będziemy musieli wykonać na większości
+komputerów.
+</p>
+
+<pre caption="Usuwanie wpisu /boot z /etc/fstab na komputerach bez partycji boot">
+# <i>nano -w /etc/fstab</i>
+<comment>Należy usunąć poniższą linię</comment>
+/dev/BOOT               /boot           ext2            noauto,noatime  1 2
+</pre>
+
+<p>
 Źródła skompilujemy przy pomocy polecenia <c>genkernel --genzimage all</c>. Na
 Pegasosie należy inaczej skonfigurować jądro i zbudować je w formacie zImage
 zamiast vmlinux, z którego korzysta się na komputerach Apple.  Kompilowanie
@@ -458,17 +474,34 @@ sprzęt i wczyta odpowiednie moduły, a następnie uruchomi się właściwy syst
 </pre>
 
 <p>
-Następna czynność jeszcze bardziej upodobni nasz system do tego znajdującego się
-na płycie instalacyjnej. Zemergujemy <c>coldplug</c>, który działa na podobnej
-zasadzie jak initrd, wykrywający przy starcie wszystkie niezbędne do
-uruchomienia systemu urządzenia, z tym, że zajmuje się wszystkimi ich typami.
-Aby zemergować i uruchomić <c>coldplug</c> należy wykonać następujące
-polecenia:
+Jeśli chcemy, aby nasz system przypominał ten na LiveCD powinniśmy po
+zakończeniu instalacji Gentoo, skompilować <c>coldplug</c>. Podczas gdy initrd
+wykrywa automatycznie komponenty naszego komputera <c>coldplug</c> wykrywa
+automatycznie całą resztę. <c>coldplug</c> dostępny jest jako jeden z pakietów
+na płycie z pakietami.
 </p>
 
-<pre caption="Emergowanie i uruchamianie coldplug">
-# <i>emerge coldplug</i>
+<pre caption="Instalacja i uruchamianie coldplug">
+<comment>(Kroki te należy podjąć po zakończeniu instalacji systemu)</comment>
+# <i>emerge -k coldplug</i>
 # <i>rc-update add coldplug boot</i>
+</pre>
+
+<note>
+Jeżeli używamy <c>udev</c> w wersji od 103 wzwyż, nie musimy już instalować
+pakietu <c>coldplug</c>. Jeśli otrzymamy wiadomość, że <c>udev</c> blokuje
+<c>coldplug</c> przed instalacją, nie będziemy musieli kompilować tego
+drugiego.
+</note>
+
+<p>
+Aby nasz system reagował na zdarzenia hotplug, musimy zainstalować i
+skonfigurować <c>hotplug</c>:
+</p>
+
+<pre caption="Instalacja i uruchamianie hotplug">
+# <i>emerge hotplug</i>
+# <i>rc-update add hotplug default</i>
 </pre>
 
 <p>
