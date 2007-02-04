@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/bootstrap-solaris.xml,v 1.1 2007/02/04 00:21:59 grobian Exp $ -->
+
+<guide link="/proj/en/gentoo-alt/prefix/bootstrap.xml" lang="en">
+  <title>Gentoo Prefixed Portage Bootstrap Process for Solaris</title>
+  
+
+  <author title="Author">
+    <mail link="grobian@gentoo.org">Fabian Groffen</mail>
+  </author>
+
+  <abstract>
+    How to bootstrap Prefixed Portage on your Solaris system
+  </abstract>
+
+
+  <!-- The content of this document is licensed under the CC-BY-SA license -->
+  <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+  <license/>
+
+  <version>1.0</version>
+  <date>2007-02-04</date>
+
+  <chapter>
+    <title>Bootstrapping on Solaris 10</title>
+
+    <section><!-- {{{ Introduction -->
+      <title>Introduction</title>
+      <body>
+        <p>
+          Bootstrapping on Solaris 10 is relatively simple, if you
+          compare it to its predecessors.  It comes with bash3 and a
+          gcc-3.4.3 compiler by default, but without a download manager
+          such as wget.  If you still are in the process of installing
+          Solaris 10, make sure you install wget, to make things easier
+          lateron.
+        </p>
+        <p>
+          Solaris is one of the more "Spartan" platforms to bootstrap
+          on, and for sure not as easy as for instance a Linux
+          distribution or Mac OS X.  However, don't despair when things
+          go wrong, it's just known to be hard(er), but not impossible.
+        </p>
+      </body>
+    </section><!-- }}} -->
+
+    <section><!-- {{{ Bootstrapping -->
+      <title>Bootstrapping</title>
+      <body>
+        <p>
+          As prerequisite, you have to have gcc and wget installed.  If
+          you didn't install wget, you have to acquire the necessary
+          files in another way, e.g. via a brower, NFS, or scp.
+        </p>
+        <p>
+          The first step is to chose a path to install into.  We refer
+          to this path as "prefix path", stored in the variable
+          <c>$EPREFIX</c>.  Some suggestions for your prefix path are
+          <path>$HOME/Gentoo</path> or <path>$HOME/Library/Gentoo</path>.
+          Whatever you chose, make sure you set it in your environment:
+        </p>
+        <pre caption="Export EPREFIX variable">
+$ <i>export EPREFIX="$HOME/Gentoo"</i>
+        </pre>
+        <note>
+          tcsh users can use <c>setenv EPREFIX "$HOME/Gentoo"</c>
+          instead.
+        </note>
+        <p>
+          Next, add the following paths in your soon to be prefix to
+          your <c>PATH</c> environment.
+          <path>$EPREFIX/bin</path>,
+          <path>$EPREFIX/usr/bin</path>,
+          <path>$EPREFIX/tmp/bin</path> and
+          <path>$EPREFIX/tmp/usr/bin</path>.
+          Adding these paths makes sure that they will be available
+          later on in the process.
+          Additionally, you need the following paths to find the gnu
+          compiler, linker, make and some other tools:
+          <path>/usr/sfw/bin</path>,
+          <path>/usr/sfw/i386-sun-solaris2.10/bin</path>,
+          <path>/usr/bin</path> and <path>/bin</path>.
+        </p>
+        <pre caption="Add prefix and utility paths to your PATH">
+$ <i>export PATH="$EPREFIX/usr/bin:$EPREFIX/bin:$EPREFIX/tmp/usr/bin:$EPREFIX/tmp/bin:/usr/sfw/bin:/usr/sfw/i386-sun-solaris2.10/bin:/usr/bin:/bin"</i>
+        </pre>
+        <p>
+          Now the path is set, start with downloading the bootstrap
+          script from
+          <uri>http://overlays.gentoo.org/proj/alt/browser/trunk/prefix-overlay/scripts/bootstrap-prefix.sh?format=txt</uri>.
+          From the directory where the bootstrap script was stored execute
+          the following commands:
+        </p>
+        <pre caption="Use the bootstrap script">
+$ <i>chmod 755 bootstrap-prefix.sh</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX tree</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp wget</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp sed</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp python</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp coreutils</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp findutils</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp tar</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp patch</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp grep</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp gawk</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX portage</i>
+        </pre>
+        <note>Please note that <c>wget</c>, <c>sed</c>, etc. are
+          installed in <path>$EPREFIX/tmp</path>!</note>
+        <p>
+          The script will setup the <path>$EPREFIX</path>
+          directory, download a portage tree snapshot, unpack it and
+          download and install portage.  Afterwards it will try to setup
+          some sane defaults.  We continue with a little hack necessary
+          for a successful bootstrap:
+        </p>
+        <pre caption="Setup ld directions">
+$ <i>export LDFLAGS="-L${EPREFIX}/usr/lib -R${EPREFIX}/usr/lib -L${EPREFIX}/lib -R${EPREFIX}/lib"</i>
+$ <i>export CPPFLAGS="-I${EPREFIX}/usr/include"</i>
+        </pre>
+        <p>
+          Because we installed some new applications, we will instruct
+          bash to reconsider all paths we have:
+        </p>
+        <pre caption="rehash in bash">
+$ <i>hash -r</i>
+        </pre>
+        <note>
+          tcsh users can use the <c>rehash</c> command.
+        </note>
+        <p>
+          We continue adding some necessary tools which will deal with
+          many errors and warnings you might see during emerging.
+        </p>
+        <pre caption="emerge sed">
+$ <i>emerge --oneshot "=sys-apps/sed-4.1.4*"</i>
+        </pre>
+        <p>
+          Next, we emerge the <c>bash</c> shell and its dependency
+          ncurses.  <c>bash</c> is used extensively within portage and
+          other applications.
+        </p>
+        <pre caption="emerge bash">
+$ <i>emerge --oneshot bash</i>
+        </pre>
+        <note>
+          It is safe to ignore the "1 config files in XXX need updating"
+          message that appears till the end of the bootstrap process.
+        </note>
+        <p>
+          Now, we will emerge a compiler which will use the gnu linker.
+          This is a requirement for many packages that follow in the
+          bootstrap process.  The gcc compiler sipped by Sun uses the
+          Solaris native linker, which is as "Spartan" as the whole
+          system.  The packages to emerge include the <c>baselayout</c>
+          package.  Some, if not many, scripts and tools within a Gentoo
+          system assume the availability of the <c>baselayout</c>
+          package for all communication using the Gentoo colour scheme.
+        </p>
+        <pre caption="emerge linker and compiler">
+$ <i>emerge --oneshot --nodeps m4</i>
+$ <i>emerge --oneshot --nodeps baselayout-prefix</i>
+$ <i>emerge --oneshot --nodeps binutils-config</i>
+$ <i>emerge --oneshot --nodeps binutils</i>
+$ <i>emerge --oneshot --nodeps gcc-config</i>
+$ <i>emerge --oneshot --nodeps gcc</i>
+        </pre>
+        <p>
+          We continue getting some autotools stuff into our prefix.
+        </p>
+        <pre caption="emerge autotools">
+$ <i>emerge --oneshot --nodeps "=autoconf-2.1*" "=autoconf-2.6*" "autoconf-wrapper"</i>
+$ <i>emerge --oneshot --nodeps "=automake-1.4*" "=automake-1.5*" "=automake-1.6*" "=automake-1.7*" "=automake-1.8*" "automake-wrapper"</i>
+        </pre>
+        <note><c>>=automake-1.9</c> and <c>libtool</c> are not (yet)
+          installed at this stage.</note>
+        <p>
+          Next, we have to get some tools in order to finalise getting
+          the autotools in our prefix.  Because we installed <c>wget</c>
+          in a temporary location, let's not forget to install it
+          properly by emerging it now:
+        </p>
+        <pre caption="emerge wget">
+$ <i>emerge --oneshot --nodeps wget</i>
+        </pre>
+        <p>
+          After this we can emerge texinfo, which <c>automake-1.9</c>
+          needs.
+        </p>
+        <pre caption="emerge texinfo">
+$ <i>emerge --oneshot --nodeps texinfo</i>
+        </pre>
+        <p>
+          Now we can finish installing the autotools:
+        </p>
+        <pre caption="finalise emerge autotools">
+$ <i>emerge --oneshot --nodeps "=automake-1.9*" "=automake-1.10*"</i>
+$ <i>emerge --oneshot --nodeps libtool</i>
+        </pre>
+        <p>
+          Now we have some decent autotooling stuff around, we can get
+          some decent core utilities in our prefix.
+        </p>
+        <pre caption="emerge coreutils">
+$ <i>emerge --oneshot --nodeps sys-apps/coreutils</i>
+        </pre>
+        <p>
+          Next, we get GNU <c>awk</c>, as most ebuild expect this
+          <c>awk</c> when they use it.
+        </p>
+        <pre caption="emerge gawk">
+$ <i>emerge --oneshot gawk</i>
+        </pre>
+        <p>
+          Same goes for GNU patch.
+        </p>
+        <pre caption="emerge patch">
+$ <i>emerge --oneshot patch</i>
+        </pre>
+        <p>
+          Finally we emerge python and some other utilities in our
+          prefix.  These are the remaining packages that we temporarily
+          installed to bootstrap our system.
+        </p>
+        <pre caption="emerge remaining temporarily installed packages">
+$ <i>emerge --oneshot --nodeps python</i>
+$ <i>emerge --oneshot --nodeps findutils</i>
+$ <i>emerge --oneshot --nodeps tar</i>
+$ <i>emerge --oneshot --nodeps grep</i>
+$ <i>emerge --oneshot --nodeps make</i>
+$ <i>emerge --oneshot --nodeps bison</i>
+        </pre>
+        <p>
+          Before we continue to emerge all ebuilds from <c>system</c>,
+          we first install <c>portage</c>.  We need to overwrite the
+          version that was installed by the bootstrap script.
+          Installing a new portage will make sure it uses the tools
+          provided by the prefix, and forget about the temporary
+          installed tools.
+        </p>
+        <pre caption="emerge portage">
+$ <i>env FEATURES="-collision-protect" emerge --oneshot --nodeps portage</i>
+        </pre>
+        <p>
+          Now we're about to start the big work, we remove the temporary
+          directory and its use as we got it all in our prefix now.
+        </p>
+        <pre caption="remove tmp directory">
+$ <i>rm -Rf $EPREFIX/tmp/*</i>
+$ <i>hash -r</i>
+        </pre>
+        <p>
+          Next, we do the real work where all packages get reemerged in
+          such an order that they make use of packages in the prefix
+          itself.
+        </p>
+        <pre caption="emerge system">
+$ <i>emerge -e system</i>
+        </pre>
+        <p>
+          This will happily install a lot of stuff and reinstall what
+          you emerged before.  This is necessary to avoid compilation
+          failures due to dependencies.
+        </p>
+        <p>
+          Since we have some basic stuff now, we might want the benefit
+          of an updated tree.  To use it, emerge <c>subversion</c>:
+        </p>
+        <pre caption="emerge subversion">
+$ <i>emerge subversion</i>
+        </pre>
+        <p>
+          We can now update the tree.  Since snapshots now are actually
+          (anonymous) SVN checkouts of the tree, we can immediately use
+          SVN commands on the tree instead of checking a tree out first.
+          Because Portage knows how to deal with the SVN tree, and the
+          bootstrap script has set a correct <c>SYNC</c> variable in
+          your <path>etc/make.conf</path>, updating the tree is done
+          using:
+        </p>
+        <pre caption="Updating the tree">
+$ <i>emerge --sync</i>
+        </pre>
+        <p>
+          To really do this properly, after emerging <c>system</c>, one
+          should re-emerge <c>world</c>, because now all packages can
+          be compiled with all tools from the prefix, instead of based
+          on tools in the system root.  Before you do though, this is
+          the good time to set your general <c>USE</c>-flags, such as
+          <c>nls</c> to get localised messages in
+          <path>$EPREFIX/etc/make.conf</path>.  In that file, you
+          can also set <c>CFLAGS</c> for your compilation.  Be
+          conservative with <c>CFLAGS</c>!  Note that the code below is
+          an example, and is meant for inspiration only.
+        </p>
+        <pre caption="Customising the prefix installation - example">
+$ <i>echo 'USE="unicode nls"' >> $EPREFIX/etc/make.conf</i>
+$ <i>echo 'CFLAGS="-O2 -pipe"' >> $EPREFIX/etc/make.conf</i>
+        </pre>
+        <p>
+          Since we're about to rebuild our system for the last time, we
+          can unset all hacks we made to help the bootstrap process.
+          This time we emerge <c>world</c> to include the packages
+          necessary for <c>subversion</c>.
+        </p>
+        <pre caption="Unsetting LDFLAGS and CPPFLAGS variables">
+$ <i>unset LDFLAGS</i>
+$ <i>unset CPPFLAGS</i>
+$ <i>emerge -e world</i>
+        </pre>
+        <note>
+          tcsh users can use <c>unsetenv LDFLAGS</c> and alike for
+          <c>CPPFLAGS</c>.
+        </note>
+        <p>
+          After <c>world</c> has emerged successfully, your prefix will
+          be set up properly, and you can emerge the whichever tools you
+          choose from the prefix tree.
+        </p>
+      </body>
+    </section><!-- }}} -->
+
+  </chapter>
+
+</guide>
+
+<!-- vim: set expandtab ts=2 sw=2 foldmethod=marker foldenable: -->
+<!-- kate: space-indent on; indent-width 2; replace-tabs on; -->
