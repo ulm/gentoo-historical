@@ -1,0 +1,335 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Id: apache-upgrading.xml,v 1.1 2007/02/08 16:26:22 neysx Exp $ -->
+
+<guide link="/doc/id/apache-upgrading.xml" lang="id">
+<title>Upgrading Apache</title>
+
+<author title="Author">
+  <mail link="vericgar@gentoo.org">Michael Stewart</mail>
+</author>
+<author title="Translator">
+  <mail link="kucrut.dz@gmail.com">Dzikri Aziz</mail>
+</author>
+
+<abstract>
+Dokumen ini menjelaskan seluruh prosedur yang harus diikuti oleh pengguna
+untuk meng-upgrade instalasi apache dengan aman.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>2.3</version>
+<date>2005-09-29</date>
+
+<chapter>
+<title>Pendahuluan</title>
+<section>
+<body>
+
+<p>
+Keberadaan Apache dan modul-modulnya di gentoo telah menjadi suram. Ada
+beberapa masalah yang dapat menyebabkan masalah dukungannya menjadi lebih sulit:
+</p>
+
+<ul>
+  <li>
+    Konfigurasi yang digunakan oleh Gentoo sangat jauh berbeda dengan
+    konfigurasi dari pusat dan yang diperkirakan oleh user
+  </li>
+  <li>
+    Banyak modul yang menggunakan kode yang mirip, tetapi melakukan tugasnya
+    masing-masing dengan cara yang berbeda
+  </li>
+  <li>
+    Kebanyakan modul tidak diurus dengan benar - biasanya karena banyaknya
+    jumlah modul yang ada
+  </li>
+  <li>Tidak adanya standar untuk konfigurasi modul</li>
+  <li>
+    Sebagian modul dapat mendukung kedua versi Apache, tetapi ebuild tidak
+    dapat menanganinya
+  </li>
+  <li>
+    Pilihan-pilihan yang tersedia di Apache tidak tersedia untuk pengguna
+    Gentoo (misalnya MPM)
+  </li>
+  <li>Bug-bug Apache semakin bertambah</li>
+</ul>
+
+<p>
+Solusinya? Herd Apache diperluas, dengan menambahkan beberapa anggota baru
+yang bekerja sama untuk menciptakan eclass, meng-update semua modul dan
+memperbaiki sejumlah bug yang ada.
+</p>
+
+<p>
+Dokumen ini berisi cara-cara meng-upgrade Apache tanpa merusak sistem anda.
+Jika anda adalah pengembang atau ingin mengetahui apa saja yang telah
+berubah, atau bagaimana sebuah ebuild perlu dimodifikasi agar dapat memanfaatkan
+eclass kami, bacalah <uri
+link="apache-developer.xml">Referensi Pengembang Apache</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="upgrade">
+<title>Instruksi-instruksi Upgrade</title>
+<section>
+<body>
+
+<p>
+Kami telah mengadakan banyak perubahan dalam hal cara kerja Apache di Gentoo.
+Setiap paket yang berhubungan langsung dengan Apache perlu di-update dan akan
+ada beberapa hal yang tadinya berfungsi jadi tidak berfungsi lagi.
+</p>
+
+<p>
+Pertama anda perlu mengetahui paket-paket apa saja yang perlu anda upgrade.
+Anda dapat melakukannya dengan menggunakan tool <c>equery</c> yang merupakan
+bagian dari paket <c>app-portage/gentoolkit</c>.
+</p>
+
+<pre caption="Mencari paket-paket yang perlu di-update">
+$ <i>equery depends net-www/apache</i>
+[ Searching for packages depending on net-www/apache... ]
+dev-db/phpmyadmin-2.5.6
+dev-php/mod_php-4.3.10
+dev-php/phpsysinfo-2.1-r2
+net-www/mod_bandwidth-2.0.5
+net-www/mod_layout-4.0.1a
+net-www/mod_ldap_userdir-1.1.4
+net-www/mod_loopback-1.04
+net-www/mod_mp3-0.40
+net-www/mod_random-2.0
+net-www/mod_throttle-3.1.2-r1
+net-www/mod_watch-3.18
+www-apps/viewcvs-0.9.2_p20030430
+</pre>
+
+<impo>
+Paket-paket yang anda instal mungkin sangat berbeda dengan contoh di atas; jadi
+anda perlu menjalankan sendiri perintah tersebut.
+</impo>
+
+<warn>
+Ada beberapa modul dan paket yang bergantung pada Apache tetapi belum di-update.
+Silakan mencarinya di <uri link="http://bugs.gentoo.org">bugzilla</uri> untuk
+mengetahui paket-paket penting yang anda gunakan dengan Apache.
+</warn>
+
+<p>
+Banyak aplikasi web yang tidak terpengaruh sama sekali karena kebanyakannya
+menggunakan eclass <c>webapp</c> yang telah menangani instalasinya. Anda mungkin
+perlu mengecek untuk mengetahui apakah sudah ada revisi baru.
+</p>
+
+<p>
+Karena kita telah menambahkan beberapa flag USE baru, anda mungkin perlu
+memeriksanya kembali dan menambahkan baris-baris yang diperlukan di file
+<path>/etc/portage/package.use</path>. Bacalah <uri
+link="#use">Flag-flag USE yang didukung oleh Apache</uri> untuk info
+perinciannya.
+</p>
+
+<pre caption="Memeriksa setting flag USE flag dan melakukan rebuild">
+<comment>(Periksa flag USE dan update-update yang diperlukan)</comment>
+# <i>emerge --pretend --verbose --update --newuse --deep apache subversion \
+mod_php mod_bandwidth mod_layout mod_ldap_userdir mod_loopback mod_mp3 \
+mod_random mod_throttle mod_watch</i>
+
+<comment>(Update paket)</comment>
+# <i>emerge --verbose --update --newuse --deep apache subversion mod_php \
+mod_bandwidth mod_layout mod_ldap_userdir mod_loopback mod_mp3 mod_random \
+mod_throttle mod_watch</i>
+
+<comment>(Mungkin akan lebih mudah untuk mengupdate world sekaligus ketimbang
+update seperti di atas)</comment>
+# <i>emerge --ask --verbose --update --newuse --deep world</i>
+</pre>
+
+<p>
+Sekarang anda perlu mengkonfigurasi ulang Apache dan modul-modulnya. Mulailah
+dengan <c>etc-update</c> atau <c>dispatch-conf</c> untuk meng-update file
+<path>/etc/init.d</path> dan <path>/etc/conf.d</path>. Anda akan melihat bahwa
+file-file konfigurasi apache anda tidak akan ditampilkan pada proses update -
+hal ini terjadi karena semua file-file konfigurasi telah dipindahkan.
+</p>
+
+<p>
+Jika anda sebelumnya telah membuat perubahan pada file <path>apache.conf</path>
+dan <path>commonapache.conf</path> yang asli, anda perlu melakukan migrasi
+perubahan anda ke <path>/etc/apache{|2}/httpd.conf</path>. Konfigurasi untuk
+modul-modul dan virtual host juga telah dipindahkan -- semuanya sekarang
+terletak di <path>/etc/apache2/modules.d</path> dan
+<path>/etc/apache2/vhosts.d</path>.
+</p>
+
+<p>
+Ketika anda telah selesai dengan migrasi, anda perlu menghapus file-file
+konfigurasi lama (atau memindahkannya ke sebuah lokasi yang aman). File
+<path>/etc/init.d/apache{|2}</path> yang baru akan memeriksa file-file ini
+dan tidak akan mengizinkan anda untuk menjalankan apache sebelum anda
+menghapusnya, yang menandakan bahwa anda telah mengkonfigurasi ulang
+apache dengan path-path yang baru.
+</p>
+
+<note>
+Banyak modul yang dulunya diaktifkan secara default sekarang telah
+dinonaktifkan. Jika modul-modul ini merupakan modul bawaan apache, maka
+hapuslah tanda komentar pada baris yang bersangkutan di <path>httpd.conf</path>.
+Namun jika modul-modul tersebut adalah modul eksternal, carilah <c>IfDefine</c>
+di file <path>.conf</path> lalu tambahkan namanya ke
+<path>/etc/conf.d/apache{|2}</path> untuk mengaktifkannya.
+</note>
+
+<p>
+Sekarang anda boleh me-restart apache.
+</p>
+
+<pre caption="Restart apache">
+# <i>/etc/init.d/apache stop</i>
+# <i>/etc/init.d/apache start</i>
+</pre>
+
+<p>
+Jika anda mendapatkan masalah, silakan baca <uri
+link="/doc/id/apache-troubleshooting.xml">Panduan Pemecahan Masalah Apache</uri>
+dan jika anda belum mendapatkan solusinya, silakan buat laporan di <uri
+link="http://bugs.gentoo.org">Bugzilla Gentoo</uri>. Jangan lupa untuk
+mencantumkan modul-modul apa saja yang telah anda aktifkan dan (jika anda
+menggunakan Apache 2) flag USE MPM apa saja yang telah anda gunakan ketika
+kompilasi (jika ada). Anda juga dapat bergabung dengan kami di channel
+<path>#gentoo-apache</path> di <path>irc.freenode.net</path> untuk mendapatkan
+bantuan.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="use">
+<title>Flag-flag USE yang didukung oleh Apache</title>
+<section>
+<body>
+
+
+<p>
+Ada beberapa flag USE yang digunakan secara lokal oleh apache dan
+modul-modulnya. Apache mendukung beberapa flag USE biasa lainnya seperti
+<c>ssl</c>, tetapi pengaruhnya terhadap apache tidak terlalu berbeda dengan
+pengaruhnya terhadap paket-paket lain, jadi flag yang seperti itu tidak kami
+cantumkan pada daftar di bawah ini. Jalankan <c>emerge --verbose --pretend
+apache</c> untuk melihat daftar lengkap flag USE yang didukung oleh apache.
+</p>
+
+<table>
+<tr>
+  <th>Flag USE</th>
+  <th>Paket</th>
+  <th>Penjelasan</th>
+</tr>
+<tr>
+  <ti>apache2</ti>
+  <ti>depend.apache eclass (semua modul)</ti>
+  <ti>
+    Harus selalu di-set jika menggunakan baris Apache-2.0, tidak boleh di-set
+    jika menggunakan baris Apache-1.3. eclass menggunakannya untuk menentukan
+    versi apache yang mana yang akan dijadikan patokan</ti>
+</tr>
+<tr>
+  <ti>mpm-leader</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Mengikutsertakan <uri
+    link="http://httpd.apache.org/docs-2.0/mod/leader.html">leader</uri>
+    MPM</ti>
+</tr>
+<tr>
+  <ti>mpm-metux</ti>
+  <ti>apache-2*</ti>
+  <ti>Mengikutsertakan <uri link="http://www.metux.de/mpm/">metux</uri> MPM</ti>
+</tr>
+<tr>
+  <ti>mpm-peruser</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Mengikutsertakan <uri link="http://www.telana.com/peruser.php">peruser</uri> MPM
+  </ti>
+</tr>
+<tr>
+  <ti>mpm-prefork</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Mengikutsertakan <uri
+    link="http://httpd.apache.org/docs-2.0/mod/prefork.html">prefork</uri>
+    MPM</ti>
+</tr>
+<tr>
+  <ti>mpm-threadpool</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Mengikutsertakan <uri
+    link="http://httpd.apache.org/docs-2.0/mod/threadpool.html">threadpool</uri>
+    MPM</ti>
+</tr>
+<tr>
+  <ti>mpm-worker</ti>
+  <ti>apache-2*</ti>
+  <ti>
+    Mengikutsertakan <uri
+    link="http://httpd.apache.org/docs-2.0/mod/worker.html">worker</uri>
+    MPM</ti>
+</tr>
+<tr>
+  <ti>no-suexec</ti>
+  <ti>apache</ti>
+  <ti>
+    Meniadakan modul suexec (bagi yang tidak menginginkan binari suid yang
+    mungkin tidak aman pada sistemnya)
+  </ti>
+</tr>
+<tr>
+  <ti>static-modules</ti>
+  <ti>apache</ti>
+  <ti>
+    Membuat link statis dari modul ke binari apache, agar LoadModule tidak
+    diperlukan untuk me-load modul-modul dasar ke Apache
+  </ti>
+</tr>
+<tr>
+  <ti>lingerd</ti>
+  <ti>apache-1*</ti>
+  <ti>
+    Menambahkan dukungan untuk <uri
+    link="http://www.iagora.com/about/software/lingerd/">lingerd</uri>
+  </ti>
+</tr>
+<tr>
+  <ti>no-htdocs</ti>
+  <ti>gentoo-webroot-default</ti>
+  <ti>
+    Meniadakan instalasi webroot default ke
+    <path>/var/www/localhost</path> agar file-file buatan anda sendiri tidak
+    akan ditimpa. Untuk itu webroot akan diinstal di
+    <path>/usr/share/doc/gentoo-webroot-default-*/webroot/</path>.
+  </ti>
+</tr>
+</table>
+
+<note>
+Walaupun terdapat banyak flag USE mpm-*, semuanya hampir sama. Anda hanya
+perlu mengaktifkan satu flag USE mpm-*. (Jika anda tidak mengaktifkan salah
+satu, mpm-prefork atau mpm-worker akan digunakan, tergantung apakah flag
+threads diaktifkan atau tidak)
+</note>
+
+</body>
+</section>
+</chapter>
+
+</guide>

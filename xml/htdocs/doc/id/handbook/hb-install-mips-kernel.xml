@@ -2,26 +2,29 @@
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
-
-<!-- English doc rev. 1.6 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
+
+<version>7.0</version>
+<date>2006-08-30</date>
+
 <section>
 <title>Zona Waktu (Timezone)</title>
 <body>
 
 <p>
 Pertama, anda perlu memilih zona waktu anda agar sistem anda tahu dimana
-dia berada. Carilah zona waktu anda di <path>/usr/share/zoneinfo</path>, lalu
-buat sebuah link simbolik (symlink) ke <path>/etc/localtime</path> menggunakan
-perintah <c>ln</c>:
+dia berada. Carilah zona waktu anda di <path>/usr/share/zoneinfo</path>,
+kemudian copy ke <path>/etc/localtime</path>. Hindari penggunaan zona waktu
+<path>/usr/share/zoneinfo/Etc/GMT*</path> karena namanya tidak mengindikasikan
+zona yang diharapkan. <path>GMT-8</path> sesungguhnya adalah GMT+8.
 </p>
 
-<pre caption="Set zona waktu">
+<pre caption="Mengatur zona waktu">
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(Misalnya anda ingin menggunakan GMT)</comment>
-# <i>ln -sf /usr/share/zoneinfo/GMT /etc/localtime</i>
+# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
 </pre>
 
 </body>
@@ -41,41 +44,106 @@ link="/doc/id/gentoo-kernel.xml">Panduan Kernel Gentoo</uri>.
 </p>
 
 <p>
-Sistem berbasis MIPS dapat memilih antara <c>mips-sources</c> (kernel default
-untuk arsitektur MIPS), dan <c>mips-prepatch-sources</c> (cabang kernel
-pra-rilis).
+Sistem berbasis MIPS hanya memiliki satu pilihan kernel, yaitu
+<c>mips-sources</c>. <!--Special patches are needed to make certain systems work.
+The table below displays the USE flags required to enable the patchsets. Note
+that Indy, Indigo2 (R4k) and Challenge S systems do not require any additional
+patchsets.--> Kumpulan <e>patch</e> di paket ini berbeda dengan yang terdapat
+pada paket kernel untuk arsitektur lain, karena berisi banyak sekali
+<e>patch</e> khusus untuk arsitektur MIPS.
 </p>
 
-<p>
-Pilihlah kernel anda dan instal menggunakan perintah <c>emerge</c>.
-Tentu saja, gantikan dengan source kernel pilihan anda, ini hanya merupakan
-contoh:
-</p>
+<!--
+<table>
+<tr>
+  <th>USE flag</th>
+  <th>System</th>
+</tr>
+<tr>
+  <ti><c>cobalt</c></ti>
+  <ti>Cobalt Qube/RaQ support</ti>
+</tr>
+<tr>
+  <ti><c>ip27</c></ti>
+  <ti>SGI Origin 200/2000 support (1)</ti>
+</tr>
+<tr>
+  <ti><c>ip28</c></ti>
+  <ti>SGI Indigo2 Impact (R10000) support (1,2)</ti>
+</tr>
+<tr>
+  <ti><c>ip30</c></ti>
+  <ti>SGI Octane/Octane2 support (1)</ti>
+</tr>
+</table>-->
 
-<pre caption="Instal sebuah kernel">
-# <i>emerge mips-sources</i>
+<note>
+<c>USE="-doc"</c> akan mencegah penginstalan dokumentasi API kernel, yang jika
+anda gunakan akan memaksa instalasi banyak dependensi lain yang untuk saat
+ini tidak diperlukan.
+</note>
+
+<pre caption="Instalasi source kernel...">
+<!-- Done by profile?
+<comment>(Substitute cobalt with the appropriate USE flag for your system if required)</comment>
+# <i>mkdir /etc/portage</i>
+# <i>echo "sys-kernel/mips-sources cobalt" &gt;&gt; /etc/portage/package.use</i>
+-->
+<comment>(Ekstrak &amp; instal source kernel)</comment>
+# <i>USE="-doc" emerge mips-sources</i>
+</pre>
+
+<impo>
+<!--(1)--> Pada sistem Origin 200/2000, Indigo2 Impact (R10000), Octane/Octane2
+dan O2, diperlukan kernel 64-bit agar sistem dapat boot. Untuk komputer-komputer
+ini, anda harus <!--switch to the <path>default-linux/mips/mips64/RELEASE</path>
+profile by altering the <path>/etc/make.profile</path> symlink.
+Then you can --><c>emerge kgcc64</c> untuk menciptakan <e>cross-compiler</e>
+yang akan digunakan untuk membangun kernel 64-bit.
+</impo>
+
+<!--<impo>
+(2) The Indigo2 Impact is a special case in that it requires special patch to
+be applied to <c>gcc</c> before it will build an IP28 kernel correctly. This
+patch adds support for the <c>-mip28-cache-barriers</c> CFLAG, which is used
+when building kernels to work around the inherent hardware bug brought on by
+speculative execution. This USE flag can be set in <path>/etc/make.conf</path>.
+This is done for you by setting your profile to
+<path>default-linux/mips/mips64/ip28/RELEASE</path>, which also takes care of
+(1).
+</impo>-->
+
+<pre caption="Instalasi kgcc64...">
+<!--<comment>(This assumes PORTDIR is in the usual location; /usr/portage)</comment>
+# <i>rm /etc/make.profile</i>
+# <i>ln -s /usr/portage/profiles/default-linux/mips/mips64/2005.0</i> <comment>(or .../mips64/ip28/2005.0)</comment>
+
+<comment>(Install the 64-bit kernel toolchain)</comment>
+--># <i>emerge kgcc64</i>
 </pre>
 
 <p>
 Jika anda melihat ke direktori <path>/usr/src</path>, anda akan menemukan
 sebuah link simbolik (symlink) bernama <path>linux</path> yang menunjuk
-ke kernel anda:
+ke source kernel. Pada contoh ini, source kernel yang terinstal adalah
+<c>mips-sources-2.6.13.4</c>. Versi kernel anda mungkin berbeda, jadi ingatlah
+ini selalu.
 </p>
 
 <pre caption="Melihat link simbolik kernel">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.4.24
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.13.4
 </pre>
 
 <p>
-Jika ini tidak benar (link simbolik menunjuk ke kernel lain), gantikan link
-simbolik tersebut sebelum anda melanjutkan:
+Jika hasilnya tidak sama (symlink menunjuk ke source kernel lain), gantilah
+symlink sebelum anda melanjutkan:
 </p>
 
-<pre caption="Mengganti link simbolik kernel">
+<pre caption="Mengganti symlink source kernel">
 # <i>rm /usr/src/linux</i>
 # <i>cd /usr/src</i>
-# <i>ln -s linux-2.4.24 linux</i>
+# <i>ln -s linux-2.6.13.4 linux</i>
 </pre>
 
 <p>
@@ -86,258 +154,150 @@ Sekarang saatnya untuk mengkonfigurasi dan kompilasi kernel anda.
 </subsection>
 </section>
 <section>
-<title>Konfigurasi Manual</title>
+<title>Kompilasi &amp; Instalasi Kernel</title>
 <subsection>
 <title>Pendahuluan</title>
 <body>
 
 <p>
-Konfigurasi kernel secara manual tampaknya adalah prosedur tersulit yang
-harus dilakukan oleh setiap pengguna Linux. Memang benar -- setelah
-mengkonfigurasi beberapa kernel, anda tidak akan lagi ingat bahwa cara
-tersebut sulit ;-)
-</p>
-
-<p>
-Bagaimanapun juga, satu hal <e>selalu</e> benar: anda harus tahu sistem anda
-sebelum mulai mengkonfigurasi kernel secara manual. Kebanyakan informasi
-dapat ditemukan dengan melihat isi <path>/proc/pci</path> (atau menggunakan
-perintah <c>lspci</c> jika tersedia). Anda dapat juga menjalankan <c>lsmod</c>
-untuk melihat modul kernel apa saja yang digunakan oleh LiveCD (tampilan
-tersebut mungkin memberi gambaran bagi anda apa saja yang harus diaktifkan).
-</p>
-
-<p>
-Sekarang, masuklah ke direktori kernel anda dan jalankan <c>make
-menuconfig</c>. Perintah ini akan menjalankan menu konfigurasi berbasis
-ncurses.
-</p>
-
-<pre caption="Menjalankan menuconfig">
-# <i>cd /usr/src/linux</i>
-# <i>make menuconfig</i>
-</pre>
-
-<p>
-Anda akan menemukan beberapa seksi konfigurasi. Kami pertama-tama akan
-menjelaskan beberapa opsi yang harus anda aktifkan (jika tidak, Gentoo tidak
-dapat berjalan dengan benar).
+Dahulu, kami menggunakan konfigurasi manual untuk men-setup source kernel.
+Tetapi sekarang hal ini sudah tidak praktis lagi karena banyaknya sistem
+yang kami dukung. Seksi ini menjelaskan beberapa sumber contoh konfigurasi
+kernel.
 </p>
 
 </body>
 </subsection>
 <subsection>
-<title>Mengaktifkan Opsi-Opsi yang Diperlukan</title>
+<title>Menggunakan contoh konfigurasi yang ada di source kernel</title>
 <body>
 
 <p>
-Pertama, aktifkan penggunaan "development and experimental code/drivers".
-Anda memerlukannya, jika tidak, beberapa code/driver yang sangat penting
-tidak akan ditampilkan:
+Banyak sistem yang telah diberikan contoh file <path>.config</path> yang
+tersembunyi di dalam source kernel. Tidak semua sistem diberikan file ini
+dengan cara yang sama. Bagi sistem yang diberikan, anda dapat
+mengkonfigurasinya dengan menggunakan perintah-perintah pada tabel berikut ini:
 </p>
 
-<pre caption="Memilih code/driver eksperimental">
-Code maturity level options ---&gt;
-  [*] Prompt for development and/or incomplete code/drivers
+<table>
+<tr>
+  <th>Sistem</th>
+  <th>Perintah konfigurasi</th>
+</tr>
+<tr>
+  <ti>Server Cobalt</ti>
+  <ti><c>make cobalt_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indy, Indigo2 (R4k), Challenge S</ti>
+  <ti><c>make ip22_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Origin 200/2000</ti>
+  <ti><c>make ip27_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indigo2 Impact (R10k)</ti>
+  <ti>
+    <c>make ip28_defconfig</c> (membutuhkan <c>mips-sources-2.6.14.5</c> atau
+    yang lebih baru)
+  </ti>
+</tr>
+<tr>
+  <ti>O2</ti>
+  <ti><c>make ip32_defconfig</c></ti>
+</tr>
+</table>
+
+</body>
+</subsection>
+
+<subsection>
+<title>
+  Menggunakan konfigurasi kernel yang sedang digunakan dari media instalasi
+</title>
+<body>
+
+<p>
+Semua imej instalasi Gentoo menyediakan opsi-opsi konfigurasi kernel sebagai
+bagian dari imej itu sendiri, berupa file <path>/proc/config.gz</path>.
+File ini dapat digunakan pada banyak kasus. Sangat baik digunakan jika versi
+kernel anda dekat dengan kernel CD. Untuk menyalinnya, jalankan perintah
+berikut ini:
+</p>
+
+<pre caption="Ekstrak .config dari /proc/config.gz">
+# <i>zcat /proc/config.gz > .config</i>
 </pre>
 
+<impo>
+Konfigurasi kernel ini diatur untuk imej netboot. Artinya, filesystem root
+akan dicari di suatu tempat yang dekat, berupa direktori atau initramfs, atau
+device loopback untuk initrd. Ketika anda menjalankan <c>make menuconfig</c>
+nanti, jangan lupa untuk masuk ke menu "General Setup" dan nonaktifkan opsi
+untuk initramfs.
+</impo>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Database Kompatibilitas Hardware</title>
+<body>
+
 <p>
-Sekarang masuklah ke <c>File Systems</c> dan aktifkan dukungan terhadap
-filesystem yang anda gunakan. <e>Jangan</e> kompilasi dukungan tersebut
-sebagai modul, jika tidak, sistem Gentoo anda tidak akan dapat me-mount
-partisi-partisi anda. Serta, aktifkan juga <c>Virtual memory</c>, <c>/proc
-file system</c>, <c>/dev file system</c> + <c>Automatically mount at boot</c>:
+Sebagai bantuan agar anda mudah mendapatkan setting-setting yang bagus, kami
+telah menyusun database kompatibilitas hardware. Database ini berisi dukungan
+untuk berbagai perangkat MIPS, dan mempersilahkan para pengguna untuk
+mengirimkan konfigurasi kernel yang diketahui dapat berfungsi dengan baik.
+Alamat website ini adalah
+<uri>http://stuartl.longlandclan.hopto.org/gentoo/mips</uri>.
 </p>
 
-<pre caption="Memilih filesystem yang diperlukan">
-<comment>(Untuk kernel 2.4.x)</comment>
-File systems ---&gt;
-  [*] Virtual memory file system support (former shm fs)
-  [*] /proc file system support
-  [*] /dev file system support (EXPERIMENTAL)
-  [*]   Automatically mount at boot
-  [ ] /dev/pts file system for Unix98 PTYs
+<p>
+Jika menurut anda layanan ini berguna, kami sangat mengharapkan kontribusi
+anda berupa catatan-catatan dan file <path>.config</path> agar pengguna lain
+dapat merasakan manfaat dari pengalaman anda. Namun perlu dicatat bahwa kami
+tidak menjamin semua file yang terdapat di website ini bisa bekerje dengan baik.
+</p>
 
-<comment>(Untuk kernel 2.6.x)</comment>
-File systems ---&gt;
-  Pseudo Filesystems ---&gt;
-    [*] /proc file system support
-    [*] /dev file system support (OBSOLETE)
-    [*]   Automatically mount at boot
-    [*] Virtual memory file system support (former shm fs)
+</body>
+</subsection>
 
-<comment>(Aktifkan satu atau lebih opsi-opsi berikut sesuai kebutuhan sistem anda)</comment>
-  &lt;*&gt; Reiserfs support
-  &lt;*&gt; Ext3 journalling file system support
-  &lt;*&gt; JFS filesystem support
-  &lt;*&gt; Second extended fs support
-  &lt;*&gt; XFS filesystem support
+<subsection>
+<title>Menyesuaikan konfigurasi dengan kebutuhan anda</title>
+<body>
+
+<p>
+Setelah anda menemukan sebuah konfigurasi, download file tersebut ke direktori
+kernel anda lalu ganti namanya menjadi <path>.config</path>. Dari sana, anda
+dapat menjalankan <c>make oldconfig</c> untuk memperbarui semua konfigurasi dan
+menyesuaikannya sebelum memulai konfigurasi.
+</p>
+
+<pre caption="Konfigurasi kernel">
+# <i>cd /usr/src/linux</i>
+# <i>cp /path/to/example-config .config</i>
+# <i>make oldconfig</i>
+<comment>(Tekan ENTER pada setiap pertanyaan untuk menerima default... kita akan menyesuaikannya nanti)</comment>
+# <i>make menuconfig</i>
 </pre>
 
-<p>
-Jika anda menggunakan PPPoE untuk koneksi internet atau modem dial-up,
-anda memerlukan opsi-opsi berikut di kernel:
-</p>
+<impo>
+Pada menu "Kernel Hacking" terdapat opsi "Are You Using A Cross Compiler?".
+Opsi ini memerintahkan kernel untuk menambahkan "<c>mips-linux-</c>" (atau
+<c>mipsel-linux</c> ... dll) ke perintah <c>gcc</c> dan <c>as</c> ketika kernel
+dikompilasi. Opsi ini harus dinonaktifkan, walaupun anda melakukan
+<e>cross-compiling</e>. Sebaliknya, jika anda perlu memanggil
+<e>cross-compiler</e>, tentukan prefiks dengan variabel <c>CROSS_COMPILE</c>
+seperti ditunjukkan pada seksi berikut.
+</impo>
 
-<pre caption="Memilih driver-driver PPPoE yang diperlukan">
-<comment>(Untuk kernel 2.4.x)</comment>
-Network device support ---&gt;
-  &lt;*&gt; PPP (point-to-point protocol) support
-  &lt;*&gt;   PPP support for async serial ports
-  &lt;*&gt;   PPP support for sync tty ports
-
-<comment>(Untuk kernel 2.6.x)</comment>
-Device Drivers ---&gt;
-  Networking support ---&gt;
-    &lt;*&gt; PPP (point-to-point protocol) support
-    &lt;*&gt;   PPP support for async serial ports
-    &lt;*&gt;   PPP support for sync tty ports
-</pre>
-
-<p>
-Kedua opsi-opsi kompresi tidak berbahaya tetapi tidak benar-benar diperlukan,
-begitu juga dengan opsi <c>PPP over Ethernet</c>, opsi-opsi tersebut mungkin
-hanya digunakan oleh <c>rp-pppoe</c> jika dikonfigurasi untuk melakukan
-modus kernel PPPoE.
-</p>
-
-<p>
-Jika anda memerlukannya, jangan lupa untuk mengikutsertakan dukungan kernel
-terhadap kartu ethernet anda.
-</p>
-
-<p>
-Jika anda menggunakan sistem berbasis Indy/Indigo2, anda perlu mengaktifkan
-dukungan terhadapnya.
-</p>
-
-<pre caption="Aktifkan SGI IP22">
-Machine selection ---&gt;
-  [*] Support for SGI IP22 (Indy/Indigo2)
-</pre>
-
-<p>
-Jika anda ingin menjalankan binari IRIX, aktifkan opsi berikut:
-</p>
-
-<pre caption="Aktifkan dukungan binari IRIX">
-General setup ---&gt;
-  [*] Include IRIX binary compatibility
-</pre>
-
-<p>
-Jika anda memiliki kartu ISA/EISA di SGI Indigo2 anda, aktifkan dukungannya.
-</p>
-
-<pre caption="Aktifkan dukungan ISA/EISA untuk SGI Indigo2">
-General setup ---&gt;
-  [*] Indigo-2 (IP22) EISA bus support
-  [*]   ISA bus support
-</pre>
-
-<p>
-Jika anda memiliki port paralel SGI, anda dapat mengaktifkan dukungannya.
-Jika anda memiliki port paralel ISA, anda sebaiknya memilih "PC-style hardware".
-</p>
-
-<pre caption="Aktifkan dukungan port paralel SGI">
-Parallel port support  ---&gt;
-  &lt;*&gt; Parallel port support
-  &lt;*&gt;   SGI Indy/Indigo2 hardware (EXPERIMENTAL) (NEW)
-  &lt;*&gt;   IEEE 1284 transfer modes (NEW)
-</pre>
-
-<p>
-Jika anda ingin menggunakan slot ISA Indigo2, aktifkan dukungan "plug and play".
-</p>
-
-<pre caption="Aktifkan dukungan PnP untuk ISA">
-Plug and Play configuration  ---&gt;
-  &lt;*&gt; Plug and Play support
-  &lt;*&gt;   ISA Plug and Play support
-</pre>
-
-<p>
-Jangan lupa untuk mengaktifkan dukungan SCSI, dan gunakan driver SGI WD93C93:
-</p>
-
-<pre caption="Aktifkan dukungan driver WD93C93">
-SCSI low-level drivers  ---&gt;
-  &lt;*&gt; SGI WD93C93 SCSI Driver
-</pre>
-
-<p>
-Untuk kartu jaringan, anda mungkin memerlukan dukungan terhadap kontroler
-ehternet SGI Seeq:
-</p>
-
-<pre caption="Aktifkan dukungan SGI Seeq">
-Network device support  ---&gt;
-  Ethernet (10 or 100Mbit)  ---&gt;
-    [*] Ethernet (10 or 100Mbit)
-    [*]   SGI Seeq ethernet controller support
-</pre>
-
-<p>
-Jangan lupa untuk mengaktifkan dukungan konsol serial dan dukungan terhadap
-SGI Zilog85C30:
-</p>
-
-<pre caption="Aktifkan dukungan SGI Zilog85C30">
-Character devices ---&gt;
-  [*] Non-standard serial port support
-  [*]   SGI Zilog85C30 serial support
-</pre>
-
-<p>
-Jangan lupa juga untuk mengaktifkan dukungan Indy/I2 Watchdog serta dukungan
-SGI DS1286 RTC:
-</p>
-
-<pre caption="Aktifkan dukungan Watchdog dan RTC">
-Character Devices ---&gt;
-  [*] SGI DS1286 RTC support
-  Watchdog Cards  ---&gt;
-    [*] Watchdog Timer Support
-    &lt;*&gt;   Indy/I2 Hardware Watchdog
-</pre>
-
-<p>
-Anda juga harus mengaktifkan dukungan terhadap partisi SGI :)
-</p>
-
-<pre caption="Aktifkan dukungan terhadap partisi SGI">
-File Systems ---&gt;
-  Partition Types ---&gt;
-    [*] Advanced partition selection
-    [*]   SGI partition support
-</pre>
-
-<p>
-Jika anda memiliki kartu SGI Newport (XL Gfx) dan ingin menggunakannya, maka
-anda perlu mengaktifkan dukungannnya:
-</p>
-
-<pre caption="Aktifkan dukungan untuk kartu SGI Newport">
-Console drivers  ---&gt;
-  &lt;*&gt; SGI Newport Console support (NEW)
-</pre>
-
-<p>
-Jika anda menginginkan dukungan suara pada Indy/Indigo2 anda, aktifkan
-dukungannya:
-</p>
-
-<pre caption="Aktifkan dukungan untuk SGI HAL2">
-Sound  ---&gt;
-  &lt;*&gt; Sound card support
-  &lt;*&gt;   SGI HAL2 sound (EXPERIMENTAL)
-</pre>
-
-<p>
-Setelah anda selesai mengkonfigurasi kernel, lanjutkan ke <uri
-link="#compiling">Kompilasi dan Instalasi</uri>.
-</p>
+<impo>
+Ada masalah yang diketahui dengan JFS dan ALSA pada sistem Octane, di mana ALSA
+tidak bisa berfungsi. Karena sifat asli JFS yang masih dalam tahap pengujian di
+MIPS kami anjurkan anda untuk menghindari penggunaan JFS.
+</impo>
 
 </body>
 </subsection>
@@ -346,98 +306,126 @@ link="#compiling">Kompilasi dan Instalasi</uri>.
 <body>
 
 <p>
-Setelah kernel anda dikonfigurasi, sekarang saatnya untuk mengkompilasi dan
-menginstalnya. Keluarlah dari menu konfigurasi dan jalankan <c>make dep
-&amp;&amp; make vmlinux modules modules_install</c>:
+Sekarang kernel anda telah dikonfigurasi, saatnya untuk mengkompilasi dan
+menginstalnya. Keluar dari menu konfigurasi lalu mulalilah proses kompilasi:
 </p>
 
-<pre caption="Kompilasi kernel">
-<comment>(Untuk kernel 2.4)</comment>
-# <i>make dep &amp;&amp; make vmlinux modules modules_install</i>
+<note>
+Pada komputer 64-bit, anda perlu menentukan
+<c>CROSS_COMPILE=mips64-unknown-linux-gnu-</c> (atau <c>mips64el-...</c>
+pada sistem <e>little-endian</e>) untuk menggunakan compiler 64-bit.
+</note>
 
-<comment>(Untuk kernel 2.6)</comment>
-# <i>make &amp;&amp; make modules_install</i>
+<pre caption="Kompilasi kernel">
+<comment>(Hanya untuk kernel 2.4)</comment>
+# <i>make dep</i>
+
+<comment>(Untuk kernel 2.4 dan 2.6 -- kompilasi nativ)</comment>
+# <i>make vmlinux modules modules_install</i>
+
+<comment>(Untuk kernel 2.4 dan 2.6 -- cross-compiling di komputer target)</comment>
+<comment>(             Sesuaikan mips64-unknown-linux-gnu-              )</comment>
+# <i>make vmlinux modules modules_install CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+
+<comment>(     Ketika melakukan kompilasi di komputer lain, seperti x86... gunakan     )</comment>
+<comment>(  perintah-perintah berikut untuk mengkompilasi kernel &amp; dan menginstal  )</comment>
+<comment>(modul-modul ke suatu direktori yang nanti akan dipindahkan ke komputer target)</comment>
+# <i>make vmlinux modules CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+# <i>make modules_install INSTALL_MOD_PATH=/somewhere</i>
+</pre>
+
+<impo>
+Ketika mengkompilasi kernel 64-bit untuk Indy, Indigo2 (R4k), Challenge S dan
+O2, gunakan target <c>vmlinux.32</c>, bukan <c>vmlinux</c>. Jika tidak,
+komputer anda tidak akan bisa boot. Hal ini untuk menyiasati PROM yang tidak
+memahami format ELF64.
+</impo>
+
+<pre caption="Menggunakan target vmlinux.32">
+# <i>make vmlinux.32</i>
+<comment>(Ini akan menciptakan vmlinux.32 -- kernel akhir anda)</comment>
 </pre>
 
 <p>
-Setelah kernel selesai dikompilasi, copy imej kernel tersebut ke
+Ketika kernel telah selesai dikompilasi, salin imej kernel ke
 <path>/boot</path>.
 </p>
 
+<note>
+Pada server Cobalt, bootloader akan mencari imej kernel yang telah dipadatkan.
+Jangan upa untuk meng- <c>gzip -9</c> file jika sudah di salin ke
+<path>/boot</path>.
+</note>
+
 <pre caption="Instalasi kernel">
-# <i>cp vmlinux /boot/kernel-2.4.24</i>
-# <i>cp System.map /boot/System.map-2.4.24</i>
+# <i>cp vmlinux /boot/kernel-2.6.13.4</i>
+
+<comment>(Server Cobalt -- Memadatkan imej kernel)</comment>
+# <i>gzip -9v /boot/kernel-2.6.13.4</i>
 </pre>
-
-<p>
-Ide yang bagus juga untuk meng-copy file konfigurasi kernel anda ke
-<path>/boot</path>, sebagai antisipasi :)
-</p>
-
-<pre caption="Backup konfigurasi kernel anda">
-# <i>cp .config /boot/config-2.4.24</i>
-</pre>
-
-<p>
-Jika sistem anda tidak dapat boot kernel ELF,
-kompilasilah kernel menggunakan <c>make vmlinux.ecoff</c> daripada
-<c>make vmlinux</c>. Imej kernel akan disimpan di
-<path>arch/mips/boot/vmlinux.ecoff</path> daripada <path>vmlinux</path>.
-</p>
 
 </body>
 </subsection>
 </section>
 <section id="kernel_modules">
-<title>Instalasi Modul-Modul Kernel yang Terpisah</title>
+<title>Instalasi Modul-modul Kernel Terpisah</title>
 <subsection>
-<title>Konfigurasi Modul-Modul</title>
+<title>Konfigurasi Modul</title>
 <body>
 
 <p>
-Anda harus menuliskan semua modul-modul yang ingin anda load secara otomatis
-di file <path>/etc/modules.autoload.d/kernel-2.4</path> (atau
-<path>kernel-2.6</path>). Anda dapat juga menambahkan opsi-opsi tambahan
-pada modul-modul tersebut jika anda mau.
+Anda perlu mendaftarkan modul apa saja yang ingin langsung anda load pada
+salah satu file berikut. Anda juga boleh menambahkan opsi-opsi tambahan ke
+modul jika memerlukannya.
+</p>
+
+<ul>
+  <li><path>/etc/modules.autoload.d/kernel-2.4</path> - Untuk kernel 2.4</li>
+  <li><path>/etc/modules.autoload.d/kernel-2.6</path> - Untuk kernel 2.6</li>
+  <li><path>/etc/modules.autoload</path> - Semua kernel</li>
+</ul>
+
+<p>
+Jadi, jika anda ingin me-load sebuah modul -- yang sama baik di kernel 2.4
+dan 2.6, maka letakkan di <path>/etc/modules.autoload</path>. Atau anda boleh
+meletakkannya di file khusus versi kernelnya.
 </p>
 
 <p>
-Untuk melihat modul-modul yang tersedia, jalankan perintah <c>find</c> berikut.
-Jangan lupa untuk menggantikan "&lt;versi kernel&gt;" dengan versi kernel yang
+Untuk melihat semua modul yang tersedia, jalankan perintah <c>find</c> berikut.
+Jangan lupa untuk mengganti "&lt;versi kernel&gt;" dengan versi kernel yang
 baru saja anda kompilasi:
 </p>
 
-<pre caption="Melihat modul-modul yang tersedia">
+<pre caption="Melihat semua modul yang tersedia">
 # <i>find /lib/modules/&lt;versi kernel&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
 </pre>
 
 <p>
-Misalnya, untuk meload modul <c>3c59x.o</c> secara otomatis, edit file
-<path>kernel-2.4</path> atau <path>kernel-2.6</path> dan tuliskan nama
-modul tersebut di dalamnya.
+Sebagai contoh, jika anda ingin langsung me-load modul <c>3c59x.o</c> ketika
+boot, edit file yang sesuai lalu masukkan nama modul ke dalam file tersebut.
 </p>
 
-<pre caption="Edit file /etc/modules.autoload.d/kernel-2.4">
-<comment>(Contoh untuk kernel-kernel 2.4)</comment>
+<pre caption="Mengedit /etc/modules.autoload.d/kernel-2.4">
 # <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
 </pre>
 
-<pre caption="/etc/modules.autoload.d/kernel-2.4 atau kernel-2.6">
+<pre caption="/etc/modules.autoload.d/kernel-2.4 or kernel-2.6">
 3c59x
 </pre>
 
 <p>
-Sekarang jalankan <c>modules-update</c> untuk menuliskan perubahan
-anda ke file <path>/etc/modules.conf</path>:
+Anda juga dapat melakukannya dengan cara lain:
 </p>
 
-<pre caption="Menjalankan modules-update">
-# <i>modules-update</i>
+<pre caption="Menambahkan modul -- metode satu baris">
+# <i>echo '3c59x' >> /etc/modules.autoload.d/kernel-2.4</i>
+<comment>(atau kernel-2.6, atau /etc/modules.autoload...)</comment>
 </pre>
 
 <p>
-Lanjutkan proses instalasi dengan bab <uri
-link="?part=1&amp;chap=8">Mengkonfigurasi Sistem anda</uri>.
+Lanjutkan instalasi dengan <uri link="?part=1&amp;chap=8">Mengkonfigurasi
+Sistem Anda</uri>.
 </p>
 
 </body>
