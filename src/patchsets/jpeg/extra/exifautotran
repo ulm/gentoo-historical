@@ -29,13 +29,23 @@ EOF
  esac
  if test -n "$transform"; then
   echo Executing: jpegtran -copy all $transform $i >&2
-  jpegtran -copy all $transform "$i" > tempfile
+  if type mktemp >/dev/null 2>&1; then
+    tempfile=`mktemp`
+  else
+    set -C
+    tempfile=${TMPDIR-/tmp}/exifautotran.$$
+  fi
+  if test $? -ne 0; then
+    echo Error while creating temp file for $i - skipped. >&2
+    continue
+  fi
+  jpegtran -copy all $transform "$i" > "$tempfile"
   if test $? -ne 0; then
    echo Error while transforming $i - skipped. >&2
   else
-   rm "$i"
-   mv tempfile "$i"
-   jpegexiforient -1 "$i" > /dev/null
+   if mv "$tempfile" "$i"; then
+     jpegexiforient -1 "$i" > /dev/null
+   fi
   fi
  fi
 done
