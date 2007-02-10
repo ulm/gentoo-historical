@@ -25,8 +25,8 @@ a MySQL 4.* e a MySQL 5.0.*.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.13</version>
-<date>2006-10-28</date>
+<version>1.16</version>
+<date>2007-01-06</date>
 
 <chapter>
 <title>Upgrade diretto, consigliato per la migrazione da 4.1 a 5.0</title>
@@ -38,18 +38,37 @@ Il motore myisam della versione 4.1 è abbastanza maturo da permette un upgrade
 diretto alla successiva major version di MySQL.
 </p>
 
+<note>
+Questo non va bene per le tabelle di tipo MERGE. Facendo un upgrade diretto con
+questo tipo di tabelle (solo raramente vengono utilizzate comunque) si possono
+avere facilmente problemi. In questi casi bisogna fare un backup prima e poi
+ricrearle dopo il processo di aggiornamento. Se non si è sicuri, dare uno
+sguardo al capitolo <uri link="#doc_chap2">Aggiornamento da vecchie versioni di
+MySQL</uri>.
+</note>
+
+<p>
+Per questo passo sono richieste due shell, poiché una è occupata dalla sessione
+di mysql.
+</p>
+
 <pre caption="Upgrade diretto da 4.1 a 5.0.*">
 # <i>quickpkg dev-db/mysql</i>
 # <i>alias MYSQL="mysql --user=root --password=</i><comment>'yourpassword'</comment><i>"</i>
 # <i>DATADIR=$(MYSQL --batch --raw --silent --skip-column-names \</i>
    <i>--execute='SHOW variables LIKE "datadir";' \</i>
    <i>| sed -e 's|datadir[ \t]||')</i>
-# <i>MYSQL --execute="FLUSH TABLES WITH READ LOCK;"</i>
+   
+<comment>(Questo comando bisogna eseguirlo in una seconda shell)</comment>
+# <i>mysql --user=root --password=</i><comment>'password'</comment><i>"</i>
+mysql&gt; <i>FLUSH TABLES WITH READ LOCK;</i>
+  	 
+<comment>(Ritornare alla prima shell e lanciare questi comandi)</comment>
 # <i>tar -cjpvf ~/mysql.$(date +%F"T"%H-%M).tar.bz2 \</i>
    <i>/etc/conf.d/mysql /etc/mysql/my.cnf "${DATADIR}"</i>
 # <i>MYSQL --execute="UNLOCK TABLES;"</i>
 # <i>tar -tjvf ~/mysql.*.tar.bz2</i>
-# <i>emerge -av "&gt;mysql-5.0"</i>
+# <i>emerge -av "&gt;dev-db/mysql-5.0"</i>
 # <i>dispatch-conf</i>
 # <i>revdep-rebuild</i>
 # <i>/etc/init.d/mysql restart</i>
@@ -215,6 +234,21 @@ Il database di amministrazione <c>mysql</c> che contiene i nomi degli utenti,
 password e altro è e <b>deve</b> essere in utf8.
 </impo>
 
+<p>
+Vecchie versioni delle utility mysqldump potrebbero esportare le tabelle in un
+ordine errato se vengono usate le foreign keys. Per evitare questo problema,
+frapporre il comando SQL tra questi due:
+</p>
+
+<pre caption="Foreign keys">
+SET FOREIGN_KEY_CHECKS=0
+SET FOREIGN_KEY_CHECKS=1
+</pre>
+
+<p>
+Poi, importare il backup.
+</p>
+  	 
 <pre caption="Importazione backup SQL">
 # <i>cat BACKUP_MYSQL_4.0.SQL \</i>
      <i>| mysql \</i>
