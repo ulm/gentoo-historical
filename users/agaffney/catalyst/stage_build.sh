@@ -7,8 +7,8 @@ version_stamp=
 subarch=
 stage1_seed=
 snapshot=
-email_from="catalyst@localhost"
-email_to="root@localhost"
+email_from="catalyst@$(hostname -f)"
+email_to="root@$(hostname -f)"
 config_file="/etc/catalyst/catalyst.conf"
 verbose=0
 
@@ -137,13 +137,14 @@ if [ -z "${stage1_seed}" ]; then
   exit 1
 fi
 
-cd /tmp
+tmpdir="$(mktemp -d)"
+cd ${tmpdir}
 
 if [ -z "${snapshot}" ]; then
   snapshot=`date +%Y%m%d`
-  run_cmd "catalyst -c '${config_file}' -s '${snapshot}'" "/tmp/catalyst_build_snapshot.${PID}.log"
+  run_cmd "catalyst -c '${config_file}' -s '${snapshot}'" "${tmpdir}/catalyst_build_snapshot.${PID}.log"
   if [ $? != 0 ]; then
-    send_email "Catalyst build error - snapshot" "$(</tmp/catalyst_build_snapshot.${PID}.log)"
+    send_email "Catalyst build error - snapshot" "$(<${tmpdir}/catalyst_build_snapshot.${PID}.log)"
     exit 1
   fi
 fi
@@ -155,9 +156,9 @@ for i in 1 2 3; do
   else 
     echo "source_subpath: default/stage$(expr ${i} - 1)-${subarch}-${version_stamp}" >> stage${i}.spec
   fi
-  run_cmd "catalyst -c '${config_file}' -a -p -f stage${i}.spec" "/tmp/catalyst_build_stage${i}.${PID}.log"
+  run_cmd "catalyst -c '${config_file}' -a -p -f stage${i}.spec" "${tmpdir}/catalyst_build_stage${i}.${PID}.log"
   if [ $? != 0 ]; then
-    send_email "Catalyst build error - stage${i}" "$(tail -n 200 /tmp/catalyst_build_stage${i}.${PID}.log)\r\n\r\nFull build log at /tmp/catalyst_build_stage${i}.${PID}.log"
+    send_email "Catalyst build error - stage${i}" "$(tail -n 200 ${tmpdir}/catalyst_build_stage${i}.${PID}.log)\r\n\r\nFull build log at ${tmpdir}/catalyst_build_stage${i}.${PID}.log"
     exit 1
   fi
 done
