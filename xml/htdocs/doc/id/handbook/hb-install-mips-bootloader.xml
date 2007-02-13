@@ -1,13 +1,14 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+<!-- $Id: hb-install-mips-bootloader.xml,v 1.7 2007/02/13 11:17:02 neysx Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
 <sections>
 
-<version>7.0</version>
-<date>2006-08-30</date>
+<version>7.1</version>
+<date>2007-02-08</date>
 
 <section id="sgi">
 <title>Komputer Silicon Graphics -- Setup arcload</title>
@@ -21,49 +22,6 @@ sebelumnya, kami juga menyediakan <c>arcboot</c>, tetapi bootloader ini secara
 resmi telah dianggap usang dan diganti dengan <c>arcload</c>.
 </p>
 
-<!-- Slated for possible removal
-<table>
-<tr>
-  <th> </th>
-  <th>arcboot</th>
-</tr>
-<tr>
-  <th>+</th>
-  <ti>
-    It can load off EXT2 and EXT3 partitions, so no need to store them in the
-    volume header
-  </ti>
-</tr>
-<tr>
-  <th>-</th>
-  <ti>
-    It doesn't work on Octane/Octane2, Origin 200/2000 or Indigo2 Impact
-    (R10000)
-  </ti>
-</tr>
-</table>
-
-<table>
-<tr>
-  <th> </th>
-  <th>arcload</th>
-</tr>
-<tr>
-  <th>+</th>
-  <ti>
-    It boots ALL Linux-compatible SGI systems
-  </ti>
-</tr>
-<tr>
-  <th>-</th>
-  <ti>
-    Currently, It cannot read EXT2/EXT3 partitions, and so needs the kernels
-    and config file to be placed in the volume header
-  </ti>
-</tr>
-</table>
--->
-
 <note>
 Nama file header volum SGI terbatas pada 8 karakter, dan satu volum tidak boleh
 diisi dengan lebih dari 16 file.
@@ -71,147 +29,6 @@ diisi dengan lebih dari 16 file.
 
 </body>
 </subsection>
-
-<!--<subsection>
-<title>Installing arcboot</title>
-<body>
-
-<warn>
-<c>arcboot</c> is deprecated and will be removed in future.
-</warn>
-
-<p>
-Previously in this guide, we showed you how to make a kernel, then copy it to
-the volume header using <c>dvhtool</c>. There were two main flaws with this
-system:
-</p>
-
-<ul>
-  <li>This is not supported on all SGI systems</li>
-  <li>It requires a significantly larger volume header</li>
-</ul>
-
-<p>
-In order to boot the machine, a bootloader, <c>arcboot</c> was developed for
-this purpose. Instead of putting the kernel directly into the volume header, we
-leave it in <path>/boot</path> (which resides on a EXT2/3 partition), and tell
-<c>arcboot</c> (which sits in the volume header in place of the kernel) where
-to find it. So our first step, is to emerge some tools that we'll use later...
-</p>
-
-<pre caption="Installing the required tools">
-# <i>emerge dvhtool arcboot</i>
-</pre>
-
-<p>
-That should have installed two tools, <c>arcboot</c> which sits in the volume
-header and loads kernels for us, and <c>dvhtool</c> which helps us put
-<c>arcboot</c> into the volume header.
-</p>
-
-<p>
-The <c>arcboot</c> binary lurks in <path>/usr/lib/arcboot</path>. The name of
-the binary depends on the machine it's compiled for.
-</p>
-
-<ul>
-  <li>
-    <c>arcboot.ip22</c>: The binary for Indy, Indigo2 (R4k) and Challenge S
-    systems
-  </li>
-  <li>
-    <c>arcboot.ip32</c>: The binary for O2 systems
-  </li>
-</ul>
-
-<pre caption="Installing arcboot into the volume header">
-# <i>dvhtool - -unix-to-vh /usr/lib/arcboot/arcboot.ip?? arcboot</i>
-</pre>
-
-<p>
-We then verify the presence of the file in the volume header.
-</p>
-
-<pre caption="Checking if arcboot made it okay">
-# <i>dvhtool - -print-volume-directory</i>
-- - - - - directory entries - - - - -
-Entry #0, name "linux", start 4, bytes 3262570
-Entry #1, name "newlinux", start 6377, bytes 7619627
-Entry #3, name "arcboot", start 21260, bytes 51448
-#
-</pre>
-
-<note>
-You'll notice that in the example above, there are two old kernels sitting
-around, <path>linux</path> and <path>newlinux</path>. This is a hangover from
-before we started using <c>arcboot</c>. Their presence doesn't matter - - just
-so long as <c>arcboot</c> is present, everything is fine.
-</note>
-
-<p>
-If you've ever set up the Linux Loader (<c>lilo</c>) before, you'll find that
-<c>arcboot</c> employs a similar syntax in its configuration file. Bear in mind
-though; <c>arcboot</c> expects to find its configuration file existing on an
-EXT2/3 partition as <path>/etc/arcboot.conf</path>. The easiest way around this
-is to make sure <path>/boot</path> is an EXT2/3 partition and that there's a
-file called <path>arcboot.conf</path> inside the <path>/boot/etc</path>
-directory. An example config can be found in
-<path>/etc/arcboot.conf.sample</path>.
-</p>
-
-<note>
-Adjust the paths accordingly if you don't have a separate <path>/boot</path>
-partition.
-</note>
-
-<pre caption="Putting arcboot.conf in its place">
-<comment>(Create the /boot/etc directory)</comment>
-# <i>mkdir /boot/etc</i>
-
-<comment>(Put our configuration into the target directory)</comment>
-# <i>cp /etc/arcboot.conf.sample /boot/etc/arcboot.conf</i>
-
-<comment>(Create a symlink back to /etc)</comment>
-# <i>ln -s /boot/etc/arcboot.conf /etc/arcboot.conf</i>
-
-<comment>(... and a symlink in /boot pointing to itself)</comment>
-# <i>(cd /boot; ln -s . boot)</i>
-</pre>
-
-<p>
-You can then edit <path>/etc/arcboot.conf</path> to your own preference. One
-possible layout, is to set up two kernel images: <path>new</path>, a freshly
-built image that may or may not work; and <path>working</path>, a proven
-trustworthy kernel image. The <path>arcboot.conf</path> for that setup looks a
-bit like this.
-</p>
-
-<pre caption="Example arcboot.conf">
-<comment># arcboot.conf</comment>
-<comment>#</comment>
-<comment># copyright 2002 Guido Guenther &lt;agx@sigxcpu.org&gt;</comment>
-<comment>#</comment>
-<comment># known working version</comment>
-label=working
-        image=/vmlinux
-        append="root=/dev/sda3"
-
-<comment># fresh "untested" version</comment>
-label=new
-        image=/vmlinux-new
-        append="root=/dev/sda3"
-</pre>
-
-<p>
-Once that is set up, there's then just some little tweaks that you need to do
-within the SGI PROM to make this magic work. This is covered in, not the next
-section (that's for Cobalt servers) but the following section <uri
-link="#reboot">Rebooting the System</uri>.
-</p>
-
-</body>
-</subsection>
--->
 <subsection>
 <title>Instalasi arcload</title>
 <body>
@@ -318,17 +135,11 @@ ip28 {
 }
 </pre>
 
-<p>
-Ini kemudian diletakkan di header volum dengan <c>sash64</c> (atau
-<c>sashARCS</c>) seperti ditunjukkan di bawah ini. Kernel-kernel juga akan
-diletakkan di header volum.
-</p>
-
 <note>
-Dengan <c>arcload</c> 0.5, anda dapat me-load file-file ini dari partisi EXT3,
-tanpa harus me-load-nya ke header volum. Jika anda menggunakan rilis yang lebih
-baru, anda boleh melangkahi penyalinan file ke header volum, dan meletakkannya
-di partisi <c>/boot</c> anda.
+Sejak <c>arcload</c> 0.5, anda dapat meletakkan file <path>arc.cf</path> dan
+kernel di header volum, atau di partisi EXT3. Jika anda ingin menggunakan fitur
+baru ini, anda boleh meletakkan kedua file ini di partisi <path>/boot</path>
+(atau <path>/</path> jika anda tidak memiliki partisi boot terpisah).
 </note>
 
 <pre caption="Meletakkan arc.cf dan kernel di header volum">
@@ -600,11 +411,11 @@ cdimage ~# <i>reboot</i>
 
 <note>
 <e>Pengguna Cobalt:</e> Sisa panduan ini berisi cara mengatur PROM SGI agar
-mem-boot <!--<c>arcboot</c>/--><c>arcload</c> dari disk dan me-load Linux.
-Ini tidak sesuai dengan pengaturan server Cobalt. Sebenarnya, semua tugas anda
-sudah selesai -- tidak ada lagi konfigurasi yang diperlukan untuk boot pertama,
-anda dapat langsung lanjut ke bagian: <uri
-link="?part=1&amp;chap=11">Menyelesaikan Instalasi Gentoo Anda</uri>
+mem-boot <c>arcload</c> dari disk dan me-load Linux. Ini tidak sesuai dengan
+pengaturan server Cobalt. Sebenarnya, semua tugas anda sudah selesai -- tidak
+ada lagi konfigurasi yang diperlukan untuk boot pertama, anda dapat langsung
+lanjut ke bagian: <uri link="?part=1&amp;chap=11">Menyelesaikan Instalasi
+Gentoo Anda</uri>
 </note>
 
 </body>
@@ -740,45 +551,29 @@ akan menentukan variabel PROM kita dengan cara yang sama:
 &gt;&gt; setenv OSLoadFilename ip28(working)
 </pre>
 
+<p>
+Sejak <c>arcload-0.5</c>, anda tidak lagi harus meletakkan file-file di header
+volum -- anda dapat meletakkanya di partisi EXT3. Untuk memberitahukan
+<c>arcload</c> di mana harus mencari file konfigurasi dan kernel, anda perlu
+mengatur variabel PROM <c>OSLoadPartition</c>. Nilai di sini tergantung pada
+tempat disk anda berada bus SCSI. Gunakan PROM variabel <c>SystemPartition</c>
+sebagai panduan -- anda hanya perlu mengganti nomor partisi.
+</p>
+
+<note>
+Partisi-partisi diberi nomor mulai dari 0, bukan 1 seperti di Linux.
+</note>
+
+<pre caption="Memberitahukan arcload di mana mencari file arc.cf">
+<comment>(Jika anda ingin me-load dari header volum -- menggunakan partisi 8)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
+
+<comment>(Atau, tentukan partisi dan tipe filesystem)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(0)[ext2]</i>
+</pre>
+
 </body>
 </subsection>
-
-<!-- Slated for removal
-<subsection>
-<title>Settings for arcboot</title>
-<body>
-
-<p>
-<c>arcboot</c> loads its configuration file and kernels from your
-<path>/boot</path> partition, which needs to be formatted either EXT2 or EXT3.
-Thus <c>OSLoadPartition</c> needs to point to that partition. <c>OSLoader</c>
-should point to the <c>arcboot</c> binary in the volume header, and
-<c>OSLoadFilename</c> is the image name being used.
-</p>
-
-<pre caption="PROM settings for using arcboot">
-<comment>(Read configuration and kernels from SCSI ID# 1, partition 0 - - sda1)</comment>
-&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(0)</i>
-
-<comment>(Use arcboot as the bootloader)</comment>
-&gt;&gt; <i>setenv OSLoader arcboot</i>
-
-<comment>(Which boot image in arcboot.conf to load)</comment>
-&gt;&gt; <i>setenv OSLoadFilename working</i>
-</pre>
-
-<p>
-When testing kernels via <c>arcboot</c> you can specify an alternate image like
-so (where <c>new</c> is the alternate image):
-</p>
-
-<pre caption="Specifying an alternate image">
-# <i>boot new</i>
-</pre>
-
-</body>
-</subsection> -->
-
 <subsection>
 <title>Selesai</title>
 <body>
