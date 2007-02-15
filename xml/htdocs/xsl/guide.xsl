@@ -150,6 +150,17 @@
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
   
+  <xsl:if test="//glsaindex or //glsa-latest">
+    <link rel="alternate" type="application/rss+xml">
+      <xsl:attribute name="href">
+        <xsl:text>/rdf/en/glsa-index.rdf</xsl:text>
+        <xsl:if test="//glsa-latest">
+          <xsl:text>?num=9</xsl:text>
+        </xsl:if>
+      </xsl:attribute>
+    </link>
+  </xsl:if>
+
   <xsl:if test="/*[1][@redirect]">
     <!-- HTML refresh in case redirect is not supported -->
     <meta http-equiv="Refresh">
