@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/nvidia-guide.xml,v 1.6 2006/11/04 22:07:08 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/nvidia-guide.xml,v 1.7 2007/02/16 21:14:51 mascherpa Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/it/nvidia-guide.xml" lang="it">
+<guide link="/doc/it/nvidia-guide.xml">
 <title>Guida nVidia per Gentoo Linux</title>
 
 <author title="Autore">
@@ -21,22 +21,21 @@
     <mail link="gianx@email.it">Gianluca Mazza</mail>
 </author>
 <author title="Traduzione">
-	Davide Cendron
+    Davide Cendron
 </author>
 
 <abstract>
-Molti Gentooisti hanno un chipset nVidia sui loro sistemi. nVidia fornisce
-driver specifici per Linux per incrementare le performance della vostra
-scheda video.  Questa guida spiega come installare e configurare questi
-driver.
+Molti utenti di Gentoo hanno un chipset nVidia sui loro sistemi. nVidia fornisce
+driver specifici per Linux per incrementare le performance della propria scheda
+video. Questa guida spiega come installare e configurare questi driver.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.28</version>
-<date>2006-10-23</date>
+<version>1.29</version>
+<date>2007-02-08</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -44,10 +43,20 @@ driver.
 <body>
 
 <p>
-nVidia rilascia i propri driver Linux che forniscono buone performance e
-piena accelerazione 3D. Ci sono due driver in Portage: <c>nvidia-drivers</c> per
-le schede video nVidia più recenti, <c>nvidia-legacy-drivers</c> per le schede
-video più vecchie.
+I driver nVidia disponibili in Portage vengono rilasciati dalla stessa nVidia e
+la loro compilazione si appoggia al kernel Linux. Contengono una piccola parte
+binaria che svolge il pesante lavoro della comunicazione con la scheda grafica.
+I driver consistono di due parti, un modulo del kernel e un driver per X11,
+entrambi inclusi in un singolo pacchetto. A causa della modalità di rilascio dei
+driver da parte di nVidia, bisognerà fare delle scelte prima di installarli nel
+proprio sistema. Attualmente in Portage sono disponibili due pacchetti distinti.
+Il primo, <c>nvidia-drivers</c>, contiene i driver nVidia più recenti ed include
+il supporto alle nuove schede grafiche. Il secondo,
+<c>nvidia-legacy-drivers</c>, supporta le schede più vecchie, dalla prime
+TNT passando per la Geforce 6800. Tuttavia non sono supportate le nuove
+caratteristiche avanzate delle schede più recenti. Utilizzare
+<c>nvidia-legacy-drivers</c> solamente se la propria scheda grafica non è
+supportata dal pacchetto <c>nvidia-drivers</c>.
 </p>
 
 <note>
@@ -64,18 +73,56 @@ pacchetti.
 </chapter>
 
 <chapter>
+<title>Compatibilità dei driver</title>
+<section>
+<title>nvidia-legacy-drivers</title>
+<body>
+
+<p>
+Il ramo <c>nvidia-legacy-drivers</c> supporta le vecchie schede nVidia non più
+supportate dalle ultime versioni dei driver. Si basa su una vecchia versione di
+codice dei driver nVidia, e supporta i kernel e le versioni di X.Org più
+recenti. Utilizzare questo driver se si possiede una scheda grafica della serie
+TNT, TNT2, Geforce o Geforce 2. Le informazioni di compatibilità di questi
+driver si trovano nell'Appendice A di
+<uri>http://download.nvidia.com/XFree86/Linux-x86/1.0-7184/README/readme.txt</uri>
+</p>
+
+</body>
+</section>
+<section>
+<title>nvidia-drivers</title>
+<body>
+
+<p>
+Il ramo <c>nvidia-drivers</c> supporta le caratteristiche delle schede grafiche
+nVidia più recenti. Nell'ultima versione è stato rimosso il supporto alle schede
+basate sui chip NV2x. Se si possiede una scheda della serie Geforce 3 o Geforce
+4, bisogna mascherare <c>>=x11-drivers/nvidia-drivers-1.0.9700</c> nel proprio
+file di configurazione <path>/etc/portage/package.mask</path>,per  evitare che
+nuove versioni del driver, incompatibili con la propria scheda grafica, vengano
+installate. È possibile verificare se la propria scheda grafica è supportata dai
+driver più recenti in
+<uri>http://us.download.nvidia.com/XFree86/Linux-x86/1.0-9746/README/appendix-a.html</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
 <title>Configurare la scheda</title>
 <section>
 <title>Configurazione del Kernel</title>
 <body>
 
 <p>
-Come accennato in precedenza, i driver nVidia si installano e girano nel kernel
-in uso. Vengono compilati come modulo, per cui è necessario che il kernel
-supporti il caricamento dei moduli.  Se si ha usato <c>genkernel</c> per
-configurare automaticamente il kernel, il supporto sarà sicuramente abilitato.
-In caso contrario, verificare attentamente che il kernel sia abilitato a questo
-supporto:
+Come accennato in precedenza, i driver nVidia si installano e vengono eseguiti
+nel kernel in uso. Vengono compilati come modulo, per cui è necessario che il
+kernel supporti il caricamento dei moduli.  Se è stato usato <c>genkernel
+all</c> per configurare automaticamente il kernel, il supporto sarà sicuramente
+abilitato. In caso contrario, verificarne l'abilitazione controllando
+attentamente la configurazione:
 </p>
 
 <pre caption="Abilitare il caricamento dei moduli del kernel">
@@ -84,7 +131,7 @@ Loadable module support ---&gt;
 </pre>
 
 <p>
-E' anche necessario abilitare <e>Memory Type Range Register</e> nel kernel:
+E' inoltre necessario abilitare il supporto <e>Memory Type Range Register</e>:
 </p>
 
 <pre caption="Abilitare MTRR">
@@ -94,13 +141,13 @@ Processor and Features ---&gt;
 
 <p>
 Inoltre, se si ha una scheda grafica AGP, si può opzionalmente abilitare il
-supporto <c>agpgart</c> al proprio kernel, compilandolo internamente o come
+supporto nativo <c>agpgart</c> del kernel, compilandolo internamente o come
 modulo. Se non si usa il supporto agpgart interno al kernel, allora i driver
 useranno la propria implementazione <c>agpgart</c>, chiamata <c>NvAGP</c>. In
 certi sistemi ciò comporta un miglioramento delle prestazioni, mentre in altri
 un peggioramento delle stesse. Si dovranno valutare personalmente le due opzioni
 sul proprio sistema, per ottenere i risultati migliori. Se non si è sicuri su
-che supporto usare, si usi l'agpgart interno del kernel:
+che supporto usare, usare l'agpgart interno del kernel:
 </p>
 
 <pre caption="Abilitare agpgart">
@@ -108,6 +155,10 @@ Device Drivers ---&gt;
 Character devices ---&gt;
 &lt;*&gt; /dev/agpgart (AGP Support)
 </pre>
+
+<note>
+Su amd64, IOMMU controlla le impostazioni di agpgart.
+</note>
 
 </body>
 </section>
@@ -117,9 +168,8 @@ Character devices ---&gt;
 
 <impo>
 Per i processori x86 e AMD64, i driver interni al kernel vanno in conflitto con
-i driver binari forniti da nVidia. Se si compilerà il kernel per queste CPU, si
-deve rimuovere completamente il supporto ai driver interni del kernel come
-mostrato:
+i driver binari forniti da nVidia. Compilando il kernel per queste CPU, si deve
+rimuovere completamente il supporto ai driver interni del kernel come mostrato:
 </impo>
 
 <pre caption="Rimuovere i driver interni del kernel">
@@ -140,7 +190,7 @@ Graphics Support ---&gt;
 </pre>
 
 <p>
-Poi, sotto "VESA driver type" si scelga o <c>vesafb</c> o <c>vesafb-tng</c>. Se
+Poi, sotto "VESA driver type" scegliere o <c>vesafb</c> o <c>vesafb-tng</c>. Se
 si sta usando un processore AMD64 si potrà scegliere <c>vesafb</c> piuttosto
 che <c>vesafb-tng</c>:
 </p>
@@ -151,9 +201,9 @@ che <c>vesafb-tng</c>:
 </pre>
 
 <p>
-Per ulteriori informazioni, si legga
+Per ulteriori informazioni, leggere
 <path>/usr/src/linux/Documentation/fb/vesafb.txt</path> se si sta usando
-<c>vesafb</c> o si guardi nella documentazione del framebuffer in
+<c>vesafb</c> o guardare nella documentazione del framebuffer in
 <path>/usr/src/linux/Documentation/fb/</path>.
 </p>
 
@@ -169,7 +219,7 @@ automaticamente la versione del kernel basandosi sul link simbolico
 <path>/usr/src/linux</path>. Assicurarsi che questo link simbolico punti ai
 sorgenti corretti e che il kernel sia configurato correttamente.  Consultare la
 sezione di configurazione del kernel di <uri link="/doc/it/handbook/">Manuale di
-installazione</uri> per i dettagli di configurazione
+installazione</uri> per i dettagli di configurazione.
 </p>
 
 <p>
@@ -211,9 +261,9 @@ link in questo modo:
 
 <note>
 Sfortunatamente, alcune schede video obsolete non sono supportate dalla nuova
-versione di <c>nvidia-drivers</c>. nVidia fornisce una <uri
-link="http://www.nvidia.com/object/IO_18897.html">lista delle schede
-supportate</uri>. Si controlli la lista prima di installare il driver.
+versione di <c>nvidia-drivers</c>. nVidia fornisce un <uri
+link="http://www.nvidia.com/object/IO_18897.html">elenco delle schede
+supportate</uri>. Controllare la lista prima di installare il driver.
 </note>
 
 <p>
@@ -221,6 +271,7 @@ La seguente è una lista di schede video obsolete <b>non supportate</b>:
 </p>
 
 <pre caption="Schede non supportate">
+TNT
 TNT2
 TNT2 Pro
 TNT2 Ultra
@@ -241,7 +292,7 @@ Quadro2 EX
 </pre>
 
 <p>
-Se la vostra scheda è presente nell'elenco di quelle obsolete, si dovrà
+Se la vostra scheda è presente nell'elenco di quelle obsolete, bisogna
 installare il pacchetto <c>nvidia-legacy-driver</c> per ottenere il supporto 3D.
 </p>
 
@@ -263,7 +314,7 @@ A questo punto si devono installare i driver.
 </pre>
 
 <impo>
-Ogni qual volta <uri link="/doc/it/kernel-upgrade.xml"> si compilerà un nuovo
+Ogni volta che <uri link="/doc/it/kernel-upgrade.xml"> si compilerà un nuovo
 kernel</uri> o si ricompilerà quello corrente, sarà necessario lanciare
 <c>emerge nvidia-drivers</c> o <c>emerge nvidia-legacy-drivers</c> per
 reinstallare i moduli nVidia.
@@ -271,8 +322,8 @@ reinstallare i moduli nVidia.
 
 <p>
 Una volta completata l'installazione, lanciare <c>modprobe</c> per caricare il
-modulo del kernel in memoria. Se si ha effettuato un aggiornamento, si deve
-prima rimuovere il modulo precedente.
+modulo del kernel in memoria. Se è stato fatto un aggiornamento, bisogna prima
+rimuovere il modulo precedente.
 </p>
 
 <pre caption="Caricare il modulo del kernel">
@@ -281,16 +332,16 @@ prima rimuovere il modulo precedente.
 </pre>
 
 <p>
-Per evitare di dover caricare manualmente il modulo ad agni avvio, si vorrà
-probabilmente fare in modo che che questo avvenga in automatico ad ogni
-accensione del sistema, per cui si dovrà aggiungere la voce <c>nvidia</c> a
+Per evitare di dover caricare manualmente il modulo ad agni avvio, è possibile
+eseguire automaticamente questa operazione ad ogni accensione del sistema
+aggiungendo la voce <c>nvidia</c> a
 <path>/etc/modules.autoload.d/kernel-2.6</path> (oppure
 <path>kernel-2.4</path>, in relazione alla versione di kernel usata).
 Non dimenticarsi di lanciare <c>modules-update</c> subito dopo.
 </p>
 
 <impo>
-Se si ha compilato <c>agpgart</c> come modulo, si dovrà aggiungerlo a
+Se <c>agpgart</c> è stato compilato come modulo, bisogna aggiungerlo a
 <path>/etc/modules.autoload.d/kernel-2.6</path> (o <path>kernel-2.4</path>, in
 base alla propria versione del kernel).
 </impo>
@@ -307,7 +358,7 @@ base alla propria versione del kernel).
 
 <p>
 Una volta che i driver appropriati sono installati è necessario configurare
-il server X per usare i driver <c>nvidia</c> al posto dei driver di default
+il server X per usare i driver <c>nvidia</c> al posto dei driver predefiniti
 <c>nv</c>.
 </p>
 
@@ -327,8 +378,8 @@ EndSection
 </pre>
 
 <p>
-Poi andare nella sezione <c>Module</c> ed assicurarsi che il modulo
-<c>glx</c> venga caricato mentre il modulo <c>dri</c> no.
+Spostarsi nella sezione <c>Module</c> ed assicurarsi che il modulo <c>glx</c>
+venga caricato mentre il modulo <c>dri</c> no.
 </p>
 
 <pre caption="Aggiornare la sezione Module">
@@ -341,7 +392,7 @@ EndSection
 </pre>
 
 <p>
-Poi nella sezione <c>Screen</c>, assicurarsi che la direttiva
+Poi, nella sezione <c>Screen</c>, assicurarsi che la direttiva
 <c>DefaultDepth</c> sia settata a 16 o a 24, o che si abbia solamente la
 subsezione <c>Display</c> con <c>Depth</c> settata a 16 o 24. Senza di
 questo, le estensioni nVidia GLX non funzioneranno.
@@ -371,12 +422,12 @@ Lanciare <c>eselect </c> in modo che X server usi le librerie nVidia GLX:
 <body>
 
 <p>
-Si deve aggiungere l'utente al gruppo <c>video</c> in modo che possa accedere
-ai file della periferica nvidia.
+È necessario aggiungere l'utente al gruppo <c>video</c> per permettergli di
+accedere ai file della periferica nvidia.
 </p>
 
 <pre caption="Aggiungere gli user al gruppo video">
-# <i>gpasswd -a youruser video</i>
+# <i>gpasswd -a tuoutente video</i>
 </pre>
 
 <p>
@@ -392,7 +443,7 @@ nessun danno e rende la configurazione già pronta per futuri aggiornamenti.
 
 <p>
 Per testare la scheda nVidia, avviare X e dare il comando <c>glxinfo | grep
-direct</c>.  Si dovrebbe avere il direct rendering attivato:
+direct</c>.  Il direct rendering dovrebbe essere attivato:
 </p>
 
 <pre caption="Verificare lo stato del direct rendering">
@@ -413,15 +464,15 @@ Per monitorare gli FPS (Frame Per Second), lanciare <c>glxgears</c>
 <p>
 Alcuni strumenti come <c>mplayer</c> e <c>xine-lib</c> usano una USE flag
 chiamata "nvidia" che abilita il supporto XvMCNVIDIA, utile quando si guardano
-film ad alta risoluzione. Aggiungere "nvidia" tra le USE presenti in
-<path>/etc/make.conf</path> oppure aggiungerlo come USE flag a
+film ad alta risoluzione. Aggiungere la voce "nvidia" tra le USE presenti in
+<path>/etc/make.conf</path> oppure aggiungerla come USE flag a
 <c>media-video/mplayer</c> e/o <c>media-libs/xine-lib</c> in
 <path>/etc/portage/package.use</path>.
 </p>
 
 <p>
-Poi lanciare <c>emerge -uD --newuse world</c> per reinstallare le applicazioni
-che beneficeranno dal cambiamento delle USE flag.
+Infine lanciare <c>emerge -uD --newuse world</c> per reinstallare le
+applicazioni che beneficeranno dal cambiamento delle USE flag.
 </p>
 
 </body>
@@ -431,9 +482,9 @@ che beneficeranno dal cambiamento delle USE flag.
 <body>
 
 <p>
-Dalla versione 1.0.6106 NVvdia  fornisce un strumento di configurazione,
-che permette di cambiare le impostazioni grafiche senza riavviare X server ed è
-presente in Portage come <c>media-video/nvidia-settings</c>
+Dalla versione 1.0.6106 nVidia  fornisce un strumento di configurazione che
+permette di cambiare le impostazioni grafiche senza riavviare il server X ed è
+presente in Portage tramite il pacchetto <c>media-video/nvidia-settings</c>.
 </p>
 
 </body>
@@ -443,7 +494,7 @@ presente in Portage come <c>media-video/nvidia-settings</c>
 <chapter>
 <title>Risoluzione dei problemi</title>
 <section>
-<title>Far lavorare 2D su macchine con 4 Gb o più di memoria</title>
+<title>Far funzionare il 2D su macchine con 4 Gb o più di memoria</title>
 <body>
 
 <p>
@@ -458,7 +509,7 @@ controllare il contenuto di <path>/proc/mtrr</path>
 
 <p>
 Ogni linea dovrebbe contenere "write-back" o "write-combining". Se si nota
-una linea con "uncachable" sarà necessario cambiare l' impostazione del BIOS.
+una linea con "uncachable" sarà necessario cambiare l'impostazione del BIOS.
 </p>
 
 
@@ -474,7 +525,7 @@ l'accelerazione 2D funzionerà senza errori.
 
 <section>
 <title>
-Mi aspettavo che venisse caricato il modulo del kernel e ho ricevuto "no such
+Tentando di caricare il modulo del kernel si riceve il messaggio "no such
 device"
 </title>
 <body>
@@ -487,7 +538,7 @@ usando <c>lspci</c>)
 
 <p>
 Se si è sicuri di avere una scheda nVidia, controllare il BIOS e verificare
-che la direttiva <e>Assign IRQ to VGA</e> sia settata.
+che la direttiva <e>Assign IRQ to VGA</e> sia impostata.
 </p>
 
 </body>
@@ -524,15 +575,14 @@ $ <i>less /usr/share/doc/nvidia-legacy-drivers-*/README.gz</i>
 Il modulo <c>nvidia</c> accetta un numero di parametri (opzioni) che si
 possono usare per migliorare il comportamento dei driver. Molti di questi
 sono menzionati nella documentazione. Per aggiungere o cambiare il valore di
-questi editare il file <c>/etc/modules.d/nvidia</c>. Ricordarsi di eseguire
-<c>modules-update</c> dopo aver editato questo file, e sarà necessario
-ricaricare il modulo <c>nvidia</c> prima che la nuova impostazione abbia
-effetto.
+questi modificare il file <c>/etc/modules.d/nvidia</c>. Ricordarsi di eseguire
+<c>modules-update</c> a seguito delle modifiche, e che è necessario ricaricare
+il modulo <c>nvidia</c> per applicare la nuove impostazioni.
  </p>
 
 
 <pre caption="Settaggio delle opzioni nvidia">
-<comment>(Editare /etc/modules.d/nvidia con l'editor preferito)</comment>
+<comment>(Modificare /etc/modules.d/nvidia con l'editor preferito)</comment>
 # <i>nano -w /etc/modules.d/nvidia</i>
 <comment>(Aggiornare le informazioni sul modulo)</comment>
 # <i>modules-update</i>
@@ -551,16 +601,15 @@ effetto.
 
 <p>
 Le librerie GLX contengono una serie di opzioni che possono essere
-configurate.  Questi controllano la configurazione dell'uscita TV, il dual
-display, la rilevazione della frequenza del monitor etc...Anche per queste
+configurate per controllare la configurazione dell'uscita TV, il dual
+display, la rilevazione della frequenza del monitor ecc... Anche per queste
 esiste una documentazione dettagliata.
 </p>
 
 <p>
-Se si desidera usare una di queste opzioni, la si deve specificare nella
-relativa sezione Device del file di configurazione di X (generalmente
-<c>/etc/X11/xorg.conf</c>). Per esempio, supponiamo di voler disabilitare il
-logo di avvio:
+Se si desidera usare una di queste opzioni, specificarla nella relativa sezione
+Device del file di configurazione di X (generalmente <c>/etc/X11/xorg.conf</c>).
+Per esempio, si supponga di voler disabilitare il logo di avvio:
 </p>
 
 <pre caption="Configurazione avanzata nvidia nella configurazione di X">
