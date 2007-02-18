@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/dri-howto.xml,v 1.36 2006/10/10 09:36:49 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/dri-howto.xml,v 1.37 2007/02/18 23:44:24 nightmorph Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/dri-howto.xml">
@@ -12,18 +12,21 @@
 <author title="Editor">
   <mail link="peesh@gentoo.org">Jorge Paulo</mail>
 </author>
+<author title="Editor">
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
+</author>
 
 <abstract>
-This document is a guide to getting 3D acceleration working using X11-DRM 
-with Xorg in Gentoo Linux.
+This document is a guide to getting 3D acceleration working using the DRM with
+Xorg in Gentoo Linux.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.6</version>
-<date>2006-10-10</date>
+<version>1.7</version>
+<date>2007-02-18</date>
 
 <chapter>
 <title>Introduction</title>
@@ -53,11 +56,11 @@ rendering of 3D objects such as games, 3D CAD and modeling.
 In many cases, both binary and open-source drivers exist. Open-source drivers
 are preferable since we're using Linux and open source is one of its underlying
 principles. Sometimes, binary drivers are the only option, like with nVidia's
-cards. Binary drivers include x11-drivers/nvidia-drivers and
-x11-drivers/nvidia-legacy-drivers for nVidia cards and media-video/ati-drivers
-for ATI cards. Other open-source drivers include media-video/kyro-kernel for
-KyroII cards and media-video/ati-gatos for ATI cards, which aim to support
-ATI's video capabilities more fully.
+cards. Binary drivers include <c>x11-drivers/nvidia-drivers</c> and
+<c>x11-drivers/nvidia-legacy-drivers</c> for nVidia cards and
+<c>x11-drivers/ati-drivers</c> for ATI cards. Other open-source drivers include
+<c>media-video/ati-gatos</c> for ATI cards, which aims to support ATI's video
+capabilities more fully.
 </p>
 
 </body>
@@ -77,12 +80,13 @@ use for the DRI is to create fast OpenGL implementations.
 </body>
 </section>
 <section>
-<title>What is X11-DRM and how does it relate to regular Xorg?</title>
+<title>What is the DRM and how does it relate to regular Xorg?</title>
 <body>
 
 <p>
-X11-DRM is an <e>enhancement</e> to Xorg that adds 3D acceleration for 
-cards by adding the kernel module necessary for direct rendering.
+The DRM (Direct Rendering Manager) is an <e>enhancement</e> to Xorg that adds 3D
+acceleration for cards by adding the kernel module necessary for direct
+rendering.
 </p>
 
 </body>
@@ -93,11 +97,23 @@ cards by adding the kernel module necessary for direct rendering.
 
 <p>
 This guide is for people who can't get direct rendering working with just Xorg.
-X11-DRM works for 3dfx, gamma, i8x0, matrox, rage128, radeon, mach64 and sis300
-series drivers. VIA card owners should not use <c>x11-drm</c>, but should
-instead use the DRI provided in recent kernels (&gt;2.6.13). See the <uri
-link="http://dri.freedesktop.org/">DRI homepage</uri> for more info and
-documentation.
+The DRM works for the following drivers:
+</p>
+
+<ul>
+  <li>3dfx</li>
+  <li>i8x0</li>
+  <li>matrox</li>
+  <li>rage128</li>
+  <li>radeon</li>
+  <li>mach64</li>
+  <li>sis300</li>
+  <li>via</li>
+</ul>
+
+<p>
+See the <uri link="http://dri.freedesktop.org/">DRI homepage</uri> for more info
+and documentation.
 </p>
 
 </body>
@@ -150,32 +166,29 @@ configuration file!
 </p>
 
 <p>
-Most, if not all, kernels should have these options. This was configured using 
-gentoo-sources-2.4.20-r5.
+Most, if not all, kernels should have these options. This was configured using a
+standard <c>gentoo-sources</c> kernel.
 </p>
 
 <pre caption="Configuring the kernel">
 # <i>ls -l /usr/src/linux </i>
-lrwxrwxrwx    1 root     root           22 May 29 18:20 /usr/src/linux -> linux-2.4.20-gentoo-r5
+lrwxrwxrwx 1 root root 22 2007-02-14 20:12 /usr/src/linux -> linux-2.6.18-gentoo-r4
 <comment>(Make sure /usr/src/linux links to your current kernel.)</comment>
 # <i>cd /usr/src/linux</i>
 # <i>make menuconfig</i>
 </pre>
 
 <pre caption="make menuconfig options">
-Processor type and features ---&gt;
+Processor type and features --->
 &lt;*&gt; MTRR (Memory Type Range Register) support
-Character devices ---&gt;
-&lt;M&gt; /dev/agpgart (AGP Support)
-[M] Intel 440LX/BX/GX and I815/I820/I830M/I830MP/I840/I845/I850/I860 support
+Device drivers --->
+   Character devices --->
+   &lt;M&gt; /dev/agpgart (AGP Support)
+   <comment>(The agpgart option is not present on 64-bit kernels; just choose your chipset support.)</comment>
+   &lt;M&gt; Intel 440LX/BX/GX, I8xx and E7x05 support
 <comment>(Enable your chipset instead of the above.)</comment>
-&lt; &gt; Direct Rendering Manager (XFree86 4.1.0 and higher DRI support)
+   &lt;M&gt; Direct Rendering Manager (XFree86 4.1.0 and higher DRI support)
 </pre>
-
-<p>
-Make sure the Direct Rendering Manager (DRM) is <e>off</e>. 
-The X11-DRM package will provide its own. 
-</p>
 
 </body>
 </section>
@@ -184,16 +197,12 @@ The X11-DRM package will provide its own.
 <body>
 
 <pre caption="Compiling and installing kernel">
-<comment>(This example is for a 2.4 kernel)</comment>
-# <i>make dep &amp;&amp; make clean bzImage modules modules_install</i>
-# <i>mount /boot</i>
-# <i>cp arch/i386/boot/bzImage /boot</i>
+# <i>make &amp;&amp; make modules_install</i>
 </pre>
 
 <p>
-If you want your kernel to be named something other than bzImage, be sure to 
-copy to /boot/yourname instead. Don't forget to set up grub.conf or lilo.conf 
-and run /sbin/lilo if you use LILO.
+Don't forget to set up <path>grub.conf</path> or <path>lilo.conf</path> and run
+<c>/sbin/lilo</c> if you use LILO.
 </p>
 
 </body>
@@ -201,35 +210,10 @@ and run /sbin/lilo if you use LILO.
 </chapter>
 
 <chapter>
-<title>Install X11-DRM and configure direct rendering</title>
-<section>
-<title>Install X11-DRM</title>
-<body>
-
-<pre caption="Installing X11-DRM">
-# <i>emerge x11-drm</i>
-</pre>
-
-</body>
-</section>
+<title>Configure direct rendering</title>
 <section id="configure_xorg">
 <title>Configure Xorg.conf</title>
 <body>
-
-<p>
-Some chipsets require you to rebuild <c>xorg-x11</c> with 
-<c>USE="insecure-drivers"</c>. This applies to mach64, unichrome and savage 
-chipsets on xorg-x11-6.8.2, and to mach64 and unichrome on xorg-x11-6.8.99.x.
-Savage users should not try xorg-x11-6.8.99.x as support for the savage there
-is broken.
-</p>
-
-<pre caption="Rebuilding xorg-x11">
-<comment>(Add the insecure-drivers USE flag if you use one of the aforementioned chipsets)</comment>
-# <i>echo "x11-base/xorg-x11 insecure-drivers" &gt;&gt; /etc/portage/package.use</i>
-
-# <i>emerge xorg-x11</i>
-</pre>
 
 <p>
 Open <path>/etc/X11/xorg.conf</path> with your favorite text editor and edit 
@@ -246,6 +230,7 @@ EndSection
 ...
 Section "Device"
   Driver "radeon"
+  <comment>(Replace radeon with the name of your driver.)</comment>
   ...
 EndSection
 ...
@@ -253,10 +238,6 @@ Section "dri"
   Mode 0666
 EndSection
 </pre>
-
-<p>
-If you are using a different driver, replace "radeon" with yours.
-</p>
 
 </body>
 </section>
@@ -303,135 +284,16 @@ $ <i>glxinfo | grep rendering</i>
 direct rendering: Yes
 <comment>(If it says "No", you don't have 3D acceleration.)</comment>
 $ <i>glxgears</i>
-<comment>(Test your frames per second (FPS) at the default size. The number should be )</comment>
-<comment>(significantly higher than before installing x11-drm. Do this while the CPU is as idle as possible.)</comment>
+<comment>(Test your frames per second (FPS) at the default size. The number should be 
+significantly higher than before configuring DRM. Do this while the CPU is as idle as 
+possible.)</comment>
 </pre>
 
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Using the CVS sources</title>
-<section>
-<body>
-
-<warn>
-Don't do this if the package worked.
-</warn>
-
-</body>
-</section>
-<section>
-<title>Do you need the CVS?</title>
-<body>
-
-<p>
-First you have to check whether the x11-drm package works. If it doesn't and 
-you have checked your logs to verify it's not a configuration error, you might 
-want to consider the CVS sources. There are also daily driver snapshots 
-available if you do not wish to build the full CVS.
-</p>
-
-</body>
-</section>
-<section>
-<title>Do the CVS sources support your card?</title>
-<body>
-
-<p>
-Check the DRI <uri link="http://dri.freedesktop.org/wiki/Status">supported
-cards list</uri> to see if the CVS supports your card. Even if it doesn't, but
-it supports a similar card, try it.
-</p>
-
-<!-- I see a couple of 8x AGP stuff on the Internet about vanilla 2.4 kernels;
-     is this now available or not? I've commented it out for the time being,
-     hoping that this doesn't affect us :)
-
-<warn>
-"Linux 2.4 doesn't support agp 8x, so I had to go find a backport. The backport 
-works .... it doesn't patch quite properly, and it requires 2.4.21 (I've only 
-gotten it to work with vanilla, straight from the tarball (not ebuild)). First 
-go get the 2.4.20-2.4.21 patch from kernel.org .... (then get the patch,) It 
-was on a mailing list somewhere. It doesn't patch cleanly - - one file fails, 
-the pci_ids.h file, but if you actually read the file and the reject list, it's
-very easy to fix. But it does load, and it gives me 1600x1200 with video 
-(although a bit slow b/c of lack of dga) with xfree-drm." (SanityInAnarchy on 
-#gentoo)
-</warn>
-
-<impo>
-The patch is a little tricky to work with but <uri 
-link="http://www.ussg.iu.edu/hypermail/linux/kernel/0302.2/att-1618/01-agp3.diff.bz2">here's 
-the link</uri>. If you can disable 8X AGP in your BIOS, change it to 4X and you 
-may not need the patch.
-</impo>
--->
-
-</body>
-</section>
-<section>
-<title>Follow the CVS Instructions</title>
-<body>
-
-<p>
-The DRI project has a document about CVS compiling themselves. Please read <uri
-link="http://dri.freedesktop.org/wiki/Building">the document</uri> and follow
-the instructions up to the <e>Installing for X.org</e> part.
-</p>
-
-</body>
-</section>
-<section>
-<title>Install the CVS</title>
-<body>
-
-<p>
-Verify that the DRI kernel module(s) for your system were built:
-</p>
-
-<pre caption="Verification">
-# <i>cd ~/DRI-CVS/build/xc/programs/Xserver/hw/xfree86/os-support/linux/drm/kernel; ls</i>
-</pre>
-
-<p>
-For the 3dfx Voodoo, you should see <path>tdfx.o</path>. For the Matrox 
-G200/G400, you should see <path>mga.o</path>. For the ATI Rage 128, you should 
-see <path>r128.o</path>. For the ATI Radeon, you should see 
-<path>radeon.o</path>. For the Intel i810, you should see <path>i810.o</path>. 
-If the DRI kernel module(s) failed to build, you should verify that you're 
-using the right version of the Linux kernel. The most recent kernels are not 
-always supported.
-</p>
-
-<p>
-Install over your X.org installation. You may wish to back up xorg-x11.
-</p>
-
-<pre caption="Backing up Xorg">
-# <i>quickpkg xorg-x11</i>
-<comment>(This backs up your Xorg-X11 package.)</comment>
-# <i>make install</i>
-</pre>
-
-<p>
-Follow the "Configure Xorg" section above.
-</p>
-
-<p>
-To load the appropriate DRM module in your running kernel, copy the kernel 
-module to <path>/lib/modules/`uname -r`/kernel/drivers/char/drm/</path> then 
-run <c>modules-update</c> and restart your X server. If you're not running the 
-kernel you'll be using it in, instead of <c>`uname -r`,</c> use that kernel's 
-name.
-</p>
-
-<warn>
-Make sure you first unload any older DRI kernel modules that might be already 
-loaded. Note that some DRM modules require that the agpgart module be loaded 
-first.
-</warn>
+<note>
+FPS may be limited by your screen's refresh rate, so keep this in mind if
+<c>glxgears</c> reports only about 70-100 FPS. <c>games-fps/ut2004-demo</c> is a
+better benchmarking tool, as it can give you real-world performance results.
+</note>
 
 </body>
 </section>
@@ -545,25 +407,13 @@ listing</uri> on Sourceforge.
 <chapter>
 <title>Troubleshooting</title>
 <section>
-<title>It doesn't work. I just recompiled my kernel or switched to a new one.</title>
-<body>
-
-<p>
-Whenever you rebuild your kernel or switch to another kernel, you'll have to
-rebuild the kernel module.  Note that you don't need to remerge xorg-x11, but
-you will need to remerge x11-drm.
-</p>
-
-</body>
-</section>
-
-<section>
 <title>It doesn't work. I don't have rendering, and I can't tell why.</title>
 <body>
 
 <p>
-Try <c>insmod radeon</c> before you start the X server. Also, try building 
-agpgart into the kernel instead of as a module.
+Try <c>modprobe radeon</c> before you start the X server (replace <c>radeon</c>
+with the name of your driver). Also, try building agpgart into the kernel
+instead of as a module.
 </p>
 
 </body>
@@ -580,34 +430,27 @@ Ignore it unless you're having problems.
 </body>
 </section>
 <section>
-<title>Direct rendering doesn't work, and in /var/log/Xorg.0.log I have an error about driver version too low.</title>
-<body>
-
-<p>
-You aren't using the x11-drm driver. Check if you compiled DRM and the driver 
-into the kernel; you shouldn't have.
-</p>
-
-</body>
-</section>
-<section>
 <title>I have a Radeon, and I want TV-Out.</title>
 <body>
 
 <p>
-Check out ati-gatos drivers. <c>emerge -s gatos</c>.
+Check out <c>ati-gatos</c> drivers. <c>emerge -av ati-gatos</c>.
 </p>
 
 </body>
 </section>
 <section>
-<title>It doesn't work. My card is so incredibly new and cool that it isn't supported at all.</title>
+<title>
+It doesn't work. My card is so incredibly new and cool that it isn't supported
+at all.
+</title>
 <body>
 
 <p>
-Try out the binary drivers. For ati-drivers, a listing is at 
-<uri>http://www.schneider-digital.de/html/download_ati.php</uri>. If those 
-don't support it, use fbdev. It's slow, but it works.
+Try out the binary drivers. For <c>ati-drivers</c>, a listing is at
+<uri>http://ati.amd.com/support/drivers/linux/linux-radeon.html</uri> (for x86)
+and at <uri>http://ati.amd.com/support/drivers/linux64/linux64-radeon.html</uri>
+(for amd64). If those don't support it, use fbdev. It's slow, but it works.
 </p>
 
 </body>
@@ -617,7 +460,7 @@ don't support it, use fbdev. It's slow, but it works.
 <body>
 
 <p>
-In section "Device" enable ForcePCIMode. 
+Edit <path>/etc/X11/xorg.conf</path>. In section "Device" enable ForcePCIMode. 
 </p>
 
 <pre caption="Enabling ForcePCIMode">
