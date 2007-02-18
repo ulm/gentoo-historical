@@ -28,7 +28,7 @@
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="contains('|ca|cs|da|de|el|en|es|fi|fr|hu|id|it|ko|lt|nl|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_cn|zh_tw|',concat('|', $LANG,'|'))">
+    <xsl:when test="contains('|ca|cs|da|de|el|en|es|fi|fr|he|hu|id|it|ko|lt|nl|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_cn|zh_tw|',concat('|', $LANG,'|'))">
       <xsl:variable name="insert" select="document(concat('/doc/', $LANG, '/inserts.xml'))/inserts/insert[@name=$str]"/>
       <xsl:choose>
         <xsl:when test="$insert">
@@ -145,7 +145,7 @@
         </xsl:when>
 
         <!-- Dutch / Greek / Indonesian / Italian / Polish / Romanian / Russian / Swedish / Turkish / Vietnamese -->
-        <xsl:when test="$lingua='nl' or $lingua='el' or $lingua='id' or $lingua='it' or $lingua='pl' or $lingua='ro' or $lingua='ru' or $lingua='sv' or $lingua='tr' or $lingua='vi'">
+        <xsl:when test="$lingua='he' or $lingua='nl' or $lingua='el' or $lingua='id' or $lingua='it' or $lingua='pl' or $lingua='ro' or $lingua='ru' or $lingua='sv' or $lingua='tr' or $lingua='vi'">
           <func:result select="concat($D, ' ', $mensis//months[@lang=$lingua]/month[position()=$M], ' ', $Y)"/>
         </xsl:when>
 

@@ -191,6 +191,11 @@
   <xsl:when test="$style = 'printable'">
     <!-- Insert the node-specific content -->
 <body bgcolor="#ffffff">
+    <!-- Test for RTL languages -->
+    <xsl:if test="$glang='he'">
+      <xsl:attribute name="dir">RTL</xsl:attribute>
+    </xsl:if>
+
     <xsl:call-template name="show-disclaimer"/>
     <xsl:call-template name="content">
       <xsl:with-param name="chapnum" select="$chapnum"/>
@@ -211,6 +216,10 @@
       <table border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr>
           <td width="99%" class="content" valign="top" align="left">
+            <!-- Test for RTL languages -->
+            <xsl:if test="$glang='he'">
+              <xsl:attribute name="dir">RTL</xsl:attribute>
+            </xsl:if>
             <!-- Insert the node-specific content -->
             <xsl:call-template name="show-disclaimer"/>
             <xsl:call-template name="content">
@@ -485,6 +494,10 @@
     </td>
     <!-- Content below top menu and between left menu and ads -->
     <td valign="top" bgcolor="#ffffff">
+      <!-- Test for RTL languages -->
+      <xsl:if test="$glang='he'">
+        <xsl:attribute name="dir">RTL</xsl:attribute>
+      </xsl:if>
             <xsl:choose>
               <xsl:when test="/mainpage/@id='news'">
               <p class="news">
@@ -1209,6 +1222,10 @@
 <!-- License Tag -->
 <xsl:template match="license">
 <p class="copyright">
+  <!-- Test for RTL languages -->
+  <xsl:if test="$glang='he'">
+    <xsl:attribute name="dir">RTL</xsl:attribute>
+  </xsl:if>
   <xsl:apply-templates select="func:gettext('License')"/>
 </p>
 <xsl:comment>
