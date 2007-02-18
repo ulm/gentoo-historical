@@ -215,7 +215,7 @@
     <td valign="top" align="right" colspan="1" bgcolor="#ffffff">
       <table border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr>
-          <td width="99%" class="content" valign="top" align="left">
+          <td width="99%" class="content" valign="top">
             <!-- Test for RTL languages -->
             <xsl:if test="$glang='he'">
               <xsl:attribute name="dir">RTL</xsl:attribute>
