@@ -217,9 +217,14 @@
         <tr>
           <td width="99%" class="content" valign="top">
             <!-- Test for RTL languages -->
-            <xsl:if test="$glang='he'">
-              <xsl:attribute name="dir">RTL</xsl:attribute>
-            </xsl:if>
+            <xsl:choose>
+              <xsl:when test="$glang='he'">
+                <xsl:attribute name="dir">RTL</xsl:attribute>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:attribute name="align">left</xsl:attribute>
+              </xsl:otherwise>
+            </xsl:choose>
             <!-- Insert the node-specific content -->
             <xsl:call-template name="show-disclaimer"/>
             <xsl:call-template name="content">
