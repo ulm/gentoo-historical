@@ -451,7 +451,7 @@
   <xsl:variable name="fileid"     select="@id"/>
   <xsl:variable name="parentfile" select="exslt:node-set($pmetadoc)/metadoc/files/file[@id = $fileid]"/>
   <tr>
-  <ti>
+  <ti dir="ltr">
   <xsl:choose>
   <!-- Add ?glang={$lang} to handbook files, i.e. those with <sections> as a root element
        because it's the only way they can know what language to use. -->
@@ -481,7 +481,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.33 2006/11/01 21:29:09 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.34 2007/02/19 13:35:38 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -504,7 +504,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.33 2006/11/01 21:29:09 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.34 2007/02/19 13:35:38 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:when test="string-length($pv)=0">?!?</xsl:when>

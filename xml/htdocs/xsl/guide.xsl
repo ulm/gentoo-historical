@@ -1150,6 +1150,9 @@
   <xsl:if test="@rowspan">
     <xsl:attribute name="rowspan"><xsl:value-of select="@rowspan"/></xsl:attribute>
   </xsl:if>
+  <xsl:if test="@dir"> <!-- Can only come from metadoc for overview.xml -->
+    <xsl:attribute name="dir"><xsl:value-of select="@dir"/></xsl:attribute>
+  </xsl:if>
   <xsl:apply-templates/>
 </td>
 </xsl:template>
