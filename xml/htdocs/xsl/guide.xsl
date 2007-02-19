@@ -1448,52 +1448,62 @@
       </td>
      </tr>
     </xsl:if>
-    <xsl:choose>
-      <xsl:when test="/book/date or /guide/date or /sections/date">
-        <tr>
-          <td align="center" class="topsep">
-            <p class="alttext">
-            <xsl:call-template name="contentdate"/>
-            </p>
-          </td>
-        </tr>
+    <xsl:if test="/book/date or /guide/date or /sections/date or /mainpage/date or /news/date">
+      <tr>
+        <td class="topsep">
+          <!-- Test for RTL languages -->
+          <xsl:choose>
+            <xsl:when test="$glang='he'">
+              <xsl:attribute name="dir">RTL</xsl:attribute>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:attribute name="align">center</xsl:attribute>
+            </xsl:otherwise>
+          </xsl:choose>
+
+          <p class="alttext">
+          <xsl:call-template name="contentdate"/>
+          </p>
+        </td>
+      </tr>
+      <xsl:if test="/book/date or /guide/date or /sections/date">
         <xsl:variable name="outdated">
           <xsl:call-template name="outdated-translation"/>
         </xsl:variable>
         <xsl:if test="string-length($outdated) &gt; 1">
           <tr>
-            <td align="left" class="topsep">
+            <td class="topsep">
+              <!-- Test for RTL languages -->
+              <xsl:choose>
+                <xsl:when test="$glang='he'">
+                  <xsl:attribute name="dir">RTL</xsl:attribute>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:attribute name="align">left</xsl:attribute>
+                </xsl:otherwise>
+              </xsl:choose>
+
               <p class="alttext">
                 <xsl:copy-of select="$outdated"/>
               </p>
             </td>
           </tr>
         </xsl:if>
-      </xsl:when>
-      <xsl:when test="/mainpage/date">
-        <tr>
-          <td align="center" class="topsep">
-            <p class="alttext">
-            <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
-            <xsl:copy-of select="func:format-date(/mainpage/date)"/>
-            </p>
-          </td>
-        </tr>
-      </xsl:when>
-      <xsl:when test="/news/date">
-        <tr>
-          <td align="center" class="topsep">
-            <p class="alttext">
-            <xsl:value-of select="concat(func:gettext('Updated'),' ')"/>
-            <xsl:copy-of select="func:format-date(/news/date)"/>
-            </p>
-          </td>
-        </tr>
-      </xsl:when>
-    </xsl:choose>
+      </xsl:if>
+    </xsl:if>
     <xsl:if test="abstract or document(include/@href)/*[1]/abstract">
       <tr>
-        <td align="left" class="topsep">
+        <td class="topsep">
+          <!-- Test for RTL languages -->
+          <xsl:choose>
+            <xsl:when test="$glang='he'">
+              <xsl:attribute name="dir">RTL</xsl:attribute>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:attribute name="align">left</xsl:attribute>
+            </xsl:otherwise>
+          </xsl:choose>
+
           <p class="alttext">
             <!-- Abstract (summary) of the document -->
             <b><xsl:value-of select="func:gettext('Summary')"/>: </b>

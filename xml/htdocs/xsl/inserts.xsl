@@ -144,8 +144,13 @@
           <func:result select="concat($Y, ' ', $mensis//months[@lang=$lingua]/month[position()=$M], ' ', $D)"/>
         </xsl:when>
 
+        <!-- Hebrew -->
+        <xsl:when test="$lingua='he'">
+          <func:result select="concat($D, ' ב', $mensis//months[@lang=$lingua]/month[position()=$M], ', ', $Y)"/>
+        </xsl:when>
+
         <!-- Dutch / Greek / Indonesian / Italian / Polish / Romanian / Russian / Swedish / Turkish / Vietnamese -->
-        <xsl:when test="$lingua='he' or $lingua='nl' or $lingua='el' or $lingua='id' or $lingua='it' or $lingua='pl' or $lingua='ro' or $lingua='ru' or $lingua='sv' or $lingua='tr' or $lingua='vi'">
+        <xsl:when test="$lingua='nl' or $lingua='el' or $lingua='id' or $lingua='it' or $lingua='pl' or $lingua='ro' or $lingua='ru' or $lingua='sv' or $lingua='tr' or $lingua='vi'">
           <func:result select="concat($D, ' ', $mensis//months[@lang=$lingua]/month[position()=$M], ' ', $Y)"/>
         </xsl:when>
 
