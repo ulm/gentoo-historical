@@ -135,7 +135,7 @@ def main():
 
     # /daily
     open(config.LOCALHOME + '/daily/.htaccess', 'w').write(
-        'Options +ExecCGI\n'
+        'Options +ExecCGI +FollowSymlinks\n'
         'ErrorDocument 404 /daily/\n'
     )
     open(config.LOCALHOME + '/daily/index.shtml', 'w').write(
