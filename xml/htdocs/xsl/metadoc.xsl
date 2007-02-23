@@ -451,37 +451,39 @@
   <xsl:variable name="fileid"     select="@id"/>
   <xsl:variable name="parentfile" select="exslt:node-set($pmetadoc)/metadoc/files/file[@id = $fileid]"/>
   <tr>
-  <ti dir="ltr">
-  <xsl:choose>
-  <!-- Add ?glang={$lang} to handbook files, i.e. those with <sections> as a root element
-       because it's the only way they can know what language to use. -->
-    <xsl:when test="exslt:node-set($dfile)/sections">
-      <uri link="{$fileurl}?glang={$lang}"><xsl:value-of select="$fileurl"/></uri>
-    </xsl:when>
-    <xsl:when test="exslt:node-set($dfile)/metadoc">
-      <b><xsl:value-of select="$fileurl"/></b>
-    </xsl:when>
-    <xsl:when test="exslt:node-set($dfile)/inserts">
-      <xsl:value-of select="$fileurl"/>
-    </xsl:when>
-    <xsl:when test="exslt:node-set($dfile)/dynamic">
-      <xsl:value-of select="$fileurl"/>
-    </xsl:when>
-    <xsl:when test="exslt:node-set($dfile)/missing">
-      <brite><xsl:value-of select="exslt:node-set($dfile)/missing/@file"/></brite>
-    </xsl:when>
-    <xsl:otherwise>
-      <uri link="{$fileurl}"><xsl:value-of select="$fileurl"/></uri>
-    </xsl:otherwise>
-  </xsl:choose>
-  <!-- Untranslated file -->
-  <xsl:if test="$parentfile and $parentfile = $fileurl">&#160;¹</xsl:if>
+  <ti>
+    <path>
+      <xsl:choose>
+      <!-- Add ?glang={$lang} to handbook files, i.e. those with <sections> as a root element
+           because it's the only way they can know what language to use. -->
+        <xsl:when test="exslt:node-set($dfile)/sections">
+          <uri link="{$fileurl}?glang={$lang}"><xsl:value-of select="$fileurl"/></uri>
+        </xsl:when>
+        <xsl:when test="exslt:node-set($dfile)/metadoc">
+          <b><xsl:value-of select="$fileurl"/></b>
+        </xsl:when>
+        <xsl:when test="exslt:node-set($dfile)/inserts">
+          <xsl:value-of select="$fileurl"/>
+        </xsl:when>
+        <xsl:when test="exslt:node-set($dfile)/dynamic">
+          <xsl:value-of select="$fileurl"/>
+        </xsl:when>
+        <xsl:when test="exslt:node-set($dfile)/missing">
+          <brite><xsl:value-of select="exslt:node-set($dfile)/missing/@file"/></brite>
+        </xsl:when>
+        <xsl:otherwise>
+          <uri link="{$fileurl}"><xsl:value-of select="$fileurl"/></uri>
+        </xsl:otherwise>
+      </xsl:choose>
+    </path>
+    <!-- Untranslated file -->
+    <xsl:if test="$parentfile and $parentfile = $fileurl">&#160;¹</xsl:if>
   </ti>
     <xsl:variable name="v"><xsl:value-of select="exslt:node-set($dfile)//version[1]"/></xsl:variable>
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.34 2007/02/19 13:35:38 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.35 2007/02/23 15:30:45 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -504,7 +506,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.34 2007/02/19 13:35:38 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.35 2007/02/23 15:30:45 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:when test="string-length($pv)=0">?!?</xsl:when>

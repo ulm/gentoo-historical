@@ -867,7 +867,7 @@
 
 <!-- Command or input, not to use inside <pre> -->
 <xsl:template match="c">
-<span class="code"><xsl:apply-templates/></span>
+<span class="code" dir="ltr"><xsl:apply-templates/></span>
 </xsl:template>
 
 <!-- Preserve whitespace, aka Code Listing -->
@@ -1149,9 +1149,6 @@
   </xsl:if>
   <xsl:if test="@rowspan">
     <xsl:attribute name="rowspan"><xsl:value-of select="@rowspan"/></xsl:attribute>
-  </xsl:if>
-  <xsl:if test="@dir"> <!-- Can only come from metadoc for overview.xml -->
-    <xsl:attribute name="dir"><xsl:value-of select="@dir"/></xsl:attribute>
   </xsl:if>
   <xsl:apply-templates/>
 </td>
