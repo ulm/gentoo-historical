@@ -889,7 +889,7 @@
         </td>
       </tr>
       <tr>
-        <td bgcolor="#eeeeff">
+        <td bgcolor="#eeeeff" align="left" dir="ltr">
           <pre>
             <xsl:apply-templates/>
           </pre>
@@ -901,7 +901,7 @@
 
 <!-- Path -->
 <xsl:template match="path">
-<span class="path"><xsl:apply-templates/></span>
+<span class="path" dir="ltr"><xsl:apply-templates/></span>
 </xsl:template>
 
 <!-- Url -->
