@@ -1,0 +1,491 @@
+Index: toolkit/components/filepicker/content/filepicker.js
+===================================================================
+RCS file: /cvsroot/mozilla/toolkit/components/filepicker/content/filepicker.js,v
+retrieving revision 1.14
+diff -p -u -d -r1.14 filepicker.js
+--- toolkit/components/filepicker/content/filepicker.js	25 Nov 2005 19:47:17 -0000	1.14
++++ toolkit/components/filepicker/content/filepicker.js	28 Mar 2006 15:25:30 -0000
+@@ -753,6 +753,7 @@ function gotoDirectory(directory) {
+     textInput.value = "";
+   }
+   textInput.focus();
++  textInput.setAttribute("autocompletesearchparam", directory.path);
+   sfile = directory;
+ }
+ 
+Index: toolkit/components/filepicker/content/filepicker.xul
+===================================================================
+RCS file: /cvsroot/mozilla/toolkit/components/filepicker/content/filepicker.xul,v
+retrieving revision 1.8
+diff -p -u -d -r1.8 filepicker.xul
+--- toolkit/components/filepicker/content/filepicker.xul	2 Mar 2005 10:53:04 -0000	1.8
++++ toolkit/components/filepicker/content/filepicker.xul	28 Mar 2006 15:25:30 -0000
+@@ -101,6 +101,7 @@
+     <row align="center">
+       <label value="&textInput.label;" id="textInputLabel" control="textInput" accesskey="&textInput.accesskey;"/>
+       <textbox id="textInput" flex="1" oninput="doEnabling()" 
++               type="autocomplete" autocompletesearch="file"
+                onfocus="onTextFieldFocus();"/>
+     </row>
+     <row id="filterBox" hidden="true" align="center">
+Index: xpfe/components/autocomplete/resources/content/autocomplete.xml
+===================================================================
+RCS file: /cvsroot/mozilla/xpfe/components/autocomplete/resources/content/autocomplete.xml,v
+retrieving revision 1.129
+diff -p -u -d -r1.129 autocomplete.xml
+--- xpfe/components/autocomplete/resources/content/autocomplete.xml	16 Mar 2006 16:21:00 -0000	1.129
++++ xpfe/components/autocomplete/resources/content/autocomplete.xml	28 Mar 2006 15:25:33 -0000
+@@ -52,7 +52,8 @@
+         this.ifSetAttribute("disableKeyNavigation", true);
+         
+         // initialize the search sessions
+-        this.searchSessions = this.getAttribute("searchSessions");
++        this.initSearchSessions();
++        this.initautocompletesearch();
+         
+         // hack to work around lack of bottom-up constructor calling
+         if ("initialize" in this.resultsPopup)
+@@ -82,35 +83,46 @@
+                 onget="return this.getAttribute('focused') == 'true';"/>
+ 
+       <!-- space-delimited string of search session types to use -->
+-      <property name="searchSessions" onget="return this.getAttribute('searchSessions')">
+-        <setter><![CDATA[
+-          val = val ? val : "";
+-          var list = val.split(" ");
+-          this.mSessions = {};
+-          this.mListeners = {};
+-          this.mLastResults = {};
+-          this.mLastStatus = {};
++      <property name="searchSessions" onget="return this.getAttribute('searchSessions')"/>
+ 
+-          for (var i in list) {
++      <method name="initSearchSessions">
++        <body><![CDATA[
++          var list = this.getAttribute("searchSessions").split(" ");
++          for (var i = 0; i < list.length; i++) {
+             var name = list[i];
+             if (name != "") {
+               var contractid = "@mozilla.org/autocompleteSession;1?type=" + name;
+               try {
+                 var session =
+                   Components.classes[contractid].getService(Components.interfaces.nsIAutoCompleteSession);
++                this.addSession(session, name);
+               } catch (e) {
+-                dump("### ERROR - unable to create search session \"" + session + "\".\n");
+-                break;
++                dump("### ERROR - unable to create search session \"" + name + "\".\n");
+               }
+-              this.mSessions[name] = session;
+-              this.mListeners[name] = new (this.mAutoCompleteListener)(name);
+-              this.mLastResults[name] = null;
+-              this.mLastStatus[name] = null;
+-              ++this.sessionCount;
+             }
+           }
+-        ]]></setter>
+-      </property>
++        ]]></body>
++      </method>
++
++      <method name="initautocompletesearch">
++        <body><![CDATA[
++          var list = this.getAttribute("autocompletesearch").split(" ");
++          for (var i = 0; i < list.length; i++) {
++            var name = list[i];
++            if (name != "") {
++              var contractid = "@mozilla.org/autocomplete/search;1?name=" + name;
++              try {
++                var search =
++                  Components.classes[contractid].getService(Components.interfaces.nsIAutoCompleteSearch);
++                var session = new (this.mAutoCompleteSession)(search);
++                this.addSession(session, name);
++              } catch (e) {
++                dump("### ERROR - unable to create search \"" + name + "\".\n");
++              }
++            }
++          }
++        ]]></body>
++      </method>
+ 
+       <!-- the number of sessions currently in use -->
+       <field name="sessionCount">0</field>
+@@ -282,10 +294,10 @@
+ 
+       <!-- =================== PRIVATE PROPERTIES =================== -->
+ 
+-      <field name="mSessions">null</field>
+-      <field name="mListeners">null</field>
+-      <field name="mLastResults">null</field>
+-      <field name="mLastStatus">null</field>
++      <field name="mSessions">({})</field>
++      <field name="mListeners">({})</field>
++      <field name="mLastResults">({})</field>
++      <field name="mLastStatus">({})</field>
+       <field name="mLastKeyCode">null</field>
+       <field name="mAutoCompleteTimer">0</field>
+       <field name="mMenuOpen">false</field>
+@@ -300,14 +312,81 @@
+       <field name="oninit">null</field>
+       <field name="mDefaultMatchFilled">false</field>
+ 
++      <field name="mAutoCompleteSession"><![CDATA[
++        var session = function(aSession) { this.session = aSession };
++        session.prototype = {
++          session: null,
++          param: this,
++          onStartLookup: function(aSearchString, aPreviousSearchResult, aListener) {
++            this.session.startSearch(aSearchString,
++                         this.param.getAttribute("autocompletesearchparam"),
++                         aPreviousSearchResult && aPreviousSearchResult.lastResult,
++                         aListener);
++          },
++          onStopLookup: function() {
++            this.session.stopSearch();
++          },
++          onAutoComplete: function() {
++          }
++        };
++        session;
++      ]]></field>
++
+       <field name="mAutoCompleteListener"><![CDATA[
+-        var listener = function(aSession) { this.sessionName = aSession };
++        var listener = function(aName) { this.sessionName = aName };
+         listener.prototype = {
+           param: this,
+           sessionName: null,
++          lastResult: null,
++          lastItems: [],
+           onAutoComplete: function(aResults, aStatus) 
+           {
+             this.param.processResults(this.sessionName, aResults, aStatus);
++          },
++          onSearchResult: function(aSearch, aResult)
++          {
++            this.lastResult = aResult;
++            this.lastItems = new Array(aResult.matchCount);
++            const nsIAutoCompleteStatus = Components.interfaces.nsIAutoCompleteStatus;
++            var status = nsIAutoCompleteStatus.failed;
++            if (aResult.errorDescription) {
++              status = nsIAutoCompleteStatus.failureItems;
++              this.lastItems = [{
++                value: aResult.errorDescription,
++                comment: null,
++                className: null,
++                param: null
++              }];
++            }
++            else if (aResult.searchResult == aResult.RESULT_IGNORED)
++              status = nsIAutoCompleteStatus.ignored;
++            else if (aResult.searchResult == aResult.RESULT_NOMATCH)
++              status = nsIAutoCompleteStatus.nomatch;
++            else if (aResult.searchResult == aResult.RESULT_SUCCESS)
++              status = nsIAutoCompleteStatus.matchFound;
++            this.param.processResults(this.sessionName, {
++              searchString: aResult.searchString,
++              items: this,
++              defaultItemIndex: aResult.defaultIndex,
++              param: null,
++              lastResult: aResult
++            }, status);
++          },
++          Count: function() {
++            return this.lastItems.length;
++          },
++          QueryElementAt: function(aIndex, aIID) {
++            if (aIndex < 0 || aIndex >= this.lastItems.length)
++              return null;
++            if (!this.lastItems[aIndex]) {
++              this.lastItems[aIndex] = {
++                value: this.lastResult.getValueAt(aIndex),
++                comment: this.lastResult.getCommentAt(aIndex),
++                className: this.lastResult.getStyleAt(aIndex),
++                param: null
++              }
++            }
++            return this.lastItems[aIndex];
+           }
+         };
+         listener;
+@@ -414,13 +493,15 @@
+       <!-- add a session by reference -->
+       <method name="addSession">
+         <parameter name="aSession"/>
++        <parameter name="aName"/>
+         <body><![CDATA[
+           ++this.sessionCount;
+-          var name = "anon_"+this.sessionCount;
++          var name = aName || "anon_"+this.sessionCount;
+           this.mSessions[name] = aSession;
+           this.mListeners[name] = new (this.mAutoCompleteListener)(name);
+           this.mLastResults[name] = null;
+           this.mLastStatus[name] = null;
++          return this.mSessions[name];
+         ]]></body>
+       </method>
+ 
+Index: xpfe/components/filepicker/res/content/filepicker.js
+===================================================================
+RCS file: /cvsroot/mozilla/xpfe/components/filepicker/res/content/filepicker.js,v
+retrieving revision 1.92
+diff -p -u -d -r1.92 filepicker.js
+--- xpfe/components/filepicker/res/content/filepicker.js	11 Mar 2005 22:26:17 -0000	1.92
++++ xpfe/components/filepicker/res/content/filepicker.js	28 Mar 2006 15:25:33 -0000
+@@ -311,7 +311,7 @@ function selectOnOK()
+                                                  [file.path]);
+           
+           promptService = Components.classes[NS_PROMPTSERVICE_CONTRACTID].getService(Components.interfaces.nsIPromptService);
+-          var rv = promptService.confirm(window, title, message);
++          var rv = promptService.confirm(window, confirmTitle, message);
+           if (rv) {
+             ret = nsIFilePicker.returnReplace;
+             retvals.directory = file.parent.path;
+@@ -725,11 +725,11 @@ function gotoDirectory(directory) {
+ 
+   window.setCursor("auto");
+ 
+-  treeView.QueryInterface(nsITreeView).selection.clearSelection();
+   if (filePickerMode == nsIFilePicker.modeGetFolder) {
+     textInput.value = "";
+   }
+   textInput.focus();
++  textInput.setAttribute("autocompletesearchparam", directory.path);
+   sfile = directory;
+ }
+ 
+Index: xpfe/components/filepicker/res/content/filepicker.xul
+===================================================================
+RCS file: /cvsroot/mozilla/xpfe/components/filepicker/res/content/filepicker.xul,v
+retrieving revision 1.55
+diff -p -u -d -r1.55 filepicker.xul
+--- xpfe/components/filepicker/res/content/filepicker.xul	28 Jan 2005 20:01:43 -0000	1.55
++++ xpfe/components/filepicker/res/content/filepicker.xul	28 Mar 2006 15:25:33 -0000
+@@ -102,6 +102,7 @@
+     <row align="center">
+       <label value="&textInput.label;" id="textInputLabel" control="textInput" accesskey="&textInput.accesskey;"/>
+       <textbox id="textInput" flex="1" oninput="doEnabling()" 
++               type="autocomplete" autocompletesearch="file"
+                onfocus="onTextFieldFocus();"/>
+     </row>
+     <row id="filterBox" hidden="true" align="center">
+Index: xpfe/components/filepicker/src/Makefile.in
+===================================================================
+RCS file: /cvsroot/mozilla/xpfe/components/filepicker/src/Makefile.in,v
+retrieving revision 1.9
+diff -p -u -d -r1.9 Makefile.in
+--- xpfe/components/filepicker/src/Makefile.in	5 Apr 2005 14:50:15 -0000	1.9
++++ xpfe/components/filepicker/src/Makefile.in	28 Mar 2006 15:25:33 -0000
+@@ -60,6 +60,7 @@ REQUIRES	= \
+ 		dom \
+ 		string \
+ 		locale \
++		autocomplete \
+ 		$(NULL)
+ 
+ CPPSRCS		= \
+Index: xpfe/components/filepicker/src/nsFileView.cpp
+===================================================================
+RCS file: /cvsroot/mozilla/xpfe/components/filepicker/src/nsFileView.cpp,v
+retrieving revision 1.24
+diff -p -u -d -r1.24 nsFileView.cpp
+--- xpfe/components/filepicker/src/nsFileView.cpp	17 Sep 2004 11:12:12 -0000	1.24
++++ xpfe/components/filepicker/src/nsFileView.cpp	28 Mar 2006 15:25:34 -0000
+@@ -42,7 +42,7 @@
+ #include "nsITreeSelection.h"
+ #include "nsITreeColumns.h"
+ #include "nsITreeBoxObject.h"
+-#include "nsIFile.h"
++#include "nsILocalFile.h"
+ #include "nsString.h"
+ #include "nsReadableUtils.h"
+ #include "nsCRT.h"
+@@ -53,11 +53,162 @@
+ #include "nsDateTimeFormatCID.h"
+ #include "nsQuickSort.h"
+ #include "nsIAtom.h"
++#include "nsIAutoCompleteResult.h"
++#include "nsIAutoCompleteSearch.h"
+ #include "nsISimpleEnumerator.h"
++#include "nsAutoPtr.h"
+ #include "nsArray.h"
+ 
+ #include "nsWildCard.h"
+ 
++#define NS_FILECOMPLETE_CID { 0xcb60980e, 0x18a5, 0x4a77, \
++                            { 0x91, 0x10, 0x81, 0x46, 0x61, 0x4c, 0xa7, 0xf0 } }
++#define NS_FILECOMPLETE_CONTRACTID "@mozilla.org/autocomplete/search;1?name=file"
++
++class nsFileResult : public nsIAutoCompleteResult
++{
++public:
++  nsFileResult(const nsAString& aSearchString, const nsAString& aSearchParam);
++
++  NS_DECL_ISUPPORTS
++  NS_DECL_NSIAUTOCOMPLETERESULT
++
++  nsStringArray mValues;
++  nsAutoString mSearchString;
++  PRInt32 mSlashPos;
++  PRUint16 mSearchResult;
++};
++
++NS_IMPL_ISUPPORTS1(nsFileResult, nsIAutoCompleteResult)
++
++nsFileResult::nsFileResult(const nsAString& aSearchString,
++                           const nsAString& aSearchParam):
++  mSearchString(aSearchString),
++  mSlashPos(mSearchString.RFindChar('/')),
++  mSearchResult(RESULT_FAILURE)
++{
++  if (aSearchString.IsEmpty())
++    mSearchResult = RESULT_IGNORED;
++  else {
++    mSearchResult = RESULT_FAILURE;
++    nsCOMPtr<nsILocalFile> directory;
++    if (mSlashPos != kNotFound)
++      NS_NewLocalFile(Substring(mSearchString, 0, mSlashPos + 1), PR_FALSE, getter_AddRefs(directory));
++    if (!directory) {
++      if (NS_FAILED(NS_NewLocalFile(aSearchParam, PR_FALSE, getter_AddRefs(directory))))
++        return;
++      if (mSlashPos > 0)
++        directory->AppendRelativePath(Substring(mSearchString, 0, mSlashPos));
++    }
++    nsCOMPtr<nsISimpleEnumerator> dirEntries;
++    if (NS_FAILED(directory->GetDirectoryEntries(getter_AddRefs(dirEntries))))
++      return;
++    mSearchResult = RESULT_NOMATCH;
++    PRBool hasMore = PR_FALSE;
++    while (NS_SUCCEEDED(dirEntries->HasMoreElements(&hasMore)) && hasMore) {
++      nsCOMPtr<nsISupports> nextItem;
++      dirEntries->GetNext(getter_AddRefs(nextItem));
++      nsCOMPtr<nsILocalFile> nextFile(do_QueryInterface(nextItem));
++      nsAutoString fileName;
++      nextFile->GetLeafName(fileName);
++      if (StringBeginsWith(fileName, Substring(mSearchString, mSlashPos + 1))) {
++        fileName.Insert(Substring(mSearchString, 0, mSlashPos + 1), 0);
++        mValues.AppendString(fileName);
++        if (mSearchResult == RESULT_NOMATCH && fileName.Equals(mSearchString))
++          mSearchResult = RESULT_IGNORED;
++        else
++          mSearchResult = RESULT_SUCCESS;
++      }
++    }
++    mValues.Sort();
++  }
++}
++
++NS_IMETHODIMP nsFileResult::GetSearchString(nsAString & aSearchString)
++{
++  aSearchString.Assign(mSearchString);
++  return NS_OK;
++}
++
++NS_IMETHODIMP nsFileResult::GetSearchResult(PRUint16 *aSearchResult)
++{
++  NS_ENSURE_ARG_POINTER(aSearchResult);
++  *aSearchResult = mSearchResult;
++  return NS_OK;
++}
++
++NS_IMETHODIMP nsFileResult::GetDefaultIndex(PRInt32 *aDefaultIndex)
++{
++  NS_ENSURE_ARG_POINTER(aDefaultIndex);
++  *aDefaultIndex = -1;
++  return NS_OK;
++}
++
++NS_IMETHODIMP nsFileResult::GetErrorDescription(nsAString & aErrorDescription)
++{
++  aErrorDescription.Truncate();
++  return NS_OK;
++}
++
++NS_IMETHODIMP nsFileResult::GetMatchCount(PRUint32 *aMatchCount)
++{
++  NS_ENSURE_ARG_POINTER(aMatchCount);
++  *aMatchCount = mValues.Count();
++  return NS_OK;
++}
++
++NS_IMETHODIMP nsFileResult::GetValueAt(PRInt32 index, nsAString & aValue)
++{
++  mValues.StringAt(index, aValue);
++  return NS_OK;
++}
++
++NS_IMETHODIMP nsFileResult::GetCommentAt(PRInt32 index, nsAString & aComment)
++{
++  aComment.Truncate();
++  return NS_OK;
++}
++
++NS_IMETHODIMP nsFileResult::GetStyleAt(PRInt32 index, nsAString & aStyle)
++{
++  aStyle.Truncate();
++  return NS_OK;
++}
++
++NS_IMETHODIMP nsFileResult::RemoveValueAt(PRInt32 rowIndex, PRBool removeFromDb)
++{
++  return NS_OK;
++}
++
++class nsFileComplete : public nsIAutoCompleteSearch
++{
++public:
++  nsFileComplete() {};
++
++  NS_DECL_ISUPPORTS
++  NS_DECL_NSIAUTOCOMPLETESEARCH
++};
++
++NS_IMPL_ISUPPORTS1(nsFileComplete, nsIAutoCompleteSearch)
++
++NS_IMETHODIMP
++nsFileComplete::StartSearch(const nsAString& aSearchString,
++                            const nsAString& aSearchParam,
++                            nsIAutoCompleteResult *aPreviousResult,
++                            nsIAutoCompleteObserver *aListener)
++{
++  NS_ENSURE_ARG_POINTER(aListener);
++  nsRefPtr<nsFileResult> result = new nsFileResult(aSearchString, aSearchParam);
++  NS_ENSURE_TRUE(result, NS_ERROR_OUT_OF_MEMORY);
++  return aListener->OnSearchResult(this, result);
++}
++
++NS_IMETHODIMP
++nsFileComplete::StopSearch()
++{
++  return NS_OK;
++}
++
+ #define NS_FILEVIEW_CID { 0xa5570462, 0x1dd1, 0x11b2, \
+                          { 0x9d, 0x19, 0xdf, 0x30, 0xa2, 0x7f, 0xbd, 0xc4 } }
+ 
+@@ -104,10 +255,13 @@ protected:
+ };
+ 
+ // Factory constructor
++NS_GENERIC_FACTORY_CONSTRUCTOR(nsFileComplete)
+ NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsFileView, Init)
+ 
+ static const nsModuleComponentInfo components[] =
+ {
++  { "nsFileComplete", NS_FILECOMPLETE_CID,
++    NS_FILECOMPLETE_CONTRACTID, nsFileCompleteConstructor },
+   { "nsFileView", NS_FILEVIEW_CID,
+     NS_FILEVIEW_CONTRACTID, nsFileViewConstructor }
+ };
+@@ -190,6 +344,11 @@ nsFileView::SetShowOnlyDirectories(PRBoo
+   } else {
+     // Run the filter again to get the file list back
+     FilterFiles();
++
++    SortArray(mFilteredFiles);
++    if (mReverseSort)
++      ReverseArray(mFilteredFiles);
++
+     if (mTree)
+       mTree->RowCountChanged(dirCount, mTotalRows - dirCount);
+   }
