@@ -4,6 +4,7 @@ from datetime import datetime
 
 DEV_LIST = 'http://www.gentoo.org/proj/en/devrel/roll-call/userinfo.xml'
 PACKAGE_LINK = 'http://packages.gentoo.org/packages/?category=%s;name=%s'
+ATTIC_LINK = 'http://sources.gentoo.org/viewcvs.py/gentoo-x86/%s/%s/?hideattic=0'
 OUTPUT_CHARSET = 'utf-8'
 
 def parse(logfile):
@@ -51,7 +52,7 @@ def developers():
 	return devs
 	
 
-def write(data, devs):
+def write(data, devs, attic=False):
 	
 	sections = {'added': 'Addition', 'removed': 'Removal'}
 	for s in sections:
@@ -73,7 +74,14 @@ def write(data, devs):
 		for pkg in data[s]:
 			print '<tr>'
 			ldata = (PACKAGE_LINK % pkg[0], '/'.join(pkg[0]))
-			print '<ti><uri link="%s">%s</uri></ti>' % ldata
+			if s == 'added':
+				print '<ti><uri link="%s">%s</uri></ti>' % ldata
+			else:
+				if attic:
+					ldata = (ATTIC_LINK % pkg[0], '/'.join(pkg[0]))
+					print '<ti><uri link="%s">%s</uri></ti>' % ldata
+				else:
+					print '<ti>%s</ti>' % ldata[1]
 			print '<ti>%s</ti>' % pkg[2].strftime('%d %b %Y')
 			mdata = (pkg[1], devs[pkg[1]].encode(OUTPUT_CHARSET))
 			print '<ti><mail link="%s@gentoo.org">%s</mail></ti>' % mdata
@@ -89,9 +97,10 @@ def write(data, devs):
 
 
 if __name__ == '__main__':
-	if len(sys.argv) != 2:
-		print 'Usage: gwn_adds_removes.py <log-file>'
+	if len(sys.argv) < 2 or len(sys.argv) > 3:
+		print 'Usage: gwn_adds_removes.py <log-file> [--attic]'
 	else:
 		data = parse(sys.argv[1])
 		devs = developers()
-		write(data, devs)
+		attic = len(sys.argv) == 3 and sys.argv[2] == '--attic'
+		write(data, devs, attic)
