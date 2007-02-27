@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/power-management-guide.xml,v 1.9 2006/09/03 21:07:29 mascherpa Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/power-management-guide.xml,v 1.10 2007/02/27 20:42:11 mascherpa Exp $ -->
 <guide link="/doc/it/power-management-guide.xml">
 <title>Guida alla Gestione Energetica</title>
 
@@ -23,8 +23,8 @@ sui sistemi mobile come i notebook. Questa guida ne illustra la sua configurazio
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.28</version>
-<date>2006-07-26</date>
+<version>1.31</version>
+<date>2006-02-20</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -691,7 +691,7 @@ Quale scegliere? Se si è indecisi, un'ottima scelta è <c>cpufreqd</c>:
 <p>
 La configurazione di <c>cpufreqd</c> avviene attraverso il file <path>/etc/cpufreqd.conf</path>.
 Quella di default fornita con cpufreqd sembra leggermente confusionaria. Si raccomanda
-di sostituirla con quella fornita dallo sviluppatore Gentoo, Henrik Brix Andersen (si guardi di seguito).
+di sostituirla con quella fornita dall'ex sviluppatore Gentoo, Henrik Brix Andersen (si guardi di seguito).
 E' necessaria almeno la versione 2.0.0 di cpufreqd. Le versioni precedenti presentano
 una sintassi differente per il file di configurazione.
 </p>
@@ -880,7 +880,7 @@ script in grado di settare il backlight nella modalità batteria e inserirlo nel
 runlevel <c>battery</c>. Lo script seguente dovrebbe funzionare sulla maggior parte
 dei notebook IBM Thinkpad e Toshiba. Per gli IBM Thinkpad bisogna attivare le opzioni
 appropriate nel kernel. Per i notebook Toshiba è sufficiente l'installazione del pacchetto
-<c>app-laptop/acpitool</c> (non sono necessarie le istruzioni seguenti <c>ibm_acpi</c>).
+<c>sys-power/acpitool</c> (non sono necessarie le istruzioni seguenti <c>ibm_acpi</c>).
 </p>
 
 <warn>
@@ -944,7 +944,7 @@ set_brightness() {
 	else
 	    ewarn "Setting LCD brightness is not supported."
 		ewarn "For IBM Thinkpads, check that ibm_acpi is loaded into the kernel"	
- 	    ewarn "For Toshiba laptops, you've got to install app-laptop/acpitool"
+ 	    ewarn "For Toshiba laptops, you've got to install sys-power/acpitool"
 	fi
 }
 	
@@ -1323,19 +1323,28 @@ l'<c>hibernate-script</c> per attivare la sospensione o una modalità di sleep.
 		
 <p>
 Sono ora necessarie alcune configurazioni in <path>/etc/hibernate</path>.
-Di default, il pacchetto appena installato contiene due file di configurazione:
-<path>hibernate.conf</path> e <path>ram.conf</path>.
+Di default, il pacchetto appena installato contiene alcuni file di configurazione per ogni 
+stato di sleep. In <path>common.conf</path> ci sono le opzioni comuni a tutti i metodi 
+di sospensione; assicurarsi che tali opzioni siano corrette per il proprio sistema
 </p>
 	
 <p>
-Per configurare lo sleep, bisogna modificare <path>ram.conf</path> in 
-<path>/etc/hibernate</path>. 
-<c>UseSysfsPowerState mem</c> è settato correttamente, ma sarà necessario scorrere
-il resto del file di configurazione e modificarlo secondo il proprio sistema.
-I commenti e i nomi delle opzioni saranno di aiuto. In caso di condivisioni
-samba o nfs in una rete, bisognerà assicurarsi di bloccare gli script init per
-evitare errori di timeout.
+Per configurare lo sleep, bisogna modificare <path>sysfs-ram.conf</path> in
+<path>/etc/hibernate</path>.
+<c>UseSysfsPowerState mem</c> è già configurato correttamente ma se
+più avanti fosse necessario effettuare cambiamenti a questo stato di sleep
+(o anche a qualsiasi altro stato), tali cambiamenti andrebbero aggiunti
+al file <path>/etc/hibernate/hibernate.conf</path>. I commenti e i nomi
+delle opzioni faranno da guida. Se si utilizzano condivisioni nfs o samba,
+bisognerà assicurarsi di bloccare gli script init appropriati per
+evitare timeout.
 </p>
+
+<note>
+Per ulteriori informazioni sulla configurazione degli stati di sleep, 
+<c>man hibernate.conf</c>.
+</note>
+
 	
 <p>
 Giunti a questo punto, questa sarà l'ultima occasione per effettuare un backup dei
@@ -1349,9 +1358,9 @@ indietro dallo stato di sleep, occorrerà premere un tasto speciale come <c>Fn</
 	
 <p>
 Se si sta ancora leggendo questa guida, sarà segno di un corretto funzionamento.
-Sarà possibile anche configurare lo standby (S1) in maniera simile copiando
-<path>ram.conf</path> in <path>standby.conf</path> e creando un link simbolico 
-a <path>/usr/sbin/hibernate</path> chiamato <path>/usr/sbin/hibernate-standby</path>.
+Sarà possibile anche configurare lo standby (S1) in maniera simile 
+modificando il file <path>sysfs-ram.conf</path> e cambiando 
+"UseSysfsPowerState mem" in "UseSysfsPowerState standby".
 S3 e S4 sono gli stati di sleep più importanti poichè permetteno un grande
 risparmio di energia.
 </p>
@@ -1433,7 +1442,7 @@ invaliderà l'immagine rovinata durante il processo di boot.
  
 <p>
 Per attivare l'ibernazione con swsusp, si utilizza lo script hibernate dopo aver
-settato <c>UseSysfsPowerState disk</c> in <path>/etc/hibernate/hibernate.conf</path>.
+settato <c>UseSysfsPowerState disk</c> in <path>/etc/hibernate/sysfs-disk</path>.
 </p>
 
 <warn>
@@ -1447,11 +1456,11 @@ esecuzione senza essere loggati al suo interno.
 Se dovesse capitare un kernel panic a causa di uhci o simili, è utile provare
 a compilare il supporto USB come modulo per poterlo eventualmente "scaricare" 
 prima che il laptop vada nello stato di sleep. Ci sono opzioni di configurazione
-a proposito in <path>hibernate.conf</path>.
+a proposito in <path>common.conf</path>.
 </p>
 
 <pre caption="Ibernazione con swsusp">
-# <i>nano -w /etc/hibernate.conf</i>
+# <i>nano -w /etc/hibernate/common.conf</i>
 <comment>(Assicurarsi di avere un backup dei propri dati)</comment>
 # <i>hibernate</i>
 </pre>
@@ -1477,10 +1486,9 @@ invaliderà l'immagine di suspend2 rovinata durante il processo di boot.
 </pre>
 	
 <p>
-Ora è necessario modificare il file <path>/etc/hibernate/hibernate.conf</path>,
-attivando la sezione <c>suspend2</c> e commentando tutte le linee nelle sezioni
-<c>sysfs_power_state</c> e <c>acpi_sleep</c>. Per il momento la parte <c>fbsplash</c>
-non va attivata nelle opzioni globali.
+Ora è necessario modificare il file <path>/etc/hibernate/suspend2.conf</path>,
+attivando la opzioni <c>suspend2</c> necessarie. Per il momento non si 
+attivino le opzioni <c>fbsplash</c> in <c>common.conf</c>.
 </p>
 
 <pre caption="Ibernazione con suspend2">
@@ -1496,8 +1504,9 @@ con la USE flag <c>fbsplash</c> attivata.
 </p>
 
 <pre caption="Installazione di suspend2-userui">
-# <i>mkdir -p /etc/portage</i>
 # <i>echo sys-apps/suspend2-userui fbsplash >> /etc/portage/package.use</i>
+<comment>(Dovrebbe essere necessario anche eseguire il comando seguente)</comment>
+# <i>echo "sys-apps/suspend2-userui" >> /etc/portage/package.keywords</i>
 # <i>emerge suspend2-userui</i>
 </pre>
 
@@ -1530,7 +1539,7 @@ da seguire sono i seguenti:
 </pre>
 
 <p>
-In seguito vanno modificati <path>grub.conf</path> oppure <path>lilo.conf</path>
+In seguito vanno modificati <path>grub.conf</path> (oppure <path>lilo.conf</path>)
 a seconda del boot manager utilizzato per fare in modo che il proprio kernel suspend2
 utilizzi <path>/boot/fbsplash-suspend2-emergence-1024x768</path> come immagine
 initrd. Ora è possibile effettuare un test per verificare il corretto funzionamento.
@@ -1541,7 +1550,7 @@ initrd. Ora è possibile effettuare un test per verificare il corretto funzionam
 </pre>
 
 <p>
-Ora, si apra ancora una volta il file <path>/etc/hibernate/hibernate.conf</path>
+Ora, si apra ancora una volta il file <path>/etc/hibernate/common.conf</path>
 e si attivino le opzioni fbsplash. Si esegua <c>hibernate</c>, tutto dovrebbe
 funzionare in maniera corretta.
 </p>
