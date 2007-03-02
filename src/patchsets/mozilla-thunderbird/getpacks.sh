@@ -1,23 +1,26 @@
 #!/bin/bash
-# $Header: /var/cvsroot/gentoo/src/patchsets/mozilla-thunderbird/getpacks.sh,v 1.1 2006/09/16 04:38:14 redhatter Exp ${app}/make-tarball.sh,v 1.2 2006/07/30 10:44:28 redhatter Exp $
+# $Header: /var/cvsroot/gentoo/src/patchsets/mozilla-thunderbird/getpacks.sh,v 1.2 2007/03/02 10:42:20 armin76 Exp ${app}/make-tarball.sh,v 1.2 2006/07/30 10:44:28 redhatter Exp $
 
-app=thunderbird
+PN=mozilla-thunderbird
 
 if [[ $# -ne 1 ]] ; then
-	echo "Usage: $0 <${app} version>"
+	echo "Usage: $0 <${PN} portage version>"
 	exit 1
 fi
-ver=$1
+PV=$1
+MY_PV=${PV/_}
+P=${PN}-${PV}
+S=${P}-xpi
 
-mkdir "langpacks-${ver}"
-wget -P "langpacks-${ver}" -m -np -nd \
-	"ftp://releases.mozilla.org/pub/mozilla.org/thunderbird/releases/${ver}/linux-i686/xpi/"
+mkdir ${S}
+wget -P "${S}" -m -np -nd \
+	"ftp://releases.mozilla.org/pub/mozilla.org/thunderbird/releases/${MY_PV}/linux-i686/xpi/"
 
-cd "langpacks-${ver}"
+cd ${S}
 for f in *.xpi; do
 	bn="$( basename "${f}" .xpi)"
 	locales="${locales} ${bn}"
-	mv -v "${f}" "${app}-${bn}-${ver}.xpi"
+	mv -v "${f}" "${P}-${bn}.xpi"
 done
 cd "${OLDPWD}"
 echo "Locales: ${locales}"
