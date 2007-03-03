@@ -1,8 +1,8 @@
 <?xml version = '1.0' encoding = 'UTF-8' ?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/vps/vserver-howto.xml,v 1.1 2006/11/06 17:05:48 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/vps/vserver-howto.xml,v 1.2 2007/03/03 16:35:21 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/es/vserver-howto.xml" lang="es">
+<guide link="/proj/es/vps/vserver-howto.xml" lang="es">
 <title>Cómo Gentoo Linux-VServer</title>
 
 <author title="Author" >
@@ -31,8 +31,8 @@ usando la Tecnología Linux-VServer
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.6</version>
-<date>2006-10-06</date>
+<version>1.9</version>
+<date>2007-02-10</date>
 
 <chapter>
 <title>Introducción</title>
@@ -47,9 +47,9 @@ Servidores Virtuales Privados, &quot;Virtual Private Servers&quot; en
 inglés) de tal forma que cada VPS parece y se comporta como un
 servidor verdadero de cara a los procesos contenidos dentro.
 </p>
-
 </body>
 </section>
+
 <section>
 <title>Terminología usada en este Cómo</title>
 <body>
@@ -88,7 +88,6 @@ servidor verdadero de cara a los procesos contenidos dentro.
   </ti>
 </tr>
 </table>
-
 </body>
 </section>
 </chapter>
@@ -105,7 +104,9 @@ servidor verdadero de cara a los procesos contenidos dentro.
 
 <p>
 Después de que las vserver-sources se hayan instalado es el momento de
-configurarlas usando <c>make menuconfig</c>.
+configurarlas usando <c>make menuconfig</c>. A continuación se muestra
+una configuración común para versiones 2.1.1 y posteriores. Si usa
+2.0.x algunas opciones de configuración pude que no estén presentes.
 </p>
 
 <pre caption="Configuración de vserver-sources" >
@@ -113,14 +114,22 @@ configurarlas usando <c>make menuconfig</c>.
 # <i>make menuconfig</i>
 
 Linux VServer ---&gt;
+<comment>(No habilite las opciones "legacy")</comment>
   [ ] Enable Legacy Kernel API
-  [*] Disable Legacy Networking Kernel API
-<comment>(Altamente recomendado)</comment>
+  [ ] Enable Legacy Networking Kernel API
+<comment>(Lea la ayuda)</comment>
+  [ ] Remap Source IP Address
+  [*] Enable COW Immutable Link Breaking
+  [ ] Enable Virtualized Guest Time
   [*] Enable Proc Security
   [*] Enable Hard CPU Limits
-  Persistent Inode Context Tagging (UID24/GID24)  ---&gt;
+  [*]   Avoid idle CPUs by skipping Time
+  [*]   Limit the IDLE tas
+      Persistent Inode Context Tagging (UID24/GID24)  ---&gt;
   [ ] Tag NFSD User Auth and Files
-  [ ] Compile Debugging Code
+  [*] Enable Inode Tag Propagation
+  [*] Honor Privacy Aspects of Guests
+  [ ] VServer Debugging Code
 </pre>
 
 <note>
@@ -130,15 +139,15 @@ atributos extendidos de reiserfs en la configuración del núcleo y
 adicionalmente añadir la opción <c>attrs</c> en
 <path>/etc/fstab</path>.
 </note>
-		
+
 <pre caption="Configurar las opciones de reiserfs">
 File systems  --->
   &lt;*&gt; Reiserfs support
   [*]   ReiserFS extended attributes
 </pre>
-		
+
 <pre caption="Ejemplo de fstab con atributos extendidos">
-/dev/hdb /vservers reiserfs noatime,attrs 0 0
+/dev/hdb1 /vservers reiserfs noatime,attrs 0 0
 </pre>
 
 <p>
@@ -156,9 +165,9 @@ arranca correctamente.
 <comment>(Editar el fichero de configuración del gestor de arranque como se necesite y)</comment>
 # <i>reboot</i>
 </pre>
-
 </body>
 </section>
+
 <section>
 <title>Configuración del entorno del anfitrión</title>
 <body>
@@ -166,66 +175,43 @@ arranca correctamente.
 <p>
 Para mantener los servidores virtuales se necesita el paquete
 util-vserver que contiene todos los programas necesarios y algunas
-utilidades prácticas.  Hay que tener precaución porque también existe
-un paquete llamado <c>vserver-utils</c> que es una nueva versión de la
-implementación de espacio de usuario de la API del núcleo de VServer,
-pero todava no es usable en entornos de producción.
+utilidades prácticas.
 </p>
-
-<note>
-Esta versión del Cómo requiere características sólo disponibles en
-<c>&gt;=sys-cluster/util-vserver-0.30.210-r6</c>. Primero habrá que
-actualizar o modificar package.keywords.
-</note>
 
 <pre caption="Instalar util-vserver" >
-# <i>emerge util-vserver</i>
+# <i>emerge >=sys-cluster/util-vserver-0.30.212</i>
 </pre>
 
 <p>
-Se debe ejecutar el comando <c>vprocunhide</c> después de cada reinicio
-para establecer los permisos adecuados en <path>/proc</path> para el uso 
-de vserver. util-vserver instala un guión de inicio y para usarlo se
-debe añadir a un nivel de ejecución:
+Se debe ejecutar el comando <c>vprocunhide</c> después de cada
+reinicio para establecer los permisos adecuados en <path>/proc</path>
+para los huéspedes vserver. util-vserver instala un guión de inicio
+que puede añadir al nivel de ejecución por defecto:
 </p>
 
-<pre caption="Guíon de inicio de vserver" >
-# <i>rc-update add vservers default</i>
-# <i>/etc/init.d/vservers start</i>
+<pre caption="Guíon de inicio de vprocunhide" >
+# <i>rc-update add vprocunhide default</i>
+# <i>/etc/init.d/vprocunhide start</i>
 </pre>
-
-<note>
-Este guión de inicio también arrancará los vservers por defecto. Lea a
-continuación para encontrar más información.
-</note>
-
-<p>
-El guión vshelper se usa para reiniciar correctamente los servidores
-virtuales. Hay que indicarle al núcleo dónde está ubicado el guión
-vshelper:
-</p>
-
-<pre caption="Configuración de vshelper" >
-# <i>echo 'kernel.vshelper = /usr/lib/util-vserver/vshelper' &gt;&gt;  /etc/sysctl.conf</i>
-# <i>sysctl -p</i>
-</pre>
-
 </body>
 </section>
 </chapter>
 
 <chapter>
-<title>Creación de una plantilla para el huésped</title>
+<title>Creación de un huésped</title>
 <section>
-<title>Instalación de un vserver con un stage3</title>
+<title>Uso de un vserver con un stage3/4</title>
 <body>
 
 <p>
-Necesitaremos descargar un stage3 preparado para vserver desde uno de
-<uri link="/main/en/mirrors.xml">los mirrors de Gentoo</uri>. Estos
+Necesitaremos descargar un stage3/4 preparado para vserver desde uno
+de <uri link="/main/en/mirrors.xml">los mirrors de Gentoo</uri>. Estos
 stages están situados en el directorio
-<path>experimental/&lt;arch&gt;/vserver/</path>.  Luego usaremos el
-guión <c>vserver-new</c> para crear el huésped inicial.
+<path>experimental/&lt;arch&gt;/vserver/</path>. Puesto que un
+stage3/4 contiene un sistema de ficheros root completo, puede usar el
+método de creación por plantilla de util-vserver. Sin embargo, este
+métod sólo está disponible desde util-vserver-0.30.211, por tanto
+asegúrese de tener instalada la versión correcta.
 </p>
 
 <p>
@@ -236,12 +222,19 @@ dispositivo de red (en este ejemplo eth0 se configura con
 de la IP de los servidores virtuales).
 </p>
 
+<note>
+El ID de contexto debe ser 1 &lt; ID &lt; 49152.
+</note>
+
 <pre caption="Inicio de la instalación de un stage3" >
-# <i>vserver-new gentoo-template \</i>
-<i>--hostname gentoo \</i>
-<i>--context 1253 \</i>
-<i>--interface eth0:192.168.1.253/24 \</i>
-<i>stage3 /path/to/stage3-&lt;arch&gt;-&lt;date&gt;.tar.bz2 &lt;arch&gt;</i>
+# <i>vserver myguest build \</i>
+  <i>--context 1253 \</i>
+  <i>--hostname gentoo \</i>
+  <i>--interface eth0:192.168.1.253/24 \</i>
+  <i>--initstyle plain \</i>
+  <i>-m template -- \</i>
+  <i>  -d gentoo \</i>
+  <i>  -t /path/to/stage4-&lt;arch&gt;-&lt;version&gt;.tar.bz2</i>
 </pre>
 
 <note>
@@ -255,53 +248,6 @@ capítulo 8.b.1</uri> y el
 capítulo 8.b.4</uri>. El resto de la configuración de red del servidor
 virtual se hará en el anfitrión.
 </note>
-
-</body>
-</section>
-<section>
-<title>Creación del archivo comprimido de la plantilla</title>
-<body>
-
-<p>
-No necesitaremos crear un tarball del stage3 para cada huésped. El
-guión <c>vserver-new</c> soporta plantillas. Para poder usarlo hay que
-crear un archivo comprimido de la instalación de vserver:
-</p>
-
-<pre caption="Creación de la plantilla comprimida" >
-# <i>cd /vservers/gentoo-template</i>
-# <i>tar cjvpf ../gentoo-template-&lt;arch&gt;-&lt;date&gt;.tar.bz2 ./</i>
-</pre>
-
-<p>
-Para crear un nuevo huésped usando este archivo comprimido basta usar
-<c>vserver-new</c>:
-</p>
-
-<pre caption="Usar una plantilla comprimida" >
-# <i>cd /vservers</i>
-# <i>vserver-new myguest \</i>
-<i>--hostname myguest \</i>
-<i>--context 1252 \</i>
-<i>--interface eth0:192.168.1.252/24 \</i>
-<i>template ./gentoo-template-&lt;arch&gt;-&lt;date&gt;.tar.bz2 &lt;arch&gt;</i>
-</pre>
-
-<note>
-Se puede usar un árbol del portage compartido para los distintos
-huéspedes y así mantenerlos de pequeño tamaño. Editaremos
-<path>/etc/vservers/myguest/fstab</path> y descomentaremos las líneas
-para <path>/usr/portage</path> y <path>/usr/portage/distfiles</path>.
-Los huéspedes tendrán acceso de sólo lectura a
-<path>/usr/portage</path> y de lectura y escritura a
-<path>/usr/portage/distfiles</path>.
-</note>
-
-</body>
-</section>
-<section>
-<title>Probar el servidor virtual</title>
-<body>
 
 <p>
 Deberíamos ser capaces de iniciar y entrar en el servidor virtual
@@ -326,89 +272,67 @@ PID   TTY      STAT   TIME COMMAND
 20508 pts/0    R+     0:00 ps ax
 # <i>logout</i>
 </pre>
-
 </body>
 </section>
-	</chapter>
-  	 
+</chapter>
+
 <chapter>
 <title>Mantenimiento sencillo</title>
 <section>
 <title>Arrancar huéspedes durante el inicio</title>
 <body>
-  	 
+
 <p>
 Se pueden arrancar algunos huéspedes durante el inicio. Cada
 <c>guest</c> puede tener asignada una MARCA (MARK). Entonces, todo lo
 que hay que hacer es configurar esas MARCAs en la configuración de los
-huéspedes e indicar al guión de inicio que arranque todos los
-huéspedes MARCAdos
+huéspedes y añadir los guiones de inicio apropiados al nivel de
+ejecución default.
 </p>
-  	 
+
 <pre caption="Configurar las MARCAs en cada huésped">
 <comment>(Hay que hacer esto en cada huésped que se quiera
-iniciar)</comment> # <i>mkdir -p /etc/vservers/myguest/apps/init</i> #
-<i>echo "default" > /etc/vservers/myguest/apps/init/mark</i>
+iniciar)</comment>
+# <i>mkdir -p /etc/vservers/myguest/apps/init</i>
+# <i>echo "default" > /etc/vservers/myguest/apps/init/mark</i>
 </pre>
-  	 
-<note>
-Puesto que todos los huéspedes marcados con "default" son arrancados
-por defecto, poco más hay que hacer. Si tuviéramos marcas diferentes
-deberíamos también actualizar <path>/etc/conf.d/vservers</path>.
-</note>
-  	 
+
+<pre caption="Añadir el guión de inicio al nivel de ejecución default">
+# <i>rc-update add vservers.default default</i>
+</pre>
 </body>
 </section>
-<section>
-<title>Extras Gentoo</title>
-<body>
-  	 
-<p>
-El ebuild de util-vserver instala algunos extras en los huéspedes
-Gentoo.  Ya conocemos <c>vserver-new</c> del capítulo anterior. En
-este, aprenderemos a usar <c>vesync</c> y <c>vemerge</c> para mantener
-portage sincronizado así como <c>vupdateworld</c> y
-<c>vdispatch-conf</c> para actualizar los huéspedes.
-</p>
-  	 
-</body>
-</section>
+
 <section>
 <title>Mantener portage sincronizado</title>
 <body>
-  	 
+
 <p>
-El guión <c>vesync</c> nos ayudará a mantener la memoria temporal de 
-metadatos y recubrimiento sincronizada. <c>vemerge</c> es un simple 
-envoltorio para <c>emerge</c> en los huéspedes
+El guión <c>vesync</c> nos ayudará a mantener la memoria temporal de
+metadatos y recubrimiento sincronizada. <c>vemerge</c> es un simple
+envoltorio para <c>emerge</c> en los huéspedes.
 </p>
-  	 
+
 <pre caption="Ejemplos">
 <comment>(Sincronizar los metadatos en 'myguest')</comment>
 # <i>vesync myguest</i>
 <comment>(Sincronizar los metadatos en todos los huéspedes)</comment>
-# <i>vesync -a</i>
-<comment>(Sincronizar los metadatos en todos los huéspedes excepto 'myguest')</comment>
-# <i>vesync -a -e myguest</i>
+# <i>vesync -all</i>
 <comment>(Sincronizar 'myoverlay' en todos los huéspedes)</comment>
-# <i>vesync -a \</i>
- <i>--overlay /usr/local/overlays/myoverlay \</i>
- <i>--overlay-host rsync://rsync.myhost.com/myoverlay \</i>
- <i>--overlay-only</i>
+# <i>vesync -all \</i>
+  <i>--overlay /usr/local/overlays/myoverlay \</i>
+  <i>--overlay-host rsync://rsync.myhost.com/myoverlay \</i>
+  <i>--overlay-only</i>
 <comment>(emerge app-editors/vim en 'myguest')</comment>
-# <i>vemerge myguest app-editors/vim -va</i>
+# <i>vemerge myguest -- app-editors/vim -va</i>
 </pre>
-  	 
-<note>
-Este guión necesita que el árbol de portage esté compartido.
-</note>
-  	 
 </body>
 </section>
+
 <section>
 <title>Actualizar huéspedes</title>
 <body>
-  	 
+
 <p>
 Los huéspedes Gentoo pueden compartir paquetes para ahorrar tiempo de
 compilación. Para usar paquetes compartidos, deberemos crear un
@@ -416,52 +340,51 @@ directorio centralizado para los paquetes en el anfitrión. Usaremos
 <path>/var/cache/vpackages</path> en el anfitrión y lo montaremos en
 cada huésped en <path>/usr/portage/packages</path>.
 </p>
-  	 
+
 <pre caption="Enlazar la configuración del huésped">
 # <i>mkdir -p /var/cache/vpackages</i>
 # <i>$EDITOR /etc/vservers/myguest/fstab</i>
 <comment>(Añadiremos esta línea al final)</comment>
 /var/cache/vpackages /usr/portage/packages none bind,rw 0 0
 </pre>
-  	 
+
 <p>
 Ahora utilizaremos <c>vupdateworld</c> para actualizar cada
 huésped. El comando es equivalente a algo como <c>emerge --deep
 --update --newuse world</c>.
 </p>
-  	 
+
 <pre caption="Ejemplos de vupdateworld">
 <comment>(Prueba de actualización para 'myguest')</comment>
-# <i>vupdateworld -p myguest</i>
+# <i>vupdateworld myguest -- -vp</i>
 <comment>(Actualización de 'myguest' usando paquetes binarios)</comment>
-# <i>vupdateworld -k myguest</i>
+# <i>vupdateworld myguest -- -k</i>
 <comment>(Actualización de todos los huéspedes usando paquetes binarios)</comment>
-# <i>vupdateworld -ka</i>
+# <i>vupdateworld --all -- -k</i>
 </pre>
-  	 
+
 <note>
 Para obtener paquetes binarios podemos usar, tanto PORTAGE_BINHOST
 (ver <c>man make.conf</c>) o establecer FEATURES="buildpkg" en uno o
 más huéspedes.
 </note>
-  	 
+
 <p>
 Después de haber actualizado con éxito, podemos actualizar fácilmente
 todos los archivos de configuración con <c>vdispatch-conf</c>, que es
 un simple envoltorio para <c>dispatch-conf</c>, comportándose de la
 misma forma.
 </p>
-  	 
+
 <pre caption="Ejemplos de vdispatch-conf">
 <comment>(Actualizar los ficheros de configuración de 'myguest')</comment>
 # <i>vdispatch-conf myguest</i>
 <comment>(Actualizar los ficheros de configuración de todos los huéspedes)</comment>
-# <i>vdispatch-conf -a</i>
+# <i>vdispatch-conf --all</i>
 </pre>
-  	 
 </body>
 </section>
-	 
+
 <section>
 <title>Contacto</title>
 <body>
@@ -472,7 +395,6 @@ link="hollow@gentoo.org">autor</mail> o crear un bug en <uri
 link="http://bugs.gentoo.org" >Bugzilla</uri> en caso de cualquier
 problema.
 </p>
-
 </body>
 </section>
 </chapter>
