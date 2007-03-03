@@ -145,6 +145,9 @@ def main():
         )
     )
     symlink(config.FELIB + '/daily.py', config.LOCALHOME + '/daily/daily.py')
+    # we need to create an empty archnav.html in this directory for the
+    # current day special case (see bug #166551)
+    open(config.LOCALHOME + '/daily/archnav.html', 'w')
 
     # /ebuilds
     symlink(config.FELIB + '/query_ebuild.py', 
@@ -214,7 +217,7 @@ def main():
     open(config.LOCALHOME + '/head.html', 'w').write(head())
     symlink('archs/archnav.html', config.LOCALHOME + '/archnav.html')
     symlink('archs/index.shtml', config.LOCALHOME + '/index.shtml')
-    symlink('archs/head.shtml', config.LOCALHOME + '/head.shtml')
+    #symlink('archs/head.html', config.LOCALHOME + '/head.html')
     symlink('archs/gentoo.rss', config.LOCALHOME + '/gentoo.rss')
     symlink('archs/gentoo_simple.rss', config.LOCALHOME +
         '/gentoo_simple.rss')
