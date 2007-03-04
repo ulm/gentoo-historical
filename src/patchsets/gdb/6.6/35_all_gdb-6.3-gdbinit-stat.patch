@@ -1,11 +1,21 @@
---- gdb/main.c.orig	2005-04-08 18:21:50.000000000 -0400
-+++ gdb/main.c	2005-04-08 18:50:58.000000000 -0400
-@@ -693,7 +693,7 @@
- 
-   if (!homedir
+Refuse to load .gdbinit files in $PWD that are not owned by us
+or are world writable due to security concerns.
+
+--- gdb/main.c
++++ gdb/main.c
+@@ -763,7 +763,14 @@
        || memcmp ((char *) &homebuf, (char *) &cwdbuf, sizeof (struct stat)))
--    if (!inhibit_gdbinit)
-+    if (!inhibit_gdbinit && (cwdbuf.st_uid == getuid()) && (!(cwdbuf.st_mode & (S_IWOTH))))
+     if (!inhibit_gdbinit)
        {
- 	catch_command_errors (source_command, gdbinit, 0, RETURN_MASK_ALL);
+-	catch_command_errors (source_script, gdbinit, 0, RETURN_MASK_ALL);
++	if (cwdbuf.st_uid != getuid() || cwdbuf.st_mode & S_IWOTH)
++	  {
++	    warning (_("Refusing to load unowned/world writable gdbinit `%s'.\n"), gdbinit);
++	  }
++	else
++	  {
++	    catch_command_errors (source_script, gdbinit, 0, RETURN_MASK_ALL);
++	  }
        }
+ 
+   for (i = 0; i < ncmd; i++)
