@@ -141,8 +141,8 @@
   </xsl:if>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
-  <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
+  <link title="new" rel="stylesheet" href="{concat($ROOT,'css/main.css')}" type="text/css"/>
+  <link REL="shortcut icon" HREF="{concat($ROOT,'favicon.ico')}" TYPE="image/x-icon"/>
 
   <!-- Support for opensearch -->
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
@@ -208,7 +208,7 @@
 <table width="100%" border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td valign="top" height="125" bgcolor="#45347b">
-    <a href="/"><img border="0" src="/images/gtop-www.jpg" alt="Gentoo Logo"/></a>
+    <a href="/"><img border="0" src="{concat($ROOT,'images/gtop-www.jpg')}" alt="Gentoo Logo"/></a>
     </td>
   </tr>
   <tr>
@@ -265,15 +265,15 @@
 </xsl:template>
 
 <!-- {Mainpage, News, Email} template -->
-<xsl:template match="/mainpage | /news"> <!-- Removed " | /email" can't find any use -->
+<xsl:template match="/mainpage | /news">
 <html>
   <xsl:if test="string-length($glang)>1">
     <xsl:attribute name="lang"><xsl:value-of select="translate($glang,'_','-')"/></xsl:attribute>
   </xsl:if>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <link title="new" rel="stylesheet" href="/css/main.css" type="text/css"/>
-  <link REL="shortcut icon" HREF="http://www.gentoo.org/favicon.ico" TYPE="image/x-icon"/>
+  <link title="new" rel="stylesheet" href="{concat($ROOT,'css/main.css')}" type="text/css"/>
+  <link REL="shortcut icon" HREF="{concat($ROOT,'favicon.ico')}" TYPE="image/x-icon"/>
 
   <!-- Support for opensearch -->
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
@@ -286,13 +286,10 @@
   </xsl:if>
   <xsl:choose>
     <xsl:when test="/mainpage | /news">
-      <title>Gentoo Linux -- <xsl:value-of select="title"/></title>
+      <title>
+        Gentoo Linux -- <xsl:value-of select="title"/>
+      </title>
     </xsl:when>
-    <!-- Can't find any use for this. Will be deleted.
-    <xsl:when test="/email">
-      <title><xsl:value-of select="subject"/></title>
-    </xsl:when>
-    -->
   </xsl:choose>
 </head>
 <body style="margin:0px;" bgcolor="#000000">
@@ -300,7 +297,7 @@
 <table border="0" width="100%" cellspacing="0" cellpadding="0">
   <tr>
     <td valign="top" height="125" width="1%" bgcolor="#45347b">
-    <a href="/"><img border="0" src="/images/gtop-www.jpg" alt="Gentoo Logo"/></a>
+    <a href="/"><img border="0" src="{concat($ROOT,'images/gtop-www.jpg')}" alt="Gentoo Logo"/></a>
     </td>
 
     <td valign="bottom" align="left" bgcolor="#000000" colspan="2" lang="en">
@@ -397,7 +394,7 @@
       <table width="100%" cellspacing="0" cellpadding="0" border="0">
         <tr>
           <td height="1%" valign="top" align="right">
-            <img src="/images/gridtest.gif" alt="Gentoo Spaceship"/>
+            <img src="{concat($ROOT,'images/gridtest.gif')}" alt="Gentoo Spaceship"/>
           </td>
         </tr>
         <tr>
@@ -506,7 +503,7 @@
             <xsl:choose>
               <xsl:when test="/mainpage/@id='news'">
               <p class="news">
-                <img class="newsicon" src="/images/gentoo-new.gif" alt="Gentoo logo"/>
+                <img class="newsicon" src="{concat($ROOT,'images/gentoo-new.gif')}" alt="Gentoo logo"/>
                 <span class="newsitem" lang="en">We produce Gentoo Linux, a special flavor of Linux that
                 can be automatically optimized and customized for just
                 about any application or need. Extreme performance,
@@ -686,7 +683,10 @@
 <xsl:variable name="llink">
   <xsl:choose>
     <xsl:when test="starts-with(@link,'http://www.gentoo.org/')">
-      <xsl:value-of select="substring-after(@link, 'http://www.gentoo.org')"/>
+      <xsl:value-of select="concat($ROOT, substring-after(@link, 'http://www.gentoo.org/'))"/>
+    </xsl:when>
+    <xsl:when test="starts-with(@link,'/')">
+      <xsl:value-of select="concat($ROOT, substring-after(@link, '/'))"/>
     </xsl:when>
     <xsl:otherwise>
       <xsl:value-of select="@link"/>
@@ -728,16 +728,29 @@
 
 <!--figure without a caption; just a graphical element-->
 <xsl:template match="fig">
-<center>
-  <xsl:choose>
-    <xsl:when test="@linkto">
-      <a href="{@linkto}"><img border="0" src="{@link}" alt="{@short}"/></a>
-    </xsl:when>
-    <xsl:otherwise>
-      <img src="{@link}" alt="{@short}"/>
-    </xsl:otherwise>
-  </xsl:choose>
-</center>
+  <xsl:variable name="llink">
+    <xsl:choose>
+      <xsl:when test="starts-with(@link,'http://www.gentoo.org/')">
+        <xsl:value-of select="concat($ROOT, substring-after(@link, 'http://www.gentoo.org/'))"/>
+      </xsl:when>
+      <xsl:when test="starts-with(@link,'/')">
+        <xsl:value-of select="concat($ROOT, substring-after(@link, '/'))"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="@link"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <center>
+    <xsl:choose>
+      <xsl:when test="@linkto">
+        <a href="{@linkto}"><img border="0" src="{$llink}" alt="{@short}"/></a>
+      </xsl:when>
+      <xsl:otherwise>
+        <img src="{$llink}" alt="{@short}"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </center>
 </xsl:template>
 
 <!-- Line break -->
@@ -1553,7 +1566,7 @@
     <tr lang="en">
     <td align="center" class="topsep">
             <a href="http://www.vr.org">
-	    <img src="/images/vr-ad.png" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" border="0"/>
+	    <img src="{concat($ROOT,'images/vr-ad.png')}" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" border="0"/>
         </a>
 	    <p class="alttext">
 	      <a href="http://www.vr.org/">VR Hosted</a>
@@ -1563,7 +1576,7 @@
     <tr lang="en">
       <td align="center" class="topsep">
       <a href="http://www.tek.net" target="_top">
-        <img src="/images/tek-gentoo.gif" width="125" height="125" alt="Tek Alchemy" border="0"/>
+        <img src="{concat($ROOT,'images/tek-gentoo.gif')}" width="125" height="125" alt="Tek Alchemy" border="0"/>
       </a>
       <p class="alttext">
 	  <a href="http://www.tek.net/">Tek Alchemy</a>
@@ -1573,7 +1586,7 @@
     <tr lang="en">
     <td align="center" class="topsep">
       <a href="http://www.sevenl.net" target="_top">
-        <img src="/images/sponsors/sevenl.gif" width="125" height="144" alt="SevenL.net" border="0"/>
+        <img src="{concat($ROOT,'images/sponsors/sevenl.gif')}" width="125" height="144" alt="SevenL.net" border="0"/>
       </a>
       <p class="alttext">
 	  <a href="http://www.sevenl.net/">SevenL.net</a>
@@ -1583,7 +1596,7 @@
     <tr lang="en">
     <td align="center" class="topsep">
         <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top">
-          <img src="/images/phpa-gentoo.gif" width="125" height="144" alt="php|architect" border="0"/>
+          <img src="{concat($ROOT,'images/phpa-gentoo.gif')}" width="125" height="144" alt="php|architect" border="0"/>
       </a>
       <p class="alttext">
 	  <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929">php|architect</a>

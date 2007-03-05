@@ -323,6 +323,18 @@
 </xsl:template>
 
 
+<!-- Use as many ../ as necessary to go back to / from current dir -->
+<xsl:template name="relative-root">
+<xsl:param name="path"/>
+  <xsl:if test="contains(substring-after($path,'/'), '/')">
+    <xsl:text>../</xsl:text>
+    <xsl:call-template name="relative-root">
+      <xsl:with-param name="path" select="substring-after($path,'/')"/>
+    </xsl:call-template>
+  </xsl:if>
+</xsl:template>
+
+
 <!-- Define some globals that can be used throughout the stylesheets -->
 
 <!-- Top element name e.g. "book" -->
@@ -334,6 +346,18 @@
 <!-- Value of top element's lang attribute e.g. "pt_br" -->
 <xsl:param name="glang"><xsl:value-of select="//*[1]/@lang" /></xsl:param>
 
+<xsl:variable name="ROOT">
+  <xsl:choose>
+    <xsl:when test="substring($link,1,1)='/' and contains(substring($link, 2), '/')">
+      <xsl:call-template name="relative-root">
+        <xsl:with-param name="path" select="$link"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:text>/</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:variable>
 
 <xsl:template match="/">
   <xsl:apply-templates/>
