@@ -1,0 +1,247 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 01_native_uconv.dpatch by  <Mike Hommey <glandium@debian.org>>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: - Fix for the build to succeed when iconv support is enabled.
+## DP: (Makefile.in  ; borrowed from upstream fix in version 1.7 of the file)
+## DP: - Don't build what is useless when native uconv is enabled. bz#331780.
+## DP: - Properly load invalid UTF-8 files. bz#331748 
+## DP: - Add the scriptableunicodeconverter component. bz#333261
+
+@DPATCH@
+
+=== intl/uconv/native/Makefile.in
+==================================================================
+--- xulrunner/intl/uconv/native/Makefile.in	(revision 53)
++++ xulrunner/intl/uconv/native/Makefile.in	(local)
+@@ -54,12 +54,10 @@
+ 			  intl \
+ 			  $(NULL)
+ 
+-ifeq ($(OS_ARCH), UNIX)
+-CPPSRCS		= nsNativeUConvService.cpp
+-endif
+-
+ ifdef WINCE
+ CPPSRCS		= nsWinCEUConvService.cpp
++else
++CPPSRCS		= nsNativeUConvService.cpp
+ endif
+ 
+ XPIDLSRCS	= \
+=== intl/uconv/Makefile.in
+==================================================================
+--- xulrunner/intl/uconv/Makefile.in	(revision 58)
++++ xulrunner/intl/uconv/Makefile.in	(local)
+@@ -57,10 +57,12 @@
+ 
+ MODULE		= uconv
+ 
+-DIRS		= idl public util ucvja ucvcn ucvlatin ucvtw ucvtw2 ucvko ucvibm
++DIRS		= idl public util
+ 
+ ifdef MOZ_USE_NATIVE_UCONV
+ DIRS		+= native
++else
++DIRS		+= ucvja ucvcn ucvlatin ucvtw ucvtw2 ucvko ucvibm
+ endif
+ 
+ DIRS		+= src
+=== intl/uconv/native/nsNativeUConvService.cpp
+==================================================================
+--- xulrunner/intl/uconv/native/nsNativeUConvService.cpp	(revision 64)
++++ xulrunner/intl/uconv/native/nsNativeUConvService.cpp	(local)
+@@ -53,6 +53,7 @@
+ #include <iconv.h>    // iconv_open, iconv, iconv_close
+ #include <errno.h>
+ 
++const char * UCS_2 = "UCS-2";
+ 
+ class IConvAdaptor : public nsIUnicodeDecoder, 
+                      public nsIUnicodeEncoder, 
+@@ -113,6 +114,7 @@
+     iconv_t mConverter;
+     PRBool    mReplaceOnError;
+     PRUnichar mReplaceChar;
++    PRBool    mToUnicode;
+ 
+ #ifdef DEBUG
+     nsCString mFrom, mTo;
+@@ -143,6 +145,7 @@
+     mFrom = from;
+     mTo = to;
+ #endif
++    mToUnicode = (to == UCS_2);
+ 
+     mConverter = iconv_open(to, from);
+     if (mConverter == (iconv_t) -1 )    
+@@ -337,7 +340,12 @@
+ #ifdef DEBUG
+                 printf(" * IConvAdaptor - Bad input ( %s -> %s )\n", mFrom.get(), mTo.get());
+ #endif
+-                return NS_ERROR_UENC_NOMAPPING;
++                *aSrcLength  -= (inLeft / aSrcCharSize);
++                *aDestLength -= (outLeft / aDestCharSize);
++                if (mToUnicode)
++                    return NS_ERROR_UNEXPECTED;
++                else
++                    return NS_ERROR_UENC_NOMAPPING;
+             }
+         }
+ 
+=== intl/uconv/src/nsCharsetConverterManager.cpp
+==================================================================
+--- xulrunner/intl/uconv/src/nsCharsetConverterManager.cpp	(revision 64)
++++ xulrunner/intl/uconv/src/nsCharsetConverterManager.cpp	(local)
+@@ -64,6 +64,8 @@
+ 
+ #ifdef MOZ_USE_NATIVE_UCONV
+ #include "nsNativeUConvService.h"
++
++extern const char * UCS_2;
+ #endif
+ 
+ static NS_DEFINE_CID(kStringBundleServiceCID, NS_STRINGBUNDLESERVICE_CID);
+@@ -191,7 +193,7 @@
+ #ifdef MOZ_USE_NATIVE_UCONV
+   if (mNativeUC) {
+     nsCOMPtr<nsISupports> supports;
+-    mNativeUC->GetNativeConverter("UCS-2", 
++    mNativeUC->GetNativeConverter(UCS_2, 
+                                   aDest,
+                                   getter_AddRefs(supports));
+ 
+@@ -247,7 +249,7 @@
+   if (mNativeUC) {
+     nsCOMPtr<nsISupports> supports;
+     mNativeUC->GetNativeConverter(aSrc,
+-                                  "UCS-2", 
++                                  UCS_2, 
+                                   getter_AddRefs(supports));
+     
+     decoder = do_QueryInterface(supports);
+=== intl/uconv/src/Makefile.in
+==================================================================
+--- xulrunner/intl/uconv/src/Makefile.in	(revision 69)
++++ xulrunner/intl/uconv/src/Makefile.in	(local)
+@@ -80,13 +80,13 @@
+ 		nsGREResProperties.cpp \
+ 		nsCharsetConverterManager.cpp \
+ 		nsUTF8ConverterService.cpp \
++		nsScriptableUConv.cpp \
+ 		$(NULL)
+ 
+ ifdef MOZ_USE_NATIVE_UCONV
+ REQUIRES	+= ucnative
+ else
+ CPPSRCS         += \
+-		nsScriptableUConv.cpp \
+ 		nsUnicodeDecodeHelper.cpp \
+ 		nsUnicodeEncodeHelper.cpp \
+ 		nsMappingCache.cpp \
+=== intl/uconv/src/nsUConvModule.cpp
+==================================================================
+--- xulrunner/intl/uconv/src/nsUConvModule.cpp	(revision 69)
++++ xulrunner/intl/uconv/src/nsUConvModule.cpp	(local)
+@@ -58,6 +58,7 @@
+ #include "nsConverterInputStream.h"
+ #include "nsConverterOutputStream.h"
+ #include "nsPlatformCharset.h"
++#include "nsScriptableUConv.h"
+ 
+ #ifndef MOZ_USE_NATIVE_UCONV
+ #include "nsIUnicodeDecodeHelper.h"
+@@ -67,7 +68,6 @@
+ 
+ #include "nsUConvDll.h"
+ #include "nsIFile.h"
+-#include "nsIScriptableUConv.h"
+ 
+ #include "nsCRT.h"
+ 
+@@ -82,7 +82,6 @@
+ #include "nsUnicodeToCP1252.h"
+ #include "nsUnicodeToMacRoman.h"
+ #include "nsUnicodeToUTF8.h"
+-#include "nsScriptableUConv.h"
+ 
+ // ucvlatin
+ #include "nsUCvLatinCID.h"
+@@ -489,7 +488,6 @@
+ 
+ NS_GENERIC_FACTORY_CONSTRUCTOR(nsUnicodeDecodeHelper)
+ NS_GENERIC_FACTORY_CONSTRUCTOR(nsUnicodeEncodeHelper)
+-NS_GENERIC_FACTORY_CONSTRUCTOR(nsScriptableUnicodeConverter)
+ NS_GENERIC_FACTORY_CONSTRUCTOR(nsUnicodeToUTF8)
+ NS_GENERIC_FACTORY_CONSTRUCTOR(nsUTF8ToUnicode)
+ 
+@@ -720,6 +718,7 @@
+ NS_GENERIC_FACTORY_CONSTRUCTOR(nsConverterInputStream)
+ NS_GENERIC_FACTORY_CONSTRUCTOR(nsConverterOutputStream)
+ NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsPlatformCharset, Init)
++NS_GENERIC_FACTORY_CONSTRUCTOR(nsScriptableUnicodeConverter)
+ 
+ static const nsModuleComponentInfo components[] = 
+ {
+@@ -752,6 +751,11 @@
+     "@mozilla.org/intl/converter-output-stream;1",
+     nsConverterOutputStreamConstructor 
+   },   
++  { 
++    "Unicode Encoder / Decoder for Script", NS_ISCRIPTABLEUNICODECONVERTER_CID,
++    NS_ISCRIPTABLEUNICODECONVERTER_CONTRACTID, 
++    nsScriptableUnicodeConverterConstructor
++  },
+ #ifdef MOZ_USE_NATIVE_UCONV
+   { 
+     "Native UConv Service", 
+@@ -776,11 +780,6 @@
+     nsUTF8ConverterServiceConstructor
+   },
+   { 
+-    "Unicode Encoder / Decoder for Script", NS_ISCRIPTABLEUNICODECONVERTER_CID,
+-    NS_ISCRIPTABLEUNICODECONVERTER_CONTRACTID, 
+-    nsScriptableUnicodeConverterConstructor
+-  },
+-  { 
+     "ISO-8859-1 To Unicode Converter", NS_ISO88591TOUNICODE_CID, 
+     NS_ISO88591TOUNICODE_CONTRACTID,
+     nsISO88591ToUnicodeConstructor,
+=== intl/uconv/src/charsetalias.properties
+==================================================================
+--- xulrunner/intl/uconv/src/charsetalias.properties	(revision 77)
++++ xulrunner/intl/uconv/src/charsetalias.properties	(local)
+@@ -120,13 +120,13 @@
+ t.61-8bit=T.61-8bit
+ hz-gb-2312=HZ-GB-2312
+ big5-hkscs=Big5-HKSCS
+-gbk=x-gbk
+-cns11643=x-euc-tw
++gbk=gbk
++cns11643=euc-tw
+ #
+ # Netscape private ...
+ #
+ x-imap4-modified-utf7=x-imap4-modified-utf7
+-x-euc-tw=x-euc-tw
++x-euc-tw=euc-tw
+ x-mac-roman=x-mac-roman
+ x-mac-ce=x-mac-ce
+ x-mac-turkish=x-mac-turkish
+@@ -475,7 +475,7 @@
+ #
+ # Aliases for x-euc-tw
+ #
+-zh_tw-euc=x-euc-tw
++zh_tw-euc=euc-tw
+ #
+ # Following names appears in unix nl_langinfo(CODESET)
+ # They can be compiled as platform specific if necessary
+@@ -513,6 +513,6 @@
+ x-obsoleted-shift_jis=x-obsoleted-Shift_JIS
+ x-obsoleted-iso-2022-jp=x-obsoleted-ISO-2022-JP
+ x-obsoleted-euc-jp=x-obsoleted-EUC-JP
+-x-gbk=x-gbk
++x-gbk=gbk
+ windows-936=windows-936
+ ansi-1251=windows-1251
