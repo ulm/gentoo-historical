@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 from xml.dom.ext.reader.Sax2 import FromXmlStream
+from urllib2 import urlopen
+from os.path import basename
 import sys
 
 def getText(nodelist):
@@ -11,31 +13,42 @@ def getText(nodelist):
 
     return ''.join(lst)
 
-fp = open(sys.argv[1],'r')
-dom = FromXmlStream(fp)
+if (len(sys.argv) <= 1):
+  print "usage: " + basename(sys.argv[0]) + " files"
+  print "if the files are URIs remember to add '?passthru=1' to the end"
+  sys.exit(1)
+else:
+  files = sys.argv[1:len(sys.argv)]
 
-title = dom.getElementsByTagName('title') [0]
+for file in files:
+  if file.startswith("http://"):
+    fp = urlopen(file)
+  else:
+    fp = open(file,'r')
+  dom = FromXmlStream(fp)
 
-print "<section>"
-print "<title>" + getText(title.childNodes) + "</title>"
-print "<body>"
-print ""
+  title = dom.getElementsByTagName('title') [0]
 
-synopsis = dom.getElementsByTagName('synopsis') [0]
+  print "<section>"
+  print "<title>" + getText(title.childNodes) + "</title>"
+  print "<body>"
+  print ""
 
-print "<p>"
-print getText(synopsis.childNodes)
-print "</p>"
-print ""
+  synopsis = dom.getElementsByTagName('synopsis') [0]
 
-id = dom.getElementsByTagName('glsa') [0].getAttribute('id')
+  print "<p>"
+  print getText(synopsis.childNodes)
+  print "</p>"
+  print ""
 
-print "<p>"
-print 'For more information, please see the'
-print '<uri link="http://www.gentoo.org/security/en/glsa/glsa-' + id + '.xml">'
-print 'GLSA Announcement</uri>'
-print "</p>"
-print ""
-print "</body>"
-print "</section>"
-print ""
+  id = dom.getElementsByTagName('glsa') [0].getAttribute('id')
+
+  print "<p>"
+  print 'For more information, please see the'
+  print '<uri link="http://www.gentoo.org/security/en/glsa/glsa-' + id + '.xml">'
+  print 'GLSA Announcement</uri>'
+  print "</p>"
+  print ""
+  print "</body>"
+  print "</section>"
+  print ""
