@@ -1,8 +1,6 @@
 #!/usr/bin/python2.4
 
-import httplib
-import string
-import time
+import httplib, string, time, sys, os
 
 def strip(x):
         '''Removes quotation marks
@@ -82,11 +80,26 @@ def sum_results(result):
     
     return result_dict
 
+# get dates from command line, else use now (time.time())
+starttime = time.gmtime(time.time() - (60 * 60 * 24 * 8))
+endtime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
+
+if len(sys.argv) > 1:
+  if len(sys.argv) >= 2:
+    starttime = time.strptime(str(int(sys.argv[1])-1), "%Y%m%d")
+
+  if len(sys.argv) == 3:
+    endtime = time.strptime(str(int(sys.argv[2])-1), "%Y%m%d")
+  else:
+    print "Usage: " + os.path.basename(sys.argv[0]) +  " [start-date] [end-date]"
+    print "dates must be passed in 'yyyymmdd' format"
+    print "if no dates are specified then it defaults to a date range of the last seven days"
+
 #1.  Set up the dates we care about...a 7 day window that ends yesterday
-date_to = time.strftime("%Y-%m-%d",time.gmtime(time.time() - (60 * 60 * 24 * 1)))
-date_to_display = time.strftime("%d %B %Y",time.gmtime(time.time() - (60 * 60 * 24 * 1)))
-date_from = time.strftime("%Y-%m-%d",time.gmtime(time.time() - (60 * 60 * 24 * 8)))
-date_from_display = time.strftime("%d %B %Y",time.gmtime(time.time() - (60 * 60 * 24 * 8)))
+date_to = time.strftime("%Y-%m-%d", endtime)
+date_to_display = time.strftime("%d %B %Y", endtime)
+date_from = time.strftime("%Y-%m-%d", starttime)
+date_from_display = time.strftime("%d %B %Y", starttime)
 
 #2.  Setup a cookie to tell bugzilla the columns we care about
 header = {"Cookie" : "COLUMNLIST=bug_severity assigned_to assigned_to_realname bug_status"}
@@ -202,4 +215,5 @@ print """</ul>
 </body>
 </section>
 
-</chapter>"""
+</chapter>
+"""
