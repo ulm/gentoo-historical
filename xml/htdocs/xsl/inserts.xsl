@@ -3,7 +3,8 @@
                 xmlns:func="http://exslt.org/functions" 
                 xmlns:exslt="http://exslt.org/common"
                 xmlns:date="http://exslt.org/dates-and-times"
-                extension-element-prefixes="func date">
+                xmlns:str="http://exslt.org/strings"
+                extension-element-prefixes="func date str">
 
 <func:function name="func:gettext">
   <xsl:param name="str"/>
@@ -326,12 +327,16 @@
 <!-- Use as many ../ as necessary to go back to / from current dir -->
 <xsl:template name="relative-root">
 <xsl:param name="path"/>
-  <xsl:if test="contains(substring-after($path,'/'), '/')">
-    <xsl:text>../</xsl:text>
-    <xsl:call-template name="relative-root">
-      <xsl:with-param name="path" select="substring-after($path,'/')"/>
-    </xsl:call-template>
-  </xsl:if>
+  <xsl:for-each select="str:tokenize($path, '/')">
+    <xsl:choose>
+      <xsl:when test="position()=1 and position()=last()">
+        <xsl:text>/</xsl:text>
+      </xsl:when>
+      <xsl:when test="position()>1">
+        <xsl:text>../</xsl:text>
+      </xsl:when>
+    </xsl:choose>
+  </xsl:for-each>
 </xsl:template>
 
 
@@ -348,7 +353,7 @@
 
 <xsl:variable name="ROOT">
   <xsl:choose>
-    <xsl:when test="substring($link,1,1)='/' and contains(substring($link, 2), '/')">
+    <xsl:when test="not(starts-with($link, '/errors/'))">
       <xsl:call-template name="relative-root">
         <xsl:with-param name="path" select="$link"/>
       </xsl:call-template>
