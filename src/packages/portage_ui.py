@@ -203,7 +203,7 @@ class Package:
     def changelog(self, _):
         """Redirect to package's changelog"""
         return redirect('http://sources.gentoo.org/viewcvs.py/'
-            '*checkout*/%s/%s/ChangeLog'
+            'gentoo-x86/*checkout*/%s/%s/ChangeLog'
             % (self.category, self.name))
 
     def bugs(self, _):
