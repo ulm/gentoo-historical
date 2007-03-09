@@ -15,7 +15,7 @@ from quixote import redirect
 
 _q_exports = []
 
-LBASE = 'http://www.gentoo.org/cgi-bin/viewcvs.cgi/*checkout*/licenses'
+LBASE = 'http://sources.gentoo.org/viewcvs.py/*checkout*/gentoo-x86/licenses'
 
 def _q_index(_):
     """This should never be called..."""
