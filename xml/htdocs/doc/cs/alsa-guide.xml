@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/cs/alsa-guide.xml,v 1.9 2006/07/19 09:32:23 jkt Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/cs/alsa-guide.xml,v 1.10 2007/03/10 13:16:29 jkt Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -8,6 +8,12 @@
 
 <author title="Autor">
   <mail link="fox2mike@gentoo.org">Shyam Mani</mail>
+</author>
+<author title="Author">
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
+</author>
+<author title="Contributor">
+  <mail link="flameeyes@gentoo.org">Diego Pettenò</mail>
 </author>
 <author title="Překladatel">
   <mail link="_einstein@centrum.cz">Mirek Kratochvíl</mail>
@@ -25,8 +31,8 @@ Pomoc při&nbsp;instalaci a nastavení ALSA pro&nbsp;Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.14</version>
-<date>2006-07-06</date>
+<version>2.18</version>
+<date>2007-02-17</date>
 
 <chapter>
 <title>Úvod</title>
@@ -81,14 +87,15 @@ Dvě možnosti jsou:
 </p>
 
 <ol>
-  <li>
-  ALSA dodávaná v&nbsp;kernelu — doporučovaná a jednodušší metoda
-  </li>
+  <li>ALSA dodávaná v&nbsp;kernelu</li>
   <li>balíček <c>media-sound/alsa-driver</c></li>
 </ol>
 
 <p>
-Před definitivním rozhodnutím, jakou metodu použít, je nejprve obě popíšeme.
+Verze z&nbsp;jádra a z&nbsp;balíčku <c>alsa-driver</c> se mohou lišit; je možné,
+že chyby nalezené v&nbsp;ještě nebyly opravené v&nbsp;druhém. Vzhledem
+k&nbsp;tomu, že jde o dvě větve téhož produktu, s&nbsp;tím mnoho nenaděláme. Je
+však dobré vědet, že pokud vám nefunguje jedna možnost, druhá možná bude.
 </p>
 
 <p>
@@ -102,7 +109,7 @@ Použijete-li ALSA z&nbsp;jádra, počítejte s&nbsp;těmito znaky:
 </tr>
 <tr>
   <th>+</th>
-  <ti>celkem stabilní, ovladače jsou přímo v&nbsp;kernelu</ti>
+  <ti>ovladače jsou přímo v&nbsp;kernelu, takže nepotřebujete další balíček</ti>
 </tr>
 <tr>
   <th>+</th>
@@ -113,7 +120,7 @@ Použijete-li ALSA z&nbsp;jádra, počítejte s&nbsp;těmito znaky:
 <tr>
   <th>-</th>
   <ti>
-  může jít o trochu starší verzi ovladačů, než obsahuje
+  může jít o trochu jiné verzi ovladačů, než obsahuje
   <c>alsa-driver</c>
   </ti>
 </tr>
@@ -126,7 +133,11 @@ Použijete-li ALSA z&nbsp;jádra, počítejte s&nbsp;těmito znaky:
 </tr>
 <tr>
   <th>+</th>
-  <ti>nejnovější ovladače přímo od ALSA týmu</ti>
+  <ti>většinou nejnovější ovladače přímo od ALSA týmu</ti>
+</tr>
+<tr>
+  <th>+</th>
+  <ti>hodí se, pokud plánujete vyvíjet ovladače</ti>
 </tr>
 <tr>
   <th>-</th>
@@ -148,13 +159,11 @@ Použijete-li ALSA z&nbsp;jádra, počítejte s&nbsp;těmito znaky:
 <body>
 
 <p>
-Hlavním a nejdůležitějším rozdílem mezi <c>alsa-driver</c> a ALSA v&nbsp;jádře
-je ten, že <c>alsa-driver</c> je v&nbsp;zásadě aktuálnější. V&nbsp;dnešní době
-to už ale není až tak velký rozdíl (rozuměj prakticky nepoznatelný), takže
-použít ALSA z&nbsp;kernelu se zdá jako nejlepší řešení. Před hlášením chyb do
-<uri link="https://bugs.gentoo.org">Gentoo Bugzilly</uri> se je však prosím
-pokuste reprodukovat s&nbsp;použitím balíčku <c>alsa-driver</c>u (chybu však
-nahlaste v&nbsp;každém případě).
+Protože rozdíly mezi těmito dvěma možnosti jsou poměrně malé, nejdříve si
+popíšeme použití ovladačů přímo z&nbsp;jádra. Před hlášením chyb do <uri
+link="https://bugs.gentoo.org">Gentoo Bugzilly</uri> se je však prosím pokuste
+reprodukovat s&nbsp;použitím balíčku <c>alsa-driver</c>u (chybu však nahlaste
+v&nbsp;každém případě).
 </p>
 
 </body>
@@ -209,6 +218,12 @@ z&nbsp;menu vyberte Creative Labs. Na další stránce vidíme, že SB Live! pou
 modul <c>emu10k1</c>, a to je informace kterou potřebujeme. Pokud vás zajímají
 detaily, můžete použít odkaz vedle "Details", který vás zavede na stránku o
 modulu <c>emu10k1</c>.
+</p>
+
+<p>
+Pokud plánujete používat MIDI, před samotnou instalací ALSy přidejte <c>midi</c>
+do USE v&nbsp;<path>/etc/make.conf</path>. O samotném nastavení si <uri
+link="#midi">povíme později</uri>.
 </p>
 
 </body>
@@ -394,7 +409,10 @@ Nyní již stačí jen napsat pár magických slov a všechno bude fungovat :-).
 <impo>
 Zapamatujte si, že příkaz <c>emerge alsa-driver</c> budete muset spustit po
 každé změně nastavení jádra nebo jeho upgradu, protože předchozí ovladače tím
-budou smazány.
+budou smazány. Nejjednudušší je použít balíček <c>module-rebuild</c>. Příkazem
+<c>module-rebuild populate</c> vytvoříte databázi externích modulů jádra, a po
+každé (re)kompilaci kernelu pomocí <c>module-rebuild rebuild</c> tyto balíčky
+znovu překompilujete.
 </impo>
 
 </body>
@@ -431,13 +449,21 @@ je potřeba ALSA ještě nastavit. Díky nástroji <c>alsaconf</c> z&nbsp;balí�
 <title>Konfigurace</title>
 <body>
 
+<p>
+Nové verze <c>udev</c> (<c>>=udev-103</c>) jsou dostatečne inteligentní na to,
+aby se zvuk nastavil více či méně samočinně, a proto můžete zbytek této sekce
+pravděpodobně směle přeskočit. Kdyby tomu tak nebylo, zkuste použít
+<c>alsaconf</c>, jak je zde popsáno.
+</p>
+
 <note>
 Před spuštěním <c>alsaconf</c> prosím ukončete všechny programy, které by
 <e>mohly</e> ke&nbsp;zvukové kartě přistupovat.
 </note>
 
 <p>
-Nejjednodušší cesta ke konfiguraci ALSA je jako rot spustit <c>alsaconf</c>.
+Nuže, pokud vám udev z&nbsp;nějakého důvodu nefunguje, spusťte jako root příkaz
+<c>alsaconf</c>.
 </p>
 
 <pre caption="Spuštění alsaconf">
@@ -512,19 +538,7 @@ udělal za vás.
 </p>
 
 <pre caption="Nastartování služby ALSA">
-<comment>(ALSA jako moduly)</comment>
 # <i>/etc/init.d/alsasound start</i>
- * Loading ALSA modules ...
- * Loading: snd-card-0 ...        [ ok ]
- * Loading: snd-pcm-oss ...       [ ok ]
- * Loading: snd-seq ...           [ ok ]
- * Loading: snd-emu10k1-synth ... [ ok ]
- * Loading: snd-seq-midi ...      [ ok ]
- * Restoring Mixer Levels ...     [ ok ]
-<comment>(ALSA přímo v&nbsp;jádře)</comment>
-# <i>/etc/init.d/alsasound start</i>
- * Loading ALSA modules ...
- * Restoring Mixer Levels ...     [ ok ]
 </pre>
 
 <p>
@@ -601,15 +615,15 @@ Po tomto kroku by měl ALSA Mixer vypadat asi jako ten dole. Všimněte si znač
 Konečně trochu muziky. Pokud všechno doteď dobře šlo, měl by váš systém být
 schopný přehrát nějakou pěknou hudbu. Nejsnazší cesta je použít přímo
 z&nbsp;shellu nějaký nástroj, jako je například <c>media-sound/madplay</c>,
-případně něco známějšího,třeba <c>mpg123</c> nebo <c>xmms</c>. Pokud patříte
-k&nbsp;fanouškům OGG Vorbis, můžete použít <c>ogg123</c> z&nbsp;balíčku
+případně něco známějšího,třeba <c>mpg123</c>. Pokud patříte k&nbsp;fanouškům OGG
+Vorbis, můžete použít <c>ogg123</c> z&nbsp;balíčku
 <c>media-sound/vorbis-tools</c>. Potřebné balíčky nainstalujete, jako ostatně
 vždy, příkazem <c>emerge</c>.
 </p>
 
 <pre caption="Instalace přehrávačů">
 <comment>(Nainstalujte to, co chcete)</comment>
-# <i>emerge madplay mpg123 xmms</i>
+# <i>emerge madplay mpg123</i>
 <comment>(k přehrávání souborů .ogg)</comment>
 # <i>emerge vorbis-tools</i>
 </pre>
@@ -809,9 +823,16 @@ alsasound.
 
 <chapter>
 <title>Ostatní</title>
-<section>
+<section id="midi">
 <title>Podpora MIDI</title>
 <body>
+
+<p>
+Nejprve se ujistěte, že jste v&nbsp;souboru <path>/etc/make.conf</path> povolili
+USE proměnnou <c>midi</c>. Pokud tomu tak není, přidejte ji a nezapomeňte znovu
+přeložit všechny ALSA balíčky, které ji používají, například <c>alsa-lib</c>,
+<c>alsa-utils</c>, a <c>alsa-driver</c>.
+</p>
 
 <p>
 V případě, že máte kartu s&nbsp;MIDI syntetizérem a chtěli byste ji slyšet
@@ -889,21 +910,17 @@ virtuální, například <c>timidity++</c>. Instalace je prostá...
 </pre>
 
 <p>
-Aby timidity hrála, potřebuje soundfont. Pokud žádný nemáte, můžete
-nainstalovat <c>timidity-eawpatches</c> nebo <c>timidity-shompatches</c>.
-Soundfontů můžete mít nainstalováno více, vlastní soubory se ukládají do
-adresáře <path>/usr/share/timidity/</path>. Pro přepínání mezi různými
-konfiguracemi použijte <c>timidity-update</c> z&nbsp;balíčku timidity++.
+Aby timidity hrála, potřebuje soundfont. Některé jsou již nainstalovány
+z&nbsp;minulého kroku, další můžete přidat instalací dalších balíčků
+z&nbsp;Portage, například <c>timidity-freepats</c> nebo
+<c>timidity-eawpatches</c>, či sami jejich nakopírováním do
+<path>/usr/share/timidity/</path>. Mezi různými konfiguracemi timidity můžete
+přepínat pomocí <c>eselect</c>u:
 </p>
 
-<pre caption="Instalace SoundFontů">
-# <i>emerge timidity-eawpatches</i>
-# <i>timidity-update -g -s eawpatches</i>
-
-<comment>(nebo)</comment>
-
-# <i>emerge timidity-shompatches</i>
-# <i>timidity-update -g -s shompatches</i>
+<pre caption="Změna konfigurace">
+# <i>eselect timidity list</i>
+# <i>eselect timidity set eawpatches</i>
 </pre>
 
 <p>
@@ -928,23 +945,58 @@ MIDI</uri> souborů.
 
 <p>
 Některým zvukovým kartám můžete povolit další funkce za pomoci balíčků
-<c>alsa-tools</c> a <c>alsa-firmware</c>. Pokud používáte <c>alsa-tools</c>,
-nastavte do proměnné ALSA_TOOLS v&nbsp;souboru <path>/etc/make.conf</path>
-všechny nástroje, které potřebujete.
-</p>
-
-<pre caption="Výběr nástrojů ALSA v /etc/make.conf">
-ALSA_TOOLS="as10k1 ac3dec"
-</pre>
-
-<p>
-Pokud ALSA_TOOLS nenastavíte, zkompilují se všechny dostupné nástroje.
-Přistupme tedy k&nbsp;instalaci balíčku <c>alsa-tools</c>, případně i
-<c>alsa-firmware</c>:
+<c>alsa-tools</c> a <c>alsa-firmware</c>.
 </p>
 
 <pre caption="Instalace ALSA Tools">
 # <i>emerge alsa-tools</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Více zvukových karet</title>
+<body>
+
+<p>
+ALSA podporuje i více zvukových karet v&nbsp;jednom počítači, jedinou podmínkou
+je to, aby byla zkompilovaná jako moduly jádra. Pořadí zvukových karet se
+nastavuje v&nbsp;<path>/etc/modules.d/alsa</path> a počítá se od nuly. Příklad
+pro systém se dvěma kartami:
+</p>
+
+<pre caption="Ukázka /etc/modules.d/alsa pro dvě karty">
+options snd-emu10k1 index=0
+options snd-via82xx index=1
+</pre>
+
+<p>
+Pokud máte dvě karty, které obsluhuje stejný typ ovladače, použijte následující
+příklad:
+</p>
+
+<pre caption="/etc/modules.d/alsa pro více zvukových karet">
+options snd-ymfpci index=0
+options snd-hda-intel index=1,2
+</pre>
+
+</body>
+</section>
+<section>
+<title>Pluginy</title>
+<body>
+
+<p>
+ALSA je rozšířitelná pomocí pluginů. Některé z&nbsp;nich najdete v&nbsp;balíčku
+<c>alsa-plugins</c>, například plugin pro PulseAudio výstup, převodník
+vzorkovací frekvence, jack (nízkolatenční zvukový server), enkodér umožňující
+výstup šestikanálového zvuku pomocí digitálního připojení (optika či koaxiální
+kabel). Pluginy, které chcete nainstalovat, jednoduše zvolíte pomocí USE flagů
+v&nbsp;souboru <path>/etc/portage/package.use</path>.
+</p>
+
+<pre caption="Instalace alsa-plugins">
+# <i>emerge -avt alsa-plugins</i>
 </pre>
 
 </body>
