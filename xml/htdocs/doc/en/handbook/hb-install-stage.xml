@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-stage.xml,v 1.104 2006/11/01 21:40:28 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-stage.xml,v 1.105 2007/03/10 17:14:15 neysx Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Gentoo installs work through a stage3 archive. In this chapter we
 describe how you extract the stage3 archive and configure Portage.
 </abstract>
 
-<version>7.4</version>
-<date>2006-11-01</date>
+<version>7.5</version>
+<date>2007-03-10</date>
 
 <section>
 <title>Installing a Stage Tarball</title>
@@ -55,20 +55,23 @@ define your timezone later on. For instance, to set the date to March 29th,
 <body>
 
 <p>
-The next step you need to perform is to install the <e>stage3</e> tarball 
-onto your system. You have the option of downloading the required
-tarball from the Internet or, if you are booted from one of the Gentoo
-Universal Installation CDs, copy it over from the CD itself. If you have a 
-Universal CD and the stage you want to use is on the CD, downloading it from 
-the Internet is just a waste of bandwidth as the stage files are the same. In 
-most cases, the command <c>uname -m</c> can be used to help you decide which 
-stage file to download. 
+The next step you need to perform is to install the <e>stage3</e> tarball onto
+your system. You have the option of downloading the required tarball from the
+Internet or, if you booted one of the Gentoo Universal CDs, copy it over from
+the CD itself. If you have a Universal CD and the stage you want to use is on
+the CD, downloading it from the Internet is just a waste of bandwidth as the
+stage files are the same. In most cases, the command <c>uname -m</c> can be
+used to help you decide which stage file to download.
 </p>
 
-<ul>
+<p>
+Minimal CDs, LiveCDs and LiveDVDs do not contain any stage3 archive.
+</p>
+
+<ul test="not(contains('AMD64 x86', func:keyval('arch')))">
 <li><uri link="#doc_chap2">Default: Using a Stage from the Internet</uri></li>
 <li>
-  <uri link="#doc_chap3">Alternative: Using a Stage from the Installation CD</uri>
+  <uri link="#doc_chap3">Alternative: Using a Stage from the Universal CD</uri>
 </li>
 </ul>
 
@@ -113,12 +116,21 @@ We will now assume that you have <c>links</c> at your disposal.
 </p>
 
 <p>
-Pick the <path>releases/</path> directory, followed by your architecture (for
-instance <path>x86/</path>) and the Gentoo version (<path>2006.1/</path>) to
-finish up with the <path>stages/</path> directory. There you should see all
-available stage files for your architecture (they might be stored within
-subdirectories named to the individual subarchitectures). Select one and press
-<c>D</c> to download. When you're finished, press <c>Q</c> to quit the browser.
+Move to the <path><keyval id="release-dir"/>stages/</path> directory. There you
+should see all available stage files for your architecture (they might be
+stored within subdirectories named after the individual subarchitectures).
+Select one and press <c>D</c> to download. When you're finished, press <c>Q</c>
+to quit the browser.
+</p>
+
+<p test="'x86'=func:keyval('arch')">
+Most PC users should use the <b><keyval id="stage3"/></b> stage3 archive. All
+modern PCs are considered i686. If you use an old machine, you can check the
+<uri link="http://en.wikipedia.org/wiki/I686">list of i686-compatible
+processors</uri> on Wikipedia. Old processors such as the Pentium, K5, K6, or
+Via C3 and similar require the <b>i586</b> stage3. Only very old processors
+such as the 80386 and 80486 require the generic <b>x86</b> stage3 (and a huge
+amount of patience.)
 </p>
 
 <pre caption="Surfing to the mirror listing with links">
@@ -140,8 +152,8 @@ mirror. For instance, to check the validity of the x86 stage tarball:
 </p>
 
 <pre caption="Example checking integrity of a stage tarball">
-# <i>md5sum -c stage3-x86-2006.1.tar.bz2.DIGESTS</i>
-stage3-x86-2006.1.tar.bz2: OK
+# <i>md5sum -c <keyval id="stage3"/>.DIGESTS</i>
+<keyval id="stage3"/>: OK
 </pre>
 
 </body>
@@ -167,11 +179,13 @@ the <c>p</c> for <e>Preserve permissions</e> and the <c>f</c> to denote that we
 want to extract a file, not standard input.
 </p>
 
+<!-- MIPS uses its own hb-install-stage.xml file, any other arch?
 <note>
 Some architectures (e.g. MIPS) Installation CDs and boot images rely upon the
 <c>tar</c> built into BusyBox which doesn't currently support the <c>v</c>
 option. Use the <c>xjpf</c> options instead.
 </note>
+-->
 
 <p>
 Now that the stage is installed, continue with <uri
@@ -181,17 +195,11 @@ link="#installing_portage">Installing Portage</uri>.
 </body>
 </subsection>
 </section>
-<section>
-<title>Alternative: Using a Stage from the Installation CD</title>
+<section test="not(contains('AMD64 x86', func:keyval('arch')))">
+<title>Alternative: Using a Stage from the Universal CD</title>
 <subsection>
 <title>Extracting the Stage Tarball</title>
 <body>
-
-<impo test="contains('AMD64 x86', func:keyval('arch'))">
-If you are on <keyval id="arch"/> and using the Installer LiveCD, you will
-<e>not</e> have stages on your CD. You will have to follow instructions for
-<uri link="#doc_chap2">Using a Stage Tarball from the Internet</uri>.
-</impo>
 
 <p>
 The stages on the CD reside in the <path>/mnt/cdrom/stages</path> directory. To
@@ -390,15 +398,10 @@ too.
 </p>
 
 <p>
-A first setting is the <c>-march=</c> flag, which specifies the name of the
-target architecture. Possible options are described in the
-<path>make.conf.example</path> file (as comments). For instance, for the x86 
-Athlon XP architecture:
+A first setting is the <c>-march=</c> or <c>-mcpu=</c> flag, which specifies
+the name of the target architecture. Possible options are described in the
+<path>make.conf.example</path> file (as comments).
 </p>
-
-<pre caption="The GCC march setting">
--march=athlon-xp
-</pre>
 
 <p>
 A second one is the <c>-O</c> flag (that is a capital O, not a zero),
@@ -406,16 +409,13 @@ which specifies the <c>gcc</c> optimization
 class flag. Possible classes are <c>s</c> (for size-optimized),
 <c>0</c> (zero - for no optimizations), <c>1</c>, <c>2</c> or <c>3</c> for more
 speed-optimization flags (every class has the same flags as the one before, plus
-some extras). For instance, for a class-2 optimization:
+some extras). <c>-O2</c> is the recommended default.
 </p>
-
-<pre caption="The GCC O setting">
--O2
-</pre>
 
 <p>
 Another popular optimization flag is <c>-pipe</c> (use pipes rather than
 temporary files for communication between the various stages of compilation).
+It has no impact on the generated code.
 </p>
 
 <p>
@@ -426,18 +426,20 @@ repercussions on the debugging of applications!
 
 <p>
 When you define the <c>CFLAGS</c> and <c>CXXFLAGS</c>, you should combine
-several optimization flags, like in the following example:
+several optimization flags. The default values contained in the stage3 archived
+you unpacked should be good enough. The following example is just an example:
 </p>
 
-<pre test="contains('Alpha arm HPPA IA64 MIPS PPC PPC64 SPARC x86', func:keyval('arch'))" caption="Defining the CFLAGS and CXXFLAGS variable">
-CFLAGS="-march=athlon-xp -pipe -O2"
-CXXFLAGS="${CFLAGS}"                  <comment># Use the same settings for both variables</comment>
+<pre test="not(func:keyval('arch')='AMD64')" caption="Defining the CFLAGS and CXXFLAGS variable">
+CFLAGS="<keyval id="CFLAGS"/>"
+<comment># Use the same settings for both variables</comment>
+CXXFLAGS="${CFLAGS}"
 </pre>
 
 <pre test="func:keyval('arch')='AMD64'" caption="Defining the CFLAGS and CXXFLAGS variable">
-CFLAGS="-march=athlon-xp -pipe -O2"   <comment># AMD64 users who want a native 64-bit system should use -march=athlon64</comment>
-                                     <comment># EM64T users should use -march=nocona</comment>
-CXXFLAGS="${CFLAGS}"                 <comment># Use the same settings for both variables</comment>
+CFLAGS="<keyval id="CFLAGS"/>"   <comment># EM64T users should use -march=nocona</comment>
+<comment># Use the same settings for both variables</comment>
+CXXFLAGS="${CFLAGS}"
 </pre>
 
 </body>
