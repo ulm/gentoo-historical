@@ -1,12 +1,12 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/printing-howto.xml,v 1.17 2006/09/07 10:54:48 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/printing-howto.xml,v 1.18 2007/03/11 23:31:43 shadoww Exp $ -->
 
 <guide link="/doc/pl/printing-howto.xml" lang="pl">
 <title>Drukowanie w Gentoo</title>
 
 <author title="Autor">
-  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+  <mail link="sven.vermeulen@siphos.be">Sven Vermeulen</mail>
 </author>
 <author title="Redaktor">
   <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
@@ -25,8 +25,8 @@ drukarek z innymi systemami operacyjnymi.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.92</version>
-<date>2006-09-03</date>
+<version>2.96</version>
+<date>2007-02-01</date>
 
 <chapter>
 <title>Gentoo i drukarki</title>
@@ -247,6 +247,14 @@ skorzystać z flag USE z nimi powiązanych.
   <th>Wpływ na CUPS</th>
 </tr>
 <tr>
+  <ti>dbus</ti>
+  <ti>Dodaje wsparcie dla systemowej magistrali komunikatów <c>dbus</c>.</ti>
+</tr>
+<tr>
+  <ti>jpeg</ti>
+  <ti>Dodaje możliwośc drukowania obrazów z plików JPEG.</ti>
+</tr>
+<tr>
   <ti>nls</ti>
   <ti>
     Włącza obsługę języków narodowych. Dzięki tej fladze CUPS jest w stanie
@@ -258,6 +266,22 @@ skorzystać z flag USE z nimi powiązanych.
   <ti>pam</ti>
   <ti>
      Pozwala na uwierzytelnianie zadań dla drukarki poprzez moduły PAM.
+  </ti>
+</tr>
+<tr>
+  <ti>php</ti>
+  <ti>Dodaje wsparcie dla skryptów php.</ti>
+</tr>
+<tr>
+  <ti>png</ti>
+  <ti>Dodaje możliwość drukowania obrazów z plików PNG.</ti>
+</tr>
+<tr>
+  <ti>ppds</ti>
+  <ti>
+    Dodaje wsparcie dla automatycznie generowanych plików ppd (sterowniki
+    drukowania). Aby dowiedzieć się więcej należy zajrzeć do rozdziału <uri
+    link="#installing_best">Installing the Best Driver</uri>.
   </ti>
 </tr>
 <tr>
@@ -285,6 +309,17 @@ skorzystać z flag USE z nimi powiązanych.
    pozwalającą na tworzenie szyfrowanych sesji wydruku.
   </ti>
 </tr>
+<tr>
+  <ti>tiff</ti>
+  <ti>Dodaje możliwość drukowania obrazów z plików TIFF.</ti>
+</tr>
+<tr>
+  <ti>X</ti>
+  <ti>
+    Jeśli chcemy używać menu naszego środowiska, do ładowania strony
+    konfiguracyjnej CUPS za pomocą naszej ulubionej przeglądarki.
+  </ti>
+</tr>
 </table>
 
 <p>
@@ -295,10 +330,10 @@ całego systemu.
 
 <pre caption="Ustawienia flag USE dla CUPS">
 # <i>emerge -pv cups</i>
-[ebuild N     ] net-print/cups-1.1.23-r1  +nls +pam -samba -slp +ssl 0 kB
+[ebuild N     ] net-print/cups-1.2.6  "X dbus jpeg nls pam png ppds ssl -php -samba -slp -tiff" 0 kB
 
 <comment>(Na przykład by włączyć obsługę SAMBA)</comment>
-# <i>vim /etc/portage/package.use</i>
+# <i>nano -w /etc/portage/package.use</i>
 net-print/cups samba
 </pre>
 
@@ -314,6 +349,16 @@ Kiedy wszystko będzie gotowe można przystąpić do instalacji CUPS.
 Po instalacji Portage poprosi o wykonanie polecenia <c>rc-update add coldplug
 default</c> co umożliwi drukarkom USB korzystanie z niezbędnych modułów jądra.
 </p>
+
+<note>
+Jeżeli używamy <c>udev</c> w wersji 103 lub wyższej nie będziemy musieli
+instalować <c>coldplug</c> ponieważ udev poradzi sobie sam z ładowaniem
+modułów. Przed aktualizacją do wersji 103 należy najpierw usunąć program
+coldplug (<c>emerge -aC coldplug</c>). Dodatkowo trzeba usunąć skrypt
+inicjujący ze wszystkich poziomów uruchomieniowych (<c>rc-update del
+coldplug</c>), a następnie skasować ten skrypt z katalogu
+<path>/etc/init.d</path>.
+</note>
 
 <p>
 Jeśli jest to drukarka lokalna to CUPS musi być uruchamiany automatycznie przy
@@ -381,16 +426,16 @@ poprzez Sambę to zmiana ta nie jest konieczna.
 Ulubionym edytorem otwieramy plik <path>/etc/cups/cupsd.conf</path> i dodajemy
 tam linię <c>Allow</c> dla każdego komputera, który ma posiadać możliwość
 łączenia się z drukarką. W poniższym przykładzie damy dostęp do drukarki
-komputerom z sieci lokalnej, czyli takim, których adresy IP rozpoczynają się od
-ciągu znaków <c>192.168.0</c>.
+komputerowi localhost oraz komputerom z sieci lokalnej, czyli takim, których 
+adresy IP rozpoczynają się od ciągu znaków <c>192.168.0</c>.
 </p>
 
 <pre caption="Umożliwianie zdalnego dostępu do drukarki">
 &lt;Location /&gt;
-Order Deny,Allow
-Deny From All
-Allow From 127.0.0.1
-<i>Allow From 192.168.0.*</i>
+  Order allow,deny
+  <i>Allow localhost</i>
+  <i>Allow 192.168.0.*</i>
+  Deny all
 &lt;/Location&gt;
 </pre>
 
@@ -400,6 +445,17 @@ należy ustawić mu port, na którym takich żądań ma oczekiwać.
 </p>
 
 <pre caption="Konfigurowanie portu w /etc/cups/cupsd.conf">
+Listen *:631
+<comment>(Należy się upewnić, że linijka z localhost jest zakomentowana)</comment>
+#Listen localhost:631
+</pre>
+
+<note>
+Jeżeli nadal używamy CUPS 1.1 (który został uznany za niebezpieczny) będziemy
+musieli używać innej składni do zdalnych poleceń drukowania:
+</note>
+
+<pre caption="Konfiguracja CUPS 1.1">
 Port 631
 <comment>(Poniższe linie muszą być zakomentowane)</comment>
 #Listen 127.0.0.1:631
@@ -424,10 +480,11 @@ IP 192.168.0.3 musimy dokonać następującego wpisu:
 <pre caption="Zapewnianie zdalnego dostępu w /etc/cups/cupsd.conf">
 &lt;Location /admin&gt;
 <comment>(...)</comment>
-Order Deny,Allow
-Deny From All
-Allow From 127.0.0.1
-<i>Allow From 192.168.0.3</i>
+  Encryption Required
+  Order allow,deny
+  <i>Allow localhost</i>
+  <i>Allow 192.168.0.3</i>
+  Deny all
 &lt;/Location&gt;
 </pre>
 
@@ -445,8 +502,9 @@ uruchomić CUPS za pomocą polecenia <c>/etc/init.d/cupsd restart</c>.
 <p>
 Sterowniki PCL wysyłają do serwera druku dane w postaci pierwotnej. Aby
 umożliwić drukowanie takich danych w CUPS należy wyedytować pliki
-<path>/etc/cups/mime.types</path> oraz <path>/etc/cups/mime.convs</path> i
-odkomentować w nich linię <c>application/octet-stream</c>.
+<path>/etc/cups/mime.types</path> i odkomentować w nich linię
+<c>application/octet-stream</c>. Następnie postępujemy tak samo z
+<path>/etc/cups/mime.convs</path>.
 </p>
 
 <pre caption="Włączanie obsługi drukowania pierwotnego">
@@ -460,8 +518,8 @@ application/octet-stream     application/vnd.cups-raw    0    -
 </pre>
 
 <p>
-Po dokonaniu zmian w pliku <path>/etc/cups/cupsd.conf</path> należy ponownie
-uruchomić CUPS za pomocą polecenia <c>/etc/init.d/cupsd restart</c>.
+Po dokonaniu zmian należy ponownie uruchomić CUPS za pomocą polecenia
+<c>/etc/init.d/cupsd restart</c>.
 </p>
 
 </body>
@@ -701,7 +759,7 @@ E [11/Jun/2005:10:23:28 +0200] [Job 102] Unable to get printer status (client-er
 
 </body>
 </section>
-<section>
+<section id="installing_best">
 <title>Wybór najlepszego sterownika</title>
 <body>
 
