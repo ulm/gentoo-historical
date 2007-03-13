@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/mailfilter-guide.xml,v 1.10 2006/05/28 14:55:41 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/mailfilter-guide.xml,v 1.11 2007/03/13 11:43:05 cam Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/mailfilter-guide.xml" lang="fr">
@@ -26,8 +26,8 @@ ClamAV, un système de listes grises et SPF.
 <!-- Voir   http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.10</version>
-<date>2006-05-22</date>
+<version>0.11</version>
+<date>2007-01-07</date>
 
 <chapter>
 <title>Introduction</title>
@@ -327,7 +327,11 @@ La première ligne avec <c>smtp-amavis</c> indique qu'au maximum deux processus
 pourront être exécutés en même temps. Vous pouvez modifier cette valeur pour
 l'adapter à vos besoins. Faites seulement bien attention de reporter cette
 modification dans la variable <c>$max_servers</c> du fichier
-<path>amavisd.conf</path>.
+<path>amavisd.conf</path>. Soyez conscient qu'<c>amavisd-new</c> est vraiment
+consommateur de mémoire et que trop augmenter le nombre d'instances
+d'<c>amavisd-new</c> peut facilement saturer la mémoire et donc provoquer un
+usage intensif de la mémoire virtuelle, ce qui réduira considérablement les
+performances.
 </note>
 
 <note>
@@ -1736,7 +1740,7 @@ Your MySQL connection id is 78 to server version: 4.0.18-log
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 mysql> <i>create database maildb;</i>
-mysql> <i>GRANT ALL PRIVILEGES ON maildb.* TO 'mail'@'localhost' IDENTIFIED BY 'mot_de_passe_archi_secret';</i>
+mysql> <i>GRANT INSERT,UPDATE,DELETE,SELECT ON maildb.* TO 'mail'@'localhost' IDENTIFIED BY 'mot_de_passe_archi_secret';</i>
 mysql> <i>use maildb;</i>
 </pre>
 
@@ -1914,8 +1918,11 @@ $sql_select_policy = 'SELECT *,users.id FROM users,policy'.
 
 <p>
 Depuis la version 3.0, Spamassassin permet de sauvegarder les données
-bayésiennes et AWL dans une base de données MySQL. Nous allons présenter comment
-configurer ça simplement.
+bayésiennes et AWL dans une base de données MySQL. Nous utilisons MySQL car ses
+performances sont supérieures aux autres pour ce genre de données. De plus, la
+gestion du système est plus facile si MySQL est utilisé pour stocker les deux
+types de données à la fois. Nous allons présenter comment le configurer
+simplement.
 </p>
 
 <p>
@@ -1931,7 +1938,7 @@ Your MySQL connection id is 78 to server version: 4.0.18-log
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 mysql> <i>create database nombdd;</i>
-mysql> <i>GRANT ALL PRIVILEGES ON nombdd.* TO 'dbuser'@'localhost' IDENTIFIED BY 'un_nouveau_mot_de_passe_super_secret';</i>
+mysql> <i>GRANT INSERT,UPDATE,DELETE,SELECT ON nombdd.* TO 'dbuser'@'localhost' IDENTIFIED BY 'un_nouveau_mot_de_passe_super_secret';</i>
 mysql> <i>use nombdd;</i>
 </pre>
 
@@ -2027,25 +2034,33 @@ $ <i>sa-learn --restore sauvegarde.txt</i>
 
 <note>
 Notez que la dernière étape ne doit être effectuée qu'une fois que la base
-de données MySQL et <path>local.cf</path> ont été mis à jour.
+de données MySQL et que le fichier <path>secrets.cf</path> ont été mis à jour.
 </note>
 
 <p>
 Donnons maintenant à Spamassassin les informations nécessaires&nbsp;:
 </p>
 
-<pre caption="Modification de /etc/mail/spamassassin/local.cf">
-<comment>(Indiquez à Spamassissin d'utiliser MySQL pour la base bayésienne.)</comment>
+<pre caption="Modification de /etc/mail/spamassassin/secrets.cf">
+<comment>(Indiquez à Spamassassin d'utiliser MySQL pour la base bayésienne.)</comment>
 bayes_store_module              Mail::SpamAssassin::BayesStore::SQL
 bayes_sql_dsn                   DBI:mysql:sa_bayes:localhost:3306
 bayes_sql_username              nombdd
 bayes_sql_password              un_nouveau_mot_de_passe_super_secret
 
-<comment>(Indiquez à Spamassissin d'utiliser MySQL pour la base AWL.)</comment>
+<comment>(Indiquez à Spamassassin d'utiliser MySQL pour la base AWL.)</comment>
 auto_whitelist_factory          Mail::SpamAssassin::SQLBasedAddrList
 user_awl_dsn                    DBI:mysql:sa_bayes:localhost:3306
 user_awl_sql_username           nombdd
 user_awl_sql_password           un_nouveau_mot_de_passe_super_secret
+</pre>
+
+<p>
+Ensuite, renforcez la sécurité du fichier&nbsp;:
+</p>
+
+<pre caption="Changer les permissions d'accès au fichier">
+# <i>chmod 400 /etc/mail/spamassassin/secrets.cf</i>
 </pre>
 
 <note>
