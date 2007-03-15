@@ -22,19 +22,20 @@
 ;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
 
-(add-to-list 'auto-mode-alist '("\\.\\(ebuild\\|eclass\\)\\'" . ebuild-mode))
-(add-to-list 'auto-mode-alist '("\\.eselect\\'" . eselect-mode))
-
-(defvar ebuild-mode-hook nil
-  "List of functions to call when entering ebuild-mode")
-
 ;;; Commentary:
 
 ;; The commands have been grouped into lists of rough similarity.  If
 ;; you can think of a better way to arrange these, please let us know.
 ;; We map each set of keywords to the basic faces: font-lock-*-face.
 
+;; (add-to-list 'auto-mode-alist '("\\.\\(ebuild\\|eclass\\)\\'" . ebuild-mode))
+;; (add-to-list 'auto-mode-alist '("\\.eselect\\'" . eselect-mode))
+
 ;;; Code:
+
+(defvar ebuild-mode-hook nil
+  "List of functions to call when entering ebuild-mode")
+
 
 (defvar ebuild-mode-commands-0
   '("use" "has_version" "best_version" "use_with" "use_enable" "check_KV" "keepdir" "econf" "die" "eerror" "einstall" "einfo" "elog" "ewarn" "diropts" "dobin" "docinto" "dodoc" "doexe" "dohard" "dohtml" "doinfo" "doins" "dolib" "dolib.a" "dolib.so" "doman" "dosbin" "dosym" "emake" "exeinto" "exeopts" "fowners" "fperms" "insinto" "insopts" "into" "libopts" "newbin" "newexe" "newins" "newman" "newsbin" "prepall" "prepalldocs" "prepallinfo" "prepallman" "prepallstrip" "has" "unpack" "dopython" "dosed" "into" "doinitd" "doconfd" "doenvd" "dojar" "domo" "dodir" "ebegin" "eend" "newconfd" "newdoc" "newenvd" "newinitd" "newlib.a" "newlib.so" "hasq" "hasv" "useq" "usev" "epause" "ebeep" "epatch" "enewuser" "enewgroup" "make_desktop_entry" "domenu" "doicon" "built_with_use"))
