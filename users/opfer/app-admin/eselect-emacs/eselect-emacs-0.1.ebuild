@@ -1,6 +1,6 @@
 # Copyright 1999-2007 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/opfer/app-admin/eselect-emacs/Attic/eselect-emacs-0.1.ebuild,v 1.1 2007/03/15 10:31:42 opfer Exp $
+# $Header: /var/cvsroot/gentoo/users/opfer/app-admin/eselect-emacs/Attic/eselect-emacs-0.1.ebuild,v 1.2 2007/03/15 10:44:39 opfer Exp $
 
 inherit eutils
 
@@ -23,5 +23,5 @@ src_install() {
 	domenu emacs.desktop
 	doicon emacs.png
 	insinto /usr/share/eselect/modules
-	doins emacs.eselect || die "doins failed
+	doins emacs.eselect || die "doins failed"
 }
