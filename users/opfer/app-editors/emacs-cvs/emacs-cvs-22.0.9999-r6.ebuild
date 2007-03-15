@@ -1,6 +1,6 @@
 # Copyright 1999-2007 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/opfer/app-editors/emacs-cvs/Attic/emacs-cvs-22.0.9999-r6.ebuild,v 1.1 2007/03/15 10:32:44 opfer Exp $
+# $Header: /var/cvsroot/gentoo/users/opfer/app-editors/emacs-cvs/Attic/emacs-cvs-22.0.9999-r6.ebuild,v 1.2 2007/03/15 11:23:09 opfer Exp $
 
 ECVS_AUTH="pserver"
 ECVS_SERVER="cvs.savannah.gnu.org:/sources/emacs"
@@ -60,7 +60,7 @@ src_unpack() {
 	fi
 
 	epatch "${FILESDIR}/${PN}-freebsd-sparc.patch"
-	epatch "${FILESDIR}/${PN}-disable_alsa_detection.patch"
+	use alsa || epatch "${FILESDIR}/${PN}-disable_alsa_detection.patch"
 	use ppc-macos && epatch "${FILESDIR}/emacs-cvs-21.3.50-nofink.diff"
 
 	eautoreconf
@@ -75,6 +75,13 @@ src_compile() {
 	sed -i -e "s/-lungif/-lgif/g" configure* src/Makefile* || die
 
 	local myconf
+
+	if use alsa && ! use sound; then
+		einfo "Although sound USE flag is disabled you chose to have alsa, so sound is switched on anyway."
+		myconf="${myconf} --with-sound"
+	else
+		myconf="${myconf} $(use_with sound)"
+	fi
 
 	if use X; then
 		myconf="${myconf} --with-x"
@@ -114,7 +121,7 @@ src_compile() {
 	else
 		econf \
 			--program-suffix=.emacs-${SLOT} \
-			--without-carbon $(use_with sound) \
+			--without-carbon \
 			${myconf} || die "econf emacs failed"
 	fi
 
@@ -205,7 +212,7 @@ pkg_postinst() {
 	# A forthcoming Portage version will handle that itself
 	rm "${ROOT}/usr/share/info/emacs-${SLOT}/dir.*" 2> /dev/null
 
-	eselect --if-unset update
+	eselect emacs --if-unset update
 
 	if use X; then
 		elog "You need to install some fonts for Emacs.	 Under monolithic"
@@ -224,5 +231,5 @@ pkg_postinst() {
 pkg_postrm() {
 #	use ppc-macos || update-alternatives
 	elisp-site-regen
-	eselect --if-unset update
+	eselect emacs --if-unset update
 }
