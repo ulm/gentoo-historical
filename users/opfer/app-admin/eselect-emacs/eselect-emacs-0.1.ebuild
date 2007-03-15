@@ -1,6 +1,6 @@
 # Copyright 1999-2007 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/users/opfer/app-admin/eselect-emacs/Attic/eselect-emacs-0.1.ebuild,v 1.2 2007/03/15 10:44:39 opfer Exp $
+# $Header: /var/cvsroot/gentoo/users/opfer/app-admin/eselect-emacs/Attic/eselect-emacs-0.1.ebuild,v 1.3 2007/03/15 11:22:09 opfer Exp $
 
 inherit eutils
 
@@ -16,7 +16,6 @@ IUSE=""
 RDEPEND=">=app-admin/eselect-1.0.7"
 
 src_install() {
-
 	cd "${S}"
 	touch 50emacs
 	doenvd 50emacs
