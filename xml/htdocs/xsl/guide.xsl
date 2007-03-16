@@ -481,8 +481,10 @@
                     <a class="altlink" href="/proj/en/devrel/roll-call/userinfo.xml">Developer List</a>
                     <br/>
                     <a class="altlink" href="http://forums.gentoo.org">Discussion Forums</a>
+              <!--
                     <br/>
                     <a class="altlink" href="http://torrents.gentoo.org/">Gentoo BitTorrents</a>
+                -->
                     <br/>
                     <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
                     <br/>
