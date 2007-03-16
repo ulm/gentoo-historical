@@ -3,11 +3,12 @@
                 xmlns:exslt="http://exslt.org/common"
                 xmlns:func="http://exslt.org/functions"
                 xmlns:dyn="http://exslt.org/dynamic"
+                xmlns:str="http://exslt.org/strings"
 
                 xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/"
                 exclude-result-prefixes="opensearch"
 
-                extension-element-prefixes="exslt func dyn" >
+                extension-element-prefixes="exslt func dyn str" >
 
 <xsl:output encoding="UTF-8"
             method="html"
@@ -281,7 +282,7 @@
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
   
-  <xsl:if test="/mainpage/@id='news'">
+  <xsl:if test="/mainpage/newsitems">
     <link rel="alternate" type="application/rss+xml" title="Gentoo Linux News RDF" href="http://www.gentoo.org/rdf/en/gentoo-news.rdf" />
   </xsl:if>
   <xsl:choose>
@@ -295,97 +296,120 @@
 <body style="margin:0px;" bgcolor="#000000">
 
 <table border="0" width="100%" cellspacing="0" cellpadding="0">
+  <xsl:variable name="tpath" select="str:replace($link, str:replace(concat('/',$glang,'/'),'//','/en/'), '/**/')"/>
+  <xsl:variable name="isEnglish"><xsl:if test="string-length($glang)=0 or $glang='en'">Y</xsl:if></xsl:variable>
   <tr>
     <td valign="top" height="125" width="1%" bgcolor="#45347b">
     <a href="/"><img border="0" src="{concat($ROOT,'images/gtop-www.jpg')}" alt="Gentoo Logo"/></a>
     </td>
-
+    <!-- Top bar menu -->
     <td valign="bottom" align="left" bgcolor="#000000" colspan="2" lang="en">
       <p class="menu">
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='about'">
-            <a class="highlight" href="/main/en/about.xml">About</a>
-          </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/main/en/about.xml">About</a>
-          </xsl:otherwise>
-        </xsl:choose>
+        <a class="menulink" href="/main/en/about.xml">
+         <xsl:choose>
+          <xsl:when test="$tpath='/main/**/about.xml'">
+            <xsl:attribute name="class">highlight</xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$link"/></xsl:attribute>
+          </xsl:when> 
+          <xsl:when test="not($isEnglish='Y' or document(concat('/main/', $glang, '/about.xml'))/missing)">
+            <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/about.xml')"/></xsl:attribute>
+          </xsl:when> 
+         </xsl:choose>
+        About</a>
+        | 
+        <a class="menulink" href="/proj/en/index.xml">
+          <xsl:if test="starts-with($tpath, '/proj/**/')">
+            <xsl:attribute name="class">highlight</xsl:attribute>
+          </xsl:if>
+        Projects</a>
         |
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='projects'">
-            <a class="highlight" href="/proj/en/index.xml?showlevel=1">Projects</a>
+        <a class="menulink" href="/doc/en/index.xml">
+         <xsl:choose>
+          <xsl:when test="starts-with($tpath, '/doc/**/')">
+            <xsl:attribute name="class">highlight</xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="str:replace(concat('/doc/',$glang,'/'), '//','/en/')"/></xsl:attribute>
           </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/proj/en/index.xml?showlevel=1">Projects</a>
-          </xsl:otherwise>
-        </xsl:choose>
-        |
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='docs'">
-            <a class="highlight" href="/doc/en/index.xml">Docs</a>
-          </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/doc/en/index.xml">Docs</a>
-          </xsl:otherwise>
-        </xsl:choose>
+          <xsl:when test="not($isEnglish='Y' or document(concat('/doc/', $glang, '/index.xml'))/missing)">
+            <xsl:attribute name="href"><xsl:value-of select="concat('/doc/',$glang,'/index.xml')"/></xsl:attribute>
+          </xsl:when> 
+         </xsl:choose>
+        Docs</a>
         | <a class="menulink" href="http://forums.gentoo.org">Forums</a>
         |
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='lists'">
-            <a class="highlight" href="/main/en/lists.xml">Lists</a>
-          </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/main/en/lists.xml">Lists</a>
-          </xsl:otherwise>
-        </xsl:choose>
+        <a class="menulink" href="/main/en/lists.xml">
+         <xsl:choose>
+          <xsl:when test="$tpath='/main/**/lists.xml'">
+            <xsl:attribute name="class">highlight</xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$link"/></xsl:attribute>
+          </xsl:when> 
+          <xsl:when test="not($isEnglish='Y' or document(concat('/main/', $glang, '/lists.xml'))/missing)">
+            <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/lists.xml')"/></xsl:attribute>
+          </xsl:when> 
+         </xsl:choose>
+        Lists</a>
         | <a class="menulink" href="http://bugs.gentoo.org">Bugs</a>
         | <a class="menulink" href="http://www.cafepress.com/officialgentoo/">Store</a>
         |
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='newsletter'">
-            <a class="highlight" href="/news/en/gwn/gwn.xml"> GWN</a>
-          </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/news/en/gwn/gwn.xml"> GWN</a>
-          </xsl:otherwise>
-        </xsl:choose>
+        <a class="menulink" href="/news/en/gwn/gwn.xml">
+         <xsl:choose>
+          <xsl:when test="starts-with($tpath, '/news/**/gwn/')">
+            <xsl:attribute name="class">highlight</xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$link"/></xsl:attribute>
+          </xsl:when> 
+          <xsl:when test="not($isEnglish='Y' or document(concat('/news/', $glang, '/gwn/gwn.xml'))/missing)">
+            <xsl:attribute name="href"><xsl:value-of select="concat('/news/',$glang,'/gwn/gwn.xml')"/></xsl:attribute>
+          </xsl:when> 
+         </xsl:choose>
+        GWN</a>
         |
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='where'">
-            <a class="highlight" href="/main/en/where.xml">Get Gentoo!</a>
-          </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/main/en/where.xml">Get Gentoo!</a>
-          </xsl:otherwise>
-        </xsl:choose>
+        <a class="menulink" href="/main/en/where.xml">
+         <xsl:choose>
+          <xsl:when test="$tpath='/main/**/where.xml'">
+            <xsl:attribute name="class">highlight</xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$link"/></xsl:attribute>
+          </xsl:when> 
+          <xsl:when test="not($isEnglish='Y' or document(concat('/main/', $glang, '/where.xml'))/missing)">
+            <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/where.xml')"/></xsl:attribute>
+          </xsl:when> 
+         </xsl:choose>
+        Get Gentoo!</a>
         |
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='support'">
-            <a class="highlight" href="/main/en/support.xml">Support</a> 
-          </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/main/en/support.xml">Support</a> 
-          </xsl:otherwise>
-        </xsl:choose>
+        <a class="menulink" href="/main/en/support.xml">
+         <xsl:choose>
+          <xsl:when test="$tpath='/main/**/support.xml'">
+            <xsl:attribute name="class">highlight</xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$link"/></xsl:attribute>
+          </xsl:when> 
+          <xsl:when test="not($isEnglish='Y' or document(concat('/main/', $glang, '/support.xml'))/missing)">
+            <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/support.xml')"/></xsl:attribute>
+          </xsl:when> 
+         </xsl:choose>
+        Support</a>
         |
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='sponsors'">
-            <a class="highlight" href="/main/en/sponsors.xml">Sponsors</a>
-          </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/main/en/sponsors.xml">Sponsors</a>
-          </xsl:otherwise>
-        </xsl:choose>
+        <a class="menulink" href="/main/en/sponsors.xml">
+         <xsl:choose>
+          <xsl:when test="$tpath='/main/**/sponsors.xml'">
+            <xsl:attribute name="class">highlight</xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$link"/></xsl:attribute>
+          </xsl:when> 
+          <xsl:when test="not($isEnglish='Y' or document(concat('/main/', $glang, '/sponsors.xml'))/missing)">
+            <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/sponsors.xml')"/></xsl:attribute>
+          </xsl:when> 
+         </xsl:choose>
+        Sponsors</a>
         | <a class="menulink" href="http://planet.gentoo.org">Planet</a>
         |
-        <xsl:choose>
-          <xsl:when test="/mainpage/@id='contact'">
-            <a class="highlight" href="/main/en/contact.xml">Contact</a>
-          </xsl:when>
-          <xsl:otherwise>
-            <a class="menulink" href="/main/en/contact.xml">Contact</a>
-          </xsl:otherwise>
-        </xsl:choose>
+        <a class="menulink" href="/main/en/contact.xml">
+         <xsl:choose>
+          <xsl:when test="$tpath='/main/**/contact.xml'">
+            <xsl:attribute name="class">highlight</xsl:attribute>
+            <xsl:attribute name="href"><xsl:value-of select="$link"/></xsl:attribute>
+          </xsl:when> 
+          <xsl:when test="not($isEnglish='Y' or document(concat('/main/', $glang, '/contact.xml'))/missing)">
+            <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/contact.xml')"/></xsl:attribute>
+          </xsl:when> 
+         </xsl:choose>
+        Contact</a>
       </p>
     </td>
   </tr>
@@ -404,26 +428,54 @@
               <tr>
                 <td valign="top" class="leftmenu" lang="en">
                   <p class="altmenu">
-                    Installation:
+                   Installation:
+                   <br/>
+                    <a class="altlink" href="/doc/en/handbook/index.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/doc/', $glang, '/handbook/index.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/doc/',$glang,'/handbook/index.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    Gentoo Handbook</a>
                     <br/>
-                    <a class="altlink" href="/doc/en/handbook/index.xml">Gentoo Handbook</a>
-                    <br/>
-                    <a class="altlink" href="/doc/en/index.xml?catid=install#doc_chap2">Installation Docs</a>
+                    <a class="altlink" href="/doc/en/index.xml?catid=install#doc_chap2">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/doc/', $glang, '/index.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/doc/',$glang,'/index.xml?catid=install#doc_chap2')"/></xsl:attribute>
+                      </xsl:if> 
+                    Installation Docs</a>
                    <br/><br/>
-                    Documentation:
+                   Documentation:
+                   <br/>
+                    <a class="altlink" href="/doc/en/index.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/doc/', $glang, '/index.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/doc/',$glang,'/index.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    Home</a>
                     <br/>
-                    <a class="altlink" href="/doc/en/">Home</a>
+                    <a class="altlink" href="/doc/en/list.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/doc/', $glang, '/list.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/doc/',$glang,'/list.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    Listing</a>
                     <br/>
-                    <a class="altlink" href="/doc/en/list.xml">Listing</a>
+                    <a class="altlink" href="/main/en/about.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/main/', $glang, '/about.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/about.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    About Gentoo</a>
                     <br/>
-                    <a class="altlink" href="/main/en/about.xml">About Gentoo</a>
+                    <a class="altlink" href="/main/en/philosophy.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/main/', $glang, '/philosophy.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/philosophy.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    Philosophy</a>
                     <br/>
-                    <a class="altlink" href="/main/en/philosophy.xml">Philosophy</a>
-                    <br/>
-                    <a class="altlink" href="/main/en/contract.xml">Social Contract</a>
-                    <br/><br/>
-                    Resources:
-                    <br/>
+                    <a class="altlink" href="/main/en/contract.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/main/', $glang, '/contract.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/contract.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    Social Contract</a>
+                   <br/><br/>
+                   Resources:
+                   <br/>
                     <a class="altlink" href="http://bugs.gentoo.org">Bug Tracker</a>
                     <br/>
                     <a class="altlink" href="/proj/en/devrel/roll-call/userinfo.xml">Developer List</a>
@@ -434,13 +486,29 @@
                     <br/>
                     <a class="altlink" href="/proj/en/glep/">Gentoo Linux Enhancement Proposals</a>
                     <br/>
-                    <a class="altlink" href="/main/en/irc.xml">IRC Channels</a>
+                    <a class="altlink" href="/main/en/irc.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/main/', $glang, '/irc.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/irc.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    IRC Channels</a>
                     <br/>
-                    <a class="altlink" href="/main/en/lists.xml">Mailing Lists</a>
+                    <a class="altlink" href="/main/en/lists.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/main/', $glang, '/lists.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/lists.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    Mailing Lists</a>
                     <br/>
-                    <a class="altlink" href="/main/en/mirrors.xml">Mirrors</a>
+                    <a class="altlink" href="/main/en/mirrors.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/main/', $glang, '/mirrors.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/mirrors.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    Mirrors</a>
                     <br/>
-                    <a class="altlink" href="/main/en/name-logo.xml">Name and Logo Guidelines</a>
+                    <a class="altlink" href="/main/en/name-logo.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/main/', $glang, '/name-logo.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/name-logo.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    Name and Logo Guidelines</a>
                     <br/>
                     <a class="altlink" href="http://packages.gentoo.org/">Online Package Database</a>
                     <br/>
@@ -449,42 +517,32 @@
                     <a class="altlink" href="/proj/en/devrel/staffing-needs/">Staffing Needs</a>
                     <br/>
              		    <a class="altlink" href="http://vendors.gentoo.org/">Supporting Vendors</a>
-		    <br/>
+                    <br/>
                     <a class="altlink" href="http://sources.gentoo.org/">View our CVS</a>
-
-                    <!--
-                    <a class="altlink" href="/dyn/index-cvs.xml">Daily CVS ChangeLog</a>
-                    -->
-                    <!--<a class="altlink" href="http://stats.gentoo.org">Gentoo Usage Statistics</a>
+                   <br/><br/>
+                   Graphics:
+                   <br/>
+                    <a class="altlink" href="/main/en/graphics.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/main/', $glang, '/graphics.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/graphics.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    Logos and themes</a>
                     <br/>
-                    <a class="altlink" href="http://stable.gentoo.org">Gentoo Stable Project</a>
-                    <br/>
-                    -->
-                    <br/><br/>
-                    Graphics:
-                    <br/>
-                    <a class="altlink" href="/main/en/graphics.xml">Logos and themes</a>
-                    <br/>
-                    <a class="altlink" href="/main/en/shots.xml">ScreenShots</a>
-                    <br/><br/>
-                    Miscellaneous Resources:
-                    <br/>
+                    <a class="altlink" href="/main/en/shots.xml">
+                      <xsl:if test="not($isEnglish='Y' or document(concat('/main/', $glang, '/shots.xml'))/missing)">
+                        <xsl:attribute name="href"><xsl:value-of select="concat('/main/',$glang,'/shots.xml')"/></xsl:attribute>
+                      </xsl:if> 
+                    ScreenShots</a>
+                   <br/><br/>
+                   Miscellaneous Resources:
+                   <br/>
                     <a class="altlink" href="http://www.cafepress.com/officialgentoo/">Gentoo Linux Store</a>
                     <br/>
+                    <!-- Old'n'useless page
                     <a class="altlink" href="/main/en/projects.xml">Gentoo-hosted projects</a>
                     <br/>
-                    <a class="altlink" href="/doc/en/articles/">IBM dW/Intel article archive</a>
-                    <!-- Moved below news items in main area 
-                    <xsl:if test="/mainpage/@id='news'">
-                    <br/><br/>
-                      Older News:<br/>
-                      <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&gt;$newsitemcount][position()&lt;20]/text()">
-                        <xsl:variable name="newsuri" select="."/>
-                        <a class="altlink" href="{$newsuri}"><xsl:value-of select="document(.)/news/title"/></a>
-                        <br/>
-                      </xsl:for-each>
-                    </xsl:if>
                     -->
+                    <a class="altlink" href="/doc/en/articles/">IBM dW/Intel article archive</a>
                   </p>
                   <br/><br />
                 </td>
@@ -501,7 +559,7 @@
         <xsl:attribute name="dir">RTL</xsl:attribute>
       </xsl:if>
             <xsl:choose>
-              <xsl:when test="/mainpage/@id='news'">
+              <xsl:when test="/mainpage/newsitems">
               <p class="news">
                 <img class="newsicon" src="{concat($ROOT,'images/gentoo-new.gif')}" alt="Gentoo logo"/>
                 <span class="newsitem" lang="en">We produce Gentoo Linux, a special flavor of Linux that
@@ -1316,7 +1374,11 @@
     <!-- /guide == /guide -->
       <xsl:if test="$original/guide/version != $translation/guide/version">X</xsl:if>
     </xsl:when>
-    <!-- If we did not compare book==book or guide==guide, then consider versions are different -->
+    <xsl:when test="$original/mainpage and $translation/mainpage">
+    <!-- /guide == /guide -->
+      <xsl:if test="$original/mainpage/version != $translation/mainpage/version">X</xsl:if>
+    </xsl:when>
+    <!-- If we did not compare book==book, mainpage==mainpage or guide==guide, then consider versions are different -->
     <xsl:otherwise>X</xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -1353,7 +1415,7 @@
         </xsl:if>
       </xsl:for-each>
     </xsl:when>
-    <xsl:when test="$thedoc/guide or $thedoc/sections or $thedoc/mainpage">
+    <xsl:when test="$thedoc/guide or $thedoc/sections or $thedoc/mainpage or $thedoc/news">
       <xsl:value-of select="$thedoc/*[1]/date"/>
     </xsl:when>
   </xsl:choose>
@@ -1379,8 +1441,8 @@
 </xsl:template>
 
 <xsl:template name="outdated-translation">
-  <!-- Add mention that translation is outdated whenever possible -->
-  <xsl:if test="starts-with($link, '/doc/') and not(starts-with($link, '/doc/en/')) and $glang != ''  and not (//*[1]/@metadoc = 'yes')">
+  <!-- Add mention that translation is outdated whenever possible in /main and /doc-->
+  <xsl:if test="$glang != '' and not (//*[1]/@metadoc = 'yes') and (starts-with($link, '/doc/') or starts-with($link, '/main/')) and not(starts-with($link, '/doc/en/') or starts-with($link, '/main/en/'))">
     <!-- We have a translation, is it up-to-date? -->
     <xsl:variable name="metadoc" select="document(concat('/doc/', $glang, '/metadoc.xml'))"/>
     <xsl:variable name="fileid" select="$metadoc/metadoc/files/file[text()=$link]/@id"/>
@@ -1479,7 +1541,7 @@
           </p>
         </td>
       </tr>
-      <xsl:if test="/book/date or /guide/date or /sections/date">
+      <xsl:if test="/book/date or /guide/date or /sections/date or /mainpage/date">
         <xsl:variable name="outdated">
           <xsl:call-template name="outdated-translation"/>
         </xsl:variable>
