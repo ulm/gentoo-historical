@@ -292,8 +292,20 @@
       </title>
     </xsl:when>
   </xsl:choose>
+
+  <xsl:if test="/mainpage/devmap">
+    <xsl:variable name="gkey" select="document('/gmaps-key.xml')/gkey"/>
+    <script src="{concat('http://maps.google.com/maps?file=api&amp;v=2&amp;key=', $gkey)}" type="text/javascript"></script>
+    <script type="text/javascript" src="/xsl/devmap.js.txt"></script>
+  </xsl:if>
+  
 </head>
 <body style="margin:0px;" bgcolor="#000000">
+
+<xsl:if test="/mainpage/devmap">
+  <xsl:attribute name="onload">load()</xsl:attribute>
+  <xsl:attribute name="onunload">GUnload()</xsl:attribute>
+</xsl:if>
 
 <table border="0" width="100%" cellspacing="0" cellpadding="0">
   <xsl:variable name="tpath" select="str:replace($link, str:replace(concat('/',$glang,'/'),'//','/en/'), '/**/')"/>
@@ -603,7 +615,7 @@
             <table border="0" class="content">
               <tr>
                 <td>
-                  <xsl:apply-templates select="chapter"/>
+                  <xsl:apply-templates select="chapter|devmap"/>
                 </td>
               </tr>
             </table>
@@ -811,6 +823,13 @@
       </xsl:otherwise>
     </xsl:choose>
   </center>
+</xsl:template>
+
+<xsl:template match="devmap">
+  <h1>Gentoo Developers Map</h1>
+  <p id="map" style="height:460px"/>
+  <br/>
+  <table id="devlinks" style="width:100%"/>
 </xsl:template>
 
 <!-- Line break -->
