@@ -21,8 +21,10 @@
 <xsl:include href="handbook.xsl" />
 <xsl:include href="inserts.xsl" />
 
+<xsl:include href="devmap.xsl" />
+
 <!-- When using <pre>, whitespaces should be preserved -->
-<xsl:preserve-space elements="pre"/>
+<xsl:preserve-space elements="pre script"/>
 
 <!-- Global definition of style parameter -->
 <xsl:param name="style">0</xsl:param>
@@ -30,6 +32,9 @@
 
 <!-- Category from metadoc -->
 <xsl:param name="catid">0</xsl:param>
+
+<!-- Nick to select on dev map -->
+<xsl:param name="dev"/>
 
 <!-- Get the list of retired devs from the roll-call -->
 <xsl:variable name="RETIRED-DEVS" xmlns="">
@@ -296,7 +301,18 @@
   <xsl:if test="/mainpage/devmap">
     <xsl:variable name="gkey" select="document('/gmaps-key.xml')/gkey"/>
     <script src="{concat('http://maps.google.com/maps?file=api&amp;v=2&amp;key=', $gkey)}" type="text/javascript"></script>
-    <script type="text/javascript" src="/xsl/devmap.js.txt"></script>
+
+    <xsl:variable name="selectdev">
+      <xsl:choose>
+        <xsl:when test="string-length(translate($dev,'qwertyuioplkjhgfdsazxcvbnm-_0987654321QWERTYUIOPLKJHGFDSAZXCVBNM',''))=0 and string-length($dev)&lt;24">
+          <xsl:value-of select="translate($dev,'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/>
+        </xsl:when>
+        <xsl:otherwise>NotADev</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+
+    <xsl:variable name="newscript" select="str:replace($devmap-js, 'X-PLACEHOLDER', string($selectdev))"/>
+    <script type="text/javascript">//<xsl:comment><xsl:value-of select="$newscript"/>//</xsl:comment></script>
   </xsl:if>
   
 </head>

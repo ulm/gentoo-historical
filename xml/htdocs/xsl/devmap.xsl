@@ -1,3 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+
+<xsl:variable name="devmap-js">
+<![CDATA[
 var req;
 var map;
 var doc;
@@ -16,7 +21,7 @@ function load() {
         req.send(null); 
         window.setTimeout(function() {
           map.checkResize();
-          }, 10000);
+          }, 8000);
     }
 }
 
@@ -50,7 +55,8 @@ function onGet() {
         }
 
         var t = document.getElementById("devlinks");
-        var nCol = 9;
+        var selectDev = -1;
+        var nCol = 8;
         var nLines = parseInt(markers.length / nCol);
         if (markers.length / nCol)
           ++nLines;
@@ -61,6 +67,8 @@ function onGet() {
             var i = c * nLines + r;
             if (i < markers.length) {
               var a = document.createElement("a");
+              if (markers[i].name == "X-PLACEHOLDER")
+                selectDev = i;
               a.setAttribute("href", "javascript:markers["+i+"].openInfoWindowHtml(markers["+i+"].text)");
               a.textContent = markers[i].name;
               td.appendChild(a);
@@ -69,5 +77,10 @@ function onGet() {
           }
           t.appendChild(tr);
         }
+        if (selectDev >= 0)
+          markers[selectDev].openInfoWindowHtml(markers[selectDev].text);
     }
 }
+]]>
+</xsl:variable>
+</xsl:stylesheet>
