@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2007.0/hb-install-config.xml,v 1.1 2007/03/19 20:37:28 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2007.0/hb-install-config.xml,v 1.2 2007/03/20 05:24:48 nightmorph Exp $ -->
 
 <sections>
 
-<version>7.5</version>
+<version>8.0</version>
 <date>2007-03-12</date>
 
 <section>
@@ -134,7 +134,7 @@ partitions or drives, for those too):
 /dev/hda2   none      swap    sw                   0 0
 /dev/hda3   /         ext3    noatime              0 1
 
-proc        /proc     proc    defaults             0 0
+proc        /proc     proc    nodev,nosuid,noexec  0 0
 shm         /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
 
 /dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
@@ -202,6 +202,12 @@ domainnames if your networking is setup for DHCP.
 <comment>(Set the dns_domain variable to your domain name)</comment>
 dns_domain_lo="<i>homenetwork</i>"
 </pre>
+
+<note>
+If you choose not to set a domainname, you can get rid of the "This is
+hostname.(none)" messages at your login screen by editing
+<path>/etc/issue</path>. Just delete the string <c>.\O</c> from that file.
+</note>
 
 <p>
 If you have a NIS domain (if you don't know what that is, then you don't have
@@ -281,7 +287,7 @@ to set both <c>config_eth0</c> and <c>routes_eth0</c>:
 
 <pre caption="Manually setting IP information for eth0">
 config_eth0=( "192.168.0.2 netmask 255.255.255.0 brd 192.168.0.255" )
-routes_eth0=( "default gw 192.168.0.1" )
+routes_eth0=( "default via 192.168.0.1" )
 </pre>
 
 <p>
@@ -316,8 +322,7 @@ Now save the configuration and exit to continue.
 
 <p>
 To have your network interfaces activated at boot, you need to add them to the
-default runlevel. If you have PCMCIA interfaces you should skip this action as
-the PCMCIA interfaces are started by the PCMCIA init script.
+default runlevel.
 </p>
 
 <pre caption="Adding net.eth0 to the default runlevel">
@@ -380,33 +385,18 @@ following topic on PCMCIA.
 <title>Optional: Get PCMCIA Working</title>
 <body>
 
-<note>
-pcmcia-cs is only available for x86, amd64 and ppc platforms.
-</note>
-
 <p>
-PCMCIA-users should first install the <c>pcmcia-cs</c> package. This also
-includes users who will be working with a 2.6 kernel (even though they won't be
-using the PCMCIA drivers from this package). The <c>USE="-X"</c> is necessary 
-to avoid installing xorg-x11 at this moment:
+PCMCIA users should first install the <c>pcmciautils</c> package.
 </p>
 
-<pre caption="Installing pcmcia-cs">
-# <i>USE="-X" emerge pcmcia-cs</i>
-</pre>
-
-<p>
-When <c>pcmcia-cs</c> is installed, add <c>pcmcia</c> to the <e>default</e> 
-runlevel:
-</p>
-
-<pre caption="Adding pcmcia to the default runlevel">
-# <i>rc-update add pcmcia default</i>
+<pre caption="Installing pcmciautils">
+# <i>emerge pcmciautils</i>
 </pre>
 
 </body>
 </subsection>
 </section>
+
 <section>
 <title>System Information</title>
 <subsection>
@@ -469,13 +459,15 @@ Take special care with the <c>KEYMAP</c> variable. If you select the wrong
 <c>KEYMAP</c>, you will get weird results when typing on your keyboard.
 </p>
 
-<note>
-Users of <b>SPARC</b> systems and <b>SPARC</b> clones should choose old-style,
-sparc-specific keymaps if they have 2.4 kernel. But if you go for 2.6 kernel
-(which is default), you should rather choose pc-style i386 keymaps (like "us").
-<b>PPC</b> uses x86 keymaps on most systems. Users who want to be able to use
-ADB keymaps on boot have to enable ADB keycode sendings in their kernel and
-have to set a mac/ppc keymap in <path>/etc/conf.d/keymaps</path>.
+<note test="func:keyval('arch')='SPARC'">
+Users of USB-based SPARC systems and SPARC clones might need to select an i386
+keymap (such as "us") instead of "sunkeymap".
+</note>
+
+<note test="substring(func:keyval('arch'),1,3)='PPC'">
+PPC uses x86 keymaps on most systems. Users who want to be able to use ADB
+keymaps on boot have to enable ADB keycode sendings in their kernel and have to
+set a mac/ppc keymap in <path>/etc/conf.d/keymaps</path>.
 </note>
 
 <p>
@@ -502,25 +494,20 @@ When you're finished configuring <path>/etc/conf.d/clock</path>, save and
 exit. 
 </p>
 
-<p>
-If you are not installing Gentoo on IBM PPC64 hardware, continue with
-<uri link="?part=1&amp;chap=9">Installing Necessary System Tools</uri>.
+<p test="not(func:keyval('arch')='PPC64')">
+Please continue with <uri link="?part=1&amp;chap=9">Installing Necessary System
+Tools</uri>.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='PPC64'">
 <title>Configuring the Console</title>
 <body>
 
-<note>
-The following section applies to the IBM PPC64 hardware platforms.
-</note>
-
 <p>
-If you are running Gentoo on IBM PPC64 hardware and using a virtual console 
-you must uncomment the appropriate line in <path>/etc/inittab</path> for the 
-virtual console to spawn a login prompt.
+If you are using a virtual console, you must uncomment the appropriate line in
+<path>/etc/inittab</path> for the virtual console to spawn a login prompt.
 </p>
 
 <pre caption="Enabling hvc or hvsi support in /etc/inittab">
