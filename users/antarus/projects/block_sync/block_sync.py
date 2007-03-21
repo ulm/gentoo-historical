@@ -1,6 +1,20 @@
 #!/usr/bin/python -O
+# Gentoo Foundation 2007
 # Authored by Alec Warner <antarus@gentoo.org> 2007
 # This code is hereby released into the public domain
+
+__author__ = "Alec Warner <antarus@gentoo.org>"
+__date__ = "March 21st 2007"
+
+# Nasty hack to create termination string; ask harring to make this better
+a = ""
+for i in xrange(72):
+	a = a + '='
+
+BLOCK_SYNC_ENTRY_TERMINATOR = a
+
+del a
+
 
 import email, sys, os
 from time import mktime, time, localtime
@@ -27,7 +41,8 @@ def send_infra_mail( msg ):
 	to.append(reporter)
 
 	# Send mail to infra as well
-	to.append(infra)
+	# to.append(infra)
+	to.append("antarus@gentoo.org")
 
 	message = "\
 From: block-sync@gentoo.org\n\
@@ -43,6 +58,20 @@ However the time is currently \n\n%s.\n\n\
 	mailserver = SMTP("localhost")
 	mailserver.sendmail(source, to, message)
 
+def process( msg ):
+	"""
+	Process a email.message object; figure out if we should send
+	mail or stop the sync...etc..
+	"""
+
+	if "Completion-Date" in msg:
+		finish = mktime( parsedate(msg["Completion-Date"] ) )
+		now = time()
+		if now > finish:
+			send_infra_mail( msg )
+			sys.exit(3)
+
+
 def main():
 	args = sys.argv[:]
 	if len(args) < 2:
@@ -53,18 +82,24 @@ def main():
 	
 	if not os.path.exists( block_sync_path ):
 		sys.exit(0)
-
-	fp = open( block_sync_path, 'rb' )
-	msg = email.message_from_file( fp )
-	fp.close()
-	
-	if "Completion-Date" in msg:
-		finish = mktime( parsedate(msg["Completion-Date"] ) )
-		now = time()
-		if now > finish:
-			send_infra_mail( msg )
-			sys.exit(3)
-
+	try:
+		fp = open( block_sync_path, 'rb' )
+		msg_text = ""
+		for line in fp:
+			if line != BLOCK_SYNC_ENTRY_TERMINATOR:
+				msg_text = msg_text + line
+			else:
+				msg = email.message_from_string( msg_text )
+				process(msg)
+				msg_text = ""
+		
+		if msg_text:
+			msg = email.message_from_file( fp )
+			process(msg)
+	except:
+		sys.exit(4)
+	finally:
+		fp.close()
 
 if __name__ == "__main__":
 	main()
