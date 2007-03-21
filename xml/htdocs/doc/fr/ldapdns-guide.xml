@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/Attic/ldapdns-guide.xml,v 1.1 2007/03/21 11:28:11 cam Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/fr/ldapdns-guide.xml" lang="fr">
+<title>Le guide Gentoo LDAP-DNS</title>
+
+<author title="Auteur">
+  <mail link="fnjordy@gmail.com">Steve-o</mail>
+</author>
+<author title="Éditeur">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Traducteur">
+  <mail link="koreth@acissi.net">Sébastien Baudru</mail>
+</author>
+
+<abstract>
+LDAPDNS vous permet de mettre en place un service DNS très facilement. Les
+enregistrements DNS utilisés sont stockés dans un environnement LDAP. Ce
+document vous guidera durant la configuration d'OpenLDAP et de ldapdns dans
+cette optique.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>0.2</version>
+<date>2006-03-25</date>
+
+<chapter>
+<title>Introduction</title>
+<section>
+<body>
+
+<p>
+LDAPDNS est un serveur léger qui fournit des services DNS pour votre réseau.
+Avec un service DNS, vous pouvez gérer les noms de machines de manière
+centralisée, ce qui rend obsolète la fastidieuse mise à jour manuelle du
+fichier <path>/etc/hosts</path> chaque fois qu'un hôte est ajouté, retiré ou
+simplement quand il change de nom.
+</p>
+
+<p>
+Le paquet LDAPDNS utilise un serveur LDAP pour stocker tous les enregistrements
+DNS (qui sont, pour faire simple, des lignes contenant le nom de l'hôte et
+l'adresse IP lui correspondant). LDAP est un protocole standard utilisé pour
+obtenir des informations depuis une base de connaissance structurée
+hiérarchiquement (sous forme de répertoires). Le plus connu des serveurs LDAP
+sous Linux est OpenLDAP, une implémentation libre de LDAP.
+</p>
+
+<p>
+Avec ce petit guide en main, vous devriez pouvoir mettre en place un service
+DNS sur votre réseau avec le moins d'effort possible.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configuration de LDAP-DNS</title>
+<section>
+<body>
+
+<p>
+Premièrement, installez <c>net-dns/ldapdns</c>.
+</p>
+
+<pre caption="Installation de ldapdns">
+# <i>emerge net-dns/ldapdns</i>
+</pre>
+
+<p>
+Ensuite, configurez <c>ldapdns</c> pour qu'il héberge les enregistrements DNS
+de votre réseau. Nous utiliserons <c>ldapdns-conf</c> qui utilise la syntaxe
+suivante&nbsp;:
+</p>
+
+<pre caption="Syntaxe de ldapdns-conf">
+ldapdns-conf acct logacct /path votreip hote_ldap dn [suffix]
+</pre>
+
+<table>
+<tr>
+  <th>Mot-clef</th>
+  <th>Explication</th>
+  <th>Exemple</th>
+</tr>
+<tr>
+  <ti>acct</ti>
+  <ti>Nom d'utilisateur avec lequel ldapdns sera lancé</ti>
+  <ti>ldapdns</ti>
+</tr>
+<tr>
+  <ti>logacct</ti>
+  <ti>Nom d'utilisateur avec lequel la journalisation ldapdns sera lancée</ti>
+  <ti>dnslog</ti>
+</tr>
+<tr>
+  <ti>/path</ti>
+  <ti>Dossier utilisateur chrooté pour ldapdns</ti>
+  <ti><path>/var/lib/ldapdns</path></ti>
+</tr>
+<tr>
+  <ti>votreip</ti>
+  <ti>L'adresse IP sur laquelle écouter</ti>
+  <ti>127.0.0.1</ti>
+</tr>
+<tr>
+  <ti>hote_ldap</ti>
+  <ti>Adresse du serveur LDAP</ti>
+  <ti><c>ldapi://%2fvar%2frun%2fopenldap%2fslapd.sock</c></ti>
+</tr>
+<tr>
+  <ti>dn</ti>
+  <ti>Information de connexion pour LDAP</ti>
+  <ti>cn=Manager,dc=<c>yourdomain</c></ti>
+</tr>
+<tr>
+  <ti>suffix</ti>
+  <ti>Répertoire LDAP par défaut à ajouter à chaque requête (optionnel)</ti>
+  <ti>ou=Machines,dc=<c>yourdomain</c></ti>
+</tr>
+</table>
+
+<p>
+Vous devriez substituer l'adresse IP <c>127.0.0.1</c> par une adresse IP que
+toutes les machines peuvent atteindre. N'oubliez pas de changer le nom de
+domaine en remplaçant <c>yourdomain</c>.
+</p>
+
+<pre caption="Exemple d'exécution de ldapdns-conf">
+# <i>ldapdns-conf ldapdns dnslog /var/lib/ldapdns 127.0.0.1 ldapi://%2fvar%2frun%2fopenldap%2fsldapd.sock cn=Manager,dc=yourdomain ou=Machines,dc=yourdomain</i>
+</pre>
+
+<p>
+Maintenant, paramétrons le mot de passe de connexion de LDAP&nbsp;:
+</p>
+
+<pre caption="Paramètrage du mot de passe de connexion LDAP">
+# <i>echo MotDePasseSecret &gt; /var/lib/ldapdns/root/password</i>
+# <i>chmod 0400 /var/lib/ldapdns/root/password</i>
+</pre>
+
+<p>
+Configurons ldapdns pour qu'il utilise une méthode d'authentification simple et
+le schéma «&nbsp;cosine&nbsp;» de LDAP.
+</p>
+
+<pre caption="Configuration de ldapdns">
+# <i>echo simple &gt; /var/lib/ldapdns/env/LDAP_AUTH</i>
+# <i>echo cosine &gt; /var/lib/ldapdns/env/SCHEMA</i>
+</pre>
+
+<p>
+Vous pouvez éventuellement fixer une adresse mail pour le serveur&nbsp;:
+</p>
+
+<pre caption="Définition d'une adresse mail pour le serveur">
+# <i>echo VotreAdresse@Mail &gt; /var/lib/ldapdns/env/HOSTMASTER</i>
+</pre>
+
+<p>
+Ajoutez le serveur au service de supervision et lancer ce dernier si vous ne
+l'avez pas déjà démarré&nbsp;:
+</p>
+
+<pre caption="Ajout au service de supervision">
+# <i>ln -s /var/lib/ldapdns /service</i>
+# <i>/etc/init.d/svscan start</i>
+# <i>rc-update add svscan default</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Configuration d'OpenLDAP</title>
+<section>
+<body>
+
+<p>
+Maintenant, nous devons configurer OpenLDAP avec le schéma DNS. Ouvrez
+<path>/etc/openldap/sldap.conf</path> avec votre éditeur favori et assurez-vous
+d'y ajouter les trois lignes suivantes&nbsp;:
+</p>
+
+<pre caption="Édition de /etc/openldap/sldap.conf">
+include         /etc/openldap/schema/cosine.schema
+include         /etc/openldap/schema/inetorgperson.schema
+include         /etc/openldap/schema/nis.schema
+</pre>
+
+<p>
+Associons LDAP avec le dn de base défini précédemment avec <c>ldapdns-conf</c>.
+Pour cela, nous créons d'abord un fichier nommé <path>bootstrap.ldif</path>
+(c'est juste un nom) que nous remplirons avec les informations DNS.
+</p>
+
+<p>
+Voici un fichier exemple, <uri link="bootstrap.ldif.txt">bootstrap.ldif</uri>,
+pour le domaine fictif <c>cherchetoujours.org</c>.
+</p>
+
+<p>
+Maintenant, associons notre LDAP avec ces informations&nbsp;:
+</p>
+
+<pre caption="Initialisation de LDAP">
+# <i>ldapadd -x -D "cn=Manager,dc=yourdomain" -W -f bootstrap.ldif</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Test de l'installation</title>
+<section>
+<body>
+
+<p>
+Vous êtes fin prêt. Testez votre configuration en utilisant <c>nslookup</c>
+(qui fait partie du paquet <c>net-dns/bind-tools</c>)&nbsp;:
+</p>
+
+<pre caption="Test de la configuration de ldapdns">
+# <i>nslookup ns1.yourdomain</i>
+ Note:  nslookup is deprecated and may be removed from future releases.
+ Consider using the `dig' or `host' programs instead.  Run nslookup with
+ the `-sil[ent]' option to prevent this message from appearing.
+ Server:         <i>127.0.0.1</i>
+ Address:        <i>127.0.0.1#53</i>
+
+ Name:   ns1.example.com
+ Address: <comment>(L'adresse IP de votre serveur)</comment>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Ressources</title>
+<section>
+<body>
+
+<p>
+Le fichier <uri
+link="http://cvs.lp.se/doc/ldapdns/README.configure.gz">README.configure.gz</uri>
+pour le projet ldapdns.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
