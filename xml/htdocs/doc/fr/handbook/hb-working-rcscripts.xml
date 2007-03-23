@@ -1,15 +1,21 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-working-rcscripts.xml,v 1.14 2005/05/31 15:08:25 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-working-rcscripts.xml,v 1.15 2007/03/23 17:04:37 cam Exp $ -->
 
 <sections>
 
-<version>1.21</version>
-<date>2005-05-29</date>
+<abstract>
+Gentoo fait appel à un format particulier de scripts de démarrage qui, entre
+autres, permet la gestion des dépendances et le support des services virtuels.
+Ce chapitre explique ces aspects et comment utiliser de tels scripts.
+</abstract>
+
+<version>1.23</version>
+<date>2007-03-21</date>
 
 <section>
 <title>Les niveaux d'exécution</title>
@@ -546,6 +552,19 @@ depend() {
 }
 </pre>
 
+<p>
+Si votre service doit écrire sur des disques locaux, il aura besoin du
+<c>localmount</c>. S'il place quelque chose dans  <path>/var/run</path>, tel
+un fichier .pid, alors il devra démarrer après <c>bootmisc</c>&nbsp;:
+</p>
+
+<pre caption="Exemple de fonction depend()">
+depend() {
+  need localmount
+  after bootmisc
+}
+</pre>
+
 </body>
 </subsection>
 <subsection>
@@ -562,22 +581,39 @@ service démarre.
 
 <pre caption="Exemple de fonction start()">
 start() {
-  ebegin "Gentoo démarre le_service"
-  start-stop-daemon --start --quiet --exec /chemin/vers/le_service
+  ebegin "Starting my_service"
+  start-stop-daemon --start --exec /chemin/vers/mon_service \
+  --pidfile /chemin/vers//mon_fichier_pid
   eend $?
 }
 </pre>
-
+ 
 <p>
-Vous trouverez plus d'exemples de fonctions <c>start()</c> dans les scripts
-d'initialisation qui se trouvent dans le répertoire <path>/etc/init.d</path>.
-La commande <c>start-stop-daemon</c> est documentée sous la forme d'une page
-man&nbsp;:
+Les options <c>--exec</c> et <c>--pidfile</c> devraient être utilisées
+dans les fonctions start et stop. Si le service ne crée pas de fichier .pid,
+alors utilisez <c>--make-pidfile</c>, si possible, bien que vous devriez
+le tester pour en être sûr. Dans le cas contraire, n'utilisez pas de fichier
+.pid. Vous pouvez aussi ajouter <c>--quiet</c> aux options 
+<c>start-stop-daemon</c>, bien que cela soit déconseillé à moins que le 
+service soit extrêmement verbeux. En effet, utiliser <c>--quiet</c> peut
+cacher des informations de débogage utiles si le démarrage du service
+échoue.
 </p>
 
-<pre caption="Afficher l'aide de la commande start-stop-daemon">
-# <i>man start-stop-daemon</i>
-</pre>
+
+<note>
+Assurez-vous que <c>--exec</c> appelle effectivement un service et pas
+simplement un script shell qui lance des services (c'est ce que le script
+init est censé faire).
+</note>
+
+
+<p>
+Vous trouverez plus d'exemples de fonctions <c>start()</c> dans les sources des
+scripts d'initialisation, localisés dans le répertoire
+<path>/etc/init.d</path>.
+</p>
+
 
 <p>
 Vous pouvez aussi définir les fonctions facultatives <c>stop()</c> et
@@ -585,6 +621,48 @@ Vous pouvez aussi définir les fonctions facultatives <c>stop()</c> et
 Gentoo est capable de s'en passer si vous avez utilisé la commande
 <c>start-stop-daemon</c>.
 </p>
+
+
+<p>
+Bien que vous ne <e>devriez</e> pas créer de fonction <c>stop()</c>, en
+voici quand même un exemple&nbsp;:
+</p>
+
+<pre caption="Exemple de fonction stop()">
+stop() {
+  ebegin "Arrêt de mon_service"
+  start-stop-daemon --stop --exec /chemin/vers/mon_service \
+    --pidfile /chemin/vers/mon_fichier_pid
+  eend $?
+}
+</pre>
+
+<p>
+Si votre service exécute un script (Bash, Python ou Perl par exemple) dont le
+nom change par la suite (par exemple, <c>toto.py</c> devient <c>toto</c>), il
+faut alors ajouter l'option <c>--name</c> à la commande
+<c>start-stop-daemon</c>. Vous devez y spécifier le nom du script après 
+changement. Dans cet exemple, un service démarre <c>toto.py</c> dont le nom
+devient <c>toto</c>&nbsp;:
+</p>
+
+<pre caption="Un service qui lance le script toto">
+start() {
+  ebegin "Démarrage de mon_script"
+  start-stop-daemon --start --exec /chemin/vers/mon_script \
+  --pidfile /chemin/vers/mon_fichier_pid --name toto 
+  eend $?
+}
+</pre>
+
+<p>
+Pour de plus amples informations, un excellent manuel est disponible pour la
+commande <c>start-stop-daemon</c>&nbsp;:
+</p>
+
+<pre caption="Consulter le manuel de start-stop-daemon">
+$ <i>man start-stop-daemon</i>
+</pre>
 
 <p>
 Les scripts d'initialisation utilisent <c>bash</c>. Vous pouvez utiliser toutes
@@ -695,6 +773,29 @@ exemple, pour copier le niveau «&nbsp;default&nbsp;» sauf le script
                local | offline
             net.eth0 |
 </pre>
+
+<p>
+Même si <c>net.eth0</c> a été retiré du niveau d'exécution offline, 
+<c>udev</c> va quand même essayer de démarrer les interfaces qu'il détecte
+et lancer les services associés. C'est pourquoi vous devez ajouter les 
+services réseaux que vous ne souhaitez pas voir démarrés au fichier
+<path>/etc/conf.d/rc</path> (cela est vrai pour tout autre service pouvant
+être lancé par udev)&nbsp;: 
+</p>
+
+<pre caption="Désactiver un service démarré par une interface dans
+               /etc/conf.d/rc">
+RC_COLDPLUG="yes"
+<comment>(Ensuite, spécifiez les services que vous ne souhaitez pas voir
+          démarrés automatiquement)</comment>
+RC_PLUG_SERVICES="!net.eth0"
+</pre>
+
+<note>
+Vous trouverez plus d'informations sur les services démarrés par les 
+interfaces en consultant les commentaires du fichier 
+<path>/etc/conf.d/rc</path>.
+</note>
 
 <p>
 Ensuite, modifiez la configuration de votre chargeur de démarrage pour y
