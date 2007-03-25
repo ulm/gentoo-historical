@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
                 xmlns:exslt="http://exslt.org/common"
+                xmlns="http://earth.google.com/kml/2.1"
                 extension-element-prefixes="exslt">
-<xsl:output method="text" indent="no"/>
+<xsl:output omit-xml-declaration="yes" indent="yes" cdata-section-elements="description"/>
 
 <xsl:param name="mode"/>
 
-<xsl:variable name="rollcall">
+<xsl:variable name="rollcall" xmlns="">
  <xsl:for-each select="document('userinfo.xml', .)/userlist/user">
   <xsl:sort select="@username"/>
   <xsl:if test="translate(status,'tired', 'TIRED')!='RETIRED'">
@@ -39,6 +40,9 @@
   <xsl:choose>
     <xsl:when test="$mode='yaml'">
       <xsl:apply-templates mode="yaml"/>
+    </xsl:when>
+    <xsl:when test="$mode='kml'">
+      <xsl:apply-templates mode="kml"/>
     </xsl:when>
     <xsl:otherwise>
       <xsl:apply-templates/>
@@ -79,5 +83,28 @@
  <xsl:text>&#xA;</xsl:text>
 </xsl:template>
 
+
+<!-- kml for google earth -->
+<xsl:template match="/devlist" mode="kml">
+<xsl:text disable-output-escaping="yes">&lt;?xml version="1.0" encoding="UTF-8"?&gt;&#xA;</xsl:text>
+<kml>
+<Document>
+  <xsl:apply-templates select="exslt:node-set($rollcall)/user" mode="kml"/>
+</Document>
+</kml>
+</xsl:template>
+
+<xsl:template match="user" mode="kml">
+   <Placemark>
+    <name><xsl:value-of select="@nick"/></name>
+    <description>
+        &lt;b&gt;<xsl:value-of select="name"/>&lt;/b&gt;&lt;br/&gt;
+        &lt;i&gt;<xsl:value-of select="roles"/>&lt;/i&gt;
+    </description>
+    <Point>
+      <coordinates><xsl:value-of select="concat(location/@lon, ',', location/@lat)"/></coordinates>
+    </Point>
+  </Placemark>
+</xsl:template>
 
 </xsl:stylesheet>
