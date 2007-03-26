@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/vps/vserver-howto.xml,v 1.7 2007/02/10 14:28:34 hollow Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/vps/vserver-howto.xml,v 1.8 2007/03/26 18:50:21 hollow Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/proj/en/vps/vserver-howto.xml">
@@ -21,8 +21,8 @@ Linux-VServer Technology
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.9</version>
-<date>2007-02-10</date>
+<version>1.10</version>
+<date>2007-03-26</date>
 
 <chapter>
 <title>Introduction</title>
@@ -170,14 +170,16 @@ contains all necessary programs and many useful features.
 
 <p>
 You have to run the <c>vprocunhide</c> command after every reboot in order to
-setup <path>/proc</path> permissions correctly for vserver guests. An init
-script has been installed by util-vserver. To use it you should add it to the
-default runlevel:
+setup <path>/proc</path> permissions correctly for vserver guests. Two init
+scripts have been installed by util-vserver which run the <c>vprocunhide</c>
+command for you and take care of virtual servers during shutdown of the host.
 </p>
 
-<pre caption="vprocunhide init script">
+<pre caption="util-vserver init scripts">
 # <i>rc-update add vprocunhide default</i>
 # <i>/etc/init.d/vprocunhide start</i>
+# <i>rc-update add util-vserver default</i>
+# <i>/etc/init.d/util-vserver start</i>
 </pre>
 
 </body>
@@ -187,13 +189,24 @@ default runlevel:
 <chapter>
 <title>Guest creation</title>
 <section>
-<title>Using vserver stage3/4</title>
+<title>Download a precompiled stage3/4</title>
 <body>
 
 <p>
-You have to download a vserver prepared stage3/4 from one of
-<uri link="/main/en/mirrors.xml">our mirrors</uri>. Those stages are located
-under the <path>experimental/&lt;arch&gt;/vserver/</path> directory.
+Since many hardware related commands are not available inside a virtual server,
+there has been a patched version of baselayout known as baselayout-vserver.
+However, since baselayout-1.13.0_alpha12, all required changes have been
+integrated into normal baselayout, eliminating the need for seperate vserver
+stages, profiles and baselayout. The only (temporary) drawback is that
+baselayout-1.13 is still considered to be in alpha stage and there are no
+stages with baselayout-1.13 available on the mirrors yet.
+</p>
+
+<p>
+As soon as baselayout-1.13 is stable you can use a precompiled stage3/4 from
+one of <uri link="/main/en/mirrors.xml">our mirrors</uri>. In the meantime
+please download a stage3/4 from
+<uri link="http://people.linux-vserver.org/~hollow/stages/">here</uri>.
 Since a stage3/4 contains a complete root filesystem you can use the template
 build method of util-vserver. However, this method is only available since
 util-vserver-0.30.211, so make sure you have the right version installed.
@@ -210,12 +223,43 @@ equivalent to the last two parts of the virtual servers IP).
 The context ID should be 1 &lt; ID &lt; 49152.
 </note>
 
+</body>
+</section>
+<section>
+<title>Using the template build method</title>
+<body>
+
+<p>
+For a long time now, plain init style was the only init style available for
+gentoo, i.e. a normal init process will be started inside the guest, just like
+on any common Unix system. However this approach has some drawbacks:
+</p>
+
+<ul>
+<li>No possibility to see output of init/rc scripts</li>
+<li>Wasted resources for idle init processes in each guest</li>
+<li>Annoying conflicts for <path>/etc/inittab</path></li>
+</ul>
+
+<p>
+Therefore, many users have requested to reimplement the gentoo init style,
+which has been abandonned since it was a very hacky implementation and more
+or less worked by accident due to other modifications done to baselayout back
+then. However, as of util-vserver-0.30.212 the gentoo init style has been
+reimplemented in a concise manner and will get the default in the future.
+</p>
+
+<note>
+If there is not a good reason for using an extra init process for each guest
+or if you don't know what to do here, you should stick with gentoo init style.
+</note>
+
 <pre caption="Start stage3 installation">
 # <i>vserver myguest build \</i>
   <i>--context 1253 \</i>
   <i>--hostname gentoo \</i>
   <i>--interface eth0:192.168.1.253/24 \</i>
-  <i>--initstyle plain \</i>
+  <i>--initstyle gentoo \</i> <comment>(replace if needed)</comment>
   <i>-m template -- \</i>
   <i>  -d gentoo \</i>
   <i>  -t /path/to/stage4-&lt;arch&gt;-&lt;version&gt;.tar.bz2</i>
@@ -241,6 +285,27 @@ this package by default.
 
 <pre caption="Test the virtual server">
 # <i>vserver myguest start</i>
+
+
+Gentoo/Linux 1.13.0_alpha12; http://www.gentoo.org/
+ Copyright 1999-2007 Gentoo Foundation; Distributed under the GPLv2
+
+Press I to enter interactive boot mode
+
+ * Using existing device nodes in /dev                    [ ok ]
+ * root filesystem is mounted read-write - skipping
+ * Checking all filesystems                               [ ok ]
+ * Mounting local filesystems                             [ ok ]
+ * Activating (possible) swap                             [ ok ]
+ * Setting hostname to myguest                            [ ok ]
+ * Updating environment                                   [ ok ]
+ * Cleaning /var/lock, /var/run                           [ ok ]
+ * Cleaning /tmp directory                                [ ok ]
+ * Initializing random number generator                   [ ok ]
+ * Setting system clock using the hardware clock [VPS]    [ ok ]
+ * Starting syslog-ng                                     [ ok ]
+ * Starting vixie-cron                                    [ ok ]
+ * Starting local                                         [ ok ]
 # <i>vserver-stat</i>
 CTX   PROC    VSZ    RSS  userTIME   sysTIME    UPTIME NAME
 0       90   1.4G 153.4K  14m00s11   6m45s17   2h59m59 root server
