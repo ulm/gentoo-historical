@@ -2,13 +2,12 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.16.2.4 $"
+__revision__ = "$Revision: 1.16.2.5 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
 import os
 import time
-import string
 import sys
 import ebuilddb
 import bugs
@@ -194,7 +193,7 @@ def general_info_to_html(pkg):
         '%s</td>' % create_similar_pkgs_link(pkg))
     related_bugs = ('<td class="related_bugs" rowspan="2">'
         '%s</td>' % create_related_bugs_link(pkg))
-    forums = ('<td class="forums" rowspan="2">'
+    forums_link = ('<td class="forums" rowspan="2">'
         '%s</td>' % forums.create_forums_link(pkg))
 
     return '\n\t'.join(['<table class="general_info">',
@@ -205,7 +204,7 @@ def general_info_to_html(pkg):
         changelog,
         similar,
         related_bugs,
-        forums,
+        forums_link,
         '</tr>',
         '<tr>',
         category,
