@@ -72,7 +72,7 @@
     </tr>
   </xsl:if>
   <xsl:for-each select="document(string($ref))">
-    <xsl:if test="($level > 0) and ($level &lt;=$showlevel)">
+    <xsl:if test="($level > 0) and ($level &lt;=$showlevel) and not(/missing)">
       <tr>
         <ti>
        	  <xsl:if test="$level=1">
