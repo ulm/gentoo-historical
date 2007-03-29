@@ -227,6 +227,7 @@
 <xsl:template match="subproject">
 	<xsl:variable name="ref" select='string(@ref)'/>
 	<xsl:for-each select='document($ref)'>
+   <xsl:if test="not(/missing)">
 		<tr><ti>
 		<uri link="{$ref}">
 			<xsl:value-of select="/project/name/text()"/>
@@ -243,6 +244,7 @@
 		</ti>
 		<ti><xsl:value-of select="normalize-space(/project/description/text())"/></ti>
 		</tr>
+   </xsl:if>
 	</xsl:for-each>
 </xsl:template>
 <xsl:template match="resource">
