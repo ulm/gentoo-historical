@@ -1,6 +1,6 @@
 #!/usr/bin/python -O
 
-__revision__ = '$Revision: 1.8 $'
+__revision__ = '$Revision: 1.8.2.1 $'
 # $Source: /var/cvsroot/gentoo/src/packages/ebuilddb.py,v $
 
 import config
@@ -165,7 +165,8 @@ def main(argv = []):
     sys.path = sys.path[1:]
 
     # We want to use the base profile, not any system-specific one
-    p_config = portage.config(config_profile_path = '/usr/portage/profiles/base')
+    p_config = portage.config(config_profile_path='/usr/portage/profiles/base',
+            local_config=False)
 
     tree = portage.portdbapi('/usr/portage', p_config)
 
