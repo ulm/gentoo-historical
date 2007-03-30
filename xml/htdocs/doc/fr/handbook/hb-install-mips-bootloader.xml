@@ -4,143 +4,155 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-mips-bootloader.xml,v 1.10 2006/01/23 10:44:44 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-mips-bootloader.xml,v 1.11 2007/03/30 20:38:26 cam Exp $ -->
 
 <sections>
 
-<version>1.8</version>
-<date>2006-01-19</date>
+<version>7.1</version>
+<date>2007-02-08</date>
 
 <section id="sgi">
-<title>Configuration de arcboot pour les machines Silicon Graphics</title>
+<title>Configuration d'Arcload pour les machines Silicon Graphics</title>
 <subsection>
-<title>Installer arcboot</title>
+<title>Arcload&nbsp;?</title>
 <body>
 
 <p>
-Jusqu'à présent, ce guide présentait comment construire son noyau, le copier
-dans l'en-tête du volume SGI avec <c>dvhtool</c>. Cette méthode présentait deux
-problèmes importants&nbsp;:
+Pour démarrer une machine SGI, nous utilisons maintenant le chargeur de
+démarrage <c>arcload</c> qui remplace officiellement le déprécié
+<c>arcboot</c> que nous utilisions auparavant pour installer Gentoo.
 </p>
-
-<ul>
-  <li>Elle n'est pas supportée sur tous les systèmes SGI&nbsp;:</li>
-  <li>Elle requiert un en-tête du volume SGI relativement importante.</li>
-</ul>
-
-<p>
-Afin de pouvoir démarrer sur votre machine, un chargeur de démarrage a été
-développé. <c>Arcboot</c> vous permet de laisser votre noyau sur
-<path>/boot</path> (qui doit être une partition EXT2/3) au lieu de le mettre
-directement dans l'en-tête du volume SGI. Il suffit d'indiquer à <c>arcboot</c>
-(qui est placé dans l'en-tête du volume SGI à la place du noyau) où se situe
-celui-ci. Nous allons donc dans un premier temps installer un certain nombre
-d'outils qui seront utilisés plus tard.
-</p>
-
-<pre caption="Installation des outils nécessaires">
-# <i>emerge dvhtool arcboot</i>
-</pre>
-
-<p>
-Cela devrait vous avoir installé deux outils&nbsp;: <c>arcboot</c>, qui sera mis
-dans l'en-tête du volume SGI et chargera le noyau pour nous, et <c>dvhtool</c>,
-qui permettra de placer <c>arcboot</c> dans ledit en-tête.
-</p>
-
-<p>
-Le binaire que nous recherchons se cache dans <path>/usr/lib/arcboot</path>. Sur
-les systèmes IP22 (Indy, Indigo 2, Challenge S), il se nomme en fait
-<path>arcboot.ip22</path>. Les autres systèmes devraient être similaires. Nous
-allons tout d'abord copier ce fichier dans l'en-tête du volume SGI.
-</p>
-
-<pre caption="Installer arcboot dans l'en-tête du volume SGI">
-# <i>dvhtool --unix-to-vh /usr/lib/arcboot/arcboot.ip?? arcboot</i>
-</pre>
-
-<p>
-Ensuite, vérifiez que le fichier est bien dans l'en-tête du volume SGI.
-</p>
-
-<pre caption="Vérification de la bonne installation de arcboot">
-# <i>dvhtool --print-volume-directory</i>
------ directory entries -----
-Entry #0, name "linux", start 4, bytes 3262570
-Entry #1, name "newlinux", start 6377, bytes 7619627
-Entry #3, name "arcboot", start 21260, bytes 51448
-#
-</pre>
 
 <note>
-Vous remarquerez que, dans mon cas, j'ai déjà deux anciens noyaux là-dedans,
-<path>linux</path> et <path>newlinux</path>. Ils viennent de l'installation que
-j'avais faite avant de commencer à utiliser <c>arcboot</c>. Leur présence n'est
-pas dérangeante, tant que <c>arcboot</c> est là tout va bien.
+L'entête de volume SGI ne peut contenir que 16 fichiers, avec chacun 8
+caractères maximum pour le nom du fichier.
 </note>
 
 </body>
 </subsection>
-
 <subsection>
-<title>Configurer arcboot</title>
+<title>Installer arcload</title>
 <body>
 
 <p>
-Si vous avez déjà mis en place le logiciel Linux Loader (<c>lilo</c>) auparavant
-vous remarquerez que <c>arcboot</c> utilise une syntaxe similaire pour son
-fichier de configuration. Souvenez-vous cependant bien que <c>arcboot</c>
-s'attend à trouver son fichier de configuration sur une partition de type EXT2/3
-et qu'il doit se nommer <path>/etc/arcboot.conf</path>. Le meilleur moyen de
-s'en assurer est d'avoir <path>/boot</path> sur une partition EXT2/3 et de
-placer le fichier <path>arcboot.conf</path> dans le répertoire
-<path>/boot/etc</path>. Vous trouverez un exemple de fichier de configuration
-dans <path>/etc/arcboot.conf.sample</path>.
+<c>arcload</c> a été écrit pour les machines qui nécessitent un noyau
+64&nbsp;bits et qui ne peuvent donc pas utiliser <c>arcboot</c> (qui demande
+beaucoup de travail pour qu'on puisse le compiler en tant que binaire
+64&nbsp;bits). Il permet également de contourner certains problèmes qui
+apparaissent lorsqu'on charge un noyau directement depuis l'entête de volume.
+Passons donc à son installation&nbsp;:
 </p>
 
-<pre caption="Placer arcboot.conf au bon endroit">
-<comment>(Création du répertoire /boot/etc)</comment>
-# <i>mkdir /boot/etc</i>
-
-<comment>(Mettre notre configuration dans ce répertoire)</comment>
-# <i>cp /etc/arcboot.conf.sample /boot/etc/arcboot.conf</i>
-
-<comment>(Créer un lien symbolique dans /etc)</comment>
-# <i>ln -s /boot/etc/arcboot.conf /etc/arcboot.conf</i>
-
-<comment>(... et un lien symbolique de /boot sur lui-même)</comment>
-# <i>(cd /boot; ln -s . boot)</i>
+<pre caption="Installer arcload et dvhtool">
+# <i>emerge arcload dvhtool</i>
 </pre>
 
 <p>
-Vous pouvez maintenant éditer le fichier <path>/etc/arcboot.conf</path> à votre
-convenance. Personnellement j'aime disposer de deux images de noyau&nbsp;:
-<path>new</path> qui est une image récemment construire, qui n'est pas sûre de
-fonctionner et <path>working</path> qui est une image dont je suis sûr qu'elle
-marche. Mon fichier <path>arcboot.conf</path> ressemble plus ou moins à ceci.
+Les binaires <c>arcload</c> ont dû être installés dans
+<path>/usr/lib/arcload</path>&nbsp;:
 </p>
 
-<pre caption="Exemple de configuration pour arcboot.conf">
-<comment># arcboot.conf</comment>
-<comment>#</comment>
-<comment># copyright 2002 Guido Guenther &lt;agx@sigxcpu.org&gt;</comment>
-<comment>#</comment>
-label=working
-        image=/vmlinux
-        append="root=/dev/sda3"
-<comment># Version de sauvegarde</comment>
+<ul>
+  <li>
+    <c>sashARCS</c>&nbsp;: le binaire 32&nbsp;bits pour Indy, Indigo2 (R4k),
+    Challenge S et O2.
+  </li>
+  <li>
+    <c>sash64</c>&nbsp;: le binaire 64&nbsp;bits pour Octane/Octane2, Origin
+    200/2000 et Indigo2 Impact.
+  </li>
+</ul>
 
-label=new
-        image=/vmlinux-new
-        append="root=/dev/sda3"
+<p>
+Utilisez maintenant <c>dvhtool</c> pour installer le bon binaire dans l'entête
+de volume&nbsp;:
+</p>
+
+<pre caption="Placer arcload dans l'entête de volume">
+<comment>(Pour les Indy/Indigo2/Challenge S/O2.)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sashARCS sashARCS</i>
+
+<comment>(Pour les Indigo2 Impact/Octane/Octane2/Origin 200/Origin 2000.)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sash64 sash64</i>
+</pre>
+
+<note>
+Vous n'êtes pas obligé de garder les noms <c>sashARCS</c> ou <c>sash64</c>, à
+moins que vous ne placiez les fichiers dans l'entête de volume d'un CD-ROM
+amorçable. Le fichier peut porter le nom que vous voulez si c'est pour démarrer
+sur disque dur.
+</note>
+
+<p>
+Utilisez maintenant <c>dvhtool</c> pour vérifier que les fichiers sont
+correctement installés.
+</p>
+
+<pre caption="Vérifier l'installation d'arcload dans l'entête de volume">
+# <i>dvhtool --print-volume-directory</i>
+----- directory entries -----
+Entry #0, name "sash64", start 4, bytes 55859
 </pre>
 
 <p>
-Une fois que tout est bien configuré, il vous reste quelques petites
-modifications à apporter sur la PROM SGI pour que tout fonctionne. Vous pouvez
-passer directement au chapitre <uri link="#reboot">Redémarrer votre
-système</uri>.<br/>
-Le chapitre suivant traite de la configuration des serveurs Cobalt.
+Le fichier de configuration, <c>arc.cf</c>, a une syntaxe à la C. Pour de
+longues explications sur son utilisation, voyez la page sur <uri
+link="http://www.linux-mips.org/wiki/Arcload">Arcload sur le wiki
+Linux/MIPS</uri>. Pour faire court, vous définissez un certain nombre d'options
+qui configureront le démarrage en utilisant la variable <c>OSLoadFilename</c>.
+</p>
+
+<pre caption="Un exemple de arc.cf">
+<comment># Configuration d'Arcload</comment>
+
+<comment># Quelques valeurs par défaut...</comment>
+append  "root=/dev/sda3";
+append  "ro";
+append  "console=ttyS0,9600";
+
+<comment># La définition principale, vous pouvez changer ip28 si vous voulez.</comment>
+ip28 {
+  <comment># Définition d'un noyau *fonctionnel*</comment>
+  <comment># Sélectionnez-le avec OSLoadFilename="ip28(working)"</comment>
+  working {
+    description "SGI Indigo2 Impact R10000\n\r";
+    image system "/working";
+  }
+
+  <comment># Définition d'un noyau en *test*</comment>
+  <comment># Sélectionnez-le avec OSLoadFilename="ip28(new)"</comment>
+  new {
+    description "SGI Indigo2 Impact R10000 - Testing Kernel\n\r";
+    image system "/new";
+  }
+
+  <comment># Pour déboguer un noyau</comment>
+  <comment># Sélectionnez-le avec OSLoadFilename="ip28(working,debug)"</comment>
+  <comment># ou OSLoadFilename="ip28(new,debug)"</comment>
+  debug {
+    description "Debug console";
+    append "init=/bin/bash";
+  }
+}
+</pre>
+
+<p>
+À partir d'<c>arcload-0.5</c>, <path>arc.cf</path> et les noyaux peuvent
+résider dans l'entête de volume ou bien dans une partition ext2/3. Si cette
+fonctionnalité vous intéresse, vous pouvez placer les fichiers directement dans
+votre partition <path>/boot</path> (ou <path>/</path> si vous n'avez pas de
+/boot séparé).
+</p>
+
+<pre caption="Placer arc.cf et le noyau dans l'entête de volume">
+# <i>dvhtool --unix-to-vh arc.cf arc.cf</i>
+# <i>dvhtool --unix-to-vh /usr/src/linux/vmlinux new</i>
+</pre>
+
+<p>
+Ceci fait, tout ce qu'il reste à faire est de régler quelques options dans la
+PROM. Voyez cela dans la section <uri link="#reboot">Redémarrer le
+système</uri>.
 </p>
 
 </body>
@@ -161,13 +173,13 @@ a un certain nombre de limitations critiques.
 
 <ul>
   <li>
-    Les noyaux sont limités à 675&nbsp;Ko. La taille actuelle de Linux 2.4 fait
-    que c'est presque mission impossible pour arriver à un noyau de cette
-    taille. Pour les noyaux 2.6, ce n'est même pas la peine d'y penser.
+    Les noyaux sont limités à (environ) 675&nbsp;Ko. La taille actuelle de
+    Linux 2.4 fait que c'est pratiquement impossible d'arriver à un noyau de
+    cette taille. Pour les noyaux 2.6, ce n'est même pas la peine d'y penser.
   </li>
   <li>
-    Les noyaux 64-bits ne sont pas supportés par le firmware d'origine (en tout
-    cas c'est au stade plus qu'expérimental sur les machines Cobalt
+    Les noyaux 64&nbsp;bits ne sont pas supportés par le firmware d'origine (en
+    tout cas c'est au stade plus qu'expérimental sur les machines Cobalt
     actuellement).
   </li>
   <li>
@@ -185,7 +197,7 @@ firmware actuel.
 
 <note>
 Ce guide va vous indiquer comment installer CoLo afin qu'il soit chargé par le
-firmware d'origine. C'est la seule méthode sûre et recommandée d'installer CoLo.
+firmware d'origine. C'est la seule méthode sure et recommandée d'installer CoLo.
 </note>
 
 <warn>
@@ -193,7 +205,7 @@ Si vous le souhaitez, vous pouvez tout aussi bien le «&nbsp;flasher&nbsp;» dan
 votre serveur et remplacer le firmware originel. Cela dit, vous prenez vos
 propres risques en faisant cela. Si quelque chose ne va pas, il vous faudra
 supprimer physiquement le BOOTROM et le reprogrammer vous-même avec le firmware
-d'origine. Si vous n'êtes pas sur de la méthode, alors <e>NE TOUCHEZ À RIEN</e>.
+d'origine. Si vous n'êtes pas sûr de la méthode, alors <e>NE TOUCHEZ À RIEN</e>.
 Nous ne sommes pas responsable de ce que vous ferez si vous ignorez cet
 avertissement.
 </warn>
@@ -237,8 +249,8 @@ démarrer sur le disque dur. Le système propose alors de monter la première
 partition Linux qu'il trouvera et d'exécuter le script
 <path>default.colo</path>. La syntaxe de ce fichier est très bien documentée
 dans la documentation de CoLo (jetez un coup d'œil au fichier
-<path>/usr/share/doc/colo-X.YY/README.shell.gz</path> - où X.YY est la version
-de CoLo installée) et est très simple.
+<path>/usr/share/doc/colo-X.YY/README.shell.gz</path> &mdash; où X.YY est la
+version de CoLo installée) et est très simple.
 </p>
 
 <note>
@@ -262,51 +274,48 @@ CoLo refusera de charger un script qui ne commence pas par la ligne
 </note>
 
 <p>
-Il est également possible de proposer un menu, comme par exemple quel noyau
-et configuration vous souhaitez charger. Le menu aura un délai de réponse par
-défaut. Voici la configuration que j'utilise sur mon serveur Cobalt&nbsp;:
+Il est également possible de proposer un menu qui vous demanderait par exemple
+quel noyau et configuration vous souhaiteriez charger. Le menu aurait un délai
+de réponse par défaut. Dans cet exemple, le menu demande à l'utilisateur quel
+noyau il souhaite utiliser, puis l'exécute. <path>vmlinux.gz.new</path> et
+<path>vmlinux.gz.working</path> peuvent être des images de noyau ou bien
+simplement des liens pointant vers les images sur le disque. L'argument
+<c>50</c> de <c>select</c> signifie que CoLo démarrera la première option (ici
+«&nbsp;Working&nbsp;») après 50 dixièmes de secondes.
 </p>
-
-<impo>
-Veuillez noter que l'exemple suivant ne fonctionne pas avec <c>menu</c> de la
-version 1.11 de Colo. Il fonctionne avec les versions 1.12 et 1.13. 
-</impo>
-
-<impo>
-La commande <c>menu</c> a été remplacée par <c>select</c> dans la version 1.14
-de CoLo. Si avez installé la dernière version, voyez le fichier
-<path>menu.colo</path> dans le répertoire <path>examples</path> de CoLo.
-</impo>
 
 <pre caption="Configuration avec menu">
 <comment>#:CoLo:#</comment>
 
 lcd "Monter hda1"
 mount hda1
-menu "Quel noyau ?" 50 Working working New new
-lcd "Chargement de Linux" {menu-option}
-load /kernel.gz.{menu-option}
+menu "Quel noyau ?" 50 Working New
+
+goto {menu-option}
+var image-name vmlinux.gz.working
+goto 3f
+@var image-name vmlinux.gz.working
+goto 2f
+@var image-name vmlinux.gz.new
+
+@lcd "Chargement de Linux" {menu-option}
+load / {image-name}
 lcd "Démarrage..."
 execute root=/dev/hda5 ro console=ttyS0,115200
 boot
 </pre>
 
 <p>
-Ce script demande à l'utilisateur sur quel noyau il veut démarrer (New ou
-Working) puis chargera <path>vmlinux.gz.new</path> ou
-<path>vmlinux.gz.working</path> selon ce qui aura été choisi. Si aucun choix n'a
-été fait dans les 5 secondes (50 dixièmes de secondes) il démarrera sur la
-première option.
+Référez-vous à la documentation dans <path>/usr/share/doc/colo-VERSION</path>
+pour plus de détails.
 </p>
 
 </body>
-
 </subsection>
 </section>
 
 <section>
 <title>Mise en place pour une console en série</title>
-
 <subsection>
 <body>
 
@@ -318,7 +327,7 @@ terminaux physiques... n'existent pas.
 </p>
 
 <note>
-Ceux qui ont le luxe de pouvoir utiliser le framebuffer peuvent sauter ce
+Ceux qui ont le luxe d'avoir une carte graphique supportée peuvent sauter ce
 chapitre s'ils le souhaitent.
 </note>
 
@@ -376,7 +385,7 @@ d'être utilisé pour se connecter en tant que <c>root</c>.
 </p>
 
 <pre caption="Permettre la connexion de root sur la console en série">
-<comment>(/dev/ttyS0 -- le nom traditionnel du premier port série)</comment>
+<comment>(/dev/ttyS0, le nom traditionnel du premier port série)</comment>
 # <i>echo 'ttyS0' >> /etc/securetty</i>
 
 <comment>(Ensuite, Linux appelle également cela /dev/tts/0, donc nous
@@ -407,7 +416,7 @@ cdimage ~# <i>reboot</i>
 
 <note>
 <e>Pour les utilisateurs de Cobalt&nbsp;:</e> la suite de ce chapitre concerne
-la configuration de la PROM SGI afin qu'elle puisse démarrer <c>arcboot</c>
+la configuration de la PROM SGI afin qu'elle puisse démarrer <c>arcload</c>
 et charger Linux. Ce n'est pas applicable à la configuration des serveurs
 Cobalt. En fait, vous avez fini votre travail de configuration et pouvez
 désormais démarrer sur votre système. Passez directement au chapitre&nbsp;:
@@ -420,14 +429,30 @@ désormais démarrer sur votre système. Passez directement au chapitre&nbsp;:
 <section>
 <title>Peaufiner la PROM SGI</title>
 <subsection>
+<title>Configuration générale de la PROM</title>
 <body>
 
 <p>
+Maintenant que le chargeur de démarrage est installé, vous êtes prêt à
+redémarrer la machine.
+</p>
+
+<pre caption="Redémarrer">
+<comment>(Quitter l'environnement chroot.)</comment>
+# <i>exit</i>
+
+<comment>(Démonter les disques.)</comment>
+# <i>umount /gentoo/boot</i>
+# <i>umount /gentoo</i>
+
+<comment>(Redémarrer.)</comment>
+# <i>reboot</i>
+</pre>
+
+<p>
 Lorsque vous avez redémarré, allez dans le menu <e>System Maintenance Menu</e>
-et sélectionnez <e>Enter Command Monitor</e> (<c>5</c>). Si vous voulez tester
-votre nouvelle installation Gentoo, vous n'avez qu'à lancer <c>boot -f &lt;nom
-du noyau&gt;</c>. Pour que votre système démarre automatiquement l'installation
-Gentoo, vous devez régler quelques variables dans la PROM SGI&nbsp;:
+et sélectionnez <e>Enter Command Monitor</e> (<c>5</c>) comme lorsque vous avez
+démarré votre machine sur le réseau.
 </p>
 
 <pre caption="Configuration de la PROM pour démarrer Gentoo">
@@ -440,7 +465,45 @@ Gentoo, vous devez régler quelques variables dans la PROM SGI&nbsp;:
 Option? <i>5</i>
 Command Monitor.  Type "exit" to return to the menu.
 
- <comment>(&lt;périphérique racine&gt; = la partition racine (root) Gentoo, /dev/sda3 par exemple</comment>
+<comment>(Quelques options pour arcload.)</comment>
+
+<comment>(Situer l'entête de volume.)</comment>
+&gt;&gt; <i>setenv SystemPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
+
+<comment>(Démarrer automatiquement Gentoo.)</comment>
+&gt;&gt; <i>setenv AutoLoad Yes</i>
+
+<comment>(Régler le fuseau horaire.)</comment>
+&gt;&gt; <i>setenv TimeZone EST5EDT</i>
+
+<comment>(Utiliser la console série : « g » au lieu de « d1 » pour les possesseurs de carte graphique.)</comment>
+&gt;&gt; <i>setenv console d1</i>
+
+<comment>(Régler la console série : de 9600 (par défaut) à 38400.)</comment>
+&gt;&gt; <i>setenv dbaud 9600</i>
+</pre>
+
+<p>
+Les réglages suivants dépendent de comment vous démarrez votre système.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Réglages concernant le démarrage sur l'entête de volume</title>
+<body>
+
+<p>
+Nous en partons uniquement dans un soucis d'exhaustivitvé, nous vous
+recommandons plutôt d'utiliser <c>arcload</c> pour démarrer.
+</p>
+
+<note>
+Ceci n'est valable que pour Indy, Indigo2 (R4k) et Challenge S.
+</note>
+
+<pre caption="Configuration de la PROM pour démarrer Gentoo depuis l'entête de volume">
+<comment>(&lt;périphérique racine&gt; = la partition racine (root) Gentoo, /dev/sda3 par exemple</comment>
 &gt;&gt; <i>setenv OSLoadPartition &lt;périphérique racine&gt;</i>
 
 <comment>(Pour obtenir la liste des noyaux disponibles, tapez « ls ».)</comment>
@@ -449,20 +512,75 @@ Command Monitor.  Type "exit" to return to the menu.
 
 <comment>(Déclarez les paramètres du noyau à passer en argument.)</comment>
 &gt;&gt; <i>setenv OSLoadOptions &lt;paramètres du noyau&gt;</i>
-
-<comment>(Donnez la localisation de l'entête de volume (« Volume Header »).)</comment>
-&gt;&gt; <i>setenv SystemPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
-
-<comment>(Démarrez automatiquement Gentoo.)</comment>
-&gt;&gt; <i>setenv AutoLoad Yes</i>
-
-<comment>(Réglez le fuseau horaire.)</comment>
-&gt;&gt; <i>setenv TimeZone EST5EDT</i>
-
-<comment>(Utilisation de la console série - Les utilisateurs de cartes graphiques</comment>
-<comment>doivent mettre « g » au lieu de « d1 » (D un).)</comment>
-&gt;&gt; <i>setenv console d1</i>
 </pre>
+
+<p>
+Pour essayer un noyau directement, vous pouvez utiliser la commande PROM
+<c>boot -f</c>&nbsp;:
+</p>
+
+<pre caption="Démarrer sans changer les variables d'environnement">
+<comment>(Démarrer un noyau, « new », avec des paramètres supplémentaires.)</comment>
+# <i>boot -f new root=/dev/sda3 ro</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Réglages pour arcload</title>
+<body>
+
+<p>
+<c>arcload</c> utilise l'option <c>OSLoadFilename</c> pour indiquer quelles
+options charger depuis <path>arc.cf</path>. Ce fichier est essentiellement un
+script dont les blocs principaux définissent les images de démarrage des
+différents systèmes et contiennent les options. Donc, l'option
+<c>OSLoadFilename=mysys(serial)</c> ira chercher les réglages du bloc
+<c>mysys</c> et applique les options supplémentaires de <c>serial</c>.
+</p>
+
+<p>
+Dans l'exemple suivant, nous avons un bloc système de défini, <c>ip28</c>, avec
+les options <c>working</c>, <c>new</c> et <c>debug</c>. Voici comment nous
+définissons nos variables PROM&nbsp;:
+</p>
+
+<pre caption="Réglages PROM pour utiliser arcload">
+<comment>(Choisir le chargeur de démarrage : sash64 ou sashARCS)</comment>
+&gt;&gt; <i>setenv OSLoader sash64</i>
+
+<comment>(Utilisation de l'image « working », définie dans la section « ip28 ».)</comment>
+&gt;&gt; <i>setenv OSLoadFilename ip28(working)</i>
+</pre>
+
+<p>
+À partir d'<c>arcload-0.5</c>, les fichiers n'ont plus besoin d'être chargés
+dans l'entête de volume, ils peuvent simplement se trouver sur une partition
+ext2/3. Pour dire à <c>arcload</c> où chercher ses fichiers de configuration et
+ses noyaux, vous devez définir la variable PROM <c>OSLoadPartition</c>. La
+valeur exacte dépendra d'où se situe votre disque sur le bus SCSI. Utilisez la
+variable PROM <c>SystemPartition</c> pour vous guider, seul le numéro de
+partition devrait changer.
+</p>
+
+<note>
+Les partitions sont numérotées à partir de 0.
+</note>
+
+<pre caption="Indiquer à arcload où trouver arc.cf">
+<comment>(Si vous souhaitez le charger depuis l'entête de volume, spécifiez la partition 8.)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
+
+<comment>(Sinon, spécifiez le numéro et le type de partition.)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(0)[ext2]</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>C'est fini</title>
+<body>
 
 <p>
 Vous êtes maintenant fin prêt pour apprécier Gentoo&nbsp;! Démarrer votre

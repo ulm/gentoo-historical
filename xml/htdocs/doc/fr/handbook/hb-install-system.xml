@@ -4,12 +4,17 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-system.xml,v 1.54 2007/01/27 00:59:00 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-system.xml,v 1.55 2007/03/30 20:38:26 cam Exp $ -->
 
 <sections>
 
-<version>2.23</version>
-<date>2006-07-19</date>
+<abstract>
+Maintenant que le fichier stage3 est extrait nous allons entrer dans le nouveau
+système et le configurer.
+</abstract>
+
+<version>7.6</version>
+<date>2007-02-12</date>
 
 <section>
 <title>Entrer dans le nouvel environnement (chroot)</title>
@@ -20,7 +25,7 @@
 <p>
 Il est recommandé de choisir un miroir rapide pour télécharger les sources.
 Portage utilise la variable GENTOO_MIRRORS définie dans <path>make.conf</path>
-pour connaître les différents serveurs à contacter. Vous pouvez consulter la
+pour connaitre les différents serveurs à contacter. Vous pouvez consulter la
 liste de nos <uri link="/main/en/mirrors.xml">miroirs</uri> et en choisir
 quelques-uns proches de chez vous, car ils sont en général les plus rapides pour
 vous. Cependant, l'outil <c>mirrorselect</c> vous présente la même liste et vous
@@ -74,7 +79,7 @@ votre réseau.
 
 </body>
 </subsection>
-<subsection>
+<subsection test="not(func:keyval('arch')='IA64')">
 <title>Monter /proc et /dev</title>
 <body>
 
@@ -88,6 +93,24 @@ l'environnement chroot ainsi que <path>/dev</path>.
 <pre caption="Monter /proc et /dev">
 # <i>mount -t proc none /mnt/gentoo/proc</i>
 # <i>mount -o bind /dev /mnt/gentoo/dev</i>
+</pre>
+
+</body>
+</subsection>
+<subsection test="func:keyval('arch')='IA64'">
+<title>Monter /proc, /sys et /dev</title>
+<body>
+
+<p>
+Montez votre <path>/proc</path> sur <path>/mnt/gentoo/proc</path> pour que
+l'installation puisse utiliser les informations fournies par le noyau dans le
+chroot. Montez ensuite <path>/dev</path> et <path>/sys</path>.
+</p>
+
+<pre caption="Montez /proc /sys et /dev">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount -o bind /sys /mnt/gentoo/sys</i>
 </pre>
 
 </body>
@@ -152,7 +175,7 @@ connexion série, vous pouvez ajouter l'option --quiet pour gagner du temps :)</
 <p>
 Si vous vous trouvez derrière un pare-feu qui bloque le trafic rsync, vous
 pouvez utiliser <c>emerge-webrsync</c> qui télécharge un instantané de l'arbre
-Portage depuis un mirroir et l'utilise pour mettre votre arbre à jour.
+Portage depuis un miroir et l'utilise pour mettre votre arbre à jour.
 </p>
 
 <p>
@@ -180,28 +203,51 @@ sont disponibles ou pas. Les profils sont mis à jour par les développeurs
 Gentoo.
 </p>
 
-<p>
+<p test="contains('Alpha x86', func:keyval('arch'))">
 Les utilisateurs n'avaient pas à se préoccuper des profils jusqu'à présent.
-Les utilisateurs de machines x86, hppa et alpha peuvent choisir entre deux
+Les utilisateurs de machines <keyval id="arch"/> peuvent choisir entre deux
 profils, un pour le noyau 2.4 et un pour le noyau 2.6. Ceci est nécessaire pour
-assurer une transition en douceur vers le noyau 2.6.  D'autres profils sont
-disponibles pour les architectures PPC et PPC64, nous y reviendrons plus tard.
+assurer une transition en douceur vers le noyau 2.6.
+</p>
+
+<p test="contains('AMD64 arm HPPA IA64 MIPS PPC PPC64 SPARC',
+func:keyval('arch'))">
+Les utilisateurs n'avaient pas à se préoccuper des profils jusqu'à présent.
+Cependant, il existe des situations dans lesquelles vous pourriez estimer qu'un
+changement de profil est nécessaire.
 </p>
 
 <p>
-Pour connaître le profil que vous utilisez, lancez la commande suivante&nbsp;:
+Pour connaitre le profil que vous utilisez, lancez la commande suivante&nbsp;:
 </p>
 
-<pre caption="Connaître son profil">
+<pre caption="Connaitre son profil">
 # <i>ls -FGg /etc/make.profile</i>
-lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2006.0/
+lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2006.1/
 </pre>
 
 <p>
-Si vous utilisez une des trois architectures mentionnées ci-dessus, le profil
-par défaut utilise un noyau 2.6. Ce profil est recommandé, mais vous pouvez
-choisir de conserver un noyau 2.4 si vous le désirez.
+Le profil par défaut utilise un noyau 2.6. Ce profil est recommandé, mais vous
+pouvez choisir de conserver un noyau 2.4 si vous le désirez.
 </p>
+
+<p>
+Les sous-profils <c>desktop</c> et <c>server</c> sont également disponibles
+pour certaines architectures.  Regardez dans le profil <path>2006.1/</path>
+pour voir s'il en existe un pour votre architecture.  Vous pouvez consulter
+le fichier <path>make.defaults</path> du profil <c>desktop</c> pour vérifier
+s'il satisfait vos besoins.
+</p>
+
+<p test="func:keyval('arch')='AMD64'">
+Si vous désirez une environnement entièrement 64&nbsp;bits, sans applications
+ni librairies 32&nbsp;bits, vous devriez utiliser un profil non-multilib.
+</p>
+
+<pre test="func:keyval('arch')='AMD64'" caption="Switching to a non-multilib
+profile">
+# <i>ln -snf /usr/portage/profiles/default-linux/amd64/2006.1/no-multilib /etc/make.profile</i>
+</pre>
 
 <p>
 Si vous avez une bonne raison de continuer à utiliser l'ancien profil 2.4, vous
@@ -233,44 +279,44 @@ total 12
 -rw-r--r--  1 573 Dec  3  2004 virtuals
 </pre>
 
-<p>
-Gentoo 2006.0 a apporté de nouveaux profils à l'architecture PPC.
+<p test="func:keyval('arch')='PPC'">
+Gentoo 2006.1 a apporté de nouveaux profils à l'architecture PPC.
 </p>
 
-<pre caption="Profils PPC">
+<pre test="func:keyval('arch')='PPC'" caption="Profils PPC">
 <comment>(Profil PPC générique pour toutes les machines PPC.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc//ppc32/2006.0 /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc//ppc32/2006.1 /etc/make.profile</i>
 <comment>(Profil G3.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G3 /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.1/G3 /etc/make.profile</i>
 <comment>(Profil G3 Pegasos.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G3/Pegasos /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.1/G3/Pegasos /etc/make.profile</i>
 <comment>(Profil G4 Altivec.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G4 /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.1/G4 /etc/make.profile</i>
 <comment>(Profil G4 Pegasos.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G4/Pegasos /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.1/G4/Pegasos /etc/make.profile</i>
 </pre>
 
-<p>
-Gentoo 2006.0 a apporté de nouveaux profils à l'architecture PPC64.
+<p test="func:keyval('arch')='PPC64'">
+Gentoo 2006.1 a apporté de nouveaux profils à l'architecture PPC64.
 </p>
 
-<pre caption="PPC64 Profiles">
+<pre test="func:keyval('arch')='PPC64'" caption="PPC64 Profiles">
 <comment>(Profil générique 64 bits pour toutes les machines PPC64.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/64bit-userland /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/64bit-userland /etc/make.profile</i>
 <comment>(Profil générique 32 bits pour toutes les machines PPC64.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/32bit-userland /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/32bit-userland /etc/make.profile</i>
 <comment>(Chaque type de « userland » a des sous-profils comme ci-dessus,
 remplacez userland par la valeur adéquate dans les profils ci-dessous.)</comment>
 <comment>(Profile 970 pour JS20.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/970 /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/970 /etc/make.profile</i>
 <comment>(Profil G5.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/970/pmac /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/970/pmac /etc/make.profile</i>
 <comment>(profil POWER3.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power3 /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/power3 /etc/make.profile</i>
 <comment>(Profil POWER4.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power4 /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/power4 /etc/make.profile</i>
 <comment>(Profil POWER5.)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power5 /etc/make.profile</i>
+# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/power5 /etc/make.profile</i>
 <comment>(Le profil multilib n'est pas encore considéré suffisamment stable.)</comment>
 </pre>
 
@@ -285,7 +331,7 @@ remplacez userland par la valeur adéquate dans les profils ci-dessous.)</commen
 <c>USE</c> est une des plus puissantes variables mises à la disposition des
 utilisateurs de Gentoo. Plusieurs programmes peuvent être compilés avec ou sans
 le support optionnel disponible pour certaines fonctionnalités. Par exemple,
-certains programmes peuvent être compilés avec un support pour gtk ou pour Qt.
+certains programmes peuvent être compilés avec un support pour GTK ou pour Qt.
 D'autres peuvent être compilés avec ou sans support pour SSL. Certains
 programmes peuvent même être compilés avec un support pour le
 «&nbsp;framebuffer&nbsp;» (svgalib) plutôt que pour X11 (serveur X).
@@ -304,9 +350,9 @@ La variable <c>USE</c> contient des mots-clés que vous choisissez et qui
 correspondent à des options de compilation. Par exemple, <e>ssl</e> compilera
 le support ssl dans les programmes qui le supportent. <e>-X</e> retirera le
 support pour le serveur X (remarquez le signe moins devant le mot-clé).
-<e>gnome gtk -kde -qt</e> compilera vos programmes avec le support pour GNOME
-(et gtk), mais sans le support pour KDE (et qt). Le résultat est un système
-complètement réglé pour GNOME.
+<e>gnome gtk -kde -qt3 -qt4</e> compilera vos programmes avec le support pour
+GNOME (et GTK), mais sans le support pour KDE (ni Qt). Le résultat sera un
+système complètement réglé pour GNOME.
 </p>
 
 <p>
@@ -327,7 +373,7 @@ lors des mises à jour de Portage&nbsp;!
 
 <p>
 Une description complète de <c>USE</c> peut être consultée dans la seconde
-partie du manuel Gentoo, <uri link="?part=2&amp;chap=2">La variable USE</uri>.
+partie du Manuel Gentoo, <uri link="?part=2&amp;chap=2">La variable USE</uri>.
 Une description complète des options disponibles se trouve dans le fichier
 <path>/usr/portage/profiles/use.desc</path> qui devrait déjà être sur votre
 système.
@@ -350,7 +396,7 @@ gravure de CD&nbsp;:
 </pre>
 
 <pre caption="Options de USE">
-USE="-gtk -gnome qt kde dvd alsa cdr"
+USE="-gtk -gnome qt3 qt4 kde dvd alsa cdr"
 </pre>
 
 </body>

@@ -1,15 +1,20 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-config.xml,v 1.44 2006/05/28 17:13:09 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-config.xml,v 1.45 2007/03/30 20:38:26 cam Exp $ -->
 
 <sections>
 
-<version>2.19</version>
-<date>2006-05-27</date>
+<abstract>
+Vous devrez modifier certains fichiers de configuration. Ce chapitre vous donne
+un aperçu de ces fichiers et décrit comment procéder.
+</abstract>
+
+<version>7.7</version>
+<date>2007-03-11</date>
 
 <section>
 <title>Information sur le système de fichiers</title>
@@ -21,12 +26,12 @@
 Sous Linux, toutes les partitions utilisées par le système doivent être listées
 dans <path>/etc/fstab</path>. Ce fichier contient l'information relative aux
 points de montage de ces partitions (où elles se situent dans le système de
-fichiers de Linux), à la façon dont elles sont montées (décrite par des options
-spéciales) et aux circonstances de leur montage (qui peut être
+fichiers de Linux), la façon dont elles sont montées (décrite par des options
+spéciales) et les circonstances de leur montage (qui peut être
 automatique ou non, sous le contrôle des utilisateurs ou non, etc.).
 (N.D.T.&nbsp;: Bien que l'on emploie fréquemment l'expression «&nbsp;monter une
 partition&nbsp;», il serait plus exact de dire que l'on monte le système de
-fichiers présent sur la partition, et non pas la partition elle-même.)
+fichiers présent sur la partition et non pas la partition elle-même.)
 </p>
 
 </body>
@@ -37,7 +42,7 @@ fichiers présent sur la partition, et non pas la partition elle-même.)
 
 <p>
 <path>/etc/fstab</path> emploie une syntaxe particulière. Chaque ligne contient
-six champs séparés par des blancs (un ou plusieurs espaces ou tabulations, ou
+six champs séparés par des blancs (une ou plusieurs espaces ou tabulations ou
 encore un mélange d'espaces et de tabulations). Chaque champ a une signification
 particulière&nbsp;:
 </p>
@@ -78,33 +83,43 @@ particulière&nbsp;:
 </li>
 </ul>
 
-<p>
+<impo>
 Vous devez modifier le fichier <path>/etc/fstab</path> qui a été installé par
 Gentoo, car celui-ci n'est qu'un exemple et votre système ne démarrera pas si
 vous le laissez tel quel. Ouvrez <c>nano</c> (ou votre éditeur favori) pour
 créer votre <path>/etc/fstab</path>&nbsp;:
-</p>
+</impo>
 
 <pre caption="Ouvrir /etc/fstab">
 # <i>nano -w /etc/fstab</i>
 </pre>
 
+</body>
+<body test="func:keyval('/boot')">
+
 <p>
 Jetons un coup d'œil à la façon d'écrire l'entrée correspondant à la partition
 <path>/boot</path>. Il ne s'agit que d'un exemple, aussi ne le copiez pas si
-votre architecture ne requiert pas de partition <path>/boot</path> (par exemple
-pour une machine Apple <b>PPC</b>).
+votre n'avez pas ou ne pouvez pas créer de partition <path>/boot</path>.
 </p>
 
-<p>
+<p test="contains(func:keyval('/boot'), '/dev/hd')">
 Dans notre exemple de stratégie de partitionnement par défaut pour les systèmes
-x86, <path>/boot</path> est sur la partition <path>/dev/hda1</path> dans un
-système de fichiers <c>ext2</c>. Il doit être vérifié au démarrage.  Nous
-écrivons donc&nbsp;:
+<keyval id="arch"/>, <path>/boot</path> est sur la partition 
+<path><keyval id="/boot"/></path>(ou <path>/dev/sda*</path> si vous utilisez un
+disque SCSI ou SATA) dans un système de fichiers <c>ext2</c>. Il doit être
+vérifié au démarrage.  Nous écrivons donc&nbsp;:
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/sd')">
+Dans notre exemple de stratégie de partitionnement par défaut pour les systèmes
+<keyval id="arch"/>, <path>/boot</path> est sur la partition 
+<path><keyval id="/boot"/></path>, dans un système de fichiers <c>ext2</c>.
+Il doit être vérifié au démarrage.  Nous écrivons donc&nbsp;:
 </p>
 
 <pre caption="Exemple d'une ligne pour /boot dans /etc/fstab">
-/dev/hda1   /boot     ext2    defaults        1 2
+<keyval id="/boot"/>   /boot     ext2    defaults        1 2
 </pre>
 
 <p>
@@ -115,6 +130,107 @@ que la partition <path>/boot</path> devra être montée manuellement avant chaqu
 usage, par exemple pour installer un nouveau noyau et configurer grub.
 </p>
 
+</body>
+<body>
+
+<p test="not(func:keyval('arch')='SPARC')">
+Ajoutez les règles qui correspondent à votre schéma de partitions ainsi que
+les règles pour <path>/proc</path>, <c>tmpfs</c>, vos lecteurs de CD-ROM,
+et, si vous en avez, pour vos disques et partitions supplémentaires.
+</p>
+
+<p test="func:keyval('arch')='SPARC'">
+Ajoutez les règles qui correspondent à votre schéma de partitions ainsi que 
+les règles pour <path>/proc/openprom</path>, <path>/proc</path>, <c>tmpfs</c>,
+vos lecteurs de CD-ROM et, si vous en avez, pour vos disques et partitions
+supplémentaires.
+</p>
+
+<p>
+Maintenant, servez-vous de l'<e>exemple</e> ci-dessous pour créer votre
+<path>/etc/fstab</path>&nbsp;:
+</p>
+
+<pre caption="Un exemple complet de fichier /etc/fstab" test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/hda2   none      swap    sw                0 0
+/dev/hda3   /         ext3    noatime           0 1
+
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="Un exemple complet de fichier /etc/fstab" test="func:keyval('arch')='HPPA'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda3   none         swap    sw                   0 0
+/dev/sda4   /            ext3    noatime              0 1
+
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="Un exemple complet de fichier /etc/fstab" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda2   none         swap    sw                   0 0
+/dev/sda3   /            ext3    noatime              0 1
+
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="Un exemple complet /etc/fstab example" test="func:keyval('arch')='SPARC'">
+/dev/sda1   /               ext3        noatime              0 1
+/dev/sda2   none            swap        sw                   0 0
+/dev/sda4   /usr            ext3        noatime              0 2
+/dev/sda5   /var            ext3        noatime              0 2
+/dev/sda6   /home           ext3        noatime              0 2
+
+openprom    /proc/openprom  openpromfs  defaults             0 0
+proc        /proc           proc        defaults             0 0
+shm         /dev/shm        tmpfs       nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom      auto        noauto,user          0 0
+</pre>
+
+<note test="func:keyval('arch')='PPC'">
+Il y a d'importantes modifications à faire selon le type de machine PPC.
+Faites attention à bien adapter l'exemple qui suit à votre configuration.
+</note>
+
+<pre caption="Un exemple complet de fichier /etc/fstab" test="func:keyval('arch')='PPC'">
+/dev/hda4   /            ext3    noatime              0 1
+/dev/hda3   none         swap    sw                   0 0
+
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='PPC64'">
+/dev/sda4   /            ext3    noatime              0 1
+/dev/sda3   none         swap    sw                   0 0
+
+proc        /proc        proc    defaults             0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>																											       	
+
+<p>
+L'option <c>auto</c> indique à <c>mount</c> de tenter de deviner le type du
+système de fichiers (ce qui est recommandé pour les périphériques amovibles
+puisqu'ils peuvent contenir différents types de systèmes de fichiers). L'option
+<c>user</c> permet aux utilisateurs (autres que root) de monter le système de 
+fichiers (en l'occurence celui présent sur le CD-ROM).
+</p>
+
 <p>
 Afin d'améliorer les performances, la plupart des utilisateurs devraient
 ajouter l'option <c>noatime</c> au champ options de montage, ce qui donnera un
@@ -122,56 +238,6 @@ système plus rapide puisque les temps d'accès ne seront pas consignés. De
 toute façon, vous n'en avez généralement pas besoin.
 </p>
 
-<pre caption="Une ligne améliorée pour /boot dans /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime     1 2
-</pre>
-
-<p>
-Poursuivons l'exemple avec ces trois lignes qui détaillent les partitions
-montées sur <path>/boot</path> et sur <path>/</path>, et la partition de la
-mémoire virtuelle&nbsp;:
-</p>
-
-<pre caption="Trois lignes de /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime       1 2
-/dev/hda2   none      swap    sw                   0 0
-/dev/hda3   /         ext3    noatime              0 1
-</pre>
-
-<p>
-Pour terminer, vous devriez ajouter des entrées pour <path>/proc</path>,
-<c>tmpfs</c> (nécessaire) et pour votre lecteur de CD-ROM (et, bien sûr, pour
-vos autres partitions et vos autres disques, si vous en avez).
-</p>
-
-<pre caption="Un exemple complet de /etc/fstab">
-/dev/hda1   /boot     ext2    noauto,noatime       1 2
-/dev/hda2   none      swap    sw                   0 0
-/dev/hda3   /         ext3    noatime              0 1
-
-none        /proc     proc    defaults             0 0
-none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
-
-/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
-</pre>
-
-<p>
-L'option <c>auto</c> indique à <c>mount</c> de tenter de deviner le type du
-système de fichiers (ce qui est recommandé pour les périphériques amovibles
-puisqu'ils peuvent contenir différents types de systèmes de fichiers). L'option
-<c>user</c> permet aux utilisateurs (autres que root) de monter le système de
-fichiers (en l'occurrence celui présent sur le CD-ROM).
-</p>
-
-<p>
-Utilisez l'exemple ci-dessus pour créer votre <path>/etc/fstab</path>. Si vous
-utilisez un système <b>SPARC</b>, vous devriez également ajouter la ligne
-suivante à <path>/etc/fstab</path>&nbsp;:
-</p>
-
-<pre caption="Ajouter le système de fichiers openprom à /etc/fstab">
-none        /proc/openprom  openpromfs    defaults      0 0
-</pre>
 
 <p>
 Relisez votre <path>/etc/fstab</path>, sauvegardez, puis quittez l'éditeur.
@@ -189,15 +255,10 @@ Relisez votre <path>/etc/fstab</path>, sauvegardez, puis quittez l'éditeur.
 <p>
 Une des choses que chaque utilisateur doit faire est nommer son PC. Cela
 peut sembler aisé, mais de <e>nombreux</e> utilisateurs ont bien du mal à
-trouver un nom approprié pour leur PC-Linux. Afin d'accélérer les choses,
+trouver un nom approprié pour leur PC Linux. Afin d'accélérer les choses,
 dites-vous que le nom que vous choisissez maintenant pourra être changé plus
 tard. Si vous êtes embêté, nommez temporairement votre système <c>tux</c> et
 choisissez <c>homenetwork</c> comme nom de domaine.
-</p>
-
-<p>
-Nous utiliserons ces valeurs dans les exemples suivants. Premièrement,
-définissons le nom d'hôte&nbsp;:
 </p>
 
 <pre caption="Définir le nom d'hôte">
@@ -207,14 +268,26 @@ HOSTNAME="<i>tux</i>"
 </pre>
 
 <p>
-Deuxièmement, définissons le nom de domaine&nbsp;:
+Ensuite, <e>si</e> vous avez <e>besoin</e> d'un nom de domaine, définissez-le
+dans <path>/etc/conf.d/net</path>. Vous avez besoin d'un nom de domaine
+uniquement si votre fournisseur d'accès ou si votre administrateur vous
+l'indiquent ou si vous utilisez un serveur DNS sans utiliser de serveur DHCP.
+Vous n'avez pas à vous occuper du DNS ou du nom de domaine si votre réseau est
+configuré via DHCP.
 </p>
 
 <pre caption="Définir le nom de domaine">
-# <i>nano -w /etc/conf.d/domainname</i>
-<comment>(Attribuez le nom de votre domaine à la variable DNSDOMAIN.)</comment>
-DNSDOMAIN="<i>mondomaine</i>"
+# <i>nano -w /etc/conf.d/net</i>
+<comment>(Attribuez le nom de votre domaine à la variable dns_domain.)</comment>
+dns_domain_lo="<i>mondomaine</i>"
 </pre>
+
+<note>
+Si vous choisissez de ne pas spécifier de nom de domaine, vous devriez éditer
+le fichier <path>/etc/issue</path> en y supprimant la chaine <c>.\O</c> afin de
+ne pas avoir ce genre de message de bienvenue au login&nbsp;: «&nbsp;This is
+hostname.(none)&nbsp;».
+</note>
 
 <p>
 Si vous avez un domaine NIS, vous devez également le définir&nbsp;: (Si vous
@@ -222,10 +295,17 @@ ne savez pas ce qu'est un domaine NIS, vous n'en avez certainement pas.)
 </p>
 
 <pre caption="Définir le domaine NIS">
-# <i>nano -w /etc/conf.d/domainname</i>
-<comment>(Attribuez le nom de votre domaine à la variable NISDOMAIN.)</comment>
-NISDOMAIN="<i>mondomaineNIS</i>"
+# <i>nano -w /etc/conf.d/net</i>
+<comment>(Attribuez le nom de votre domaine à la variable nis_domain.)</comment>
+nis_domain_lo="<i>mondomaineNIS</i>"
 </pre>
+
+<note>
+Pour plus d'information sur la configuration du DNS et du NIS, lisez l'exemple
+fourni dans le fichier <path>/etc/conf.d/net.example</path>. En plus, vous
+pourriez être intéressé par l'installation du paquet <c>resolvconf-gentoo</c>
+pour vous aider à gérer votre configuration DNS/NIS.
+</note>
 
 </body>
 </subsection>
@@ -254,7 +334,10 @@ vous sera expliqué. Un exemple commenté complet se trouve dans le fichier
 </p>
 
 <p>
-DHCP est utilisé par défaut et ne demande aucune intervention de votre part.
+DHCP est utilisé par défaut.  Pour que le DHCP fonctionne, vous devez installer
+un client DHCP.  La procédure à suivre est décrite dans <uri link="?part=1&amp;chap=9#networking-tools">
+installation des outils systèmes</uri>. N'oubliez pas d'installer un
+client DHCP.
 </p>
 
 <p>
@@ -293,7 +376,7 @@ Pour utiliser DHCP et lui passer des options, définissez les variables
 <c>config_eth0</c> et <c>dhcp_eth0</c>&nbsp;:
 </p>
 
-<pre caption="Obternir une adresse IP automatiquement avec DHCP">
+<pre caption="Obtenir une adresse IP automatiquement avec DHCP">
 config_eth0=( "dhcp" )
 dhcp_eth0="nodns nontp nonis"
 </pre>
@@ -304,8 +387,8 @@ commentés pour vous aider à configurer votre réseau.
 </p>
 
 <p>
-Si vous avez plusieurs interfaces réseau, créez des variables <c>iface_eth</c>
-supplémentaires telles que <c>iface_eth1</c>, <c>iface_eth2</c>, etc.
+Si vous avez plusieurs interfaces réseau, répétez ces étapes avec
+<c>config_eth1</c>, <c>config_eth2</c>, etc.
 </p>
 
 <p>
@@ -337,7 +420,7 @@ utilisez <c>ln</c>&nbsp;:
 
 <pre caption="Créer des scripts d'initialisation supplémentaires">
 # <i>cd /etc/init.d</i>
-# <i>ln -s net.eth0 net.eth1</i>
+# <i>ln -s net.lo net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 </pre>
 
@@ -374,21 +457,17 @@ doivent avoir une IP statique pour que celà fonctionne.)</comment>
 Sauvegardez et quittez l'éditeur afin de poursuivre.
 </p>
 
-<p>
+<p test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 Si vous n'avez pas de PCMCIA, vous pouvez maintenant poursuivre avec <uri
-link="#doc_chap3">Information système</uri>. Les utilisateurs de PCMCIA
+link="#sysinfo">Information système</uri>. Les utilisateurs de PCMCIA
 devraient lire ce qui suit&nbsp;:
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 <title>Facultatif&nbsp;: Activer PCMCIA</title>
 <body>
-
-<note>
-pcmcia-cs est uniquement disponible sur les plates-formes x86, AMD64 et PPC.
-</note>
 
 <p>
 Les utilisateurs de PCMCIA devraient d'abord installer le paquet
@@ -414,7 +493,7 @@ niveau d'exécution «&nbsp;default&nbsp;».
 </body>
 </subsection>
 </section>
-<section>
+<section id="sysinfo">
 <title>Information système</title>
 <subsection>
 <title>Mot de passe root</title>
@@ -460,7 +539,7 @@ Ensuite, sauvez votre fichier et quittez votre éditeur.
 <p>
 Comme vous pouvez le voir, ce fichier est généreusement commenté afin de vous
 aider à paramétrer les différentes variables relatives à la configuration.
-Vous pouvez configurer votre système pour qu'il utilise unicode. Vous pouvez
+Vous pouvez configurer votre système pour qu'il utilise Unicode. Vous pouvez
 aussi définir votre éditeur par défaut et votre gestionnaire d'affichage
 préféré (gdm ou kdm).
 </p>
@@ -481,15 +560,18 @@ disposition des touches de votre clavier. Si vous choisissez une valeur
 incorrecte, vous serez surpris quand vous taperez sur votre clavier.
 </p>
 
-<note>
+<note test="func:keyval('arch')='SPARC'">
 Si vous utilisez un système <b>SPARC</b> avec USB ou un clone de <b>SPARC</b>,
 vous devrez peut-être sélectionner une disposition clavier «&nbsp;i386&nbsp;»
 (par exemple «&nbsp;us&nbsp;») au lieu de «&nbsp;sunkeymap&nbsp;».
+</note>
+<note test="substring(func:keyval('arch'),1,3)='PPC'">
 La plupart des systèmes <b>PPC</b> utilisent des définitions de clavier x86. Si
 vous voulez utiliser une disposition ADB, vous devez l'activer quand vous
 compilez votre noyau et ensuite définir une disposition mac/ppc dans
 <path>/etc/conf.d/keymaps</path>.
 </note>
+
 
 <p>
 Quand vous en avez terminé avec le fichier <path>/etc/conf.d/keymaps</path>,
@@ -508,8 +590,7 @@ options relatives à l'horloge&nbsp;:
 <p>
 Si l'horloge de votre PC n'utilise pas l'heure UTC, vous devez ajouter
 <c>CLOCK="local"</c> à ce fichier sans quoi votre horloge fera des «&nbsp;saut
-d'heures&nbsp;». Si vous utilisez Windows sur la même machine, vous devez
-spécifier <c>CLOCK="local"</c> et mettre votre PC à l'heure locale.
+d'heures&nbsp;».
 </p>
 
 <p>
@@ -517,26 +598,20 @@ Lorsque vous aurez fini de configurer <path>/etc/conf.d/clock</path>,
 sauvegardez puis quittez l'éditeur.
 </p>
 
-<p>
-Si vous n'installez pas Gentoo sur un système IBM PPC64, poursuivez
-votre lecture avec l'<uri link="?part=1&amp;chap=9">installation des outils
-systèmes</uri>.
+<p test="not(func:keyval('arch')='PPC64')">
+Poursuivez votre lecture avec l'<uri link="?part=1&amp;chap=9">installation des 
+outils systèmes</uri>.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='PPC64'">
 <title>Configurer la console</title>
 <body>
 
-<note>
-Ceci ne concerne que les systèmes PPC64.
-</note>
-
 <p>
-Si vous utilisez Gentoo dans un système PPC64, vous devez décommenter la ligne
-appropriée hvc dans le fichier <path>/etc/inittab</path> pour obtenir une
-invite sur la console virtuelle.
+Vous devez décommenter la ligne appropriée hvc dans le fichier <path>/etc/inittab</path>
+pour obtenir une invite sur la console virtuelle.
 </p>
 
 <pre caption="Activer hvc ou hvsi dans /etc/inittab">
