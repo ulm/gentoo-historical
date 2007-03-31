@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2007.0/hb-install-config.xml,v 1.2 2007/03/20 05:24:48 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2007.0/hb-install-config.xml,v 1.3 2007/03/31 04:36:53 nightmorph Exp $ -->
 
 <sections>
 
@@ -67,32 +67,39 @@ its own meaning:
 </li>
 </ul>
 
-<p>
+<impo>
 The default <path>/etc/fstab</path> file provided by Gentoo <e>is not a valid
-fstab file</e>, so start <c>nano</c> (or your favorite editor) to create your
-<path>/etc/fstab</path>:
-</p>
+fstab file</e>. You <b>have to create</b> your own <path>/etc/fstab</path>.
+</impo>
 
 <pre caption="Opening /etc/fstab">
 # <i>nano -w /etc/fstab</i>
 </pre>
 
-<p>
-Let us take a look at how we write down the options for the <path>/boot</path>
-partition.  If your architecture doesn't require a seperate <path>/boot</path>
-partition (such as Apple PowerPC machines) or you have elected not to create 
-one, don't include a boot line in your fstab. The Apple Bootstrap partition
-is not a <path>/boot</path> partition.
-</p>
+</body>
+<body test="func:keyval('/boot')">
 
 <p>
-In our default x86 partitioning example <path>/boot</path> is the
-<path>/dev/hda1</path> partition, with <c>ext2</c> as filesystem. 
-It needs to be checked during boot, so we would write down:
+Let us take a look at how we write down the options for the <path>/boot</path>
+partition. This is just an example, if you didn't or couldn't create a
+<path>/boot</path>, don't copy it.
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/hd')">
+In our default <keyval id="arch"/> partitioning example, <path>/boot</path> is
+usually the <path><keyval id="/boot"/></path> partition (or
+<path>/dev/sda*</path> if you use SCSI or SATA drives), with <c>ext2</c> as
+filesystem. It needs to be checked during boot, so we would write down:
+</p>
+
+<p test="contains(func:keyval('/boot'), '/dev/sd')">
+In our default <keyval id="arch"/> partitioning example, <path>/boot</path> is
+usually the <path><keyval id="/boot"/></path> partition, with <c>ext2</c> as
+filesystem. It needs to be checked during boot, so we would write down:
 </p>
 
 <pre caption="An example /boot line for /etc/fstab">
-/dev/hda1   /boot     ext2    defaults        1 2
+<keyval id="/boot"/>   /boot     ext2    defaults        1 2
 </pre>
 
 <p>
@@ -102,42 +109,95 @@ substitute <c>defaults</c> with <c>noauto</c>. This does mean that you need to
 manually mount this partition every time you want to use it.
 </p>
 
-<p>
-Now, to improve performance, most users would want to add the <c>noatime</c>
-option as mountoption, which results in a faster system since access times
-aren't registered (you don't need those generally anyway):
+</body>
+<body>
+
+<p test="not(func:keyval('arch')='SPARC')">
+Add the rules that match your partitioning scheme and append rules for
+<path>/proc</path>, <c>tmpfs</c>, for your CD-ROM drive(s), and of course, if
+you have other partitions or drives, for those too.
 </p>
 
-<pre caption="An improved /boot line for /etc/fstab">
-/dev/hda1   /boot     ext2    defaults,noatime    1 2
+<p test="func:keyval('arch')='SPARC'">
+Add the rules that match your partitioning schema and append rules for
+<path>/proc/openprom</path>, <path>/proc</path>, <c>tmpfs</c> , for your CD-ROM
+drive(s), and of course, if you have other partitions or drives, for those too.
+</p>
+
+<p>
+Now use the <e>example</e> below to create your <path>/etc/fstab</path>:
+</p>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/hda2   none         swap    sw                   0 0
+/dev/hda3   /            ext3    noatime              0 1
+
+proc        /proc        proc    nodev,nosuid,noexec  0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-If we continue with this, we would end up with the following three lines (for
-<path>/boot</path>, <path>/</path> and the swap partition):
-</p>
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='HPPA'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda3   none         swap    sw                   0 0
+/dev/sda4   /            ext3    noatime              0 1
 
-<pre caption="Three /etc/fstab lines">
-/dev/hda1   /boot     ext2    defaults,noatime  1 2
-/dev/hda2   none      swap    sw                0 0
-/dev/hda3   /         ext3    noatime           0 1
+proc        /proc        proc    nodev,nosuid,noexec  0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-To finish up, you should add a rule for <path>/proc</path>, <c>tmpfs</c>
-(required) and for your CD-ROM drive (and of course, if you have other 
-partitions or drives, for those too):
-</p>
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda2   none         swap    sw                   0 0
+/dev/sda3   /            ext3    noatime              0 1
 
-<pre caption="A full /etc/fstab example">
-/dev/hda1   /boot     ext2    defaults,noatime     1 2
-/dev/hda2   none      swap    sw                   0 0
-/dev/hda3   /         ext3    noatime              0 1
+proc        /proc        proc    nodev,nosuid,noexec  0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
-proc        /proc     proc    nodev,nosuid,noexec  0 0
-shm         /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
 
-/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='SPARC'">
+/dev/sda1   /               ext3        noatime              0 1
+/dev/sda2   none            swap        sw                   0 0
+/dev/sda4   /usr            ext3        noatime              0 2
+/dev/sda5   /var            ext3        noatime              0 2
+/dev/sda6   /home           ext3        noatime              0 2
+
+openprom    /proc/openprom  openpromfs  defaults             0 0
+proc        /proc           proc        nodev,nosuid,noexec  0 0
+shm         /dev/shm        tmpfs       nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom      auto        noauto,user          0 0
+</pre>
+
+<note test="func:keyval('arch')='PPC'">
+There are important variations between PPC machine types. Please make sure you
+adapt the following example to your system.
+</note>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='PPC'">
+/dev/hda4   /            ext3    noatime              0 1
+/dev/hda3   none         swap    sw                   0 0
+
+proc        /proc        proc    nodev,nosuid,noexec  0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
+</pre>
+
+<pre caption="A full /etc/fstab example" test="func:keyval('arch')='PPC64'">
+/dev/sda4   /            ext3    noatime              0 1
+/dev/sda3   none         swap    sw                   0 0
+
+proc        /proc        proc    nodev,nosuid,noexec  0 0
+shm         /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
 <p>
@@ -147,15 +207,10 @@ removable media as they can be created with one of many filesystems) and
 </p>
 
 <p>
-Now use the above example to create your <path>/etc/fstab</path>. If you are a
-<b>SPARC</b>-user, you should add the following line to your 
-<path>/etc/fstab</path>
-too:
+To improve performance, most users would want to add the <c>noatime</c>
+mount option, which results in a faster system since access times
+aren't registered (you don't need those generally anyway).
 </p>
-
-<pre caption="Adding openprom filesystem to /etc/fstab">
-openprom    /proc/openprom  openpromfs    defaults      0 0
-</pre>
 
 <p>
 Double-check your <path>/etc/fstab</path>, save and quit to continue.
@@ -373,15 +428,15 @@ they need to have a static IP to be defined this way.)</comment>
 Save and exit the editor to continue.
 </p>
 
-<p>
+<p test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 If you don't have PCMCIA, you can now continue with <uri
-link="#doc_chap3">System Information</uri>. PCMCIA-users should read the
+link="#sysinfo">System Information</uri>. PCMCIA-users should read the
 following topic on PCMCIA.
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 <title>Optional: Get PCMCIA Working</title>
 <body>
 
