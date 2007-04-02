@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2007.0/hb-install-ppc-kernel.xml,v 1.1 2007/03/19 20:37:28 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/2007.0/hb-install-ppc-kernel.xml,v 1.2 2007/04/02 00:49:18 nightmorph Exp $ -->
 
 <sections>
 
-<version>7.5</version>
+<version>8.0</version>
 <date>2007-03-12</date>
 
 <section>
@@ -17,8 +17,8 @@
 
 <p>
 You first need to select your timezone so that your system knows where it is
-located. Look for your timezone in <path>/usr/share/zoneinfo</path>, then copy
-it to <path>/etc/localtime</path>. Please avoid the
+located. Look for your timezone in <path>/usr/share/zoneinfo</path>. You then
+set your timezone in <path>/etc/conf.d/clock</path>. Please avoid the
 <path>/usr/share/zoneinfo/Etc/GMT*</path> timezones as their names do not
 indicate the expected zones. For instance, <path>GMT-8</path> is in fact GMT+8.
 </p>
@@ -26,7 +26,8 @@ indicate the expected zones. For instance, <path>GMT-8</path> is in fact GMT+8.
 <pre caption="Setting the timezone information">
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(Suppose you want to use GMT)</comment>
-# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+# <i>nano -w /etc/conf.d/clock</i>
+TIMEZONE="GMT"
 </pre>
 
 </body>
@@ -56,13 +57,13 @@ We suggest using <c>gentoo-sources</c> on PPC, which is a 2.6 kernel.
 <p>
 If you take a look in <path>/usr/src</path> you should see a symlink named
 <path>linux</path> pointing to your current kernel source. In this case, the
-installed kernel source points to <c>gentoo-sources-2.6.15</c>. Your version
-may be different, so keep this in mind.
+installed kernel source points to <c>gentoo-sources-<keyval
+id="kernel-version"/></c>. Your version may be different, so keep this in mind.
 </p>
 
 <pre caption="Viewing the kernel source symlink">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.15
+lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
 </pre>
 
 <p>
@@ -171,6 +172,17 @@ File systems ---&gt;
 </pre>
 
 <p>
+Users of NewWorld and OldWorld machines will want HFS support as well.  OldWorld
+users require it for copying compiled kernels to the MacOS partition. NewWorld
+users require it for configuring the special Apple_Bootstrap partition:
+</p>
+
+<pre caption="Activating HFS support">
+File Systems ---&gt;
+  [*] HFS Support
+</pre>
+
+<p>
 If you are using PPPoE to connect to the Internet or you are using a dial-up
 modem, you will need the following options in the kernel:
 </p>
@@ -190,20 +202,10 @@ does the <c>PPP over Ethernet</c> option, that might only be used by
 </p>
 
 <p>
-If you require it, don't forget to include support in the kernel for your
-ethernet card.
+Don't forget to include support in the kernel for your ethernet card!  Most
+newer Apple computers use the SunGEM ethernet driver.  Older iMacs commonly use
+the BMAC driver.
 </p>
-
-<p>
-Users of NewWorld and OldWorld machines will want HFS support as well.  OldWorld
-users require it for copying compiled kernels to the MacOS partition. NewWorld
-users require it for configuring the special Apple_Bootstrap partition:
-</p>
-
-<pre caption="Activating HFS support">
-File Systems ---&gt;
-  [*] HFS Support
-</pre>
 
 <p>
 At this time, kernel preemption is still unstable on PPC and may cause 
@@ -292,16 +294,17 @@ the configuration and run the commands which will compile the kernel:
 
 <p>
 When the kernel has finished compiling, copy the kernel image to
-<path>/boot</path> (be sure that it is mounted properly on Pegasos computers).
-If you are using BootX to boot, we'll copy the kernel later.
+<path>/boot</path> as shown below. If you have a separate boot partition, as
+on Pegasos computers, be sure that it is mounted properly. If you are using 
+BootX to boot, we'll copy the kernel later.
 </p>
 
 <p>
-Yaboot and BootX expect to use an uncompressed kernel unlike many other 
+Yaboot and BootX expect to use an uncompressed kernel unlike many other
 bootloaders.  The uncompressed kernel is called vmlinux and it is placed in
-<path>/usr/src/linux</path> after the kernel has finished compiling.  If you
-are using a Pegasos machine, the Pegasos firmware requires a compressed
-kernel called zImage.chrp which can be found in 
+<path>/usr/src/linux</path> after the kernel has finished compiling.  If you are
+using a Pegasos machine, the Pegasos firmware requires a compressed kernel
+called zImage.chrp which can be found in
 <path>/usr/src/linux/arch/ppc/boot/images</path>.
 </p>
 
@@ -329,9 +332,9 @@ Modules</uri>.
 <body>
 
 <p>
-You should list the modules you want automatically loaded in 
-<path>/etc/modules.autoload.d/kernel-2.6</path>. 
-You can add extra options to the modules too if you want.
+You should list the modules you want automatically loaded in
+<path>/etc/modules.autoload.d/kernel-2.6</path>.  You can add extra options to
+the modules too if you want.
 </p>
 
 <p>
@@ -346,8 +349,7 @@ just compiled:
 
 <p>
 For instance, to automatically load the <c>3c59x.o</c> module, edit the
-<path>kernel-2.6</path> file and enter the module
-name in it.
+<path>kernel-2.6</path> file and enter the module name in it.
 </p>
 
 <pre caption="Editing /etc/modules.autoload.d/kernel-2.6">
@@ -371,19 +373,15 @@ your System</uri>.
 <body>
 
 <p>
-If you are reading this section, you have chosen to use our <c>genkernel</c>
-script to configure your kernel for you.
-</p>
-
-<p>
-Now that your kernel source tree is installed, it's now time to compile your 
-kernel by using our <c>genkernel</c> script to automatically build a kernel for 
-you. <c>genkernel</c> works by configuring a kernel nearly identically to the 
-way our Installation CD kernel is configured. This means that when you use 
-<c>genkernel</c> to build your kernel, your system will generally detect all 
-your hardware at boot-time, just like our Installation CD does. Because genkernel 
-doesn't require any manual kernel configuration, it is an ideal solution for 
-those users who may not be comfortable compiling their own kernels.
+Now that your kernel source tree is installed, it's now time to compile your
+kernel by using our <c>genkernel</c> script to automatically build a kernel for
+you. <c>genkernel</c> works by configuring a kernel nearly identically to the
+way our Installation CD kernel is configured. This means that when you use
+<c>genkernel</c> to build your kernel, your system will generally detect all
+your hardware at boot-time, just like our Installation CD does. Because
+genkernel doesn't require any manual kernel configuration, it is an ideal
+solution for those users who may not be comfortable compiling their own
+kernels.
 </p>
 
 <p>
@@ -391,7 +389,7 @@ Now, let's see how to use genkernel. First, emerge the genkernel ebuild:
 </p>
 
 <pre caption="Emerging genkernel">
-# <i>emerge genkernel</i>
+# <i>emerge --usepkg genkernel</i>
 </pre>
 
 <p>
@@ -462,16 +460,6 @@ boot arguments, these are required for a successful boot with genkernel.
 
 <pre caption="Checking the created kernel image name and initrd">
 # <i>ls /boot/kernel* /boot/initramfs*</i>
-</pre>
-
-<p>
-If you want your system to react to hotplugging events, you will need to install
-and setup <c>hotplug</c>:
-</p>
-
-<pre caption="Emerging and enabling hotplug">
-# <i>emerge hotplug</i>
-# <i>rc-update add hotplug default</i>
 </pre>
 
 <p>
