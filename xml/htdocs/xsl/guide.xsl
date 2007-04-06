@@ -259,7 +259,7 @@
 </xsl:template>
 
 
-<xsl:template match="/devaway|/uris|/inserts|/glsa-index|opensearch:OpenSearchDescription">
+<xsl:template match="/gleps|/devaway|/uris|/inserts|/glsa-index|opensearch:OpenSearchDescription">
  <xsl:message>
   <xsl:value-of select="concat('%%GORG%%Redirect=',$link,'?passthru=1')"/>
  </xsl:message>
@@ -1353,6 +1353,32 @@
   &lt;/rdf:RDF&gt;
 </xsl:comment>
 </xsl:template>
+
+<!-- GLEP index -->
+<xsl:template match="glepindex">
+ <table class="ntable">
+ <tr>
+   <td class="infohead">Number</td><td class="infohead">Type</td><td class="infohead">Status</td><td class="infohead">Title</td>
+ </tr>
+  <xsl:apply-templates select="document(@index)/gleps/glep">
+    <xsl:with-param name="status" select="string(@status)"/>
+  </xsl:apply-templates>
+ </table>
+</xsl:template>
+
+<!-- One GLEP table row -->
+<xsl:template match="glep">
+<xsl:param name="status" select="''"/>
+ <xsl:if test="string-length($status)=0 or contains($status, @status)">
+  <tr>
+   <td class="tableinfo"><a href="{@file}"><xsl:value-of select="@id"/></a></td>
+   <td class="tableinfo"><xsl:value-of select="@type"/></td>
+   <td class="tableinfo"><xsl:value-of select="@status"/></td>
+   <td class="tableinfo"><xsl:apply-templates select="node()"/></td>
+  </tr>
+ </xsl:if>
+</xsl:template>
+
 
 <!-- GLSA Index -->
 <xsl:template match="glsaindex">
