@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/power-management-guide.xml,v 1.9 2007/01/18 23:56:29 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/power-management-guide.xml,v 1.10 2007/04/06 20:44:21 chiguire Exp $ -->
 <guide link="/doc/es/power-management-guide.xml" lang="es">
 <title>Guía de Administración de Energía</title>
 
@@ -27,8 +27,8 @@ de duración de la batería en sistemas móviles como los portátiles.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.30</version>
-<date>2006-12-16</date>
+<version>1.31</version>
+<date>2007-02-20</date>
 
 <chapter>
 <title>Introducción</title>
@@ -1236,12 +1236,13 @@ archivos esenciales.  No intente montar el directorio
 <body>
 
 <p>
-En caso de que posea una tarjeta gráfica ATI que soporte PowerPlay (escalado
-dinámico del reloj para la unidad gráfica de procesamiento GPU), puede activar
-esta característica en X.org. Abra el archivo <path>/etc/X11/xorg.conf</path>
-y agregue (o active) la opción <c>DynamicClocks</c> en la sección Device. Por
-favor note que esta característica puede resultar en caídas o cuelgues en
-algunos sistemas.
+En caso que posea una tarjeta gráfica ATI que soporte PowerPlay
+(escalado dinámico del reloj para la unidad gráfica de procesamiento
+GPU), puede activar esta característica en X.org. Abra el archivo
+<path>/etc/X11/xorg.conf</path> y agregue (o active) la opción
+<c>DynamicClocks</c> en la sección Device. Por favor note que esta
+característica puede resultar en caídas o cuelgues en algunos
+sistemas.
 </p>
 
 <pre caption="Activando el soporte PowerPlay de ATI en X.org">
@@ -1380,19 +1381,28 @@ sueño. Instalaremos esto primero.
 
 <p>
 Deben configurarse algunas cosas en <path>/etc/hibernate</path>. El
-paquete por defecto incorpora dos archivos de configuración:
-<path>hibernate.conf</path> y <path>ram.conf</path>.
+paquete por defecto incorpora algunos archivos de configuración para
+cada estado suspensión. Las opciones comunes a todos los métodos de
+suspensión se colocan en <path>common.conf</path>; asegúrese que este
+archivo esté correctamente configurado para el sistema.
 </p>
 
 <p>
-Para configurar la suspensión, edite <path>ram.conf</path> en
-<path>/etc/hibernate</path>. <c>UseSysfsPowerState mem</c> está ya
-configurado correctamente, pero tiene seguir con el resto del archivo
-de configuración y ajustarlo a su sistema. Los comentarios y nombres
-de opciones le servirán de guía. Si usa NFS o recursos compartidos en
-red vía Samba, asegúrese de apagar los guiones de inicio apropiados
-para evitar timeouts.
+Para configurar la suspensión, modifique <path>sysfs-ram.conf</path>
+en <path>/etc/hibernate</path>. <c>UseSysfsPowerState mem</c> ya está
+configurado correctamente, pero tiene necesita hacer más cambios a
+este estado de suspensión en particular (o cualquier otro estado de
+suspensión) debe agregarlos a
+<path>/etc/hibernate/hibernate.conf</path>. Los comentarios y nombres
+de opciones servirán de guía. Si usa NFS o recursos compartidos en red
+vía Samba, asegúrese de apagar los guiones de inicio apropiados para
+evitar expiraciones de plazo.
 </p>
+
+<note>
+Para más información acerca de la configuración de estados de
+suspensión, lea <c>man hibernate.conf</c>.
+</note>
 
 <p>
 ¿Listo? Esta es la última oportunidad de respaldar aquellos datos que
@@ -1406,12 +1416,11 @@ para volver desde el estado de suspensión.
 </pre>
 
 <p>
-Si todavía está leyendo es porque funciona. Puede también configurar standby
-(S1) en forma similar copiado el archivo <path>ram.conf</path> a
-<path>standby.conf</path> y creando un enlace simbólico
-<path>/usr/sbin/hibernate-standby</path> apuntando a
-<path>/usr/sbin/hibernate</path>. S3 y S4 son los estados de sueño más
-interesantes debido a los mayores ahorros de energía involucrados.
+Si todavía está leyendo es porque funciona. Puede también configurar
+standby (S1) en forma similar modificando el archivo
+<path>sysfs-ram.conf</path> y cambiando "UseSysfsPowerState mem" a
+"UseSysfsPowerState. S3 y S4 son los estados de sueño más interesantes
+debido a los mayores ahorros de energía.
 </p>
 </body>
 </section>
@@ -1497,20 +1506,22 @@ Para activar la hibernación con swsup use el guión hibernate y ajuste
 </p>
 
 <warn>
-Respalde sus datos antes de hacer esto. Corra <c>sync</c> antes de ejecutar
-uno de los comando para llevar los datos en caché a disco. Primero inténtelo
-fuera del servidor X, luego con X corriendo pero sin haber ingresado.
+Respalde sus datos antes de hacer esto. Corra <c>sync</c> antes de
+ejecutar uno de los comando para llevar los datos en caché a
+disco. Primero inténtelo fuera del servidor X, luego con X corriendo
+pero sin haber ingresado.
 </warn>
 
 <p>
-Si experimenta errores del tipo "kernel panic" debido a uhci o similar, intente
-compilar el soporte USB como módulo y descargue los módulos antes de enviar su
-portátil al modo de suspensión. Hay opciones de configuración para esto en
-el archivo <path>hibernate.conf</path>.
+Si experimenta errores del tipo "kernel panic" debido a uhci o
+similar, intente compilar el soporte USB como módulo y descargue los
+módulos antes de enviar su portátil al modo de suspensión. Hay
+opciones de configuración para esto en el archivo
+<path>common.conf</path>.
 </p>
 
 <pre caption="Hibernando con swsusp">
-# <i>nano -w /etc/hibernate.conf</i>
+# <i>nano -w /etc/hibernate/common.conf</i>
 <comment>(Asegúrese de haber respaldado sus datos)</comment>
 # <i>hibernate</i>
 </pre>
@@ -1537,14 +1548,13 @@ invalida las imagenes suspend2 durante el proceso de arranque.
 </pre>
 
 <p>
-Ahora edite <path>/etc/hibernate/hibernate.conf</path>, active la
-sección <c>suspend2</c> y comente todo en las secciones
-<c>sysfs_power_state</c> y <c>acpi_sleep</c>. No active todavía la
-parte fbsplash en las opciones globales.
+Ahora edite <path>/etc/hibernate/hibernate.conf</path>, active las
+opciones <c>suspend2</c> que necesite. No active las opciones
+<c>fbsplash</c> en <c>common.conf</c> por ahora.
 </p>
 
 <pre caption="Hibernando con suspend2">
-# <i>nano -w /etc/hibernate.conf</i>
+# <i>nano -w /etc/hibernate/suspend2.conf</i>
 <comment>(Asegúrese de tener un respaldo de sus datos)</comment>
 # <i>hibernate</i>
 </pre>
@@ -1557,8 +1567,9 @@ debe activar la bandera USE <e>fbsplash</e>.
 </p>
 
 <pre caption="Instalando suspend2-userui">
-# <i>mkdir -p /etc/portage</i>
 # <i>echo sys-apps/suspend2-userui fbsplash >> /etc/portage/package.use</i>
+<comment>(Podrá estar marcado como ~arch, primero debemos tomarlo en cuenta)</comment>
+# <i>echo "sys-apps/suspend2-userui" >> /etc/portage/package.keywords</i>
 # <i>emerge suspend2-userui</i>
 </pre>
 
@@ -1593,10 +1604,10 @@ esto.
 </pre>
 
 <p>
-A continuación, ajuste <path>grub.conf</path> o <path>lilo.conf</path>
-respectivamente, de manera que su núcleo suspend2 use
+A continuación, ajuste <path>grub.conf</path> (o
+<path>lilo.conf</path>)de manera que el núcleo suspend2 use
 <path>/boot/fbsplash-suspend2-emergence-1024x768</path> como imagen
-initrd.  Ahora puede hacer una prueba para ver si todo fue configurado
+initrd. Ahora puede hacer una prueba para ver si todo fue configurado
 correctamente.
 </p>
 
@@ -1605,7 +1616,7 @@ correctamente.
 </pre>
 
 <p>
-Después abra <path>/etc/hibernate/hibernate.conf</path> nuevamente y
+Después abra <path>/etc/hibernate/hibernate/common.conf</path> y
 active las opciones fbsplash. Ejecute <c>hibernate</c> y disfrute.
 </p>
 </body>
