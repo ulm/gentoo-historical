@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.57 2007/04/03 23:06:21 vapier Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/home-router-howto.xml,v 1.58 2007/04/07 02:16:43 vapier Exp $ -->
 
 <guide link="/doc/en/home-router-howto.xml" lang="en">
 <title>Home Router Guide</title>
@@ -17,8 +17,8 @@ for connecting your home network to the internet.
 <!-- The content of this document is released into the public domain -->
 <license/>
 
-<version>1.36</version>
-<date>2007-04-03</date>
+<version>1.37</version>
+<date>2007-04-06</date>
 
 <chapter>
 <title>Introduction</title>
@@ -191,38 +191,56 @@ the router connected to the internet via eth1.
 <body>
 
 <p>
-All the fancy PPPoE software has been bundled up into one little nice package
-nowadays called <uri link="http://www.roaringpenguin.com/">Roaring
-Penguin</uri>.  Simply <c>emerge rp-pppoe</c> and you'll be on your way.
-Remember how I said you'll need username/password information?  Well I wasn't
-lying so I hope you have it now!  Load up <path>/etc/ppp/pppoe.conf</path> in
-your favorite editor and set it up.
+All the fancy PPPoE software that used to be provided by rp-pppoe 
+(<uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri>) has been 
+integrated into the <uri link="http://samba.org/ppp/">standard PPP 
+package</uri>.  Simply <c>emerge ppp</c> and you'll be on your way.  Remember 
+how I said you'll need username/password information?  Well I wasn't lying so 
+I hope you have it now!  Load up <path>/etc/conf.d/net</path> in your favorite 
+editor and set it up.
 </p>
 
 <note>
 In order for the following net settings to work, you must have 
-baselayout-1.11.14 or later installed on your system.
+baselayout-1.12.9 or later installed on your system.
 </note>
 
 <pre caption="Setting up eth1">
-<comment>(Replace 'vla9h924' with your username and 'password' with your password)</comment>
+<comment>(Replace 'vla9h924' with your username and 'boogie' with your password)</comment>
 
-# <i>nano /etc/ppp/pap-secrets</i>
-<comment># client    server  secret</comment>
-"vla9h924" * "password"
 # <i>nano /etc/conf.d/net</i>
-<comment>Tell baselayout to use adsl for your eth1:</comment>
-config_eth1=( "adsl" )
-user_eth1=( "vla9h924" )
-# <i>ln -s net.lo /etc/init.d/net.eth1</i>
-# <i>rc-update add net.eth1 default</i>
-# <i>/etc/init.d/net.eth1 start</i>
+<comment>Tell baselayout to use adsl over eth1 for ppp0:</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth1"
+plugins_ppp0=( "pppoe" )
+pppd_ppp0=(
+	"defaultroute"
+	"usepeerdns"
+	<comment>There may be other settings you want, see /etc/conf.d/net.example</comment>
+)
+username_ppp0="vla9h924"
+password_ppp0="boogie"
+
+# <i>ln -s net.lo /etc/init.d/net.ppp0</i>
+# <i>rc-update add net.ppp0 default</i>
+# <i>/etc/init.d/net.ppp0 start</i>
 </pre>
 
 <warn>
 When the DSL interface comes up, it will create ppp0.  Although your NIC is 
 called eth1, the IP is actually bound to ppp0.  From now on, when you see 
 examples that utilize 'eth1', substitute with 'ppp0'.
+</warn>
+
+<warn>
+Make sure you change the permissions of the /etc/conf.d/net file so that only 
+root can read/write it since you're sticking your username/password in it.
+</warn>
+
+<warn>
+For people transitioning from the <c>rp-pppoe</c> package, or for people who 
+hit weird connection resets, see the MTU section in the Troubleshooting 
+chapter.
 </warn>
 
 </body>
