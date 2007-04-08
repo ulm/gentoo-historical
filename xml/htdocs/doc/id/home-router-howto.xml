@@ -19,8 +19,8 @@ menghubungkan jaringan di rumah anda ke internet.
 <!-- The content of this document is released into the public domain -->
 <license/>
 
-<version>1.34</version>
-<date>2007-03-07</date>
+<version>1.37</version>
+<date>2007-04-06</date>
 
 <chapter>
 <title>Pendahuluan</title>
@@ -36,7 +36,7 @@ menyesuaikan saja dengan kebutuhan.
 </p>
 
 <p>
-Panduan ini akan menjelaskan cara men-setup <e>Network Address Translation</e>
+Panduan ini akan menjelaskan cara menyiapkan <e>Network Address Translation</e>
 (NAT) di router (kernel dan <c>iptables</c>), menambahkan dan mengkonfigurasi
 beberapa servis (<e>Domain Name System</e> (DNS) melalui  dnsmasq, dhcp melalui
 <c>dhcpcd</c>, ADSL melalui <c>rp-pppoe</c>), lalu ditutup dengan banyak hal
@@ -84,7 +84,7 @@ Untuk melihat servis yang sedang berjalan, jalankan <c>rc-status</c>.
 
 <p>
 Kernel anda harus memilki driver yang menjalankan kedia NIC anda. Untuk melihat
-apakah kartu-kartu anda telah di-setup, jalankan saja <c>ifconfig</c>. Output
+apakah kartu-kartu anda telah diatur, jalankan saja <c>ifconfig</c>. Output
 anda mungkin akan sedikit berbeda, tidak apa-apa. Yang penting adalah kartu
 anda ditampilkan.
 </p>
@@ -197,32 +197,40 @@ ini hanya berisi cara menghubungkan router ke internet melalui
 <body>
 
 <p>
-Semua software PPPoE yang bagus telah dikumpulkan pada sebuah paket kecil
-bernama <uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri>.
-Jalankan saja <c>emerge rp-pppoe</c> dan anda sudah siap. Ingat 'kan ketika
-penulis mengatakan bahwa anda memerlukan informasi username/password? Penulis
-tidak bohong, jadi mudah-mudahan anda sudah memilikinya sekarang! Bukalah
-<path>/etc/ppp/pppoe.conf</path> dengan editor kesukaan anda.
+Semua software PPPoE yand dahulu disediakan oleh rp-pppoe (<uri
+link="http://www.roaringpenguin.com/">Roaring Penguin</uri>) telah
+diintegrasikan ke dalam <uri link="http://samba.org/ppp/">paket PPP
+standar</uri>. Jalankan saja <c>emerge ppp</c>. Masih ingat pesan penulis untuk
+menyediakan informasi username/password kan? Na, sekarang saatnya untuk
+mengedit <path>/etc/conf.d/net</path>.
 </p>
 
 <note>
 Agar aturan-aturan jaringan berikut dapat digunakan, anda harus memiliki
-baselayout-1.11.14 atau yang lebih baru di sistem anda.
+baselayout-1.12.9 atau yang lebih baru di sistem anda.
 </note>
 
-<pre caption="Men-setup eth1">
-<comment>(Gantikan 'vla9h924' dengan username dan 'password' dengan password anda sendiri)</comment>
+<pre caption="Pengaturan eth1">
+<comment>(Gantikan 'vla9h924' dengan username dan 'boogie' dengan password anda sendiri)</comment>
 
-# <i>nano /etc/ppp/pap-secrets</i>
-<comment># klien    server  rahasia</comment>
-"vla9h924" * "password"
 # <i>nano /etc/conf.d/net</i>
-<comment>Beritahukan baselayout untuk menggunakan adsl untuk eth1:</comment>
-config_eth1=( "adsl" )
-user_eth1=( "vla9h924" )
-# <i>ln -s net.lo /etc/init.d/net.eth1</i>
-# <i>rc-update add net.eth1 default</i>
-# <i>/etc/init.d/net.eth1 start</i>
+
+
+<comment>Perintahkan baselayout untuk menggunakan adsl melalui eth1 untuk ppp0:</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth1"
+plugins_ppp0=( "pppoe" )
+pppd_ppp0=(
+       "defaultroute"
+       "usepeerdns"
+       <comment>Anda mungkin ingin menerapkan pengaturan lain, bacalah /etc/conf.d/net.example</comment>
+)
+username_ppp0="vla9h924"
+password_ppp0="boogie"
+
+# <i>ln -s net.lo /etc/init.d/net.ppp0</i>
+# <i>rc-update add net.ppp0 default</i>
+# <i>/etc/init.d/net.ppp0 start</i>
 </pre>
 
 <warn>
@@ -230,6 +238,19 @@ Ketika antarmuka DSL dinyalakan, <path>ppp0</path> akan diciptakan. Walaupun
 NIC anda dinamakan <path>eth1</path>, IP-nya sebenarnya diikatkan ke
 <path>ppp0</path>. Dari sekarang, jika anda menemukan contoh yang berisi
 <path>eth1</path>, gantikan dengan <path>ppp0</path>.
+</warn>
+
+
+<warn>
+Jangan lupa ganti perizinan file <path>/etc/conf.d/net</path> agar hanya dapat
+dibaca/tulis oleh root karena anda telah menuliskan username/password anda di
+dalamnya.
+</warn>
+
+<warn>
+Bagi anda yang berpindah dapri paket <c>rp-pppoe</c>, atau bagi anda yang
+mendapatkan koneksi yang aneh, bacalah bagian MTU pada bagian Pemecahan
+Masalah.
 </warn>
 
 </body>
@@ -245,7 +266,7 @@ lebih banyak daripada IP dinamik. Untuk pengguna IP statik, anda memerlukan
 IP anda, gateway, dan server DNS.
 </p>
 
-<pre caption="Men-setup eth1">
+<pre caption="Pengaturan eth1">
 <comment>Untuk pengguna IP dinamik:</comment>
 # <i>emerge dhcpcd</i>
 # <i>nano /etc/conf.d/net</i>
@@ -284,7 +305,7 @@ Sekarang anda sudah siap.
 Langkah ini lebih mudah daripada langkah-langkah sebelumnya.
 </p>
 
-<pre caption="Men-setup eth0">
+<pre caption="Pengaturan eth0">
 # <i>nano /etc/conf.d/net</i>
 <comment>Tambahkan sebuah baris seperti berikut:</comment>
 config_eth0=( "192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0" )
@@ -715,7 +736,7 @@ restrict 192.168.0.0 mask 255.255.255.0 notrust nomodify notrap
 
 <note>
 Anda harus memastikan bahwa anda telah mengijinkan komunikasi <e>inbound</e>
-dan <e>outbound</e> pada port ntp (123/udp) ketika men-setup server. Klien
+dan <e>outbound</e> pada port ntp (123/udp) ketika mengatur server. Klien
 hanya memerlukan akses <e>outbound</e> di port 123/udp.
 </note>
 
@@ -783,7 +804,7 @@ Satu lagi yang perlu diatur adalah memberitahukan klien anda untuk melakukan
 sync ke router.
 </p>
 
-<pre caption="Setting SYNC klien di make.conf">
+<pre caption="Pengaturan SYNC klien di make.conf">
 SYNC="rsync://192.168.0.1/gentoo-portage"
 </pre>
 
@@ -805,32 +826,33 @@ pengiriman surat agar surat-surat besar tidak memperlambat koneksi anda dalam
 waktu yang lama.
 </p>
 
-<pre caption="Setup SMTP">
+<pre caption="Pengaturan SMTP">
 # <i>emerge netqmail</i>
 <comment>pastikan agar output `hostname` sudah benar</comment>
 # <i>emerge --config netqmail</i>
 # <i>iptables -I INPUT -p tcp --dport smtp -i ! ${LAN} -j REJECT</i>
 # <i>ln -s /var/qmail/supervise/qmail-send /service/qmail-send</i>
 # <i>ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd</i>
-<!--
 # <i>cd /etc/tcprules.d</i>
 # <i>nano tcp.qmail-smtp</i>
--->
+<!--
 # <i>cd /etc</i>
 # <i>nano tcp.smtp</i>
+-->
 <comment>Tambahkan sebuah entri seperti berikut ke bagian allow:</comment>
 192.168.0.:allow,RELAYCLIENT=""
 <!--
 # <i>tcprules tcp.qmail-qmtp.cdb rules.tmp &lt; tcp.qmail-smtp</i>
--->
 # <i>tcprules tcp.smtp.cdb rules.tmp &lt; tcp.smtp</i>
+-->
+# <i>make</i>
 # <i>rc-update add svscan default</i>
 # <i>/etc/init.d/svscan start</i>
 </pre>
 
 <p>
 Penulis adalah penggemar berat netqmail, tetapi anda bebas memilih <c>mta</c>
-yang lain :). Ketika anda men-setup e-mail pada satu komputer di jaringan
+yang lain :). Ketika anda mengatur e-mail pada satu komputer di jaringan
 anda, jadikan 192.168.0.1 sebagai server SMTP dan semuanya akan berfungsi.
 Anda mungkin perlu mengunjungi <uri link="http://qmail.org/">website
 qmail</uri> untuk membaca dokumentasi lain.
@@ -893,7 +915,7 @@ subnet 192.168.0.0 netmask 255.255.255.0 {
 </pre>
 
 <p>
-Ini adalah setup minimal yang diperlukan untuk mengganti fungsionalitas DHCP
+Ini adalah pengaturan minimal yang diperlukan untuk mengganti fungsionalitas DHCP
 <c>dnsmasq</c> yang sebelumnya kita gunakan. Anda masih ingat untuk
 menonaktifkan fitur DHCP di <c>dnsmasq</c> 'kan? Jika tidak, anda harus
 melakukannya sekarang (beri saja tanda komentar pada setting
