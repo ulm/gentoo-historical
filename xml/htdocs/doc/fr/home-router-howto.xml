@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Id: home-router-howto.xml,v 1.22 2007/04/04 16:36:03 cam Exp $ -->
+<!-- $Id: home-router-howto.xml,v 1.23 2007/04/10 15:02:25 cam Exp $ -->
 
 <guide link="/doc/fr/home-router-howto.xml" lang="fr">
 <title>Guide du routeur personnel</title>
@@ -23,8 +23,8 @@ destiné à connecter votre réseau personnel à Internet.
 <!-- The content of this document is released into the public domain -->
 <license/>
 
-<version>1.36</version>
-<date>2007-04-03</date>
+<version>1.37</version>
+<date>2007-04-06</date>
 
 <chapter>
 <title>Introduction</title>
@@ -204,33 +204,39 @@ la connexion de votre routeur à Internet via eth1.
 <body>
 
 <p>
-Les logiciels requis pour une connexion ADSL via PPPoE ont été rassemblés dans
-un paquet nommé <uri link="http://www.roaringpenguin.com/">Roaring
-Penguin</uri> (N.d.t. le manchot rugissant). Il vous suffit de lancer <c>emerge
-rp-pppoe</c>. Ensuite, ouvrez le fichier <path>/etc/ppp/pppoe.conf</path> dans
-votre éditeur préféré et définissez le nom d'utilisateur et le mot de passe à
-utiliser pour la connexion ADSL.
+Les logiciels requis pour une connexion ADSL via PPPoE qui étaient rassemblés
+dans un paquet nommé <uri link="http://www.roaringpenguin.com/">Roaring
+Penguin</uri> (N.d.t. le manchot rugissant) ont maintenant été intégrés dans le
+<uri link="http://samba.org/ppp/">paquet standard PPP</uri>. Faites simplement
+<c>emerge ppp</c> et il ne vous restera plus qu'à configurer vos login/mots de
+passes dans <path>/etc/conf.d/net</path>.
 </p>
 
 <note>
-Pour que le script net fonctionne, vous devez utiliser baselayout-1.11.14 ou
-une version plus récente.
+Pour que le script net fonctionne, vous devez utiliser baselayout-1.12.9 ou une
+version plus récente.
 </note>
 
 <pre caption="Configurer eth1">
 <comment>(Remplacez 'vla9h924' par le nom de l'utilisateur et</comment>
-<comment>'password' par le mot de passe à utiliser.)</comment>
+<comment>'boogie' par le mot de passe à utiliser.)</comment>
 
-# <i>nano /etc/ppp/pap-secrets</i>
-<comment># client    server  secret</comment>
-"vla9h924" * "password"
 # <i>nano /etc/conf.d/net</i>
-<comment>(Indiquez que eth1 utilise l'ADSL.)</comment>
-config_eth1=( "adsl" )
-user_eth1=( "vla9h924" )
-# <i>ln -s net.lo /etc/init.d/net.eth1</i>
-# <i>rc-update add net.eth1 default</i>
-# <i>/etc/init.d/net.eth1 start</i>
+<comment>(Indiquer au baselayout de configurer eth1 en ADSL pour ppp0.)</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth1"
+plugins_ppp0=( "pppoe" )
+pppd_ppp0=(
+        "defaultroute"
+        "usepeerdns"
+        <comment>(Lisez /etc/conf.d/net.example pour les autres possibilités.)</comment>
+)
+username_ppp0="vla9h924"
+password_ppp0="boogie"
+
+# <i>ln -s net.lo /etc/init.d/net.ppp0</i>
+# <i>rc-update add net.ppp0 default</i>
+# <i>/etc/init.d/net.ppp0 start</i>
 </pre>
 
 <warn>
@@ -238,6 +244,17 @@ Quand votre interface ADSL sera activée, elle créera ppp0. Bien que votre cart
 réseau s'appelle eth1, l'adresse IP sera liée à ppp0. À partir de maintenant,
 vous devrez remplacer <c>eth1</c> par <c>ppp0</c> dans tous les exemples
 proposés.
+</warn>
+
+<warn>
+Changez les permissions du fichier /etc/conf.d/net afin que personne d'autre
+que root ne puisse lire vos mots de passes.
+</warn>
+
+<warn>
+Pour les utilisateurs qui migrent depuis le paquet <c>rp-pppoe</c> ou pour ceux
+qui ont des problèmes de connexion, voyez la section MTU dans le chapitre des
+résolutions de problèmes.
 </warn>
 
 </body>
