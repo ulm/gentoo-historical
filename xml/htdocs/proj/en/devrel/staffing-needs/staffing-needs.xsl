@@ -104,7 +104,7 @@
                 </xsl:otherwise>
               </xsl:choose>
               <xsl:text> </xsl:text>
-              <xsl:value-of select="description"/>
+              <xsl:apply-templates select="description"/>
             </ti>
           </tr>
         </xsl:for-each>
@@ -114,4 +114,12 @@
   </extrachapter>
 </project>
 </xsl:template>
+
+
+<xsl:template match="description//node()|description//@*">
+  <xsl:copy>
+    <xsl:apply-templates select="node()|@*"/>
+  </xsl:copy>
+</xsl:template>
+
 </xsl:stylesheet>
