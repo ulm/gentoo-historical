@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-net-modules.xml,v 1.22 2007/04/08 01:28:11 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-net-modules.xml,v 1.23 2007/04/14 02:39:25 nightmorph Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Gentoo provides you flexible networking - here you are told about choosing
 different DHCP clients, setting up bonding, bridging, VLANs and more.
 </abstract>
 
-<version>8.0</version>
-<date>2007-04-07</date>
+<version>8.2</version>
+<date>2007-04-13</date>
 
 <section>
 <title>Network Modules</title>
@@ -204,7 +204,7 @@ DHCP server by default so you don't need to specify this anymore.
 </body>
 </section>
 <section>
-<title>ADSL Modem</title>
+<title>ADSL with PPPoE/PPPoA</title>
 <body>
 
 <p>
@@ -216,27 +216,48 @@ First we need to install the ADSL software.
 </pre>
 
 <note>
-If you need PPPoA, then you need to use >=<c>baselayout-1.12.x</c>.
+If you need PPPoA, then make sure to use >=<c>baselayout-1.12.x</c>.
 </note>
 
 <p>
-Second, create the PPP net script:
+Second, create the PPP net script and the net script for the ethernet interface
+to be used by PPP:
 </p>
 
-<pre caption="Creating the PPP net script">
+<pre caption="Creating the PPP and ethernet scripts">
 # <i>ln -s /etc/init.d/net.lo /etc/init.d/net.ppp0</i>
+# <i>ln -s /etc/init.d/net.lo /etc/init.d/net.eth0</i>
 </pre>
+
+<p>
+Be sure to set RC_NET_STRICT_CHECKING="yes" in <path>/etc/conf.d/rc</path>.
+</p>
 
 <p>
 Now we need to configure <path>/etc/conf.d/net</path>.
 </p>
 
 <pre caption="A basic PPPoE setup">
+config_eth0=( null ) <comment>(Specify your ethernet interface)</comment>
 config_ppp0=( "ppp" )
-link_ppp0="eth0" <comment>(For PPPoE users; replace eth0 with your actual PPP interface)</comment>
+link_ppp0="eth0" <comment>(Specify your ethernet interface)</comment>
 plugins_ppp0=( "pppoe" )
 username_ppp0='user'
 password_ppp0='password'
+pppd_ppp0=(
+       "noauth"
+       "defaultroute"
+       "usepeerdns"
+       "holdoff 3"
+       "child-timeout 60"
+       "lcp-echo-interval 15"
+       "lcp-echo-failure 3"
+       noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp
+)
+
+depend_ppp0() {
+    need net.eth0
+}
 </pre>
 
 <p>
@@ -247,6 +268,12 @@ You can also set your password in <path>/etc/ppp/pap-secrets</path>.
 <comment># The * is important</comment>
 "username"  *  "password"
 </pre>
+
+<p>
+If you use PPPoE with a USB modem you'll need to emerge <c>br2684ctl</c>. Please
+read <path>/usr/portage/net-dialup/speedtouch-usb/files/README</path> for
+information on how to properly configure it.
+</p>
 
 <impo>
 Please carefully read the section on ADSL and PPP in
