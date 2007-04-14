@@ -1,0 +1,84 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 61_javaxpcom.dpatch by Mike Hommey <glandium@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: - Allow to build with gcj headers. bz#333420
+## DP: - Don't install GenerateJavaInterfaces. bz#333542
+## DP: - Correctly install javaxpcom.jar.
+## DP: - Don't use visibility flags so that symbols are exported.
+
+@DPATCH@
+
+=== extensions/java/xpcom/nsJavaXPCOMBindingUtils.cpp
+==================================================================
+--- xulrunner/extensions/java/xpcom/nsJavaXPCOMBindingUtils.cpp	(revision 73)
++++ xulrunner/extensions/java/xpcom/nsJavaXPCOMBindingUtils.cpp	(local)
+@@ -532,7 +532,9 @@
+       PR_Free(iid_str);
+ #endif
+ 
+-      env->DeleteWeakGlobalRef(item->javaObject);
++      jweak weakref = NS_STATIC_CAST(jweak,
++                                     NS_CONST_CAST(jobject, item->javaObject));
++      env->DeleteWeakGlobalRef(weakref);
+       if (item == e->list) {
+         e->list = item->next;
+         if (e->list == nsnull)
+=== extensions/java/xpcom/tools/genifaces/Makefile.in
+==================================================================
+--- xulrunner/extensions/java/xpcom/tools/genifaces/Makefile.in	(revision 73)
++++ xulrunner/extensions/java/xpcom/tools/genifaces/Makefile.in	(local)
+@@ -54,6 +54,8 @@
+ CPPSRCS = GenerateJavaInterfaces.cpp
+ 
+ SIMPLE_PROGRAMS	= GenerateJavaInterfaces$(BIN_SUFFIX)
++NO_INSTALL	= 1
++NO_DIST_INSTALL	= 1
+ 
+ LIBS		+= \
+ 		$(LIBS_DIR) \
+=== extensions/java/xpcom/interfaces/Makefile.in
+==================================================================
+--- xulrunner/extensions/java/xpcom/interfaces/Makefile.in	(revision 167)
++++ xulrunner/extensions/java/xpcom/interfaces/Makefile.in	(local)
+@@ -76,7 +76,7 @@
+ OUTPUT_DIR = $(CURDIR)/_javagen/org/mozilla/xpcom
+ endif
+ 
+-_javagen/org/mozilla/xpcom/.iface_done: $(JAVA_SRCS) $(DIST)/bin/GenerateJavaInterfaces$(BIN_SUFFIX)
++_javagen/org/mozilla/xpcom/.iface_done: $(JAVA_SRCS) $(DEPTH)/extensions/java/xpcom/tools/genifaces/GenerateJavaInterfaces$(BIN_SUFFIX)
+ 	@if test ! -d _javagen/org/mozilla/xpcom; then \
+ 		touch .done; \
+ 		$(INSTALL) -m 644 .done _javagen/org/mozilla/xpcom; \
+@@ -86,7 +86,7 @@
+ 			_javagen/org/mozilla/xpcom
+ 	@$(INSTALL) -m 644 $(GEN_JAVA_SRCS) _javagen/org/mozilla/xpcom
+ 	@echo Generating Java interface files
+-	$(RUN) $(DIST)/bin/GenerateJavaInterfaces$(BIN_SUFFIX) -d $(OUTPUT_DIR)
++	$(RUN) $(DEPTH)/extensions/java/xpcom/tools/genifaces/GenerateJavaInterfaces$(BIN_SUFFIX) -d $(OUTPUT_DIR)
+ 	@touch $@
+ 
+ # Using the temporary "java.files" avoids an "argument list too long"
+=== extensions/java/xpcom/src/Makefile.in
+==================================================================
+--- xulrunner/extensions/java/xpcom/src/Makefile.in	(revision 76)
++++ xulrunner/extensions/java/xpcom/src/Makefile.in	(local)
+@@ -134,4 +134,5 @@
+ #	$(INSTALL) $(IFLAGS1) $^ $(DIST)/bin
+ jarfile:: $(JARFILE)
+ 	$(INSTALL) $(IFLAGS1) $^ $(DIST)/bin
+-
++install:: $(JARFILE)
++	$(SYSINSTALL) $(IFLAGS1) $^ $(DESTDIR)$(mozappdir)
+=== extensions/java/xpcom/glue/Makefile.in
+==================================================================
+--- xulrunner/extensions/java/xpcom/glue/Makefile.in	(revision 77)
++++ xulrunner/extensions/java/xpcom/glue/Makefile.in	(local)
+@@ -44,6 +44,7 @@
+ 
+ MODULE		= javaxpcomglue
+ LIBRARY_NAME	= javaxpcomglue
++VISIBILITY_FLAGS =
+ 
+ # On Mac OS X, JNI libraries must end with a '.jnilib' extension
+ ifeq ($(OS_ARCH),Darwin)
