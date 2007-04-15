@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/java/Attic/java-devel.xml,v 1.22 2007/03/27 03:54:12 wltjr Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/java/Attic/java-devel.xml,v 1.23 2007/04/15 17:22:22 betelgeuse Exp $ -->
 
 <guide link="/doc/en/java-devel.xml">
 <title>Gentoo Java Packaging Guide</title>
@@ -286,17 +286,20 @@ In addition to standard Gentoo ebuild guidelines, there are a number specific fo
 </p>
 
 <ul>
-  <li>In RDEPEND, use ">=virtual/jre-[minimal-version]". If you need a JDK is needed for normal operation, like www-servers/tomcat, then you should use ">=virtual/jdk-[minimal-version]". The jre atom MUST have a version.</li>
+  <li>In RDEPEND, use ">=virtual/jre-[minimal-version]". If you need a JDK for normal operation, like www-servers/tomcat used to, then you should use ">=virtual/jdk-[minimal-version]". The jre atom MUST have a version.</li>
 
   <li>In DEPEND, use ">=virtual/jdk-[minimal-version]", unless the ebuild is not compiling source. The jdk atom MUST have a version.</li>
 
-  <li>For packages that use Ant to build, try to DEPEND on just dev-java/ant-core when possible. If the package makes use of 'optional' ant tasks, you'll need to DEPEND on dev-java/ant.</li>
+  <li>For packages that use Ant to build, try to DEPEND on just dev-java/ant-core when possible instead of dev-java/ant.
+	  dev-java/ant-core is automatically added to DEPEND if you inherit java-ant-2.
+	  If the package makes use of 'optional' ant tasks, you'll need to DEPEND on dev-java/ant or
+	  add WANT_ANT_TASKS="ant-task" before inherit. The latter is of course preferred.</li>
 
   <li>For packages that are distributed as zip, you need to DEPEND on app-arch/unzip to unpack</li>
 
   <li>Since Portage does not support depending on a particular slot at this time, your DEPEND and RDEPEND should look like =dev-java/some-library-1.2* to signify that any 1.2.x library is supported. Presumably, they will all be SLOT compatible.</li>
 
-  <li>Avoid using bundled .jar files at all costs for source-based packages. Instead, they should be replaced with jars provided by Gentoo packages using java-pkg_jar-from.</li>
+  <li>Avoid using bundled .jar files at all costs for source-based packages. Instead, they should use system installed versions with the help of our eclass functions.</li>
 
   <li>If you only need the path to installed libraries, you can use java-pkg_getjar(s). Don't call java-config directly, because it will not be recorded as a dependency in the package env.</li>
 
@@ -306,7 +309,7 @@ In addition to standard Gentoo ebuild guidelines, there are a number specific fo
   Avoid cluttering up the environment by adding environment files to /etc/env.d/. Instead, store your env file in /etc/env.d/java/, and then have user scripts source its environment file when it launches. Otherwise, developers, who regularly override CLASSPATH, CATALINA_HOME and other env vars, will have problems running regular apps.  If you use the <uri link="#launcher">launcher</uri> it will also automatically source the appropriate env file.
 </li>
 
-  <li>Make sure you always compile with correct a source/target. This is important to ensure future and backwards <uri link="#compatibility">compatibility</uri>.  If the packages uses ant, this can be done for you automatically. See <uri link="#java-ant-2.eclass">java-ant-2.eclass</uri>.  If not you will have to patch it to pass <uri link="#func_query">$(java-pkg_javac-args)</uri> to javac.</li>
+  <li>Make sure you always compile with correct a source/target. This is important to ensure future and backwards <uri link="#compatibility">compatibility</uri>.  If the packages use ant, this can be done for you automatically. See <uri link="#java-ant-2.eclass">java-ant-2.eclass</uri>.  If not you will have to patch it to pass <uri link="#func_query">$(java-pkg_javac-args)</uri> to javac.</li>
 
   <li>Do no install jars which contain versions in their filename, ie castor-0.9.7.jar. Use java-pkg_newjar to rename and install versioned jars to not contain the version in their filename.</li>
 
@@ -331,7 +334,7 @@ If the program provides examples, in the form of source code or some other forma
 If you want to go all the way, add the source USE flag that installs the
 complete source code as a .zip file. Use <uri
 link="#func_install">java-pkg_dosrc</uri> for this purpose.  This allows IDEs
-such as Eclipse and NetBeans to do complete source-level debugging. You will need to also DEPEND="source? ( app-arch/zip )".
+such as Eclipse and NetBeans to do complete source-level debugging. You will need to also DEPEND="source? ( app-arch/zip )" or add JAVA_PKG_IUSE="source" before inherit. Using JAVA_PKG_IUSE means that we can remove the app-arch/zip requirement in the future and use for example jar provided by virtual/jdk.
 </p>
 
 <p>
@@ -354,6 +357,8 @@ Without further ado, here are a few examples.
 
 <pre caption="Example: Pure java package">
 
+JAVA_PKG_IUSE="doc examples source"
+
 inherit eutils java-pkg-2 java-ant-2
 
 DESCRIPTION="Fictional example ebuild."
@@ -363,27 +368,25 @@ SRC_URI="mirror://gentoo/${P}-src.tar.gz"
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS="~x86 ~sparc ~ppc ~amd64 ppc64"
-IUSE="doc examples source"
+IUSE=""
 
 COMMON_DEP="
         =dev-java/xerces-2*
         >=dev-java/log4j-1.2.8"
 
-RDEPEND=">=virtual/jre-1.3
+RDEPEND=">=virtual/jre-1.4
         ${COMMON_DEP}"
 
-DEPEND=">=virtual/jdk-1.3
-        ${COMMON_DEP}
-        >=dev-java/ant-core-1.5.4
-        source? ( app-arch/zip )"
+DEPEND=">=virtual/jdk-1.4
+        ${COMMON_DEP}"
 
 S=${WORKDIR}/${P}-src
 
 src_unpack() {
         unpack ${A}
 
-        cd ${S}/lib
-        rm *.jar
+        cd "${S}/lib"
+        rm -v *.jar || die
 
         java-pkg_jar-from xerces-2
         java-pkg_jar-from log4j log4j.jar log4j-1.2.8.jar
@@ -415,9 +418,9 @@ RDEPEND="java? ( >=virtual/jre-1.4 )"
 
 pkg_unpack() {
         unpack ${A}
-        cd ${S}
+        cd "${S}"
 
-        epatch ${FILESDIR}/${P}.patch
+        epatch "${FILESDIR}/${P}.patch"
 }
 
 src_compile() {
@@ -553,7 +556,7 @@ necessary symlinks.
 <body>
 
 <p>
-You should inherit this eclass when you package uses ant, and you want it to automatically rewrite the build.xml.
+You should inherit this eclass when your package uses ant. This eclass automatically rewrites the build.xml unless JAVA_PKG_BSFIX is set to off.
 fex: Add source/target attributes to javac calls.
 </p>
 <p>
@@ -625,7 +628,7 @@ it. It can contain any combination of: 'ecj' 'jikes' and 'javac'.
 <p>
 You should only use this if the package is known to work all 3 of the
 compilers, if later on a problem does occur with one of them, you can set
-JAVA_PKG_DROP_COMPILER to it in the ebuild, and it will no longer try to use
+JAVA_PKG_FILTER_COMPILER to it in the ebuild, and it will no longer try to use
 it.
 </p>
 
@@ -655,7 +658,7 @@ one of them, this can be useful when testing a new ebuild with every compiler.
   <ul>
     <li>
       If you need to rename the jar, since we don't allow versions in the jar
-      name, then calls _dojar
+      name, then calls _dojar.
     </li>
     <li>If you only pass one argument it will name it ${PN}.jar</li>
     <li>will die on errors</li>
