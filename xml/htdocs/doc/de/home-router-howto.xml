@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/home-router-howto.xml,v 1.14 2007/03/10 23:57:02 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/home-router-howto.xml,v 1.15 2007/04/16 21:22:02 keytoaster Exp $ -->
 
-<!-- English CVS Version: 1.56 -->
+<!-- English CVS Version: 1.58 -->
 
 <guide link="/doc/de/home-router-howto.xml" lang="de">
 <title>Home Router Guide</title>
@@ -25,8 +25,8 @@ verwandelt, um das eigene Heimnetzwerk mit dem Internet zu verbinden.
 <!-- The content of this document is released into the public domain -->
 <license/>
 
-<version>1.35</version>
-<date>2007-03-07</date>
+<version>1.37</version>
+<date>2007-04-06</date>
 
 <chapter>
 <title>Einleitung</title>
@@ -211,39 +211,59 @@ die Verbindung des Routers mit dem Internet über eth1.
 <body>
 
 <p>
-Die ganze einfallsreiche PPPoE Software wurde in einem Paket zusammengefasst,
-das sich <uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri>
-nennt. Ein simples <c>emerge rp-pppoe</c> installiert alles, was benötigt wird.
-Erinnern Sie sich, wie ich sagte, dass Sie einen Benutzernamen und ein Passwort
-brauchen? Nun, ich habe nicht gelogen, daher hoffe ich, dass Sie beides jetzt
-vorliegen haben! Öffnen Sie <path>/etc/ppp/pppoe.conf</path> in Ihrem
-bevorzugten Editor und konfigurieren Sie die Datei.
+Die gesamte Software, die bislang von rp-pppoe
+(<uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri>)
+bereitgestellt wurde, ist jetzt in das <uri link="http://samba.org/ppp/">
+Standard-PPP-Paket</uri> integriert worden. Mit einem einfachen
+<c>emerge ppp</c> sind Sie auf dem richtigen Weg. Erinnern Sie sich, wie ich
+sagte, dass Sie einen Benutzernamen und ein Passwort brauchen? Nun, ich
+habe nicht gelogen, daher hoffe ich, dass Sie beides jetzt vorliegen haben!
+Öffnen Sie <path>/etc/conf.d/net</path> in Ihrem bevorzugten Editor und
+konfigurieren Sie die Datei.
 </p>
 
 <note>
 Damit die folgenden Netzwerkeinstellungen funktionieren, müssen Sie
-baselayout-1.11.14 oder neuer auf Ihrem System installiert haben.
+baselayout-1.12.9 oder neuer auf Ihrem System installiert haben.
 </note>
 
 <pre caption="Konfiguration von eth1">
-<comment>(Ersetzen Sie 'vla9h924' mit Ihrem Benutzernamen und 'password' mit Ihrem Passwort)</comment>
+<comment>(Ersetzen Sie 'vla9h924' mit Ihrem Benutzernamen und 'boogie' mit Ihrem Passwort)</comment>
 
-# <i>nano /etc/ppp/pap-secrets</i>
-<comment># Client-Server-Secret</comment>
-"vla9h924" * "password"
 # <i>nano /etc/conf.d/net</i>
-<comment>Sagen Sie baselayout, dass es adsl für Ihr eth1 verwenden soll:</comment>
-config_eth1=( "adsl" )
-user_eth1=( "vla9h924" )
-# <i>ln -s net.lo /etc/init.d/net.eth1</i>
-# <i>rc-update add net.eth1 default</i>
-# <i>/etc/init.d/net.eth1 start</i>
+<comment>Sagen Sie baselayout, dass es adsl über eth1 für ppp0 verwenden soll:</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth1"
+plugins_ppp0=( "pppoe" )
+pppd_ppp0=(
+        "defaultroute"
+        "usepeerdns"
+        <comment>Es mag noch andere Einstellungen geben, die Sie setzen möchten, siehe hierzu /etc/conf.d/net.example</comment>
+)
+username_ppp0="vla9h924"
+password_ppp0="boogie"
+
+# <i>ln -s net.lo /etc/init.d/net.ppp0</i>
+# <i>rc-update add net.ppp0 default</i>
+# <i>/etc/init.d/net.ppp0 start</i>
 </pre>
 
 <warn>
 Wenn das DSL-Interface gestartet wird, erstellt es ppp0. Obwohl Ihre NIC eth1
 genannt wird, ist die IP tatsächlich an ppp0 gebunden. Wenn Sie von jetzt an
 ein Beispiel sehen, das 'eth1' nutzt, ersetzen Sie es gedanklich durch 'ppp0'.
+</warn>
+
+<warn>
+Stellen Sie sicher, dass die Berechtigungen der Datei /etc/conf.d/net so
+gesetzt sind, dass sie nur von root gelesen bzw. geschrieben werden kann,
+weil Sie Ihren Benutzernamen und Ihr Passwort dort abgelegt haben.
+</warn>
+
+<warn>
+Allen, die vom <c>rp-pppoe</c>-Paket wechseln oder kuriose Verbindungsabbrüche
+erleben, sei der Abschnitt bezüglich MTU im Kapitel Problembehebung ans Herz
+gelegt.
 </warn>
 
 </body>
@@ -844,24 +864,25 @@ legen.
 # <i>iptables -I INPUT -p tcp --dport smtp -i ! ${LAN} -j REJECT</i>
 # <i>ln -s /var/qmail/supervise/qmail-send /service/qmail-send</i>
 # <i>ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd</i>
-<!--
 # <i>cd /etc/tcprules.d</i>
 # <i>nano tcp.qmail-smtp</i>
--->
+<!--
 # <i>cd /etc</i>
 # <i>nano tcp.smtp</i>
+-->
 <comment>Fügen Sie einen Eintrag ähnlich diesem zum "allow"-Abschnitt hinzu:</comment>
 192.168.0.:allow,RELAYCLIENT=""
 <!--
 # <i>tcprules tcp.qmail-qmtp.cdb rules.tmp &lt; tcp.qmail-smtp</i>
--->
 # <i>tcprules tcp.smtp.cdb rules.tmp &lt; tcp.smtp</i>
+-->
+# <i>make</i>
 # <i>rc-update add svscan default</i>
 # <i>/etc/init.d/svscan start</i>
 </pre>
 
 <p>
-Ich bin ein großer Fan von netqmail, aber selbstverständlich können Sie auch
+Ich bin ein großer Fan von qmail, aber selbstverständlich können Sie auch
 einen anderen MTA nutzen :). Wenn Sie E-Mail auf den Hosts in Ihrem Netzwerk
 konfigurieren, stellen Sie als SMTP-Server 192.168.0.1 ein, dann sollte alles
 gut laufen. Möglicherweise möchten Sie die <uri
