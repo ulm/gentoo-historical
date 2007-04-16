@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Id: modular-x-howto.xml,v 1.13 2006/10/25 09:27:49 neysx Exp $ -->
+<!-- $Id: modular-x-howto.xml,v 1.14 2007/04/16 15:14:55 cam Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/proj/fr/desktop/x/x11/modular-x-howto.xml" lang="fr">
@@ -23,8 +23,8 @@ Ce guide vous explique comment migrer vers la version modulaire de X.Org.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.1.1</version>
-<date>2006-01-02</date>
+<version>1.1.2</version>
+<date>2006-11-05</date>
 
 <chapter>
 <title>Introduction</title>
@@ -379,29 +379,31 @@ la 7.0. De nouvelles sont aussi apparues. En voici la description&nbsp;:
 <section>
 <title>Qu'est-il advenu des fichiers de configurations&nbsp;?</title>
 <body>
-  	 
+
 <p>
 Dans le paquet X.Org 6.8 de Gentoo, tous les fichiers de configuration et les
 scripts étaient dans le répertoire <path>/etc/X11</path>. Dans X.Org modulaire,
 l'emplacement par défaut de ces fichiers a changé, c'est-à-dire que les
 fichiers de configuration sont toujours dans <path>/etc/X11</path>, mais les
 scripts et les configurations par défaut se trouvent maintenant dans
-<path>/usr/lib/X11</path> (ou <path>lib64</path>) et
+<path>/usr/lib/X11</path> (ou <path>/usr/lib64/X11</path>) et
 <path>/usr/share/X11</path>.
 </p>
 
 <p>
-À cause de la protection des configurations (CONFIG_PROTECT), vous aurez
-certainement encore tous vos vieux fichiers de configuration de X.Org 6.8 dans
-<path>/etc/X11</path>, prennant de la place et semblant utiles.
+À cause de la protection des fichiers de configurations (CONFIG_PROTECT), vous
+aurez certainement encore tous vos vieux fichiers de configuration de X.Org 6.8
+dans <path>/etc/X11</path>&nbsp;; ces fichiers prennent inutilement de la place
+et peuvent vous induire en erreur quant à leur utilité.
 </p>
 
 <p>
-Puisque ces répertoires ne sont pas dans CONFIG_PROTECT, il est important que
-tout changement à la configuration par défaut soit fait en copiant les fichiers
-concernés dans <path>/etc/X11</path> et en faisant le changement là. Une autre
-méthode qui n'est pas recommandée est d'ajouter le nouvel emplacement dans
-CONFIG_PROTECT. Ci-dessous se trouvent deux exemples&nbsp;:
+Puisque ces nouveaux répertoires ne sont pas dans CONFIG_PROTECT, il est
+important que tout changement apporté à la configuration par défaut soit fait
+en copiant les fichiers concernés dans <path>/etc/X11</path> et en faisant les
+changement dans ce répertoire. Une autre méthode, mais qui n'est pas
+recommandée, consiste à ajouter le nouvel emplacement dans CONFIG_PROTECT.
+Ci-dessous se trouvent deux exemples&nbsp;:
 </p>
 
 <pre caption="Personnaliser l'initialisation de XDM">
@@ -423,23 +425,67 @@ DisplayManager._0.reset:        /usr/lib/X11/xdm/TakeConsole
 </pre>
 
 <note>
-Sur les systèmes 64-bits multilib avec le profil no-symlink, il faut changer
-lib en lib64.
+Sur les systèmes 64&nbsp;bits multilib avec le profil no-symlink, il faut
+changer <c>lib</c> en <c>lib64</c>.
 </note>
 
-<pre caption="Personnaliser app-defaults/XTerm-color">
-<comment>(Je n'ai pas réussi à trouver où le chemin vers app-defaults est défini dans
-les fichiers de configuration du répertoire /etc/X11, donc pour protéger mes
-changements faits XTerm-color, on va protéger /usr/share/X11/app-defaults en
-modifiant /etc/make.conf.)</comment>
-# <i>nano /etc/make.conf</i>
-<comment>(et régler CONFIG_PROTECT de façon adéquate)</comment>
-CONFIG_PROTECT="/usr/share/X11/app-defaults"
+<p>
+Dans cet exemple proposé par Joe Womack, nous allons configurer quelques
+paramètres de <c>xterm</c>. Cela peut être fait soit globalement par
+l'administrateur, soit par chaque utilisateur selon ses préférences.
+</p>
+
+<pre caption="Configuration globale d'app-defaults/XTerm-color">
+<comment>
+Comme précédemment, créez une copie du fichier dans /etc/ afin de
+bénéficier de la protection des fichiers de configuration&nbsp;:
+</comment>
+# <i>cp -a /usr/share/X11/app-defaults/XTerm-color /etc/X11/app-defaults/</i>
+<comment>
+Éditez le fichier selon vos préférences. Nous devons maintenant informer Xt de
+l'emplacement du fichier à travers la variable XFILESEARCHPATH. Configurez
+cette variable dans un fichier placé dans /etc/env.d&nbsp;:
+</comment>
+# <i>echo '# Emplacement global des fichiers de configuration des applications X' >> /etc/env.d/10xpaths</i>
+# <i>echo 'XFILESEARCHPATH=/etc/X11/%T/%N:/usr/share/X11/%T/%N' >> /etc/env.d/10xpaths</i>
 </pre>
+
+<pre caption="Configuration de app-defaults/XTerm-color par les utilisateurs">
+<comment>Cela peut être fait de deux façons&nbsp;:</comment>
+<comment>1) Configurez un répertoire « app-defaults » par utilisateur&nbsp;:</comment>
+# <i>echo '# Emplacement par utilisateur des fichiers de configuration des applications X' >> /etc/env.d/10xpaths </i>
+# <i>echo 'XUSERFILESEARCHPATH=$HOME/%T/%N' >> /etc/env.d/10xpaths</i>
+
+<comment>
+2) Créez un fichier .Xdefault ou .Xresources et copiez-y les paramètres que
+vous souhaitez modifier. Dans cet exemple, on personnalisera les Xterm pour
+qu'ils aient un curseur orange, qu'ils se comportent comme un terminal
+interactif, qu'ils aient une barre de défilement, ainsi qu'un historique de
+1000 lignes&nbsp;:
+</comment>
+# <i>echo '! Xterm defaults'               >> .Xresources</i>
+# <i>echo 'XTerm*CursorColor:      orange' >> .Xresources</i>
+# <i>echo 'XTerm*loginShell:       true'   >> .Xresources</i>
+# <i>echo 'XTerm*scrollBar:        true'   >> .Xresources</i>
+# <i>echo 'XTerm*saveLines:        1000'   >> .Xresources</i>
+
+<comment>
+Pour appliquer ces paramètres, relancez X ou bien utilisez la commande&nbsp;:
+</comment>
+# <i>xrdb -merge $HOME/.Xresources</i>
+</pre>
+
+<note>
+Consultez la page
+<uri>http://www.faqs.org/faqs/x-faq/part2/section-22.html</uri> pour plus de
+détails sur la configuration des variables XFILESEARCHPATH et
+XUSERFILESEARCHPATH.  Consultez la page
+<uri>http://tldp.org/HOWTO/XWindow-User-HOWTO/moreconfig.html#XRESOURCES</uri>
+pour plus de détails sur le fichier <path>.Xresources</path>.
+</note>
 
 </body>
 </section>
-
 <section>
 <title>Problèmes de pilotes</title>
 <body>
@@ -457,7 +503,6 @@ Il a été rapporté que&nbsp;:
 
 </body>
 </section>
-
 <section>
 <title>Faire fonctionner l'accélération 3D</title>
 <body>
@@ -603,7 +648,6 @@ Maintenant, tout fonctionne)</comment>
 
 </body>
 </section>
-
 <section>
 <title>Autres problèmes</title>
 <body>
