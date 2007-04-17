@@ -20,8 +20,8 @@ un enrutador para conectar su red doméstica a Internet.
 <!-- The content of this document is released into the public domain -->
 <license/>
 
-<version>1.34</version>
-<date>2007-01-28</date>
+<version>1.37</version>
+<date>2007-04-06</date>
 
 <chapter>
 <title>Introducción</title>
@@ -207,33 +207,41 @@ el enrutador a Internet a través de eth1.
 <body>
 
 <p>
-Todo el elaborado software de PPPoE ha sido incluido en un paquetito
-llamado actualmente <uri link="http://www.roaringpenguin.com/">
-Roaring Penguin</uri>. Simplemente haga <c>emerge rp-pppoe</c> y
-estará encaminado. ¿Recuerda cómo le decía que necesitaría la
-información de usuario/contraseña? Bien, no le he mentido y ¡espero
-que disponga de ella ahora! Abra en su editor preferido
+Todo el elaborado software de PPPoE que era proporcionado por rp-pppoe
+(<uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri>)
+ha sido integrado en el 
+<uri link="http://samba.org/ppp/">paquete estándard PPP</uri>. Simplemente 
+haga <c>emerge ppp</c> y estará encaminado. ¿Recuerda cómo le decía que
+necesitaría la información de usuario/contraseña? Bien, no le he mentido 
+y ¡espero que disponga de ella ahora! Abra en su editor preferido
 <path>/etc/ppp/pppoe.conf</path> y configúrelo.
 </p>
 
 <note>
 Para hacer que la siguiente configuración de net.eth1 funcione,
-necesita tener instalado en su sistema baselayout-1.11.14 o posterior.
+necesita tener instalado en su sistema baselayout-1.12.9 o posterior.
 </note>
 
 <pre caption="Configurar eth1" >
-<comment>(Reemplace 'vla9h924' con su usuario y 'password' con su contraseña)</comment>
+<comment>(Reemplace 'vla9h924' con su usuario y 'boogie' con su contraseña)</comment>
 
-# <i>nano /etc/ppp/pap-secrets</i>
-<comment># cliente    servidor  contraseña</comment>
-&quot;vla9h924&quot; * &quot;password&quot;
 # <i>nano /etc/conf.d/net</i>
-<comment>Indique a baselayout que utilice adsl en eth1:</comment>
-config_eth1=( &quot;adsl&quot; )
-user_eth1=( "vla9h924" )
-# <i>ln -s net.lo /etc/init.d/net.eth1</i>
-# <i>rc-update add net.eth1 default</i>
-# <i>/etc/init.d/net.eth1 start</i>
+<comment>Indique a baselayout que utilice adsl sobre eth1 para ppp0:</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth1"
+plugins_ppp0=( "pppoe" )
+pppd_ppp0=(
+         "defaultroute"
+         "usepeerdns"
+         <comment>Puede necesitar otras opciones, vea
+         /etc/conf.d/net.example</comment>
+)
+username_ppp0="vla9h924"
+password_ppp0="boogie"
+
+# <i>ln -s net.lo /etc/init.d/net.ppp0</i>
+# <i>rc-update add net.ppp0 default</i>
+# <i>/etc/init.d/net.ppp0 start</i>
 </pre>
 
 <warn>
@@ -241,6 +249,18 @@ Cuando la interfaz DSL se levante, creará ppp0. Si bien la tarjeta de
 red se llama eth1, la IP está ahora vinculada a ppp0. Desde este
 momento, cuando vea ejemplos que utilicen 'eth1', sustitúyalo con
 'ppp0'.
+</warn>
+
+<warn>
+Asegúrese que cambia los permisos del fichero /etc/conf.d/net para que
+sólo root lo pueda leer/escribir ya que contiene su nombre de usuario y
+contraseña.
+</warn>
+
+<warn>
+Aquéllos que están cambiando desde el paquete <c>rp-pppoe</c>, o la gente
+que observa extraños cortes en la conexión, pueden consultar la seción MTU
+en el capítulo de Solución de problemas
 </warn>
 
 </body>
@@ -815,24 +835,25 @@ conexión media hora.
 </p>
 
 <pre caption="Configurar SMTP" >
-# <i>emerge qmail</i>
+# <i>emerge netqmail</i>
 <comment>Asegúrese que la salida de `hostname` es correcta</comment>
-# <i>ebuild /var/db/pkg/*-*/qmail-1.03-r*/*.ebuild config</i>
+# <i>emerge --config netqmail</i>
 # <i>iptables -I INPUT -p tcp --dport smtp -i ! ${LAN} -j REJECT</i>
 # <i>ln -s /var/qmail/supervise/qmail-send /service/qmail-send</i>
 # <i>ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd</i>
-<!--
 # <i>cd /etc/tcprules.d</i>
 # <i>nano tcp.qmail-smtp</i>
--->
+<!--
 # <i>cd /etc</i>
 # <i>nano tcp.smtp</i>
+-->
 <comment>Añada una línea tal que esta en la sección permitir (allow):</comment>
 192.168.0.:allow,RELAYCLIENT=&quot;&quot;
 <!--
 # <i>tcprules tcp.qmail-qmtp.cdb rules.tmp &lt; tcp.qmail-smtp</i>
--->
 # <i>tcprules tcp.smtp.cdb rules.tmp &lt; tcp.smtp</i>
+-->
+# <i>make</i>
 # <i>rc-update add svscan default</i>
 # <i>/etc/init.d/svscan start</i>
 </pre>
@@ -841,8 +862,8 @@ conexión media hora.
 Soy un gran admirador de qmail, pero usted es libre de utilizar un mta
 distinto :). Cuando configure el correo electrónico en los ordenadores
 de su red, indique que su servidor SMTP es 192.168.0.1 y así todo
-estaría correcto. Podría visitar <uri link="http://qmail.org/" >página
-web de qmail</uri> para más información.
+estaría correcto. Podría visitar <uri link="http://netqmail.org/" >página
+web de netqmail</uri> para más información.
 </p>
 
 </body>
