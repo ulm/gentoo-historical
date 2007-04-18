@@ -105,9 +105,16 @@
             </xsl:if>
           </ti>
           <ti>
-            <xsl:if test="location"><xsl:value-of select="location"/></xsl:if>
-            <xsl:if test="$devaway/devaway/dev[@nick=$username]">
-              (<uri><xsl:attribute name="link"><xsl:value-of select="concat('devaway.xml?select=', $username,'#',$username)"/></xsl:attribute>away</uri>)
+            <xsl:choose>
+             <xsl:when test="$statusFilter != 'Retired' and location/@longitude and location/@latitude">
+              <uri link="{concat('devmap.xml?dev=',@username)}"><xsl:value-of select="location"/></uri>
+             </xsl:when>
+             <xsl:when test="location">
+              <xsl:value-of select="location"/>
+             </xsl:when>
+            </xsl:choose>
+            <xsl:if test="$statusFilter != 'Retired' and $devaway/devaway/dev[@nick=$username]">
+              (<uri><xsl:attribute name="link"><xsl:value-of select="concat('devaway.xml?select=', $username,'#',$username)"/></xsl:attribute><brite>away</brite></uri>)
             </xsl:if>
           </ti>
           <ti>
