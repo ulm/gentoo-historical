@@ -1,0 +1,82 @@
+--- unix/xorg-x11-server-source/hw/xfree86/int10/Makefile.am.s390	2007-03-01 12:22:04.000000000 +0100
++++ unix/xorg-x11-server-source/hw/xfree86/int10/Makefile.am	2007-03-01 12:34:20.000000000 +0100
+@@ -38,7 +38,8 @@
+ endif
+ 
+ if INT10_STUB
+-AM_CFLAGS = $(I386_VIDEO_CFLAGS) -D_VM86_LINUX $(XORG_CFLAGS) $(EXTRA_CFLAGS)
++AM_CFLAGS = $(I386_VIDEO_CFLAGS) -D_VM86_LINUX $(XORG_CFLAGS) $(EXTRA_CFLAGS) \
++	-I../common -I../os-support -I../os-support/bus
+ libint10_la_SOURCES = stub.c xf86int10module.c
+ endif
+ 
+--- unix/xorg-x11-server-source/hw/xfree86/common/compiler.h.s390	2007-03-01 12:22:04.000000000 +0100
++++ unix/xorg-x11-server-source/hw/xfree86/common/compiler.h	2007-03-01 12:22:04.000000000 +0100
+@@ -1353,6 +1353,15 @@
+     : "0" (_beg), "r" (_end), "r" (_flg));				\
+ } while (0)
+ 
++#   elif defined(__s390__) || defined(__s390x__)
++
++#define inb(x) (0)
++#define inw(x) (0)
++#define inl(x) (0)
++#define outb(x,y) (0)
++#define outw(x,y) (0)
++#define outl(x,y) (0)
++
+ #   else /* ix86 */
+ 
+ #    define ldq_u(p)	(*((unsigned long  *)(p)))
+--- unix/xorg-x11-server-source/hw/xfree86/common/xf86Helper.c.s390	2007-03-01 12:22:04.000000000 +0100
++++ unix/xorg-x11-server-source/hw/xfree86/common/xf86Helper.c	2007-03-01 12:22:04.000000000 +0100
+@@ -2089,6 +2089,7 @@
+ 	      void (*BlankScreen)(ScrnInfoPtr, Bool), IOADDRESS vertsyncreg,
+ 	      int maskval, int knownclkindex, int knownclkvalue)
+ {
++#if !defined(__s390__) && !defined(__s390x__)
+     register int status = vertsyncreg;
+     unsigned long i, cnt, rcnt, sync;
+ 
+@@ -2182,6 +2183,7 @@
+ 
+     /* Restore registers that were written on */
+     (*ClockFunc)(pScrn, CLK_REG_RESTORE);
++#endif /* !defined(__s390__) && !defined(__s390x__) */
+ }
+ 
+ _X_EXPORT void
+--- unix/xorg-x11-server-source/hw/xfree86/os-support/linux/lnx_video.c.s390	2007-03-01 12:22:04.000000000 +0100
++++ unix/xorg-x11-server-source/hw/xfree86/os-support/linux/lnx_video.c	2007-03-01 12:29:36.000000000 +0100
+@@ -62,7 +62,8 @@
+ #elif !defined(__powerpc__) && \
+       !defined(__mc68000__) && \
+       !defined(__sparc__) && \
+-      !defined(__mips__)
++      !defined(__mips__) && \
++      !defined(__s390__)
+ 
+ /*
+  * Due to conflicts with "compiler.h", don't rely on <sys/io.h> to declare
+@@ -567,7 +568,7 @@
+ #endif
+ 	}
+ 	close(fd);
+-#elif !defined(__mc68000__) && !defined(__sparc__) && !defined(__mips__) && !defined(__sh__) && !defined(__hppa__)
++#elif !defined(__mc68000__) && !defined(__sparc__) && !defined(__mips__) && !defined(__sh__) && !defined(__hppa__) && !defined(__s390__)
+         if (ioperm(0, 1024, 1) || iopl(3)) {
+                 if (errno == ENODEV)
+                         ErrorF("xf86EnableIOPorts: no I/O ports found\n");
+--- unix/xorg-x11-server-source/hw/xfree86/os-support/misc/SlowBcopy.c.s390	2007-03-01 12:22:04.000000000 +0100
++++ unix/xorg-x11-server-source/hw/xfree86/os-support/misc/SlowBcopy.c	2007-03-01 12:22:04.000000000 +0100
+@@ -35,7 +35,9 @@
+ #if !defined(__sparc__) && \
+     !defined(__powerpc__) && \
+     !defined(__mips__) && \
+-    !defined(__ia64__)
++    !defined(__ia64__) && \
++    !defined(__s390__) && \
++    !defined(__s390x__)
+ 	outb(0x80, 0x00);
+ #endif
+     }
