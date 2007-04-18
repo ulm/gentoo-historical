@@ -74,10 +74,14 @@
   <xsl:param name="lingua" select="//*[1]/@lang"/>
 
   <xsl:variable name="mensis" select="document('/xsl/months.xml')"/>
+
   <xsl:variable name="NormlzD">
     <xsl:choose>
     <xsl:when test="translate(normalize-space($datum),'TODAY','today')='today'">
       <xsl:value-of select="func:today()"/>
+    </xsl:when>
+    <xsl:when test="starts-with($datum,'$Date: 2007/04/18 16:50:44 $datum,8,10),'/','-'))">
+      <xsl:value-of select="translate(substring($datum,8,10),'/','-')"/>
     </xsl:when>
     <xsl:otherwise>
       <xsl:value-of select="normalize-space($datum)"/>
