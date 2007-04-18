@@ -80,7 +80,7 @@
     <xsl:when test="translate(normalize-space($datum),'TODAY','today')='today'">
       <xsl:value-of select="func:today()"/>
     </xsl:when>
-    <xsl:when test="starts-with($datum,'$Date: 2007/04/18 16:50:44 $datum,8,10),'/','-'))">
+    <xsl:when test="starts-with($datum,'&#36;Date: ') and 'YES'=func:is-date(translate(substring($datum,8,10),'/','-'))">
       <xsl:value-of select="translate(substring($datum,8,10),'/','-')"/>
     </xsl:when>
     <xsl:otherwise>
