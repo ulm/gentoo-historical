@@ -12,8 +12,8 @@ diajarkan tentang memilih jenis-jenis klien DHCP, menyiapkan bonding, bridging,
 VLAN, dan banyak lagi.
 </abstract>
 
-<version>7.1</version>
-<date>2007-01-04</date>
+<version>8.2</version>
+<date>2007-04-13</date>
 
 <section>
 <title>Modul-modul Jaringan</title>
@@ -209,41 +209,84 @@ server DHCP secara default, jadi anda tidak perlu menentukannya lagi.
 </body>
 </section>
 <section>
-<title>Modem ADSL</title>
+<title>Modem ADSLdengan PPPoE/PPPoA</title>
 <body>
 
 <p>
 Pertama kita perlu menginstal software ADSL.
 </p>
 
-<pre caption="Instalasi paket rp-pppoe">
-# <i>emerge net-dialup/rp-pppoe</i>
+<pre caption="Instalasi paket ppp">
+# <i>emerge net-dialup/ppp</i>
 </pre>
 
-<warn>
-<c>baselayout-1.11.x</c> hanya mendukung PPPoE. Mudah-mudahan, versi-versi
-selanjutnya akan mendukung PPPoA.
-</warn>
+<note>
+Jika anda membutuhkan PPPoA, maka anda harus menggunakan
+>=<c>baselayout-1.12.x</c>.
+</note>
 
 <p>
-Sekarang kita perlu mengkonfigurasi <c>eth0</c> agar menjadi antarmuka ADSL
-lalu memasukkan username kita dengan mengedit <path>/etc/conf.d/net</path>.
+Selanjutnya, ciptakan skrip net PPP dan skrip net untuk antarmuka ethernet yang
+akan digunakan oleh PPP:
 </p>
 
-<pre caption="Konfigurasi eth0 untuk ADSL di /etc/conf.d/net">
-config_eth0=( "adsl" )
-adsl_user_eth0="username"
+<pre caption="Menciptakan skrip net dan PPP">
+# <i>ln -s /etc/init.d/net.lo /etc/init.d/net.ppp0</i>
+# <i>ln -s /etc/init.d/net.lo /etc/init.d/net.eth0</i>
 </pre>
 
 <p>
-Terakhir anda perlu menentukan username dan password anda di
-<path>/etc/ppp/pap-secrets</path>.
+Jangan lupa tetapkan RC_NET_STRICT_CHECKING="yes" di
+<path>/etc/conf.d/rc</path>.
+</p>
+
+<p>
+Sekarang kita perlu mengkonfigurasi <path>/etc/conf.d/net</path>.
+</p>
+
+<pre caption="Pengaturan dasar PPPoE">
+config_eth0=( null ) <comment>(Menentukan antarmuka ethernet)</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth0" <comment>(Menentukan antarmuka ethernet)</comment>
+plugins_ppp0=( "pppoe" )
+username_ppp0='user'
+password_ppp0='password'
+pppd_ppp0=(
+       "noauth"
+       "defaultroute"
+       "usepeerdns"
+       "holdoff 3"
+       "child-timeout 60"
+       "lcp-echo-interval 15"
+       "lcp-echo-failure 3"
+       noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp
+)
+
+depend_ppp0() {
+    need net.eth0
+}
+</pre>
+
+<p>
+Anda juga boleh menentukan password anda di <path>/etc/ppp/pap-secrets</path>.
 </p>
 
 <pre caption="Contoh /etc/ppp/pap-secrets">
 <comment># Tanda * penting</comment>
 "username"  *  "password"
 </pre>
+
+<p>
+Anda harus menginstal <c>br2684ctl</c> jika anda menggunakan PPPoE dengan modem
+USB. Bacalah <path>/usr/portage/net-dialup/speedtouch-usb/files/README</path>
+untuk mengetahui cara mengkonfigurasinya.
+</p>
+
+<impo>
+Bacalah seksi ADSL dan PPP di <path>/etc/conf.d/net.example</path>. File ini
+berisi penjelasan mendalam tentang semua pengaturan PPP yang kemungkinan besar
+anda perlukan
+</impo>
 
 </body>
 </section>
