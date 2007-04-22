@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/home-router-howto.xml,v 1.24 2007/03/11 23:41:40 shadoww Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/home-router-howto.xml,v 1.25 2007/04/22 21:11:20 rane Exp $ -->
 
 <guide link="/doc/pl/home-router-howto.xml" lang="pl">
 <title>Konfiguracja routera</title>
@@ -19,8 +19,8 @@ Internetem.
 
 <license/>
 
-<version>1.35</version>
-<date>2007-03-07</date>
+<version>1.37</version>
+<date>2007-04-06</date>
 
 <chapter>
 <title>Wprowadzenie</title>
@@ -192,38 +192,52 @@ poprzez interfejs eth1.
 <body>
 
 <p>
-Całe oprogramowanie dla PPPoE znajduje się w jednym małym pakiecie - <uri
-link="http://www.roaringpenguin.com/">Roaring Penguin</uri>. Jego instalacja w
-Gentoo odbywa się za pomocą polecenia <c>emerge rp-pppoe</c>. Na początku
-dokumentu wspominaliśmy o nazwie użytkownika i haśle, należy je umieścić w pliku
-<path>/etc/ppp/pppoe.conf</path>.
+Całe oprogramowanie dla PPPoE, które kiedyś znajdowało się w pakiecie rp-pppoe
+<uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri> zostało
+zintegrowane do <uri link="http://samba.org/ppp/">standardowego pakietu
+PPP</uri>. Jego instalacja w Gentoo odbywa się za pomocą polecenia <c>emerge
+ppp</c>. Na początku dokumentu wspominaliśmy o nazwie użytkownika i haśle,
+należy je umieścić w pliku <path>/etc/conf.d/net</path>.
 </p>
 
 <note>
 Aby poniższe instrukcje zadziałały potrzebny będzie pakiet baselayout w wersji
-1.11.14 lub nowszy.
+1.12.9 lub nowszy.
 </note>
 
 <pre caption="Konfiguracja interfejsu eth1">
 <comment>(Zamieniamy 'vla9h924' na odpowiednią nazwę
-użytkownika, a 'password' na odpowiednie hasło)</comment>
+użytkownika, a 'boogie' na odpowiednie hasło)</comment>
 
-# <i>nano /etc/ppp/pap-secrets</i>
-<comment># Kolejno: Klient, serwer, tajemnica:</comment>
-"vla9h924" * "password"
+"vla9h924" * "boogie"
 # <i>nano /etc/conf.d/net</i>
-<comment># Wpis przypisujący połączenie adsl do eth1:</comment>
-ifconfig_eth1=( "adsl" )
-user_eth1=( "vla9h924" )
-# <i>ln -s net.lo /etc/init.d/net.eth1</i>
-# <i>rc-update add net.eth1 default</i>
-# <i>/etc/init.d/net.eth1 start</i>
+<comment># Wpis przypisujący połączenie adsl poprzez eth1 do ppp0:</comment>
+ifconfig_ppp0=( "ppp" )
+link_ppp0=( "eth1" )
+plugins_ppp0=( "pppoe" )
+pppd_ppp0=(
+ "defaultroute"
+ "usepeerdns"
+  <comment>Inne interesujące ustawienia można znaleźć w pliku /etc/conf.d/net.example</comment>
+)
+username_ppp0="vla9h924"
+password_ppp0="boogie"
+
+# <i>ln -s net.lo /etc/init.d/net.ppp0</i>
+# <i>rc-update add net.ppp0 default</i>
+# <i>/etc/init.d/net.ppp0 start</i>
 </pre>
 
 <warn>
 Przy podnoszeniu interfejsu DSL zostanie utworzone ppp0. Jest to dość mylące,
 gdyż karta sieciowa tego interfejsu nazywa się eth1. Od tej pory w przykładach
 utożsamiamy eth1 z ppp0.
+</warn>
+
+<warn>
+Niezbędna jest zmiana praw dostępu do pliku <path>/etc/conf.d/net</path> tak,
+aby miał do niego dostęp tylko root, ponieważ znajdują się w nim nazwa
+użytkownika i hasło.
 </warn>
 
 </body>
@@ -800,24 +814,25 @@ przesyłanych załączników tak, aby zbyt duże pliki nie blokowały łącza.
 # <i>iptables -I INPUT -p tcp --dport smtp -i ! ${LAN} -j REJECT</i>
 # <i>ln -s /var/qmail/supervise/qmail-send /service/qmail-send</i>
 # <i>ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd</i>
-<!--
 # <i>cd /etc/tcprules.d</i>
 # <i>nano tcp.qmail-smtp</i>
--->
+<!--
 # <i>cd /etc</i>
 # <i>nano tcp.smtp</i>
-<comment>Dodaj taki wpis do sekcji allow:
-192.168.0.:allow,RELAYCLIENT=""</comment>
+-->
+<comment>Dodajemy następujący wpis do sekcji allow:</comment>
+192.168.0.:allow,RELAYCLIENT=""
 <!--
 # <i>tcprules tcp.qmail-qmtp.cdb rules.tmp &lt; tcp.qmail-smtp</i>
--->
 # <i>tcprules tcp.smtp.cdb rules.tmp &lt; tcp.smtp</i>
+-->
+# <i>make</i>
 # <i>rc-update add svscan default</i>
 # <i>/etc/init.d/svscan start</i>
 </pre>
 
 <p>
-Osobiście jestem wielkim fanem programu netqmail, ale jego wybór nie jest tu
+Osobiście jestem wielkim fanem programu qmail, ale jego wybór nie jest tu
 obowiązkowy i można swobodnie wybrać inny MTA. Podczas konfiguracji poczty
 należy ustawić jako serwer adres 192.168.1.0 i wszystko powinno działać
 prawidłowo. Więcej informacji na ten temat znajduje się na stronie domowej
