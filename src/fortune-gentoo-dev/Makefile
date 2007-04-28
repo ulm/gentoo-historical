@@ -1,13 +1,13 @@
 # Copyright 1999-2007 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/fortune-gentoo-dev/Makefile,v 1.3 2007/04/28 23:25:58 robbat2 Exp $
+# $Header: /var/cvsroot/gentoo/src/fortune-gentoo-dev/Makefile,v 1.4 2007/04/28 23:29:32 robbat2 Exp $
 
 # These are specific to Gentoo.
 # If you are elsewhere, you might want to change them.
 STRFILE ?= /usr/bin/strfile
 PERL ?= /usr/bin/perl
 RM ?= /bin/rm
-INSTALL ?= /usr/bin/install -c
+INSTALL ?= /usr/bin/install -c -m0644
 INSTALL_DIR ?= $(INSTALL) -d
 ROT13 ?= $(PERL) rot13.pl
 FORTUNE_DIR ?= /usr/share/fortune
