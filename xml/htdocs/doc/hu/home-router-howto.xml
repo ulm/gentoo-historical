@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Id: home-router-howto.xml,v 1.4 2007/03/28 16:27:09 neysx Exp $ -->
+<!-- $Id: home-router-howto.xml,v 1.5 2007/05/04 09:34:47 neysx Exp $ -->
 
 <guide link="/doc/hu/home-router-howto.xml" lang="hu">
 
@@ -23,8 +23,8 @@ Ez a dokumentum arról szól, hogyan változtasd a kivénhedt, otthoni Gentoo-s 
 <!-- The content of this document is released into the public domain -->
 <license/>
 
-<version>1.35</version>
-<date>2007-03-07</date>
+<version>1.37</version>
+<date>2007-04-06</date>
 
 <chapter>
 <title>Bevezető</title>
@@ -204,40 +204,56 @@ interfészen keresztül.
 
 <p>
 Az összes gusztusos PPPoE szoftver egy kis csomagba lett egybegyúrva, amit 
-manapság <uri link="http://www.roaringpenguin.com/">Roaring 
-Penguin</uri>-nak hívnak. Egyszerűen telepítsd fel az <c>emerge rp-pppoe</c> 
-paranccsal és már léphetsz is tovább. Emlékszel, említettem, hogy szükséged 
-lesz a felhasználónév/jelszó párosra? Nos mivel nem tréfáltam, remélem 
-mostanra a kezed ügyében van! Töltsd be a <path>/etc/ppp/pppoe.conf</path> 
-fájlt a kedvenc szövegszerkesztődbe és állítsd be.
+manapság rp-pppoe-nak hívnak (<uri link="http://www.roaringpenguin.com/">Roaring Penguin</uri>), és bele lett integrálva a <uri link="http://samba.org/ppp/">standard PPP csomagba</uri>. Egyszerűen telepítsd fel az <c>emerge ppp</c> paranccsal és már léphetsz is tovább. Emlékszel, említettem, hogy szükséged lesz a felhasználónév/jelszó párosra? Nos mivel nem tréfáltam, remélem mostanra a kezed ügyében van! Töltsd be a <path>/etc/conf.d/net</path> fájlt a kedvenc szövegszerkesztődbe és állítsd be.
 </p>
 
 <note>
-Hogy a következő beállítások működjenek, ahhoz a baselayout-1.11.14 vagy 
+Hogy a következő beállítások működjenek, ahhoz a baselayout-1.12.9 vagy 
 frissebb verziójának telepítve kell lennie.
 </note>
 
 <pre caption="Az eth1 beállítása">
-<comment>(Cseréld le a 'vla9h924'-t a felhasználónevedre és a 'password'-öt a 
+<comment>(Cseréld le a 'felhasználó'-t a felhasználónevedre és a 'jelszó'-t a 
 jelszavadra)</comment>
 
 # <i>nano /etc/ppp/pap-secrets</i>
 <comment># client    server  secret</comment>
 "vla9h924" * "password"
 # <i>nano /etc/conf.d/net</i>
-<comment>Mondjuk meg a baselayout-nak, hogy az adsl-t használja az eth1-hez:
-</comment>
-config_eth1=( "adsl" )
-user_eth1=( "vla9h924" )
-# <i>ln -s net.lo /etc/init.d/net.eth1</i>
-# <i>rc-update add net.eth1 default</i>
-# <i>/etc/init.d/net.eth1 start</i>
+<comment>Mondjuk meg a baselayout-nak, hogy az adsl-t használja a ppp0-nak az 
+eth1-en:</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth1"
+plugins_ppp0=( "pppoe" )
+pppd_ppp0=(
+        "defaultroute"
+        "usepeerdns"
+        <comment>Ha kíbványcsi vagy egyéb beállításokra, akkor látogass el a 
+/etc/conf.d/net.example-be</comment>
+)
+username_ppp0="felhasználó"
+password_ppp0="jelszó"
+
+# <i>ln -s net.lo /etc/init.d/net.ppp0</i>
+# <i>rc-update add net.ppp0 default</i>
+# <i>/etc/init.d/net.ppp0 start</i>
 </pre>
 
 <warn>
 Amikor a DSL interfész feléled, létrejön a ppp0 nevű interfészt. Habár a 
 hálózati kártyádat eth1-nek hívják, az IP címet mégis a ppp0 fogja megkapni. 
 Így mostantól, ha a példákban 'eth1'-et látsz, akkor cseréld le 'ppp0'-ra.
+</warn>
+
+<warn>
+Változtasd meg úgy a /etc/conf.d/net jogosultságát, hogy csak a root tudja 
+írni/olvasni, hiszen éppen most tettünk bele felhasználónevet és jelszót.
+</warn>
+
+<warn>
+Ha emberi beavatkozás kell az <c>rp-ppoe</c> csomaghoz, vagy embernek kell 
+újraindítania a kapcsolatot, akkor nézz el Hibaelhárítás MTU részébe.
+chapter.
 </warn>
 
 </body>
@@ -696,7 +712,7 @@ tc qdisc add dev $DEV parent 1:10 handle 10: sfq
 -->
 
 <section>
-<title>Idő Szerver</title>
+<title>Idő szerver</title>
 <body>
 
 <p>
@@ -841,24 +857,25 @@ nagyméretű csatolmányok nem fogják meg a kapcsolatodat fél órára.
 # <i>iptables -I INPUT -p tcp --dport smtp -i ! ${LAN} -j REJECT</i>
 # <i>ln -s /var/qmail/supervise/qmail-send /service/qmail-send</i>
 # <i>ln -s /var/qmail/supervise/qmail-smtpd /service/qmail-smtpd</i>
-<!--
 # <i>cd /etc/tcprules.d</i>
 # <i>nano tcp.qmail-smtp</i>
--->
+<!--
 # <i>cd /etc</i>
 # <i>nano tcp.smtp</i>
+-->
 <comment>Az engedélyező részhez add hozzá a következő sort:</comment>
 192.168.0.:allow,RELAYCLIENT=""
 <!--
 # <i>tcprules tcp.qmail-qmtp.cdb rules.tmp &lt; tcp.qmail-smtp</i>
--->
 # <i>tcprules tcp.smtp.cdb rules.tmp &lt; tcp.smtp</i>
+-->
+# <i>make</i>
 # <i>rc-update add svscan default</i>
 # <i>/etc/init.d/svscan start</i>
 </pre>
 
 <p>
-Lelkes rajongója vagyok a netqmail-nek, de nyugodtan használhatsz más 
+Lelkes rajongója vagyok a qmail-nek, de nyugodtan használhatsz más 
 levélküldőt is :). Amikor a gépeken állítod be az e-mail küldést, SMTP 
 szervernek a routert add meg (192.168.0.1) így minden flottul fog menni. 
 Bővebb dokumentációt a qmail-ről a 

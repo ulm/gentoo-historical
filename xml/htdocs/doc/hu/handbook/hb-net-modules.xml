@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Id: hb-net-modules.xml,v 1.3 2007/01/25 11:21:04 neysx Exp $ -->
+<!-- $Id: hb-net-modules.xml,v 1.4 2007/05/04 09:34:47 neysx Exp $ -->
 
 <sections>
 
@@ -14,8 +14,8 @@ között a DHCP kliens kiválasztásáról, csatolások (bonding) és hidak (bri
 beállításáról valamint a VLAN-okról olvashatsz.
 </abstract>
 
-<version>7.1</version>
-<date>2007-01-04</date>
+<version>8.2</version>
+<date>2007-04-13</date>
 
 <section>
 <title>Hálózati modulok</title>
@@ -217,34 +217,64 @@ többé.
 </body>
 </section>
 <section>
-<title>ADSL Modem</title>
+<title>ADSL PPPoE/PPPoA-val</title>
 <body>
 
 <p>
 Először is fel kell telepíteni az ADSL-hez a programot.
 </p>
 
-<pre caption="Az rp-pppoe csomag feltelepítése">
-# <i>emerge net-dialup/rp-pppoe</i>
+<pre caption="Az ppp csomag feltelepítése">
+# <i>emerge net-dialup/ppp</i>
 </pre>
 
 <warn>
-Csak a <c>baselayout-1.11.x</c> támogatja a PPPoE-t. Remélhetőleg a következő 
-verziók támogatni fogják a PPPoA-t.
+Csak a <c>baselayout-1.12.x</c> és későbbi verziók támogatják a PPPoA-t.
 </warn>
 
 <p>
-Ezután be kell állítanunk az <c>eth0</c>-t ADSL interfésznek valamint meg kell 
-adnunk a felhasználó nevünket is az <path>/etc/conf.d/net</path> állományban.
+Másodszorra létre kell hozni a PPP hálózati scriptet a hálózati interfész scriptjéből:
 </p>
 
-<pre caption="Eth0 beállítása a /etc/conf.d/net-ben ADSL-hez">
-config_eth0=( "adsl" )
-adsl_user_eth0="felhasznalonev"
+<pre caption="A PPP és hálózati scriptek létrehozása">
+# <i>ln -s /etc/init.d/net.lo /etc/init.d/net.ppp0</i>
+# <i>ln -s /etc/init.d/net.lo /etc/init.d/net.eth0</i>
 </pre>
 
 <p>
-Végül az <path>/etc/ppp/pap-secrets</path> állományban meg kell adnod a 
+Állítsd be a RC_NET_STRICT_CHECKING="yes" értéket a 
+<path>/etc/conf.d/rc</path> fájlban.
+</p>
+
+<p>
+Ezután be kell állítanunk a <path>/etc/conf.d/net</path> állományt.
+</p>
+
+<pre caption="Egy alap PPPoE beállítás">
+config_eth0=( null ) <comment>(Itt a hálózati interfészedet add meg)</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth0" <comment>(Szintén a hálózati interfészedet add meg)</comment>
+plugins_ppp0=( "pppoe" )
+username_ppp0='felhasználó'
+password_ppp0='jelszó'
+pppd_ppp0=(
+       "noauth"
+       "defaultroute"
+       "usepeerdns"
+       "holdoff 3"
+       "child-timeout 60"
+       "lcp-echo-interval 15"
+       "lcp-echo-failure 3"
+       noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp
+)
+
+depend_ppp0() {
+    need net.eth0
+}
+</pre>
+
+<p>
+Az <path>/etc/ppp/pap-secrets</path> állományban add meg a 
 felhasználónevedet és a jelszavadat.
 </p>
 
@@ -252,6 +282,19 @@ felhasználónevedet és a jelszavadat.
 <comment># A * lényeges</comment>
 "felhasznalonev"  *  "jelszo"
 </pre>
+
+<p>
+Ha a PPPoE-t USB modemmel szeretnéd használni, akkor emergelned kell a 
+<c>br2684ctl</c> csomagot. Kérlek olvasd el a 
+<path>/usr/portage/net-dialup/speedtouch-usb/files/README</path> fájlt a 
+konfigurálás előtt. Fontos információk vannak benne.
+</p>
+
+<impo>
+Kérlek figyelmesen olvasd át a <path>/etc/conf.d/net.example</path> ADSL-re és 
+PPP-re vonatkozó részét. Ez részletesebb magyarázattal szolgál a 
+beállításokról, és valószínűleg szükséged is lesz rá.
+</impo>
 
 </body>
 </section>
