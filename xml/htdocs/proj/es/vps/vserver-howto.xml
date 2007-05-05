@@ -1,5 +1,5 @@
 <?xml version = '1.0' encoding = 'UTF-8' ?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/vps/vserver-howto.xml,v 1.2 2007/03/03 16:35:21 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/vps/vserver-howto.xml,v 1.3 2007/05/05 18:03:17 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/proj/es/vps/vserver-howto.xml" lang="es">
@@ -31,8 +31,8 @@ usando la Tecnología Linux-VServer
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.9</version>
-<date>2007-02-10</date>
+<version>1.10</version>
+<date>2007-03-26</date>
 
 <chapter>
 <title>Introducción</title>
@@ -185,13 +185,16 @@ utilidades prácticas.
 <p>
 Se debe ejecutar el comando <c>vprocunhide</c> después de cada
 reinicio para establecer los permisos adecuados en <path>/proc</path>
-para los huéspedes vserver. util-vserver instala un guión de inicio
-que puede añadir al nivel de ejecución por defecto:
+para los huéspedes vserver. util-vserver acaba de instalar dos guiones
+de inicio que ejecutan el comando <c>vprocunhide</c> y tienen cuidado de
+los servidores virtuales durante el apagado del anfitrión.
 </p>
 
-<pre caption="Guíon de inicio de vprocunhide" >
+<pre caption="Guiones de inicio de util-vserver" >
 # <i>rc-update add vprocunhide default</i>
 # <i>/etc/init.d/vprocunhide start</i>
+# <i>rc-update add util-vserver default</i>
+# <i>/etc/init.d/util-vserver start</i>
 </pre>
 </body>
 </section>
@@ -200,18 +203,31 @@ que puede añadir al nivel de ejecución por defecto:
 <chapter>
 <title>Creación de un huésped</title>
 <section>
-<title>Uso de un vserver con un stage3/4</title>
+<title>Descargar un stage3/4 precompilado</title>
 <body>
 
 <p>
-Necesitaremos descargar un stage3/4 preparado para vserver desde uno
-de <uri link="/main/en/mirrors.xml">los mirrors de Gentoo</uri>. Estos
-stages están situados en el directorio
-<path>experimental/&lt;arch&gt;/vserver/</path>. Puesto que un
-stage3/4 contiene un sistema de ficheros root completo, puede usar el
-método de creación por plantilla de util-vserver. Sin embargo, este
-métod sólo está disponible desde util-vserver-0.30.211, por tanto
-asegúrese de tener instalada la versión correcta.
+Puesto que muchos comandos relacionados con el hardware no están
+disponibles dentro de un servidor virtual, se ha parcheado una versión
+del baselayout llamada baselayout-vserver. Sin embargo, desde
+baselayout-1.13.0_alpha12, todos los cambios necesarios se han integrado
+en el baselayout normal, eliminado la necesidad de stages, perfiles y
+baselayout de vserver separados. El único (temporalmente) inconveniente
+es que baselayout-1.13 todavía se considera un stage alfa y no se
+encuentran aún disponibles stages con baselayout-1.13 en los servidores
+espejo.
+</p>
+
+<p>
+Tan pronto como baselayout-1.13 se considere estable, puede usar un stage3/4
+precompilado desde nuestros
+<uri link="/main/en/mirrors.xml">servidores espejo</uri>. Mientras tanto, por
+favor descarge un stage3/4 desde
+<uri link="http://people.linux-vserver.org/~hollow/stages/">aquí</uri>.
+Puesto que un stage3/4 contiene un sistema de ficheros root completo, puede
+usar el método de creación por plantilla de util-vserver. Sin embargo,
+este método sólo funciona de forma segura desde util-vserver-0.30.213_rc5,
+por tanto asegúrese de tener instalada la versión correcta.
 </p>
 
 <p>
@@ -226,12 +242,47 @@ de la IP de los servidores virtuales).
 El ID de contexto debe ser 1 &lt; ID &lt; 49152.
 </note>
 
+</body>
+</section>
+<section>
+<title>Uso del método de creación por plantilla</title>
+<body>
+
+<p>
+Desde hace mucho tiempo hasta ahora, el único estilo de inicio disponible
+en gentoo ha sido el estilo de inicio sencillo, es decir un proceso normal
+de inicio será iniciado dentro del huésped, tal como se hace en un
+sistema Unix común. Sin embargo, este método tiene algunos inconvenientes:
+</p>
+
+<ul>
+<li>No es posible ver la salida de los guiones init/rc</li>
+<li>Recursos malgastados para los procesos de inicio idle en cada huésped</li>
+<li>Molestos conflictos para <path>/etc/inittab</path></li>
+</ul>
+
+<p>
+Por lo tanto, muchos usuarios han pedido reimplementar el estilo de inicio
+de gentoo, que fue abandonado porque suponía una implementación poco 
+limpia y más o menos funcionaba por casualidad debido a otras
+modificaciones hechas entonces en el baselayout. Sin embargo, desde
+util-vserver-0.30.21 el estilo de inicio de gentoo ha sido puesto en
+práctica de nuevo de una manera concisa y será el predeterminado en el
+futuro.
+</p>
+
+<note>
+Si no hay una buena razón par usar un proceso de inicio suplementario por
+cada huésped o si no sabe qué hacer aquí, debería utililar el estilo de
+inicio de gentoo.
+</note>
+
 <pre caption="Inicio de la instalación de un stage3" >
 # <i>vserver myguest build \</i>
   <i>--context 1253 \</i>
   <i>--hostname gentoo \</i>
   <i>--interface eth0:192.168.1.253/24 \</i>
-  <i>--initstyle plain \</i>
+  <i>--initstyle gentoo \</i> <comment>(cambiélo si lo necesita)</comment>
   <i>-m template -- \</i>
   <i>  -d gentoo \</i>
   <i>  -t /path/to/stage4-&lt;arch&gt;-&lt;version&gt;.tar.bz2</i>
@@ -250,15 +301,33 @@ virtual se hará en el anfitrión.
 </note>
 
 <p>
-Deberíamos ser capaces de iniciar y entrar en el servidor virtual
-usando los siguientes comandos. Si echamos a faltar algunos como
-<c>mount</c> o <c>dmesg</c> deberemos hacer <c>emerge util-linux</c>
-dentro del servidor virtual puesto que el perfil del vserver no
-contiene este paquete por defecto.
+Deberíamos ser ahora capaces de iniciar y entrar en el servidor virtual
+usando los siguientes comandos.
 </p>
 
 <pre caption="Probar el servidor virtual" >
 # <i>vserver myguest start</i>
+
+
+Gentoo/Linux 1.13.0_alpha12; http://www.gentoo.org/
+ Copyright 1999-2007 Gentoo Foundation; Distributed under the GPLv2
+
+Press I to enter interactive boot mode
+
+ * Using existing device nodes in /dev                    [ ok ]
+ * root filesystem is mounted read-write - skipping
+ * Checking all filesystems                               [ ok ]
+ * Mounting local filesystems                             [ ok ]
+ * Activating (possible) swap                             [ ok ]
+ * Setting hostname to myguest                            [ ok ]
+ * Updating environment                                   [ ok ]
+ * Cleaning /var/lock, /var/run                           [ ok ]
+ * Cleaning /tmp directory                                [ ok ]
+ * Initializing random number generator                   [ ok ]
+ * Setting system clock using the hardware clock [VPS]    [ ok ]
+ * Starting syslog-ng                                     [ ok ]
+ * Starting vixie-cron                                    [ ok ]
+ * Starting local                                         [ ok ]
 # <i>vserver-stat</i>
 CTX   PROC    VSZ    RSS  userTIME   sysTIME    UPTIME NAME
 0       90   1.4G 153.4K  14m00s11   6m45s17   2h59m59 root server
