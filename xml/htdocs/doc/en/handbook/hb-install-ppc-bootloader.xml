@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-ppc-bootloader.xml,v 1.40 2006/11/13 09:56:55 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-ppc-bootloader.xml,v 1.41 2007/05/07 18:11:41 nightmorph Exp $ -->
 
 <sections>
 
-<version>7.2</version>
-<date>2006-11-13</date>
+<version>8.0</version>
+<date>2007-05-07</date>
 
 <section>
 <title>Choosing a Bootloader</title>
@@ -28,7 +28,7 @@ If you are using a NewWorld Apple or IBM machine, you need to use
 <uri link="#yaboot">yaboot</uri>.  OldWorld Apple machines have two options,
 <uri link="#bootx">BootX</uri> (recommended) and <uri link="#quik">quik</uri>.
 The Pegasos does not require a bootloader, but you will need to emerge 
-<uri link="#bootcreator">BootCreator</uri> to create SmartFirmware bootmenus.
+<uri link="#bootcreator">bootcreator</uri> to create SmartFirmware boot menus.
 </p>
 
 </body>
@@ -72,24 +72,24 @@ or USB, you will need to manually configure yaboot.
 <note>
 You will need to manually edit the yaboot.conf when using genkernel, even if
 yabootconfig is used.  The kernel image section of yaboot.conf should be
-modified as follows:
+modified as follows (using vmlinux and initrd as the name of kernel and 
+initrd image):
 </note>
 
 <pre caption="Adding genkernel boot arguments to yaboot.conf">
 <comment>###########################################################
 ## This section can be duplicated if you have more than one
-## kernel or set of boot options - replace kernel-name
-## and initrd-name with the exact filename of your kernel
-## and initrd image.
+## kernel or set of boot options - replace the image and initrd
+## with the exact filename of your kernel and initrd image.
 ###########################################################</comment>
-image=/boot/kernel-name
+image=/boot/kenrel-genkernel-ppc-<keyval id="kernel-gentoo"/>
   label=Linux
   root=/dev/ram0
   partition=3
-  initrd=/boot/initrd-name
-  append="real_root=/dev/hda3 init=/linuxrc"  
+  initrd=/boot/initramfs-genkernel-ppc-<keyval id="kernel-gentoo"/>
   <comment># You can add additional kernel arguments to append such as 
   # rootdelay=10 for a USB/Firewire Boot</comment>
+  append="real_root=/dev/hda3 init=/linuxrc"  
   read-only
 <comment>##########################################################</comment>
 </pre>
@@ -115,9 +115,9 @@ set up dual and triple boot combinations with Linux, Mac OS, and Mac OS X.
 <p>
 To use <c>yabootconfig</c>, your drive must have an Apple_Bootstrap partition,
 and <path>/etc/fstab</path> must be configured to reflect your Linux 
-partitions. These steps should have already been completed before, but check
-<path>/etc/fstab</path> before proceeding.  Now, ensure that you have 
-<c>yaboot</c> installed.
+partitions (note that the Bootstrap partition should <e>not</e> be in your
+fstab). These steps should have already been completed before, but check
+<path>/etc/fstab</path> before proceeding.  Now, install <c>yaboot</c>.
 </p>
 
 <pre caption = "Installing yaboot">
@@ -141,9 +141,11 @@ the yaboot configuration file into it.  After this enter the chroot again.
 </pre>
 
 <p>
-You might want to verify the contents of <path>/etc/yaboot.conf</path>. If you
-make changes to <path>/etc/yaboot.conf</path> (like setting the default/boot
-OS), make sure to rerun <c>ybin -v</c> to apply changes to the Apple_Bootstrap
+You should verify the contents of <path>/etc/yaboot.conf</path>. If you make
+changes to <path>/etc/yaboot.conf</path> (like setting the default/boot OS),
+make sure to rerun <c>ybin -v</c> to apply changes to the Apple_Bootstrap
+partition.  Whenever you make a change to yaboot.conf, like when testing a new
+kernel, always remember to run <c>ybin -v</c> to update the bootstrap
 partition.
 </p>
 
@@ -158,11 +160,11 @@ Now continue with <uri link="#reboot">Rebooting the System</uri>.
 <body>
 
 <p>
-First make sure you have <c>yaboot</c> installed on your system:
+First, install <c>yaboot</c> on your system:
 </p>
 
-<pre caption = "Installing yaboot with GRP">
-# <i>emerge --usepkg yaboot</i>
+<pre caption="Installing yaboot">
+# <i>emerge yaboot</i>
 </pre>
 
 <p>
@@ -215,11 +217,12 @@ timeout=30
 install=/usr/lib/yaboot/yaboot
 magicboot=/usr/lib/yaboot/ofboot
 
-<comment>#################
-## This section can be duplicated if you have more than one kernel or set of
-## boot options - replace kernel-name with your kernel-version
-#################</comment>
-image=/boot/kernel-name
+<comment>############################################################
+## This section can be duplicated if you have more than one
+## kernel or set of boot options - replace the image variable
+## with the exact filename of your kernel.
+###########################################################</comment>
+image=/boot/<keyval id="kernel-name"/>
   label=Linux
   root=/dev/hda3
   partition=3
@@ -228,7 +231,7 @@ image=/boot/kernel-name
 <comment>##################
 
 ## G5 users and some G4 users should set 
-##   macos=hd:13
+##   macos=hd:13/
 ##   macosx=hd:12
 ## instead of the example values.</comment>
 macos=/dev/hda13
@@ -278,7 +281,7 @@ mounted, we'll copy the kernel to the system folder so BootX can find it.
 # <i>exit</i>
 cdimage ~# <i>mkdir /mnt/mac</i>
 cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
-cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux Kernels/<keyval id="kernel-name"/>"</i>
 </pre>
 
 <p>
@@ -290,8 +293,8 @@ MacOS partition.
 # <i>exit</i>
 cdimage ~# <i>mkdir /mnt/mac</i>
 cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
-cdimage ~# <i>cp /mnt/gentoo/boot/kernel-* "/mnt/mac/System Folder/Linux Kernels"</i>
-cdimage ~# <i>cp /mnt/gentoo/boot/initramfs-* "/mnt/mac/System Folder"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/kernel-genkernel-ppc-<keyval id="kernel-gentoo"/> "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/initramfs-genkernel-ppc-<keyval id="kernel-gentoo"/> "/mnt/mac/System Folder"</i>
 </pre>
 
 <p>
@@ -359,19 +362,21 @@ First, we'll need to install quik:
 </pre>
 
 <p>
-Next, we'll need to set it up.  Edit /etc/quik.conf and set your image to the
-kernel that we copied to your boot partition.
+Next, we'll need to set it up. Edit <path>/etc/quik.conf</path> and set your
+image to the kernel that we copied to your boot partition.
 </p>
 
 <pre caption="Configuring quik.conf">
 # Example of quik.conf
-init-message = "Gentoo 2006.1\n"
-partition = 2		<comment># This is the boot partition</comment>
+init-message = "Gentoo 2007.0\n"
+<comment># This is the boot partition</comment>
+partition = 2
 root = /dev/hda4
 timeout = 30
 default = gentoo
-image = /vmlinux	<comment># This is your kernel</comment>
-	label = gentoo
+<comment># This is your kernel</comment>
+image = /<keyval id="kernel-name"/>
+  label = gentoo
 </pre>
 
 <p>
@@ -398,17 +403,18 @@ before attempting this.
 # <i>nvsetenv input-device kbd</i>
 # <i>nvsetenv boot-device scsi/sd@1:0</i> <comment># For SCSI</comment>
 # <i>nvsetenv boot-device ata/ata-disk@0:0</i> <comment># For ATA</comment>
-# <i>nvsetenv boot-file /boot/vmlinux-2.6.17 root=/dev/hda4</i> <comment>First item is the path to the kernel, the second is the root partition.  You may append any kernel options to the end of this line.</comment>
+# <i>nvsetenv boot-file /boot/<keyval id="kernel-name"/> root=/dev/hda4</i> <comment>First item is the path to the kernel, the second is the root partition.  You may append any kernel options to the end of this line.</comment>
 # <i>nvsetenv boot-command boot</i> <comment># Set this to bye for MacOS and boot for Linux</comment>
 </pre>
 
 <note>
-It is also possible to change your boot variables from MacOS.  Depending
-upon the model, either 
-<uri link="http://penguinppc.org/bootloaders/quik/BootVars.sit.hqx">bootvars</uri> or 
-<uri link="ftp://ftp.apple.com/developer/macosxserver/utilities/SystemDisk2.3.1.smi.bin">
-Apple System Disk</uri> should be used.  Please see the quik quirks page
-above for more information.
+It is also possible to change your boot variables from MacOS.  Depending upon
+the model, either <uri
+link="http://penguinppc.org/bootloaders/quik/BootVars.sit.hqx">bootvars</uri> or
+<uri
+link="ftp://ftp.apple.com/developer/macosxserver/utilities/SystemDisk2.3.1.smi.bin">
+Apple System Disk</uri> should be used.  Please see the quik quirks page above
+for more information.
 </note>
 
 <p>
@@ -445,7 +451,7 @@ First make sure you have <c>bootcreator</c> installed on your system:
 </p>
 
 <pre caption = "Installing bootcreator">
-# <i>emerge --usepkg bootcreator</i>
+# <i>emerge bootcreator</i>
 </pre>
 
 <p>
@@ -459,8 +465,8 @@ Now copy the file <path>/etc/bootmenu.example</path> into
 </pre>
 
 <p>
-Below is a complete <path>/etc/bootmenu</path> config file.  The kernel-name
-and initrd-name should be replaced by your kernel and initrd image names.
+Below is a complete <path>/etc/bootmenu</path> config file. vmlinux and
+initrd should be replaced by your kernel and initrd image names.
 </p>
 
 <pre caption = "bootcreator config file">
@@ -485,15 +491,15 @@ ide:0 boot2.img ramdebug edebugflags="logkprintf"
 
 [SECTION]
 Local HD -> Linux (Normal)
-ide:0 kernel-name video=radeonfb:1024x768@70 root=/dev/hda3
+ide:0 <keyval id="kernel-name"/> video=radeonfb:1024x768@70 root=/dev/hda3
 
 [SECTION]
 Local HD -> Genkernel (Normal)
-ide:0 kernel-name root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc initrd=initrd-name
+ide:0 kernel-genkernel-ppc-<keyval id="kernel-gentoo"/> root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc initrd=initramfs-genkernel-ppc<keyval id="kernel-gentoo"/>
 </pre>
 
 <p>
-Finally the <path>bootmenu</path> must be transfered into Forth and copied to
+Finally the <path>bootmenu</path> must be transferred into Forth and copied to
 your boot partition, so that the SmartFirmware can read it.  Therefore you have
 to call <c>bootcreator</c>:
 </p>

@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-mips-kernel.xml,v 1.23 2007/02/26 08:54:53 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-mips-kernel.xml,v 1.24 2007/05/07 18:11:41 nightmorph Exp $ -->
 <!-- :vim:ts=2:sts=2:et:tw=80: -->
 <sections>
 
-<version>7.1</version>
-<date>2007-02-26</date>
+<version>8.0</version>
+<date>2007-05-07</date>
 
 <section>
 <title>Timezone</title>
@@ -17,14 +17,17 @@
 
 <p>
 You first need to select your timezone so that your system knows where it is
-located. Look for your timezone in <path>/usr/share/zoneinfo</path>, then copy
-it to <path>/etc/localtime</path>. Please avoid the
+located. Look for your timezone in <path>/usr/share/zoneinfo</path>. You then
+set your timezone in <path>/etc/conf.d/clock</path>. Please avoid the
 <path>/usr/share/zoneinfo/Etc/GMT*</path> timezones as their names do not
 indicate the expected zones. For instance, <path>GMT-8</path> is in fact GMT+8.
 </p>
 
-<pre caption="Setting the timezone information to GMT">
-# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+<pre caption="Setting the timezone information">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Suppose you want to use GMT)</comment>
+# <i>nano -w /etc/conf.d/clock</i>
+TIMEZONE="GMT"
 </pre>
 
 </body>
@@ -46,97 +49,35 @@ Guide</uri>.
 
 <p>
 MIPS-based systems have just the one kernel tree to choose from,
-<c>mips-sources</c>. <!--Special patches are needed to make certain systems work.
-The table below displays the USE flags required to enable the patchsets. Note
-that Indy, Indigo2 (R4k) and Challenge S systems do not require any additional
-patchsets.-->  This patchset differs from the ones available for other
-architectures, in that it has lots of patches specific to the MIPS architecture.
+<c>mips-sources</c>. This patchset differs from the ones available for other
+architectures, in that it has lots of patches specific to the MIPS
+architecture.
 </p>
 
-<!--
-<table>
-<tr>
-  <th>USE flag</th>
-  <th>System</th>
-</tr>
-<tr>
-  <ti><c>cobalt</c></ti>
-  <ti>Cobalt Qube/RaQ support</ti>
-</tr>
-<tr>
-  <ti><c>ip27</c></ti>
-  <ti>SGI Origin 200/2000 support (1)</ti>
-</tr>
-<tr>
-  <ti><c>ip28</c></ti>
-  <ti>SGI Indigo2 Impact (R10000) support (1,2)</ti>
-</tr>
-<tr>
-  <ti><c>ip30</c></ti>
-  <ti>SGI Octane/Octane2 support (1)</ti>
-</tr>
-</table>-->
-
 <pre caption="Merging kernel sources...">
-<!-- Done by profile?
-<comment>(Substitute cobalt with the appropriate USE flag for your system if required)</comment>
-# <i>mkdir /etc/portage</i>
-# <i>echo "sys-kernel/mips-sources cobalt" &gt;&gt; /etc/portage/package.use</i>
--->
-<comment>(Unpack &amp; install the kernel sources)</comment>
 # <i>emerge mips-sources</i>
 </pre>
 
 <impo>
-<!--(1)--> On the Origin 200/2000, Indigo2 Impact (R10000), Octane/Octane2 and
-O2, a 64-bit kernel is required to boot these systems. For these machines, you
-should <!--switch to the <path>default-linux/mips/mips64/RELEASE</path>
-profile by altering the <path>/etc/make.profile</path> symlink.
-Then you can --><c>emerge
-kgcc64</c> to create a cross-compiler for building 64-bit kernels.
+On the Origin 200/2000, Indigo2 Impact (R10000), Octane/Octane2 and O2, a 64-bit
+kernel is required to boot these systems. For these machines, you should
+<c>emerge kgcc64</c> to create a cross-compiler for building 64-bit kernels.
 </impo>
 
-<!--<impo>
-(2) The Indigo2 Impact is a special case in that it requires special patch to
-be applied to <c>gcc</c> before it will build an IP28 kernel correctly. This
-patch adds support for the <c>-mip28-cache-barriers</c> CFLAG, which is used
-when building kernels to work around the inherent hardware bug brought on by
-speculative execution. This USE flag can be set in <path>/etc/make.conf</path>.
-This is done for you by setting your profile to
-<path>default-linux/mips/mips64/ip28/RELEASE</path>, which also takes care of
-(1).
-</impo>-->
-
 <pre caption="Installing kgcc64...">
-<!--<comment>(This assumes PORTDIR is in the usual location; /usr/portage)</comment>
-# <i>rm /etc/make.profile</i>
-# <i>ln -s /usr/portage/profiles/default-linux/mips/mips64/2005.0</i> <comment>(or .../mips64/ip28/2005.0)</comment>
-
-<comment>(Install the 64-bit kernel toolchain)</comment>
---># <i>emerge kgcc64</i>
+# <i>emerge kgcc64</i>
 </pre>
 
 <p>
 When you take a look in <path>/usr/src</path> you should see a symlink called
 <path>linux</path> pointing to your kernel source. In this case, the installed
-kernel source points to <c>mips-sources-2.6.13.4</c>. Your version may be
-different, so keep this in mind.
+kernel source points to <c>mips-sources-<keyval id="kernel-version"/></c>. Your
+version may be different, so keep this in mind.
 </p>
 
 <pre caption="Viewing the kernel source symlink">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.6.13.4
-</pre>
-
-<p>
-If this isn't the case (i.e. the symlink points to a different kernel source)
-change the symlink before you continue:
-</p>
-
-<pre caption="Changing the kernel source symlink">
-# <i>rm /usr/src/linux</i>
-# <i>cd /usr/src</i>
-# <i>ln -s linux-2.6.13.4 linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
 </pre>
 
 <p>
@@ -190,7 +131,7 @@ can be configured using the commands mentioned in the table below.
 <tr>
   <ti>Indigo2 Impact (R10k)</ti>
   <ti>
-    <c>make ip28_defconfig</c> (requires <c>mips-sources-2.6.14.5</c> or later)
+    <c>make ip28_defconfig</c>
   </ti>
 </tr>
 <tr>
@@ -303,19 +244,16 @@ little-endian system) to use the 64-bit compiler.
 </note>
 
 <pre caption="Compiling the kernel">
-<comment>(For 2.4 kernel only)</comment>
-# <i>make dep</i>
-
-<comment>(2.4 and 2.6 kernels -- compiling natively)</comment>
+<comment>(Compiling natively)</comment>
 # <i>make vmlinux modules modules_install</i>
 
-<comment>(2.4 and 2.6 kernels -- cross-compiling on target machine)</comment>
-<comment>(    Adjust the mips64-unknown-linux-gnu- accordingly    )</comment>
+<comment>(Cross-compiling on target machine)</comment>
+<comment>(Adjust the mips64-unknown-linux-gnu- accordingly)</comment>
 # <i>make vmlinux modules modules_install CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
 
-<comment>(When compiling on another machine, such as an x86 box... use the)</comment>
-<comment>( following commands to compile the kernel &amp; install modules into)</comment>
-<comment>(  a specific directory to be transferred to the target machine. )</comment>
+<comment>(When compiling on another machine, such as an x86 box, use the)</comment>
+<comment>(following commands to compile the kernel &amp; install modules into)</comment>
+<comment>(a specific directory to be transferred to the target machine.)</comment>
 # <i>make vmlinux modules CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
 # <i>make modules_install INSTALL_MOD_PATH=/somewhere</i>
 </pre>
@@ -343,10 +281,10 @@ Remember to <c>gzip -9</c> the file once it is in <path>/boot</path>.
 </note>
 
 <pre caption="Installing the kernel">
-# <i>cp vmlinux /boot/kernel-2.6.13.4</i>
+# <i>cp vmlinux /boot/kernel-<keyval id="kernel-version"/></i>
 
 <comment>(Cobalt Servers -- Compressing the kernel image)</comment>
-# <i>gzip -9v /boot/kernel-2.6.13.4</i>
+# <i>gzip -9v /boot/kernel-<keyval id="kernel-version"/></i>
 </pre>
 
 </body>
@@ -359,21 +297,9 @@ Remember to <c>gzip -9</c> the file once it is in <path>/boot</path>.
 <body>
 
 <p>
-You should list the modules you want automatically loaded in one of the
-relevant files listed below. You can add extra options to the modules too if
-you want.
-</p>
-
-<ul>
-  <li><path>/etc/modules.autoload.d/kernel-2.4</path> - Kernel 2.4 only</li>
-  <li><path>/etc/modules.autoload.d/kernel-2.6</path> - Kernel 2.6 only</li>
-  <li><path>/etc/modules.autoload</path> - All Kernels</li>
-</ul>
-
-<p>
-Therefore, if you have a kernel module that you want to load -- which is common
-to both 2.4 and 2.6, then place it in <path>/etc/modules.autoload</path>.
-Otherwise it can be placed in the appropriate file.
+You should list the modules you want automatically loaded in
+<path>/etc/modules.autoload.d/kernel-2.6</path>. You can add extra options to
+the modules too if you want.
 </p>
 
 <p>
@@ -388,24 +314,15 @@ you just compiled:
 
 <p>
 For instance, to automatically load the <c>3c59x.o</c> module, edit the
-appropriate file and enter the module name in it.
+<path>kernel-2.6</path> file and enter the module name in it.
 </p>
 
-<pre caption="Editing /etc/modules.autoload.d/kernel-2.4">
-# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+<pre caption="Editing /etc/modules.autoload.d/kernel-2.6">
+# <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
 </pre>
 
-<pre caption="/etc/modules.autoload.d/kernel-2.4 or kernel-2.6">
+<pre caption="/etc/modules.autoload.d/kernel-2.6">
 3c59x
-</pre>
-
-<p>
-This can be also done in a one-liner:
-</p>
-
-<pre caption="Adding a module -- the one-liner method">
-# <i>echo '3c59x' >> /etc/modules.autoload.d/kernel-2.4</i>
-<comment>(or kernel-2.6, or /etc/modules.autoload...)</comment>
 </pre>
 
 <p>
