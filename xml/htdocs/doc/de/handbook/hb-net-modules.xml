@@ -4,9 +4,9 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-net-modules.xml,v 1.11 2007/01/29 04:19:59 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-net-modules.xml,v 1.12 2007/05/07 10:15:07 grahl Exp $ -->
 
-<!-- English CVS Version: 1.21 -->
+<!-- English CVS Version: 1.23 -->
 
 <sections>
 
@@ -15,8 +15,8 @@ Gentoo ermöglicht flexible Netzwerkkonfiguration. Hier wird erläutert wie Sie
 einen DHCP-Client auswählen, Bonding, VLANS und mehr einrichten.
 </abstract>
 
-<version>7.1</version>
-<date>2007-01-04</date>
+<version>8.2</version>
+<date>2007-04-13</date>
 
 <section>
 <title>Netzwerkmodule</title>
@@ -219,41 +219,86 @@ Hostnamen zum DHCP-Server, so dass Sie ihn nicht mehr angeben müssen.
 </body>
 </section>
 <section>
-<title>ADSL-Modem</title>
+<title>ADSL mit PPPoE/PPPoA</title>
 <body>
 
 <p>
 Zunächst müssen wir die ADSL-Software installieren.
 </p>
 
-<pre caption="Das rp-pppoe-Paket installieren">
-# <i>emerge net-dialup/rp-pppoe</i>
+<pre caption="Das ppp-Paket installieren">
+# <i>emerge net-dialup/ppp</i>
 </pre>
 
-<warn>
-<c>baselayout-1.11.x</c> unterstützt lediglich PPPoE. So Gott will unterstützt
-eine zukünftige Version PPPoA.
-</warn>
+<note>
+Wenn Sie PPPoA benötigen, stellen Sie sicher, dass Sie
+>=<c>baselayout-1.12.x</c> verwenden.
+</note>
 
 <p>
-Nun müssen wir <c>eth0</c> als ADSL-Schnittstelle konfigurieren und unseren
-Benutzernamen angeben indem wir <path>/etc/conf.d/net</path> aktualisieren.
+Zweitens, erzeugen Sie das PPP-Netzwerkskript und das Netzwerkskript für die
+Ethernet-Schnittstelle, die von PPP verwendet werden soll:
 </p>
 
-<pre caption="eth0 für ADSL in /etc/conf.d/net konfigurieren">
-config_eth0=( "adsl" )
-adsl_user_eth0="username"
+<pre caption="Erzeugen des PPP Netzwerkskripts">
+# <i>ln -s /etc/init.d/net.lo /etc/init.d/net.ppp0</i>
+# <i>ln -s /etc/init.d/net.lo /etc/init.d/net.eth0</i>
 </pre>
 
 <p>
-Schließlich muss Ihr Username und Kennwort in <path>/etc/ppp/pap-secrets</path>
-angegeben werden.
+Überprüfen Sie ob RC_NET_STRICT_CHECKING="yes" in <path>/etc/conf.d/rc</path>
+gesetzt ist.
+</p>
+
+<p>
+Nun müssen wir <path>/etc/conf.d/net</path> konfigurieren.
+</p>
+
+<pre caption="Eine grundlegende PPPoE-Konfiguration">
+config_eth0=( null ) <comment>(Geben Sie Ihre Ethernet-Schnittstelle an)</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth0" <comment>(Geben Sie Ihre Ethernet-Schnittstelle an)</comment>
+plugins_ppp0=( "pppoe" )
+username_ppp0='user'
+password_ppp0='password'
+pppd_ppp0=(
+       "noauth"
+       "defaultroute"
+       "usepeerdns"
+       "holdoff 3"
+       "child-timeout 60"
+       "lcp-echo-interval 15"
+       "lcp-echo-failure 3"
+       noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp
+)
+
+depend_ppp0() {
+    need net.eth0
+}
+</pre>
+
+<p>
+Ihr Kennwort können Sie auch in <path>/etc/ppp/pap-secrets</path> angeben.
 </p>
 
 <pre caption="Beispiel einer /etc/ppp/pap-secrets">
 <comment># Der * ist wichtig</comment>
 "username"  *  "password"
 </pre>
+
+<p>
+Wenn Sie PPPoE mit einem USB-Modem verwenden werden Sie <c>br2684ctl</c> emergen
+müssen. Bitte lesen Sie hierzu
+<path>/usr/portage/net-dialup/speedtouch-usb/files/README</path> für weitere
+Informationen zur korrekten Konfiguration.
+</p>
+
+<impo>
+Bitte lesen Sie den Abschnitt zu ADSL und PPP in
+<path>/etc/conf.d/net.example</path> sorgfältig durch. Dort sind viel
+detailliertere Erklärungen zu allen Einstellungen enthalten, die Sie für
+Ihre spezielle PPP-Einrichtung wahrscheinlich nutzen können.
+</impo>
 
 </body>
 </section>
