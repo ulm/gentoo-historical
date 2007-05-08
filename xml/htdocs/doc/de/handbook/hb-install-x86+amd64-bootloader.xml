@@ -4,14 +4,14 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- English CVS Version: 1.7 -->
+<!-- English CVS Version: 1.8 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-bootloader.xml,v 1.6 2007/03/24 02:02:59 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-bootloader.xml,v 1.7 2007/05/08 05:39:47 grahl Exp $ -->
 
 <sections>
 
-<version>4.3</version>
-<date>2007-03-12</date>
+<version>5.0</version>
+<date>2007-05-07</date>
 
 <section>
 <title>Eine Wahl treffen</title>
@@ -62,7 +62,7 @@ Fall ist benutzen Sie <c>vesafb-tng</c> und benötigen die <c>vga</c> Anweisung
 <e>müssen</e> diese Anweisung setzen.
 </p>
 
-<p test="func:keyval('arch')='AMD64'">
+<p test="contains('AMD64 IA64',func:keyval('arch'))">
 64-Bit Systeme müssen den <c>vesafb</c> Treiber verwenden und die <c>vga</c>
 Anweisung verwenden.
 </p>
@@ -162,7 +162,7 @@ gelistet, wir möchten Sie daher nur über die drei wichtigsten informieren:
 </table>
 
 </body>
-<body test="func:keyval('arch')='AMD64'">
+<body test="contains('AMD64 IA64',func:keyval('arch'))">
 
 <p>
 Das Ergebnis dieser beiden Anweisungen könnte etwas wie <c>vga=0x318
@@ -170,9 +170,13 @@ video=vesafb:mtrr:3,ywrap</c> sein. Schreiben Sie es sich auf, Sie werden
 es bald benötigen!
 </p>
 
-<p>
+<p test="func:keyval('arch')='AMD64'">
 Obwohl LILO auf AMD64 funktioniert unterstützt Gentoo nur GRUB. Fahren Sie nun
 mit dessen <uri link="#grub">Installation</uri> fort.
+</p>
+
+<p test="func:keyval('arch')='IA64'">
+Jetzt sollten Sie den Bootloader <uri link="#elilo">elilo</uri> installieren.
 </p>
 
 </body>
@@ -193,7 +197,7 @@ Fahren Sie nun mit der Installation von <uri link="#grub">GRUB</uri> <e>oder</e>
 </body>
 </subsection>
 </section>
-<section id="grub">
+<section id="grub" test="contains('AMD64 x86',func:keyval('arch'))">
 <title>Standard: Die Benutzung von GRUB
 </title>
 <subsection>
@@ -676,18 +680,98 @@ Fahren Sie nun mit <uri link="#reboot">Rebooten des Systems</uri> fort.
 </body>
 </subsection>
 </section>
+<section id="elilo" test="func:keyval('arch')='IA64'">
+<title>Standard: Installation von elilo</title>
+<body>
+
+<p>
+Auf der IA64-Architektur wird der Bootloader elilo genannt. Sie müssen ihn unter
+Umständen auf Ihrem Rechner erst emergen.
+</p>
+
+<pre caption="Installation von elilo">
+# <i>emerge elilo</i>
+</pre>
+
+<p>
+Sie finden die Konfigurationsdatei in <path>/etc/elilo.conf</path> und eine
+Beispieldatei im typischen Dokumentationsverzeichnis
+<path>/usr/share/doc/elilo-&lt;ver&gt;/</path>. Hier ist eine weitere
+Beispielkonfiguration:
+</p>
+
+<pre caption="/etc/elilo.conf Beispiel">
+boot=/dev/sda1
+delay=30
+timeout=50
+default=Gentoo
+append="console=ttyS0,9600"
+prompt
+
+image=/vmlinuz
+        label=Gentoo
+        root=/dev/sda2
+        read-only
+
+image=/vmlinuz.old
+        label=Gentoo.old
+        root=/dev/sda2
+        read-only
+</pre>
+
+<p>
+Die Zeile <c>boot</c> teilt elilo den Ort der Boot-Partition mir (in diesem Fall
+<path>/dev/sda1</path>). Die Zeile <c>delay</c> setzt die Anzahl von
+Zehntelsekunden, bevor automatisch, im nicht-interaktiven Modus, der Standard
+gebootet wird. Die Zeile <c>timeout</c> ist wie die Delay-Zeile, nur für den
+interaktiven Modus. Die Zeile <c>default</c> setzt den Standardkerneleintrag
+(welcher weiter unten definiert ist). Die Zeile <c>append</c> fügt zusätzliche
+Optionen zur Kernelkommandozeile hinzu. Das <c>prompt</c> setzt das
+Standardverhalten von elilo auf interaktiv.
+</p>
+
+<p>
+Die Abschnitte, welche mit <c>image</c> beginnen, geben verschiedene bootbare
+Images an. Jedes Image hat eine informatives <c>label</c>, ein <c>root</c>
+Dateisystem und wird das root-Dateisystem nur als <c>read-only</c> mounten
+(nur-lesen).
+</p>
+
+<p>
+Wenn die Konfiguration abgeschlossen ist führen Sie einfach
+<c>elilo --efiboot</c> aus. Die <c>--efiboot</c> Option fügt einen Menüeintrag
+für Gentoo Linux zum EFI-Bootmanager hinzu.
+</p>
+
+<pre caption="Die elilo-Konfiguration anwenden">
+# <i>elilo --efiboot</i>
+</pre>
+
+<p>
+Fahren Sie jetzt mit dem <uri link="#reboot">Neustart des Systems</uri> fort.
+</p>
+
+</body>
+</section>
 <section id="reboot">
-<title>Rebooten des Systems</title>
+<title>Neustart des Systems</title>
 <subsection>
 <body>
 
 <p>
-Verlassen Sie die chroot Umgebung und unmounten Sie alle gemounteten
+Verlassen Sie die chroot-Umgebung und unmounten Sie alle gemounteten
 Partitionen. Danach tippen Sie den magischen Befehl ein, auf das Sie solange
 gewartet haben: <c>reboot</c>.
 </p>
 
-<pre caption="Unmounten aller Partitionen und Rebooten">
+<pre caption="Ausbinden aller Partitionen und Neustart" test="func:keyval('arch')='IA64'">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/sys /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<pre caption="Ausbinden aller Partitionen und Neustart" test="not(func:keyval('arch')='IA64')">>
 # <i>exit</i>
 cdimage ~# <i>cd</i>
 cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo</i>
@@ -697,6 +781,11 @@ cdimage ~# <i>reboot</i>
 <p>
 Vergessen Sie nicht die bootbare CD aus dem Laufwerk zu nehmen, sonst wird diese
 anstatt Ihres neuen Gentoo Systems gestartet.
+</p>
+
+<p test="func:keyval('arch')='IA64'">
+Wenn Sie neustarten, sollten Sie eine neue Gentoo Linux Menüoption im
+EFI-Bootmanager sehen, welche Gentoo starten wird.
 </p>
 
 <p>

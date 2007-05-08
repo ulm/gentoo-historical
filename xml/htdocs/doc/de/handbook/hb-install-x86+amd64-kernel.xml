@@ -4,9 +4,9 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- English CVS Version: 1.9 -->
+<!-- English CVS Version: 1.10 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-kernel.xml,v 1.9 2007/03/24 02:02:59 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-kernel.xml,v 1.10 2007/05/08 05:39:47 grahl Exp $ -->
 
 <sections>
 
@@ -15,8 +15,8 @@ Der Linux-Kernel ist der Kern einer jeden Distribution. Dieses Kapitel
 erläutert wie man den Kernel konfiguriert.
 </abstract>
 
-<version>4.3</version>
-<date>2007-03-12</date>
+<version>5.0</version>
+<date>2007-05-07</date>
 
 <section>
 <title>Setzen der Zeitzone des Systems</title>
@@ -24,8 +24,8 @@ erläutert wie man den Kernel konfiguriert.
 
 <p>
 Zuerst müssen Sie Ihrem System mitteilen, in welcher Zeitzone es sich befindet.
-Suchen Sie Ihre Zeitzone in <path>/usr/share/zoneinfo/</path> und kopieren Sie
-diese nach <path>/etc/localtime</path>. Bitte vermeiden Sie die
+Suchen Sie Ihre Zeitzone in <path>/usr/share/zoneinfo/</path>. Sie setzen diese
+Zeitzone dann in <path>/etc/conf.d/clock</path>. Bitte vermeiden Sie die
 <path>/usr/share/zoneinfo/Etc/GMT*</path> Zeitzonen, denn deren Namen verweisen
 nicht auf die erwarteten Zonen. Zum Beispiel ist <path>GMT-8</path> in
 Wirklichkeit GMT+8.
@@ -34,7 +34,8 @@ Wirklichkeit GMT+8.
 <pre caption="Setzen der Zeitzone">
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(Beispiel: GMT)</comment>
-# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+# <i>nano -w /etc/conf.d/clock</i>
+TIMEZONE="GMT"
 </pre>
 
 </body>
@@ -60,8 +61,8 @@ Eigenschaften).
 </p>
 
 <p test="func:keyval('arch')='AMD64'">
-Für AMD64-basierende Systeme haben wir die <c>gentoo-sources</c> (2.6er
-Kernelquellen  mit amd64 spezifischen Patches für Stabilität, Performance und
+Für AMD64-basierende Systeme haben wir die <c>gentoo-sources</c> (Kernelquellen
+mit amd64 spezifischen Patches für Stabilität, Performance und
 Hardware-Unterstützung).
 </p>
 
@@ -221,22 +222,7 @@ zu mounten. Selektieren Sie auch <c>Virtual memory</c>,
 </body>
 <body test="func:keyval('arch')='x86'">
 
-<p>
-Wenn sie einen 2.4 Kernel verwenden, müssen Sie auch
-<c>/dev file system</c> selektieren, da 2.4 Kernel <c>udev</c> nicht
-unterstützen.
-</p>
-
 <pre caption="Selektieren notwendiger Dateisysteme">
-<comment>(Mit einem 2.4.x Kernel)</comment>
-File systems ---&gt;
-  [*] Virtual memory file system support (former shm fs)
-  [*] /proc file system support
-  [*] /dev file system support (EXPERIMENTAL)
-  [*]   Automatically mount at boot
-  [ ] /dev/pts file system for Unix98 PTYs
-
-<comment>(Mit einem 2.6.x Kernel)</comment>
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
@@ -248,22 +234,6 @@ File systems ---&gt;
   &lt;*&gt; JFS filesystem support
   &lt;*&gt; Second extended fs support
   &lt;*&gt; XFS filesystem support
-</pre>
-
-<p>
-Wenn Ihr BIOS nicht von großen Festplatten booten kann und Sie die Festplatte
-gejumpert haben, damit diese dem BIOS eine begrenzte Größe meldet, müssen Sie
-die folgenden Optionen aktivieren, um Zugriff auf die gesamte Festplatte zu
-erlangen:
-</p>
-
-<pre caption="Aktivieren des Autogeometry Resizing Support">
-<comment>(Nur für 2.4 Kernel)</comment>
-ATA/IDE/MFM/RLL support ---&gt;
-  IDE, ATA and ATAPI Block devices ---&gt;
-    &lt;*&gt;   Include IDE/ATA-2 DISK support
-    [ ]     Use multi-mode by default
-    [*]     Auto-Geometry Resizing support
 </pre>
 
 </body>
@@ -311,13 +281,6 @@ Device Drivers ---&gt;
 </pre>
 
 <pre caption="Auswählen von Treibern, notwendig für PPPoE" test="func:keyval('arch')='x86'">
-<comment>(Bei einem 2.4.x Kernel)</comment>
-Network device support ---&gt;
-  &lt;*&gt; PPP (point-to-point protocol) support
-  &lt;*&gt;   PPP support for async serial ports
-  &lt;*&gt;   PPP support for sync tty ports
-
-<comment>(Bei einem 2.6.x Kernel)</comment>
 Device Drivers ---&gt;
   Networking support ---&gt;
     &lt;*&gt; PPP (point-to-point protocol) support
@@ -327,8 +290,9 @@ Device Drivers ---&gt;
 
 <p>
 Die zwei Komprimierungsoptionen werden nicht schaden, aber werden auch nicht
-definitiv gebraucht, ebenso die <c>PPP over Ethernet</c> Option, die vielleicht
-nur von <c>rp-pppoe</c> verwendet wird, wenn der Kernelmodus PPPoE benutzt wird.
+definitiv gebraucht, ebenso die <c>PPP over Ethernet</c> Option, die
+möglicherweise nur von <c>ppp</c> verwendet wird, wenn es dazu konfiguriert ist
+Kernelmodus-PPPoE zu verwenden.
 </p>
 
 <p>
@@ -372,20 +336,12 @@ Device Drivers ---&gt;
 <body test="func:keyval('arch')='x86'">
 
 <p>
-Laptop-Nutzer, die PCMCIA-Unterstützung benötigen, sollten <e>nicht</e> die
-PCMCIA-Treiber nutzen, wenn Sie einen 2.4-Kernel konfigurieren. Aktuellere
-Treiber sind durch das <c>pcmcia-cs</c> Paket verfügbar, welches Sie später
-installieren können. Benutzer der Kernelversion 2.6 sollten die PCMCIA-Treiber
-aus dem Kernel benutzen.
+Wenn sie PCMCIA-Unterstützung für Ihren Laptop benötigen, vergessen Sie nicht
+die Unterstütztung für die PCMCIA-Card-Bridge, die sich in Ihrem System
+befindet, zu aktivieren.
 </p>
 
-<p>
-Neben der PCMCIA-Unterstützung in einem 2.6-Kernel sollten Sie ebenfalls nicht
-die Unterstützung für die PCMCIA-Card-Bridge vergessen, die in Ihrem System zum
-Einsatz kommt.
-</p>
-
-<pre caption="Aktivieren von PCMCIA-Unterstützung für 2.6-Kernel">
+<pre caption="Aktivieren von PCMCIA-Unterstützung">
 Bus options (PCI, PCMCIA, EISA, MCA, ISA)  ---&gt;
   PCCARD (PCMCIA/CardBus) support  ---&gt;
     &lt;*&gt; PCCard (PCMCIA/CardBus) support
@@ -419,14 +375,6 @@ installieren. Verlassen Sie die Konfiguration und führen Sie <c>make dep
 </p>
 
 <pre caption="Kompilieren des Kernels" test="func:keyval('arch')='x86'">
-<comment>(Für 2.4 kernel)</comment>
-# <i>make dep &amp;&amp; make bzImage modules modules_install</i>
-
-<comment>(Für 2.6 kernel)</comment>
-# <i>make &amp;&amp; make modules_install</i>
-</pre>
-
-<pre caption="Kompilieren des Kernels" test="func:keyval('arch')='AMD64'">
 # <i>make &amp;&amp; make modules_install</i>
 </pre>
 
@@ -485,13 +433,11 @@ Nun lassen Sie uns sehen wie man Genkernel benutzt. Zuerst installieren Sie
 <body test="func:keyval('arch')='x86'">
 
 <p>
-Wenn Sie einen 2.6-Kernel konfigurieren, kopieren Sie die Kernel-Konfiguration
-von der Installations-CD an die Stelle, an der genkernel nach der
-Standardkonfiguration schaut:
+Kopieren Sie als nächstes die Kernelkonfiguration von der Installations-CD an
+die Stelle, an der genkernel nach der Standardkonfiguration schaut:
 </p>
 
 <pre caption="Kopieren der Kernelkonfiguration der Installations-CD">
-<comment>(Nur wenn Sie einen 2.6 Kernel verwenden möchten)</comment>
 # <i>zcat /proc/config.gz &gt; /usr/share/genkernel/x86/kernel-config-2.6</i>
 </pre>
 
@@ -538,11 +484,6 @@ wird direkt nach dem Booten gestartet um die Hardware Autoerkennung zu starten
 <subsection>
 <title>Konfiguration der Module</title>
 <body>
-
-<note test="func:keyval('arch')='x86'">
-Wenn Sie einen 2.4 Kernel wählen, sollten Sie in diesem Abschnitt jedes
-<c>2.6</c> durch <c>2.4</c> ersetzen.
-</note>
 
 <p>
 Sie sollten alle Module, die automatisch geladen werden sollen, in
