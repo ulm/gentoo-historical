@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-kernel.xml,v 1.3 2007/03/30 20:38:26 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-kernel.xml,v 1.4 2007/05/08 03:35:49 cam Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Le noyau Linux est au cœur de toutes les distributions. Ce chapitre explique
 comment le configurer.
 </abstract>
 
-<version>4.3</version>
-<date>2007-03-12</date>
+<version>5.0</version>
+<date>2007-05-07</date>
 
 <section>
 <title>Fuseau horaire</title>
@@ -23,16 +23,17 @@ comment le configurer.
 <p>
 Vous devez maintenant choisir votre fuseau horaire afin que votre système sache
 où il se trouve. Cherchez votre fuseau horaire dans
-<path>/usr/share/zoneinfo</path>, puis copiez-le sur
-<path>/etc/localtime</path>. Évitez les zones
-<path>/usr/share/zoneinfo/Etc/GMT*</path>, car leur nom prête à confusion. En
-effet, <path>GMT-8</path> signifie en fait GMT+8.
+<path>/usr/share/zoneinfo</path>, puis configurez-le dans le fichier
+<path>/etc/conf.d/clock</path>. Évitez les zones du type
+<path>/usr/share/zoneinfo/Etc/GMT*</path>, car leur nom porte à confusion. En
+effet, <path>GMT-2</path> signifie en fait GMT+2.
 </p>
 
 <pre caption="Définir l'information relative au fuseau horaire">
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(En supposant que vous utilisiez l'heure de Paris.)</comment>
-# <i>cp /usr/share/zoneinfo/Europe/Paris /etc/localtime</i>
+# <i>nano -w /etc/conf.d/clock</i>
+TIMEZONE="Europe/Paris"
 </pre>
 
 </body>
@@ -59,9 +60,9 @@ performances).
 </p>
 
 <p test="func:keyval('arch')='AMD64'">
-Pour les systèmes AMD64, nous avons les <c>gentoo-sources</c>, un noyau 2.6
-modifié avec des améliorations de stabilité, de performance et de support
-matériel pour AMD64.
+Pour les systèmes AMD64, nous avons les <c>gentoo-sources</c>, un noyau modifié
+avec des améliorations de stabilité, de performance et de support matériel pour
+AMD64.
 </p>
 
 <p>
@@ -219,21 +220,7 @@ partitions. Activez aussi <c>Virtual memory</c> et <c>/proc file system</c>.
 </body>
 <body test="func:keyval('arch')='x86'">
 
-<p>
-Si vous utilisez encore un noyau 2.4, vous devez sélectionner l'option <c>/dev
-file system</c>, car les noyaux 2.4 ne supportent pas <c>udev</c>.
-</p>
-
 <pre caption="Activer le support pour les systèmes de fichiers">
-<comment>(Avec un noyau 2.4.x)</comment>
-File systems ---&gt;
-  [*] Virtual memory file system support (former shm fs)
-  [*] /proc file system support
-  [*] /dev file system support (EXPERIMENTAL)
-  [*]   automatically mount /dev at boot
-  [ ] /dev/pts file system for Unix98 PTYs
-
-<comment>(Avec un noyau 2.6.x)</comment>
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
@@ -244,22 +231,6 @@ File systems ---&gt;
   &lt;*&gt; JFS filesystem support
   &lt;*&gt; Second extended fs support
   &lt;*&gt; XFS filesystem support
-</pre>
-
-<p>
-Si votre BIOS ne sait pas gérer les disques durs de grande capacité et si vous
-avez dû placer un cavalier sur le disque pour qu'il reporte une taille limitée,
-alors vous devez activer les options suivantes pour permettre l'accès à votre
-disque entier&nbsp;:
-</p>
-
-<pre caption="Sélection du redimensionnement de la géométrie du disque dur">
-<comment>(Seulement pour les noyaux 2.4.x)</comment>
-ATA/IDE/MFM/RLL support ---&gt;
-  IDE, ATA and ATAPI Block devices ---&gt;
-    &lt;*&gt;   Include IDE/ATA-2 DISK support
-    [ ]     Use multi-mode by default
-    [*]     Auto-Geometry Resizing support
 </pre>
 
 </body>
@@ -307,13 +278,6 @@ Device Drivers ---&gt;
 </pre>
 
 <pre caption="Sélection des pilotes PPPoE" test="func:keyval('arch')='x86'">
-<comment>(Avec un noyau 2.4.x)</comment>
-Network device support ---&gt;
-  &lt;*&gt; PPP (point-to-point protocol) support
-  &lt;*&gt;   PPP support for async serial ports
-  &lt;*&gt;   PPP support for sync tty ports
-
-<comment>(Avec un noyau 2.6.x)</comment>
 Device Drivers ---&gt;
   Networking support ---&gt;
     &lt;*&gt; PPP (point-to-point protocol) support
@@ -324,7 +288,7 @@ Device Drivers ---&gt;
 <p>
 Les deux options de compression ne vous feront pas de mal, mais ne sont pas
 absolument nécessaires. L'option <c>PPP over Ethernet</c> n'est pas obligatoire
-non plus, considérant qu'elle pourrait n'être utilisée que par <c>rp-pppoe</c>
+non plus, considérant qu'elle pourrait n'être utilisée que par <c>ppp</c>
 lorsque ce dernier est configuré pour utiliser PPPoE en mode noyau.
 </p>
 
@@ -366,17 +330,11 @@ Device Drivers --->
 <body test="func:keyval('arch')='x86'">
 
 <p>
-Sur un portable, vous <e>ne devez pas</e> utiliser les pilotes PCMCIA du noyau
-2.4, mais ceux qui seront installés plus tard avec le paquet <c>pcmcia-cs</c>.
-Avec un noyau 2.6.x, vous devriez utiliser les pilotes du noyau.
+Si vous voulez utiliser le PCMCIA sur votre portable, n'oubliez pas d'activer
+le support pour le type de carte PCMCIA de votre système.
 </p>
 
-<p>
-En plus de compiler le support PCMCIA dans le noyau 2.6, n'oubliez pas
-d'activer le support pour le type de carte PCMCIA de votre système.
-</p>
-
-<pre caption="Activer le support PCMCIA pour un noyau 2.6">
+<pre caption="Activer le support PCMCIA">
 Bus options (PCI, PCMCIA, EISA, MCA, ISA)  ---&gt;
   PCCARD (PCMCIA/CardBus) support  ---&gt;
     &lt;*&gt; PCCard (PCMCIA/CardBus) support
@@ -408,15 +366,7 @@ Maintenant que votre noyau est configuré, il est temps de le compiler et de
 l'installer. Quittez la configuration et lancez la compilation&nbsp;:
 </p>
 
-<pre caption="Compiler le noyau" test="func:keyval('arch')='x86'">
-<comment>(Pour les noyaux 2.4)</comment>
-# <i>make dep &amp;&amp; make bzImage modules modules_install</i>
-
-<comment>(Pour les noyaux 2.6)</comment>
-# <i>make &amp;&amp; make modules_install</i>
-</pre>
-
-<pre caption="Compiler le noyau" test="func:keyval('arch')='AMD64'">
+<pre caption="Compiler le noyau">
 # <i>make &amp;&amp; make modules_install</i>
 </pre>
 
@@ -474,13 +424,11 @@ genkernel comme suit&nbsp;:
 <body test="func:keyval('arch')='x86'">
 
 <p>
-Puis, si vous avez choisi un noyau 2.6, copiez les fichiers de configuration
-utilisés par le CD d'installation vers le répertoire qui sera utilisé par
-genkernel.
+Puis, copiez les fichiers de configuration utilisés par le CD d'installation
+vers le répertoire qui sera utilisé par genkernel.
 </p>
 
 <pre caption="Copier la configuration du noyau du CD">
-<comment>(Uniquement si vous avez choisi un noyau 2.6.)</comment>
 # <i>zcat /proc/config.gz &gt; /usr/share/genkernel/x86/kernel-config-2.6</i>
 </pre>
 
@@ -528,11 +476,6 @@ avant que votre «&nbsp;véritable&nbsp;» système ne démarre.
 <subsection>
 <title>Configurer les modules</title>
 <body>
-
-<note test="func:keyval('arch')='x86'">
-Si vous aviez choisi un noyau 2.4, remplacez les occurences de <c>2.6</c> par
-<c>2.4</c> dans cette section.
-</note>
 
 <p>
 Vous devriez indiquer la liste des modules que vous souhaitez charger
