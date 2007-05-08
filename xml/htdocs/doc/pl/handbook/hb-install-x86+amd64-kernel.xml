@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-install-x86+amd64-kernel.xml,v 1.8 2007/03/24 16:55:06 shadoww Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/handbook/hb-install-x86+amd64-kernel.xml,v 1.9 2007/05/08 00:04:25 rane Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Jądro Linux jest rdzeniem każdej dystrybucji. W tym rozdziale wytłumaczymy, j
 je skonfigurować.
 </abstract>
 
-<version>4.3</version>
-<date>2007-03-12</date>
+<version>5.0</version>
+<date>2007-05-07</date>
 
 <section>
 <title>Strefa czasowa</title>
@@ -23,16 +23,17 @@ je skonfigurować.
 <p>
 System musi wiedzieć gdzie się znajduje, musimy zatem poprawnie skonfigurować
 jego ustawienia strefy czasowej. Zaczynamy od wyszukania odpowiedniej dla nas
-strefy w katalogu <path>/usr/share/zoneinfo</path>, a następnie skopiujemy ją
-do <path>/etc/localtime</path>. Należy unikać stref czasowych o nazwie
+strefy w katalogu <path>/usr/share/zoneinfo</path>, a następnie ustawiamy ją w
+<path>/etc/conf.d/clock</path>. Należy unikać stref czasowych o nazwie
 <path>/usr/share/zoneinfo/Etc/GMT*</path>, ponieważ ich nazwy mogą być mylące,
 na przykład <path>GMT-8</path> jest w rzeczywistości GMT+8.
 </p>
 
 <pre caption="Ustawianie strefy czasowej">
 # <i>ls /usr/share/zoneinfo</i>
-<comment>(przy założeniu, że nasza strefa to "Poland")</comment>
-# <i>cp /usr/share/zoneinfo/Poland /etc/localtime</i>
+<comment>(przy założeniu, że nasza strefa to "Warsaw")</comment>
+# <i>nano -w /etc/conf.d/clock</i>
+TIMEZONE="Europe/Warsaw"
 </pre>
 
 </body>
@@ -63,7 +64,7 @@ stabilność, wydajność i obsługę sprzętu).
 </p>
 
 <p>
-Wybrane źródła instaluje się przy pomocy polecenia <c>emerge</c>. 
+Wybrane źródła instaluje się przy pomocy polecenia <c>emerge</c>.
 </p>
 
 <pre caption="Instalowanie źródeł jądra">
@@ -217,21 +218,7 @@ dodawać w modułach. Oprócz tego zaznaczamy opcje <c>Virtual memory</c> i
 </body>
 <body test="func:keyval('arch')='x86'">
 
-<p>
-Jeśli korzysta się z jądra 2.4, należy wybrać <c>/dev file system</c> w związku
-z tym, że jądra z serii 2.4 nie posiadają obsługi <c>udev</c>.
-</p>
-
 <pre caption="Wybór potrzebnych systemów plików">
-<comment>(Dla jądra 2.4)</comment>
-File systems ---&gt;
-  [*] Virtual memory file system support (former shm fs)
-  [*] /proc file system support
-  [*] /dev file system support (EXPERIMENTAL)
-  [*]   automatically mount /dev at boot
-  [ ] /dev/pts file system for Unix98 PTYs
-
-<comment>(Dla jądra 2.6)</comment>
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
@@ -243,22 +230,6 @@ File systems ---&gt;
   &lt;*&gt; JFS filesystem support
   &lt;*&gt; Second extended fs support
   &lt;*&gt; XFS filesystem support
-</pre>
-
-<p>
-Jeśli BIOS nie radzi sobie z dużymi dyskami i konieczne było ograniczenie
-maksymalnego ich rozmiaru przy pomocy jumpera warto zaznaczyć poniższą opcję,
-co umożliwi uzyskanie dostępu również do niewidocznej dla BIOS-u części
-urządzenia.
-</p>
-
-<pre caption="Zaznaczanie opcji Auto-Geometry Resizing">
-<comment>(Wyłącznie dla jąder 2.4.X)</comment>
-ATA/IDE/MFM/RLL support ---&gt;
-  IDE, ATA and ATAPI Block devices ---&gt;
-    &lt;*&gt;   Include IDE/ATA-2 DISK support
-    [ ]     Use multi-mode by default
-    [*]     Auto-Geometry Resizing support
 </pre>
 
 </body>
@@ -306,13 +277,6 @@ Device Drivers ---&gt;
 </pre>
 
 <pre caption="Sterowniki niezbędne dla użytkowników PPPoE cd." test="func:keyval('arch')='x86'">
-<comment>(Dla jąder 2.4)</comment>
-Network device support ---&gt;
-  &lt;*&gt; PPP (point-to-point protocol) support
-  &lt;*&gt;   PPP support for async serial ports
-  &lt;*&gt;   PPP support for sync tty ports
-
-<comment>(Dla jąder 2.6)</comment>
 Device Drivers ---&gt;
   Networking support ---&gt;
     &lt;*&gt; PPP (point-to-point protocol) support
@@ -323,8 +287,8 @@ Device Drivers ---&gt;
 <p>
 Obie opcje dotyczące kompresji nie są wprawdzie wymagane, ale również nie
 zaszkodzą naszemu systemowi, podobnie zresztą jak opcja <c>PPP over
-Ethernet</c>, która jest przydatna tylko gdy skonfiguruje się <c>rp-pppoe</c>
-do pracy w trybie PPPoE jądra (kernel mode PPPoE).
+Ethernet</c>, która jest przydatna tylko gdy skonfiguruje się <c>ppp</c> do
+pracy w trybie PPPoE jądra (kernel mode PPPoE).
 </p>
 
 <p>
@@ -368,18 +332,10 @@ Device Drivers ---&gt;
 <body test="func:keyval('arch')='x86'">
 
 <p>
-Posiadacze laptopów chcący korzystać z PCMCIA <e>nie powinni</e> korzystać ze
-sterowników PCMCIA z jądra 2.4. Za chwilę omówimy instalację nowszych
-sterowników z pakietu <c>pcmcia-cs</c>. Użytkownicy jąder 2.6 mogą bezpiecznie
-korzystać ze sterowników z jądra.
+Posiadacze laptopów z PCMCIA powinni włączyć wsparcie dla swoich kart.
 </p>
 
-<p>
-Poza włączeniem generalnej obsługi PCMCIA w jądrze 2.6, należy również
-zaznaczyć używany przez karty PCMCIA mostek obecny w systemie:
-</p>
-
-<pre caption="Włączanie obsługi PCMCIA w jądrach 2.6">
+<pre caption="Włączanie obsługi PCMCIA">
 Bus options (PCI, PCMCIA, EISA, MCA, ISA)  ---&gt;
   PCCARD (PCMCIA/CardBus) support  ---&gt;
     &lt;*&gt; PCCard (PCMCIA/CardBus) support
@@ -412,14 +368,6 @@ Opuszczamy program konfiguracyjny i rozpoczynamy proces kompilacji:
 </p>
 
 <pre caption="Kompilowanie kernela" test="func:keyval('arch')='x86'">
-<comment>(Dla jąder 2.4)</comment>
-# <i>make dep &amp;&amp; make bzImage modules modules_install</i>
-
-<comment>(Dla jąder 2.6)</comment>
-# <i>make &amp;&amp; make modules_install</i>
-</pre>
-
-<pre caption="Kompilowanie jądra" test="func:keyval('arch')='AMD64'">
 # <i>make &amp;&amp; make modules_install</i>
 </pre>
 
@@ -527,11 +475,6 @@ sprzęt i wczyta odpowiednie moduły, a następnie uruchomi się właściwy syst
 <subsection>
 <title>Konfigurowanie modułów</title>
 <body>
-
-<note test="func:keyval('arch')='x86'">
-Jeśli korzysta się z jądra 2.4, należy zastąpić wszystkie <c>2.6</c> w
-poniższym tekście i poleceniach przez <c>2.4</c>.
-</note>
 
 <p>
 Moduły ładowane w czasie startu systemu muszą zostać dopisane do pliku
