@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/power-management-guide.xml,v 1.6 2006/12/19 14:58:31 shadoww Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/power-management-guide.xml,v 1.7 2007/05/08 11:33:41 rane Exp $ -->
 
 <guide link="/doc/pl/power-management-guide.xml" lang="pl">
 <title>Zarządzanie zasilaniem</title>
@@ -10,6 +10,9 @@
 </author>
 <author title="Redaktor">
   <mail link="chriswhite@gentoo.org">Chris White</mail>
+</author>
+<author title="Redaktor">
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
 <author title="Tłumaczenie">
   <mail link="edi15ta@gazeta.pl">Mateusz Kotyrba</mail>
@@ -25,8 +28,8 @@ skonfigurować.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.30</version>
-<date>2006-07-26</date>
+<version>1.32</version>
+<date>2007-04-15</date>
 
 <chapter>
 <title>Wprowadzenie</title>
@@ -918,7 +921,7 @@ eksperymentalnym.
 <pre caption="Automatyczne ładowanie modułu ibm_acpi">
 <comment>(Przed przystąpieniem, proszę przeczytać powyższe ostrzeżenia!)</comment>
 # <i>echo "options ibm_acpi experimental=1" >> /etc/modules.d/ibm_acpi</i>
-# <i>/sbin/modules-update</i>
+# <i>/sbin/update-modules</i>
 # <i>echo ibm_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
 # <i>modprobe ibm_acpi</i>
 </pre>
@@ -1355,19 +1358,27 @@ jednak musimy go zainstalować
 
 <p>
 Musimy jeszcze skonfigurować kilka plików w katalogu
-<path>/etc/hibernate</path>> Domyślnie pakiet wstawia tam dwa pliki
-<path>hibernate.con</path> i <path>ram.conf</path>.
+<path>/etc/hibernate</path>. Domyślnie pakiet wstawia tam kilka plików
+odpowiednio dla każdego stanu uśpienia. Opcje, które są popularne dla wszystkich
+metod wstrzymania zostały umieszczone w <path>common.conf</path>; upewnijcie
+się, że plik ten jest właściwie ustawiony dla waszego systemu.
 </p>
 
 <p>
-Do skonfigurowania uśpienia, edytujemy <path>ram.conf</path> w katalogu
-<path>/etc/hibernate</path>. <c>UseSysfsPowerState mem</c> jest już dobrze
-ustawiona, ale musimy jeszcze przejść przez resztę konfiguracji i dopasować ją
-do naszego systemu. W tej drodze poprowadzą nasz komentarze oraz nazwy
+Do skonfigurowania uśpienia, edytujemy <path>sysfs-ram.conf</path> w katalogu
+<path>/etc/hibernate</path>. Zmienna <c>UseSysfsPowerState mem</c> jest już
+dobrze ustawiona, ale jeżeli chcecie dokonać dalszych zmian dla tego konkretnego
+stanu uśpienia (lub jakiegokolwiek innego), powinien on zostać dodany do
+<path>/etc/hibernate/hibernate.conf</path>. Pomogą w tym komentarze oraz nazwy
 odpowiednich opcji. Jeżeli ponadto używamy nfs lub samby do dzielenia się
-plikami w sieci, powinniśmy się upewnić aby wyłączyć nie potrzebne skrypty
-uruchomieniowe, aby uniknąć opóźnień.
+plikami w sieci, powinniśmy wyłączyć niepotrzebne skrypty uruchomieniowe, aby
+uniknąć opóźnień.
 </p>
+
+<note>
+Aby uzyskać więcej informacji na temat stanów uśpienia, należy przeczytać <c>man
+hibernate.conf</c>.
+</note>
 
 <p>
 Gotowi? Teraz mamy ostatnią szansę zrobić kopię bezpieczeństwa danych, które
@@ -1380,12 +1391,10 @@ należy wcisnąć jakiś specjalny klawisz (np. <c>Fn</c>).
 </pre>
 
 <p>
-Jeżeli dalej czytamy ten tekst, wygląda na to, że uśpienie działa poprawnie.
-Możemy również ustawić oczekiwanie (S1) w podobny sposób, kopiując
-<path>ram.conf</path> do <path>standby.conf</path> i tworząc symlink
-<path>/usr/sbin/hibernate-standby</path> wskazujący na
-<path>/usr/sbin/hibernate</path>. S3 oraz S4 są bardziej intersującymi stanami
-uspienia prowadzącymi jednakże do większego oszczędzania energii.
+Teraz uśpienie powinno działać poprawnie.  Możemy również ustawić oczekiwanie
+(S1) w podobny sposób, edytując <path>sysfs-ram.conf</path> oraz zmieniając
+"UseSysfsPowerState mem" na "UseSysfsPowerState standby". S3 oraz S4 są bardziej
+intersującymi stanami uśpienia powodującymi zwiększenie oszczędzania energii.
 </p>
 
 </body>
@@ -1468,7 +1477,7 @@ uruchamiania.
 
 <p>
 Aby uaktywnić hibernację z swsusp, trzeba użyć skryptu hibernate oraz ustawić
-<c>UseSysfsPowerState disk</c> w <path>/etc/hibernate/hibernate.conf</path>
+<c>UseSysfsPowerState disk</c> w <path>/etc/hibernate/sysfs-disk</path>
 </p>
 
 <warn>
@@ -1479,14 +1488,14 @@ X, ale jako niezalogowani.
 </warn>
 
 <p>
-Jeśli wyświetli nam się komunikat o spanikowaniu jądra z powodu uhci lub
-czegoś podobnego, wtedy należy skompilować wsparcie dla USB jako moduł i
-usunąć go z pamięci przed uśpieniem laptopa. Opcje konfiguracyjne możemy znaleźć
-w <path>hibernate.conf</path>
+Jeśli wyświetli nam się komunikat o spanikowaniu jądra z powodu uhci lub czegoś
+podobnego, wtedy należy skompilować wsparcie dla USB jako moduł i usunąć go z
+pamięci przed uśpieniem laptopa. Opcje konfiguracyjne możemy znaleźć w
+<path>common.conf</path>
 </p>
 
 <pre caption="Hibernacja z swsusp">
-# <i>nano -w /etc/hibernate.conf</i>
+# <i>nano -w /etc/hibernate/common.conf</i>
 <comment>(Ostatnia szansa na zrobienie kopii zapasowej)</comment>
 # <i>hibernate</i>
 </pre>
@@ -1510,14 +1519,13 @@ suspend2 podczas uruchamiania.
 </pre>
 
 <p>
-Teraz należy odpowiednio wyedytować <path>/etc/hiberante/hibernate.conf</path>,
-uaktywniajać w nim <c>suspend2</c> oraz zakomentowywując wszystko w sekcji
-<c>sysfs_power_state</c> oraz <c>acpi_sleep</c>. Na razie jednak nie
-uaktualniajmy części o fbsplash w globalnych opcjach.
+Teraz należy odpowiednio wyedytować <path>/etc/hiberante/suspend2.conf</path>,
+uaktywniając opcje <c>suspend2</c>, które są nam potrzebne. Na razie jednak nie
+uaktualniajmy części o <c>fbsplash</c> w <c>common.conf</c>.
 </p>
 
 <pre caption="Hibernacja z suspend2">
-# <i>nano -w /etc/hibernate.conf</i>
+# <i>nano -w /etc/hibernate/suspend2.conf</i>
 <comment>(Ostatnia szansa na zrobienie kopii zapasowej danych)</comment>
 # <i>hibernate</i>
 </pre>
@@ -1530,8 +1538,9 @@ Aby uaktywnić wsparcie dla fbsplash podczas hibernacji, potrzebujemy pakietu
 </p>
 
 <pre caption="Instalacja suspend2-userui">
-# <i>mkdir -p /etc/portage</i>
 # <i>echo sys-apps/suspend2-userui fbsplash >> /etc/portage/package.use</i>
+<comment>(Pakiet może być oznaczony jako niestabilny, więc najpierw trzeba będzie go odmaskować)</comment>
+# <i>echo "sys-apps/suspend2-userui" >> /etc/portage/package.keywords</i>
 # <i>emerge suspend2-userui</i>
 </pre>
 
@@ -1565,8 +1574,8 @@ informacje jak tego dokonać.
 </pre>
 
 <p>
-Pozostaje nam jeszcze tylko przekonfigurowanie <path>grub.conf</path> lub
-<path>lilo.conf</path> aby nasz kernel używał
+Pozostaje nam jeszcze tylko przekonfigurowanie <path>grub.conf</path> (lub
+<path>lilo.conf</path>), aby nasz kernel używał
 <path>/boot/fbsplash-suspend2-emergence-1024x768</path> jako obrazu initrd.
 Teraz możemy na sucho przetestować czy wszystko zostało ustawione poprawnie
 </p>
@@ -1577,9 +1586,9 @@ Teraz możemy na sucho przetestować czy wszystko zostało ustawione poprawnie
 
 <p>
 Jeżeli wszystko działa dobrze, możemy ponownie otworzyć
-<path>/etc/hibernate/hibernate.conf</path> i uaktywnić wszystkie opcje związane
-z fbsplash. Po tym możemy już uruchomić <c>hibernate</c> i podziwiać hibernacje
-z użyciem fbsplash
+<path>/etc/hibernate/common.conf</path> i uaktywnić wszystkie opcje związane z
+fbsplash. Po tym możemy już uruchomić <c>hibernate</c> i podziwiać hibernację z
+użyciem fbsplash
 </p>
 
 
