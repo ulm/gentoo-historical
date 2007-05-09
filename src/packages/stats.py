@@ -17,7 +17,7 @@ from quixote import redirect
 
 _q_exports = []
 
-SBASE = 'http://cia.navi.cx/stats/author/'
+SBASE = 'http://cia.vc/stats/author/'
 
 def _q_index(_):
     """This should never be called"""
