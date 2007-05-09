@@ -22,7 +22,7 @@ DATE_REGEX = re.compile(
     re.M)
 GENTOO_DEV = re.compile(r'&lt;((.+))@gentoo.org&gt;', re.I)
 BUG_URL = 'http://bugs.gentoo.org/show_bug.cgi?id='
-CIA_URL = 'http://cia.navi.cx/stats/author/'
+CIA_URL = 'http://cia.vc/stats/author/'
 
 def bugs_to_html(string):
     """Convert bug #'s to html, escape other html text"""
