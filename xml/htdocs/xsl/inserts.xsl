@@ -29,7 +29,7 @@
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="contains('|ca|cs|da|de|el|en|es|fi|fr|he|hu|id|it|ko|lt|nl|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_cn|zh_tw|',concat('|', $LANG,'|'))">
+    <xsl:when test="contains('|ar|ca|cs|da|de|el|en|es|fi|fr|he|hu|id|it|ko|lt|nl|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_cn|zh_tw|',concat('|', $LANG,'|'))">
       <xsl:variable name="insert" select="document(concat('/doc/', $LANG, '/inserts.xml'))/inserts/insert[@name=$str]"/>
       <xsl:choose>
         <xsl:when test="$insert">
@@ -354,6 +354,8 @@
 
 <!-- Value of top element's lang attribute e.g. "pt_br" -->
 <xsl:param name="glang"><xsl:value-of select="//*[1]/@lang" /></xsl:param>
+
+<xsl:variable name="RTL"><xsl:if test="$glang='he' or $glang='ar'">Y</xsl:if></xsl:variable>
 
 <xsl:variable name="ROOT">
   <xsl:choose>

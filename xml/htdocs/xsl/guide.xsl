@@ -198,7 +198,7 @@
     <!-- Insert the node-specific content -->
 <body bgcolor="#ffffff">
     <!-- Test for RTL languages -->
-    <xsl:if test="$glang='he'">
+    <xsl:if test="$RTL='Y'">
       <xsl:attribute name="dir">RTL</xsl:attribute>
     </xsl:if>
 
@@ -224,7 +224,7 @@
           <td width="99%" class="content" valign="top">
             <!-- Test for RTL languages -->
             <xsl:choose>
-              <xsl:when test="$glang='he'">
+              <xsl:when test="$RTL='Y'">
                 <xsl:attribute name="dir">RTL</xsl:attribute>
               </xsl:when>
               <xsl:otherwise>
@@ -583,7 +583,7 @@
     <!-- Content below top menu and between left menu and ads -->
     <td valign="top" bgcolor="#ffffff">
       <!-- Test for RTL languages -->
-      <xsl:if test="$glang='he'">
+      <xsl:if test="$RTL='Y'">
         <xsl:attribute name="dir">RTL</xsl:attribute>
       </xsl:if>
             <xsl:choose>
@@ -1334,7 +1334,7 @@
 <xsl:template match="license">
 <p class="copyright">
   <!-- Test for RTL languages -->
-  <xsl:if test="$glang='he'">
+  <xsl:if test="$RTL='Y'">
     <xsl:attribute name="dir">RTL</xsl:attribute>
   </xsl:if>
   <xsl:apply-templates select="func:gettext('License')"/>
@@ -1589,7 +1589,7 @@
         <td class="topsep">
           <!-- Test for RTL languages -->
           <xsl:choose>
-            <xsl:when test="$glang='he'">
+            <xsl:when test="$RTL='Y'">
               <xsl:attribute name="dir">RTL</xsl:attribute>
             </xsl:when>
             <xsl:otherwise>
@@ -1611,7 +1611,7 @@
             <td class="topsep">
               <!-- Test for RTL languages -->
               <xsl:choose>
-                <xsl:when test="$glang='he'">
+                <xsl:when test="$RTL='Y'">
                   <xsl:attribute name="dir">RTL</xsl:attribute>
                 </xsl:when>
                 <xsl:otherwise>
@@ -1632,7 +1632,7 @@
         <td class="topsep">
           <!-- Test for RTL languages -->
           <xsl:choose>
-            <xsl:when test="$glang='he'">
+            <xsl:when test="$RTL='Y'">
               <xsl:attribute name="dir">RTL</xsl:attribute>
             </xsl:when>
             <xsl:otherwise>
