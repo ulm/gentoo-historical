@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-freebsd.xml,v 1.25 2007/04/08 21:55:42 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoo-freebsd.xml,v 1.26 2007/05/10 22:00:51 cam Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/gentoo-freebsd.xml">
@@ -26,6 +26,9 @@
 <author title="Editor">
   <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
+<author title="Editor">
+  <mail link="cam@gentoo.org">Camille Huot</mail>
+</author>
 
 <abstract>
 This document gives some general information on FreeBSD, as well as
@@ -37,8 +40,8 @@ for people interested in helping out with development.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.8</version>
-<date>2007-04-08</date>
+<version>2.9</version>
+<date>2007-05-10</date>
 
 <chapter>
 <title>Introduction to FreeBSD</title>
@@ -199,22 +202,6 @@ bound to 192.168.0.106 -- renewal in 302400 seconds
 The output presented here will differ based on your network.
 </note>
 
-<p>
-Next, create the chroot for your installation:
-</p>
-
-<pre caption="Making the chroot directory">
-# <i>mkdir /mnt/gentoo</i>
-</pre>
-
-<note>
-There is a bug in the <uri
-link="http://dev.gentoo.org/~flameeyes/minimal-freesbie-drizzt.iso.bz2">
-minimal Freesbie CD</uri> that prevents the creation of the
-<path>/mnt/gentoo</path> mount point. To avoid this, use <path>/mnt</path>
-instead of <path>/mnt/gentoo</path> in the following sections.
-</note>
-
 </body>
 </section>
 <section>
@@ -251,7 +238,7 @@ Here, we'll refrain from using the automatic layout, and create one giant root
 partition, followed by a swap partition. Hit <b>c</b> to create a new
 partition. A dialog prompts you to enter a size. Go ahead and do so, using
 MB/GB for setting different sizes, or C for cylinders. For root, choose FS as
-the partition type, and set the mount point as <path>/mnt/gentoo</path>. <e>If
+the partition type, and set the mount point as <path>/mnt/</path>. <e>If
 you do not adjust the mount point, it will overwrite the FreeSBIE
 environment!</e> As <path>/boot</path> is not a separate partition, you'll
 need to disable soft-updates, or your system will not boot! To do so, use the
@@ -271,20 +258,21 @@ boot from. To fix this, run the following:
 </p>
 
 <pre caption="Fixing the root partition letter">
-# <i>disklabel ad0s1 | sed 's/^  d:/  a:/g' | disklabel -w ad0s1</i>
+# <i>disklabel ad0s1 | sed 's/^  d:/  a:/' > label</i>
+# <i>disklabel -R ad0s1 label</i>
 </pre>
 
 <p>
 This will finalize the partitioning process, and format the drive in UFS for
 FreeBSD to utilize. This will also mount the drive for you at the mount point
-specified earlier (<path>/mnt/gentoo</path>). You can verify this worked by
+specified earlier (<path>/mnt/</path>). You can verify this worked by
 running <c>mount</c>:
 </p>
 
 <pre caption="Verifying the new disk layout was mounted with mount">
 # <i>mount</i>
 ...
-/dev/ad0s1a on /mnt/gentoo (ufs, local)
+/dev/ad0s1a on /mnt (ufs, local)
 </pre>
 
 <p>
@@ -306,7 +294,7 @@ latest snapshot, and unpack it into the mountpoint:
 </p>
 
 <pre caption="Obtaining and unpacking a stage3 tarball">
-# <i>cd /mnt/gentoo/</i>
+# <i>cd /mnt/</i>
 <comment>(Any other Gentoo mirror which includes the experimental/ directory will also work.)</comment>
 # <i>wget http://gentoo.osuosl.org/experimental/x86/freebsd/stages/stage3-x86-freebsd-6.2.tar.bz2</i>
 # <i>tar -jxvpf stage3-x86-freebsd-6.2.tar.bz2</i>
@@ -330,9 +318,9 @@ point before proceeding with the chroot.
 </p>
 
 <pre caption="Mounting the /dev filesystem and chrooting">
-# <i>mount -t devfs none /mnt/gentoo/dev/</i>
-# <i>cp /etc/resolv.conf /mnt/gentoo/etc</i>
-# <i>chroot /mnt/gentoo/ /bin/bash</i>
+# <i>mount -t devfs none /mnt/dev/</i>
+# <i>cp /etc/resolv.conf /mnt/etc/</i>
+# <i>chroot /mnt/ /bin/bash</i>
 # <i>env-update &amp;&amp; source /etc/profile</i>
 </pre>
 
@@ -385,6 +373,51 @@ If you want, you can now rebuild the system's core packages.
 </chapter>
 <chapter>
 <title>Setting up for Booting</title>
+<section>
+<title>Set your time zone</title>
+<body>
+
+<p>
+First make sure your date and time is set correctly using <c>date
+yyyymmddHHMM</c>. Use UTC time.
+</p>
+
+<pre caption="Set the date and UTC time">
+<comment>(Check the clock)</comment>
+# <i>date</i>
+Mon Mar  6 00:14:13 UTC 2006
+
+<comment>(Set the current date and time if required)</comment>
+# <i>date 200603060016</i> <comment>(Format is yyyymmddHHMM)</comment>
+Mon Mar  6 00:16:00 UTC 2006
+</pre>
+
+<p>
+Next, set your time zone information by using the correct listing in
+<path>/usr/share/zoneinfo</path>.
+</p>
+
+<pre caption="Setting your timezone">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Using Brussels as an example)</comment>
+# <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
+
+# <i>date</i>
+Wed Mar  8 00:46:05 CET 2006
+</pre>
+
+<p>
+Edit <path>/etc/conf.d/clock</path> to define the time zone you used
+previously.
+</p>
+
+<pre caption="Edit /etc/conf.d/clock">
+# <i>nano -w /etc/conf.d/clock</i>
+TIMEZONE="Europe/Brussels"
+</pre>
+
+</body>
+</section>
 <section>
 <title>Kernel Installation</title>
 <body>
@@ -491,8 +524,8 @@ To install and configure <c>boot0</c>, run the following. Remember to replace
 <comment>(Leave the chroot environment)</comment>
 # <i>exit</i>
 <comment>(Issued from outside the chroot)</comment>
-# <i>fdisk -B -b /mnt/gentoo/boot/boot0 /dev/adX</i>
-# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>fdisk -B -b /mnt/boot/boot0 /dev/adX</i>
+# <i>chroot /mnt/ /bin/bash</i>
 # <i>disklabel -B adXsY</i>
 </pre>
 
@@ -553,6 +586,16 @@ grub&gt; quit
 </pre>
 
 <p>
+To make the loader find the kernel on a specific slice (the default is 'a'),
+add a <c>vfs.root.mountfrom</c> line to the <path>/boot/loader.conf</path>
+file:
+</p>
+
+<pre caption="Tell the loader where to look for the kernel">
+# <i>echo 'vfs.root.mountfrom="ufs:ad0s1d"' >> /boot/loader.conf</i>
+</pre>
+
+<p>
 When you first boot, you may not receive a grub menu. If so, run this at the
 prompt:
 </p>
@@ -573,6 +616,12 @@ For more information on configuring grub, please refer to the <uri
 link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=10#doc_chap2">Gentoo
 Linux Handbook</uri>.
 </note>
+
+<warn>
+Grub doesn't follow UFS symlinks so be sure to delete the
+<path>/boot/grub/menu.lst</path> symlink and to use <path>menu.lst</path> to
+setup Grub (<path>grub.conf</path> isn't used).
+</warn>
 
 </body>
 </section>
