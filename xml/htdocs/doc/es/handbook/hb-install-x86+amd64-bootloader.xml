@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-x86+amd64-bootloader.xml,v 1.5 2007/04/22 18:35:47 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-x86+amd64-bootloader.xml,v 1.6 2007/05/10 00:31:26 yoswink Exp $ -->
 
 <sections>
 
-<version>4.3</version>
-<date>2007-03-12</date>
+<version>5.0</version>
+<date>2007-05-07</date>
 
 <section>
 <title>Realizando su elección</title>
@@ -62,7 +62,7 @@ está utilizando el controlador <c>vesafb</c> y <e>necesita</e> el parámetro
 <c>vga</c>.
 </p>
 
-<p test="func:keyval('arch')='AMD64'">
+<p test="contains('AMD64 IA64',func:keyval('arch'))">
 Los sistemas de 64-bits deben usar el controlador <c>vesafb</c>, y necesitan
 el parámetro <c>vga</c>.
 </p>
@@ -163,7 +163,7 @@ informamos sobre las más utilizadas:
 </table>
 
 </body>
-<body test="func:keyval('arch')='AMD64'">
+<body test="contains('AMD64 IA64',func:keyval('arch'))">
 
 <p>
 El resultado de estas dos configuraciones podría ser algo como: <c>vga=0x318
@@ -171,9 +171,13 @@ video=vesafb:mtrr:3,ywrap</c>. Recuerde (o anote) ésta configuración. La
 necesitará dentro de poco.
 </p>
 
-<p>
+<p test="func:keyval('arch')='AMD64'">	
 Aunque LILO funciona en AMD64, Gentoo solamente soporta GRUB. Ahora cotinue
 con su <uri link="#grub">instalación</uri>.
+</p>
+
+<p test="func:keyval('arch')='IA64'">
+Ahora, debería instalar el <uri link="#elilo">cargador de arranque elilo</uri>.
 </p>
 
 </body>
@@ -193,7 +197,7 @@ link="#lilo">LILO</uri>.
 </body>
 </subsection>
 </section>
-<section id="grub">
+<section id="grub" test="contains('AMD64 x86',func:keyval('arch'))">	
 <title>Por defecto: Usando GRUB</title>
 <subsection>
 <title>Comprendiendo la terminología de GRUB</title>
@@ -687,8 +691,82 @@ Ahora puede continuar con <uri link="#reboot">Reiniciando el Sistema</uri>.
 </body>
 </subsection>
 </section>
+<section id="elilo" test="func:keyval('arch')='IA64'">
+<title>Por defecto: instalar elilo</title>
+<body>
+  	 
+<p>
+En la plataforma IA64, el cargador de arranque se llama elilo. Quizá necesite
+instalarlo en su máquina primero.
+</p>
+  	 
+<pre caption="Instalar elilo">
+# <i>emerge elilo</i>
+</pre>
+ 
+<p>
+Puede encontrar el archivo de configuración en <path>/etc/elilo.conf</path> y 
+un archivo de ejemplo en el directorio usual de documentos	
+<path>/usr/share/doc/elilo-&lt;ver&gt;/</path>. Aquí tiene otro ejemeplo 
+de configuración:
+</p>
+ 
+<pre caption="ejemplo /etc/elilo.conf">
+boot=/dev/sda1
+delay=30
+timeout=50
+default=Gentoo
+append="console=ttyS0,9600"
+prompt
+
+image=/vmlinuz
+	label=Gentoo
+	root=/dev/sda2
+	read-only
+ 
+image=/vmlinuz.old
+	label=Gentoo.old
+	root=/dev/sda2
+	read-only
+</pre>
+ 
+<p>
+La linea <c>boot</c> le indica a elilo la ubicación de la partición de boot 
+(en este caso <path>/dev/sda1</path>). La línea <c>delay</c> configura el 
+número de segundos antes de que se inicie el arranque de manera automática 
+cuando se está en modo no interactivo. La línea <c>timeout</c> es igual 
+que delay pero para el modo interactivo. La línea <c>default</c> establece
+la entrada de kernel por defecto (la cual se lista debajo). La línea 
+<c>append</c> añade opciones extra a la línea de invocación del kernel.
+<c>prompt</c> configura el comportamiento predeterminado de elilo con el
+que interactuar.
+</p>
+  	 
+<p>
+Las secciones que comienzan con <c>image</c> definen distintas images
+arrancables. Cada imagen tiene una etiqueta (<c>label</c>), un sistema
+de ficheros raíz (<c>root</c>) y montarán la raíz del sistema en modo
+solamente lectura (<c>read-only</c>).
+</p>
+  	 
+<p>
+Cuando la configuración está terminada, simplemente ejecute 
+<c>elilo --efiboot</c>. La opción <c>--efiboot</c> añade una entrada
+al menu para Gentoo Linux en el Gestor de Arranque EFI.
+</p>
+  	 
+<pre caption="Aplicar la configuración de elilo">
+# <i>elilo --efiboot</i>
+</pre>
+  	 
+<p>
+Ahora continue con <uri link="#reboot">reiniciando el sistema</uri>.
+</p>
+ 	 
+</body>
+</section>
 <section id="reboot">
-<title>Reiniciando el Sistema</title>
+<title>Reiniciando el sistema</title>
 <subsection>
 <body>
 
@@ -698,7 +776,14 @@ montadas. Después podemos ejecutar el mágico comando que hemos
 estado esperando: <c>reboot</c>.
 </p>
 
-<pre caption="Desmontar todas las particiones y reiniciar">
+<pre caption="Desmontar todas las particiones y reiniciar" test="func:keyval('arch')='IA64'">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/sys /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo</i>
+cdimage ~# <i>reboot</i>
+</pre>
+						   	 
+<pre caption="Desmontar todas las particiones y reiniciar" test="not(func:keyval('arch')='IA64')">
 # <i>exit</i>
 cdimage ~# <i>cd</i>
 cdimage ~# <i>umount /mnt/gentoo/boot  /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo</i>
@@ -710,9 +795,14 @@ Por supuesto, no olvide quitar el CD arrancable, o el CD será arrancado de
 nuevo en lugar de su nuevo sistema Gentoo.
 </p>
 
+<p test="func:keyval('arch')='IA64'">
+Cuando reinicie el sistema debería poder observar una nueva opción en el gestor
+de arranque EFI para Gentoo Linux que le permitirá arrancarlo.
+</p>
+
 <p>
 Una vez que haya reiniciado su instalación de Gentoo, termínela con
- <uri link="?part=1&amp;chap=11">Finalizando su instalación de Gentoo</uri>.
+<uri link="?part=1&amp;chap=11">Finalizando su instalación de Gentoo</uri>.
 </p>
 
 </body>
