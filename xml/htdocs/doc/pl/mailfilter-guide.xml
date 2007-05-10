@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/mailfilter-guide.xml,v 1.8 2006/07/27 08:35:02 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/mailfilter-guide.xml,v 1.9 2007/05/10 13:42:02 shadoww Exp $ -->
 
 <guide link="/doc/pl/mailfilter-guide.xml" lang="pl">
 <title>Filtrowanie poczty w Gentoo</title>
@@ -25,8 +25,8 @@ ClamAV, greylistingu i SPF.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.10</version>
-<date>2006-05-22</date>
+<version>0.12</version>
+<date>2007-04-25</date>
 
 <chapter>
 <title>Wprowadzenie</title>
@@ -1703,7 +1703,7 @@ Your MySQL connection id is 78 to server version: 4.0.18-log
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 mysql> <i>create database maildb;</i>
-mysql> <i>GRANT ALL PRIVILEGES ON maildb.* TO 'mail'@'localhost' IDENTIFIED BY 'very_secret_password';</i>
+mysql> <i>GRANT INSERT,UPDATE,DELETE,SELECT ON maildb.* TO 'mail'@'localhost' IDENTIFIED BY 'very_secret_password';</i>
 mysql> <i>use maildb;</i>
 </pre>
 
@@ -1896,7 +1896,7 @@ Your MySQL connection id is 78 to server version: 4.0.18-log
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 mysql> <i>create database dbname;</i>
-mysql> <i>GRANT ALL PRIVILEGES ON dbname.* TO 'dbuser'@'localhost' IDENTIFIED BY 'anoter_very_secret_password';</i>
+mysql> <i>GRANT INSERT,UPDATE,DELETE,SELECT ON dbname.* TO 'dbuser'@'localhost' IDENTIFIED BY 'another_very_secret_password';</i>
 mysql> <i>use dbname;</i>
 </pre>
 
@@ -1933,7 +1933,8 @@ mysql:
           spam_count            int(11)         NOT NULL default '0',
           ham_count             int(11)         NOT NULL default '0',
           atime                 int(11)         NOT NULL default '0',
-          PRIMARY KEY           (id, token)
+          PRIMARY KEY           (id, token),
+          INDEX                 (id, atime)
           ) TYPE=MyISAM;
 
       CREATE TABLE bayes_vars (
@@ -1991,14 +1992,14 @@ zatrzymać należy kierować się poniższym instrukcjami:
 
 <note>
 Należy zauważyć, iż ostatni krok można wykonać jedynie w przypadku gdy baza
-danych MySQL i plik <path>local.cf</path> zostaną zaktualizowane.
+danych MySQL i plik <path>secrets.cf</path> zostaną zaktualizowane.
 </note>
 
 <p>
 Należy podać programowi Spamassassin potrzebne informację:
 </p>
 
-<pre caption="Modifyikacja pliku /etc/mail/spamassassin/local.cf">
+<pre caption="Modifyikacja pliku /etc/mail/spamassassin/secrets.cf">
 <comment>(Należy powiedzieć programowi Spamassassin, aby używał MySQL dla danych Bayesa</comment>
 bayes_store_module              Mail::SpamAssassin::BayesStore::SQL
 bayes_sql_dsn                   DBI:mysql:sa_bayes:localhost:3306
@@ -2010,6 +2011,14 @@ auto_whitelist_factory          Mail::SpamAssassin::SQLBasedAddrList
 user_awl_dsn                    DBI:mysql:sa_bayes:localhost:3306
 user_awl_sql_username           db_name
 user_awl_sql_password           another_very_secret_password
+</pre>
+
+<p>
+Następnie, ustawiamy dla bezpieczeństwa odpowiednie zezwolenia:
+</p>
+
+<pre caption="Zmiana zezwoleń">
+# <i>chmod 400 /etc/mail/spamassassin/secrets.cf</i>
 </pre>
 
 <note>
