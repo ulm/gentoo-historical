@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Id: liveusb.xml,v 1.3 2006/09/21 10:54:56 neysx Exp $ -->
+<!-- $Id: liveusb.xml,v 1.4 2007/05/15 12:15:42 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/id/liveusb.xml" lang="id">
@@ -8,21 +8,25 @@
 <author title="Author">
   <mail link="henrik@brixandersen.dk">Henrik Brix Andersen</mail>
 </author>
+<author title="Editor">
+  <mail link="neysx@gentoo.org">Xavier Neys</mail>
+</author>
 <author title="Translator">
   <mail link="kucrut.dz@gmail.com">Dzikri Aziz</mail>
 </author>
 
 <abstract>
 Panduan ini menjelaskan cara membuat Gentoo Linux LiveUSB, atau dengan kata
-lain, cara mengemulasi CD Instalasi Linux dengan menggunakan flash drive.
+lain, cara mengemulasi CD Instalasi Linux x86 dan AMD64 dengan menggunakan
+flash drive.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.6</version>
-<date>2006-09-18</date>
+<version>2</version>
+<date>2007-05-10</date>
 
 <chapter>
 <title>Pendahuluan</title>
@@ -32,9 +36,9 @@ lain, cara mengemulasi CD Instalasi Linux dengan menggunakan flash drive.
 
 <p>
 Panduan ini menjelaskan cara membuat Gentoo Linux LiveUSB, atau dengan kata
-lain, cara mengemulasi CD Instalasi Linux dengan menggunakan flash drive. Hal
-ini berguna untuk menginstal Gentoo Linux pada laptop modern yagn tidak
-memiliki CD-ROM.
+lain, cara mengemulasi CD Instalasi Linux x86 dan AMD64 dengan menggunakan
+flash drive. Hal ini berguna untuk menginstal Gentoo Linux pada laptop modern
+yang tidak memiliki CD-ROM.
 </p>
 
 <p>
@@ -54,8 +58,8 @@ Berikut ini yang perlukan untuk menggunakan Gentoo Linux LiveUSB:
 </p>
 
 <ul>
-  <li>Bootable USB flash drive (paling kecil 64MB)</li>
-  <li>Komputer x86 dengan dukungan boot dari USB</li>
+  <li>Bootable USB flash drive (paling kecil 1GB)</li>
+  <li>Komputer i686 atau x86_64 dengan dukungan boot dari USB</li>
 </ul>
 
 <p>
@@ -67,6 +71,14 @@ Anda juga memerlukan akses berikut ini untuk menciptakan LiveUSB:
     Komputer dengan Gentoo Linux (atau disto Linux lain)
   </li>
 </ul>
+
+<note>
+Jika anda ingin menggunakan CD Instalasi Minimal pada flashdrive yang lebih
+kecil atau ingin menggunakan komputer &lt; i686, anda harus mengikuti seluruh
+petunjuk di panduan ini dengan imej CD minimal <b>2006.0</b> karena adanya <uri
+link="http://bugs.gentoo.org/show_bug.cgi?id=173117">bug</uri> di rilis
+terbaru.
+</note>
 
 </body>
 </section>
@@ -83,26 +95,31 @@ Pastikan anda telah membuat cadangan untuk data anda.
 </warn>
 
 <impo>
-Panduan ini menganggap flash driver USB anda adalah <path>/dev/sda</path>.
+Panduan ini menganggap flash driver USB anda adalah <path>/dev/sdc</path>.
 Jika anda memiliki perangkat mirip SCSI lainnya, pastikan anda menggunakan
 nama device yang benar.
 </impo>
 
 <p>
-Ciptakan sebuah partisi FAT32 pada flash drive USB anda dan tandakan sebagai
+Ciptakan sebuah partisi FAT16 di flashdrive USB anda dan tandakan sebagai
 bootable dengan menggunakan <c>fdisk</c>. Berikut ini adalah contoh skema
 partisi:
 </p>
 
-<pre caption="Contoh skema partisi">
-# <i>fdisk -l /dev/sda</i>
+<note>
+Jika flashdrive anda berukuran lebih dari 4GB, gunakan tipe partisi <c>b</c>
+(W95 FAT32).
+</note>
 
-Disk /dev/sda: 1048 MB, 1048313856 bytes
-33 heads, 61 sectors/track, 1017 cylinders
-Units = cylinders of 2013 * 512 = 1030656 bytes
+<pre caption="Contoh skema partisi">
+# <i>fdisk -l /dev/sdc</i>
+
+Disk /dev/sdc: 2063 MB, 2063597056 bytes
+255 heads, 63 sectors/track, 250 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
 
    Device Boot      Start         End      Blocks   Id  System
-/dev/sda1   *           1        1017     1023580    b  W95 FAT32
+/dev/sdc1   *           1         250     2008124+   6  FAT16
 </pre>
 
 </body>
@@ -112,13 +129,18 @@ Units = cylinders of 2013 * 512 = 1030656 bytes
 <body>
 
 <p>
-Ciptakan filesystem FAT32 pada flash drive USB dengan <c>mkdosfs</c>:
+Ciptakan filesystem FAT16 pada flash drive USB dengan <c>mkdosfs</c>:
 </p>
+
+<note>
+Jika flashdrive anda berukuran lebih dari 4Gb, gunakan <c>-F 32</c> untuk
+menciptakan filesystem FAT32.
+</note>
 
 <pre caption="Menjalankan mkdosfs">
 <comment>(Pastikan anda telah menginstal sys-fs/dosfstools)</comment>
 # <i>emerge -av sys-fs/dosfstools</i>
-# <i>mkdosfs -F 32 /dev/sda1</i>
+# <i>mkdosfs -F 16 /dev/sdc1</i>
 mkdosfs 2.11 (12 Mar 2005)
 </pre>
 
@@ -136,36 +158,33 @@ pada flash drive USB:
 <pre caption="Instalasi Master Boot Record">
 <comment>(Pastikan anda telah menginstal sys-boot/syslinux-3.00 atau yang lebih baru)</comment>
 # <i>emerge -av '>=sys-boot/syslinux-3*'</i>
-# <i>dd if=/usr/lib/syslinux/mbr.bin of=/dev/sda</i>
+# <i>dd if=/usr/lib/syslinux/mbr.bin of=/dev/sdc</i>
 0+1 records in
 0+1 records out
+304 bytes (304 B) copied, 0.0162317 s, 18.7 kB/s
 </pre>
 
 </body>
 </section>
 </chapter>
 <chapter>
-<title>Menyalin file-file</title>
+<title>Menyalin file ke flashdrive</title>
 <section>
 <title>Mount CD Instalasi Gentoo Linux</title>
 <body>
 
-<warn>
-Panduan ini ditulis hanya untuk digunakan dengan rilis Gentoo 2006.0. Jangan
-mencoba untuk menggunakan CD 2006.1 atau yang lebih baru, anda hanya akan
-menghasilkan disk USB yang tidak dapat boot.
-</warn>
-
 <p>
-Download <path>install-x86-minimal-2006.0.iso</path> dari <uri
-link="/main/en/where.xml">mirror</uri> Gentoo Linux lalu mount imej ISO
-tersebut di <path>/mnt/cdrom/</path> seperti berikut ini:
+Download <path>livecd-i686-installer-2007.0.iso</path> atau
+<path>livecd-amd64-installer-2007.0.iso</path> dari website <uri
+link="/main/en/where.xml">mirror</uri> Gentoo lalu mount imej ISO image di
+<path>/mnt/cdrom</path> seperti berikut:
+
 </p>
 
 <pre caption="Mount imej ISO CD Instalasi Gentoo Linux">
 <comment>(Ciptakan mount point /mnt/cdrom/ jika belum ada)</comment>
 # <i>mkdir -p /mnt/cdrom</i>
-# <i>mount -o loop,ro -t iso9660 install-x86-minimal-2006.0.iso /mnt/cdrom/</i>
+# <i>mount -o loop,ro -t iso9660 livecd-i686-installer-2007.0.iso /mnt/cdrom/</i>
 </pre>
 
 <note>
@@ -181,20 +200,20 @@ pada konfigurasi kernel anda.
 <body>
 
 <p>
-Mount flash drive USB yang telah diformat di <path>/mnt/usb/</path> seperti
+Mount flash drive USB yang telah diformat di <path>/mnt/usb</path> seperti
 berikut ini:
 </p>
 
 <pre caption="Mount flash drive USB">
-<comment>(Ciptakan mount point /mnt/usb/ jika belum ada)</comment>
+<comment>(Ciptakan mount point /mnt/usb jika belum tersedia)</comment>
 # <i>mkdir -p /mnt/usb</i>
-# <i>mount -t vfat /dev/sda1 /mnt/usb/</i>
+# <i>mount -t vfat /dev/sdc1 /mnt/usb</i>
 </pre>
 
 </body>
 </section>
 <section>
-<title>Menyalin file-file</title>
+<title>Menyalin file</title>
 <body>
 
 <p>
@@ -203,9 +222,9 @@ perlu kita sesuaikan karena kita akan menggunakan bootloader <c>syslinux</c>,
 bukan <c>isolinux</c>:
 </p>
 
-<pre caption="Menyalin file-file">
-# <i>cp -r /mnt/cdrom/* /mnt/usb/</i>
-# <i>mv /mnt/usb/isolinux/* /mnt/usb/</i>
+<pre caption="Menyalin file">
+# <i>cp -r /mnt/cdrom/* /mnt/usb</i>
+# <i>mv /mnt/usb/isolinux/* /mnt/usb</i>
 # <i>mv /mnt/usb/isolinux.cfg /mnt/usb/syslinux.cfg</i>
 # <i>rm -rf /mnt/usb/isolinux*</i>
 
@@ -218,7 +237,7 @@ Sekarang anda dapat meng-unmount imej ISO:
 </p>
 
 <pre caption="Unmount imej ISO">
-# <i>umount /mnt/cdrom/</i>
+# <i>umount /mnt/cdrom</i>
 </pre>
 
 </body>
@@ -229,24 +248,17 @@ Sekarang anda dapat meng-unmount imej ISO:
 
 <p>
 Edit file konfigurasi syslinux dengan menggunakan <c>sed</c> seperti yang
-ditunjukkan di bawah ini. Parameter <c>dobladecenter</c> akan mengakibatkan
-delay sebelum mencoba untuk me-mount filesystem. Hal ini diperlukan agar
-flash driver USB telah siap ketika dideteksi.
+ditunjukkan di bawah ini. Parameter <c>slowusb</c> akan mengakibatkan delay
+sebelum mencoba untuk me-mount filesystem. Hal ini diperlukan agar flashdrive
+USB telah siap ketika dideteksi.
 </p>
 
 <pre caption="Edt parameter boot">
 # <i>sed -i \
-    -e "s:cdroot:cdroot dobladecenter:" \
+    -e "s:cdroot:cdroot slowusb:" \
     -e "s:kernel memtest86:kernel memtest:" \
     /mnt/usb/syslinux.cfg</i>
 </pre>
-
-<note>
-Anda boleh menambahkan <c>docache</c> pada parameter boot agar anda dapat
-meng-unmount <path>/mnt/cdrom/</path> setelah selesai boot dan mencabut flash
-drive USB. Jangan gunakan parameter ini kecuali komputer target memiliki RAM
-paling sedikit 128MB.
-</note>
 
 </body>
 </section>
@@ -262,7 +274,7 @@ Pastikan anda telah meng-unmount flash drive USB sebelum menginstal bootloader.
 </p>
 
 <pre caption="Unmount flash drive USB">
-# <i>umount /mnt/usb/</i>
+# <i>umount /mnt/usb</i>
 </pre>
 
 </body>
@@ -276,11 +288,11 @@ Akhirnya, instal bootloader <c>syslinux</c> pada flash drive USB:
 </p>
 
 <pre caption="Menjalankan syslinux">
-# <i>syslinux /dev/sda1</i>
+# <i>syslinux /dev/sdc1</i>
 </pre>
 
 <impo>
-Anda perlu menjalankan <c>syslinux /dev/sda1</c> kembali setiap anda merubah
+Anda perlu menjalankan <c>syslinux /dev/sdc1</c> kembali setiap anda merubah
 file <path>syslinux.cfg</path> agar perubahan konfigurasi diterapkan.
 </impo>
 
