@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-bootloader.xml,v 1.11 2006/11/28 07:45:02 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-bootloader.xml,v 1.12 2007/05/15 11:35:47 chiguire Exp $ -->
 
 <sections>
 
@@ -29,7 +29,7 @@ Si está utilizando una máquina IBM o Apple NewWorld, necesita usar <uri
 link="#yaboot" >yaboot</uri>. Con las máquinas Apple OldWorld tenemos dos
 opciones, <uri link="#bootx" >BootX</uri> (recomendado) y <uri 
 link="#quik">quik</uri>. Las Pegasos no necesitan gestor de arranque, pero 
-se necesita instalar <uri link="#bootcreator" >BootCreator</uri> para crear 
+se necesita instalar <uri link="#bootcreator" >bootcreator</uri> para crear 
 un menú de inicio SmartFirmware.
 </p>
 
@@ -76,24 +76,25 @@ desde firewire o USB, debemos configurarlo manualmente.
 <note>
 Necesitaremos editar el fichero yaboot.conf si usamos genkernel, incluso 
 habiendo utilizado yabootconfig. La sección de la imagen del núcleo de 
-yaboot.conf deberá ser modificada así:
+yaboot.conf deberá ser modificada así (usando vmlinux e initrd como los 
+nombres del núcleo y de la imagen initrd):
 </note>
 
 <pre caption="Añadiendo opciones de arranque de genkernel a yaboot.conf" >
 <comment>###########################################################
 ## Esta sección se puede duplicar si tenemos más de un 
-## núcleo o conjunto de opciones de arranque - reemplazaremos kernel-name
-## e initrd-name con el nombre exacto del fichero del núcleo
+## núcleo o conjunto de opciones de arranque - reemplazaremos la imagen
+## y el initrd con el nombre exacto del fichero del núcleo
 ## y de la imagen initrd.
 ###########################################################</comment>
-image=/boot/kernel-name
-label=Linux
-root=/dev/ram0
-partition=3
-initrd=/boot/initrd-name
-append="real_root=/dev/hda3 init=/linuxrc"
+image=/boot/kernel-genkernel-ppc-<keyval id="kernel-gentoo"/>
+   label=Linux
+   root=/dev/ram0
+   partition=3
+   initrd=/boot/initramfs-genkernel-ppc-<keyval id="kernel-gentoo"/>
 <comment># Podemos añadir argumentos adicionales al núcleo como por ejemplo
 # rootdelay=10 para un arranque USB/Firewire</comment>
+   append="real_root=/dev/hda3 init=/linuxrc"
 read-only
 <comment>##########################################################</comment>
 </pre>
@@ -121,10 +122,11 @@ configurará un arranque múltiple con Linux, Mac OS y Mac OS X.
 <p>
 Para usar <c>yabootconfig</c>, el disco debe tener una partición
 Apple_Bootstrap, y <path>/etc/fstab</path> debe estar configurado
-reflejando nuestras particiones Linux. Estos pasos deben haberse
+reflejando nuestras particiones Linux (notemos que la partición
+Bootstrap <e>no</e> debe estar en el fstab). Estos pasos deben haberse
 satisfecho ya anteriormente, pero deberíamos revisar
-<path>/etc/fstab</path> antes de continuar. Luego, nos aseguraremos tener
-instalado <c>yaboot</c>. 
+<path>/etc/fstab</path> antes de continuar. Ahora, instalaremos
+<c>yaboot</c>. 
 </p>
 
 <pre caption="Instalación de yaboot" >
@@ -150,15 +152,14 @@ yaboot en ella. Después de esto, entraremos en el chroot nuevamente.
 </pre>
 
 <p>
-Puede que queramos verificar el contenido de <path>/etc/yaboot.conf</path>. 
+Debemos verificar el contenido de <path>/etc/yaboot.conf</path>. 
 Si lo modificamos (por ejemplo para indicar el sistema operativo por
 defecto) debemos asegurarnos de volver a ejecutar <c>ybin -v</c> para
-aplicar los cambios en la partición Apple_Bootstrap.
+aplicar los cambios en la partición Apple_Bootstrap. Cada vez que
+realicemos un cambio en yaboot.conf, como cuando probamos un nuevo núcleo,
+debemos recordar siempre ejecutar <c>ybin -v</c> para actualizar la
+partición de bootstrap.
 </p>
-
-<pre caption="Preparación de la partición de bootstrap">
-# <i>mkofboot -v</i>
-</pre>
 
 <p>
 Ahora, continuaremos en <uri link="#reboot" >Reiniciando el sistema</uri>.
@@ -171,11 +172,11 @@ Ahora, continuaremos en <uri link="#reboot" >Reiniciando el sistema</uri>.
 <body>
 
 <p>
-En primer lugar nos aseguraremos de haber instalado <c>yaboot</c>.
+Primero, instalaremos <c>yaboot</c> en el sistema:
 </p>
 
-<pre caption="Instalación de yaboot desde GRP" >
-# <i>emerge --usepkg yaboot</i>
+<pre caption="Instalación de yaboot" >
+# <i>emerge yaboot</i>
 </pre>
 
 <p>
@@ -193,7 +194,7 @@ vistos como discos SCSI por el núcleo Linux, por lo que necesitaremos cambiar
 ## hasta haberlo consultado!
 ## Hay más ejemplos de configuración en /usr/share/doc/yaboot/examples.
 ##
-## En un menú de arranque múltiple, se añadirían una o más de las
+## En un menú de arranque dual, se añadirían una o más de las
 ## siguientes opciones:
 ## bsd=/dev/hdaX, macos=/dev/hdaY, macosx=/dev/hdaZ
 
@@ -235,20 +236,20 @@ install=/usr/lib/yaboot/yaboot
 magicboot=/usr/lib/yaboot/ofboot
 
 <comment>#################
-## Esta sección puede duplicarse si tiene más de un núcleo o conjunto de
-## opciones de arranque - reemplazaremos kernel-name con nuestra versión 
-## del núcleo
+## Esta sección puede duplicarse si tiene más de un núcleo o
+## conjunto de opciones de arranque - reemplazaremos la variable
+## imagen con el nombre exacto de nuestro núcleo.
 #################</comment>
-image=/boot/kernel-name
+image=/boot/<keyval id="kernel-name"/>
   label=Linux
   root=/dev/hda3
   partition=3
-  <comment>#  append="rootdelay=10"  # Necesario para arranque con USB/Firewire</comment>
+<comment>#  append="rootdelay=10"  # Necesario para arranque con USB/Firewire</comment>
   read-only
 <comment>##################
 
 ## Los usuarios de G5 y algunos de G4 deben indicar
-##   macos=hd:13
+##   macos=hd:13/
 ##   macosx=hd:12
 ## en lugar de los valores de ejemplo.</comment>
 macos=/dev/hda13
@@ -264,6 +265,10 @@ configuraciones. Si cambiamos yaboot.conf después de que la partición
 Apple_bootstrap haya sido creada deberemos actualizar la configuración 
 ejecutando <c>ybin -v</c>.
 </p>
+
+<pre caption="Configurando la partición de bootstrap">
+# <i>mkofboot -v</i>
+</pre>
 
 <p>
 Para más información a cerca de yaboot, se puede hojear <uri
@@ -298,7 +303,7 @@ encontrarlo.
 # <i>exit</i>
 cdimage ~# <i>mkdir /mnt/mac</i>
 cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
-cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux &quot;/mnt/mac/System Folder/Linux Kernels&quot;</i>
+cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux Kernels/<keyval id="kernel-name"/>"</i>
 </pre>
 
 <p>
@@ -310,8 +315,8 @@ partición MacOS.
 # <i>exit</i>
 cdimage ~# <i>mkdir /mnt/mac</i>
 cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
-cdimage ~# <i>cp /mnt/gentoo/boot/kernel-* "/mnt/mac/System Folder/Linux Kernels"</i>
-cdimage ~# <i>cp /mnt/gentoo/boot/initramfs-* "/mnt/mac/System Folder"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/kernel-genkernel-ppc-<keyval id="kernel-gentoo"/> "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/initramfs-genkernel-ppc-<keyval  id="kernel-gentoo"/> "/mnt/mac/System Folder"</i>
 </pre>
 
 <p>
@@ -339,7 +344,6 @@ instalación. Si no se usa genkernel, hay una opción para especificar el disco
 y la partición raíz de Linux. La rellenaremos con los valores apropiados.
 Dependiendo de la configuración del núcleo probablemente deberemos aplicar
 algunos parámetros adicionales de inicio del núcleo.
-
 </p>
 
 <p>
@@ -383,19 +387,21 @@ Primero, necesitamos instalar quik:
 </pre>
 
 <p>
-A continuación, necesitaremos configurarlo. Editaremos /etc/quik.conf e
-indicaremos la imagen del núcleo que hemos copiado en la partición de
-arranque.
+A continuación, necesitaremos configurarlo. Editaremos
+<path>/etc/quik.conf</path> e indicaremos la imagen del núcleo que hemos
+copiado en la partición de arranque.
 </p>
 
 <pre caption="Configuración de quik.conf" >
 # Ejemplo de quik.conf
-init-message = "Gentoo 2006.1\n"
-partition = 2           <comment># Esta es la partición de boot</comment>
+init-message = "Gentoo 2007.0\n"
+<comment># Esta es la partición de boot</comment>
+partition = 2
 root = /dev/hda4
 timeout = 30
 default = gentoo
-image = /vmlinux        <comment># Este es su núcleo</comment>
+<comment># Este es su núcleo</comment>
+image = /<keyval id="kernel-name"/>
     label = gentoo
 </pre>
 
@@ -424,14 +430,15 @@ intentar esto.
 # <i>nvsetenv input-device kbd</i>
 # <i>nvsetenv boot-device scsi/sd@1:0</i> <comment># Para SCSI</comment>
 # <i>nvsetenv boot-device ata/ata-disk@0:0</i> <comment># Para ATA</comment>
-# <i>nvsetenv boot-file /boot/vmlinux-2.6.17 root=/dev/hda4</i> <comment> # El
-primer ítem es la ruta al núcleo, el segundo es la partición root. Se pueden
-añadir las opciones del núcleo al final de esta línea.</comment>
+# <i>nvsetenv boot-file /boot/<keyval id="kernel-name"/> root=/dev/hda4</i>
+<comment> # El primer ítem es la ruta al núcleo, el segundo es la
+particiónroot. Se pueden añadir las opciones del núcleo al final de esta
+línea.</comment>
 # <i>nvsetenv boot-command boot</i> <comment># Establezca esta opción para arrancar desde Linux</comment>
 </pre>
 
 <note>
-También es posible cambiar las variables de arranque desde macOS. Dependiendo
+También es posible cambiar las variables de arranque desde MacOS. Dependiendo
 del modelo, tanto  <uri
 link="http://penguinppc.org/bootloaders/quik/BootVars.sit.hqx">bootvars</uri>
 o <uri
@@ -474,7 +481,7 @@ Primero nos aseguraremos de tener <c>bootcreator</c> instalado en el sistema:
 </p>
 
 <pre caption="Instalación de bootcreator" >
-# <i>emerge --usepkg bootcreator</i>
+# <i>emerge bootcreator</i>
 </pre>
 
 <p>
@@ -489,7 +496,7 @@ Ahora copiaremos el fichero <path>/etc/bootmenu.example</path> en
 
 <p>
 A continuación se encuentra un completo fichero de configuración de
-<path>/etc/bootmenu</path>. kernel-name e initrd-name deben ser cambiados
+<path>/etc/bootmenu</path>. vmlinux e initrd deben cambiarse
 por los nombres de núcleo e imagen initrd que estemos utilizando.
 </p>
 
@@ -515,11 +522,11 @@ ide:0 boot2.img ramdebug edebugflags=&quot;logkprintf&quot;
 
 [SECTION]
 Local HD -> Linux (Normal)
-ide:0 kernel-name video=radeonfb:1024x768@70 root=/dev/hda3
+ide:0 <keyval id="kernel-name"/> video=radeonfb:1024x768@70 root=/dev/hda3
 
 [SECTION]
 Local HD -> Genkernel (Normal)
-ide:0 kernel-name root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc initrd=initrd-name
+ide:0 kernel-genkernel-ppc-<keyval id="kernel-gentoo"/> root=/dev/ram0 real_root=/dev/hda3 init=/linuxrc initrd=initramfs-genkernel-ppc-<keyval id="kernel-gentoo"/>
 </pre>
 
 <p>

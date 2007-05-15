@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-kernel.xml,v 1.18 2007/04/17 22:29:38 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-kernel.xml,v 1.19 2007/05/15 11:35:47 chiguire Exp $ -->
 
 <sections>
 
-<version>7.5</version>
-<date>2007-02-12</date>
+<version>8.0</version>
+<date>2007-05-07</date>
 
 <section>
 <title>Zona horaria</title>
@@ -18,23 +18,24 @@
 <p>
 Primero necesitamos seleccionar la zona horaria para que nuestro
 sistema sepa dónde está ubicado. Hay que buscar la zona horaria en
-<path>/usr/share/zoneinfo</path>, y luego cópiela en
-<path>/etc/localtime</path>. Por favor, tenga cuidado con las zonas horarias
-de <path>/usr/share/zoneinfo/Etc/GMT*</path> pues sus nombres no hacen
-referencia a las zonas esperadas. Por ejemplo, <path>GMT-8</path> es
-en realidad GMT+8.
+<path>/usr/share/zoneinfo</path>. Luego establézcala en
+<path>/etc/conf.d/clock</path>. Por favor, tenga cuidado con las zonas
+horarias de <path>/usr/share/zoneinfo/Etc/GMT*</path> pues sus nombres no
+hacen referencia a las zonas esperadas. Por ejemplo, <path>GMT-8</path>
+es en realidad GMT+8.
 </p>
 
 <pre caption="Configurar la zona horaria" >
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(Suponiendo que queremos usar GMT)</comment>
-# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+# <i>nano -w /etc/conf.d/clock</i>
+TIMEZONE="GMT"
 </pre>
 
 </body>
 </section>
 <section>
-<title>Instalar las fuentes</title>
+<title>Instalar las fuentes del núcleo</title>
 <subsection>
 <title>Elegir un núcleo</title>
 <body>
@@ -42,13 +43,14 @@ en realidad GMT+8.
 <p>
 El corazón alrededor del cual se construyen todas las distribuciones es
 el núcleo (kernel) de Linux. Es la capa entre los programas de usuario
-y el hardware del sistema. Gentoo proporciona a sus usuarios varias
-fuentes de kernel. Una lista completa está disponible en la <uri
+y el hardware del sistema. Gentoo proporciona a sus usuarios varios
+núcleos para escoger. Una lista completa está disponible en la <uri
 link="/doc/es/gentoo-kernel.xml" >Guía Gentoo del Kernel</uri>.
 </p>
 
 <p>
-Sugerimos utilizar <c>gentoo-sources</c> en PPC, que es un núcleo 2.6.
+Sugerimos utilizar <c>gentoo-sources</c> en PPC, que es un núcleo 2.6
+reciente.
 </p>
 
 <pre caption="Instalar unas fuentes del kernel" >
@@ -59,21 +61,20 @@ Sugerimos utilizar <c>gentoo-sources</c> en PPC, que es un núcleo 2.6.
 En <path>/usr/src</path> se encuentra un enlace simbólico llamado
 <path>linux</path> apuntando a las fuentes del núcleo actual. En nuestro
 caso, el enlace a las fuentes del núcleo instaladas apunta a
-<c>gentoo-sources-2.6.15</c>. Tenga en cuenta que su versión puede ser
-diferente.
+<c>gentoo-sources-<keyval id="kernel-version"/></c>. Tenga en cuenta que
+su versión puede ser diferente.
 </p>
 
 <pre caption="Ver el enlace a las fuentes del kernel" >
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.15
+lrwxrwxrwx    1 root     root           22  Mar 18 16:23 /usr/src/linux -&gt; linux-<keyval id="kernel-gentoo"/>
 </pre>
 
 <p>
 Ahora vamos a configurar y compilar las fuentes del núcleo. Puede usar
 para ello <c>genkernel</c>, que construirá un núcleo genérico como el
 usado por el CD de instalación. Sin embargo, primero vamos a explicar la
-configuración "manual", puesto que es la mejor manera de optimizar nuestro
-sistema.
+configuración "manual", puesto que es una configuración más eficiente.
 </p>
 
 <p>
@@ -95,32 +96,33 @@ genkernel</uri>.
 <p>
 Configurar manualmente un núcleo es visto frecuentemente como el
 procedimiento más difícil al que tiene que enfrentarse un usuario de
-Linux. Nada mas lejos de la realidad: después de configurar un par de
-núcleos no recordaremos si fue difícil la primera vez ;)
+Linux. Nada mas lejos de la realidad: después de configurar algunos
+núcleos no recordaremos si era algo difícil ;)
 </p>
 
 <p>
 Sin embargo, una cosa <e>es</e> cierta: necesitaremos conocer nuestro sistema
 si queremos configurar el núcleo manualmente. Mucha de la información
 necesaria se puede recolectar instalando pciutils (<c>emerge pciutils</c>) que
-contiene <c>lscpi</c>. Ahora podremos utilizar <c>lscpi</c> en el entorno del
-chroot. Se puede ignorar sin riesgo cualquier aviso que muestre <c>lspci</c>
-relativo a <e>pcilib</e> (como "pcilib: cannot open /sys/bus/pci/devices").
-Alternativamente, se puede ejecutar <c>lscpi</c> desde un entorno <e>no
-chroot</e>. Los resultados serían los mismos. También se puede ejecutar
-<c>lsmod</c> para ver que módulos del núcleo usa el CD de instalación (puede
-proporcionar buenos consejos sobre qué habilitar). Otro lugar para buscar
-posibles pistas sobre que componentes habilitar es comprobar los mensajes del
-kernel que se obtienen durante el proceso de inicio. Ejecute <c>dmesg</c> para
-ver los mensajes del kernel.
+contiene el programa <c>lscpi</c>. Ahora podremos utilizar <c>lscpi</c> en el
+entorno del chroot. Se puede ignorar sin riesgo cualquier aviso que muestre
+<c>lspci</c> relativo a <e>pcilib</e> (como "pcilib: cannot open 
+/sys/bus/pci/devices"). Alternativamente, se puede ejecutar <c>lscpi</c> desde
+un entorno <e>no chroot</e>. Los resultados serían los mismos. También se
+puede ejecutar <c>lsmod</c> para ver que módulos del núcleo usa el CD de
+instalación (puede proporcionar buenos consejos sobre qué habilitar). Otro
+lugar para buscar posibles pistas sobre que componentes habilitar es comprobar
+los mensajes del kernel que se obtienen durante el proceso de inicio. Ejecute
+<c>dmesg</c> para ver los mensajes del kernel.
 </p>
 
 <p>
-Ahora hay que ir al directorio de las fuentes para configurar el núcleo. Se
-recomienda incluir inicialmente la configuración por defecto con
-<c>make pmac32_defconfig</c>. Una vez que la configuración por defecto haya
-sido incluida, ejecutaremos <c>make menuconfig</c> que lanzará un menú de
-configuración basado en ncurses.
+Ahora hay que ir al directorio de las fuentes para configurar el núcleo.
+Empiece configurando un núcleo que pueda arranacar en la mayor parte de
+máquinas PowerPC de 32 bits ejecutando <c>make pmac32_defconfig</c>. Una
+vez que la configuración por defecto haya sido incluida, ejecutaremos
+<c>make menuconfig</c> que lanzará un menú de configuración basado en
+ncurses.
 </p>
 
 <pre caption="Invocar a menuconfig" >
@@ -166,6 +168,8 @@ utilizando un ordenador Apple.
 <pre caption="Selecionar los sistemas de ficheros necesarios" >
 File systems ----&gt;
   Pseudo Filesystems ----&gt;
+<comment>(/proc puede estar ya forzado por su configuración, si es así,
+verá --- en su lugar)</comment> 
     [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
   Partition Types ---&gt;
@@ -180,51 +184,69 @@ File systems ----&gt;
 </pre>
 
 <p>
+Los usuarios de las máquinas NewWorld y OldWorld querrán igualmente
+soporte para HFS. Los usuarios de OldWorld lo necesitan para copiar en la
+partición MacOS los núcleos compilados. Los usuarios de NewWorld lo
+necesitan para configurar la partición especial Apple_Bootstrap:
+</p>
+
+<pre caption="Activar el soporte HFS">
+File Systems ---&gt;
+  Miscellaneous filesystems ---&gt;
+    &lt;*&gt; Apple Macintosh file system support
+    &lt;*&gt; Apple Extended HFS file system support
+</pre>
+
+<p>
 Si usamos PPPoE o un módem para conectar a Internet, necesitaremos las
 siguientes opciones del núcleo:
 </p>
 
 <pre caption="Seleccionar los controladores necesarios para PPPoE" >
-Device Drivers --->
-  Networking support --->
+Device Drivers ---&gt;
+   Network device support ---&gt;
     &lt;*> PPP (point-to-point protocol) support
     &lt;*>   PPP support for async serial ports
     &lt;*>   PPP support for sync tty ports
 </pre>
 
 <p>
-Las dos opciones de compresión no molestan pero no son necesarias. La
-opción<c>PPP over Ethernet</c> tampoco es obligatoria, tal vez solo
-sea usada por <c>rp-pppoe</c> cuando se configure PPPoE en modo
-núcleo.
+Las dos opciones de compresión no molestan pero no son siempre necesarias.
+La opción <c>PPP over Ethernet</c> sólo podría ser usada por <c>ppp</c>
+cuando se configure para realizar PPPoE en modo núcleo.
 </p>
 
 <p>
-Si es necesario, no hay que olvidar incluir el soporte en el núcleo
-para la tarjeta ethernet.
+¡No olvide incluir soporte en el núcleo para su tarjeta ethernet! Muchos de
+los nuevos ordenadores Apple usan el controlador ethernet SunGEM. Lo viejos
+iMac usan habitualmente el controlador BMAC.
 </p>
 
-<p>
-Los usuarios de sistemas NewWorld y OldWorld querrán igualmente activar
-el soporte HFS. Los usuarios de OldWorld lo necesitan para poder copiar
-el núcleo en la partición MacOS. Los usuarios de NewWorld lo necesitan
-para configurar la partición especial Apple_Bootstrap:
-</p>
-
-<pre caption="Activar el soporte HFS" >
-File Systems --->
-  [*] HFS Support
+<pre caption="Selección del controlador de red" >
+Device Drivers ---&gt;
+   Network device support ---&gt;
+    Ethernet (10 or 100Mbit) ---&gt;
+      [*] Ethernet (10 or 100Mbit)
+      &lt;*&gt;   Generic Media Independent Interface device support
+      &lt;*&gt;   MACE (Power Mac ethernet) support
+      &lt;*&gt;   BMAC (G3 ethernet) support
+      &lt;*&gt; Sun GEM support
 </pre>
 
 <p>
-En el momento presente, la característica de núcleo preentivo es todavía
-inestable en PPC y puede causar fallos de compilación y de segmentación
-aleatorios. Se sugiere <c>encarecidamente</c> no usar esta opción.
+En el momento presente, la característica de núcleo preentivo completo
+todavía puede ser inestable en PPC y puede causar fallos de compilación y
+de segmentación aleatorios. Se sugiere <c>encarecidamente</c> no usar esta
+opción. Tanto <e>Voluntary Preemption</e> como <e>No Forced Preemption</e>
+pueden ser seguras..
 </p>
 
 <pre caption="Comprobar que la opción Preemptible Kernel está desactivada">
 Kernel options ---&gt;
- Preemption Model (No Forced Preemption (Server))
+<comment>(Elija una)</comment>
+  Preemption Model
+    (X) No Forced Preemption (Server)
+    (X) Voluntary Kernel Preemption (Desktop)
 </pre>
 
 <p>
@@ -263,7 +285,7 @@ un chipset basado en ATI, deberemos utilizar el controlador de framebuffer
 basado en el chipset (Mach64, Rage128 or Radeon).
 </p>
 
-<pre caption="Elegir un Controlador de Framebuffer">
+<pre caption="Elegir un controlador de Framebuffer">
   Device Drivers ---&gt;
   Graphics support ---&gt;
     &lt;*&gt; Support for frame buffer devices
@@ -279,7 +301,8 @@ basado en el chipset (Mach64, Rage128 or Radeon).
 Si seleccionamos más de un dispositivo de framebuffer puede que se utilice por
 defecto un controlador no óptimo. Podemos tanto utilizar un sólo framebuffer
 como especificar el que queremos utilizar pasándolo como parámetro del núcleo
-durante el arranque, como por ejemplo <c>video=radeonfb</c>.
+durante el arranque añadiendo una línea de vídeo como por ejemplo
+<c>video=radeonfb</c>.
 </note>
 
 <p>
@@ -295,8 +318,8 @@ acabar de configurar el núcleo.
 
 <p>
 Ahora que ya está configurado el núcleo, es el momento para compilarlo
-e instalarlo. Saldremos de la configuración y comenzaremos con el
-proceso de compilación:
+e instalarlo. Saldremos del menú de configuración y ejecutaremos los
+comandos siguientes:
 </p>
 
 <pre caption="Compilar el núcleo" >
@@ -305,9 +328,10 @@ proceso de compilación:
 
 <p>
 Cuando el núcleo haya terminado de compilar, se ha de copiar la imagen
-a <path>/boot</path> (hay que asegurarse que esté correctamente
-montada en ordenadores Pegasos).
-Si estamos utilizando BootX para arrancar, copiaremos el núcleo después.
+a <path>/boot</path>  tal como se muestra a continuación. Si tiene una
+partición boot separada, como en los ordenadores Pegasos, asegúrese que
+esté montada correctamente. Si estamos utilizando BootX para arrancar,
+copiaremos el núcleo después.
 </p>
 
 <p>
@@ -315,18 +339,17 @@ Yaboot y BootX usan un núcleo sin comprimir a diferencia de otros gestores
 de arranque. El núcleo sin comprimir se llama vmlinux y se encontrará en
 <path>/usr/src/linux</path> una vez que el núcleo haya terminado de
 compilarse. Si está utilizando una máquina Pegasos, el microcódigo del
-Pegasos necesita un núcleo comprimido llamado zImage.chrp que puede
-encontrarse en <path>/usr/src/linux/arch/ppc/boot/images</path>.
+Pegasos necesita un núcleo comprimido llamado zImage que puede
+encontrarse en <path>/usr/src/linux/arch/powerpc/boot/images</path>.
 </p>
 
 <pre caption="Instalar el kernel" >
 # <i>cd /usr/src/linux</i>
-<comment>reemplace &lt;kernel-version&gt; con la versión correspondiente del núcleo</comment>
+<comment>Note que su versión del núcleo puede ser diferente</comment>
 <comment>(Apple/IBM)</comment>
-# <i>cp vmlinux /boot/&lt;kernel-version&gt;</i>
-
+# <i>cp vmlinux /boot/<keyval id="kernel-name"/></i>
 <comment>(Pegasos)</comment>
-# <i>cp arch/ppc/boot/images/zImage.chrp /boot/&lt;kernel-version&gt;</i>
+# <i>cp arch/powerpc/boot/images/zImage /boot/&lt;kernel-version&gt;</i>
 </pre>
 
 <p>
@@ -346,7 +369,7 @@ módulos del núcleo separadamente</uri>.
 <p>
 Se deben poner los módulos que queramos cargar automáticamente en
 <path>/etc/modules.autoload.d/kernel-2.6</path>. También puede agregar
-opciones extras a los módulos si así lo quiere..
+opciones extras a los módulos si se requiere.
 </p>
 
 <p>
@@ -360,9 +383,9 @@ kernel>&quot; con la versión del kernel que hemos compilado:
 </pre>
 
 <p>
-Por ejemplo, para cargar automáticamente el módulo <c>3c59x.o</c>, hay
-que editar el fichero <path>kernel-2.6</path> y escribir en él el
-nombre del módulo.
+Por ejemplo, para cargar automáticamente el módulo <c>3c59x</c>, hay
+que editar el fichero <path>kernel-2.6</path> y añadir el módulo en él,
+un módulo en una línea.
 </p>
 
 <pre caption="Editar /etc/modules.autoload.d/kernel-2.6" >
@@ -384,11 +407,6 @@ sistema</uri>.
 <section id="genkernel" >
 <title>Alternativa: Usar genkernel</title>
 <body>
-
-<p>
-Si hemos llegado a esta sección, es porque habremos elegido usar el
-guión <c>genkernel</c> para configurar el kernel.
-</p>
 
 <p>
 Ahora que el árbol de las fuentes del núcleo está instalado, es hora
@@ -436,8 +454,8 @@ Antes de compilar las fuentes, el fichero fstab necesita algunos pequeños
 ajustes. El resto del fstab se podrá completar en un paso posterior, por lo
 que no se preocupe ahora por los detalles. Si no quiere crear una partición
 separada para boot (NO bootstrap, que es algo diferente), quite la línea que
-se refiere a /boot en <path>/etc/fstab</path>. Esto tendrá que hacerse en 
-muchos ordenadores Apple.
+se refiere a <path>/boot</path> en <path>/etc/fstab</path>. Esto tendrá que
+hacerse en muchos ordenadores Apple.
 </p>
 
 <pre caption="Quitar /boot en /etc/fstab en las máquinas sin una partición boot">
@@ -487,17 +505,8 @@ arranque correcto con genkernel.
 </p>
 
 <pre caption="Verificar los nombres del kernel e initrd creados" >
-# <i>ls /boot/kernel* /boot/initramfs*</i>
-</pre>
-
-<p>
-Si quisiéramos que nuestro sistema reaccione a los eventos de hotplug,
-necesitaremos instalar y configurar <c>hotplug</c>:
-</p>
-
-<pre caption="Instalar y habilitar hotplug">
-# <i>emerge hotplug</i>
-# <i>rc-update add hotplug default</i>
+<comment>Note que su versión del núcleo puede ser diferente</comment>
+# <i>ls /boot/kernel-genkernel-ppc-<keyval id="kernel-gentoo"/> /boot/initramfs-genkernel-ppc-<keyval id="kernel-gentoo"/></i>
 </pre>
 
 <p>
