@@ -1,0 +1,242 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/devrel/Attic/new-dev-training.xml,v 1.1 2007/05/16 21:25:18 scen Exp $ -->
+
+<guide link="/proj/it/devrel/new-dev-training.xml" lang="it">
+<title>Istruzioni per i nuovi sviluppatori</title>
+
+<author title="Autore">
+  <mail link="avenj@gentoo.org">Jon Portnoy</mail>
+</author>
+<author title="Autore">
+  <mail link="jforman@gentoo.org">Jeffrey Forman</mail>
+</author>
+<author title="Redazione">
+  <mail link="curtis119@gentoo.org">Curtis Napier</mail>
+</author>
+<author title="Traduzione">
+  <mail link="syntaxerrormmm@gmail.com">Emiliano G. Vavassori</mail>
+</author>
+
+<abstract>Istruzioni per i nuovi sviluppatori</abstract>
+
+<version>1.0.2</version>
+<date>2005-04-24</date>
+
+<chapter>
+<title>Usare CVS</title>
+<section>
+<title>Introduzione</title>
+<body>
+
+<p>
+Questa guida non è stata scritta con l'intento di essere un manuale sull'uso di
+CVS, in quanto c'è la pagina info di CVS oppure
+<uri>http://www.gentoo.org/doc/it/cvs-tutorial.xml</uri>. Questa guida invece si
+focalizza in modo specifico sull'uso di CVS e di Repoman nell'albero dei
+pacchetti di Gentoo.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configurazione</title>
+<body>
+
+<p>
+Tipicamente, è necessario avere nel proprio <path>~/.cvsrc</path> le seguenti
+linee:
+</p>
+
+<pre caption="~/.cvsrc">
+cvs -q -z0
+diff -u -b -B
+checkout -P
+update -d -P
+</pre>
+
+<p>
+Per essere sicuri che tutti i digest siano corretti, è necessario mettere
+<c>cvs</c> nella propria impostazione <c>FEATURES</c>.
+</p>
+
+<p>
+A molti utenti CVS piace utilizzare la compressione (-z#). Si chiede agli
+sviluppatori che non abbiano una connessione dialup di usare -z0: considerando
+il contenuto del repository CVS di Gentoo e il carico sul suo server CVS, senza
+compressione sarà più probabile notare una velocità _maggiore_.
+</p>
+
+</body>
+</section>
+<section>
+<title>Controllo (check out)</title>
+<body>
+
+<p>
+Ci sono pochi moduli utili nel repository CVS di Gentoo. Gli ebuild sono tenuti
+nel modulo <path>gentoo-x86</path>. <path>gentoo-src</path> contiene diversi
+progetti, alcuni utili, altri inattivi. <path>gentoo</path> contiene il codice
+XML per il sito web, la documentazione, le directory e le immagini degli
+sviluppatori e così via.
+</p>
+
+<pre caption="Controllo (check out) del modulo gentoo-x86">
+# cvs -d username@cvs.gentoo.org:/var/cvsroot co gentoo-x86
+</pre>
+
+<p>
+Prima di lavorare nell'albero locale, è sempre una buona idea eseguire un
+aggiornamento (update) per controllare i cambiamenti e prevenire i conflitti. È
+possibile aggiornare qualsiasi sottodirectory dell'albero se non si vuole
+procedere a un aggiornamento globale, tuttavia questa pratica è consigliabile,
+una volta ogni tanto:
+</p>
+
+<pre caption="Aggiornamento (update) in gentoo-x86">
+# cd gentoo-x86
+# cvs update
+</pre>
+
+</body>
+</section>
+<section>
+<title>Aggiungere/Rimuovere</title>
+<body>
+
+<p>
+Si ipotizzi di dover aggiungere un nuovo pacchetto, <c>foo</c>, in app-misc:
+</p>
+
+<pre caption="Aggiungere un nuovo pacchetto">
+# cd CVSROOT/app-misc <comment>(Sostituire CVSROOT con il percorso dell'albero CVS locale.)</comment>
+# cvs update <comment>(Aggiornare sempre prima di lavorare in una parte dell'albero!)</comment>
+# mkdir foo
+# cvs add foo <comment>(Aggiunge la directory del pacchetto foo al repository CVS.)</comment>
+# cd foo
+# cp /path/to/foo-1.0.ebuild ./ <comment>(È meglio tenere gli ebuild in sviluppo in un overlay al di fuori dell'albero CVS locale.)</comment>
+<comment>(Non dimenticarsi di creare un ChangeLog; si veda la pagina di manuale per echangelog.)</comment>
+# ebuild foo-1.0.ebuild digest <comment>(Assicurarsi che PORTDIR_OVERLAY sia impostata alla directory dell'albero CVS locale</comment>
+<comment>quando si creano i digest.)</comment>
+# cvs add foo-1.0.ebuild ChangeLog files
+# cvs add files/digest-foo-1.0 <comment>(Con FEATURES=autoaddcvs questo passaggio è effettuato automaticamente.)</comment>
+</pre>
+
+<p>
+Ricordarsi inoltre di aggiungere un file metadata.xml con le informazioni del
+manutentore del pacchetto. Vedere la <uri
+link="/proj/it/devrel/handbook/handbook.xml?part=2&amp;chap=4">guida al file
+metadata</uri> per maggiori informazioni.
+</p>
+
+<p>
+A questo punto, tutto è pronto per l'invio dei cambiamenti (vedere il successivo
+paragrafo sul commit). Cosa fare se si vuole cancellare foo-1.0 quando foo-1.1 è
+stato reso disponibile?
+</p>
+
+<pre caption="Invio dei cambiamenti (commit)">
+# cd CVSROOT/app-misc/foo
+# cvs update
+# rm foo-1.0.ebuild files/digest-foo-1.0 <comment>(I file devono prima essere rimossi.)</comment>
+# cvs remove foo-1.0.ebuild files/digest-foo-1.0
+</pre>
+
+<p>
+Ora tutto è veramente pronto per l'invio dei cambiamenti (vedere il
+successivo paragrafo sul commit).
+</p>
+
+</body>
+</section>
+<section>
+<title>Invio dei cambiamenti (commit)</title>
+<body>
+
+<p>
+È sempre obbligatorio usare <c>repoman commit</c> piuttosto che <c>cvs
+commit</c>. Repoman è uno strumento per garantire la qualità (QA) che esegue dei
+controlli di base e crea i file Manifest; se qualsiasi parte dell'output di
+repoman non è chiara, consultare <c>man repoman</c>. In aggiunta, ci si potrebbe
+stancare di inserire la propria passphrase ripetutamente; keychain
+<uri>http://www.gentoo.org/proj/en/keychain/index.xml</uri>, ndt: in inglese)
+può essere d'aiuto.
+</p>
+
+<pre caption="repoman commit">
+<comment>(Assicurarsi che non ci siano file di proprietà di root prima di lanciare repoman.)</comment>
+# repoman scan <comment>("scan" cerca nella directory corrente per problemi di QA. "full" è un'azione più completa.)</comment>
+# repoman commit <comment>("commit" ricerca poi esegue l'invio dei cambiamenti, aggiornando contemporaneamente i digest.</comment>
+<comment>Assicurarsi di inserire un messaggio di changelog per CVS prolisso e utile.)</comment>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Altre informazioni</title>
+<section>
+<title>Mettere i file sui mirror</title>
+<body>
+
+<p>
+I distfile sono automaticamente scaricati dal sistema di mirror Gentoo. È
+solamente necessario controllare che non ci siano errori di scaricamento nella
+propria copia locale. Per avere istruzioni complete, vedere la <uri
+link="/proj/en/infrastructure/mirrors/overview-distfile.xml">guida
+introduttiva ai distfile</uri> (in inglese, ndt).
+</p>
+
+</body>
+</section>
+<section>
+<title>Posta e Web</title>
+<body>
+
+<p>
+L'infrastruttura di Gentoo permette agli sviluppatori di gestire la propria
+posta. <uri>http://www.gentoo.org/proj/en/infrastructure/dev-email.xml</uri>
+contiene le istruzioni sulla configurazione dell'indirizzo di posta @gentoo.org.
+</p>
+
+<p>
+Gli sviluppatori hanno accesso a un servizio di webhosting,
+http://dev.gentoo.org/~$TUONOME. Vedere la <uri
+link="http://www.gentoo.org/proj/en/infrastructure/dev-webspace.xml">guida di
+configurazione dello spazio web</uri> (in inglese, ndt) per dettagli.
+</p>
+
+</body>
+</section>
+<section>
+<title>Vacanze</title>
+<body>
+
+<p>
+Spesso, gli sviluppatori Gentoo vanno in vacanza, prendono una pausa per
+affrontare gli esami universitari o partono per la luna di miele. Nonostante
+sia approvabile avere una vita al di fuori di Gentoo, sarebbe utile mettere al
+corrente gli altri sviluppatori della partenza e della probabile data di
+ritorno. Alla partenza, avvertire il gruppo di sviluppo più vicino, chesia
+ gentoo-releng@gentoo.org o sparc@gentoo.org. Fare in modo che gli altri
+sviluppatori sappiano della partenza e di chi può essere contattato se un
+pacchetto ha bisogno di essere aggiornato.
+</p>
+
+<pre caption=".away">
+<comment>(Prima della partenza, nella propria home:)</comment>
+# touch ~/.away
+# echo "I've gone to the mountains, will be away from June 29 - Aug 4th, \
+contact zhen, cshields, or klieber in my absence." > ~/.away
+<comment>(Quello che fa è avvertire lo script http://dev.gentoo.org/devaway dell'assenza;</comment>
+<comment>viene aggiornato una volta ogni ora.)</comment>
+
+<comment>(Al ritorno:)</comment>
+# rm ~/.away
+</pre>
+
+</body>
+</section>
+</chapter>
+</guide>
