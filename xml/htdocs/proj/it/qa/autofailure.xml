@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/qa/autofailure.xml,v 1.1 2007/05/16 08:43:38 scen Exp $ -->
+
+<guide link="/proj/it/qa/autofailure.xml" lang="it">
+<title>Come risolvere i guasti negli autotools</title>
+
+<author title="Autore">
+  <mail link="flameeyes@gentoo.org">Diego Pettenò</mail>
+</author>
+<author title="Traduzione">
+  <mail link="skypjack@gmail.com">Michele Caini</mail>
+</author>
+
+<abstract>
+Questa guida si propone di descrivere le situazioni comuni che portano ad un
+guasto degli autotools nell'esecuzione in un ebuild, fornendo consigli su
+come risolvere questo tipo di problemi.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>0.5</version>
+<date>2006-10-28</date>
+
+<chapter>
+<title>Introduzione</title>
+
+<section>
+<body>
+<p>
+Con il termine <e>autotools</e> ci riferiamo solitamente agli strumenti
+sviluppati dal progetto GNU per creare un sistema di compilazione indipendente
+dalla piattaforma e dal sistema operativo in cui opera, ovvero <c>autoconf</c>,
+<c>automake</c> e <c>libtool</c>. Anche se non ogni pacchetto li usa tutti allo
+stesso momento, molti dei più moderni lo fanno; i vecchi pacchetti spesso non
+usano invece <c>automake</c> e <c>libtool</c>; i pacchetti di KDE usano un più
+complesso sistema di compilazione che si basa alla fine sui tre software citati.
+</p>
+
+<p>
+È semplice riconoscere un pacchetto il cui sistema di compilazione si basa sugli
+autotools: se c'è uno script <path>configure</path>, e un file
+<path>configure.in</path> o <path>configure.ac</path>, il sistema di
+compilazione è basato su <c>autoconf</c>; se ci sono uno o più file
+<path>Makefile.am</path> nelle varie sottocartelle, si appoggia anche su
+<c>automake</c>; se c'è uno script <path>ltmain.sh</path>, sfrutta infine
+<c>libtool</c>.
+</p>
+
+<p>
+Per compilare un pacchetto che usa un sistema di compilazione basato sugli
+autotools, questi stessi strumenti non sono strettamente necessari: lo script
+<path>configure</path> è un semplice script per Bourne Shell (di solito, ma
+questo sarà discusso in seguito) e trasforma i file <path>Makefile.in</path> in
+più semplici <path>Makefile</path> per <c>make</c> (o, più probabilmente,
+<c>gmake</c>). Nonostante siano opzionali per compilare il software, spesso le
+patch necessarie per risolvere i problemi come le <uri
+link="/proj/en/qa/asneeded.xml">compilazioni fallite a causa di
+--as-needed</uri> (ndT: in inglese) o le <uri link="automagic.xml">dipendenze
+automagic</uri> richiedono di eseguire nuovamente gli strumenti citati per
+ricreare i modelli di script e makefile.
+</p>
+
+<p>
+Questa guida non darà indicazioni su come correggere gli errori dei pacchetti
+con l'uso degli autotools, in quanto è un argomento molto vasto che richieder
+ebbe molto tempo per essere spiegato. Per una semplice introduzione alla maggior
+parte degli errori più comuni nell'uso degli autotools, è caldamente suggerito
+la lettura dell'articolo <uri
+link="/doc/it/articles/autotools-practices.xml">"Le migliori tecniche con gli
+autotools"</uri>. Invece, saranno descritti i casi più comuni in cui il
+rieseguire gli autotools porta a degli errori, sia nella creazione degli script
+che all'atto della compilazione.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Eseguire nuovamente gli autotools</title>
+<section>
+<body>
+
+<p>
+La prima cosa importante da sapere è come ricreare correttamente il supporto
+agli autotools, problema comune che introduce degli errori negli ebuild.
+L'ordine in cui gli autotools sono eseguiti è importante, in quanto uno dipende
+dall'altro e l'output finale dipende largamente dal rispetto dell'ordine di
+esecuzione.
+</p>
+
+<p>
+Molti pacchetti forniscono uno script singolo, solitamente chiamato
+<path>autogen.sh</path> o <path>bootstrap.sh</path> che viene usato per eseguire
+i vari strumenti nell'ordine che gli sviluppatori originali ritengono essere
+quello corretto, spesso impostando variabili così che le versioni corrette di
+tali strumenti vengano eseguite (versioni differenti degli autotools non sempre
+vanno bene). Questi script sono, in generale, preferiti al posto di altri metodi
+ma a volte contengono errori, o assumono di essere eseguito su un dato ambiente
+che potrebbe essere univoco rispetto ad altre distribuzioni, e per questa
+ragione vanno controllati attentamente, e quando non comportano nessun vantaggio
+rispetto ad altri metodi (come nel caso in cui eseguono i vari strumenti uno
+dopo l'altro senza passare loro parametri speciali o controllare il loro valore
+di ritorno), dovrebbero essere scartati.
+</p>
+
+<p>
+Il pacchetto <c>autoconf</c> fornisce uno script automatizzato, chiamato
+<c>autoreconf</c> che dovrebbe automaticamente rilevare quali autotools sono
+utilizzati e chiamarli, ma troppo spesso fallisce nel riconoscere la corretta
+versione o si interrompe perchè incappa in casi specifici. Inoltre, esegue
+<c>autopoint</c>, lo script che aggiunge il supporto a <c>gettext</c> ad un
+pacchetto, la cui esecuzione non è quasi mai richiesta dopo aver applicato
+patch ad un pacchetto. Per questa ragione, <c>autoreconf</c> è deprecato ed
+evitato quando possibile (lo stesso vale per gli script forniti dagli
+sviluppatori originali che lo usano).
+</p>
+
+<p>
+Per aggirare questo problema, è stata aggiunta l'eclass <path>autotools</path>,
+che fornisce delle funzioni che inglobano gli GNU autotools: <c>eautoconf</c>,
+<c>eautomake</c>, <c>_elibtoolize</c> (il simbolo _ è usato come prefisso per
+evitare collisioni con le funzioni <c>elibtoolize</c> provenienti invece
+dall'eclass <path>libtool</path>) e la più importante funzione
+<c>eautoreconf</c>. Questa funzione non include lo script <c>autoreconf</c>
+malfunzionante, ma piuttosto analizza i file di supporto agli autotools presenti
+ed esegue i vari strumenti nel loro corretto ordine. Inoltre esegue la funzione
+<c>elibtoolize</c> per correggere i file di supporto a libtool se necessario,
+evitando problemi quando questo viene chiamato prima dell'attuale
+ristrutturazione dei file per gli autotools.
+</p>
+
+<p>
+Le funzioni nell'eclass <path>autotools</path> hanno anche il vantaggio di non
+presentare all'utente grosse quantità di output inutile (nel caso di
+avvertimenti) o perfino niente (in caso non ci siano problemi); piuttosto
+forniscono i messaggi di stato <c>ebegin</c>/<c>eend</c> così che l'utente saprà
+cosa sta succedendo, e inoltre tracciano la situazioni d'errore mettendo a
+disposizione un messaggio simile a <c>epatch</c> in caso di fallimento. Per tale
+ragione, queste funzioni sono preferite al posto delle chiamate manuali, di
+comportamenti scorretti o script personalizzati quasi inutili. Un altro motivo è
+che l'eclass <path>autotools</path> aggiunge anche una dipendenza di
+compilazione sui pacchetti di cui necessita (<b>sys-devel/autoconf</b>,
+<b>sys-devel/automake</b>, <b>sys-devel/libtool</b>).
+</p>
+
+<warn>
+I pacchetti KDE normalmente utilizzano un più complesso sistema di compilazione
+basato sugli autotools che fa uso di speciali file <path>configure.in.in</path>
+e alcuni script Perl. Per questa ragione non dovrebbero <b>mai</b> usare
+l'eclass <path>autotools</path>. Se si necessita di eseguire nuovamente gli
+autotools sarebbe meglio piuttosto cancellare il file
+<path>${S}/configure</path> in modo da istruire la funzione
+<c>kde_src_compile</c> a rieseguire gli script per creare nuovamente il
+supporto agli autotools.
+</warn>
+
+</body>
+</section>
+<section>
+<title>Possibili macro non definite</title>
+<body>
+
+<p>
+Il fallimento più comune con gli autotools è legato al messaggio di
+<c>autoconf</c> "possibly undefined macro: SOME-MACRO" ("possibile macro non
+definita: QUALCHE_MACRO"). Questo messaggio è utilizzato quando una macro viene
+chiamata dal file <path>configure.ac</path> o <path>configure.in</path> ma non è
+in realtà definita nel file <path>aclocal.m4</path> creato da <c>aclocal</c>.
+</p>
+
+<p>
+Questo succede spesso perchè la macro indicata non è disponibile quando
+<c>aclocal</c> viene eseguito; poiche, in modo predefinito, si caricano le macro
+trovate in <path>/usr/share/aclocal</path>, ciò significa che il pacchetto che
+fornisce questa macro non è installato (o la macro è chiamata con un altro
+nome). Siccome il secondo caso è tanto banale quanto complesso da risolvere, ci
+si concentrerà sul primo esempio, la definizione mancante di una macro.
+</p>
+
+<p>
+Affinchè le macro scritte dagli sviluppatori originali per il loro software
+siano rilevate nel sistema dall'uso degli autotools, vengono normalmente scritte
+in file m4 che sono poi installati nella già citata cartella
+<path>/usr/share/aclocal</path>. Dato che molti pacchetti usano queste macro per
+le dipendenze opzionali, potrebbero avere bisogno di un file m4 che non è
+installato nel sistema quando vengono eseguiti gli autotools; per risolvere il
+problema, è possibile copiare il file m4 in una sottocartella fornita del
+pacchetto stesso.
+</p>
+
+<p>
+Sfortunatamente, per poter utilizzare questa sottocartella, di norma chiamata
+<path>m4</path>, <c>aclocal</c> deve essere informato riguardo alla sua
+esistenza. Nei progetti che usano <c>automake</c> è possibile specificarlo
+all'interno del file <path>Makefile.am</path> principale impostando la variabile
+<b>ACLOCAL_AMFLAGS</b>:
+</p>
+
+<pre caption="esempio di chiamata ad aclocal per cercare i file di macro nella
+cartella m4">
+...
+ACLOCAL_AMFLAGS = -I m4
+...
+</pre>
+
+<p>
+Questo viene spesso trascurato dagli sviluppatori originali che semplicemente
+passano il parametro <c>-I m4</c> ad aclocal quando compilano i loro pacchetti.
+Mentre aggiungere una patch per correggere il problema è molto difficile, è
+invece semplice, se il pacchetto ha una cartella con i file m4 necessari,
+impostarla nella variabile <b>AT_M4DIR</b>. Lo stesso vale se il pacchetto non
+usa <c>automake</c> ma solo <c>autoconf</c>.
+</p>
+
+<pre caption="indicare ad eautoreconf di cercare i file di macro nella cartella
+'m4'">
+src_unpack() {
+    ...
+    AT_M4DIR="m4" eautoreconf
+}
+</pre>
+
+<p>
+Nei rari casi in cui il software usi un sistema di compilazione sostitutivo
+simile a Cygnus, il precedente esempio può fallire, in quanto prova a cercare la
+sottocartella m4 dal punto in cui risiede lo script configure; per risolvere
+questo tipo di problemi, impostare invece la variabile AT_M4DIR a
+<path>${S}/m4</path>.
+</p>
+
+<note>
+È di solito una buona idea fare sapere agli sviluppatori originali se non hanno
+impostato la variabile <b>ACLOCAL_AMFLAGS</b>, in modo che possano correggere la
+svista nella versione successiva; in un teorico mondo perfetto, il solo
+<c>eautoreconf</c> dovrebbe risolvere tutti i problemi.
+</note>
+
+<p>
+Meno spesso, ma ancora succede, non ci sono cartelle con file m4, o i file con
+le macro non definite non sono presenti; per risolvere la questione, si deve
+cercare il pacchetto che fornisce le macro m4, quindi aggiungerlo alla cartella,
+con una patch o mettendolo su un mirror e poi aggiungendolo a <b>SRC_URI</b> (in
+questo caso si dovrà aggiungere <b>${WORKDIR}</b> alla lista delle cartelle di
+ricerca o posizionarla nella cartella corretta). Questo tipo di problemi è uno
+dei più fastidiosi, perciò è di solito preferibile informare il prima possibile
+gli sviluppatori originali così che il rilascio successivo non necessiti di
+nessun accorgimento.
+</p>
+
+</body>
+</section>
+<section>
+<title>Fallimenti di automake, richiesta file mancanti</title>
+<body>
+
+<p>
+Un altro errore comune, questa volta con <c>automake</c> è un fallimento causato
+da file mancanti, come <path>NEWS</path> o <path>README</path>. Questo avviene
+perchè tutti gli autotools assumono, se nessuno li informa del contrario, di
+stare lavorando in un pacchetto GNU, quindi di avere una serie di file perchè
+appartenenti alla guida sullo stile di codifica del progetto GNU stesso, e
+falliscono quando questi file non sono presenti. In questi casi <c>automake</c>
+dovrebbe essere chiamato col parametro <c>--foreign</c>, che chiede di non
+fallire se i file richiesti dal progetto GNU non sono presenti.
+</p>
+
+<p>
+D'altra parte, la funzione <c>eautomake</c> prova a semplificare la
+ricompilazione con gli autotools controllando se alcuni dei file del progetto
+GNU sono presenti, e quindi chiamando <c>automake</c> con le giuste opzioni se
+non fosse questo il caso. Il modo corretto per risolvere il problema (da
+notificare agli sviluppatori originali) è aggiungere alla variabile
+<b>AUTOMAKE_OPTIONS</b> l'opzione <e>foreign</e> così da informarlo di usare il
+supporto esterno.
+</p>
+
+<p>
+Quando i file sono richiesti da <path>configure.in</path> o
+<path>configure.ac</path> invece che da <path>Makefile.am</path>, e sono di
+solito i due file <path>config.guess</path> e <path>config.sub</path>, il
+problema è che il pacchetto non viene correttamente avviato. Per risolvere,
+<c>automake</c> dovrebbe essere chiamato con l'opzione <c>--add-missing
+--copy</c>. Questo è quello che la funzione <c>eautomake</c> fa già, così se si
+riscontra questo problema, dovrebbe essere considerata l'idea di usare le
+funzioni fornite dall'eclass <path>autotools</path> invece di eseguire i diversi
+strumenti manualmente o con eventuali script forniti col pacchetto stesso.
+</p>
+
+<warn>
+Uno sbaglio comune fatto quando <c>automake</c> fallisce in questi casi è il non
+mettere la condizione <c>|| die</c>, che evita l'interruzione del processo di
+compilazione. Questo è un errore, perchè i file saranno di solito necessari più
+tardi, è quindi meglio forzare sempre il loro rimpiazzo, anche perchè in molti
+casi nuove versioni dei due file sono necessari per la compilazione su molte
+architetture.
+</warn>
+
+</body>
+</section>
+<section>
+<title>Dipendenze di versione mancanti</title>
+<body>
+
+<p>
+All'incirca dall'Estate 2006, le funzioni di supporto per <c>automake</c> e
+<c>autoconf</c> non dipendono forzatamente da tutte le versioni dei rispettivi
+pacchetti, ciò comporta il non potersi affidare al fatto che gli utenti abbiano
+tutte le versioni installate, e le dipendenze devono essere risolte in accordo
+con i pacchetti usati. Per semplificare la gestione delle dipendenze e la
+forzatura delle versioni necessarie, le variabili <b>WANT_AUTOCONF</b> e
+<b>WANT_AUTOMAKE</b> sono considerate come input all'eclass che quindi tratterà
+sia le dipendenze che l'applicativo.
+</p>
+
+<pre caption="dipendere da autoconf 2.1 e automake 1.4">
+WANT_AUTOCONF="2.1"
+WANT_AUTOMAKE="1.4"
+
+inherit autotools
+</pre>
+
+<p>
+In molti casi, invece di dipendere da una data versione di automake o autoconf,
+si vorrebbe dipendere dall'ultima versione disponibile, più facilmente già
+presente nel sistema degli utenti. Per questa ragione, l'eclass autotools
+accetterà uno speciale valore per le variabili menzionate, <e>latest</e>, che
+sarà poi espanso in <c>autoconf</c> 2.5 e <c>automake</c> 1.9 o 1.10 in
+relazione a cosa è smascherato per il dato sistema. Tutto ciò è suggerito quando
+un pacchetto non deve essere influenzato da qualche caratteristica o
+malfunzionamento di una vecchia versione di questi.
+</p>
+
+<pre caption="dipendere dalle ultime versioni degli autotools">
+WANT_AUTOCONF="latest"
+WANT_AUTOMAKE="latest"
+
+inherit autotools
+</pre>
+
+</body>
+</section>
+</chapter>
+
+</guide>
