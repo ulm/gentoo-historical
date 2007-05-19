@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-config.xml,v 1.22 2007/03/13 21:17:04 mascherpa Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-config.xml,v 1.23 2007/05/19 13:41:51 mascherpa Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ E' necessario modificare alcuni importanti file di configurazione. In questo
 capitolo si dà una panoramica di questi file e dei cambiamenti da eseguire.
 </abstract>
 
-<version>7.7</version>
-<date>2007-03-11</date>
+<version>8.1</version>
+<date>2007-05-15</date>
 
 <section>
 <title>Informazioni sul filesystem</title>
@@ -73,9 +73,9 @@ controllo del filesystem).
 </ul>
 
 <impo>
-Il file <path>/etc/fstab</path> fornito da Gentoo è solo di esempio, quindi
-aprire <c>nano</c> (o l'editor preferito) per modificare
-<path>/etc/fstab</path> secondo le proprie necessità:
+Il file <path>/etc/fstab</path> fornito da Gentoo è solo un esempio <e>non
+valido per la produzione</e>, quindi <b>è necessario</b> creare il proprio
+<path>/etc/fstab</path> personalizzato:
 </impo>
 
 <pre caption="Aprire /etc/fstab">
@@ -142,7 +142,7 @@ test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86'">
 /dev/hda2   none         swap    sw                   0 0
 /dev/hda3   /            ext3    noatime              0 1
 
-proc       /proc        proc    defaults             0 0
+proc        /proc        proc    nodev,nosuid,noexec  0 0
 shm        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
 /dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
@@ -154,7 +154,7 @@ test="func:keyval('arch')='HPPA'">
 /dev/sda3   none         swap    sw                   0 0
 /dev/sda4   /            ext3    noatime              0 1
 
-proc       /proc        proc    defaults             0 0
+proc        /proc        proc    nodev,nosuid,noexec  0 0
 shm        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
 /dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
@@ -166,7 +166,7 @@ test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS'">
 /dev/sda2   none         swap    sw                   0 0
 /dev/sda3   /            ext3    noatime              0 1
 
-proc       /proc        proc    defaults             0 0
+proc        /proc        proc    nodev,nosuid,noexec  0 0
 shm        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
 /dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
@@ -181,7 +181,7 @@ test="func:keyval('arch')='SPARC'">
 /dev/sda6   /home           ext3        noatime              0 2
 
 openprom   /proc/openprom  openpromfs  defaults             0 0
-proc       /proc           proc        defaults             0 0
+proc        /proc           proc        nodev,nosuid,noexec  0 0
 shm        /dev/shm        tmpfs       nodev,nosuid,noexec  0 0
 
 /dev/cdrom  /mnt/cdrom      auto        noauto,user          0 0
@@ -197,7 +197,7 @@ test="func:keyval('arch')='PPC'">
 /dev/hda4   /            ext3    noatime              0 1
 /dev/hda3   none         swap    sw                   0 0
 
-proc       /proc        proc    defaults             0 0
+proc        /proc        proc    nodev,nosuid,noexec  0 0
 shm        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
 /dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
@@ -208,7 +208,7 @@ test="func:keyval('arch')='PPC64'">
 /dev/sda4   /            ext3    noatime              0 1
 /dev/sda3   none         swap    sw                   0 0
 
-proc       /proc        proc    defaults             0 0
+proc        /proc        proc    nodev,nosuid,noexec  0 0
 shm        /dev/shm     tmpfs   nodev,nosuid,noexec  0 0
 
 /dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
@@ -366,7 +366,7 @@ le variabili <c>config_eth0</c> e <c>routes_eth0</c>:
 
 <pre caption="Impostare manualmente l'interfaccia eth0">
 config_eth0=( "192.168.0.2 netmask 255.255.255.0 brd 192.168.0.255" )
-routes_eth0=( "default gw 192.168.0.1" )
+routes_eth0=( "default via 192.168.0.1" )
 </pre>
 
 <p>
@@ -401,8 +401,7 @@ Salvare la configurazione e uscire per continuare.
 
 <p>
 Per attivare le interfacce di rete al boot, si deve aggiungerle al runlevel di
-default. Se si hanno interfacce PCMCIA, si può saltare questa azione, poichè
-vengono avviate dallo script init PCMCIA.
+default.
 </p>
 
 <pre caption="Aggiungere net.eth0 al runlevel di default">
@@ -470,25 +469,12 @@ substring(func:keyval('arch'),1,3)='PPC'">
 <body>
 
 <p>
-Gli utenti PCMCIA devono innanzitutto installare il pacchetto <c>pcmcia-cs</c>.
-Questo passo è necessario anche per gli utenti del kernel 2.6 (anche se non
-utilizzano i driver
-forniti con il pacchetto). L'impostazione
-<c>USE="-X"</c> è necessaria per evitare di installare xorg-x11 in questo
-momento:
+Gli utenti PCMCIA devono innanzitutto installare il pacchetto
+<c>pcmciautils</c>.
 </p>
 
-<pre caption="Installare pcmcia-cs">
-# <i>USE="-X" emerge pcmcia-cs</i>
-</pre>
-
-<p>
-Dopo aver installato <c>pcmcia-cs</c>, aggiungere <c>pcmcia</c> al runlevel di
-<e>default</e>:
-</p>
-
-<pre caption="Aggiungere pcmcia al runlevel di default">
-# <i>rc-update add pcmcia default</i>
+<pre caption="Installare pcmciautils">
+# <i>USE="-X" emerge pcmciautils</i>
 </pre>
 
 </body>
@@ -541,9 +527,8 @@ uscire.
 <p>
 Come si può vedere, questo file contiene tutte le spiegazioni necessarie per
 impostare le variabili di configurazione. E' possibile configurare il proprio
-sistema per utilizzare unicode e
-definire il proprio editor di default ed il proprio display manager (come gdm or
-kdm).
+sistema per utilizzare unicode e definire il proprio editor di default ed il
+proprio display manager (come gdm o kdm).
 </p>
 
 <p>
@@ -560,11 +545,6 @@ E' possibile modificarlo per cambiare le impostazioni della tastiera.
 Si presti particolare attenzione alla variabile <c>KEYMAP</c>: impostare questo
 valore in maniera sbagliata significa avere problemi con l'uso della tastiera.
 </p>
-
-<note test="func:keyval('arch')='SPARC'">
-Gli utenti di sistemi <b>SPARC</b> basati su USB e cloni <b>SPARC</b>,
-dovrebbero selezionare una tastiera i386 (come "us"), invece di "sunkeymap".
-</note>
 
 <note test="substring(func:keyval('arch'),1,3)='PPC'">
 PPC usa le keymap x86 sulla maggior parte dei sistemi. Gli utenti che
@@ -591,6 +571,14 @@ E' possibile modificarlo per personalizzare l'orologio.
 Se il proprio orologio hardware non è impostato su UTC è necessario aggiungere
 l'impostazione <c>CLOCK="local"</c> al file. In caso contrario l'orologio non
 funziona correttamente.
+</p>
+
+<p>
+E' necessario definire il fuso orario che si è precedentemente copiato in
+<path>/etc/localtime</path> in modo tale che gli aggiornamenti al pacchetto
+<c>sys-libs/timezone-data</c> possano automaticamente aggiornare
+<path>/etc/localtime</path>. Ad esempio se si dovesse usare l'impostazione GMT
+si dovrebbe aggiungere <c>TIMEZONE="GMT"</c>.
 </p>
 
 <p>
