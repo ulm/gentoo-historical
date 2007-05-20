@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-sparc-kernel.xml,v 1.12 2007/03/13 21:26:37 mascherpa Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-sparc-kernel.xml,v 1.13 2007/05/20 15:29:52 mascherpa Exp $ -->
 
 <sections>
 
-<version>7.2</version>
-<date>2007-03-06</date>
+<version>8.2</version>
+<date>2007-05-19</date>
 
 <section>
 <title>Timezone</title>
@@ -28,6 +28,18 @@ rispettive zone. Per esempio <path>GMT-8</path> è GMT+8.
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(Per esempio GMT:)</comment>
 # <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+<p>
+E' necessario definire il fuso orario che si è precedentemente copiato in
+<path>/etc/localtime</path> in modo tale che gli aggiornamenti al pacchetto
+<c>sys-libs/timezone-data</c> possano automaticamente aggiornare
+<path>/etc/localtime</path>.
+</p>
+
+<pre caption="Impostare la variabile TIMEZONE in /etc/conf.d/clock">
+# <i>nano -w /etc/conf.d/clock</i>
+TIMEZONE="GMT"
 </pre>
 
 </body>
@@ -49,14 +61,12 @@ Gentoo</uri>.
 </p>
 
 <p>
-Per i sistemi basati su sparc si hanno <c>sparc-sources</c> (sorgente del
-kernel 2.4 ottimizzato per gli utenti SPARC) e <c>gentoo-sources</c> (sorgenti
+Per i sistemi basati su sparc sono disponibili <c>sparc-sources</c> (sorgenti
 del kernel 2.6 raccomandati).
 </p>
 
 <p>
-Nel prossimo esempio si installa <c>gentoo-sources</c>. Sostituirlo con il
-sorgente che si è scelto, questo è solo un esempio.
+Nel prossimo esempio si installa <c>gentoo-sources</c>.
 </p>
 
 <pre caption="Installare un sorgente del kernel">
@@ -67,13 +77,14 @@ sorgente che si è scelto, questo è solo un esempio.
 Se si dà un'occhiata a <path>/usr/src</path>, si dovrebbe vedere un link
 simbolico chiamato <path>linux</path>, che punta al sorgente del kernel. In
 questo caso il sorgente del kernel installato punta a
-<c>linux-2.6.17-gentoo-r5</c>. La versione potrebbe essere differente.
+<c>linux-<keyval id="kernel-version"/></c>. La versione potrebbe essere
+differente.
 </p>
 
 <pre caption="Il link simbolico al sorgente del kernel">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root       12 Oct 13 11:04 /usr/src/linux
--&gt;linux-2.6.17-gentoo-r5
+lrwxrwxrwx    1 root     root       12 Oct 13 11:04 /usr/src/linux -&gt;
+linux-<keyval id="kernel-version"/>
 </pre>
 
 <p>
@@ -145,31 +156,19 @@ Code maturity level options ---&gt;
 Andare su <c>File Systems</c> e selezionare il supporto per il filesystem che
 si usa. <e>Non</e> compilarlo come modulo, altrimenti Gentoo non può montare
 le partizioni. Selezionare anche <c>Virtual memory</c> e <c>/proc file
-system</c>. Se si sta installando un kernel 2.4, si dovrebbe selezionare
-<c>/dev file system</c> e <c>Automatically mount at boot</c>:
+system</c>.
 </p>
 
 <pre caption="Selezionare il filesystem">
-<comment>(Con un kernel 2.4.x)</comment>
-File systems ---&gt;
-  [*] Virtual memory file system support (former shm fs)
-  [*] /proc file system support
-  [*] /dev file system support (EXPERIMENTAL)
-  [*]   Automatically mount at boot
-  [ ] /dev/pts file system for Unix98 PTYs
-
-<comment>(Con un kernel 2.6.x)</comment>
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
 
-<comment>(Selezionare una o più delle seguenti opzioni necessarie per il proprio sistema)</comment>
-  &lt; &gt; Reiserfs support
+<comment>(Selezionare una o più delle seguenti opzioni necessarie per il proprio
+sistema)</comment>
   &lt;*&gt; Ext3 journalling file system support
-  &lt; &gt; JFS filesystem support
   &lt;*&gt; Second extended fs support
-  &lt; &gt; XFS filesystem support
 </pre>
 
 <p>
@@ -178,13 +177,6 @@ dial-up, si ha bisogno delle seguenti opzioni nel kernel:
 </p>
 
 <pre caption="Selezionare i driver necessari per PPPoE">
-<comment>(Con kernel 2.4.x)</comment>
-Network device support ---&gt;
-  &lt;*&gt; PPP (point-to-point protocol) support
-  &lt;*&gt;   PPP support for async serial ports
-  &lt;*&gt;   PPP support for sync tty ports
-
-<comment>(Con kernel 2.6.x)</comment>
 Device Drivers ---&gt;
   Networking support ---&gt;
     &lt;*&gt; PPP (point-to-point protocol) support
@@ -195,12 +187,7 @@ Device Drivers ---&gt;
 <p>
 Le due opzioni di compressione non sono dannose, ma neppure necessarie; lo
 stesso vale per <c>PPP over Ethernet</c>, che potrebbe essere usata soltanto
-da <c>rp-pppoe</c> se configurato in modalità kernel.
-</p>
-
-<p>
-Chi ne ha bisogno, non deve dimenticare di includere il supporto per la
-scheda ethernet nel kernel.
+da <c>ppp</c> se configurato in modalità kernel.
 </p>
 
 <p>
@@ -270,17 +257,11 @@ del kernel, si può controllare la sua dimensione:
 </pre>
 
 <p>
-Se la (non compressa) dimensione è più grande di 2.5 MB (per Sparc32) o 3.5
-MB (per Sparc64), riconfigurare il kernel fino a quando non eccede questi
-limiti. Un modo per ottenerlo, è quello di compilare come moduli la maggior
-parte dei driver del kernel. Ignorando questo aspetto si potrà avere un
-kernel non avviabile.
+Se la (non compressa) dimensione è più grande di 7.5 MB, riconfigurare il
+kernel fino a quando non eccede questi limiti. Un modo per ottenerlo, è quello
+di compilare come moduli la maggior parte dei driver del kernel. Ignorando
+questo aspetto si potrà avere un kernel non avviabile.
 </p>
-
-<note>
-Se si usa un kernel 2.6.3 o superiore, i kernel di sparc64 possono essere
-grandi fino a 7.5 MB.
-</note>
 
 <p>
 Se il kernel è di poco più grande, si può usare il comando <c>strip</c>:
@@ -303,16 +284,6 @@ di compilazione:
 </p>
 
 <pre caption="Compilare il kernel">
-<comment>(Per kernel 2.4, sparc32)</comment>
-# <i>make dep &amp;&amp; make clean vmlinux modules modules_install</i>
-
-<comment>(Per kernel 2.4, sparc64)</comment>
-# <i>make dep &amp;&amp; make clean vmlinux image modules modules_install</i>
-
-<comment>(Per kernel 2.6, sparc32)</comment>
-# <i>make &amp;&amp; make modules_install</i>
-
-<comment>(Per kernel 2.6, sparc64)</comment>
 # <i>make &amp;&amp; make image modules_install</i>
 </pre>
 
@@ -324,16 +295,6 @@ scelta.
 </p>
 
 <pre caption="Installare il kernel">
-<comment>(Per kernel 2.4, sparc32)</comment>
-# <i>cp vmlinux /boot/&lt;kernel-version&gt;</i>
-
-<comment>(Per kernel 2.4, sparc64)</comment>
-# <i>cp arch/sparc64/boot/image /boot/&lt;kernel-version&gt;</i>
-
-<comment>(Per kernel 2.6, sparc32)</comment>
-# <i>cp arch/sparc/boot/image /boot/&lt;kernel-version&gt;</i>
-
-<comment>(Per kernel 2.6, sparc64)</comment>
 # <i>cp arch/sparc64/boot/image /boot/&lt;kernel-version&gt;</i>
 </pre>
 
@@ -353,8 +314,8 @@ Kernel separati</uri>.
 
 <p>
 Si dovrebbero inserire i moduli che si vogliono caricare in
-<path>/etc/modules.autoload.d/kernel-2.4</path> (o <path>kernel-2.6</path>).
-Se si vuole, si possono anche aggiungere altre opzioni ai moduli.
+<path>/etc/modules.autoload.d/kernel-2.6</path>. Se si vuole, si possono anche
+aggiungere altre opzioni ai moduli.
 </p>
 
 <p>
@@ -369,16 +330,14 @@ kernel che si è compilata:
 
 <p>
 Per esempio, per caricare automaticamente il modulo <c>3c59x.o</c>,
-modificare il file <path>kernel-2.4</path> o <path>kernel-2.6</path> e
-inserire il nome.
+modificare il file <path>kernel-2.6</path> e inserire il nome.
 </p>
 
-<pre caption="Modificare /etc/modules.autoload.d/kernel-2.4">
-<comment>(Esempio per i kernel 2.4)</comment>
-# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
+<pre caption="Modificare /etc/modules.autoload.d/kernel-2.6">
+# <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
 </pre>
 
-<pre caption="/etc/modules.autoload.d/kernel-2.4 o kernel-2.6">
+<pre caption="/etc/modules.autoload.d/kernel-2.6">
 3c59x
 </pre>
 
