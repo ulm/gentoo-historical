@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-net-functions.xml,v 1.4 2006/10/29 22:21:42 so Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-net-functions.xml,v 1.5 2007/05/22 12:22:14 scen Exp $ -->
 
 <sections>
 
@@ -12,26 +12,26 @@
 Per gli esperti ecco le istruzioni per personalizzare l'infrastruttura di rete.
 </abstract>
 
-<version>7.0</version>
-<date>2006-08-30</date>
+<version>8.0</version>
+<date>2007-05-07</date>
 
 <section>
-<title>Funzioni di intercettazioni standard</title>
+<title>Funzioni di hook (intercettazioni) standard</title>
 <body>
 
 <p>
-Quattro funzioni possono essere definite, che sono chiamate in prossimità
-delle operazioni di <c>avvio</c>/<c>chiusura</c>. Le funzioni sono chiamate
-con il nome dell'interfaccia in modo che una funzione possa controllare
-adattatori multipli.
+Possono essere definite quattro funzioni, che sono chiamate in prossimità delle
+operazioni di <c>avvio</c>/<c>chiusura</c>. Le funzioni sono chiamate con il
+nome dell'interfaccia in modo che una funzione possa controllare adattatori
+multipli.
 </p>
 
 <p>
 I valori di ritorno per le funzioni <c>preup</c> e <c>predown</c> dovrebbero
 essere 0 (successo) per indicare che la configurazione o la deconfigurazione
-dell'interfaccia può continuare. Se <c>preup</c> ritorna con un valore
-non-zero, allora la configurazione dell'interfaccia viene chiusa. Se
-<c>predown</c> ritorna con un valore non-zero, allora all'interfaccia non
+dell'interfaccia può continuare. Se <c>preup</c> ritorna con un valore diverso
+da zero, allora la configurazione dell'interfaccia viene chiusa. Se
+<c>predown</c> ritorna con un valore diverso da zero, allora all'interfaccia non
 viene permesso di continuare la deconfigurazione.
 </p>
 
@@ -41,7 +41,7 @@ ignorati poichè non c'è niente da fare se indicano un fallimento.
 </p>
 
 <p>
-<c>${IFACE}</c> è impostata sull'interfaccia che è portata up/down.
+<c>${IFACE}</c> è impostata sull'interfaccia che viene portata sù/giù (up/down).
 <c>${IFVAR}</c> è <c>${IFACE}</c> convertita al nome della variabile che bash
 permette.
 </p>
@@ -50,47 +50,40 @@ permette.
 preup() {
   <comment># Test per link sull'interfaccia prima di avviarla. Questo
   # funziona solo su alcuni adattatori di rete e richiede che il pacchetto
-  # mii-diag sia installato.</comment>
-  if mii-tool ${IFACE} 2> /dev/null | grep -q 'no link'; then
-    ewarn "No link on ${IFACE}, aborting configuration"
-    return 1
-  fi
-
-  <comment># Test per link sull'interfaccia prima di avviarla. Questo
-  # funziona solo su alcuni adattatori di rete e richiede che il pacchetto
   # ethtool sia installato.</comment>
   if ethtool ${IFACE} | grep -q 'Link detected: no'; then
     ewarn "No link on ${IFACE}, aborting configuration"
     return 1
   fi
 
-  <comment># Ricordare di ritornare a 0 quando funziona</comment>
+  <comment># Ricordarsi di restituire 0 in caso di successo</comment>
   return 0
 }
 
 predown() {
-  <comment># Il default nello script è testare NFS root e non permettere
-  # che le interfacce si spengono. Notare che se si specifica una funzione
-  # predown() si sovrappone questa logica. Eccola qui se la si vuole vedere</comment>
+  <comment># L'azione predefinita nello script è eseguire un test per NFS root e non permettere
+  # che in quel caso le interfacce vengano disattivate. Notare che se si specifica una funzione
+  # predown() si sovrappone questa logica, mostrata in dettaglio qui di seguito, in caso
+  # la si voglia usare...</comment>
   if is_net_fs /; then
     eerror "root filesystem is network mounted -- can't stop ${IFACE}"
     return 1
   fi
 
-  <comment># Ricordare di ritornare a 0 quando funziona</comment>
+  <comment># Ricordarsi di restituire 0 in caso di successo</comment>
   return 0
 }
 
 postup() {
   <comment># Questa funzione potrebbe essere usata, per esempio, per
-  # registrare un servizio dinamico DNS. Un'altra possibilità potrebbe essere
+  # registrarsi ad un servizio dinamico DNS. Un'altra possibilità potrebbe essere
   # mandare/ricevere mail quando l'interfaccia è avviata.</comment>
        return 0
 }
 
 postdown() {
-  <comment># Questa funzione è più per completezza. Ancora non
-  # c'è niente da fare con essa.</comment>
+  <comment># Questa funzione viene utilizzata perlopiù per completezza. Attualmente
+  # non c'è mai stato bisogno di utilizzarla.</comment>
   return 0
 }
 </pre>
@@ -98,7 +91,7 @@ postdown() {
 </body>
 </section>
 <section>
-<title>Funzioni di intercettazioni per Wireless Tool</title>
+<title>Funzioni di hook (intercettazioni) per "Wireless Tools"</title>
 <body>
 
 <note>
@@ -107,17 +100,16 @@ Non funziona con WPA Supplicant - ma le variabili <c>${ESSID}</c> e
 </note>
 
 <p>
-Due funzioni possono essere definite, che sono chiamate in prossimità della
-funzione associata. Le funzioni sono chiamate con il nome
-dell'interfaccia in modo che una funzione possa controllare adattatori
-multipli.
+Possono essere definite due funzioni, che sono chiamate in prossimità della
+funzione associata. Le funzioni sono chiamate con il nome dell'interfaccia in
+modo che una funzione possa controllare adattatori multipli.
 </p>
 
 <p>
 I valori di ritorno per la funzione <c>preassociate</c> dovrebbero essere 0
 (successo) per indicare che la configurazione o la deconfigurazione
-dell'interfaccia può continuare. Se la <c>preassociate</c> ritorna a un
-valore non-zero, allora la configurazione dell'interfaccia viene chiusa.
+dell'interfaccia può continuare. Se la <c>preassociate</c> ritorna un valore
+diverso da zero, allora la configurazione dell'interfaccia viene chiusa.
 </p>
 
 <p>
@@ -133,9 +125,9 @@ bash permette.
 
 <pre caption="Funzioni di associazione pre/post">
 preassociate() {
-  <comment># Questo sotto aggiunge due variabili di configurazione
+  <comment># Il codice seguente aggiunge due variabili di configurazione
   # leap_user_ESSID e leap_pass_ESSID. Quando sono entrambe configurate per
-  # essere connesse a ESSID, si esegue lo script CISCO LEAP</comment>
+  # essere connesse a ESSID, viene eseguito lo script CISCO LEAP</comment>
 
   local user pass
   eval user=\"\$\{leap_user_${ESSIDVAR}\}\"
@@ -157,8 +149,8 @@ preassociate() {
 }
 
 postassociate() {
-  <comment># Questa funzione è più per completezza. Ancora non
-  # c'è niente da fare con essa</comment>
+  <comment># Questa funzione viene utilizzata perlopiù per completezza. Attualmente
+  # non c'è mai stato bisogno di utilizzarla.</comment>
 
   return 0
 }
