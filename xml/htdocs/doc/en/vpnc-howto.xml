@@ -1,30 +1,32 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/vpnc-howto.xml,v 1.1 2007/05/23 08:50:13 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/en/vpnc-howto.xml">
+<guide link="/doc/en/vpnc-howto.xml" disclaimer="draft">
 
 <title>Gentoo vpnc HOWTO</title>
 
 <author title="Author">
   <mail link="dhaskew@earthlink.net">David H. Askew</mail>
 </author>
-
-<!-- 
-My email address is dhaskew on earthlink.net
--->
+<author title="Contributor">
+  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Contributor">
+  <mail link="opfer@gentoo.org">Christian Faulhammer</mail>
+</author>
 
 <abstract>
 This document details how to connect your workstation to a Cisco VPN
 concentrator utilizing vpnc to manage the connection.
 </abstract>
 
-
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.11</version>
-<date>2005-08-07</date>
+<version>0.14</version>
+<date>2007-05-23</date>
 
 <chapter>
 <title>Introduction</title>
@@ -33,9 +35,9 @@ concentrator utilizing vpnc to manage the connection.
 
 <p>
 If you're reading this, then you likely need to connect to your office network
-from home or during travel.  Many companies utilize Cisco 3000 VPN concentrators
+from home or during travel. Many companies utilize Cisco 3000 VPN concentrators
 for their VPN needs, and I am willing to bet that most Linux newbies think that
-they are forced to use Windows to connect to them.  Well this document informs
+they are forced to use Windows to connect to them. Well this document informs
 you that connecting to a Cisco VPN is very possible and will hopefully enable
 you to setup a working tunnel using your Gentoo workstation or laptop.
 </p>
@@ -60,7 +62,7 @@ you to setup a working tunnel using your Gentoo workstation or laptop.
 <body>
 
 <ul>
-  <li>An in-depth guide to VPN / encryption technologies</li>
+  <li>An in-depth guide to VPN/encryption technologies</li>
   <li>A feature by feature explanation of <c>vpnc</c></li>
 </ul>
 
@@ -92,26 +94,33 @@ The assumptions made at this point are:
 
 <p>
 In order for Linux to be able to open a VPN connection <e>Universal TUN/TAP
-device driver support</e> must be enabled in the kernel.  What is it and why do
-you need it?  Below is a relatively straight forward explanation from the kernel
+device driver support</e> must be enabled in the kernel. What is it and why do
+you need it? Below is a relatively straight forward explanation from the kernel
 configuration dialog:
 </p>
 
-<pre caption="CONFIG_TUN:">
+<pre caption="CONFIG_TUN">
 TUN/TAP provides packet reception and transmission for user space
-programs.  It can be viewed as a simple Point-to-Point or Ethernet
+programs. It can be viewed as a simple Point-to-Point or Ethernet
 device, which instead of receiving packets from a physical media,
 receives them from user space program and instead of sending packets
 via physical media writes them to the user space program.
 
 When a program opens /dev/net/tun, driver creates and registers
-corresponding net device tunX or tapX.  After a program closed above
+corresponding net device tunX or tapX. After a program closed above
 devices, driver will automatically delete tunXX or tapXX device and
 all routes corresponding to it.
 </pre>
 
 <p>
-You can verify if your kernel has TUN/TAP support with the following command:
+From the vpnc ebuild 0.4.0-r1 on, it is tested wether TUN/TAP support is
+enabled. If not, enable it in your kernel config either as module or built-in,
+recompile and reboot.
+</p>
+
+<p>
+You can verify yourself if your kernel has TUN/TAP support with the following
+command:
 </p>
 
 <pre caption="Checking the kernel config">
@@ -125,10 +134,9 @@ CONFIG_TUN=m
 </pre>
 
 <p>
-As you can see above, <c>CONFIG_TUN=m</c> is compiled as a module.  If it is
-disabled in your setup, enable it in your kernel of choice, rebuild,
-install, reboot and return to this document before continuing with the next
-steps.
+As you can see above, <c>CONFIG_TUN=m</c> is compiled as a module. If it is
+disabled in your setup, enable it in your kernel of choice, rebuild, install,
+reboot and return to this document before continuing with the next steps.
 </p>
 
 <pre caption="Configuration location in the kernel configuration dialog">
@@ -136,12 +144,6 @@ Device Drivers  ---&gt;
   Networking support  ---&gt;
     [*] Universal TUN/TAP device driver support
 </pre>
-
-<p>
-If you already have TUN/TAP support built in your kernel, or you just booted
-your computer after a fresh kernel build, then you need to verify that the
-kernel has the appropriate code initialized.
-</p>
 
 <p>
 If you built TUN/TAP support directly into the kernel, you should see
@@ -154,7 +156,7 @@ Universal TUN/TAP device driver 1.5 (C)1999-2002 Maxim Krasnyansky
 </pre>
 
 <p>
-If you build TUN/TAP support as a module, you first must load the <c>tun</c> 
+If you build TUN/TAP support as a module, you first must load the <c>tun</c>
 module:
 </p>
 
@@ -167,8 +169,8 @@ nvidia               4050204  12
 </pre>
 
 <p>
-Now that the <c>tun</c> module is loaded, check <c>dmesg</c> output.  You 
-should see something like the following:
+Now that the <c>tun</c> module is loaded, check <c>dmesg</c> output. You should
+see something like the following:
 </p>
 
 <pre caption="Checking dmesg output">
@@ -186,7 +188,7 @@ Universal TUN/TAP device driver 1.5 (C)1999-2002 Maxim Krasnyansky
 <body>
 
 <p>
-Now that you have a working kernel setup, you need to install 
+Now that you have a working kernel setup, you need to install
 <c>net-misc/vpnc</c>:
 </p>
 
@@ -204,14 +206,13 @@ Now that you have a working kernel setup, you need to install
 <body>
 
 <p>
-In order to make the following sections more clear, we need an example setup
-to work from.  For the purposes of this exercise, we will assume that you have
-a home network of several computers.  All computers are on the 192.168.0.0 /
-255.255.255.0 network.  The LAN in question is run by a Gentoo box using an
-iptables firewall, DHCP, caching DNS, etc ... and it masquerades the LAN
-behind the public IP address it receives from an ISP.  You also have a
-workstation on the LAN from which you want to be able to VPN into your 
-office with.
+In order to make the following sections more clear, we need an example setup to
+work from. For the purposes of this exercise, we will assume that you have a
+home network of several computers. All computers are on the 192.168.0.0 /
+255.255.255.0 network. The LAN in question is run by a Gentoo box using an
+iptables firewall, DHCP, caching DNS, etc ... and it masquerades the LAN behind
+the public IP address it receives from an ISP. You also have a workstation on
+the LAN from which you want to be able to VPN into your office with.
 </p>
 
 <p>
@@ -269,13 +270,13 @@ default         router          0.0.0.0         UG        0 0          0 eth0
 <body>
 
 <p>
-Now that you have <c>vpnc</c> installed and we have an example to work from, 
-let's discuss the basics of setting up <c>vpnc</c>.  The configuration file for
+Now that you have <c>vpnc</c> installed and we have an example to work from,
+let's discuss the basics of setting up <c>vpnc</c>. The configuration file for
 <c>vpnc</c> connection settings can be located in a couple places, depending on
-how many profiles you want to setup.  By default, <c>vpnc</c> looks first for
-<path>/etc/vpnc/default.conf</path> for its connection settings.  If it doesn't 
-find that file, then it looks for <path>/etc/vpnc.conf</path>.  This setup will
-only address a single profile example and will use the configuration file 
+how many profiles you want to setup. By default, <c>vpnc</c> looks first for
+<path>/etc/vpnc/default.conf</path> for its connection settings. If it doesn't
+find that file, then it looks for <path>/etc/vpnc.conf</path>. This setup will
+only address a single profile example and will use the configuration file
 location <path>/etc/vpnc.conf</path>. Make sure you do not have a
 <path>/etc/vpnc/default.conf</path> file.
 </p>
@@ -289,21 +290,21 @@ Xauth password network_password
 </pre>
 
 <p>
-The configuration file example above should be modified to reflect the 
-appropriate values for your setup.  The gateway option 
-<c>vpngateway.domain.org</c> can be a fully qualified domain name or an IP 
-address.  The ID and secret options should be given to you by a network 
-administrator.  If they are hesitant about giving you this info and you 
-currently have a working setup on a Windows box which utilizes the official 
-Cisco VPN client, then all you have to do is export your profile.  The 
-user name and password options are for your normal network
-sign-on, such as a Windows NT domain account.
+The configuration file example above should be modified to reflect the
+appropriate values for your setup. The gateway option
+<c>vpngateway.domain.org</c> can be a fully qualified domain name or an IP
+address. The ID and secret options should be given to you by a network
+administrator. If they are hesitant about giving you this info and you
+currently have a working setup on a Windows box which utilizes the official
+Cisco VPN client, then all you have to do is export your profile. The user name
+and password options are for your normal network sign-on, such as a Windows NT
+domain account.
 </p>
 
 <p>
 If you are forced to export your profile from a Windows machine, then what you
-will likely have is a file ending in <path>.pcf</path>.  This file will have 
-all the information you need.  Below is an example:
+will likely have is a file ending in <path>.pcf</path>. This file will have all
+the information you need. Below is an example:
 </p>
 
 <pre caption="Example profile.pcf file">
@@ -346,20 +347,15 @@ ForceNetLogin=0
 </pre>
 
 <p>
-In the above example, we can see entries for <c>Host</c>, <c>GroupName</c> and 
-<c>enc_GroupPwd</c>.  Your <c>Username</c> and <c>UserPassword</c> may or may 
-not be exported depending on the setup.
+In the above example, we can see entries for <c>Host</c>, <c>GroupName</c> and
+<c>enc_GroupPwd</c>. Your <c>Username</c> and <c>UserPassword</c> may or may
+not be exported depending on the setup. To generate a working vpnc
+configuration out of it, you can use <c>pcf2vpnc</c>, included with vpnc.
 </p>
 
 <note>
-The <c>vpnc</c> configuration file uses an unencrypted group password (IPSec 
-secret), so if you do not know the group password, but you have a copy of the 
-encrypted group password from an exported profile, then you need not worry.  
-The encoding scheme for these group passwords is widely known, and all you 
-have to do is visit a web page that will offer to decrypt it for you.  The 
-<uri link="http://www.unix-ag.uni-kl.de/~massar/vpnc/">vpnc homepage</uri>
-has <uri link="http://www.unix-ag.uni-kl.de/~massar/bin/cisco-decode">a 
-link</uri> to such a page.
+You can decrypt the password with the help from the <c>cisco-decrypt</c>
+program, shipped with the latest vpnc.
 </note>
 
 </body>
@@ -369,27 +365,27 @@ link</uri> to such a page.
 <body>
 
 <p>
-Now that you have a configuration in place, it's time to test your setup.  To
+Now that you have a configuration in place, it's time to test your setup. To
 start <c>vpnc</c> you do the following:
 </p>
 
 <pre caption="Example vpnc usage">
 # <i>vpnc</i>
-Enter password for username@vpngateway.domain.org: 
+Enter password for username@vpngateway.domain.org:
 VPNC started in background (pid: 14788)...
 </pre>
 
 <p>
-As you can see from the above command output, once you type <c>vpnc</c>
-(as root), you are prompted for your password.  After entering your password, 
-which will not be echoed back to you, the <c>vpnc</c> process will automatically
+As you can see from the above command output, once you type <c>vpnc</c> (as
+root), you are prompted for your password. After entering your password, which
+will not be echoed back to you, the <c>vpnc</c> process will automatically
 become a background process.
 </p>
 
 <note>
-If you specified the <c>Xauth password</c> option in your <c>vpnc</c> config 
-file, then you will not be prompted for your password at <c>vpnc</c> startup. 
-Additionally, if <c>vpnc</c> needs some extra options not specified in the 
+If you specified the <c>Xauth password</c> option in your <c>vpnc</c> config
+file, then you will not be prompted for your password at <c>vpnc</c> startup.
+Additionally, if <c>vpnc</c> needs some extra options not specified in the
 configuration file, or if you have forgotten something, don't worry, it will
 ask you for it.
 </note>
@@ -434,7 +430,8 @@ default         *               0.0.0.0         U         0 0          0 tun0
 </pre>
 
 <p>
-As you can see from the above command output(s), <c>vpnc</c> has done the following:
+As you can see from the above command output(s), <c>vpnc</c> has done the
+following:
 </p>
 
 <ul>
@@ -448,12 +445,12 @@ As you can see from the above command output(s), <c>vpnc</c> has done the follow
 
 <p>
 At this point, your workstation is capable of communicating with hosts via the
-VPN, but only by IP address.  As you might have noticed, <c>vpnc</c> did not 
+VPN, but only by IP address. As you might have noticed, <c>vpnc</c> did not
 alter your <path>/etc/resolv.conf</path>, thus not setting up DNS services for
-the virtual link.  Also, because <c>vpnc</c> sets your default route to your VP
-gateway, all network traffic will travel across the VPN, even if it destined 
+the virtual link. Also, because <c>vpnc</c> sets your default route to your VPN
+gateway, all network traffic will travel across the VPN, even if it destined
 for the Internet or elsewhere not specifically specified by additional routes.
-For some, this basic type of connection may be satisfactory, but for most, 
+For some, this basic type of connection may be satisfactory, but for most,
 additional steps need to be taken.
 </p>
 
@@ -464,14 +461,14 @@ Additional things you might want to have:
 <ul>
   <li>DNS for the VPN</li>
   <li>
-    A routing setup that will only send traffic destined for the VPN down
-    the virtual tunnel.  This way, you can browse the Internet while connected 
-    to the VPN, without your personal web/p2p etc ... traffic going across the
+    A routing setup that will only send traffic destined for the VPN down the
+    virtual tunnel. This way, you can browse the Internet while connected to
+    the VPN, without your personal web/p2p etc ... traffic going across the
     tunnel.
   </li>
   <li>
-    A script to manage all this, because <c>vpnc</c> just doesn't do
-    enough by default.
+    A script to manage all this, because <c>vpnc</c> just doesn't do enough by
+    default.
   </li>
 </ul>
 
@@ -481,7 +478,7 @@ example is shown below.
 </p>
 
 <note>
-Don't disconnect yet, because we have additional things to test.  The example
+Don't disconnect yet, because we have additional things to test. The example
 below is just for informational purposes.
 </note>
 
@@ -495,42 +492,42 @@ Terminating vpnc daemon (pid: 26250)
 </chapter>
 
 <chapter>
-<title>Setup DNS</title>
+<title>Set up DNS</title>
 <section>
 <body>
 
 <p>
 Unfortunately, <c>vpnc</c> doesn't handle the setup and management of DNS for
-your newly established tunnel.  The user is left to decide how DNS should be
-handled.  You could just overwrite <path>/etc/resolv.conf</path> when you 
-connect, but that would utilize your VPN DNS for all DNS queries regardless of 
-whether or not the traffic is destined for your VPN tunnel.  This is a very 
-functional solution and if you simply need to connect to the tunnel, do your 
-work, and then disconnect, read no further.  But, if you want to be able to 
-leave your tunnel connected for lengthy periods of time and don't want your 
+your newly established tunnel. The user is left to decide how DNS should be
+handled. You could just overwrite <path>/etc/resolv.conf</path> when you
+connect, but that would utilize your VPN DNS for all DNS queries regardless of
+whether or not the traffic is destined for your VPN tunnel. This is a very
+functional solution and if you simply need to connect to the tunnel, do your
+work, and then disconnect, read no further. But, if you want to be able to
+leave your tunnel connected for lengthy periods of time and don't want your
 work DNS servers handling requests for your personal traffic, read on.
 </p>
 
 <p>
 The ideal setup would allow you to separate your DNS queries into two
-categories: VPN-related and other.  Under this setup, all VPN-related DNS
+categories: VPN-related and other. Under this setup, all VPN-related DNS
 queries would be answered by DNS servers located at the other end of your VPN
 tunnel and all other queries would continue to be answered by local or ISP
-supplied DNS servers.  This is the setup that will be demonstrated here.
+supplied DNS servers. This is the setup that will be demonstrated here.
 </p>
 
 <note>
-We will consider VPN-related DNS queries to be any query belonging to the 
+We will consider VPN-related DNS queries to be any query belonging to the
 example.org domain, such as host1.example.org or server1.example.org.
 </note>
 
 <p>
-So how do you set things up, so that only requests made to hosts on the 
-example.org domain get sent to VPN supplied DNS servers?  Well, you're going to
+So how do you set things up, so that only requests made to hosts on the
+example.org domain get sent to VPN supplied DNS servers? Well, you're going to
 need to install a local DNS server, but don't worry, it's much easier than you
-think.  There are several software packages that can handle the type of setup
-we desire, but for the purposes of this demonstration, <c>dnsmasq</c> will be
-utilized.  Let's emerge it now:
+think. There are several software packages that can handle the type of setup we
+desire, but for the purposes of this demonstration, <c>dnsmasq</c> will be
+utilized. Let's emerge it now:
 </p>
 
 <note>
@@ -543,10 +540,10 @@ answer requests from localhost, <c>127.0.0.1</c>.
 </pre>
 
 <p>
-Now you need to add an option to your <c>dnsmasq</c> startup options.  Edit the 
-following option to suit your needs.  Substitute .example.org with the 
-appropriate domain and the IP address with a valid DNS server that belongs 
-to the VPN tunnel.
+Now you need to add an option to your <c>dnsmasq</c> startup options. Edit the
+following option to suit your needs. Substitute .example.org with the
+appropriate domain and the IP address with a valid DNS server that belongs to
+the VPN tunnel.
 </p>
 
 <pre caption="/etc/conf.d/dnsmasq">
@@ -557,11 +554,11 @@ DNSMASQ_OPTS="-S /.example.org/192.168.125.10"
 </pre>
 
 <p>
-Next, make sure that the first entry in <path>/etc/resolv.conf</path> 
-is your local host <c>127.0.0.1</c>, followed by the location of the backup DNS
-servers that should handle the DNS traffic in case dnsmasq fails to start, or 
-if it needs to forward a DNS query it doesn't currently have in its cache.  An 
-example <path>/etc/resolv.conf</path> is shown below.
+Next, make sure that the first entry in <path>/etc/resolv.conf</path> is your
+local host <c>127.0.0.1</c>, followed by the location of the backup DNS servers
+that should handle the DNS traffic in case dnsmasq fails to start, or if it
+needs to forward a DNS query it doesn't currently have in its cache. An example
+<path>/etc/resolv.conf</path> is shown below.
 </p>
 
 <pre caption="/etc/resolv.conf">
@@ -590,19 +587,19 @@ Now that you have setup a rule for your VPN tunnel DNS, you need to start
 
 <p>
 The ideal scenario would be if only the traffic destined for VPN tunnel would
-travel across the link.  At this point, you have a VPN tunnel setup and all
+travel across the link. At this point, you have a VPN tunnel setup and all
 traffic will travel across the tunnel, unless you specify additional routes. In
 order to fix this situation you need to know what networks are available to you
-on your VPN.  The easiest way to find out the needed information is to ask a 
+on your VPN. The easiest way to find out the needed information is to ask a
 network administrator, but sometimes they are reluctant to answer such
-questions.  If your local network admin wont provide the needed information,
+questions. If your local network admin wont provide the needed information,
 some trial and error experiments will be required.
 </p>
 
 <p>
-When the VPN tunnel was started, <c>vpnc</c> set the default route to the 
-tunnel.  So you must set your default route back to normal, so that things 
-work as expected.
+When the VPN tunnel was started, <c>vpnc</c> set the default route to the
+tunnel. So you must set your default route back to normal, so that things work
+as expected.
 </p>
 
 <pre caption="Resetting your default route">
@@ -610,8 +607,8 @@ work as expected.
 </pre>
 
 <p>
-Earlier, when DNS services were being configured for your VPN, you specified a 
-DNS server to handle your example.org domain.  You need to add a route for the
+Earlier, when DNS services were being configured for your VPN, you specified a
+DNS server to handle your example.org domain. You need to add a route for the
 192.168.125.0 subnet so that DNS queries will work.
 </p>
 
@@ -620,16 +617,15 @@ DNS server to handle your example.org domain.  You need to add a route for the
 </pre>
 
 <p>
-At this point, you should add any additional routes for known networks.  If 
-your friendly network administrator gave you the required info,
-great.  Otherwise, you might need to ping hosts you will be connecting to 
-frequently, to give yourself an idea about what your routing table should look
-like.
+At this point, you should add any additional routes for known networks. If your
+friendly network administrator gave you the required info, great. Otherwise,
+you might need to ping hosts you will be connecting to frequently, to give
+yourself an idea about what your routing table should look like.
 </p>
 
 <note>
-Due to your setup, when using VPN network services by name, you must specify the
-fully qualified domain name, for instance: webserver1.example.org
+Due to your setup, when using VPN network services by name, you must specify
+the fully qualified domain name, for instance: webserver1.example.org
 </note>
 
 <pre caption="Ping example">
@@ -643,7 +639,7 @@ PING intranet1.example.org (172.25.230.29) 56(84) bytes of data.
 
 <p>
 As you can see from the above example, the ping probes to
-<c>intranet1.example.org</c> were unsuccessful.  So we need to add a route for 
+<c>intranet1.example.org</c> were unsuccessful. So we need to add a route for
 that subnet.
 </p>
 
@@ -652,8 +648,8 @@ that subnet.
 </pre>
 
 <p>
-A few ping and route commands later, you should be well on your way to a 
-well working routing table.
+A few ping and route commands later, you should be well on your way to a well
+working routing table.
 </p>
 
 </body>
@@ -663,14 +659,15 @@ well working routing table.
 <chapter>
 <title>Manage the connection</title>
 <section>
+<title>Calling vpnc when needed</title>
 <body>
 
 <p>
 Next is an example script to manage the VPN connection. You could execute it
-(as root) from an xterm to start a connection to your VPN.  Then all you have
-to do is press return to disconnect the VPN.  Obviously you will need to 
-modify this for your setup, remembering to add all the additional routes that
-you may need.
+(as root) from an xterm to start a connection to your VPN. Then all you have to
+do is press return to disconnect the VPN. Obviously you will need to modify
+this for your setup, remembering to add all the additional routes that you may
+need.
 </p>
 
 <pre caption="Example session management script">
@@ -680,7 +677,7 @@ source /sbin/functions.sh
 
 ebegin "Connecting to the VPN"
 vpnc
-eend 
+eend
 
 ebegin "Modifying the routing table"
 route add default gw 192.168.0.1
@@ -695,13 +692,56 @@ read $disconnect
 
 ebegin "Disconnecting from the VPN"
 vpnc-disconnect
-eend 
+eend
 ebegin "Reconfiguring the default routing table"
 route add default gw 192.168.0.1
 eend
 
 einfo "VPN should now be disconnected"
 </pre>
+
+</body>
+</section>
+<section>
+<title>Start vpnc on boot</title>
+<body>
+
+<p>
+Version 0.4.0-r1 of vpnc brings an init file for Gentoo which even can handle
+multiple configurations. You will find a file <path>/etc/init.d/vpnc</path>
+which can be handled by the usual means of init scripts. The default looks for
+<path>/etc/vpnc/vpnc.conf</path>, the scheme is sketched in the following
+table.
+</p>
+
+<table>
+  <tr>
+    <th>init script name</th>
+    <th>needed configuration file</th>
+  </tr>
+  <tr>
+    <ti>/etc/init.d/vpnc</ti>
+    <ti>/etc/vpnc/vpnc.conf</ti>
+  </tr>
+  <tr>
+    <ti>/etc/init.d/vpnc.work</ti>
+    <ti>/etc/vpnc/work.conf</ti>
+  </tr>
+</table>
+
+<p>
+Add vpnc to default runlevel with the following commands (in this case for the
+standard configuration). Don't forget to add the tun module (if you have built
+it that way) to the kernels autoload mechanism at startup.
+</p>
+
+<pre caption="Adding vpnc to startup scripts">
+# <i>rc-update add vpnc default</i>
+</pre>
+
+<note>
+The init scripts don't handle DNS separation.
+</note>
 
 </body>
 </section>
@@ -713,25 +753,25 @@ einfo "VPN should now be disconnected"
 <body>
 
 <p>
-If you are looking for a linux application that supports RDP (Remote Desktop 
-Protocol) then give <c>grdesktop</c> a try.  It's a GUI app written in Gtk that
-fits in well with a gnome desktop, but doesn't require it.  If you don't want
-the GUI configuration dialogs that grdesktop provides, then just install 
-<c>rdesktop</c>.  Ultimately, grdesktop is just a frontend for rdesktop.
+If you are looking for a linux application that supports RDP (Remote Desktop
+Protocol) then give <c>grdesktop</c> a try. It's a GUI app written in Gtk that
+fits in well with a gnome desktop, but doesn't require it. If you don't want
+the GUI configuration dialogs that grdesktop provides, then just install
+<c>rdesktop</c>. Ultimately, grdesktop is just a frontend for rdesktop.
 </p>
 
 <p>
-If you are a KDE user, you might want to try <c>kvpnc</c>.  It a appears to be
-a very mature VPN management GUI.
+If you are a KDE user, you might want to try <c>kvpnc</c>. It a appears to be a
+very mature VPN management GUI.
 </p>
 
 <p>
 If you need to connect to a windows machine which doesn't have a DNS entry, and
 you know the address of an available WINS server, you can use a tool called
-<c>nmblookup</c> to query the WINS server for the host name of the machine you 
-want to connect to.  Unfortunately, you have to install samba to get it, but if
-you are going to be working with boxes running Windows you might as well want to
-install samba, because it includes several other useful tools.
+<c>nmblookup</c> to query the WINS server for the host name of the machine you
+want to connect to. Unfortunately, you have to install samba to get it, but if
+you are going to be working with boxes running Windows you might as well want
+to install samba, because it includes several other useful tools.
 </p>
 
 <pre caption="Installing samba">
@@ -739,9 +779,8 @@ install samba, because it includes several other useful tools.
 </pre>
 
 <p>
-When you have samba and its tools installed, test <c>nmblookup</c> by
-asking the WINS server at IP address 192.168.125.11 about a host named 
-wintelbox1.
+When you have samba and its tools installed, test <c>nmblookup</c> by asking
+the WINS server at IP address 192.168.125.11 about a host named wintelbox1.
 </p>
 
 <pre caption="nmblookup example">
@@ -781,10 +820,10 @@ querying wintelbox1 on 192.168.125.11
 <body>
 
 <p>
-Hopefully by now you have been able to connect to your VPN on choice and are
-well on your way to remote office work.  Feel free to file a bug at 
-<uri link="http://bugs.gentoo.org">bugs.gentoo.org</uri> should you find a
-mistake or wish to make a addition or recommendation regarding this document.
+Hopefully by now you have been able to connect to your VPN of choice and are
+well on your way to remote office work. Feel free to file a bug at <uri
+link="http://bugs.gentoo.org">bugs.gentoo.org</uri> should you find a mistake
+or wish to make an addition or recommendation regarding this document.
 </p>
 
 </body>
