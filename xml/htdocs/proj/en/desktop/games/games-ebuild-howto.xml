@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.14 2006/11/21 21:36:44 nyhm Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/games/games-ebuild-howto.xml,v 1.15 2007/05/23 01:11:12 nyhm Exp $ -->
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -20,8 +20,8 @@ This guide outlines the best practices for creating ebuilds for games on Gentoo.
 
 <license/>
 
-<version>1.12</version>
-<date>27 July 2006</date>
+<version>1.13</version>
+<date>23 May 2007</date>
 
 <chapter>
 <title>Introduction</title>
@@ -118,7 +118,7 @@ If, for example, your game is a soccer game named "kickball",
 you would create a directory in your local overlay like follows.
 </p>
 
-<pre caption="Creating your overlay direcory">
+<pre caption="Creating your overlay directory">
 # mkdir -p /usr/local/portage/games-sports/kickball
 </pre>
 
@@ -137,9 +137,9 @@ developer handbook</uri> online.  After deciding on the category
 and naming of your new ebuild, we will want to start editing on it.
 </p>
 
-<pre caption="Using vi to edit your ebuild">
+<pre caption="Using vim to edit your ebuild">
 # cd /usr/local/portage/games-sports/kickball
-# vi kickball-1.0.ebuild
+# vim kickball-1.0.ebuild
 </pre>
 
 <p>
@@ -148,7 +148,7 @@ It should look like the following.
 </p>
 
 <pre caption="Skeleton ebuild example">
-# Copyright 1999-2005 Gentoo Foundation
+# Copyright 1999-2007 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # Header: $
 
@@ -305,10 +305,10 @@ common place for making mistakes.  Try to check the license on any
 ebuild that you submit.  Often times, the license will be in a
 COPYING file, distributed in the package's tarball.  If the license
 is not readily apparent, try contacting the authors of the package
-for clarification.  For a list of available licenses, look at
+for clarification.  For a list of available licenses, look in
 <c>/usr/portage/licenses</c>.  Also, if the license requires the
 user to accept the license before installation, then you will need
-to use the check_license function of eutils.eclass in pkg_setup.
+to set GAMES_CHECK_LICENSE="yes" in your ebuild.
 </p>
 
 </body>
@@ -385,7 +385,7 @@ add it to DEPEND.  These packages are only used at build time.
 <body>
 
 <p>
-This variable is used fro run-time dependencies.  If left
+This variable is used for run-time dependencies.  If left
 undefined, portage assumes RDEPEND to be equal to DEPEND.  These
 are dependencies required by the package to run.  If you have
 packages listed here, you should also refer to this in DEPEND as
@@ -409,11 +409,11 @@ app-arch/unzip"
 The S variable is used to store the starting location that the
 ebuild should use for performing work.  By default, this is
 S=${WORKDIR}/${P}.  If the upstream packager did not use a
-subfolder when packing their package, which is common with zip
+subdirectory when packing their package, which is common with zip
 file distribution, then you would set S as follows.
 </p>
 
-<pre caption="S with no folder example">
+<pre caption="S with no subdirectory example">
 S=${WORKDIR}
 </pre>
 
@@ -434,33 +434,6 @@ If you do not need special handling, leave S= out of the ebuild.
 </section>
 
 <section>
-<title>pkg_setup</title>
-<body>
-
-<p>
-In most cases, you will not need to edit pkg_setup.  One common
-reason for needing to create a pkg_setup in your ebuild would be
-for using the check_license function in eutils.eclass, such as in
-the quake3 ebuilds.
-</p>
-
-<pre caption="Example pkg_setup">
-pkg_setup() {
-check_license || die "license check failed"
-games_pkg_setup
-}
-</pre>
-
-<p>
-As you can see, you must always call games_pkg_setup if you specify
-your own pkg_setup function.  This is to ensure that the system is
-properly configured for games under Gentoo.
-</p>
-
-</body>
-</section>
-
-<section>
 <title>src_unpack</title>
 <body>
 
@@ -473,7 +446,7 @@ src_unpack function are below.
 
 <pre caption="Makeself archive example">
 src_unpack() {
-unpack_makeself || die "unpacking files"
+unpack_makeself
 }
 </pre>
 
@@ -486,8 +459,7 @@ this comes from the ut2003 ebuild.
 
 <pre caption="unpack and unpack_makeself example">
 src_unpack() {
-unpack_makeself ${PN}lnx_2107to${PV}.sh.bin \
-|| die "unpacking patch"
+unpack_makeself linux_installer.sh
 unpack UT2003CrashFix.zip
 }
 </pre>
@@ -501,7 +473,7 @@ that our fictional package, kickball, has both a broken Makefile,
 and also a binary that must be removed for compilation to complete.
 </p>
 
-<pre caption="kickball example src_unpack">
+<pre caption="kickball src_unpack example">
 src_unpack() {
 unpack ${A}
 cd "${S}"
@@ -547,10 +519,10 @@ We did not add a die after the rm above.  The reason for this is
 the presence of kickball will cause the build to fail, but the lack
 of the file will not hurt us in any way.  Remove only items that
 stop the ebuild from working when present.  If there are, for
-example, Makefiles for 25 different systems,  plus a bunch of crap
-for MSVC, just ignore them.  They will not be installed unless we
-specifically ask for them to be during src_install, and they will
-be deleted by portage at the end of the completed emerge.
+example, Makefiles for 25 different systems, just ignore them.
+They will not be installed unless we specifically ask for them to
+be during src_install, and they will be deleted by portage at
+the end of the completed emerge.
 </p>
 
 </body>
@@ -576,12 +548,8 @@ emake || die "emake failed"
 
 <p>
 As you can see, we use the egamesconf function, rather than econf.
-The egamesconf function is a wrapper function that calls
-"./configure" with the proper paths for a Gentoo games ebuild.  If
-the package does not use autotools, then using egamesconf is still
-preferred over calling "./configure" directly.  You can still fix
-the Makefile afterwards, or, even better, fix the configure script
-itself.
+The egamesconf function is a wrapper function that runs
+"./configure" with the proper paths for a Gentoo games ebuild.
 </p>
 
 <p>
@@ -604,24 +572,20 @@ This causes the emerge to stop if one either of these steps fails.
 
 <p>
 After completing the compilation of the game, we need to actually
-install it.  By default, the game is installed using the default
-ebuild src_install function.  If the default will not work for you,
-then you will need to write your own src_install function.  One
-example where the default will not work is if the upstream Makefile
-does not have an "install" target.
+install it.
 </p>
 
 <pre caption="Example src_install">
 src_install() {
-dogamesbin ${PN} || die "installing the binary failed"
+dogamesbin ${PN} || die "dogamesbin failed"
 
-insinto "${GAMES_DATADIR}/${PN}"
-doins -r data/* || die "installing data failed"
-dodoc README manual.pdf || die "installing docs failed"
+insinto "${GAMES_DATADIR}"/${PN}
+doins -r data/* || die "doins failed"
+dodoc README manual.pdf
 
 # optional
 doicon ${PN}.xpm
-make_desktop_entry ${PN} "KickBall" ${PN}.xpm
+make_desktop_entry ${PN} KickBall ${PN}.xpm
 
 prepgamesdirs
 }
@@ -758,9 +722,10 @@ that created by a dedicated server</ti>
 </tr>
 <tr>
 <ti>GAMES_LIBDIR</ti>
-<ti>/usr/games/lib</ti>
-<ti>This is the location into which games should install
-any libraries</ti>
+<ti>NULL</ti>
+<ti>This variable should not be used in any ebuilds but can
+be set by the user to override the games_get_libdir function
+</ti>
 </tr>
 <tr>
 <ti>GAMES_BINDIR</ti>
@@ -809,10 +774,10 @@ pkg_setup function.</ti>
 </table>
 
 <p>
-There are some things that you need to be aware of when creating a
-games ebuild.  For one, we do not allow information to be written
-to /usr, so any game that does not write to ${GAMES_STATEDIR} will
-need to be patched.
+One thing you need to be aware of when creating a games ebuild is
+that we do not allow games to write to /usr, so any game that does
+so will need to be patched to write to ${GAMES_STATEDIR} or
+${HOME} instead.
 </p>
 
 </body>
@@ -834,6 +799,11 @@ absolute requirement.
 <th>Description</th>
 </tr>
 <tr>
+<ti>games_get_libdir</ti>
+<ti>This function prints the architecture-specific location
+into which games ebuilds should install libraries.</ti>
+</tr>
+<tr>
 <ti>egamesconf</ti>
 <ti>As we discussed before, egamesconf is used to configure
 your package for proper paths on Gentoo.  If your package
@@ -842,9 +812,8 @@ requirement.</ti>
 </tr>
 <tr>
 <ti>egamesinstall</ti>
-<ti>We use egamesinstall only in the case where the Makefile
-does not properly work with DESTDIR.  We do not recommend
-using this function otherwise.</ti>
+<ti>We do not recommend the use of this function.  "emake
+DESTDIR="${D}" install" should be used instead.</ti>
 </tr>
 <tr>
 <ti>gameswrapper</ti>
@@ -871,7 +840,7 @@ group to be able to use all of its functions.</ti>
 <tr>
 <ti>dogameslib</ti>
 <ti>This function wraps the dolib function.  It is used for
-installing libraries into ${GAMES_LIBDIR}.  Be aware that
+installing libraries into the proper directory.  Be aware that
 this function installs the libraries into directories
 based on $(get_libdir).  This means the default location
 on AMD64 would be /usr/games/lib64, rather than the
@@ -879,15 +848,13 @@ expected /usr/games/lib.</ti>
 </tr>
 <tr>
 <ti>dogameslib.a</ti>
-<ti>This function wraps dolib.a and installs the library
-into ${GAMES_LIBDIR}.  Like dogameslib, it installs into
-the architecture-specific default location.</ti>
+<ti>This function wraps dolib.a and like dogameslib, it
+installs into the architecture-specific default location.</ti>
 </tr>
 <tr>
 <ti>dogameslib.so</ti>
-<ti>This function wraps dolib.so and installs the library
-into ${GAMES_LIBDIR}.  Like dogameslib, it installs into
-the architecture-specific default location.</ti>
+<ti>This function wraps dolib.so and like dogameslib, it
+installs into the architecture-specific default location.</ti>
 </tr>
 <tr>
 <ti>newgamesbin</ti>
@@ -912,7 +879,7 @@ This function is used for creating a wrapper in
 ${GAMES_BINDIR} that points to your actual game binary.
 This is mostly used for binary games that are installed
 into ${GAMES_PREFIX_OPT}.  You should avoid using a wrapper
-for any source-based game.  It is best to patch the sources
+whenever possible.  It is best to patch the sources
 to resolve any issues, instead.</ti>
 </tr>
 <tr>
@@ -928,8 +895,8 @@ function yourself.</ti>
 </tr>
 <tr>
 <ti>prepgamesdirs</ti>
-<ti>This function is used to ensure that all files that are
-installed by a games ebuild has the proper permissions.
+<ti>This function is used to ensure that all files
+installed by games ebuilds have the proper permissions.
 This function should be called last in src_install, as it
 potentially touches every file and directory installed by
 the ebuild.  The purpose of this function is to ensure that
@@ -994,7 +961,7 @@ requirement for playing games on Gentoo.</ti>
 <ti>This function is used to unpack .uz and .uz2 files that
 are typically associated with the Unreal Tournament series
 of games.  It can take either a file name or a directory
-name as an argument.  Use of this function requries that
+name as an argument.  Use of this function requires that
 your ebuild has games-util/uz2unpack in DEPEND.</ti>
 </tr>
 <tr>
