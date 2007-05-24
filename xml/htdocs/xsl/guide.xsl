@@ -250,7 +250,7 @@
   </tr>
   <tr>
     <td colspan="2" align="right" class="infohead">
-      Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments? <a class="highlight" href="/main/en/contact.xml">Contact us</a>.
+     <xsl:call-template name="copyright-footer"/>
     </td>
   </tr>
 </table>
@@ -646,13 +646,31 @@
   </tr>
   <tr lang="en">
     <td align="right" class="infohead" colspan="3">
-      Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments? <a class="highlight" href="/main/en/contact.xml">Contact us</a>.
+     <xsl:call-template name="copyright-footer"/>
     </td>
   </tr>
 </table>
 
 </body>
 </html>
+</xsl:template>
+
+<xsl:template name="copyright-footer">
+  <xsl:variable name="isEnglish">
+    <xsl:if test="string-length($glang)=0 or $glang='en'">Y</xsl:if>
+  </xsl:variable>
+  <xsl:variable name="www">
+    <xsl:if test="$httphost!='www'">http://www.gentoo.org</xsl:if>
+  </xsl:variable>
+  <xsl:variable name="contact">
+   <xsl:choose>
+    <xsl:when test="not($isEnglish='Y' or document(concat('/main/', $glang, '/contact.xml'))/missing)">
+      <xsl:value-of select="concat('/main/', $glang, '/contact.xml')"/>
+    </xsl:when>
+    <xsl:otherwise>/main/en/contact.xml</xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments? <a class="highlight" href="{concat($www, $contact)}">Contact us</a>.
 </xsl:template>
 
 <!-- Mail template -->
