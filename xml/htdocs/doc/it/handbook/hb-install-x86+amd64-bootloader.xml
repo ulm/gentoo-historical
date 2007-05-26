@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-x86+amd64-bootloader.xml,v 1.4 2007/03/14 13:19:28 mascherpa Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-x86+amd64-bootloader.xml,v 1.5 2007/05/26 13:05:29 mascherpa Exp $ -->
 
 <sections>
 
-<version>4.3</version>
-<date>2007-03-12</date>
+<version>5.0</version>
+<date>2007-05-07</date>
 
 <section>
 <title>La scelta</title>
@@ -60,7 +60,7 @@ si sta utilizzando <c>vesafb-tng</c> e non è necessario impostare l'opzione
 <c>vesafb</c> è <e>importante</e> impostare la variabile <c>vga</c>.
 </p>
 
-<p test="func:keyval('arch')='AMD64'">
+<p test="contains('AMD64 IA64',func:keyval('arch'))">
 I sistemi a 64-bit devono usare il driver <c>vesafb</c> e necessitano
 dell'impostazione della variabile <c>vga</c>.
 </p>
@@ -164,7 +164,7 @@ una frequenza di
 </table>
 
 </body>
-<body test="func:keyval('arch')='AMD64'">
+<body test="contains('AMD64 IA64',func:keyval('arch'))">
 
 <p>
 Il risultato di queste due impostazioni può essere del tipo <c>vga=0x318
@@ -172,9 +172,13 @@ video=vesafb:mtrr:3,ywrap</c>. E' importante ricordare questa riga perchè sarà
 utile in seguito.
 </p>
 
-<p>
+<p test="func:keyval('arch')='AMD64'">
 Mentre LILO funziona su AMD64, Gentoo supporta solo l'utilizzo di GRUB.
 Continuare ora con l'<uri link="#grub">installazione</uri> di GRUB.
+</p>
+
+<p test="func:keyval('arch')='IA64'">
+Ora è necessario installare <uri link="#elilo">bootloader elilo</uri>.
 </p>
 
 </body>
@@ -194,7 +198,7 @@ link="#lilo">LILO</uri>.
 </body>
 </subsection>
 </section>
-<section id="grub">
+<section id="grub" test="contains('AMD64 x86',func:keyval('arch'))">
 <title>Default: Usare GRUB</title>
 <subsection>
 <title>Comprendere la terminologia di GRUB</title>
@@ -688,6 +692,79 @@ Continuare ora con il <uri link="#reboot">Reboot del sistema</uri>.
 </body>
 </subsection>
 </section>
+<section id="elilo" test="func:keyval('arch')='IA64'">
+<title>Default: Installazione di elilo</title>
+<body>
+
+<p>
+Sulle piattaforme IA64, il bootloader si chiama elilo. Potrebbe essere
+necessario installarlo innanzitutto.
+</p>
+
+<pre caption="Installazione di elilo">
+# <i>emerge elilo</i>
+</pre>
+
+<p>
+E' possibile trovare il file di configurazione in <path>/etc/elilo.conf</path>
+ed un file di esempio nella tipica directory dei documenti
+<path>/usr/share/doc/elilo-&lt;ver&gt;/</path>. Ecco un'altra configurazione
+ di esempio:
+</p>
+
+<pre caption="esempio di /etc/elilo.conf">
+boot=/dev/sda1
+delay=30
+timeout=50
+default=Gentoo
+append="console=ttyS0,9600"
+prompt
+
+image=/vmlinuz
+      label=Gentoo
+      root=/dev/sda2
+      read-only
+
+image=/vmlinuz.old
+      label=Gentoo.old
+      root=/dev/sda2
+      read-only
+</pre>
+
+<p>
+La linea <c>boot</c> informa elilo della posizione della partizione di boot (in
+questo caso, <path>/dev/sda1</path>). La linea <c>delay</c> imposta il
+numero di decimi di secondo prima che venga automaticamente avviata l'opzione 
+di default quando si utilizza la modalità non interattiva. La linea 
+<c>timeout</c> è simile a delay ma vale per la modalità interattiva. La linea
+<c>default</c> definisce quale sia il kernel di default tra uelli elencati
+in seguito. La linea <c>append</c> aggiunge ulteriori opzioni alla linea di 
+comando del kernel. <c>prompt</c> imposta il comportamento di default di
+elilo ad interattivo.
+</p>
+
+<p>
+Le sezioni che cominciano con <c>image</c> definiscono le varie immagini
+bootabili- Ogni immagine ha una semplice <c>label</c>, un filesystem 
+di <c>root</c>, e monta il filesystem di root <c>read-only</c>.
+</p>
+
+<p>
+Una volta terminata la configurazione è sufficiente eseguire <c>elilo
+--efiboot</c>. L'opzione <c>--efiboot</c> aggiunge un elemento del menu
+per Gentoo Linux nel boot manager EFI.
+</p>
+
+<pre caption="Applicazione della configurazione di elilo">
+# <i>elilo --efiboot</i>
+</pre>
+
+<p>
+Continuare ora con il <uri link="#reboot">Reboot del sistema</uri>.
+</p>
+
+</body>
+</section>
 <section id="reboot">
 <title>Reboot del sistema</title>
 <subsection>
@@ -698,7 +775,17 @@ Uscire dall'ambiente in chroot e smontare tutte le partizioni. Ed eseguire poi
 l'ultimo comando, <c>reboot</c>.
 </p>
 
-<pre caption="Umount della partizioni e reboot">
+<pre caption="Umount delle partizioni e reboot"
+test="func:keyval('arch')='IA64'">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/sys /mnt/gentoo/dev
+/mnt/gentoo/proc /mnt/gentoo</i>
+cdimage ~# <i>reboot</i>
+</pre>
+     
+<pre caption="Umount delle partizioni e reboot"
+test="not(func:keyval('arch')='IA64')">
 # <i>exit</i>
 cdimage ~# <i>cd</i>
 cdimage ~# <i>umount /mnt/gentoo/boot /mnt/gentoo/dev /mnt/gentoo/proc
@@ -709,6 +796,11 @@ cdimage ~# <i>reboot</i>
 <p>
 Non dimenticare di rimuovere il CD bootabile, altrimenti verrà di nuovo
 avviato il CD al posto del sistema appena installato.
+</p>
+
+<p test="func:keyval('arch')='IA64'">
+Durante il riavvio dovrebbe comparire una nuova opzione nel menu per Gentoo
+Linux nel boot manager EFI, con essa è possibile avviare Gentoo.
 </p>
 
 <p>
