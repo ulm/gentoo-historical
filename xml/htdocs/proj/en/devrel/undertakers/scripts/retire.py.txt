@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+"""Script to remove retired devs from metadata.xml."""
+
+import os
+import sys
+import difflib
+import StringIO
+
+try:
+    import cElementTree as etree
+except ImportError:
+    try:
+        from elementtree import ElementTree as etree
+    except ImportError:
+        print 'This script needs either celementtree (preferred, faster) or'
+        print 'elementtree installed.'
+        sys.exit(1)
+
+
+def main(args):
+    if len(args) != 3:
+        print 'Usage: %s devname /path/to/tree' % args[0]
+        print
+        print 'outputs a diff between the current metadata.xml and'
+        print 'metadata.xml with the retired dev removed.'
+        print
+        print 'remember to review the output before applying!'
+        return 1
+    devname, path = args[1:]
+    email = '%s@gentoo.org' % devname
+    if not os.path.isdir(path):
+        print '%r is not a directory' % path
+        return 1
+    for root, dirs, files in os.walk(path):
+        if 'metadata.xml' not in files:
+            continue
+        metadata = etree.parse(os.path.join(root, 'metadata.xml'))
+        changed = False
+        for entry in metadata.findall('maintainer'):
+            for mailentry in entry.findall('email'):
+                if mailentry.text.strip() == email:
+                    metadata.getroot().remove(entry)
+                    changed = True
+        if changed:
+            # we don't want the full path in the diff
+            if not root.startswith(path + '/'):
+                print 'wtf (not %r.startswith(%r/))' % (root, path)
+                return 1
+            shortpath = root[len(path) + 1:]
+            newfile = StringIO.StringIO()
+            # etree does not write the <?xml ...> header and DOCTYPE
+            newfile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+            newfile.write(
+                '<!DOCTYPE pkgmetadata SYSTEM '
+                '"http://www.gentoo.org/dtd/metadata.dtd">\n')
+            metadata.write(newfile)
+            # etree omits the final newline, add that to make the diff nicer
+            newfile.write('\n')
+            newfile.seek(0)
+            # (skips the <?xml ...> and DOCTYPE lines, hopefully)
+            for line in difflib.unified_diff(
+                open(os.path.join(root, 'metadata.xml')).readlines(),
+                list(newfile),
+                '%s.orig' % shortpath,
+                shortpath):
+                print line,
+            print
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
