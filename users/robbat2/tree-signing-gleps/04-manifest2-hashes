@@ -1,0 +1,158 @@
+GLEP: xx+4
+Title: Manifest2 hash policies and security implications
+Version: $Revision: 1.1 $
+Last-Modified: $Date: 2007/06/03 07:46:58 $
+Author: Robin Hugh Johnson <robbat2@gentoo.org>, 
+Status: Draft
+Type: Standards Track
+Content-Type: text/plain
+Created: October 2006
+Post-History: ...
+
+Abstract
+========
+While Manifest2 format allows multiple hashes, the question of which
+checksums should be present, why, and the security implications of such
+have never been resolved. This GLEP covers all of these issues, and
+makes recommendations as to how to handle checksums both now, and in
+future.
+
+Motivation
+==========
+This GLEP is being written as part of the work on signing the Portage
+tree, but is only tangentially related to the actual signing of
+Manifests. Checksums present one possible weak point in the overall
+security of the tree - and a comprehensive security plan is needed.
+
+Specification
+=============
+The bad news
+------------
+First of all, I'd like to cover the bad news in checksum security.
+A much discussed point, as been the simple question: What is the
+security of multiple independent checksums on the same data?
+The most common position (and indeed the one previously held by myself),
+is that multiple checksums would be an increase in security, but we
+could not provably quantify the amount of security this added.
+The really bad news, is that this position is completely and utterly
+wrong. Many of you will be aghast at this. There is extremely little
+added security in multiple checksums [J04]. For any set of checksums,
+the actual strength lies in that of the strongest checksum.
+
+How fast can MD5 be broken?
+---------------------------
+For a general collision, not a pre-image attack, since the original
+announcement by Wang et al [W04], the time required to break MD5 has
+been massively reduced. Originally at 1 hour on a near-supercomputer
+(IBM P690) and estimated at 64 hours with a Pentium-3 1.7Ghz. This has
+gone down to less than in two years, to 17 seconds [K06a]!
+
+08/2004 - 1 hour, IBM pSeries 690 (32-way 1.7Ghz POWER4+) 
+03/2005 - 8 hours, Pentium-M 1.6Ghz
+11/2005 - 5 hours, Pentium-4 1.7Ghz
+03/2006 - 1 minute, Pentium-4 3.2Ghz
+04/2006 - 17 seconds, Pentium-4 3.2Ghz
+
+If we accept a factor of 800x as a sample of how much faster a checksum
+may be broken over the course of 2 years (MD5 using the above data is
+1694x), then existing checksums do not stand a significant chance of
+survival in the future. We should thus accept that whatever checksums we
+are using today, will be broken in the near future, and plan as best as
+possible. (A brief review of the present SHA1 attacks indicates an
+improvement of ~600x in the same timespan).
+
+And for those that claim implementation of these procedures is not yet
+feasible, see [K06b] for an application that can produce two
+self-extracting .exe files, with identical MD5s, and whatever payload
+you want.
+
+The good news
+-------------
+Of the checksums presently used by Manifest2, one stands close to being
+completely broken: SHA1. The other two, RIPEMD160 and SHA256 (SHA2, 256
+bit size), while not yet broken, have shown signs of strain to newly
+discovered methods of cryptanalysis [H04]. 
+
+To reduce the potential for future problems and any single checksum
+break leading to a rapid decrease in security, we should incorporate the
+strongest hash available from each family of checksums, and be prepared
+to retire old checksums actively, unless there is a overriding reason to
+keep a specific checksum.
+
+What should be done
+-------------------
+Portage should always try to verify all hashes that are available in a
+Manifest2, starting with the strongest ones. Over time, the weaker
+checksums should be removed, once all old Portage installations have had
+sufficient time to upgrade. We should be prepared to add stronger
+checksums wherever possible, and to remove those that have been
+defeated.
+
+For the current Portage, SHA1 should be removed, as insecure compared to
+SHA256. Beyond one specific problem (see the next section), we should
+add SHA512 (SHA2, 512 bit size), the Whirlpool checksum (standardized
+checksum, with no known weaknesses). In future, as stream-based
+checksums are developed (in response to the development by NIST [AHS]),
+they should be considered and used.
+
+There is one temporary stumbling block at hand - the existing Portage
+infrastructure does not support SHA384/512 or Whirlpool, thus hampering
+their immediate acceptance. SHA512 is available in Python 2.5
+
+Backwards Compatibility
+=======================
+Old versions of Portage may support and expect only specific checksums.
+This is accounted for in the checksum depreciation discussion above.
+
+References
+==========
+
+[AHS] NIST (2007). "NIST's Plan for New Cryptographic Hash Functions",
+  (Advanced Hash Standard). http://csrc.nist.gov/pki/HashWorkshop/
+
+[BOBO06] Boneh, D. and Boyen, X. (2006). "On the Impossibility of
+  Efficiently Combining Collision Resistant Hash Functions"; Proceedings
+  of CRYPTO 2006, Dwork, C. (Ed.); Lecture Notes in Computer Science
+  4117, pp. 570-583. Available online from:
+  http://crypto.stanford.edu/~dabo/abstracts/hashing.html
+
+[H04] Hawkes, P. and Paddon, M. and Rose, G. (2004). "On Corrective
+  Patterns for the SHA-2 Family". CRYPTO 2004 Cryptology ePrint Archive,
+  Report 2004/204. Available online from:
+  http://eprint.iacr.org/2004/207.pdf
+
+[J04] Joux, Antoie. (2004). "Multicollisions in Iterated Hash Functions
+- Application to Cascaded Constructions;" Proceedings of CRYPTO 2004,
+  Franklin, M. (Ed); Lecture Notes in Computer Science 3152, pp.
+  306-316. Available online from:
+  http://web.cecs.pdx.edu/~teshrim/spring06/papers/general-attacks/multi-joux.pdf
+
+[K06a] Klima, V. (2006). "Tunnels in Hash Functions: MD5 Collisions
+  Within a Minute", Cryptology ePrint Archive, Report 2006/105.
+  Available online from: http://eprint.iacr.org/2006/105.pdf
+
+[K06b] Klima, V. (2006). "Note and links to high-speed MD5 collision
+  proof of concept tools". Available online from:
+  http://cryptography.hyperlink.cz/2006/trick.txt
+
+[W04] Wang, X. et al: "Collisions for Hash Functions MD4, MD5,
+  HAVAL-128 and RIPEMD", rump session, CRYPTO 2004, Cryptology ePrint
+  Archive, Report 2004/199, first version (August 16, 2004), second
+  version (August 17, 2004). Available online from:
+  http://eprint.iacr.org/2004/199.pdf
+
+Thanks to
+=========
+I'd like to thank the following folks, in no specific order:
+Ciaran McCreesh (ciaranm) - for pointing out the Joux (2004) paper, and
+being stubborn enough in not accepting a partial solution.
+Zac Medico (zmedico) and Brian Harring (ferringb) - for being
+knowledgeable about the present Manifest2 codebase.
+
+Copyright
+=========
+Copyright (c) 2006 by Robin Hugh Johnson. This material may be
+distributed only subject to the terms and conditions set forth in the
+Open Publication License, v1.0.
+
+vim: tw=72 ts=2 expandtab:
