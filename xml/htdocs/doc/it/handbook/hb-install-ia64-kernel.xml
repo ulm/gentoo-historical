@@ -1,0 +1,400 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-ia64-kernel.xml,v 1.1 2007/06/03 16:52:28 mascherpa Exp $ -->
+
+<sections>
+
+<version>8.1</version>
+<date>2007-05-15</date>
+
+<section>
+<title>Timezone</title>
+<body>
+
+<p>
+Innanzitutto è necessario selezionare la propria timezone, in modo che il
+sistema riconosca in che parte del globo è collocato. Per la propria timezone,
+consultare <path>/usr/share/zoneinfo</path> e copiarla poi nel
+file <path>/etc/localtime</path>. Si sconsiglia di utilizzare le
+timezone<path>/usr/share/zoneinfo/Etc/GMT*</path> perchè i nomi non indicano
+quello che ci si attende. Ad esempio <path>GMT-8</path> indica GMT+8:
+</p>
+
+<pre caption="Abilitare le informazioni sulla timezone">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Per esempio GMT:)</comment>
+# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Installare i sorgenti</title>
+<subsection>
+<title>Scegliere un Kernel</title>
+<body>
+
+<p>
+Il cuore, intorno al quale sono sviluppate tutte le distribuzioni, è il Kernel
+di Linux. E' la parte di software compresa tra i programmi e l'hardware. Gentoo
+dà la possibilità ai suoi utenti di scegliere tra diversi sorgenti del kernel.
+Una lista completa delle descrizioni dei kernel disponibili, è consultabile
+nella <uri link="/doc/it/gentoo-kernel.xml">Guida ai Kernel Gentoo</uri>.
+</p>
+
+<p>
+Per i sistemi IA64 sono disponibili i <c>gentoo-sources</c> (sorgenti del
+kernel modificati con patch dedicate a amd64 con miglioramenti in stabilità e
+performance).
+</p>
+
+<p>
+Installarli utilizzando <c>emerge</c>.
+</p>
+
+<pre caption="Installare un sorgente del kernel">
+# <i>emerge gentoo-sources</i>
+</pre>
+
+<p>
+Se si dà un'occhiata a <path>/usr/src</path>, si dovrebbe vedere un link
+simbolico chiamato <path>linux</path>, che punta al sorgente del kernel. In
+questo caso si tratta di <c>gentoo-sources-<keyval id="kernel-version"/></c>, ma
+c'è da ricordare che potrebbe essere diverso:
+</p>
+
+<pre caption="Il link simbolico al sorgente del kernel">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root   root    12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+<p>
+Ora si procede a configurare e compilare il sorgente del kernel. Allo scopo è
+possibile utilizzare <c>genkernel</c>, che compila un kernel generico come
+quello usato dal CD di Installazione. Si tratta però prima la configurazione
+"manuale", poichè è il miglior modo di ottimizzare l'ambiente.</p>
+
+<p>
+Se si desidera configurare il kernel manualmente, continuare con <uri
+link="#manual">Default: Configurazione manuale</uri>. Per
+chi preferisce usare <c>genkernel</c>, leggere <uri
+link="#genkernel">Alternativa: Usare genkernel</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>Default: Configurazione manuale</title>
+<subsection>
+<title>Introduzione</title>
+<body>
+
+<p>
+La configurazione manuale del kernel è spesso considerata la parte più difficile
+che ogni utente Linux incontra. Non è assolutamente vero -- dopo aver
+configurato un po' di kernel, l'operazione risulta semplice.
+</p>
+
+<p>
+Una cosa <e>è</e> però vera: si deve conoscere il proprio sistema quando si
+comincia una configurazione manuale del kernel. La maggior parte delle
+informazioni può essere raccolta installando pciutils (<c>emerge pciutils</c>)
+che contiene <c>lspci</c>. E' possibile tranquillamente ignorare gli errori di
+<e>pcilib</e> (ad esempio pcilib: cannot open /sys/bus/pci/devices) che a volte
+<c>lspci</c> stampa a video. In alternativa è anche possibile eseguire
+<c>lspci</c> dal di fuori dell'ambiente chrootato, i risultati sono i medesimi.
+Si può anche eseguire <c>lsmod</c> per vedere che moduli del kernel usa il CD di
+Installazione (potrebbe fornire un buon suggerimento su cosa abilitare).
+</p>
+
+<p>
+Andare nella directory del sorgente del kernel, e digitare <c>make
+menuconfig</c> per visualizzare un menu di configurazione basato su ncurses.
+</p>
+
+<pre caption="Aprire menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Vengono visualizzate molte sezioni di configurazione. Ecco ora alcune opzioni
+che devono essere attivate (altrimenti Gentoo non può funzionare, o non funziona
+correttamente senza modifiche aggiuntive).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Attivare le opzioni indispensabili</title>
+<body>
+
+<p>
+Prima di tutto, si deve attivare l'uso di codice/driver di sviluppo e
+sperimentale. Se non lo si fa, non si ha la possibilità di utilizzare qualche
+codice/driver molto importante:
+</p>
+
+<pre caption="Selezionare codice/driver sperimentale">
+Code maturity level options ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+General setup  ---&gt;
+  [*] Support for hot-pluggable devices
+</pre>
+
+<p>
+E' importante verificare che ogni driver necessario  al boot della propria
+macchina (ad esempio il controller SCSI, ..) sia compilato <e>nel</e> kernel e
+non come modulo. In caso contrario il sistema potrebbe non funzionare
+correttamente.
+</p>
+
+<p>
+Selezionare ora il tipo di sistema e processore. Se non si sa che tipo di
+sistema IA64 si possieda, <c>DIG-compliant</c> è una buona scelta generica. Se
+si sta installando su una macchina SGI, assicurarsi di selezionare il tipo di
+sistema SGI, in caso contrario il kernel potrebbe non funzionare correttamente.
+</p>
+
+<pre caption="Selezione del tipo di sistema">
+System type ---&gt;
+  <comment>(Cambiare a seconda del proprio sistema)</comment>
+  <i>DIG-compliant</i>
+Processor type ---&gt;
+  <comment>(Cambiare a seconda del proprio sistema)</comment>
+  <i>Itanium 2</i>
+</pre>
+
+<p>
+Andare su <c>File Systems</c> e selezionare il supporto per il filesystem che si
+usa. <e>Non</e> compilarlo come modulo, altrimenti Gentoo non può montare le
+partizioni. Selezionare anche <c>Virtual memory</c>, <c>/proc file system</c>.
+</p>
+
+<pre caption="Selezione dei filesystem necessari">
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>(Selezionare una o più delle seguenti, secondo necessità)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+
+<comment>(Assicurarsi di selezionare il supporto VFAT per la
+partizione EFI)</comment>
+DOS/FAT/NT Filesystems  --->
+  &lt;*&gt; VFAT (Windows-95) fs support
+</pre>
+
+<p>
+Ricordarsi di attivare il supporto DMA:
+</p>
+
+<pre caption="Attivare DMA">
+Device Drivers ---&gt;
+  ATA/ATAPI/MFM/RLL support ---&gt;
+    [*] Generic PCI bus-master DMA support
+    [*]   Use PCI DMA by default when available
+</pre>
+
+<p>
+Se si sta usando PPPoE per connettersi a Internet, si ha bisogno delle seguenti
+opzioni nel kernel:
+</p>
+
+<pre caption="Selezionare i driver necessari per PPPoE">
+Device Drivers ---&gt;
+  Networking Support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+Le due opzioni di compressione non sono dannose, ma neppure necessarie; lo
+stesso vale per <c>PPP over Ethernet</c>, che potrebbe essere usata soltanto da
+<c>ppp</c> se configurato in modalità kernel.
+</p>
+
+<p>
+Chi ne ha bisogno, non deve dimenticare di includere il supporto per la scheda
+ethernet nel kernel.
+</p>
+
+<p>
+Se si è in possesso di una CPU Intel che supporta HyperThreading (tm), o si
+possiede un sistema con più CPU, è possibile attivare il supporto
+multiprocessore:
+</p>
+
+<pre caption="Attivare il supporto multiprocessore">
+Processor type and features  ---&gt;
+  [*] Symmetric multi-processing support
+</pre>
+
+<p>
+Se si utilizzano periferiche USB (come mouse o tastiere) è necessario
+abilitarle:
+</p>
+
+<pre caption="Attivare il supporto USB per dispositivi di input">
+Device Drivers ---&gt;
+  USB Support ---&gt;
+    &lt;*&gt;   USB Human Interface Device (full HID) support
+</pre>
+
+<p>
+Una volta terminata la configurazione del kernel continuare con<uri 
+link="#compiling">Compilazione e Installazione</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Compilazione e Installazione</title>
+<body>
+
+<p>
+Ora che il kernel è configurato, il prossimo passo è la compilazione e
+l'installazione. Uscire dal menu di configurazione ed avviare la compilazione:
+</p>
+
+<pre caption="Compilare il kernel">
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+Quando la compilazione è finita, è necessario copiare l'immagine del kernel in
+<path>/boot</path>. E' possibile utilizzare qualsiasi nome per indicare il
+proprio kernel, è sufficiente tenerlo a mente perchè è necessario nella
+configurazione del bootoader. Ricordare di sostituire
+<path><keyval id="kernel-name"/></path> con il nome e la versione del proprio
+kernel.
+</p>
+
+<pre caption="Installare il kernel">
+# <i>cp vmlinux.gz /boot/<keyval id="kernel-name"/></i>
+</pre>
+
+<p>
+Adesso continuare con <uri link="#kernel_modules">i moduli del Kernel</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="genkernel">
+<title>Alternativa: Usare genkernel</title>
+<body>
+
+<p>
+Se si sta leggendo questa sezione, vuol dire che si è scelto di usare lo script
+<c>genkernel</c>, che configura il kernel.
+</p>
+
+<p>
+Adesso che sono stati installati i sorgenti del kernel si può utilizzare lo
+script <c>genkernel</c> per configurarlo e compilarlo automaticamente.
+<c>genkernel</c> configura il kernel in modo quasi identico a come è configurato
+quello del CD di Installazione. Infatti quando si usa <c>genkernel</c> per
+compilare il kernel, il sistema rileva tutto l'hardware al boot, proprio come il
+CD di Installazione. Poichè genkernel non richiede nessuna configurazione
+manuale del kernel, questa è una soluzione ideale per quegli utenti che hanno
+qualche difficoltà nel compilarsi il kernel da soli.
+</p>
+
+<p>
+Ecco come usare genkernel. Per prima cosa si deve emergere l'ebuild di
+genkernel:
+</p>
+
+<pre caption="Emergere genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+Compilare ora i proprio sorgenti del kernel eseguendo <c>genkernel --udev
+all</c>. Attenzione però, visto che <c>genkernel</c> compila un kernel con
+supporto per quasi tutto l'hardware disponibile, l'operazione potrebbe
+richiedere diverso tempo.
+</p>
+
+<note>
+Gli utenti di EVMS2 o LVM2 possono aggiungere <c>--evms2</c> o <c>--lvm2</c>
+ai parametri della line adi comando di genkernel.
+</note>
+
+<pre caption="Esecuzione di genkernel">
+# <i>genkernel --udev all</i>
+</pre>
+
+<p>
+Una volta completato <c>genkernel</c>, viene creato un kernel completo di moduli
+e <e>root disk iniziale</e> (initrd). Il kernel e initrd intervengono quando si
+configura un boot loader. E' consigliabile dunque annotare il nome del kernel e
+del initrd, poichè servono quando si scrive il file di configurazione del
+bootloader. Initrd si avvia subito dopo il boot per effettuare un rilevamento
+automatico dell'hardware (come nel CD di Installazione), prima che si avvii il
+sistema "reale".
+</p>
+
+<pre caption="Controllo dell'immagine del kernel e dell'initrd">
+# <i>ls /boot/kernel* /boot/initramfs*</i>
+</pre>
+
+</body>
+</section>
+<section id="kernel_modules">
+<title>Moduli del kernel</title>
+<subsection>
+<title>Configurare i moduli</title>
+<body>
+
+<p>
+E' possibile elencare tutti i moduli che si desidera caricare automaticamente in
+<path>/etc/modules.autoload.d/kernel-2.6</path>. E' anche possibile specificare
+opzioni extra per i moduli, se si desidera.
+</p>
+
+<p>
+Per vedere tutti i moduli disponibili, eseguire il comando <c>find</c>. Non
+dimenticarsi di sostituire <c><keyval id="kernel-version"/></c> con la versione
+del kernel che si è compilata:
+</p>
+
+<pre caption="Vedere tutti i moduli disponibili">
+# <i>find /lib/modules/<keyval id="kernel-version"/>/ -type f -iname '*.o' -or
+-iname '*.ko'</i>
+</pre>
+
+<p>
+Per esempio, per caricare automaticamente il modulo <c>3c59x.o</c>, modificare
+il file <path>kernel-2.6</path> e inserire il nome:
+</p>
+
+<pre caption="Modificare /etc/modules.autoload.d/kernel-2.6">
+# <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
+</pre>
+
+<pre caption="/etc/modules.autoload.d/kernel-2.6">
+3c59x
+</pre>
+
+<p>
+Continuare l'installazione con la <uri link="?part=1&amp;chap=8">Configurazione
+del sistema</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
