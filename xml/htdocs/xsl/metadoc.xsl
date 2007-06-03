@@ -11,6 +11,7 @@
 
 <!-- Selection parameter -->
 <xsl:param name="catid">0</xsl:param>
+<xsl:param name="desc">0</xsl:param>
 
 <xsl:template match="dynamic">
   <xsl:variable name="metadoc"  select="document(@metadoc)"/>
@@ -346,9 +347,25 @@
               <xsl:with-param name="docid"    select="@id"/>
             </xsl:call-template>
           </xsl:variable>
+          <xsl:variable name="docabstract">
+           <xsl:if test="$desc = '1'">
+            <xsl:call-template name="documentabstract">
+              <xsl:with-param name="metadoc"  select="$metadoc"/>
+              <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
+              <xsl:with-param name="lang"     select="$lang"/>
+              <xsl:with-param name="fileid"   select="fileid"/>
+              <xsl:with-param name="vpart"    select="fileid/@vpart"/>
+              <xsl:with-param name="vchap"    select="fileid/@vchap"/>
+              <xsl:with-param name="docid"    select="@id"/>
+            </xsl:call-template>
+           </xsl:if>
+          </xsl:variable>
           <xsl:if test="not($docname='')">
             <li>
               <xsl:copy-of select="$docname"/>
+              <xsl:if test="$desc = '1' and not($docabstract='')">
+              <br/><xsl:value-of select="$docabstract"/>
+              </xsl:if>
             </li>
           </xsl:if>
         </xsl:otherwise>
@@ -483,7 +500,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.35 2007/02/23 15:30:45 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.36 2007/06/03 13:53:06 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -506,7 +523,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.35 2007/02/23 15:30:45 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.36 2007/06/03 13:53:06 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:when test="string-length($pv)=0">?!?</xsl:when>
