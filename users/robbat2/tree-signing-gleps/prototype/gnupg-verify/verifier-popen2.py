@@ -54,4 +54,9 @@ while(1):
 r.close()
 #w.close()
 
+keys = results.keys()
+keys.sort()
+for k in keys:
+	print "file: %s result: %s" % (k,results[k])
+
 # vim: sts=4 ts=4 sw=4:
