@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/liveusb.xml,v 1.11 2007/06/03 14:44:58 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/liveusb.xml,v 1.12 2007/06/04 12:50:50 rane Exp $ -->
 
 <guide link="/doc/pl/liveusb.xml" lang="pl">
 <title>Instalacja Gentoo Linux przy użyciu USB (LiveUSB)</title>
@@ -14,17 +14,21 @@
 <author title="Tłumaczenie">
   <mail link="stawrul@gmail.com">Waldemar Korłub</mail>
 </author>
+<author title="Redaktor">
+  <mail link="neysx@gentoo.org">Xavier Neys</mail>
+</author>
 
 <abstract>
-Opis tworzenia dysku instalacyjnego Gentoo Linux na USB.
+Opis tworzenia dysku instalacyjnego Gentoo Linux na USB lub emulacja Gentoo
+Linux x86 oraz AMD64 na napędach Flash USB.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.7</version>
-<date>2006-12-21</date>
+<version>2</version>
+<date>2007-05-10</date>
 
 <chapter>
 <title>Wprowadzenie</title>
@@ -34,9 +38,10 @@ Opis tworzenia dysku instalacyjnego Gentoo Linux na USB.
 
 <p>
 Ten dokument wyjaśnia jak stworzyć <e>dysk instalacyjny Gentoo Linux na USB</e>
-lub innymi słowy, jak emulować płyty instalacyjne Gentoo Linux wykorzystując do
-tego urządzenie flash USB. Jest to szczególnie przydatne dla osób instalujących
-Gentoo Linux na laptopie, który nie posiada napędu CD-ROM.
+lub innymi słowy, jak emulować płyty instalacyjne Gentoo Linux x86 lub AMD64
+wykorzystując do tego urządzenie flash USB. Jest to szczególnie przydatne
+dla osób instalujących Gentoo Linux na laptopie, który nie posiada
+napędu CD-ROM.
 </p>
 
 <p>
@@ -56,8 +61,10 @@ Aby używać dysku instalacyjnego Gentoo Linux na USB potrzebujemy:
 </p>
 
 <ul>
-  <li>Urządzenia flash USB (co najmniej 64MB)</li>
-  <li>Komputer x86 z możliwością uruchamiania systemu z USB</li>
+  <li>
+    Urządzenia flash USB, z którego można uruchomić komputer (co najmniej 1 MB)
+  </li>
+  <li>Komputer i686 lub x86_64 z możliwością uruchamiania systemu z USB</li>
 </ul>
 
 <p>
@@ -67,6 +74,14 @@ Jak również dostępu do:
 <ul>
   <li>Komputera z Gentoo Linux (lub z inną dystrybucją Linuksa)</li>
 </ul>
+
+<note>
+Jeżeli chcemy użyć minimal CD na mniejszym pendrive lub uruchomić system
+&lt;i686, powinniśmy postępować zgodnie z procedurami opisanymi w tym dokumencie
+wykorzystując obraz minimal CD z wydania <b>2006.0</b> z powodu <uri
+link="http://bugs.gentoo.org/show_bug.cgi?id=173117">błędu</uri> w nowszych
+wydaniach.
+</note>
 
 </body>
 </section>
@@ -84,25 +99,30 @@ urządzeniu flash USB.
 </warn>
 
 <impo>
-Zakładamy, że węzęł urządzenia <path>/dev/sda</path> odpowiada urządzeniu flash
+Zakładamy, że węzeł urządzenia <path>/dev/sdc</path> odpowiada urządzeniu flash
 USB. Jeżeli w komputerze znajdują się inne urządzenia typu SCSI, należy upewnić
 się, że używany jest odpowiedni węzeł.
 </impo>
 
 <p>
-Tworzymy partycję FAT32 na urządzeniu flash USB i ustawiamy ją jako startową
+Tworzymy partycję FAT16 na urządzeniu flash USB i ustawiamy ją jako startową
 używając <c>fdisk</c>. Przykład partycjonowania został podany poniżej:
 </p>
 
-<pre caption="Przykładowy schemat partycjonowania">
-# <i>fdisk -l /dev/sda</i>
+<note>
+Jeżeli nasz pendrive dysponuje pojemnością powyżej 4 GB, należy użyć typu
+<c>b</c> (W95 FAT32).
+</note>
 
-Disk /dev/sda: 1048 MB, 1048313856 bytes
-33 heads, 61 sectors/track, 1017 cylinders
-Units = cylinders of 2013 * 512 = 1030656 bytes
+<pre caption="Przykładowy schemat partycjonowania">
+# <i>fdisk -l /dev/sdc</i>
+
+Disk /dev/sdc: 2063 MB, 2063597056 bytes
+255 heads, 63 sectors/track, 250 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
 
    Device Boot      Start         End      Blocks   Id  System
-/dev/sda1   *           1        1017     1023580    b  W95 FAT32
+/dev/sdc1   *           1         250     2008124+   6  FAT16
 </pre>
 
 </body>
@@ -112,13 +132,18 @@ Units = cylinders of 2013 * 512 = 1030656 bytes
 <body>
 
 <p>
-Tworzymy system plików FAT32 na urządzeniu flash USB używając <c>mkdosfs</c>:
+Tworzymy system plików FAT16 na urządzeniu flash USB używając <c>mkdosfs</c>:
 </p>
+
+<note>
+Jeżeli nasz pendrive dysponuje pamięcią powyżej 4 GB, należy użyć <c>-F 32</c> w
+celu stworzenia systemu plików FAT32.
+</note>
 
 <pre caption="Uruchamianie mkdosfs">
 <comment>(Należy się upewnić że pakiet sys-fs/dosfstools jest zainstalowany)</comment>
 # <i>emerge -av sys-fs/dosfstools</i>
-# <i>mkdosfs -F 32 /dev/sda1</i>
+# <i>mkdosfs -F 16 /dev/sdc1</i>
 mkdosfs 2.11 (12 Mar 2005)
 </pre>
 
@@ -136,35 +161,32 @@ urządzeniu flash USB:
 <pre caption="Instalacja MBR">
 <comment>(Należy się upewnić że pakiet sys-boot/syslinux-3.00 (lub nowszy) jest zainstalowany)</comment>
 # <i>emerge -av '>sys-boot/syslinux-3'</i>
-# <i>dd if=/usr/lib/syslinux/mbr.bin of=/dev/sda</i>
+# <i>dd if=/usr/lib/syslinux/mbr.bin of=/dev/sdc</i>
 0+1 records in
 0+1 records out
+304 bytes (304 B) copied, 0.0162317 s, 18.7 kB/s
 </pre>
 
 </body>
 </section>
 </chapter>
 <chapter>
-<title>Kopiowanie plików</title>
+<title>Kopiowanie plików na nasz pendrive</title>
 <section>
 <title>Montowanie płyty instalacyjnej Gentoo</title>
 <body>
 
-<warn>
-Przewodnik ten został napisany w opraciu o wersję Gentoo 2006.0 i takiej należy
-używać. Jeżeli użyjemy nowszej wersji nasz dysk USB nie będzie się uruchamiał.
-</warn>
-
 <p>
-Pobieramy plik <path>install-x86-minimal-2006.0.iso</path> z <uri
-link="/main/pl/where.xml">serwera lustrzanego</uri> Gentoo i montujemy obraz
-ISO w <path>/mnt/cdrom/</path> jak pokazano poniżej:
+Pobieramy plik <path>livecd-i686-installer-2007.0.iso</path> lub
+<path>livecd-amd64-installer-2007.0.iso</path> z <uri
+link="/main/pl/where.xml">serwera lustrzanego</uri> Gentoo i montujemy obraz ISO
+w <path>/mnt/cdrom/</path> jak pokazano poniżej:
 </p>
 
 <pre caption="Montowanie obrazu ISO płyty instalacyjnej Gentoo">
-<comment>(Tworzymy katalog montowania /mnt/cdrom/, jeśli nie istnieje)</comment>
+<comment>(Tworzymy katalog montowania /mnt/cdrom/ jeśli nie istnieje)</comment>
 # <i>mkdir -p /mnt/cdrom</i>
-# <i>mount -o loop,ro -t iso9660 install-x86-minimal-2006.0.iso /mnt/cdrom/</i>
+# <i>mount -o loop,ro -t iso9660 livecd-i686-installer-2007.0.iso /mnt/cdrom</i>
 </pre>
 
 <note>
@@ -180,14 +202,14 @@ support</c> w konfiguracji jądra.
 <body>
 
 <p>
-Montujemy sformatowane urządzenie flash USB w <path>/mnt/usb/</path> jak
+Montujemy sformatowane urządzenie flash USB w <path>/mnt/usb</path> jak
 pokazano poniżej:
 </p>
 
 <pre caption="Montowanie urządzenia flash USB">
-<comment>(Tworzymy katalog montowania /mnt/usb/, jeżeli to potrzebne)</comment>
+<comment>(Tworzymy katalog montowania /mnt/usb, jeżeli to potrzebne)</comment>
 # <i>mkdir -p /mnt/usb</i>
-# <i>mount -t vfat /dev/sda1 /mnt/usb/</i>
+# <i>mount -t vfat /dev/sdc1 /mnt/usb</i>
 </pre>
 
 </body>
@@ -203,8 +225,8 @@ muszą zostać troszeczkę zreorganizowane, ponieważ będziemy używać
 </p>
 
 <pre caption="Kopiowanie plików">
-# <i>cp -r /mnt/cdrom/* /mnt/usb/</i>
-# <i>mv /mnt/usb/isolinux/* /mnt/usb/</i>
+# <i>cp -r /mnt/cdrom/* /mnt/usb</i>
+# <i>mv /mnt/usb/isolinux/* /mnt/usb</i>
 # <i>mv /mnt/usb/isolinux.cfg /mnt/usb/syslinux.cfg</i>
 # <i>rm -rf /mnt/usb/isolinux*</i>
 
@@ -217,7 +239,7 @@ Możemy teraz odmontować obraz ISO:
 </p>
 
 <pre caption="Odmotowywanie obrazu ISO">
-# <i>umount /mnt/cdrom/</i>
+# <i>umount /mnt/cdrom</i>
 </pre>
 
 </body>
@@ -228,71 +250,17 @@ Możemy teraz odmontować obraz ISO:
 
 <p>
 Konfigurację syslinux dopasowujemy używając programu <c>sed</c> tak, jak
-pokazano poniżej. Parametr <c>dobladecenter</c> wprowadzi dodatkowe opóźnienie
-przed usiłowaniem zamontowania systemu plików. Jest to potrzebne, aby umożliwić
+pokazano poniżej. Parametr <c>slowusb</c> wprowadzi dodatkowe opóźnienie przed
+usiłowaniem zamontowania systemu plików. Jest to potrzebne, aby umożliwić
 urządzeniu flash USB zainstalowanie przed detekcją.
 </p>
 
 <pre caption="Dopasowywanie parametrów ładowania">
 # <i>sed -i \
-    -e "s:cdroot:cdroot dobladecenter:" \
+    -e "s:cdroot:cdroot slowusb:" \
     -e "s:kernel memtest86:kernel memtest:" \
     /mnt/usb/syslinux.cfg</i>
 </pre>
-
-<note>
-Rozważmy dodanie <c>docache</c> do parametrów uruchamiania. Powinno to pozwolić
-na uruchomienie polecenia <c>umount /mnt/cdrom/</c> po załadowaniu systemu,
-abyśmy mogli odłączyć urządzenie flash USB. Opcji tej nie należy używać jeśli
-nie mamy pewności, że komputer, na którym będziemy uruchamiać system z USB nie
-ma co najmniej 128MB RAM.
-</note>
-
-<!--
-(2006.1 workaround) posted by nightmorph
-
-Background:
-After some lengthy discussion with Robin Johnson (robbat2) on IRC, it turns out
-that the reason why 2006.1 fails to work with this guide is because inside the
-initramfs, it specifies -t iso9660..but usb flash isn't this filetype, it's
-vfat. 2006.0 was much better and just specified mount -t auto. so the thing is
-to install an ~arch version of genkernel (3.4.4, still ~arch as of 2006-11-04)
-and reconfigure syslinux.config to point at the renamed files.
-
-Obviously, unmasking an ~arch version is never desirable in documentation, so
-we
-need some more alternatives...since 3.4.4 was only created at the end of
-october; not likely to go stable all that soon.
-
-Procedure:
-After adjusting the parameters, and before the disk is unmounted/bootloader
-installed, the following must be done for ~arch genkernel. Please replace
-(dash)
-with an actual - , since the damned xmllint throws a "comment not terminated"
-error.
-
-# echo "sys-kernel/genkernel" &gt;&gt; /etc/portage/package.keywords
-# genkernel (dash)(dash)bootdir=/mnt/usb (dash)(dash)install all
-(not sure if syslinux has been installed previously yet)
-# nano -w syslinux.cfg
-(Edit it to point at the new filenames installed by genkernel)
-(might be worth renaming to the ones normally used by syslinux, as
-if the kernel name is too long, "vfat might bite")
-
-(might need to re-run syslinux as specified below to pick up the new names,
-though maybe this renaming step should be in the section below?)
-# syslinux /dev/sda1
-
-TODO:
-- if/when this document changes, brix requested some time ago that he be
-  renamed
-  "Original Author" and be moved to the bottom of the credits list.
-- if/when this fix goes in, robbat2 deserves credit: this is his solution
-    after
-      all, and it works.
-
--->
-
 
 </body>
 </section>
@@ -309,7 +277,7 @@ bootloadera:
 </p>
 
 <pre caption="Odmontowywanie urządzenia flash USB">
-# <i>umount /mnt/usb/</i>
+# <i>umount /mnt/usb</i>
 </pre>
 
 </body>
@@ -323,11 +291,11 @@ Na koniec instalujemy bootloader <c>syslinux</c> na urządzeniu flash USB:
 </p>
 
 <pre caption="Uruchamiamy syslinux">
-# <i>syslinux /dev/sda1</i>
+# <i>syslinux /dev/sdc1</i>
 </pre>
 
 <impo>
-Należy ponownie uruchomić <c>syslinux /dev/sda1</c> za każdym razem gdy
+Należy ponownie uruchomić <c>syslinux /dev/sdc1</c> za każdym razem gdy
 modyfikujemy plik <path>syslinux.cfg</path>, aby zmiany konfiguracji odniosły
 zamierzony skutek.
 </impo>
