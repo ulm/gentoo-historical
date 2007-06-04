@@ -1,6 +1,6 @@
-<?xml version='1.0' encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/diskless-howto.xml,v 1.13 2007/05/24 20:24:17 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/diskless-howto.xml,v 1.14 2007/06/04 11:41:27 rane Exp $ -->
 
 <guide link="/doc/pl/diskless-howto.xml" lang="pl">
 <title>Bezdyskowa stacja robocza na bazie Gentoo</title>
@@ -11,10 +11,10 @@
 <author title="Redaktor">
   <mail link="unsolo@sysrq.no">Kristian Jerpetjoen</mail>
 </author>
-<author title="Korekta">
+<author title="Redaktor">
   <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
-<author title="Korekta">
+<author title="Redaktor">
   <mail link="neysx@gentoo.org">Xavier Neys</mail>
 </author>
 <author title="Tłumaczenie">
@@ -25,16 +25,15 @@
 </author>
 
 <abstract>
-Niniejszy przewodnik pomaga stworzyć bezdyskową stację roboczą opartą o Gentoo
-Linux.
+Opis tworzenia bezdyskowej stacji roboczej opartej na Gentoo Linux.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.21</version>
-<date>2006-04-02</date>
+<version>1.26</version>
+<date>2007-03-05</date>
 
 <chapter>
 <title>Wprowadzenie</title>
@@ -95,15 +94,6 @@ do internetu, który jest oddzielony od połączenia z siecią lokalną.
 <section>
 <title>O kernelach</title>
 <body>
-
-<note>
-Jeśli zamierzamy utworzyć klaster oparty o openMosix i bezdyskowe stacje, to
-musimy upewnić się że dysponujemy wersją kernela z nałożonymi łatamia dla
-openMosixa. Kernel znajduje się w portage
-<path>sys-kernel/openmosix-sources</path>. Informacje o tym jak skompilować
-kernel, by wspierał openMosix można znaleźć w naszym <uri
-link="openmosix-howto.xml">przewodniku po openMosix</uri>.
-</note>
 
 <p>
 Kernel to program, który pośredniczy między sprzętem a innymi programami, które
@@ -309,8 +299,8 @@ zostały zbudowane dla maszyny master.
 <p>
 Na komputerze master tworzymy katalog, który będzie zawierał niezbędne pliki
 systemowe oraz dane stacji bezdyskowych. W przewodniku używamy katalogu
-<path>/diskless</path>, ale można wybrać dowolną lokalizację. Skopiujmy
-obraz kernela, dla maszyny slave, do katalogu <path>/diskless</path>:
+<path>/diskless</path>, ale można wybrać dowolną lokalizację. Skopiujmy obraz
+kernela, dla maszyny slave, do katalogu <path>/diskless</path>:
 </p>
 
 <note>
@@ -381,8 +371,6 @@ montowania. By je utworzyć wpisujemy:
 # <i>mkdir /diskless/192.168.1.21/var/spool</i>
 # <i>mkdir /diskless/192.168.1.21/usr</i>
 # <i>mkdir /diskless/192.168.1.21/opt</i>
-<comment>(tylko dla openMosix)</comment>
-# <i>mkdir /diskless/192.168.1.21/mfs</i>
 </pre>
 
 <p>
@@ -420,7 +408,7 @@ DHCP jest skrótem dla Dynamic Host Configuration Protocol.  Serwer DHCP jest
 pierwszą maszyną, z którą komputer slave komunikuje się podczas uruchamiania
 z PXE. Podstawowym zadaniem serwera DHCP jest przydzielenie adresu IP. Serwer
 DHCP jest w stanie przypisać adres IP na podstawie adresów MAC kart sieciowych
-klientów. Jak tylko komputer slave uzyska adres IP, serwer DHCP przekazujej jej
+klientów. Jak tylko komputer slave uzyska adres IP, serwer DHCP przekazuje jej
 informację skąd wziąć bazowy system plików oraz kernel.
 </p>
 
@@ -502,7 +490,7 @@ Ogólny układ pliku to sformatowana struktura, która wygląda tak:
 </p>
 
 <pre caption="Przykładowy plik dhcpd.conf">
-<comment># opcje globalne</comment>
+<comment># ogólne opcje</comment>
 ddns-update-style none;
 shared-network LOCAL-NET {
 <comment># współdzielone opcje sieciowe</comment>
@@ -527,11 +515,24 @@ wpisów. Dobry przykład pliku <path>dhcpd.conf</path> wygląda tak:
 </p>
 
 <pre caption="Przykładowy plik dhcpd.conf">
-# plik konfiguracyjne DHCP dla DHCP ISC 3.0
+#
+# Przykładowy plik dhcpd.conf dla klientów bezdyskowych
+#
 
+# Wyłączanie dynamicznych DNS
 ddns-update-style none;
 
-# Definicja opcji charakterystycznych dla PXE
+# Zakładamy jedną domyślną bramkę wyjściową dla IP
+option routers 192.168.1.1;
+
+# Zapewniamy informację o DNS dla klientów
+option domain-name-servers 192.168.1.1;
+option domain-name "mydomain.com";
+
+# Wyszczególniamy, który serwer TFTP ma zostać użyty
+next-server 192.168.1.1;
+
+# Deklarujemy opcje bufora zapewniającego dla klientów PXE:
 # Code 1: adres Multicast IP startowego serwera plików
 # Code 2: port UDP, na którym klient powinien sprawdzać odpowiedzi MTFTP
 # Code 3: port UDP, którego używa serwer MTFTP do nasłuchiwania zapytań
@@ -549,12 +550,12 @@ option PXE.mtftp-delay            code 5 = unsigned integer 8;
 option PXE.discovery-control      code 6 = unsigned integer 8;
 option PXE.discovery-mcast-addr   code 7 = ip-address;
 
+# Należy zdeklarować podsieć, gdzie będą się znajdowały nasze bezdyskowe węzły
 subnet 192.168.1.0 netmask 255.255.255.0 {
 
 
   class "pxeclients" {
     match if substring (option vendor-class-identifier, 0, 9) = "PXEClient";
-    option vendor-class-identifier "PXEClient";
     vendor-option-space PXE;
 
     # Przynajmniej jedna z opcji PXE, charakterystycznych dla dostawcy, musi
@@ -567,55 +568,26 @@ subnet 192.168.1.0 netmask 255.255.255.0 {
 
     # Nazwa pliku, który boot ROMy powinny ściągnąć.
     filename "pxelinux.0";
-    # Nazwa serwera, z którego powinny to zrobić.
-    <comment># Używamy IP maszyny master</comment>
-    next-server 192.168.1.1;
   }
 
-  <comment># Jeśli korzystamy z etherboot bez wskazania obrazu </comment>
+  # Należy zapewnić klientom etherboot odpowiednie informacje
   class "etherboot" {
-        if substring (option vendor-class-identifier, 0, 9) = "Etherboot" {
-        filename "/diskless/vmlinuz";
-        }
+        match if substring(option vendor-class-identifier, 0, 9) = "Etherboot";
+        filename "vmlinuz_arch";
   }
 
-  pool {
-    max-lease-time 86400;
-    default-lease-time 86400;
-    <comment># Zapobiega uzyskaniu IP przez maszyny, których brak na liście</comment>
-    deny unknown-clients;
-  }
-
+  # Dodajemy jedną deklarację hosta dla każdego bezdyskowego hosta
   host slave21 {
        <comment># Używamy adresu MAC karty sieciowej w komputerze slave</comment>
        hardware ethernet                00:40:63:C2:CA:C9;
        <comment># Nadajemy komputerowi slave statyczny adres IP</comment>
        fixed-address                    192.168.1.21;
-       server-name                      "master";
-       <comment># Używamy adresu IP bramki, jeśli to konieczne</comment>
-       option routers                   192.168.1.1;
-       <comment># Używamy adresu IP serwera DNS, jeśli to konieczne</comment>
-       option domain-name-servers       192.168.1.1;
-       option domain-name               "mydomain.com";
-       <comment># Używamy nazwy maszyny slave</comment>
-       option host-name                 "slave21";
-
-
-       <comment># Etherboot z PXE z obrazem specyficznym dla adresu</comment>
-       option root-path                 "/diskless/192.168.1.21";
-
-       if substring (option vendor-class-identifier, 0, 9) = "Etherboot" {
-                        filename "/vmlinuz_arch";
-        } else if substring (option vendor-class-identifier, 0,9) ="PXEClient" {
-                        filename "/pxelinux.0";
-        }
-
   }
 }
 </pre>
 
 <note>
-Nie ma żadnych przeciwskazań do jednoczesnego używania PXE i Etherboot.
+Nie ma żadnych przeciwwskazań do jednoczesnego używania PXE i Etherboot.
 Powyższa konfiguracja jest zaledwie przykładem. W razie wątpliwości należy
 zapoznać się z dokumentacją DHCPd.
 </note>
@@ -628,10 +600,9 @@ jest podana względem katalogu <path>/diskless</path> (jest to spowodowane
 opcjami serwera tftp i zostanie omówione w dalszej części). Wewnątrz bloku
 <c>host</c>, opcja <c>hardware ethernet</c> określa adres MAC,
 <c>fixed-address</c> przypisuje stały adres IP do konkretnego adresu MAC.
-Dobrym pomysłem jest dodanie wpisu <c>host-name</c>, który określa nazwę danej
-maszyny slave. Istnieje dobry podręcznik dla pliku <path>dhcpd.conf</path>,
-który opisuje opcje wykraczające poza potrzeby tego przewodnika. Można się z
-nim zapoznać wpisując:
+Strona manuala <path>dhcpd.conf</path> może okazać się bardzo pomocna, ponieważ
+zawiera opisy opcji nie znajdujących się w tym HOWTO. Można ją przeczytać
+wpisując:
 </p>
 
 <pre caption="Przeglądanie stron podręcznika dla pliku dhcpd.conf">
@@ -897,8 +868,8 @@ APPEND ip=dhcp root=/dev/nfs nfsroot=192.168.1.1:/diskless/192.168.1.21
 
 <p>
 Znacznik <c>DEFAULT</c> wskazuje pxelinux'owi obraz bzImage, wcześniej
-przygotowanego kernela. Znacznik <c>APPEND</c> dodaje opcje inicjalizujące
-kernel. Z uwagi na to, że skompilowaliśmy kernel dla maszyny slave z
+przygotowanego kernela. Znacznik <c>APPEND</c> dodaje opcje startowee dla jądra.
+Z uwagi na to, że skompilowaliśmy kernel dla maszyny slave z
 <c>NFS_ROOT_SUPPORT</c>, to będziemy musieli określić tutaj katalog nfsroot.
 Pierwsze z adresów IP to IP maszyny master, zaś drugie IP to nazwa katalogu,
 który został stworzony w <path>/diskless</path> z myślą o składowaniu bazowego
@@ -1010,12 +981,11 @@ jak port tftp, wpisując:
 </pre>
 
 <p>
-Częsty błąd jaki może się pojawić to: "PXE-E32: TFTP open time-out".
-Jest to prawdopodobnie spowodowane kwestiami konfiguracji firewalla.
-Jeśli korzystamy z <c>TCPwrappers</c>, to warto sprawdzić pliki
-<path>/etc/hosts.allow</path> oraz <path>etc/hosts.deny</path> i upewnić
-się, że są skonfigurowane poprawnie.
-Klient powinien mieć możliwośc podłączenia się do serwera.
+Częsty błąd jaki może się pojawić to: "PXE-E32: TFTP open time-out".  Jest to
+prawdopodobnie spowodowane kwestiami konfiguracji firewalla.  Jeśli korzystamy z
+<c>TCPwrappers</c>, to warto sprawdzić pliki <path>/etc/hosts.allow</path> oraz
+<path>etc/hosts.deny</path> i upewnić się, że są skonfigurowane poprawnie.
+Klient powinien mieć możliwość podłączenia się do serwera.
 </p>
 
 </body>
@@ -1101,7 +1071,7 @@ Pakiet z NFS można uzyskać poprzez portage pisząc:
 <p>
 Pakiet zostanie zainstalowany wraz z narzędziem do mapowania portów
 (portmapper), serwerem i klientem nfs. Automatycznie zostaną obsłużone
-zależności inicjalizacyjne.
+zależności startowe.
 </p>
 
 </body>
@@ -1162,9 +1132,6 @@ master:/home                    /home     nfs     sync,hard,intr,rw,nolock,rsize
 none                            /proc     proc    defaults                                     0 0
 <comment># użyteczne, ale zbyteczne</comment>
 master:/var/log                 /var/log  nfs     hard,intr,rw                                 0 0
-
-<comment>(jedynie, gdy konfigurujemy klaster oparty na openMosix)</comment>
-none                            /mfs      mfs     dfsa=1                                       0 0
 </pre>
 
 <p>
@@ -1253,51 +1220,30 @@ symbolicznych i uprawnień.
 </body>
 </section>
 <section>
-<title>Skrypty startowe</title>
+<title>Konfigurowanie sieci w instalacji bezdyskowej</title>
 <body>
 
 <p>
-Standardowe skrypty spróbują uruchomić <e>checkroot</e>, co nie ma sensu na
-komputerach slave. Najprostszy sposób to ręczna edycja skryptu
-<path>/diskless/192.168.1.21/sbin/rc</path>. Jest to niewygodne,
-niebezpieczne i może się popsuć jeśli zsynchronizujemy system plików na
-stacji roboczej i zapomnimy zostawić ten skrypt w pierwotnej postaci.
-Sztuczka polega na tym, że podczas uruchamiania systemu istnieje pliku
-<path>/fastboot</path>. Plik ten informuje <e>checkroot'a</e>, by nie wykonywał
-sprawdzenia systemu plików. Jednakże plik ten zostaje usunięty po zakończeniu
-procesu startowego. Dlatego musimy odtwarzać ten plik na końcu procesu
-startowego. Robimy to w następujący sposób:
+Aby zapobiec zatrzymaniu połączenia z naszym serwerem NFS przez skrypt startowy
+sieci, musimy dodać opcję do <path>/etc/conf.d/net</path> na naszym kliencie
+bezdyskowym.
 </p>
 
-<pre caption="Zapobieganie uruchamianiu sprawdzania systemu plików przez skrypty startowe">
-<comment>(Tworzymy plik /fastboot na ponowne uruchomienie)</comment>
-# <i>touch /diskless/192.168.1.21/fastboot</i>
-<comment>(Tworzymy plik /fastboot przy każdym uruchomieniu)</comment>
-# <i>echo "touch /fastboot" &gt;&gt; /diskless/192.168.1.21/etc/conf.d/local.start</i>
-</pre>
-
-<p>
-Odmontowanie sieciowego systemu plików powinno zostać przeprowadzone tak późno,
-jak to tylko możliwe. W tym celu należy wyedytować plik
-<path>/etc/init.d/netmount</path>, by zawierał:
-</p>
-
-<pre caption="Edycja /etc/init.d/netmount">
-depend() {
-    <i>before *</i>
+<pre caption="Edycja /etc/conf.d/net">
+<comment>(Dodajemy ten wpis do już istniejących opcji naszego klienta bezdyskowego)</comment>
+config_eth0=( "noop" )
 </pre>
 
 <note>
-Baselayout w wersji 1.11.* i późniejszych, nie potrzebuje tego.
+W celu zasięgnięcia dalszych informacji należy przeczytać
+<path>/etc/conf.d/net.example</path>.
 </note>
 
-<p>
-Jeśli wykonujemy to na działającym systemie, to nie można zapomnieć
-o uruchomieniu skryptu <c>depscan.sh</c>, który naprawi zależności
-dla usług. Można bezpiecznie zignorować wszelkie ostrzeżenia o kolizji
-z /etc/init.d/checkroot, gdyż zostało to wyłączone, przez plik fastboot,
-w poprzednim paragrafie.
-</p>
+</body>
+</section>
+<section>
+<title>Skrypty startowe</title>
+<body>
 
 <p>
 Potrzebne jest tyle skryptów startowych w katalogu
@@ -1327,10 +1273,8 @@ total 0
 lrwxrwxrwx    1 root     root           20 2003-10-18 17:28 bootmisc -> /etc/init.d/bootmisc
 lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 checkfs -> /etc/init.d/checkfs
 lrwxrwxrwx    1 root     root           17 2003-10-18 17:28 clock -> /etc/init.d/clock
-lrwxrwxrwx    1 root     root           23 2003-10-18 17:28 consolefont -> /etc/init.d/consolefont
 lrwxrwxrwx    1 root     root           22 2003-10-18 17:28 domainname -> /etc/init.d/domainname
 lrwxrwxrwx    1 root     root           20 2003-10-18 17:28 hostname -> /etc/init.d/hostname
-lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 keymaps -> /etc/init.d/keymaps
 lrwxrwxrwx    1 root     root           22 2003-10-18 17:28 localmount -> /etc/init.d/localmount
 lrwxrwxrwx    1 root     root           18 2003-10-18 17:28 net.lo -> /etc/init.d/net.lo
 lrwxrwxrwx    1 root     root           20 2003-10-18 17:28 netmount -> /etc/init.d/netmount
@@ -1339,7 +1283,9 @@ lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 urandom -> /etc/init
 
 /diskless/192.168.1.21/etc/runlevels/default:
 total 0
+lrwxrwxrwx    1 root     root           23 2003-10-18 17:28 consolefont ->  /etc/init.d/consolefont
 lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 distccd -> /etc/init.d/distccd
+lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 keymaps -> /etc/init.d/keymaps
 lrwxrwxrwx    1 root     root           17 2003-10-18 17:28 local -> /etc/init.d/local
 lrwxrwxrwx    1 root     root           16 2003-10-18 17:28 sshd -> /etc/init.d/sshd
 lrwxrwxrwx    1 root     root           21 2003-10-18 17:28 syslog-ng -> /etc/init.d/syslog-ng
@@ -1428,7 +1374,6 @@ above:
 /etc/hostname$$IP=192.168.1.21$$<comment> (Name your slaves)</comment>
 /etc/mtab$$IP=192.168.1.21$$
 /etc/runlevels$$CLIENT$$<comment> (Clean separation between master and slave boot scripts)</comment>
-/fastboot$$CLIENT$$
 /tmp$$IP=192.168.1.21$$
 /var$$IP=192.168.1.21$$<comment> (Create subdirs as in /var)</comment>
 </pre>
@@ -1449,14 +1394,9 @@ above:
         eend $? "Error starting NFS mountd"
 </pre>
 
-<pre caption="Edycja /etc/conf.d/local.start$$CLIENT$$">
-<comment>(Dodajemy następującą linię)</comment>
-touch /fastboot\$\$CLIENT\$\$
-</pre>
-
 </body>
 </section>
 -->
-</chapter>
 
+</chapter>
 </guide>
