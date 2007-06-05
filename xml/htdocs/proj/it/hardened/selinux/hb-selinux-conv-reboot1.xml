@@ -1,0 +1,198 @@
+<?xml version='1.0' encoding="utf-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/hardened/selinux/Attic/hb-selinux-conv-reboot1.xml,v 1.1 2007/06/05 21:43:21 scen Exp $ -->
+
+<sections>
+<version>1.7</version>
+<date>2006-10-08</date>
+
+<section>
+<title>Installare un kernel SELinux</title>
+<subsection>
+<body>
+
+<p>
+SELinux richiede un qualisiasi kernel 2.6: si suggerisce di utilizzare i
+sorgenti hardened.
+</p>
+
+<warn>
+Nelle versioni 2.6.14 e 2.6.15 del kernel è stato riscontrato un baco
+all'interno del supporto ad XFS di SELinux.
+</warn>
+
+<pre caption="Installare un kernel appropriato">
+<comment>Qualunque kernel 2.6</comment>
+# <i>emerge hardened-sources</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Compilare il kernel con le opzioni di SELinux abilitate</title>
+<subsection>
+<body>
+
+<p>
+Il kernel deve essere compilato abilitando il supporto ai moduli di sicurezza, a
+SELinux, a devpts e agli attributi estesi delle etichette di sicurezza (ndT:
+"security labels"). Fare riferimento alla guida di installazione principale per
+ulteriori informazioni sulla configurazione.
+</p>
+
+<pre caption="Posizioni ed opzioni richieste sotto menuconfig">
+<comment>Menù "Code maturity level options"</comment>
+[*] Prompt for development and/or incomplete code/drivers
+
+<comment>Menù "General setup"</comment>
+[*] Auditing support
+[*]   Enable system-call auditing support
+
+<comment>Menù "File systems"</comment>
+&lt;*&gt; Second extended fs support <comment>(per abilitare ext2)</comment>
+[*]   Ext2 extended attributes
+[ ]     Ext2 POSIX Access Control Lists
+[*]     Ext2 Security Labels
+&lt;*&gt; Ext3 journalling file system support <comment>(per abilitare ext3)
+</comment>
+[*]   Ext3 extended attributes
+[ ]     Ext3 POSIX Access Control Lists
+[*]     Ext3 Security labels
+&lt;*&gt; JFS filesystem support <comment>(per abilitare JFS)</comment>
+[ ]   JFS POSIX Access Control Lists
+[*]   JFS Security Labels
+[ ]   JFS debugging
+[ ]   JFS statistics
+&lt;*&gt; XFS filesystem support <comment>(per abilitare XFS)</comment>
+[ ]   Realtime support (EXPERIMENTAL)
+[ ]   Quota support
+[ ]   ACL support
+[*]   Security Labels
+
+<comment>Menù "Pseudo filesystems" (all'interno di "File systems")</comment>
+[ ] /dev file system support (EXPERIMENTAL)
+[*]   /dev/pts Extended Attributes
+[*]     /dev/pts Security Labels
+[*] Virtual memory file system support (former shm fs)
+[*]   tmpfs Extended Attributes
+[*]     tmpfs Security Labels
+
+<comment>Menù "Security options"</comment>
+[*] Enable different security models
+[*]   Socket and Networking Security Hooks
+&lt;*&gt;   Default Linux Capabilities
+[*] NSA SELinux Support
+[ ]   NSA SELinux boot parameter
+[ ]   NSA SELinux runtime disable
+[*]   NSA SELinux Development Support
+[ ]   NSA SELinux AVC Statistics
+(1)   NSA SELinux checkreqprot default value
+[ ]   NSA SELinux enable new secmark network controls by default
+</pre>
+
+<note>
+Le opzioni disponibili possono differire lievemente a seconda della versione
+utilizzata del kernel. Le rimanenti opzioni riguardanti gli attributi estesi
+dovrebbero venire disabilitate.
+</note>
+
+<p>
+Occorre abilitare il supporto agli attributi estesi delle security label per
+devpts e per i filesystem utilizzati. Devfs non è utilizzabile in SELinux, e
+dovrebbe essere disattivato. Non tutte le opzioni descritte sono presenti nei
+vecchi kernel 2.6, come per esempio il supporto ad Auditing e runtime disable.
+Nei kernel più recenti, il supporto agli attributi estesi per i filesystem
+virtuali proc e tmpfs vengono abilitati in modo predefinito; in questo caso, non
+apparirà nessuna opzione all'interno del menù di configurazione.
+</p>
+
+<warn>
+Non abilitare l'opzione "SELinux MLS policy" anche se è disponibile, in quanto
+non è supportata e inibirà il riavvio della macchina.
+</warn>
+
+<p>
+Ora è possibile compilare ed installare il kernel ed i moduli, ma non riavviare.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Aggiornare fstab</title>
+<subsection>
+<body>
+
+<p>
+Affinchè SELinuxfs venga montato all'avvio, occorre aggiornare /etc/fstab nel
+seguente modo:
+</p>
+
+<pre caption="Impostazioni di Fstab per selinuxfs">
+none	/selinux	selinuxfs	defaults	0	0
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Configurare Baselayout</title>
+<subsection>
+<body>
+
+<p>
+SELinux non supporta devfs, quindi occorre configurare baselayout per utilizzare
+nodi di dispositivi statici oppure udev: se si opta per quest'ultimo, è
+necessario disabilitare il salvataggio dei device in un archivio tar.
+Modificare quindi il file /etc/conf.d/rc impostando RC_DEVICES a "static" o
+"udev", e RC_DEVICE_TARBALL a "no". In presenza di numerosi device
+personalizzati è consigliabile utilizzare static, in caso contrario udev.
+</p>
+
+<pre caption="Configurazione degli Init script">
+# Use this variable to control the /dev management behavior.
+#  auto   - let the scripts figure out what's best at boot
+#  devfs  - use devfs (requires sys-fs/devfsd)
+#  udev   - use udev (requires sys-fs/udev)
+#  static - let the user manage /dev
+
+<i>RC_DEVICES="udev"</i>
+
+# UDEV OPTION:
+# Set to "yes" if you want to save /dev to a tarball on shutdown
+# and restore it on startup.  This is useful if you have a lot of
+# custom device nodes that udev does not handle/know about.
+
+<i>RC_DEVICE_TARBALL="no"</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Riavviare</title>
+<subsection>
+<body>
+
+<p>
+Infine prima di riavviare è necessario creare alcune directory.
+</p>
+
+<pre caption="Creare le directory richieste">
+# <i>mkdir /selinux</i>
+# <i>mkdir /sys</i>
+</pre>
+
+<p>
+Infine riavviare.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
