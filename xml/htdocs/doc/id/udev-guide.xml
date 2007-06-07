@@ -21,8 +21,8 @@ dengan kebutuhan anda.
 
 <license/>
 
-<version>0.27</version>
-<date>2007-03-12</date>
+<version>0.31</version>
+<date>2007-06-05</date>
 
 <chapter>
 <title>Apa itu udev?</title>
@@ -163,11 +163,10 @@ daftar semua hardware yang ada tanpa perlu memperkirakan jenisnya.
 <body>
 
 <p>
-Setiap kali kernel menemukan update pada struktur perangkat, ia akan memanggil
-program <path>/sbin/hotplug</path>. Hotplug menjalankan aplikasi yang dikaitkan
-di direktori <path>/etc/hotplug.d/default</path> tempat yang anda juga dapat
-menemukan symlink ke aplikasi udev. Hotplug memberikan informasi dari kernel
-kepada aplikasi udev yang akan melakukan hal-hal yang diperlukan pada struktur
+Setiap kali kernel menemukan update pada struktur perangkat, udev akan
+diperintahkan untuk memeriksanya. udev mengikuti aturan-aturan yang tercantum
+di direktori <path>/etc/udev/rules.d/</path>, kemudian menggunakan informasi
+yang didapatkan dari kernel untuk menjalankan tugas yang diperlukan di
 <path>/dev</path> (menciptakan atau menghapus file device).
 </p>
 
@@ -184,24 +183,13 @@ kepada aplikasi udev yang akan melakukan hal-hal yang diperlukan pada struktur
 <p>
 udev ditujukan untuk digunakan dengan kombinasi kernel 2.6 (seperti
 <c>vanilla-sources</c> atau <c>gentoo-sources</c> dengan profile default
-2005.0). Jika anda menggunakan kernel ini, maka anda hanya perlu memastikan
+2007.0). Jika anda menggunakan kernel ini, maka anda hanya perlu memastikan
 bahwa anda menggunakan <c>sys-apps/baselayout</c> versi terbaru. Itu saja
 yang anda butuhkan.
 </p>
 
 <pre caption="Instalasi udev">
 # <i>emerge udev</i>
-</pre>
-
-<p>
-udev akan menginstal <c>hotplug-base</c> sebagai salah satu dependensinya.
-Anda tidak perlu menginstal <c>hotplug</c> kecuali anda ingin agar modul-modul
-anda langsung di-load ketika anda menancapkan sebuah perangkat. <c>hotplug</c>
-juga menangani penyalaan perangkat jaringan dan proses download firmware.
-</p>
-
-<pre caption="Instalasi skrip hotplug opsional">
-# <i>emerge hotplug</i>
 </pre>
 
 <p>
@@ -370,38 +358,6 @@ jalankan <path>/sbin/NVmakedevices.sh</path> untuk menciptakannya (kembali).
 </body>
 </section>
 <section>
-<title>Nama-nama LVM2 hilang</title>
-<body>
-
-<p>
-Ketika anda menggunakan <c>udev</c> bersama LVM2, anda mungkin melihat bahwa
-grup volum dan volum-volum logikal anda hilang. Sebenarnya tidak, tetapi
-namanya dirubah menjadi <path>/dev/dm-#</path> dengan # adalah 0, 1, ...
-</p>
-
-<p>
-Untuk memperbaikinya, edit <path>/etc/udev/rules.d/50-udev.rules</path> dan
-hilangkan tanda komentar pada baris berikut:
-</p>
-
-<pre caption="Hilangkan komentar pada baris ini dari /etc/udev/rules.d/50-udev.rules">
-KERNEL="dm-[0-9]*",     PROGRAM="/sbin/devmap_name %M %m", NAME="%k", SYMLINK="%c"
-</pre>
-
-<p>
-Kemudian, instal <c>sys-fs/multipath-tools</c> yang berisi aplikasi
-<c>devmap_name</c>.
-</p>
-
-<pre caption="Instalasi multipath-tools">
-<comment>(Pada saat panduan ini ditulis, multipath-tools hanya tersedia pada cabang percobaan:)</comment>
-# <i>echo "=sys-fs/multipath-tools-0.4.2 ~x86" &gt;&gt; /etc/portage/package.keywords</i>
-# <i>emerge multipath-tools</i>
-</pre>
-
-</body>
-</section>
-<section>
 <title>Tidak adanya Penamaan yang Konsisten antara DevFS dan udev</title>
 <body>
 
@@ -440,6 +396,36 @@ Jika devfs menamakan terminalnya dengan <c>tty</c>, udev menamakannya
 login root dari konsol dengan menggunakan <path>/etc/securetty</path>. Anda
 perlu memastikan <c>tty1</c> dan <c>vc/1</c> tersedia di
 <path>/etc/securetty</path> agar root dapat login menggunakan konsol.
+</p>
+
+</body>
+</section>
+<section>
+<title>Penamaan kembali Device</title>
+<body>
+
+<p>
+Versi terbaru dari udev (104 dan yang lebih baru) dan kernel baru (2.6.19 dan
+yang lebih baru) mungkin merubah nama-nama device anda, karena adanya perubahan
+pada implementasi <e>libata</e> di kernel. Perangkat CD-RW di
+<path>/dev/hdc</path> mungkin telah diganti menjadi <path>/dev/sr0</path>.
+Walaupun hal ini biasanya tidak menjadi masalah yang berarti, beberapa aplikasi
+mungkin dibuat dengan aturan untuk mencari perangkat yang diperlukan di lokasi
+lain. Misalnya, <c>media-sound/rip</c> akan mencari perangkat disk di
+<path>/dev/cdrom</path>, yang akan menjadi masalah jika anda menggunakan kernel
+baru dan udev menamakan device anda dengan <path>/dev/cdrom1</path>.
+</p>
+
+<p>
+Untuk mengatasinya, anda harus mengedit
+<path>/etc/udev/rules.d/70-persistent-cd.rules</path> dan mencantumkan nama
+yang sesuai untuk perangkat anda.
+</p>
+
+<p>
+Untuk mendapatkan informasi lebih lanjut tentang cara menulis aturan udev,
+bacalah <uri link="http://www.reactivated.net/udevrules.php">panduan</uri> dari
+Daniel Drake.
 </p>
 
 </body>
