@@ -108,7 +108,7 @@
         <xsl:call-template name="outdated-translation"/>
       </xsl:variable>
       <xsl:if test="string-length($outdated) &gt; 1">
-        <br/><i><xsl:copy-of select="$outdated"/></i>
+        <br/><b><i><xsl:copy-of select="$outdated"/></i></b>
       </xsl:if>
     </xsl:when>
     <xsl:otherwise>
@@ -1639,7 +1639,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
               </xsl:choose>
 
               <p class="alttext">
-                <xsl:copy-of select="$outdated"/>
+                <b><xsl:copy-of select="$outdated"/></b>
               </p>
             </td>
           </tr>
