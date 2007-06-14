@@ -1,0 +1,190 @@
+<?xml version='1.0' encoding="utf-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/hardened/selinux/Attic/hb-selinux-conv-reboot2.xml,v 1.1 2007/06/14 22:22:12 scen Exp $ -->
+
+<sections>
+<version>1.6</version>
+<date>2006-05-07</date>
+
+<section>
+<title>Emergere i pacchetti SELinux</title>
+<subsection>
+<body>
+
+<p>
+Ora occorre emergere le librerie, i programmi e le politiche di base. Potrebbe
+rendersi necessario correggere la versione delle politiche: fare riferimento al
+capitolo "Panoramica su SELinux" per ulteriori informazioni. A questo punto
+caricare le politiche.
+</p>
+
+<pre caption="Emergere i pacchetti di SELinux e le politiche di base">
+# <i>emerge selinux-base-policy</i>
+# <i>emerge checkpolicy policycoreutils</i>
+
+# <i>cd /etc/security/selinux/src/policy</i>
+<comment>Adesso, se necessario, correggere la versione delle politiche.</comment>
+# <i>make load</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Emergere i pacchetti adattati per SELinux</title>
+<subsection>
+<body>
+
+<p>
+Esistono numerosi pacchetti di sistema dotati delle patch di SELinux, che
+forniscono molteplici funzionalità addizionali, come visualizzare i contesti
+di un file.
+</p>
+
+<pre caption="Reinstallare i pacchetti">
+# <i>emerge sysvinit pam coreutils findutils openssh procps psmisc shadow util-linux python-selinux</i>
+</pre>
+
+<note>
+Può capitare che portage riporti un errore simile a <c>!!! 'module' object has
+no attribute 'secure_rename'</c> oppure <c>AttributeError: 'module' object has
+no attribute 'getcontext'</c>: è un baco di portage che si verifica perchè non
+viene individuato python-selinux. Per correggere il problema, installarlo
+tramite "USE=-selinux emerge python-selinux". Per ulteriori informazioni
+consultare il bug <uri
+link="http://bugs.gentoo.org/show_bug.cgi?id=122517">#122517</uri>.
+</note>
+
+<p>
+Sono disponibili anche altri pacchetti adattati a SELinux, ma sono opzionali. Se
+sono già installati sul sistema, dovrebbero venire reinstallati, in modo che
+vengano applicate le patch:
+</p>
+
+<ul>
+  <li>app-admin/logrotate</li>
+  <li>sys-apps/fcron</li>
+  <li>sys-apps/vixie-cron</li>
+  <li>sys-fs/device-mapper</li>
+  <li>sys-fs/udev</li>
+  <li>sys-libs/pwdb</li>
+</ul>
+
+<note>
+Fcron e Vixie-cron sono gli unici schedulatori con supporto ad SELinux
+disponibili.
+</note>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Emergere le Politiche delle Applicazioni</title>
+<subsection>
+<body>
+
+<p>
+Una volta completata l'installazione di SELinux, nel momento in cui verrà
+installato un pacchetto, la politica verrà considerata una dipendenza e
+impostata di conseguenza; tuttavia, siccome il sistema è ancora in fase di
+conversione, occorre emergere una politica per i pacchetti installati
+precedentemente. La politica selinux-base integra già la maggior parte di
+pacchetti presenti nel profilo di sistema.
+</p>
+
+<p>
+Nella cartella <c>/usr/portage/sec-policy</c> sono presenti numerosi schemi,
+ognuno dei quali rappresenta una politica. Il nome di uno schema è composto da
+selinux-NOMEPKG, dove NOMEPKG rappresenta il nome del pacchetto al quale è
+associata la politica: per esempio selinux-apache è la politica di SELinux per
+il corrispondente pacchetto net-www/apache. Occorre installare tutte le
+politiche necessarie e quindi caricarle.
+</p>
+
+<pre caption="Esempio: emergere le politiche di Apache e BIND">
+# <i>ls /usr/portage/sec-policy</i>
+<comment>(verranno elencate numerose directory)</comment>
+
+# <i>emerge selinux-apache selinux-bind</i>
+
+# <i>cd /etc/security/selinux/src/policy</i>
+# <i>make load</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Etichettare i filesystem</title>
+<subsection>
+<body>
+
+<p>
+L'ultimo passo necessario consiste nell'etichettare il filesystem. Questa
+operazione assegna ad ogni file una etichetta di sicurezza: è importante che la
+consistenza di queste etichette venga sempre preservata.
+</p>
+
+<pre caption="Etichettare il filesystem">
+# <i>cd /etc/security/selinux/src/policy</i>
+# <i>make relabel</i>
+</pre>
+
+<warn>
+Nelle versioni più datate di GRUB è presente un baco noto che non permette di
+leggere i link simbolici etichettati: assicurarsi di avere installato almeno la
+versione 0.94 di GRUB. Inoltre occorre reinstallare GRUB nell'MBR in modo da
+assicurarsi che venga eseguito il codice aggiornato. Per qualsiasi evenienza, è
+consigliabile tenere un LiveCD a portata di mano.
+</warn>
+
+<pre caption="Reinstallare GRUB nell'MBR (solo per gli utenti di GRUB)">
+# <i>grub</i>
+
+grub> root (hd0,0) <comment>(La partizione di avvio)</comment>
+grub> setup (hd0) <comment>(Dove installare il boot record; in questo caso, nell'MBR)</comment>
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Riavvio finale</title>
+<subsection>
+<body>
+
+<p>
+Riavviare. A questo punto accedere al sistema ed etichettare nuovamente tutti i
+file, in modo da essere sicuri di aver correttamente etichettato tutto il
+filesystem (alcuni file potrebbero essere stati creati durante il recedente
+riavvio).
+</p>
+
+<pre caption="Etichettare nuovamente">
+# <i>cd /etc/security/selinux/src/policy</i>
+# <i>make relabel</i>
+</pre>
+
+<note>
+È caldamente raccomandato <uri link="http://www.gentoo.org/main/it/lists.xml">
+iscriversi</uri> alla mailing list gentoo-hardened. Solitamente è una lista a
+basso traffico riguardante la versione sicura di Gentoo (hardened, appunto), e
+comprende anche SELinux.
+</note>
+
+<p>
+A questo punto SELinux è installato!
+</p>
+
+</body>
+</subsection>
+</section>
+
+</sections>
