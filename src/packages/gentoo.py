@@ -2,7 +2,7 @@
 """These functions mainly take ebuild info (grabbed from the database and
     convert it to HTML.  See the "main" function at the bottom."""
 
-__revision__ = "$Revision: 1.16.2.5 $"
+__revision__ = "$Revision: 1.16.2.6 $"
 # $Source: /var/cvsroot/gentoo/src/packages/gentoo.py,v $
 
 import config
@@ -326,20 +326,27 @@ def cmp_ebuilds(a, b):
     fields_b = pkgsplit('%s-%s' % (b['name'], b['version']))
     return pkgcmp(fields_a, fields_b)
 
-def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
+def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle='', arch='', branch=''):
     """write out ebuild info to RSS file (fp)"""
 
     # web link for RSS feed
+    link = config.FEHOME
+    subtitle = subtitle
+    if arch != '':
+        link = '%sarchs/%s/' % (link, arch)
+        subtitle = '%s' % arch
+        if branch != '':
+            link = '%s%s/' % (link, branch)
+            subtitle = '%s %s' % (subtitle, branch)
+
+    title = 'packages.gentoo.org'
     if subtitle:
-        link = '%s/%s' % (config.FEHOME, subtitle.replace(' ','/',1))
-    else:
-        link = config.FEHOME
+        title = '%s [ %s ]' % (title, subtitle)
 
     pubDate = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
-    fp.write("""<?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0">
+    fp.write("""<rss version="2.0">
         <channel>
-        <title>packages.gentoo.org [ %s ]</title>
+        <title>%s</title>
         <link>%s</link>
         <description>Latest ebuilds from the Gentoo Linux portage tree</description>
         <webMaster>www@gentoo.org</webMaster>
@@ -351,7 +358,7 @@ def ebuilds_to_rss(fp, ebuilds, simple=False, subtitle=""):
         </image>
 
         <managingEditor>marduk@gentoo.org</managingEditor>
-        <pubDate>%s</pubDate>""" % (subtitle, link, config.RSS_IMAGE,
+        <pubDate>%s</pubDate>""" % (title, link, config.RSS_IMAGE,
             config.FEHOME, pubDate))
 
     for ebuild in ebuilds:
@@ -440,14 +447,42 @@ def main(argv=None):
             index.close()
 
             subtitle = ' %s %s' % (arch, branch)
-            rss = open(os.path.join(config.LOCALHOME, "archs", arch, branch,
-                config.RSS), 'w')
-            ebuilds_to_rss(rss, ebuilds, simple=False, subtitle=subtitle)
+            rss = open(
+                os.path.join(
+                    config.LOCALHOME,
+                    "archs",
+                    arch,
+                    branch,
+                    config.RSS
+                ),
+                'w'
+            )
+            ebuilds_to_rss(
+                rss,
+                ebuilds,
+                simple=False,
+                arch=arch,
+                branch=branch
+            )
             rss.close()
 
-            rss2 = open(os.path.join(config.LOCALHOME, "archs", arch, branch,
-                config.RSS2), 'w')
-            ebuilds_to_rss(rss2, ebuilds, simple=True, subtitle=subtitle)
+            rss2 = open(
+                os.path.join(
+                    config.LOCALHOME,
+                    "archs",
+                    arch,
+                    branch,
+                    config.RSS2
+                ),
+                'w'
+            )
+            ebuilds_to_rss(
+                rss2,
+                ebuilds,
+                simple=True,
+                arch=arch,
+                branch=branch
+            )
             rss.close()
 
 if __name__ == '__main__':
