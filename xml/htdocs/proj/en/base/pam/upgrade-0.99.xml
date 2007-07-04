@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/base/pam/upgrade-0.99.xml,v 1.1 2007/07/04 18:49:07 flameeyes Exp $ -->
+
+<guide link="/proj/en/desktop/sound/upgrade-0.99.xml" lang="en">
+<title>Linux-PAM 0.99 upgrade guide</title>
+
+<author title="Author">
+  <mail link="flameeyes@gentoo.org">Diego Pettenò</mail>
+</author>
+
+<abstract>
+This guide is a tutorial to guide through the upgrade path for Linux-PAM from
+0.78 (or older) to Linux-PAM 0.99.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2007-07-04</date>
+
+<chapter>
+<title>Upgrade guide</title>
+
+<section>
+<title>Introduction</title>
+
+<body>
+
+<p>
+This guide is being written to help through the process of upgrade from older
+Linux-PAM versions to the new versions based on 0.99 series; the reason for
+this is that with 0.99, Gentoo does not use RedHat/Fedora patches anymore, and
+thus some features previously supported are no more available (on the other
+hand, even RedHat stopped supporting and providing some of these features).
+</p>
+
+<p>
+For this reason, the upgrade from old Linux-PAM to new one is not
+straightforward, and might require changing the authentication configuration for
+system or for services if it wasn't updated automatically during time. Also some
+modules were removed from the <c>sys-libs/pam</c> package, and moved to packages
+on their own, so you might need to merge them if you are relying on them.
+</p>
+
+<p>
+Please note that there is no loss in functionality coming from the update: most
+of the RedHat patches are currently implemented in Linux-PAM through slightly
+different methods, like the <c>include</c> directive replacing the deprecated
+<path>pam_stack</path> module. For what concern the modules moved on their own
+packages, this was done to maintain the clean design of the ebuild, and to allow
+packages whose default configuration requires these optional modules to just
+depend on them.
+</p>
+
+<p>
+It is important to keep Linux-PAM up to date, because it is an important piece
+in a system, as it's the default authentication provider for Gentoo Linux. For
+this reason, the upgrade to Linux-PAM 0.99 is suggested as an high priority to
+keep the system safe and secure.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>What are the main changes</title>
+
+<body>
+
+<p>
+As we said, the main change between 0.78 and 0.99 is that the RedHat patches
+aren't applied anymore, but this does not explain what really changed for
+users. To a minimum, the following modules are not available anymore:
+<path>pam_stack</path>, <path>pam_pwdb</path> &amp; <path>pam_radius</path>
+(ex-<b>pwdb</b> USE flag), <path>pam_timestamp</path>, <path>pam_chroot</path>.
+</p>
+
+<p>
+Additionally, the <b>berkdb</b> USE flag, used to build the
+<path>pam_userdb</path> module was removed, in its stead you have to merge
+manually the <c>sys-auth/pam_userdb</c> package that provides the module with
+the same name. Same goes for <b>pam_console</b>, although this one is also
+deprecated; see its own section for more details.
+</p>
+
+<p>
+For all the missing modules, beside <path>pam_stack</path>, please feel free to
+ask about their destiny on Bugzilla, providing an use case for them, and they
+might get resurrected on their own packages too.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>The case against pam_console</title>
+
+<body>
+
+<p>
+The <path>pam_console</path> module was designed by RedHat to allow setting
+different permissions on devices for users logging in through an hardware access
+(either in X through the various graphical login applications, or through the
+console login). This approach caused more than a few problems in the past with
+users unable to get their devices working, and was then disabled by default,
+linked to a <b>pam_console</b> USE flag for those needing it.
+</p>
+
+<p>
+As with 0.99 version of Linux-PAM the whole RedHat patchset was dropped,
+<path>pam_console</path> is no more shipped with the main package; for the
+people needing it, it's available on the <c>sys-auth/pam_console</c>, although
+the need for this is being reduced gradually, as HAL switched to a
+<path>pam_consolekit</path>-based approach (in <c>sys-auth/consolekit</c>).
+</p>
+
+<p>
+Nothing more than using <c>sys-auth/pam_console</c> is requested to users
+needing this module.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Moving Berkeley DB support</title>
+
+<body>
+
+<p>
+The <path>pam_userdb</path> module, used to provide authentication against a
+simple Berkeley DB file, was previously available through the <b>berkdb</b> USE
+flag; as this module requires a static inline copy of Berkeley DB to work
+correctly, it was moved on its own package to simplify maintenance of PAM, and
+to reduce the risk of problems. The package is <c>sys-auth/pam_userdb</c>.
+</p>
+
+<p>
+It is important to note that even though the module's code is updated, taken
+from the last PAM release, the Berkeley DB copy is still at 4.3; no upgrade of
+this is planned, as such upgrades usually are not backward compatible. For this
+reason, unless a security bug is found, you'll still need to use Berkeley DB 4.3
+tools to manipulate the users' database.
+</p>
+
+<p>
+Nothing more than using <c>sys-auth/pam_console</c> is requested to users
+needing this module.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>pam_stack and the include directive</title>
+
+<body>
+
+<p>
+PAM was designed to allow configuring different software and services with
+different authentication facilities, for instance accepting local users through
+the usual Unix authentication facilities, but allowing mail users authenticate
+against a database. For most desktop users and for those servers who don't
+expect connections from non-system users (like HTTP servers) though, most of the
+services would just use the same authentication, against the system password database.
+</p>
+
+<p>
+For this reason, to avoid managing multiple copies of the same exact PAM
+configuration file, many Linux distributions started writing extensions to them
+to allow keeping a single <e>system</e> or more commonly <e>system-auth</e>
+configuration, and then telling the other services to use that one to
+authenticate.
+</p>
+
+<p>
+Up to version 0.77, Linux-PAM itself didn't provide any of such extensions, and
+Gentoo's package followed RedHat's solution through the <path>pam_stack</path>
+module, that hijacked PAM's internals to get a second pass over a different
+service configuration. This method was not standard, not portable, and required
+heavy patching of the internal library structure.
+</p>
+
+<p>
+An alternative solution was instead designed by ALTlinux for OpenPAM, and was to
+use an <c>include</c> directive, that would be handled internally by the PAM
+implementation, effectively loading the configuration for that service and
+passing through the equivalent class's modules. This is the same extension
+implemented by Linux-PAM 0.78 and later, and the current only supported option
+for Gentoo (as it works on both the supported implementations).
+</p>
+
+<p>
+To convert an old configuration file that uses <path>pam_stack</path> into an
+updated one that works with the <c>include</c> directive, you just need to
+replace the lines in this way:
+</p>
+
+<pre caption="replace pam_stack usage with include directive">
+<comment>(If there was this before)</comment>
+auth    required     pam_stack.so    service=system-auth
+
+<comment>(you replace it with)</comment>
+<i>auth    include      system-auth</i>
+</pre>
+
+<p>
+Please note that you might also need to reorder a bit the calls when doing this
+change, as sometimes modules like <path>pam_nologin</path> were listed after
+<path>pam_stack</path>, even though they now need to be listed before the
+<c>include</c> directive.
+</p>
+
+<pre caption="handling multiple-modules with pam_stack">
+<comment>(before)</comment>
+auth    required     pam_stack.so    service=system-auth
+auth    required     pam_nologin.so
+
+<comment>(now)</comment>
+auth    required     pam_nologin.so
+auth    include      system-auth
+</pre>
+
+<p>
+No feature loss is due to this change (<path>pam_stack</path> didn't work with
+anything but <c>required</c> directive), and it should always be safe. All the
+recent PAM configurations installed by ebuilds in the Portage tree are updated
+to use the new syntax.
+</p>
+
+</body>
+</section>
+
+</chapter>
+
+</guide>
