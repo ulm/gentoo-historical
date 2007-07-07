@@ -34,7 +34,7 @@ class Util:
             ebuild = get_extended_info(ebuild)
 
             homepage = ebuild['homepage']
-            c.execute = ("""
+            c.execute("""
                 UPDATE package
                 SET homepage = %s
                 WHERE category=%s
