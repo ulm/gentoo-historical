@@ -60,17 +60,20 @@ Index: rezound-0.12.3beta/src/backend/CPortAudioSoundPlayer.cpp
 ===================================================================
 --- rezound-0.12.3beta.orig/src/backend/CPortAudioSoundPlayer.cpp
 +++ rezound-0.12.3beta/src/backend/CPortAudioSoundPlayer.cpp
-@@ -70,6 +70,21 @@ void CPortAudioSoundPlayer::initialize()
+@@ -70,6 +70,24 @@ void CPortAudioSoundPlayer::initialize()
  		
  
  		// open a PortAudio stream
 +#ifdef ENABLE_PORTAUDIO_V19
-+		PaStreamParameters input = { paNoDevice, 0, paInt16, 0, NULL};
-+		PaStreamParameters output = { gPortAudioOutputDevice, gDesiredOutputChannelCount, sampleFormat, 0, NULL};
++		PaStreamParameters output = { gPortAudioOutputDevice, 
++			gDesiredOutputChannelCount, 
++			sampleFormat,
++			Pa_GetDeviceInfo(gPortAudioOutputDevice)->defaultLowOutputLatency ,
++			NULL};
 +
 +		err = Pa_OpenStream(
 +				&stream,
-+				&input,
++				NULL,
 +				&output,
 +				gDesiredOutputSampleRate,
 +				gDesiredOutputBufferSize * gDesiredOutputBufferCount,
@@ -82,7 +85,7 @@ Index: rezound-0.12.3beta/src/backend/CPortAudioSoundPlayer.cpp
  		err = Pa_OpenStream(
  			&stream,
  			paNoDevice,			/* recording parameter, we're not recording */
-@@ -86,6 +101,7 @@ void CPortAudioSoundPlayer::initialize()
+@@ -86,6 +104,7 @@ void CPortAudioSoundPlayer::initialize()
  			paClipOff|paDitherOff,
  			CPortAudioSoundPlayer::PortAudioCallback,
  			this);
@@ -90,7 +93,7 @@ Index: rezound-0.12.3beta/src/backend/CPortAudioSoundPlayer.cpp
  
  		if(err!=paNoError) 
  			throw runtime_error(string(__func__)+" -- error opening PortAudio stream -- "+Pa_GetErrorText(err));
-@@ -156,7 +172,11 @@ void CPortAudioSoundPlayer::doneRecordin
+@@ -156,7 +175,11 @@ void CPortAudioSoundPlayer::doneRecordin
  }
  
  
@@ -126,17 +129,21 @@ Index: rezound-0.12.3beta/src/backend/CPortAudioSoundRecorder.cpp
 ===================================================================
 --- rezound-0.12.3beta.orig/src/backend/CPortAudioSoundRecorder.cpp
 +++ rezound-0.12.3beta/src/backend/CPortAudioSoundRecorder.cpp
-@@ -65,6 +65,20 @@ void CPortAudioSoundRecorder::initialize
+@@ -65,6 +65,24 @@ void CPortAudioSoundRecorder::initialize
  		ASoundRecorder::initialize(sound);
  
  		// open a PortAudio stream
 +#ifdef ENABLE_PORTAUDIO_V19
-+		PaStreamParameters input = { gPortAudioOutputDevice, sound->getChannelCount(), sampleFormat, 0, NULL};
-+		PaStreamParameters output = { paNoDevice, 0,  paInt16, 0, NULL};
++		PaStreamParameters input = { 
++                        gPortAudioOutputDevice, 
++                        sound->getChannelCount(), 
++                        sampleFormat, 
++                        Pa_GetDeviceInfo(gPortAudioOutputDevice)->defaultLowInputLatency ,
++                        NULL};
 +		err = Pa_OpenStream(
 +			&stream,
 +			&input,
-+			&output,
++			NULL,
 +			sound->getSampleRate(),
 +			BUFFER_SIZE_FRAMES*12,
 +			paClipOff|paDitherOff,
@@ -147,7 +154,7 @@ Index: rezound-0.12.3beta/src/backend/CPortAudioSoundRecorder.cpp
  		err = Pa_OpenStream(
  			&stream,
  			gPortAudioOutputDevice,
-@@ -81,6 +95,7 @@ void CPortAudioSoundRecorder::initialize
+@@ -81,6 +99,7 @@ void CPortAudioSoundRecorder::initialize
  			paClipOff|paDitherOff,
  			CPortAudioSoundRecorder::PortAudioCallback,
  			this);
@@ -155,7 +162,7 @@ Index: rezound-0.12.3beta/src/backend/CPortAudioSoundRecorder.cpp
  
  		if(err!=paNoError) 
  			throw runtime_error(string(__func__)+" -- error opening PortAudio stream -- "+Pa_GetErrorText(err));
-@@ -131,7 +146,11 @@ void CPortAudioSoundRecorder::redo()
+@@ -131,7 +150,11 @@ void CPortAudioSoundRecorder::redo()
  	Pa_StartStream(stream);
  }
  
