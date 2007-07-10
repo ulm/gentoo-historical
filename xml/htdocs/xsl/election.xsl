@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-<xsl:output encoding="UTF-8" method="xml" indent="yes" doctype-system="/dtd/guide.dtd"/>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:func="http://exslt.org/functions"
+                extension-element-prefixes="func">
+
+<xsl:output encoding="UTF-8"
+            method="xml"
+            indent="yes"
+            doctype-system="/dtd/guide.dtd"/>
+
 <xsl:include href="util.xsl"/>
+<xsl:include href="inserts.xsl"/>
 
 <xsl:template match="/election">
 <mainpage>
@@ -28,22 +37,33 @@
 
   <chapter>
     <title><xsl:apply-templates select="title"/></title>
-    <section>
-    <title>Nominations status</title>
-    <body>
 
-    <note>
-    Nominations are allowed from July 1st 0000 UTC to July 31st 2359 UTC via
-    gentoo-dev mailling list.
-    </note>
-    <table>
-      <tr><th>Accepted</th><th>Developer</th><th>Nickname</th><th>Devrel</th><th>Council</th><th>Trustee</th></tr>
-      <xsl:apply-templates select="nominee"/>
-    </table>
-    </body>
-    </section>
-  </chapter>
+    <xsl:apply-templates select="nominations"/>
+
+</chapter>
 </mainpage>
+</xsl:template>
+
+<!-- Nominations data -->
+<xsl:template match="nominations">
+  <section>
+  <title>Nominations status</title>
+  <body>
+
+  <note>
+  Nominations are allowed from <xsl:value-of
+  select="func:format-date(@from,'en')"/> 00:00 UTC to <xsl:value-of
+  select="func:format-date(@to,'en')"/> 23:59 UTC via the gentoo-dev mailling
+  list.
+  </note>
+
+  <table>
+    <tr><th>Accepted</th><th>Developer</th><th>Nickname</th><th>Devrel</th><th>Council</th><th>Trustee</th></tr>
+    <xsl:apply-templates select="nominee"/>
+  </table>
+
+  </body>
+  </section>
 </xsl:template>
 
 <!-- Nominee row -->
