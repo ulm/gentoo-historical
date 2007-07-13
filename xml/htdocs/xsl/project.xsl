@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Identity xsl transformation to allow downloading of other documents
-  without the automatic translation kicking in -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:output encoding="UTF-8" method="xml" indent="yes" doctype-system="/dtd/guide.dtd"/>
 <xsl:include href="util.xsl"/>
@@ -35,9 +33,9 @@
 		</xsl:if>
 		<chapter>
 			<title>Project Description</title>
-			<section><body><p>
+			<section><body>
 			<xsl:apply-templates select="longdescription"/>
-			</p></body></section>
+			</body></section>
 		</chapter>
 		<xsl:apply-templates select='extrachapter[@position="top"]'/>
 		<!-- here extra chapters would appear-->
@@ -350,7 +348,7 @@
       <xsl:if test='@finished="yes"'> (finished)</xsl:if>
     </title>
     <body>
-      <p><xsl:value-of select="longdescription"/></p>
+      <xsl:apply-templates select="longdescription"/>
       <table>
         <tr>
 	  <th>Starting date:</th><ti><xsl:value-of select="startdate"/></ti>
