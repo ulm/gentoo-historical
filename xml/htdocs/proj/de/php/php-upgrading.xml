@@ -1,0 +1,747 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/de/php/Attic/php-upgrading.xml,v 1.1 2007/07/13 12:24:06 grahl Exp $ -->
+<?xml-stylesheet href="xsl/guide.xsl" type="text/xsl"?>
+<guide link="php-upgrading.xml" lang="de">
+<title>Upgrading PHP</title>
+
+<author title="Autor">
+ <mail link="akorthaus@web.de">Andreas Korthaus</mail>
+</author>
+
+<author title="Übersetzer">
+ <mail link="rb@bugajewski.de">Rafael Bugajewski</mail>
+</author>
+
+<abstract>
+Dieses Dokument beschreibt welche Schritte durchzuführen sind, damit
+ein Endbenutzer seine PHP Installation upgraden kann.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.1</version>
+<date>2006-03-22</date>
+
+<chapter>
+<title>Einleitung</title>
+<section>
+<body>
+
+<p>
+In der Vergangenheit gab es viele Anfragen, warum PHP5 in Portage noch 
+nicht als stabil gekennzeichnet ist. Das eigentliche Problem ist nicht PHP5,
+sondern zahlreiche Anwendungen, PHP-Erweiterungen und Packages, die mit PHP5
+nicht zusammenarbeiten. Daran kann man leider nichts ändern. PHP5 ist nicht
+zu 100% abwärtskompatibel zu PHP4 und nicht jedes PHP4 Programm wird nach
+PHP5 portiert. Viele Benutzer werden also die PHP4-Unterstützung für eine
+längere Zeit benötigen.
+</p>
+
+<p>
+Die Lösung für dieses Problem ist eine Umgebung, in der PHP4 und PHP5 auf
+der selben Maschine zur gleichen Zeit benutzt werden können. Das war mit dem
+bisherigen Layout der PHP-Packages und eclasses nicht möglich, so dass eine
+Menge Arbeit in ein neues Layout, neue eclasses und neue ebuilds gesteckt
+werden musste.
+</p>
+
+<p>
+Dieses Dokument beschreibt ein erfolgreiches Upgrade ohne das bisherige
+System zu beeinträchtigen.
+</p>
+
+<note>
+Die neuen PHP-Packages benötigen das neue Apache-Layout. Sollten sie Apache
+noch nicht aktualisiert haben, so werfen Sie bitte einen Blick auf <uri 
+link="/doc/de/apache-upgrading.xml">Upgrading Apache</uri>.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Änderungen</title>
+<section>
+<title>Zusammenführung elementarer PHP-Packages</title>
+<body>
+
+<p>
+Alle PHP ebuilds <c>dev-php/php</c>, <c>dev-php/php-cgi</c> und 
+<c>dev-php/mod_php</c> wurden zu einem ebuild <c>dev-lang/php</c> zusammen
+gefügt. 
+</p>
+
+<p>
+Um die SAPI auszuwählen, die Sie benötigen, benutzen Sie bitte die USE flags:
+</p>
+
+<ul>
+  <li><c>cgi</c> - kompiliert &amp; installiert <path>/usr/bin/php-cgi</path></li>
+  <li><c>cli</c> - kompiliert &amp; installiert <path>/usr/bin/php</path></li>
+  <li><c>apache</c> - kompiliert &amp; installiert <c>mod_php</c> für Apache 1.3
+  (neues Layout)</li>
+  <li><c>apache2</c> - kompiliert &amp; installiert <c>mod_php</c> für Apache 2.0  
+(neues Layout)</li>
+</ul>
+
+<p>
+Die USE flags können Sie beliebig miteinander koppeln. Ausgenommen ist die
+Kombination, in der die beiden USE flags <c>apache</c> und <c>apache2</c>
+angeschaltet sind.
+</p>
+
+<p>
+Der eigentliche Sinn dieser ebuilds ist, dass man PHP4 und PHP5 zur gleichen
+Zeit installieren kann:
+</p>
+
+<pre caption="Installiere PHP">
+<comment>(installiere die aktuellste PHP Version mit CLI und dem Apache2-Modul)
+</comment>
+<i>USE="cli apache2" emerge 'dev-lang/php'</i>
+
+<comment>(installiere ausschließlich PHP4)</comment>
+<i>USE="cli apache2" emerge '=dev-lang/php-4*'</i>
+
+<comment>(installiere sowohl PHP4, als auch PHP5)</comment>
+<i>USE="cli apache2" emerge '=dev-lang/php-4*' '=dev-lang/php-5*'</i>
+</pre>
+
+<note>
+USE flags sollten nicht auf diese Weise gesetzt werden. Bitte benutzen Sie
+stattdessen <path>/etc/portage/package.use</path>. Dies ist später im Dokument
+beschrieben.
+</note>
+  
+</body>
+</section>
+
+<section>
+<title>Neue Portage Kategorien</title>
+<body>
+
+<p>
+Die neuen PHP ebuilds wurden von <c>dev-php</c> nach <c>dev-lang/php</c>
+verschoben. Damit Pakete für PHP4 und PHP5 unabhängig voneinander installiert
+werden können, wurden zwei neue Portage Kategorien erstellt: <c>dev-php4</c>
+und <c>dev-php5</c>. Diese Kategorien werden hauptsächlich von PECL-Packages,
+wie zum Beispiel <c>pecl-pdo</c>, <c>pecl-apc</c>, <c>php-java-bridge</c> oder
+<c>xdebug</c> benutzt.
+</p>
+
+<p>
+Um <c>pecl-apc</c> zu installieren, müssen folgende Schritte durchgeführt
+werden:
+</p>
+
+<pre caption="installiere PHP Erweiterungen, wie zum Beispiel PECL::APC (Beispiel)">
+<comment>(installiere APC nur für PHP4)</comment>
+<i>emerge dev-php4/pecl-apc</i>
+
+<comment>(installiere APC nur für PHP5)</comment>
+<i>emerge dev-php5/pecl-apc</i>
+
+<comment>(installiere APC sowohl für PHP4, als auch für PHP5)</comment>
+<i>emerge dev-php4/pecl-apc dev-php5/pecl-apc</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Neue Verzeichnisse</title>
+<body>
+
+<ul>
+  <li>Die neuen ebuilds installieren ihre Inhalte in die Verzeichnisse
+  <path>/usr/lib/php4</path> und <path>/usr/lib/php5</path> (die Apache-Module
+  werden an die für Apache entsprechende Stelle installiert).</li>
+  <li>Die PEAR-Packages und andere PHP-Bibliotheken werden in
+  <path>/usr/share/php</path> installiert (vorher: <path>/usr/lib/php</path>).</li>
+  <li>PECL-Packages fügen Konfigurationsdirektiven nicht mehr in die
+  <path>php.ini</path> ein. Stattdessen wird die Datei <path>[PACKAGE].ini</path>
+  in das Verzeichnis <path>/etc/php/[SAPI]/ext</path> installiert.</li>
+</ul>
+
+</body>
+</section>
+
+<section>
+<title>Symbolisches Verlinken von PHP Binaries</title>
+<body>
+
+<p>
+Wenn Sie mehrere PHP Versionen installieren werden die ausführbaren Dateien
+(Binaries) verlinkt, zum Beispiel:
+</p>
+
+<pre caption="emerge PHP4 und PHP5">
+<i>USE="cgi cli apache2" emerge '=dev-lang/php-4*' '=dev-lang/php-5*'</i>
+</pre>
+
+<p>
+Die ebuilds erzeugen symbolische Links für die zuletzt installierte PHP Version
+im Verzeichnis <path>/usr/bin</path>. In diesem Fall für PHP5, da es nach der PHP4
+Version installiert wurde. Wenn Sie die symbolischen Links ändern möchten,
+so dass zum Beispiel <path>/usr/bin/php</path> oder <path>/usr/bin/php-cgi</path>
+auf PHP4 zeigt, so können Sie <uri link="#doc_chap3_sect5">php-select</uri> aus
+<c>app-admin/php-toolkit</c> benutzen. <c>php-select</c> ist eine starke
+Erleichterung für die Verwaltung symbolischer Links auf die entsprechenden
+ausführbaren Dateien.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Upgrade Anleitung</title>
+<section>
+<title>Aufsuchen von Paketen, die aktualisiert werden müssen</title>
+<body>
+
+<p>
+Als erstes müssen Sie herausfinden, welche zusätzlichen Pakete aktualisiert
+werden müssen. Sie können dies mit dem <c>equery</c> Programm machen, das 
+Teil von <c>app-portage/gentoolkit</c> ist: 
+</p>
+
+<pre caption="Auflistung der installierten Packages in dev-php">
+$ <i>equery list 'dev-php/'</i>
+[ Searching for all packages in 'dev-php' among: ]
+ * installed packages
+[I--] [  ] dev-php/php-4.4.0 (0)
+[I--] [  ] dev-php/mod_php-4.4.0 (1)
+[I--] [  ] dev-php/smarty-2.6.10 (0)
+[I--] [  ] dev-php/PEAR-PEAR-1.3.5-r1 (0)
+[I--] [  ] dev-php/PEAR-Mail-1.1.6 (0)
+[I--] [  ] dev-php/PEAR-MDB-1.3.0 (0)
+[I--] [  ] dev-php/PECL-apc-3.0.6 (0)
+[I--] [  ] dev-php/PECL-imagick-0.9.11 (0)
+[I--] [  ] dev-php/xdebug-2.0.0_beta3 (0)
+</pre>
+
+<impo>
+Ihre Ausgabe der installierten Packages kann stark abweichen, führen Sie den
+Befehl daher bitte selbst aus. Sie sollten die ausgegebene Liste speichern,
+um sicher zu gehen, dass sie im Laufe des Upgrades alle Packages berücksichtigen
+werden.
+</impo>
+
+<note>
+Zahlreiche webapps sind in keinster Weise betroffen, da sie in den meisten
+Fällen die webapp eclass benutzen, die sich um die korrekte Installation
+eigenständig kümmert. Unter Umständen kann es sinnvoll sein die webapps auf
+neue Revisionen zu überprüfen.
+</note>
+
+<p>
+PHP Erweiterungen, wie zum Beispiel:
+</p>
+
+<ul>
+  <li><c>PECL-apc</c></li>
+   <li><c>PECL-imagick</c></li>
+   <li><c>xdebug</c></li>
+</ul>
+
+<p>
+wurden in zwei unterschiedliche portage Kategorien <c>dev-php4</c> und 
+<c>dev-php5</c> aufgeteilt, um eine unabhängige Nutzung für beide PHP
+Versionen zu ermöglichen. Außerdem wurden die meisten der nachfolgenden
+Packages umbenannt:
+</p>
+
+<p>
+Beispiele für neue Verzeichnisse und Umbenennungen:
+</p>
+
+<table>
+  <tr>
+    <th>PHP Erweiterung</th>
+    <th>alt</th>
+    <th>neu (PHP4)</th>
+    <th>neu (PHP5)</th>
+  </tr>
+  <tr>
+    <ti>APC</ti>
+    <ti>dev-php/PECL-apc</ti>
+    <ti>dev-php4/pecl-apc</ti>
+    <ti>dev-php5/pecl-apc</ti>
+  </tr>
+  <tr>
+    <ti>Imagick</ti>
+    <ti>dev-php/PECL-imagick</ti>
+    <ti>dev-php4/pecl-imagick</ti>
+    <ti>dev-php5/pecl-imagick</ti>
+  </tr>
+  <tr>
+    <ti>Xdebug</ti>
+    <ti>dev-php/xdebug</ti>
+    <ti>dev-php4/xdebug</ti>
+    <ti>dev-php5/xdebug</ti>
+  </tr>
+</table>
+
+<note>
+Bevor Sie diese Erweiterungen erneut emergen, müssen Sie in 
+<path>/usr/portage</path> herausfinden, wie sie umbenannt wurden.
+</note>
+
+</body>
+</section>
+
+<section>
+<title>Entfernen alter Packages</title>
+<body>
+
+<p>
+Es wurden zahlreiche Änderungen bezüglich PHP und seiner Arbeitsweise 
+unter Gentoo gemacht. Sie müssen vorher alle alten PHP Packages komplett
+entfernen, bevor Sie die neuen Packages installieren:
+</p>
+
+<pre caption="Entfernen alter Packages (Beispiel)">
+<comment>(unmerge PHP Packages)</comment>
+<i>emerge --unmerge php mod_php</i>
+
+<comment>(unmerge PHP Erweiterungen)</comment>
+<i>emerge --unmerge PECL-apc PECL-imagick xdebug</i>
+
+<comment>(unmerge PHP Bibliotheken/Anwendungen)</comment>
+<i>emerge --unmerge PEAR-PEAR PEAR-Mail PEAR-MDB smarty</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Setzen des USE flags</title>
+<body>
+
+<p>
+Da einige neue USE flags hinzugefügt wurden, sollten Sie diese überprüfen
+und nach Bedarf die entsprechenden Zeilen zu der Datei
+<path>/etc/portage/package.use</path> hinzufügen (muss erstellt
+werden, wenn sie nicht existiert). 
+</p>
+
+<note>
+In <path>/etc/portage/package.use</path> können die USE flags für die PHP
+Installation gesetzt und dauerhaft gespeichert werden, ohne dass es nötig
+ist die Datei <path>make.conf</path> massenhaft zu editieren.
+</note>
+
+<p>
+Bitte setzen sie die USE flags entsprechend dem, was Ihre PHP Installation
+unterstützen soll (es ist empfohlen, dass zumindest das <c>cli</c> USE flag
+gesetzt wird):
+</p>
+
+<pre caption="USE flags für dev-lang/php (Beispiel)">
+dev-lang/php -* cli apache2 ctype expat fastbuild ftp gd hash iconv memlimit mysql nls pcre pic pdo reflection session simplexml sockets spl ssl tokenizer truetype xml xsl zlib
+</pre>
+
+<note>
+<c>-*</c> deaktiviert alle USE flags (deaktiviert sogar grundlegende PHP
+Features, wie Session-, PCRE-, gd- und MySQL-support!), so dass sie jede USE
+flags für jegliches Feature manuell setzen müssen. Unter <uri 
+link="http://svn.gnqs.org/projects/gentoo-php-overlay/wiki/ManagingExtensions">
+Managing Extensions</uri> können Sie Details zu diesem Thema nachlesen.
+Sie müssen USE flags für Vorgaben setzen, wie <c>pcre</c> wenn Sie <uri 
+link="http://svn.gnqs.org/projects/gentoo-php-overlay/wiki/PhpRefPcre">preg_* 
+Funktionen</uri> oder <c>session</c> wenn Sie <uri 
+link="http://svn.gnqs.org/projects/gentoo-php-overlay/wiki/PhpRefSession">Session 
+Handling Funktionen</uri> benutzen möchten.. 
+</note>
+
+<p>
+Wenn Sie PHP4 und PHP5 parallel installieren möchten, können Sie verschiedene
+USE flags für die jeweiligen Versionen benutzen:
+</p>
+
+<pre caption="verschiedene USE flags für PHP4 und PHP5 (Beispiel)">
+=dev-lang/php-4* -* cli cgi apache2 ctype expat fastbuild force-cgi-redirect ftp gd iconv ipv6 memlimit mysql nls pcre pic posix session sockets ssl tokenizer truetype xml xsl zlib
+=dev-lang/php-5* -* cli cgi apache2 ctype fastbuild force-cgi-redirect ftp gd hash iconv ipv6 memlimit mysql nls pcre pic posix pdo reflection session simplexml soap sockets spl sqlite ssl tokenizer truetype xml xmlreader xmlwriter xsl zlib
+</pre>
+
+<note>
+Für eine Liste empfohlener USE flags schauen Sie bitte unter <uri 
+link="http://svn.gnqs.org/projects/gentoo-php-overlay/wiki/CommonQuestions#DoYouRecommendAnyUSEFlags">
+Recommend USE flags</uri> nach. Für eine Liste von USE flags, die
+PHP zur Verfügung stehen, schauen Sie bitte unter <uri 
+link="http://svn.gnqs.org/projects/gentoo-php-overlay/wiki/NewUseFlags">USE 
+flags table</uri> nach.
+</note>
+
+</body>
+</section>
+
+<section>
+<title>Emerge PHP</title>
+<body>
+
+<p>
+Sie haben jetzt die Möglichkeit nur PHP4, nur PHP5 oder beide parallel zu
+installieren. Wenn Sie nur PHP4 installieren möchten, so müssen Sie lediglich ein
+emerge <c>=dev-lang/php-4*</c> durchführen, um nur PHP5 zu installieren (aktuellste
+Version) können Sie <c>dev-lang/php</c> benutzen, und um beide parallel zu
+installieren, müssen Sie <c>=dev-lang/php-4*</c> und <c>=dev-lang/php-5*</c>
+verwenden.
+</p>
+
+<p>
+Überprüfe USE flags:
+</p>
+
+<pre caption="überprüfe USE flags (Beispiel)">
+<comment>(überprüfe PHP4 Package)</comment>
+<i>emerge --pretend --verbose '=dev-lang/php-4*'</i>
+
+<comment>(überprüfe PHP5 Package)</comment>
+<i>emerge --pretend --verbose '=dev-lang/php-5*'</i>
+
+<comment>(überprüfe PHP Erweiterungen für PHP4)</comment>
+<i>emerge --pretend --verbose dev-php4/pecl-apc dev-php4/pecl-imagick dev-php4/xdebug</i>
+
+<comment>(überprüfe PHP Erweiterungen für PHP5)</comment>
+<i>emerge --pretend --verbose dev-php5/pecl-apc dev-php5/pecl-imagick</i>
+
+<comment>(überprüfe PHP Bibliotheken/Anwendungen)</comment>
+<i>emerge --pretend --verbose PEAR-PEAR PEAR-Mail PEAR-MDB smarty</i>
+</pre>
+
+<p>
+Emerge PHP, wenn alles in Ordnung ist:
+</p>
+
+<pre caption="emerge neue Packages (Beispiel)">
+<comment>(emerge PHP4 Package)</comment>
+<i>emerge '=dev-lang/php-4*'</i>
+
+<comment>(emerge PHP5 Package)</comment>
+<i>emerge '=dev-lang/php-5*'</i>
+
+<comment>(emerge PHP Erweiterungen für PHP4)</comment>
+<i>emerge dev-php4/pecl-apc dev-php4/pecl-imagick dev-php4/xdebug</i>
+
+<comment>(emerge PHP Erweiterungen für PHP5)</comment>
+<i>emerge dev-php5/pecl-apc dev-php5/pecl-imagick</i>
+
+<comment>(emerge PHP Bibliotheken/Anwendungen)</comment>
+<i>emerge PEAR-PEAR PEAR-Mail PEAR-MDB smarty</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>PHP4 und PHP5 parallel: wählen SIe aus welche cli/cgi Binary benutzt
+werden soll</title>
+<body>
+
+<p>
+Nach der Installation haben Sie binaries für <c>cli</c> und/oder <c>cgi</c>
+in <path>/usr/lib/php4/bin</path> und/oder <path>/usr/lib/php5/bin</path>.
+Wenn Sie beide Versionen installiert haben, PHP4 und PHP5, kann Portage
+keine Entscheidung darüber treffen, welche Version als Default verwendet
+werden soll. Somit erstellt Portage immer einen symbolischen Link in
+<path>/usr/bin</path> zur zuletzt installierten Version. Wenn Sie also
+PHP5 zuletzt installiert haben, befindet sich in Ihrer Verzeichnisstruktur
+ein symbolischer Link
+<path>/usr/bin/php</path>, der auf <path>/usr/lib/php5/bin/php</path> zeigt.
+Also muss eine <c>cli</c> und/oder <c>cgi</c> Binary so wie <c>php-devel</c>
+(verantwortlich für das kompilieren von PHP Erweiterungen mit Hilfe von
+<c>phpize</c> und <c>php-config</c>) verlinkt werden, was einfach mit Hilfe von
+<c>php-select</c>, das ein Teil von <c>app-admin/php-toolkit</c> ist,
+geschehen kann.
+</p>
+
+<note>
+<c>dev-lang/php</c> Packages hängen von <c>app-admin/php-toolkit</c> ab, so
+dass <c>php-select</c> automatisch zur Verfügung stehen sollte, wenn Sie die
+neuen PHP Packages installieren.
+</note>
+
+<p>
+Ausgehend davon, dass Sie sowohl <c>=dev-lang/php-4*</c> als auch
+<c>=dev-lang/php-5*</c> installiert haben, geben Sie bitte den nachfolgenden
+<c>php-select</c> Befehl um die momentan verwendete PHP Version anzuzeigen:
+</p>
+
+<pre caption="zeige momentan verwendete PHP Version an">
+<comment>(für cli)</comment>
+<i>php-select php</i>
+
+<comment>(für cgi)</comment>
+<i>php-select php-cgi</i>
+
+<comment>(für phpize, php-config)</comment>
+<i>php-select php-devel</i>
+</pre>
+
+<p>
+Sie sollten in etwa die folgende Ausgabe sehen:
+</p>
+
+<pre caption="Beispielausgabe von php-select">
+# <i>php-select php</i>
+/usr/bin/php is set to /usr/lib/php5/bin/php
+</pre>
+
+<p>
+Das bedeutet, dass der vorgegebene Pfad zur PHP cli Binary
+<path>/usr/bin/php</path> als symbolischer Link auf die PHP5 Binary
+<path>/usr/lib/php5/bin/php</path> zeigt. PHP Skripte, die
+<path>/usr/bin/php</path> benutzen, werden also von PHP5 ausgeführt.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>php-select benutzen, um die vorgegebenen PHP Versionen einzustellen</title>
+<body>
+
+<p>
+Wenn die vorgegebenen Einstellungen, wie Sie im letzten Abschnitt erläutert wurden,
+nicht Ihren Vorstellungen entsprechen, können Sie <c>php-select</c> benutzen, um
+die geeignete Version auszuwählen:
+</p>
+
+<pre caption="Auswählen gewünschter Versionen">
+<comment>(für cli)</comment>
+<i>php-select php php4</i>
+
+<comment>(für cgi)</comment>
+<i>php-select php-cgi php5</i>
+
+<comment>(für phpize, php-config)</comment>
+<i>php-select php-devel php5</i>
+</pre>
+
+<note>
+Geben Sie bitte <c>php-select -h</c> ein, um mehr Informationen über
+<c>php-select</c> und seine Möglichkeiten zu erlangen.
+</note>
+
+<p>
+Überprüfen der Verlinkung:
+</p>
+
+<pre caption="Überprüfen der symbolischen Links">
+ # <i>stat /usr/bin/php /usr/bin/php-cgi /usr/bin/phpize /usr/bin/php-config | grep File</i>
+ File: `/usr/bin/php' -> `/usr/lib/php4/bin/php'
+ File: `/usr/bin/php-cgi' -> `/usr/lib/php5/bin/php-cgi'
+ File: `/usr/bin/phpize' -> `/usr/lib/php5/bin/phpize'
+ File: `/usr/bin/php-config' -> `/usr/lib/php5/bin/php-config'
+</pre>
+
+<note>
+Bitte beachten Sie, dass <c>php-select</c> lediglich die vorgebene, also
+standardmäßig verwendete, Version ändert. Wenn Sie beide Versionen, PHP4 und
+PHP5 cgi/cli, installiert haben, können Sie immer die direkten Pfade, wie zum
+Beispiel <path>/usr/lib/php4/bin/php</path> und <path>/usr/lib/php5/bin/php</path>
+benutzen, um ein Skript mit einer bestimmten Version auszuführen. Sie können
+PHP4 und PHP cgi in der gleichen Apache-Instanz benutzen, aber Sie können nicht
+zwei unterschiedliche PHP Apache-Module in einer Apache-Instanz verwenden. Für
+Details siehe <uri link="php4-php5-configuration.xml"> PHP4 and PHP5
+Configuration Guide</uri>.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Migration von Konfigurationsdateien</title>
+<section>
+<body>
+
+<p>
+Das Gentoo PHP Package speichert die PHP Konfiguration in <path>/etc/php</path>,
+welches jeweils ein Unterverzeichnis für jede SAPI und für jede PHP Version
+enthält:
+</p>
+
+<pre caption="Auflisten der PHP Konfigurationsverzeichnisse">
+$ <i>ls -1 /etc/php</i>
+apache2-php4
+apache2-php5
+cli-php4
+cli-php5
+</pre>
+
+<p>
+Jedes Unterverzeichnis enthält eine eigene <path>php.ini</path>, so wie die
+alten Packages.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Änderungen in der php.ini</title>
+<body>
+
+<p>
+Sie sollten <c>etc-update</c> oder <c>dispatch-conf</c> benutzen und die
+Unterschiede zwischen der alten und der neuen Konfiguration in der Datei
+<path>php.ini</path> untersuchen. Zwei Direktiven, die Sie auf jeden Fall
+überprüfen müssen, sind <c>include_path</c> und <c>extension_dir</c>. Seien
+Sie an dieser Stelle jedoch vorsichtig, da <c>extension_dir</c> zwischen
+jeglichen PHP Versionen unterschiedlich ist (also auch zwischen 5.0 und 5.1!).
+</p>
+
+<p>
+Beispiel für PHP 5.1 in <path>/etc/php/apache2-php5/php.ini</path> und 
+<path>/etc/php/cli-php5/php.ini</path>:
+</p>
+
+<pre caption="alte Einstellungen in php.ini">
+include_path = ".:/usr/lib/php"
+extension_dir = "/usr/lib/php/extensions/no-debug-non-zts-20050617/"
+</pre>
+
+<pre caption="neue Einstellungen in php.ini">
+include_path = ".:/usr/share/php"
+extension_dir = "/usr/lib/php5/lib/php/extensions/no-debug-non-zts-20050617/"
+</pre>
+
+<warn>
+Seien Sie sich sicher, dass Sie <c>etc-update</c> oder <c>dispatch-conf</c>
+benutzen, um die korrekten Einstellungen für alle Dateien zu überprüfen.
+</warn>
+
+</body>
+</section>
+
+<section>
+<title>Geänderte Konfiguration von PHP Erweiterungen</title>
+<body>
+
+<p>
+Die neuen PHP Packages speichern nicht mehr Konfigurationsdirektiven von
+externen PHP Erweiterungen in <path>php.ini</path>. Diese Direktiven werden
+stattdessen in erweiterungs-spezifischen Konfigurationsdateien, die sich
+in den Verzeichnissen <path>/etc/php/*/ext</path> befinden, gespeichert.
+Um Erweiterungen zu aktivieren/deaktivieren werden symbolische Links aus dem
+Verzeichnis <path>/etc/php/*/ext-active</path> benutzt. Wenn Sie eine
+Erweiterung aktivieren möchten, erstellen Sie einen symbolischen Link in
+<path>/etc/php/*/ext-active</path>, so dass er auf die entsprechende
+<path>[EXTENSION].ini</path> in <path>/etc/php/*/ext/</path> zeigt. Wenn
+Sie die Erweiterungen deaktivieren möchten, so löschen Sie den symbolischen
+Link.
+</p>
+
+<p>
+Wenn Sie vorher <c>dev-php/PECL-apc</c> installiert hatten, so befindet
+sich die APC Konfiguration in Ihrer <path>php.ini</path>. Wenn Sie das neue
+<c>dev-php5/pecl-apc</c> Package installieren, wird die vorgegebene Konfiguration
+von APC in die Datei <path>/etc/php/*5/ext/apc.ini</path> geschrieben.
+</p>
+
+<p>
+Somit müssen Sie Ihre APC Konfigurationsdirektiven von
+<path>/etc/php/*5/php.ini</path> nach <path>/etc/php/*5/ext/apc.ini</path>
+bewegen und einen symbolischen Link von <path>/etc/php/*5/ext-active/apc.ini</path>
+nach <path>/etc/php/*5/ext/apc.ini</path> erstellen.
+</p>
+
+<note>
+Wenn Sie PHP als Apache-Modul installieren, gehen Sie sicher, dass Sie Apache
+nach der Installation und Konfiguration von PHP neu starten.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Konfiguration von Apache, um mit PHP4 und/oder PHP5 zu arbeiten</title>
+<section>
+<body>
+
+<p>
+Um Apache zu konfigurieren, damit es das PHP4 oder PHP5 Modul (mod_php) lädt,
+müssen Sie <c>-D PHP4</c> beziehungsweise <c>-D PHP5</c> zu der <c>APACHE2_OPTS</c>
+Variablen in <path>/etc/conf.d/apache2</path> hinzufügen.
+</p>
+
+<pre caption="Konfiguration von Apache mod_php">
+<comment>(Einstellungen für PHP4)</comment>
+<i>APACHE2_OPTS="-D PHP4"</i>
+
+<comment>(Einstellungen für PHP5)</comment>
+<i>APACHE2_OPTS="-D PHP5"</i>
+</pre>
+
+<p>
+Es gibt zahlreiche Möglichkeiten, um Apache dazu zu bewegen mit zwei PHP
+Versionen parallel zu arbeiten. Die einfachste Möglichkeit besteht darin
+PHP4 und PHP5 als eine cgi Binary zu benutzen, oder eine PHP4 cgi und ein
+PHP5 Modul (beziehungsweise umgekehrt) zu benutzen. Es ist nicht möglich
+das PHP4 Modul und das PHP5 Modul zur gleichen Zeit in einer Apache-Instanz
+zu benutzen.
+</p>
+
+<p>
+Es wurde ein <uri link="php4-php5-configuration.xml">PHP4 and PHP5
+Configuration Guide</uri> erstellt, das einige mögliche Lösungen beschreibt.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Probleme nach einem PHP Upgrade?</title>
+<section>
+<body>
+
+<p>
+Wenn Sie Probleme mit den neuen Gentoo PHP Packages haben, können Sie die
+nachfolgenden Ressourcen benutzen, die Ihnen hoffentlich helfen werden:
+</p>
+
+<ul>
+  <li><uri 
+link="http://svn.gnqs.org/projects/gentoo-php-overlay/wiki/CommonQuestions">
+Common Questions</uri> about PHP on Gentoo</li>
+  <li><uri 
+link="http://svn.gnqs.org/projects/gentoo-php-overlay">Development-Page of the 
+PHP Overlay</uri></li>
+  <li>#gentoo-php im irc.freenode.net; das ist der Chatroom, in dem die Autoren
+  des Overlay normalerweise rumhängen. Wir würden uns freuen, Sie dort zu sehen!
+  </li>
+  <li><uri link="http://forums.gentoo.org/">Gentoo Foren</uri> sind ein
+  populärer Ort, an dem man Hilfe bekommen kann. Es gibt dort zahlreiche
+  Gentoo Benutzer, die die Foren rund um die Uhr lesen. Dies macht die Foren
+  zu einem Ort an dem man zügig Hilfe bekommt.</li>
+</ul>
+
+<p>
+Über Details zur Implementierung der neuen Packages können Sie in <uri 
+link="http://article.gmane.org/gmane.linux.gentoo.devel/30050">Stuarts Posting 
+on gentoo-dev</uri> und Stuarts Blogeinträge angefangen mit <uri 
+link="http://stu.gnqs.org/diary/gentoo.php/2005/07/11/radical_changes_for_php5_support">
+'Radical Changes for PHP5 Support'</uri> nachlesen. 
+</p>
+
+<p>
+Auf der <uri 
+link="http://svn.gnqs.org/projects/gentoo-php-overlay">Development-Page</uri> 
+finden Sie eine Menge an Dokumentation, sowie die aktuellesten ebuilds, die
+erst zu einem späteren Zeitpunkt in den offiziellen Portage Baum verschoben
+werden.
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
