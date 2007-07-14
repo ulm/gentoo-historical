@@ -19,12 +19,12 @@
   <description>
     This page lists requests for Gentoo Developers the Gentoo Recruiters have received.
   </description>
-  <longdescription>
+  <longdescription><p>
     This page aims to list the areas in which Gentoo actively seeks to
     expand development efforts. Positions are open to both existing
     Gentoo developers and also those wishing to become a Gentoo
     developer. The priorities shown are sorted from highest to lowest.
-  </longdescription>
+  </p></longdescription>
   <extrachapter position="bottom">
     <title>Gentoo Linux Staffing Needs</title>
     <section>
