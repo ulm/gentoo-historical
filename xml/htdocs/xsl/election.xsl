@@ -68,14 +68,26 @@
 
 <!-- Nominee row -->
 <xsl:template match="nominee">
+
+  <xsl:variable name="fullname">
+    <xsl:call-template name="fullname">
+      <xsl:with-param name="nick" select="."></xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+
   <tr>
     <ti>
       <xsl:apply-templates select="@accepted"/>
     </ti>
     <ti>
-      <xsl:call-template name="fullname">
-        <xsl:with-param name="nick" select="."></xsl:with-param>
-      </xsl:call-template>
+      <xsl:choose>
+       <xsl:when test="@platform">
+         <uri link="{@platform}"><xsl:value-of select="$fullname"/></uri>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:value-of select="$fullname"/>
+       </xsl:otherwise>
+      </xsl:choose>
     </ti>
     <ti>
       <xsl:value-of select='translate(.,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")'/>
