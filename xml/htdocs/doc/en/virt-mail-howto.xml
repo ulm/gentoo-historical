@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/virt-mail-howto.xml,v 1.56 2007/07/20 09:09:04 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/virt-mail-howto.xml,v 1.57 2007/07/23 15:44:42 swift Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/virt-mail-howto.xml">
@@ -26,28 +26,8 @@ This document details how to create a virtual mailhosting system based upon
 postfix, mysql, courier-imap, and cyrus-sasl.
 </abstract>
 
-<version>1.4</version>
-<date>2007-07-20</date>
-
-<!--
-Contents
-
-I. Introduction
-II. Postfix Basics
-III. Courier-imap
-IV. Cyrus-sasl
-V. SSL Certificates for Postfix and Apache
-VI. Adding SSL and SASL support to Postfix
-VII. MySQL
-VIII. Apache and phpMyAdmin
-IX. The vmail user
-X. Configuring MySQL Authentication and vhosts
-XI. Squirrelmail
-XII. Mailman
-XIII. Content Filtering and Anti-Virus
-XIV. Wrap Up
-XV. Troubleshooting
--->
+<version>1.5</version>
+<date>2007-07-23</date>
 
 <chapter>
 <title>Introduction</title>
@@ -384,6 +364,9 @@ You can turn this on later if you desire.)</comment>
 
 <p>
 Now we're going to verify that the config's we added were picked up by postfix.
+For this we are going to use <c>telnet</c> (provided by for instance
+<c>net-misc/netkit-telnetd</c>) although you can also use <c>nc</c> (provided by
+<c>net-analyzer/netcat</c>):
 </p>
 
 <pre caption="Verifying sasl and tls support">
@@ -415,6 +398,42 @@ sasl will try to auth against it's sasldb, instead of the shadow file for some
 unknown reason, which we have not set up. So we're going to just plow through
 and set up mysql to hold all of our auth and virtual domain information.
 </p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>The vmail user</title>
+<section>
+<body>
+
+<p>
+Before we set up our virtual mailhosting environment, we create a functional
+user under which the virtual mailboxes will be hosted. For clarity's sake we
+will call this <e>vmail</e>:
+</p>
+
+<pre caption="Adding the vmail user">
+# <i>adduser -d /home/vmail -s /bin/false -m vmail</i>
+</pre>
+
+<p>
+So now you've set up the vmail account. You can create multiple accounts if you
+want (to keep some structure in your set of virtual mail accounts). The user id,
+group id and home dirs are referenced in the MySQL tables.
+</p>
+
+<p>
+Next to the user account we also need to create the location where the mailboxes
+will reside:
+</p>
+
+<pre caption="Creating mailboxes">
+# <i>mkdir /home/vmail/virt-domain.com/foo</i>
+# <i>chown -R vmail:vmail /home/vmail/virt-domain.com</i>
+# <i>maildirmake /home/vmail/virt-domain.com/foo/.maildir</i>
+</pre>
 
 </body>
 </section>
@@ -485,8 +504,8 @@ id   alias    destination
 <comment>(Line wrapped for clarity.)</comment>
 id email            clear     name     uid     gid     homedir     \
 	maildir                                quota  postfix
-10 foo@virt-bar.org $password realname virtid  virtid  /home/vmail \
-	/home/vmail/virt-bar.org/foo/.maildir/        y
+10 foo@virt-domain.com $password realname virtid  virtid  /home/vmail \
+	/home/vmail/virt-domain.com/foo/.maildir/        y
 13 foo@bar.com      $password realname localid localid /home/foo   \
 	/home/foo/.maildir/                           y
 </pre>
@@ -497,14 +516,14 @@ user and group.
 </p>
 
 <pre caption="transport table sample">
-id   domain       destination
-1    bar.com      local:
-2    virt-bar.org virtual:
+id   domain          destination
+1    bar.com         local:
+2    virt-domain.com virtual:
 </pre>
 
 <pre caption="virtual table sample">
-id   email            destination
-3   root@virt-bar.org other@email.address
+id   email               destination
+3   root@virt-domain.com other@email.address
 </pre>
 
 </body>
@@ -621,30 +640,6 @@ setup their account to make sure the .maildir gets created.
 </chapter>
 
 <chapter>
-<title>The vmail user</title>
-<section>
-<body>
-
-<p>
-At this point you may be wondering what user and directory to use for virtual
-mail users, and rightly so. Let's set that up.
-</p>
-
-<pre caption="Adding the vmail user">
-# <i>adduser -d /home/vmail -s /bin/false -m vmail</i>
-</pre>
-
-<p>
-So now you've set up the vmail account. You can create multiple accounts if you
-want (to keep some structure in your set of virtual mail accounts). The user id,
-group id and home dirs are referenced in the MySQL tables.
-</p>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
 <title>Configuring MySQL Authentication and vhosts</title>
 <section>
 <body>
@@ -741,7 +736,7 @@ hosts         	= unix:/var/run/mysqld/mysqld.sock
 
 <pre caption="/etc/postfix/mysql-virtual-maps.cf">
 # <i>nano -w /etc/postfix/mysql-virtual-maps.cf</i>
-#myql-virtual-maps.cf
+# mysql-virtual-maps.cf
 
 user        	= mailsql
 password        = $password
@@ -796,7 +791,7 @@ local_recipient_maps = $alias_maps $virtual_mailbox_maps unix:passwd.byname
 virtual_transport = virtual
 <comment>(The domains listed by the mydestination should not be listed in 
  the virtual_mailbox_domains parameter)</comment>
-virtual_mailbox_domains = virt-bar.com, $other-virtual-domain.com
+virtual_mailbox_domains = virt-domain.com, $other-virtual-domain.com
 
 virtual_minimum_uid = 1000
 <comment>(Substitute $vmail-gid with the GID of the vmail group)</comment>
@@ -908,11 +903,11 @@ add_virtualhost('www.virt.domain2.com', 'virt.domain2.com')
 
 # <i>su mailman</i>
 # <i>cd ~</i>
-# <i>./bin/newlist test</i>
+# <i>./bin/newlist --urlhost='www.virt-domain.com' --emailhost='virt-domain.com' test</i>
 Enter the email of the person running the list: <i>your@email.address</i>
 Initial test password:
 Hit enter to continue with test owner notification...
-<comment>(Virtual domain lists may be specified with
+<comment>(Virtual domain lists may also be specified with
 list@domain.com style list names.)</comment>
 # <i>./bin/genaliases</i>
 <comment>(Now that your aliases have been generated,
@@ -921,16 +916,16 @@ verify that they were added successfully.)</comment>
 # <i>nano -w data/aliases</i>
 # STANZA START: test
 # CREATED:
-test:             "|/var/mailman/mail/mailman post test"
-test-admin:       "|/var/mailman/mail/mailman admin test"
-test-bounces:     "|/var/mailman/mail/mailman bounces test"
-test-confirm:     "|/var/mailman/mail/mailman confirm test"
-test-join:        "|/var/mailman/mail/mailman join test"
-test-leave:       "|/var/mailman/mail/mailman leave test"
-test-owner:       "|/var/mailman/mail/mailman owner test"
-test-request:     "|/var/mailman/mail/mailman request test"
-test-subscribe:   "|/var/mailman/mail/mailman subscribe test"
-test-unsubscribe: "|/var/mailman/mail/mailman unsubscribe test"
+test:             "|/usr/local/mailman/mail/mailman post test"
+test-admin:       "|/usr/local/mailman/mail/mailman admin test"
+test-bounces:     "|/usr/local/mailman/mail/mailman bounces test"
+test-confirm:     "|/usr/local/mailman/mail/mailman confirm test"
+test-join:        "|/usr/local/mailman/mail/mailman join test"
+test-leave:       "|/usr/local/mailman/mail/mailman leave test"
+test-owner:       "|/usr/local/mailman/mail/mailman owner test"
+test-request:     "|/usr/local/mailman/mail/mailman request test"
+test-subscribe:   "|/usr/local/mailman/mail/mailman subscribe test"
+test-unsubscribe: "|/usr/local/mailman/mail/mailman unsubscribe test"
 # STANZA END: test
 
 <comment>(Create the required mailman list)</comment>
