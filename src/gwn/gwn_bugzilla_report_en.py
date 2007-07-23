@@ -149,7 +149,7 @@ print """<chapter>
 </body>
 </section>
 
-<section id="bug-stats">
+<section id="bugs-stats">
 <title>Statistics</title>
 <body>
 
