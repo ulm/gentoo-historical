@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/power-management-guide.xml,v 1.11 2007/06/04 14:45:16 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/power-management-guide.xml,v 1.12 2007/07/24 11:32:18 shadoww Exp $ -->
 
 <guide link="/doc/pl/power-management-guide.xml" lang="pl">
 <title>Zarządzanie zasilaniem</title>
@@ -28,8 +28,8 @@ skonfigurować.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.33</version>
-<date>2007-05-30</date>
+<version>1.34</version>
+<date>2007-07-08</date>
 
 <chapter>
 <title>Wprowadzenie</title>
@@ -1117,40 +1117,31 @@ wszystkich, możemy zająć się konfiguracją <c>hdparm</c>.
 <body>
 
 <p>
-Drugą możliwością jest użycie małego skryptu wraz z <c>hdparm</c>. Tworzymy
-plik <path>/etc/init.d/pmg_hda</path>, wpisując:
+Drugą możliwością jest użycie <c>hdparm</c>. Jeśli używamy tryby laptop-mode
+należy pominąć ten krok. Jeśli nie, wyedytujmy <path>/etc/conf.d/hdparm</path> i
+dodajmy poniższe wartości dla dysku. W tym przypadku dysk jest nazwany
+<b>hda</b>.
 </p>
 
-<pre caption="Używanie hdparm do przejścia stan oczekiwania dysku">
-#!/sbin/runscript
-
-depend() {
-  after hdparm
-}
-
-start() {
-  ebegin "Aktywacja zarządzania zasilaniem dla dysków twardych"
-  hdparm -q -S12 /dev/hda
-  eend $?
-}
-
-stop () {
-  ebegin "Dezaktywacja zarządzania zasilaniem dla dysków twardych"
-  hdparm -q -S253 /dev/hda
-  eend $?
-}
+<pre caption="Użycie /etc/conf.d/hdparm dla ustawień dysku">
+hda_args="-q -S12"
 </pre>
 
 <p>
+Zarządzanie energią dla dysku zostanie aktywowane. Jeśli kiedykolwiek sytuacja
+będzie wymagała jego wyłączenia, w pliku <path>/etc/conf.d/hdparm</path> można
+zmienić wartość na <c>-q -S0</c> lub uruchomić <c>hdparm -q -S0 /dev/hda</c>.
+</p>
+<p>
 Aby dowiedzieć się o dostępnych opcjach należy spojrzeć do <c>man hdparm</c>.
-Jeśli nasz skrypt jest gotowy, należy dodać go do poziomu uruchamiania o
-nazwie "battery".
+Chociaż uruchomienie <c>hdparm</c> jest zawsze możliwe poprzez wykonanie
+polecenia <c>/etc/init.d/hdparm start</c>, to znacznie łatwiej jest gdy proces
+ten przechodzi automatycznie podczas zmiany poziomu uruchamiania. Aby tego
+dokonać, należy dodać <c>hdparm</c> do odpowiedniego poziomu uruchamiania.
 </p>
 
 <pre caption="Zautomatyzowanie ustawień stanu oczekiwania dysku">
-# <i>chmod +x /etc/init.d/pmg_hda</i>
-# <i>/sbin/depscan.sh</i>
-# <i>rc-update add pmg_hda battery</i>
+# <i>rc-update add hdparm battery</i>
 </pre>
 
 <impo>
@@ -1234,7 +1225,7 @@ EndSection
 
 <p>
 Karty sieci bezprzewodowych również pochłaniają sporo energii. Należy dodać je
-do trybu zarządzania zasilaniem w analogii do skryptu <c>pmg_hda</c>.
+do trybu zarządzania zasilaniem tak jak zostało to dokonane w przypadku dysku.
 </p>
 
 <note>
@@ -1243,36 +1234,20 @@ W poniższym skrypcie zakładamy, że interfejs sieci bezprzewodowej nazywa się
 zmienić to w treści skryptu.
 </note>
 
-<pre caption="Zautomatyzowane zarządzanie zasilaniem dla WLAN">
-#!/sbin/runscript
-start() {
-  ebegin "Aktywacja zarządzania zasilaniem dla sieci bezprzewodowych"
-  iwconfig wlan0 power on
-  eend $?
-}
+<p>
+Aby automatycznie włączyć zarządzanie energią dla karty bezprzewodowej należy
+uaktywnić odpowiednie opcje w <path>/etc/conf.d/net</path>, jak poniżej.
+</p>
 
-stop () {
-  ebegin "Dezaktywacja zarządzania zasilaniem dla sieci bezprzewodowych"
-  iwconfig wlan0 power off
-  eend $?
-}
+<pre caption="Automatyczne zarządzanie energią WLAN">
+iwconfig_wlan0="power on"
 </pre>
 
 <p>
-Uruchomienie tego skryptu aktywuje tryb oszczędzania energii dla wlan0.
-Zachowujemy ten skrypt jako <path>/etc/init.d/pmg_wlan0</path> i
-dodajemy go do poziomu uruchamiania o nazwie <c>battery</c> tak jak powyżej. Po
-więcej szczegółów i opcji należy spojrzeć do <c>man iwconfig</c>. Jeśli nasz
-sterownik oraz punkt dostępu wspierają zmienianie czasu sygnału nawigacyjnego,
-wtedy jest to dobrym punktem wyjścia do zachowania nawet większej ilości
-energii.
+Więcej szczegółów można uzyskać w  <c>man iwconfig</c>. Jeśli sterownik i punkt
+dostępu wspierają zmianę sygnału, jest możliwość zaoszczędzenia jeszcze większej
+ilości energii.
 </p>
-
-<pre caption="Zarządzanie zasilaniem dla WLAN">
-# <i>chmod +x /etc/init.d/pmg_wlan0</i>
-# <i>/sbin/depscan.sh</i>
-# <i>rc-update add pmg_wlan0 battery</i>
-</pre>
 
 </body>
 </section>
