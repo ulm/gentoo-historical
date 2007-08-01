@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/power-management-guide.xml,v 1.17 2007/06/15 14:37:28 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/power-management-guide.xml,v 1.18 2007/08/01 16:10:21 cam Exp $ -->
 <guide link="/doc/fr/power-management-guide.xml" lang="fr">
 <title>Guide de la gestion de l'alimentation</title>
 
@@ -33,8 +33,8 @@ aidera à paramétrer la gestion de l'alimentation sur votre portable.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.33</version>
-<date>2007-05-30</date>
+<version>1.35</version>
+<date>2007-07-24</date>
 
 <chapter>
 <title>Introduction</title>
@@ -676,10 +676,7 @@ changements.
   </ti>
 </tr>
 <tr>
-  <ti>
-    <uri
-    link="http://fatcat.ftj.agh.edu.pl/~nelchael/index.php?cat=projs&amp;subcat=ncpufreqd&amp;language=en">ncpufreqd</uri>
-  </ti>
+  <ti>ncpufreqd</ti>
   <ti>Démon</ti>
   <ti>Température</ti>
   <ti>Aucun</ti>
@@ -1158,40 +1155,30 @@ hdparm.
 <body>
 
 <p>
-La deuxième méthode utilise un petit script et le programme <c>hdparm</c>.
-Sautez cette étape si vous utiliser laptop-mode. Sinon, créez le fichier
-<path>/etc/init.d/pm.hda</path> et copiez-y ce qui suit&nbsp;:
+La deuxième méthode utilise <c>hdparm</c>.  Sautez cette étape si vous utiliser
+laptop-mode. Sinon, éditez le fichier <path>/etc/conf.d/hdparm</path> et
+ajoutez-y les valeurs suivantes pour vos disques. Cet exemple présume que votre
+disque dur se nomme <b>hda</b>&nbsp;:
 </p>
 
-<pre caption="Utiliser hdparm pour la mise en veille des disques">
-#!/sbin/runscript
-
-depend() {
-  after hdparm
-}
-
-start() {
-  ebegin "Activating Power Management for Hard Drives"
-  hdparm -q -S12 /dev/hda
-  eend $?
-}
-
-stop () {
-  ebegin "Deactivating Power Management for Hard Drives"
-  hdparm -q -S253 /dev/hda
-  eend $?
-}
+<pre caption="Utiliser /etc/conf.d/hdparm pour la mise en veille des disques">
+hda_args="-q -S12"
 </pre>
 
 <p>
-Consultez <c>man hdparm</c> pour en connaître les options. Lorsque votre script
-est prêt, ajoutez-le au niveau d'exécution battery.
+Cela activera la gestion d'énergie de votre disque dur. Si vous vouliez un jour la désactiver, éditez <path>/etc/conf.d/hdparm</path> et changez les valeurs pour <c>-q -S0</c> (ou exécutez <c>hdparm -q -S0 /dev/hda</c>).
+</p>
+
+<p>
+Voir <c>man hdparm</c> pour les options. Bien que vous puissiez démarrer le
+service hdparm manuellement lorsque vous passez en mode batterie en lançant
+<c>/etc/init.d/hdparm start</c>, il est bien plus commode d'automatiser son
+démarrage et son arrêt. Pour ce faire, ajoutez <c>hdparm</c> au niveau
+d'exécution <e>battery</e>.
 </p>
 
 <pre caption="Automatiser la mise en veille des disques">
-# <i>chmod +x /etc/init.d/pmg_hda</i>
-# <i>/sbin/depscan.sh</i>
-# <i>rc-update add pmg_hda battery</i>
+# <i>rc-update add hdparm battery</i>
 </pre>
 
 <impo>
@@ -1277,7 +1264,7 @@ EndSection
 <p>
 Les cartes réseau sans fil consomment une quantité non négligeable d'énergie.
 Cette consommation peut être gérée de façon analogue à ce qui a été décrit pour
-le disque dur avec le script <c>pmg_hda</c>.
+le disque dur.
 </p>
 
 <note>
@@ -1285,38 +1272,21 @@ Ce script suppose que votre interface sans fil se nomme <c>wlan0</c>&nbsp;;
 faites les corrections appropriées.
 </note>
 
-<pre caption="Gestion automatique de l'alimentation pour les cartes réseau sans fil">
-#!/sbin/runscript
-start() {
-  ebegin "Activating Power Management for Wireless LAN"
-  iwconfig wlan0 power on
-  eend $?
-}
+<p>
+Ajoutez l'option suivante à votre <path>/etc/conf.d/net</path> pour activer
+automatiquement la gestion de l'énergie pour votre carte sans fil&nbsp;:
+</p>
 
-stop () {
-  ebegin "Deactivating Power Management for Wireless LAN"
-  iwconfig wlan0 power off
-  eend $?
-}
+<pre caption="Activer la gestion d'énergie de la carte sans fil">
+iwconfig_wlan0="power on"
 </pre>
 
 <p>
-L'exécution de ce script active la gestion de l'alimentation pour wlan0.
-Sauvegardez ce script sous le nom <path>/etc/init.d/pmg_wlan0</path> et
-ajoutez-le au niveau d'exécution battery (comme vous avez fait pour le script
-pour le disque dur). Consultez <c>man iwconfig</c> pour connaître les
-différentes options telles que les durées avant la mise en veille de
-l'interface.  Si votre pilote et votre point d'accès permettent de changer le
-délai de reconnaissance de l'émission de la balise (en anglais «&nbsp;beacon
-time&nbsp;»), cela peut vous servir de point de départ pour économiser encore
-davantage d'énergie.
+Voir <c>man iwconfig</c> pour plus de détails et plus d'options telles que les
+délais entre les réveils et les délais d'attente. Si votre pilote et votre
+point d'accès permettent de modifier l'intervalle de temps entre chaque balise
+(beacon), c'est un bon point de départ pour économiser de l'énergie.
 </p>
-
-<pre caption="Gestion de l'alimentation pour les cartes réseau sans fil">
-# <i>chmod +x /etc/init.d/pmg_wlan0</i>
-# <i>/sbin/depscan.sh</i>
-# <i>rc-update add pmg_wlan0 battery</i>
-</pre>
 
 </body>
 </section>
