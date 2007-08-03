@@ -1,0 +1,635 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/gcc-optimization.xml,v 1.1 2007/08/03 22:16:26 chiguire Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/doc/en/gcc-optimization.xml">
+
+<title>Guía de Compilación Optimizada</title>
+
+<author title="Autor">
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
+</author>
+<author title="Traductor">
+  <mail link="nordri@gmail.com">Federico Díaz</mail>
+</author>
+
+<abstract>
+Esta guía proporciona una introducción a la compilación optimizada
+usando CFLAGS y CXXFLAGS seguras y sanas. Al tiempo que se describe la
+teoria detrás de la optimización en general.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.4</version>
+<date>2007-07-28</date>
+
+<chapter>
+<title>Introducción</title>
+<section>
+<title>¿Qué son CFLAGS y CXXFLAGS?</title>
+<body>
+
+<p>
+CFLAGS y CXXFLAGS son variables de entorno usadas para decirle a la
+Colección de Compiladores GNU, <c>gcc</c>, que tipo de interruptores
+usar cuando compila código fuente. Las CFLAGS son para código escrito
+en C, mientras que CXXFLAGS son para código escrito en C++.
+</p>
+
+<p>
+Pueden usarse para decrementar la cantidad de mensajes de depuración
+para un programa, incrementar los niveles de aviso de errores, y, por
+supuesto, optimizar el código producido. El <uri
+link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Invoking-GCC.html#Invoking-
+GCC">Cuaderno de GNU gcc </uri> mantiene una completa lista de
+opciones disponibles y sus propósitos.
+</p>
+</body>
+</section>
+
+<section>
+<title>¿Cómo se usan?</title>
+<body>
+
+<p>
+CFLAGS y CXXFLAGS pueden ser usados de dos maneras. La primera, pueden
+usarse por programa con los Makefiles generados por automake.
+</p>
+
+<p>
+Sin embargo, esto no debería usarse cuando instalamos paquetes
+encontrados en el árbol del Portage. En su lugar, establezca sus
+CFLAGS y CXXFLAGS en <path> /etc/make.conf</path>. De esta manera
+todos los paquetes se compilaran con las opciones que especifique.
+</p>
+
+<pre caption="CFLAGS in /etc/make.conf">
+CFLAGS="-march=athlon64 -O2 -pipe"
+CXXFLAGS="${CFLAGS}"
+</pre>
+
+<p>
+Como puede ver, CXXFLAGS se establece para usar todas las opciones
+presentes en CFLAGS. Esto es lo que deseara casi seguro. No debería
+necesitar especificar opciones adicionales en CXXFLAGS nunca.
+</p>
+
+<impo>
+Portage no puede usar CFLAGS en una base por paquete, ni existe ningún
+método para forzarlo a que lo haga. Las banderas que establezca en
+<path>/etc/make.conf </path> las usaran <e>todos</e> los paquetes que
+instale.
+</impo>
+</body>
+</section>
+
+<section>
+<title>Conceptos generales</title>
+<body>
+
+<p>
+Mientras CFLAGS y CXXFLAGS pueden ser muy efectivos tomando el código
+fuente para producir binarios pequeños y/o rápidos, también pueden
+deteriorar la función de su código, inflar su tamaño, relentizar su
+ejecución, o incluso causar errores de compilación.
+</p>
+
+<p>
+CFLAGS no es una bala mágica; no hará que su sistema corra más rápido
+o sus binarios sean más pequeños automáticamente. Añadir más y más
+banderas en un intento de optimización (o "rizar") su sistema es una
+receta segura para el fallo. Hay un punto en el cual permanecerá dando
+vueltas.
+</p>
+
+<p>
+A pesar de la jactancia que pueden encontrar en Internet, unas
+banderas CFLAGS y CXXFLAGS agresivas están más cerca de dañar sus
+programas que de hacerles ningún bien. Recuerde que la razón de que
+las banderas existan en primer lugar es porque están diseñadas para
+usarse en sitios específicos para propósitos específicos. ¡Sólo porque
+una CFLAG particular sea buena para un bit de código ni significa que
+esté diseñada para compilar todo lo que quiera instalar en su máquina.
+</p>
+</body>
+</section>
+
+<section>
+<title>¿Preparado?</title>
+<body>
+
+<p>
+Ahora que está advertido de algunos de los riesgos involucrados,
+echemos un vistazo a algo sano, optimizaciones seguras para su
+ordenador. Esto le será útil y lo agradecerán los desarrolladores la
+próxima vez que reporte un problema en <uri
+link="http://bugs.gentoo.org">Bugzilla</uri>. (Los desarrolladores
+suelen pedir que recompile un paquete con los CFLAGS mínimos para ver
+si el problema persiste. Recuerde, banderas agresivas pueden arruinar
+el código.)
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Optimizando</title>
+<section>
+<title>Los básicos</title>
+<body>
+
+<p>
+La meta detrás de usar CFLAGS y CXXFLAGS es crear código específico
+para su sistema; debería funcionar perfectamente mientra es delgado y
+rápido, si es posible. Algunas veces estás condiciones son mutuamente
+excluyentes, pero nosotros jugaremos con combinaciones que sabemos que
+funcionan bien.  Mencionaremos más adelante las banderas agresivas
+para que conozca con cuales tener cuidado. No discutiremos cada opción
+listada en el manual de <c>gcc</c> (hay cientos), pero hablaremos de
+las básicas, las banderas más comunes.
+</p>
+
+<note>
+Siempre que no esté seguro de que hace la bandera actual, revise el
+capítulo relevante en <uri
+link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Optimize-Options.html#Optimize
+-Options">manual de gcc</uri> si aún continúa atascado, pruebe Google,
+o revise las <uri link="http://gcc.gnu.org/lists.html">listas de
+correo</uri> de <c>gcc</c>.
+</note>
+</body>
+</section>
+
+<section>
+<title>-march</title>
+<body>
+
+<p>
+La primera y más importante opción es <c>-march</c>. Esta le dice al
+compilador que código debería producirse para su <uri
+link="http://en.wikipedia.org/wiki/Microarchitecture">arquitectura</uri>
+de procesador (o <e>arch</e>); dice que debería producir código para
+un cierto tipo de CPU. Diferentes CPUs tienen diferentes
+características, soportan diferente juego de instrucciones y tienen
+diferentes formas de ejecutar código.  La bandera <c>-march</c>
+mandará al compilador para producir un código específico para su CPU,
+con todas sus capacidades, características, juegos de instrucciones,
+caprichos y todo.
+</p>
+
+<p>
+A pesar que la variable CHOST en <path>/etc/make.conf</path>
+especifica la arquitectura usada, <c>-march</c> también se usaría para
+que sus programas sean optimizados para su procesador específico.
+</p>
+
+<p>
+¿Qué tipo de CPU tiene? Para encontrarlo, ejecute el siguiente
+comando:
+</p>
+
+<pre caption="Examinando la información de la CPU">
+$ <i>cat /proc/cpuinfo</i>
+</pre>
+
+<p>
+Ahora veamos <c>-march</c> en acción. Este ejemplo es para un viejo
+Pentium III:
+</p>
+
+<pre caption="/etc/make.conf: Pentium III">
+CFLAGS="-march=pentium3"
+CXXFLAGS="${CFLAGS}"
+</pre>
+
+<p>
+Aquí está otro para una CPU de 64-bit Sparc:
+</p>
+
+<pre caption="/etc/make.conf: Sparc">
+CFLAGS="-march=ultrasparc"
+CXXFLAGS="${CFLAGS}"
+</pre>
+
+
+<p>
+También están disponibles las banderas <c>-mcpu</c> y
+<c>-mtune</c>. Cada una de ellas <e>sólo</e> se usaran cuando no haya
+ninguna opción <c>-march</c> disponible. ¿Cuál es la diferencia entre
+ellas? <c>-march</c> es mucho más específica en cuanto a que
+características del procesador se usaran cuando se compile código, es
+la mejor opción. <c>-mcpu</c> producirá un código mucho más genérico,
+menos optimizado para su máquina. <c>-mtune</c> es incluso más
+genérico que <c>-mcpu</c>. Siempre que sea posible, utilice
+<c>-march</c>. Para algunas arquitecturas menos comunes como PowerPC y
+Alpha, deberá usar <c>-mcpu</c>
+</p>
+
+<note>
+Para más sugerencias de configuraciones de <c>-march</c>, por favor
+lea el capítulo 5 de la <uri link="/doc/es/handbook/">Guía de
+Instalación de Gentoo </uri> apropiada a su arquitectura. También, lea
+el manual de <c>gcc</c> listado en <uri
+link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Submodel-Options.html#Submodel
+-Options">architecture-specific options</uri>, así como explicaciones
+más detalladas sobre las diferencias entre <c>-march</c>,
+<c>-mcpu</c>, y <c>-mtune</c>. Esto ayudará bastante para determinar
+cual configuración de <c>-march</c> debería usar, especialmente desde
+que en algunas arquitecturas, como x86, <c>-mcpu</c> está obsoleto y
+en su lugar debe usarse <c>-mtune</c>.
+</note>
+</body>
+</section>
+
+<section>
+<title>-O</title>
+<body>
+
+<p>
+Lo siguiente es la variables <c>-O</c>. Controla el total de niveles
+de optimización. Hace que la compilación de código tome algo más de
+tiempo, y puede tomar mucha más memoria, especialmente cuando
+incrementa el nivel de optimización.
+</p>
+
+<p>
+Hay cinco configuraciones para <c>-O</c>: <c>-O0</c>, <c>-O1</c>,
+<c>-O2</c>, <c>-O3</c> y <c>-Os</c>. Debería usar solamente una de
+ellas en <path>/etc/make.conf</path>.
+</p>
+
+<p>
+Con la excepción de <c>-O0</c>, la configuración de <c>-O</c> activa
+varias banderas adicionales, así que asegúrese de leer el capítulo del
+manual de gcc en <uri
+link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Optimize-Options.html#Optimize
+-Options">opciones de optimización</uri> para aprender cuales banderas
+son activadas en cada nivel <c>-O</c>, así como algunas explicaciones
+sobre lo que hacen.
+</p>
+
+<p>
+Examinemos cada nivel de optimización:
+</p>
+
+<ul>
+  <li>
+    <c>-O0</c>: Este nivel (que es la letra "O" seguida de un cero)
+    desconecta por completo la optmización y es el predeterminado si
+    no se especifica ningún nivel <c>-O</c> en CFLAGS o CXXFLAGS. Su
+    código no será optimizado; Esto, normalmente, no es lo que se
+    desea.
+  </li>
+  <li>
+    <c>-O1</c>: Este es el nivel de optimización más básico. El
+    compilador intentará producir un código rápido y pequeño sin tomar
+    mucho tiempo de compilación. Es bastante básico, pero conseguirá
+    acabar el trabajo todas las veces.
+  </li>
+  <li>
+    <c>-O2</c>: Un paso por encima de <c>-O1</c>. Este es el nivel
+    <e>recomendado</e> de optimización a no ser que tenga necesidades
+    especiales (como con <c>-Os</c>, se explicará
+    brevemente). <c>-O2</c> activará unas pocas banderas más añadidas
+    a las que se activan con <c>-O1</c>. Con <c>-O2</c>, el compilador
+    intentará incrementar el rendimiento del código sin comprometer el
+    tamaño y sin tomar mucho más tiempo de compilación.
+  </li>
+  <li>
+    <c>-O3</c>: Este es el más alto nivel de optimización posible, y
+    también el más arriesgado. Tomará muchísimo tiempo compilar su
+    código con esta opción, y de echo no debería usarse en un sistema
+    completo con <c>gcc</c> <e>4.x</e>. El comportamiento de
+    <c>gcc</c> ha cambiado significativamente desde la versión 3.x. En
+    la 3.x, <c>-O3</c> había demostrado que precedía a tiempos de
+    ejecución marginales sobre <c>-O2</c>, pero este no será más el
+    caso con <c>gcc</c> 4.x. Compilar todos sus paquetes con
+    <c>-O3</c> <e>resultará</e> en grandes binarios que requerirán
+    mucha memoria e incrementará significativamente los extraños
+    fallos de compilación o los comportamientos inesperados de los
+    programas (incluidos los errores). Las desventajas compensan las
+    ventajas; recuerde el principio de disminución de vueltas.  <b>
+    Usar <c>-O3</c> no está recomendado para <c>gcc</c> 4.x.</b>
+  </li>
+  <li>
+    <c>-Os</c>: Este nivel optimizará su código para el tamaño. Activa
+    todas las opciones de <c>-O2</c> que no incrementan el tamaño del
+    código generado Es útil para máquinas que tienen la capacidad de
+    disco limitada y/o tienen CPUs con poca caché. Sin embargo, puede
+    causar algunos problemas, los cuales es por qué es filtrado por
+    muchos de los ebuilds del árbol. Usar <c>-Os</c> no es
+    aconsejable.
+  </li>
+</ul>
+
+<p>
+Como se comentó anteriormente, <c>-O2</c> es el nivel de optimización
+recomendado. Si un paquete muestra errores de compilación, asegúrese
+que no está usando <c>-O3</c>. Como opción de marcha atrás, pruebe
+configurando CFLAGS y CXXFLAGS a un nivel de optimización inferior,
+como <c>-O1</c> o incluso <c>-O0 -g2 -ggdb</c> (para reportar errores
+y comprobar posibles problemas) y recompile el paquete.
+</p>
+</body>
+</section>
+
+<section>
+<title>-pipe</title>
+<body>
+
+<p>
+Una bandera divertida y segura para usar es <c>-pipe</c>. Realmente,
+esta bandera no tiene efecto sobre el código que se produce, pero hace
+que el proceso de compilación sea más rápido. Indica al compilador que
+use tuberías en lugar de archivos temporales durante los diferentes
+estados de compilación.
+</p>
+</body>
+</section>
+
+<section>
+<title>-fomit-frame-pointer</title>
+<body>
+
+<p>
+Esta es una bandera muy común diseñada para reducir el tamaño del
+código generado. Está activado para todos los niveles de <c>-O</c>
+(excepto <c>-O0</c>) en arquitecturas donde hacerlo no interfiere con
+el depurado (como x86-64), pero puede necesitar activarlo usted mismo
+añadiéndolo a su bandera. Aunque el manual de GNU <c>gcc</c> no
+especifica todas las arquitecturas en las que está activado por usar
+<c>-O</c>, necesitará activarlo explícitamente en un x86. Sin embargo,
+usando esta bandera hará la depuración de dura a imposible.
+</p>
+
+<p>
+En particular, provoca que localizar problemas en aplicaciones
+escritas en Java sea mucho más complicada, aunque Java no es el único
+código afectado por usar esta bandera; la vuelta atrás será útil. Así
+mientras la bandera puede ayudar, también puede hacer la depuración
+difícil. Si no planea hacer muchas depuraciones y no tiene añadida
+ninguna otra CFLAG relacionada con la depuración como <c>-ggdb</c> (y
+no está instalando paquete con la variable USE <c>debug</c>), entonces
+pruebe usando <c>-fomit-frame-pointer</c>.
+</p>
+
+<impo>
+<e>No</e> combine <c>-fomit-frame-pointer</c> con la bandera similar
+<c>-momit- leaf-frame-pointer</c>. Usar la última bandera esta
+desaconsejado, ya que <c>-fomit-frame-pointer</c> ya hace el trabajo
+apropiado. Es más, <c>-momit-leaf-frame-pointer</c> ha demostrado que
+impacta negativamente en el rendimiento del código.
+<!--
+source for this info:
+http://www.coyotegulch.com/products/acovea/aco5p4gcc40.html
+-->
+</impo>
+</body>
+</section>
+
+<section>
+<title>-msse, -msse2, -msse3, -mmmx, -m3dnow</title>
+<body>
+
+<p>
+Estas banderas activan los juegos de instrucciones <uri
+link="http://es.wikipedia.org/wiki/Streaming_SIMD_Extensions">SSE</uri>,
+<uri link="http://es.wikipedia.org/wiki/SSE2">SSE2</uri>, <uri
+link="http://en.wikipedia.org/wiki/SSSE3">SSE3</uri>, <uri
+link="http://es.wikipedia.org/wiki/MMX">MMX</uri>, and <uri
+link="http://en.wikipedia.org/wiki/3dnow">3DNow!</uri> para
+arquitecturas x86-64. Son útiles principalmente en multimedia, juegos
+y otras tareas intensivas de computación en punto flotante, aunque
+también contienen muchos otros realces matemáticos. Estos juegos de
+instrucciones se encuentran en las más modernas CPUs.
+</p>
+
+<impo>
+Asegúrese de verificar si su CPU los soporta ejecutando <c>cat
+/proc/cpuinfo</c>.  La salida incluirá cualquier juego de
+instrucciones adicional. Fíjese que <b>pni</b> es sólo otro nombre
+diferente para SSE3.
+</impo>
+
+<p>
+Normalmente no necesita añadir ninguna de estas banderas a
+<path>/etc/make.conf </path> mientras esté usando la <c>-march</c>
+correcta (por ejemplo, <c>-march= nocona</c> implica
+<c>-msse3</c>). Algunas excepciones notables son las nuevas VIA y
+AMD64 CPUs que soportan instrucciones no implicadas por <c>-march</c>
+(como SSE3). Para CPUs como estas necesitará habilitar bandera
+adicionales donde sea apropiado después de verificar la salida de
+<c>cat /proc/cpuinfo</c>.
+</p>
+
+<note>
+Debería revisar la <uri
+link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/i386-and-x86_002d64-Options.
+html#i386-and-x86_002d64-Options">lista</uri> de banderas especificas
+para x86 y x86-64 para ver cuales de estos juegos de instrucciones son
+activados por la propia bandera del tipo de CPU. Si una instrucción
+está listada, entonces no necesita especificarla; se activará la
+configuración de <c>-march</c> apropiada.
+</note>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>PUFs de Optimización</title>
+<section>
+<title>¡Pero tengo un mejor rendimiento con -funroll-loops -fomg-optimize!</title>
+<body>
+
+<p>
+No, solo <e>piensa</e> que lo hace porque alguien le ha convencido que
+más banderas es mejor. Las banderas agresivas solo dañaran sus
+aplicaciones cuando use un sistema completo. Incluso el <uri
+link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Optimize-Options.html#Optimize
+-Options">manual</uri> de <c>gcc</c> dice que usar
+<c>-funroll-loops</c> y <c>-funroll-all-loops</c> crea código grande y
+que corre lento. Aún por algunas razones, estas dos banderas, junto
+con <c>-ffast-math</c>, <c>-fforce-mem</c>, <c>-fforce-addr</c>, y
+similares, continúan siendo muy populares entre pardillos que quieren
+saber más que nadie.
+</p>
+
+<p>
+La verdad del asunto es que son banderas peligrosamente
+agresivas. Eche un buen vistazo sobre los <uri
+link="http://forums.gentoo.org">Foros de Gentoo</uri> y <uri
+link="http://bugs.gentoo.org">Bugzilla</uri> para ver que hacen estas
+banderas: ¡nada bueno!
+</p>
+
+<p>
+No necesita usar estas banderas globalmente en CFLAGS o CXXFLAGS. Solo
+dañaran el rendimiento. Puede sonarle como que tiene un sistema de
+alto rendimiento corriendo en un filo sangrante, pero no harán otra
+cosa que hinchar su código y marcar sus bichos como INVALID o WONTFIX.
+</p>
+
+<p>
+No necesita banderas peligrosas como estas. <b>No las use</b>. Quédese
+con las básicas: <c>-march</c>, <c>-O</c>, y <c>-pipe</c>.
+</p>
+</body>
+</section>
+
+<section>
+<title>¿Qué pasa con los niveles -O mayores que 3?</title>
+<body>
+
+<p>
+Algunos usuarios alardean que obtienen mejor rendimiento usando
+<c>-O4</c>, <c>-O9</c>, y así, pero la realidad es que niveles de
+<c>-O</c> mayores que 3 no tienen efecto. El compilador puede aceptar
+CFLAGS como <c>-O4</c>, pero realmente no hace nada con el. Solo
+realiza la optmización para <c>-O3</c>, nada más.
+</p>
+
+<p>
+¿Necesita más pruebas? Examine el <uri
+link="http://gcc.gnu.org/viewcvs/trunk/gcc/opts.c?revision=124622&amp;view=markup">
+código fuente</uri> de <c>gcc</c>:
+</p>
+
+<pre caption="Código fuente de -O">
+if (optimize >= 3)
+    {
+      flag_inline_functions = 1;
+      flag_unswitch_loops = 1;
+      flag_gcse_after_reload = 1;
+      /* Allow even more virtual operators.  */
+      set_param_value ("max-aliased-vops", 1000);
+      set_param_value ("avg-aliased-vops", 3);
+    }
+</pre>
+
+<p>
+Como puede ver, cualquier valor por encima de 3 es tratado como sólo
+<c>-O3</c>.
+</p>
+</body>
+</section>
+
+<section>
+<title>¿Qué pasa con las banderas redundantes?</title>
+<body>
+
+<p>
+A menudo CFLAGS y CXXFLAGS que están activadas en varios niveles de
+<c>-O</c> están especificadas redundantemente en
+<path>/etc/make.conf</path>. Algunas veces esto ocurre por ignorancia,
+pero también ocurre para permitir el filtrado o el reemplazo de
+banderas.
+</p>
+
+<p>
+Muchos de los ebuilds del árbol del Portage contienen
+filtrado/reemplazo de banderas. Se suele hacer porque hay paquetes que
+fallan en ciertos niveles de <c>-O</c>, o cuando el código fuente es
+muy sensible para ser usado para cualquier bandera adicional. El
+ebuild podrá cada vez filtrar para algunas o todas las CFLAGS y
+CXXFLAGS, o puede reemplazar <c>-O</c> con un nivel diferente.
+</p>
+
+<p>
+El <uri
+link="http://devmanual.gentoo.org/ebuild-writing/functions/src_compile/build-
+environment/index.html">Manual del Desarrollador de Gentoo</uri>
+resume dónde y cómo trabaja el filtrado/reemplazo de banderas.
+</p>
+
+<p>
+Es posible evitar el filtrado de <c>-O</c> por el listado redundante
+de banderas para un cierto nivel, como <c>-O3</c>, haciendo cosas
+como:
+</p>
+
+<pre caption="Especificando CFLAGS redundantes">
+CFLAGS="-O3 -finline-functions -funswitch-loops"
+</pre>
+
+<p>
+Sin embargo, <brite>hacer esto no es inteligente</brite>. ¡Las CFLAGS
+son filtradas por una razón! Cuando las banderas son filtradas,
+significa que es inseguro construir paquetes para estas
+banderas. Claramente, <e>no</e> es seguro compilar su sistema completo
+con <c>-O3</c> si alguna de estas banderas está activada para este
+nivel causará problemas con ciertos paquetes. Por lo tanto, no debería
+intentar "idiotizar" a los desarrolladores que mantienen estos
+paquetes. <e>Confíe en los desarrolladores</e>. ¡El filtrado y
+reemplazo de banderas se hace por su bien! Si un ebuild especifica
+banderas alternativas, entonces no intente convencerlo.
+</p>
+
+<p>
+No encontrará más que problemas cuando construya un paquete con
+banderas inaceptables. Cuando reporte sus problemas en Bugzilla, las
+banderas que usó en <path>/etc/make.conf</path> serán fácilmente
+visibles y se le instará a recompilar sin esas banderas. ¡Protéjase de
+los problemas de recompilar no usando banderas redundantes en primer
+lugar!
+</p>
+</body>
+</section>
+
+<section>
+<title>¿Qué pasa con LDFLAGS?</title>
+<body>
+
+<p>
+No lo use. Habrá escuchado que pueden acelerar los tiempos de carga de
+las aplicaciones o reducir el tamaño de los binarios, pero en
+realidad, LDFLAGS está más cerca de hacer que sus aplicaciones dejen
+de funcionar. No están soportadas y sus bichos seran marcados como
+INVALID si reporta los errores de los paquetes mientras usa
+LDFLAGS. Como mínimo tendrá que recompilar todos los paquetes
+afectados sin soporte de LDFLAGS.
+</p>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Recursos</title>
+<section>
+<body>
+
+<p>
+Los siguientes recursos son un poco de ayuda en aras de comprender la
+optimización:
+</p>
+
+<ul>
+  <li>
+    El <uri link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/">Manual
+    de GNU gcc</uri>
+  </li>
+  <li>
+	Capítulo 5 del <uri link="/doc/es/handbook/">Cuaderno de
+	Instalación de Gentoo</uri>
+  </li>
+  <li><c>man make.conf</c></li>
+  <li><uri link="http://es.wikipedia.org">Wikipedia</uri></li>
+  <li>
+    <uri
+    link="http://www.coyotegulch.com/products/acovea/">Acovea</uri>,
+    una comparativa y juego de test que pueden ser útiles para
+    determinar cómo diferentes banderas de compilación interactuan y
+    afectan al código generado, aunque sus sugerencias sobre el código
+    no son adecuadas para un sistema completo. Está disponible en
+    Portage: <c>emerge acovea</c>.
+  </li>
+  <li>Los <uri link="http://forums.gentoo.org">Foros de Gentoo</uri></li>
+</ul>
+</body>
+</section>
+</chapter>
+</guide>
