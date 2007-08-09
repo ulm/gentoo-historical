@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/power-management-guide.xml,v 1.10 2007/04/06 20:44:21 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/power-management-guide.xml,v 1.11 2007/08/09 15:29:59 chiguire Exp $ -->
 <guide link="/doc/es/power-management-guide.xml" lang="es">
 <title>Guía de Administración de Energía</title>
 
@@ -9,6 +9,9 @@
 </author>
 <author title="Editor">
   <mail link="chriswhite@gentoo.org">Chris White</mail>
+</author>
+<author title="Editor">
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
 <author title="Traductor">
   <mail link="chiguire@gentoo.org">John Christian Stoddart</mail>
@@ -27,8 +30,8 @@ de duración de la batería en sistemas móviles como los portátiles.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.31</version>
-<date>2007-02-20</date>
+<version>1.35</version>
+<date>2007-07-24</date>
 
 <chapter>
 <title>Introducción</title>
@@ -663,9 +666,7 @@ configuración y cambios.
   </ti>
 </tr>
 <tr>
-  <ti>
-    <uri link="http://fatcat.ftj.agh.edu.pl/~nelchael/index.php?cat=projs&amp;subcat=ncpufreqd&amp;language=en">ncpufreqd</uri>
-  </ti>
+  <ti>ncpufreqd</ti>
   <ti>Demonio</ti>
   <ti>Temperatura</ti>
   <ti>Ninguno</ti>
@@ -947,7 +948,7 @@ Para poder ajustar el nivel de brillo debe ser cargado el módulo
 <pre caption="Cargar automáticamente el módulo ibm_acpi">
 <comment>(¡Por favor, lea las advertencias indicadas arriba antes de seguir!)</comment>
 # <i>echo "options ibm_acpi experimental=1" >> /etc/modules.d/ibm_acpi</i>
-# <i>/sbin/modules-update</i>
+# <i>/sbin/update-modules</i>
 # <i>echo ibm_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
 # <i>modprobe ibm_acpi</i>
 </pre>
@@ -1047,11 +1048,11 @@ energía del disco duro con <c>hdparm</c> como segunda alternativa.
 <body>
 
 <p>
-Los núcleos recientes (2.6.6 y superiores, versiones actuales de la serie 2.4 y
-otros con parches) incluyen el denominado <c>laptop-mode</c>. Cuando está
-activado, los contenidos de las memorias de tránsito en estado sucio se escriben
-a disco cuando hay llamadas de lectura o después de 10 minutos (en vez de 30
-segundos).  Esto minimiza el tiempo de rotación del disco.
+Los núcleos 2.6 recientes incluyen el modo <c>laptop-mode</c>. Cuando
+está activado, los contenidos de las memorias de tránsito en estado
+sucio se escriben a disco cuando hay llamadas de lectura o después de
+10 minutos (en vez de 30 segundos). Esto minimiza el tiempo de
+de rotación del disco duro.
 </p>
 
 <pre caption="Inicio automátizado del laptop-mode">
@@ -1143,40 +1144,35 @@ siga con la configuración de hdparm.
 <body>
 
 <p>
-La segunda posibilidad es usar un pequeño guión y <c>hdparm</c>. No lo
-haga si está usando laptop-mode. De otro modo cree el archivo
-<path>/etc/init.d/pmg_hda</path>:
+La segunda posibilidad es usando <c>hdparm</c>. No lo haga si está
+usando laptop-mode. De otro modo modifique el archivo
+<path>/etc/conf.d/hdparm</path> y agregue los siguientes valores a la
+línea que corresponda al disco duro. Este ejemplo asume que el disco
+en cuestión es el <b>hda</b>:
 </p>
 
 <pre caption="Usando hdparm para la suspensión temporal del disco">
-#!/sbin/runscript
-
-depend() {
-after hdparm
-}
-
-start() {
-ebegin "Activating Power Management for Hard Drives"
-hdparm -q -S12 /dev/hda
-eend $?
-}
-
-stop () {
-ebegin "Deactivating Power Management for Hard Drives"
-hdparm -q -S253 /dev/hda
-eend $?
-}
+hda_args="-q -S12"
 </pre>
 
 <p>
-Revise las opciones con <c>man hdparm</c>. Si su guión está listo, agréguelo al
-nivel de ejecución battery.
+Esto activará el ahorro de energía en el disco duro. Si en alguna
+oportunidad desea desactivarlo, modifique el
+<path>/etc/conf.d/hdparm</path> y cambie los valores a <c>-q -S0</c>,
+o solo ejecute <c>hdparm -q -S0 /dev/hda</c>.
 </p>
 
-<pre caption="Automatizando la configuración de la suspensión temporal del disco">
-# <i>chmod +x /etc/init.d/pmg_hda</i>
-# <i>/sbin/depscan.sh</i>
-# <i>rc-update add pmg_hda battery</i>
+<p>
+Vea <c>man hdparm</c> para las opciones. Aunque siempre se puede
+iniciar <c>hdparm</c> manualmente cuando se está en modo de batería
+ejecutando <c>/etc/init.d/hdparm start</c>, es más sencillo
+automatizar la activación y la desactivación. Para esto, agregue
+<c>hdparm</c> al nivel de ejecución battery para activar el ahorro
+automáticamente.
+</p>
+
+<pre caption="Automatizando la activación del ahorro de energía">
+# <i>rc-update add hdparm battery</i>
 </pre>
 
 <impo>
@@ -1255,12 +1251,12 @@ EndSection
 </section>
 
 <section>
-<title>Administración de Energía para tarjetas inalámbricas</title>
+<title>Administración de energía para tarjetas inalámbricas</title>
 <body>
 
 <p>
 Las tarjetas LAN inalámbricas consumen bastante energía. Colóquelas en el
-modo de Administración de Energía en analogía al guión <c>pmg_hda</c>.
+modo de Administración de Energía igual que el disco duro.
 </p>
 
 <note>
@@ -1269,36 +1265,15 @@ reemplácela con el nombre real de su interfaz.
 </note>
 
 <pre caption="Administración de Energía automatizada para WLAN">
-#!/sbin/runscript
-start() {
-  ebegin "Activating Power Management for Wireless LAN"
-  iwconfig wlan0 power on
-  eend $?
-}
-
-stop () {
-  ebegin "Deactivating Power Management for Wireless LAN"
-  iwconfig wlan0 power off
-  eend $?
-}
+iwconfig_wlan0="power on"
 </pre>
 
 <p>
-Al iniciar este guión se activarán las características de ahorro de energía para
-wlan0. Guárdelo como  <path>/etc/init.d/pmg_wlan0</path> y
-agréguelo al nivel de ejecución battery tal como se hizo con el guión para el
-disco de más arriba. Vea <c>man iwconfig</c> para más detalles y opciones como
-el periodo de tiempo entre despertares (wakeups) o ajustes de timeouts. Si
-su controlador y punto de acceso están habilitados para cambiar el tiempo de
-reconocimiento de la señal ("beacon time"), ésto es un buen punto de partida
-para ahorrar aún más energía:
+Vea <c>man iwconfig</c> para detalles y más opciones como el lapso
+entre activaciones o de expiración. Si el controlador y el punto de
+acceso soportan la modificación de tiempos de faro (beacon), este
+sería un buen punto de inicio para ahorrar aún más energía.
 </p>
-
-<pre caption="Administración de Energía de WLAN">
-# <i>chmod +x /etc/init.d/pmg_wlan0</i>
-# <i>/sbin/depscan.sh</i>
-# <i>rc-update add pmg_wlan0 battery</i>
-</pre>
 </body>
 </section>
 
