@@ -1522,7 +1522,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 
 <xsl:template name="outdated-translation">
   <!-- Add mention that translation is outdated whenever possible in /main and /doc-->
-  <xsl:if test="$glang != '' and not (//*[1]/@metadoc = 'yes') and (starts-with($link, '/doc/') or starts-with($link, '/main/')) and not(starts-with($link, '/doc/en/') or starts-with($link, '/main/en/'))">
+  <xsl:if test="$glang != '' and not (//*[1]/@metadoc = 'yes') and (starts-with($link, '/doc/') or starts-with($link, '/main/') or (starts-with($link, '/proj/') and contains($link, '/gdp/'))) and not(starts-with($link, '/doc/en/') or starts-with($link, '/main/en/') or starts-with($link, '/proj/en/'))">
     <!-- We have a translation, is it up-to-date? -->
     <xsl:variable name="metadoc" select="document(concat('/doc/', $glang, '/metadoc.xml'))"/>
     <xsl:variable name="fileid" select="$metadoc/metadoc/files/file[text()=$link]/@id"/>
