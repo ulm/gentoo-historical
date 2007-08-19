@@ -21,8 +21,8 @@
 
 <!-- The content of this document is placed into the public domain, have fun -->
 
-<version>1.1</version>
-<date>2006-09-08</date>
+<version>1.2</version>
+<date>2007-08-19</date>
 
 <chapter>
 <title>Introduction</title>
@@ -62,12 +62,18 @@ Before you can start fixing something, you got to make sure it's broken first,
 right?  For this reason, we've developed a suite of tools named <uri 
 link="/proj/en/hardened/pax-utils.xml">PaX Utilities</uri>.  If you are not 
 familiar with these utilities, you should read the <uri 
-link="/proj/en/hardened/pax-utils.xml">PaX Utilities Guide</uri> now.  Gentoo users 
-can simply do <c>emerge pax-utils</c>.  Non-Gentoo users should be able to 
-find a copy of the source tarball in the <path>distfiles</path> on a <uri 
+link="/proj/en/hardened/pax-utils.xml">PaX Utilities Guide</uri> now.  Gentoo 
+users can simply do <c>emerge pax-utils</c>.  Non-Gentoo users should be able 
+to find a copy of the source tarball in the <path>distfiles</path> on a <uri 
 link="/main/en/mirrors.xml">Gentoo Mirror</uri>.  Once you have the PaX 
 Utilities setup on your system, we can start playing around with 
 <c>scanelf</c>.
+</p>
+
+<p>
+Keep in mind that although these utilities are named PaX Utilities, they 
+certainly do not require PaX or anything else like that on your system.  
+The name is a historical artifact and want of a better name, has stuck.
 </p>
 
 <p>
@@ -111,6 +117,50 @@ installed is the latest upstream has to offer and the latest version your
 distro has to offer.  Who knows, maybe you can get lucky and someone else has 
 already fixed it.  If you wish to get feedback on your work, feel free to 
 contact the <mail link="hardened@gentoo.org">Gentoo hardened team</mail>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>"False" Positives</title>
+<body>
+
+<p>
+Sometimes you may come across a package which contains a mountain of TEXTRELs 
+with seemingly no relation to assembler.  This may simply be because the 
+objects were not properly compiled with the appropriate PIC flag.  The fix is 
+quite simple: make sure every object file that is linked into the final shared 
+object is compiled with the appropriate PIC flag (typically -fPIC).
+</p>
+
+<p>
+For example, let's look at the silc-plugin package.  It builds up a few 
+modules, but only compiles some of the objects with -fPIC that are linked into
+the final libsilc_core.so module.  The output of scanelf here is quite 
+extensive!
+</p>
+
+<pre caption="Run scanelf on silc-plugin">
+$ <i>scanelf -qT /usr/lib/irssi/modules/libsilc_core.so | wc -l</i>
+10734
+$ <i>scanelf -qT /usr/lib/irssi/modules/libsilc_core.so</i>
+...
+  libsilc_core.so: silc_client_ftp_ask_name [0xD542C] in silc_client_receive_new_id [0xD5380]
+  libsilc_core.so: silc_client_run_one [0xD55CA] in silc_client_receive_new_id [0xD5380]
+  libsilc_core.so: silc_id_payload_parse [0xD5842] in silc_client_packet_parse_type [0xD57B0]
+  libsilc_core.so: fgetc@@GLIBC_2.0 [0xD5857] in silc_client_packet_parse_type [0xD57B0]
+...
+</pre>
+
+<p>
+A TEXTREL on glibc's fgetc() function!?  Either people are calling fgetc() from
+assembler (and should be shot), or something else is going on.  A good rule of
+thumb is that if it seems like just about every function/variable reference 
+causes a TEXTREL and it is all done in C code, then the file was not built as
+PIC.  Just review the build output and see if the command to compile it was
+invoked with -fPIC.  If not, go fix the build system as you do not need to dig
+into the source.  Dodged the bullet this time!
 </p>
 
 </body>
