@@ -155,7 +155,7 @@ def main():
     open(config.LOCALHOME + '/ebuilds/index.shtml', 'w').write(
             index.replace(
                 '<!--#include virtual="main.shtml"-->',
-                '<!--#exec cmd="./query_ebuild.py $QUERY_STRING" -->')
+                '<!--#exec cmd="export QUERY_STRING;./query_ebuild.py" -->')
             )
 
     # /feeds
@@ -190,7 +190,7 @@ def main():
     # /search
     open(config.LOCALHOME + '/search/index.shtml', 'w').write(
             index.replace('<!--#include virtual="main.shtml"-->',
-                '<!--#exec cmd="./search.py $QUERY_STRING" -->'
+                '<!--#exec cmd="export QUERY_STRING;./search.py" -->'
                 )
             )
 
@@ -202,7 +202,7 @@ def main():
     # /similar
     open(config.LOCALHOME + '/similar/index.shtml', 'w').write(
             index.replace('<!--#include virtual="main.shtml"-->',
-                '<!--#exec cmd="./similar.py $QUERY_STRING" -->'
+                '<!--#exec cmd="export QUERY_STRING;./similar.py" -->'
                 )
             )
 
