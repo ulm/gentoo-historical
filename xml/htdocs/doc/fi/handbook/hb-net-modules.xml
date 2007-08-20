@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-net-modules.xml,v 1.10 2007/01/04 00:38:33 flammie Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/handbook/hb-net-modules.xml,v 1.11 2007/08/20 07:47:12 flammie Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Tässä kappaleessa kerrotaan Gentoon joustavista verkkoasetusmahdollisuuksista,
 DHCP-asiakasohjelmista, siltauksista, VLANeista ja muista.
 </abstract>
 
-<version>7.1</version>
-<date>2007-01-04</date>
+<version>8.2</version>
+<date>2007-04-13</date>
 
 <section>
 <title>Verkkomoduulit</title>
@@ -206,34 +206,63 @@ konenimen oletusarvoisesti, joten sitä ei tarvitse erikseen määritellä.
 </section>
 
 <section>
-<title>ADSL-modeemi</title>
+<title>ADSL ja PPPoE tai PPPoA</title>
 <body>
 
 <p>
 Ensin asennetaan ADLS-ohjelmat.
 </p>
 
-<pre caption="Rp-pppoe:n asentaminen">
-# <i>emerge net-dialup/rp-pppoe</i>
+<pre caption="Ppp:n asentaminen">
+# <i>emerge net-dialup/ppp</i>
 </pre>
 
-<warn>
-<c>Baselayout-1.11.x</c>-versiot tukevat vain PPPoE:tä, tulevaisuudessa
-aiotaan tukea myös PPPoA:ta.
-</warn>
+<note>
+PPPoA on saatavilla paketista <c>>=baselayout-1.12</c> lähtien.
+</note>
 
 <p>
-Seuraavaksi asetetaan <c>eth0</c> käyttämään ADSL-rajapintaa ja sopivaa
-käyttäjänimeä. Muutokset tehdään tiedostoon <path>/etc/conf.d/net</path>.
+PPP- ja eth0-skriptit pitää luoda:
 </p>
 
-<pre caption="eth0:n asettaminen ADSL:ksi /etc/conf.d/netissä">
-config_eth0=( "adsl" )
-adsl_user_eth0="username"
+<pre caption="Nettiskriptien teko">
+# <i>ln -s /etc/init.d/net.lo /etc/init.d/net.ppp0</i>
+# <i>ln -s /etc/init.d/net.lo /etc/init.d/net.eth0</i>
 </pre>
 
 <p>
-Lopulta pitää määritellä käyttäjänimi ja salasana tiedostoon
+Aseta RC_NET_STRICT_CHECKING="yes" tiedostoon <path>/etc/conf.d/rc</path>.
+</p>
+
+<p>
+Seuraavaksi asetetaan tiedosto <path>/etc/conf.d/net</path>.
+</p>
+
+<pre caption="A basic PPPoE setup">
+config_eth0=( null ) <comment>(Aseta ethernet-rajapinta)</comment>
+config_ppp0=( "ppp" )
+link_ppp0="eth0" <comment>(Aseta ethernet-rajapinta)</comment>
+plugins_ppp0=( "pppoe" )
+username_ppp0='user'
+password_ppp0='password'
+pppd_ppp0=(
+       "noauth"
+       "defaultroute"
+       "usepeerdns"
+       "holdoff 3"
+       "child-timeout 60"
+       "lcp-echo-interval 15"
+       "lcp-echo-failure 3"
+       noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp
+)
+
+depend_ppp0() {
+    need net.eth0
+}  
+</pre>
+
+<p>
+Käyttäjänimi ja salasana voidaan asettaa myös tiedostoon
 <path>/etc/ppp/pap-secrets</path>.
 </p>
 
@@ -241,6 +270,18 @@ Lopulta pitää määritellä käyttäjänimi ja salasana tiedostoon
 <comment># *-merkki on tärkeä!</comment>
 "username"	*	"password"
 </pre>
+
+<p>
+Jos PPPoE:ta käytetään USB-modeemilla, pitää asentaa <c>br2684ctl</c>.
+Lue myös asennusohjeet tiedostosta
+<path>/usr/portage/net-dialup/speedtouch-usb/files/README</path>.
+</p>
+
+<impo>
+Lue myös tarkkaan ADSL- ja PPP-ohjeet tiedostossa
+<path>/etc/conf.d/net.example</path>. Siinä on tarkempia selityksiä monista
+tarpeellisista asetuksista.
+</impo>
 
 </body>
 </section>
