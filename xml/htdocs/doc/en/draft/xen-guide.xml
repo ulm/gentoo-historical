@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/draft/Attic/xen-guide.xml,v 1.2 2007/07/25 19:14:01 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/draft/Attic/xen-guide.xml,v 1.3 2007/08/24 18:37:53 swift Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -19,8 +19,8 @@ This guide describes how to start using Xen on your Gentoo system
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.1</version>
-<date>2007-07-24</date>
+<version>0.9</version>
+<date>2007-08-24</date>
 
 <chapter>
 <title>Introduction</title>
@@ -72,7 +72,7 @@ domains.
 <body>
 
 <p>
-A drastic change that might be necessary is to rebuild the entire Gentoo
+A dramatic change that might be necessary is to rebuild the entire Gentoo
 installation with a different <c>CFLAGS</c> setting. Guest operating systems
 running under Xen might otherwise see major performance degradation. If you,
 however, are planning on checking out Xen rather than installing it for
@@ -349,8 +349,8 @@ an operating system, we could just create and attach the domain using the
 
 <p>
 The domain would be booted inside the terminal in which you executed the
-command. However, in our case, the disk image is empty so the domain wouldn't be
-able to do much. To fix this, you can loop-mount the image and install Gentoo as
+command. However, in our case, the disk image is empty so the domain won't boot
+up in anything useful. To fix this, you can loop-mount the image and install Gentoo as
 you're used to.
 </p>
 
@@ -387,7 +387,9 @@ up specific routing rules.
 </p>
 
 <p>
-When selecting the <e>bridged</e> approach, <brite>TODO</brite>.
+When selecting the <e>bridged</e> approach, your default network interface on
+the administrative domain becomes a bridge which accepts connections to the
+virtual domains as well as to the IP address your administrative domain has.
 </p>
 
 </body>
@@ -441,6 +443,71 @@ network configuration:
 <comment>(Enable the following lines)</comment>
 (network-script network-route)
 (vif-script vif-route)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Bridged Interfaces</title>
+<body>
+
+<p>
+Unlike the routed interfaces you now need to load the <path>netloop</path>
+driver with <c>nloopbacks=1</c> (or higher) as the additional loopback devices
+are used to create the bridge. For the other modules you still need the
+<path>netbk</path> module as well as briding functionality (<path>bridge</path>
+module if build as such).
+</p>
+
+<p>
+Now edit your virtual domain and add the <c>vif</c> construct:
+</p>
+
+<pre caption="Configuring a virtual interface">
+~# <i>nano -w /mnt/data/xen/configs/gentoo</i>
+
+<comment>(Add the vif instruction)</comment>
+vif    = [ 'ip=192.168.1.101, vifname=veth0' ]
+</pre>
+
+<p>
+Next edit <path>/etc/xen/xend-config.xsp</path> as follows to select bridged
+network configuration:
+</p>
+
+<pre caption="Editing xend-config.xsp">
+~# <i>nano -w /etc/xen/xend-config.xsp</i>
+
+<comment>(Enable the following lines)</comment>
+(network-script network-bridge)
+(vif-script vif-bridge)
+
+<comment>(Comment out the following lines if not done already)</comment>
+<i>#</i> (network-script network-route)
+<i>#</i> (vif-script vif-route)
+</pre>
+
+<p>
+By default, the bridge will contain whatever interface is configured to be the
+default interface (the device that is listed under the default route through
+<c>ip route list</c>). If you want to alter this behavior, edit the
+<path>xend-config.xsp</path> as follows:
+</p>
+
+<pre caption="Editing xend-config.xsp to change bridge configuration">
+~# <i>nano -w /etc/xen/xend-config.xsp</i>
+
+<comment>(Edit the network-script line)</comment>
+(network-script <i>'</i>network-bridge <i>netdev=eth0 bridge=xenbr0 vifnum=0'</i>)
+</pre>
+
+<p>
+Once the configuration is done, restart the <c>xend</c> init script to have Xen
+build the bridge:
+</p>
+
+<pre caption="Restarting the xend daemon">
+~# <i>/etc/init.d/xend restart</i>
 </pre>
 
 </body>
