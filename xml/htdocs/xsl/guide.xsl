@@ -17,11 +17,11 @@
             doctype-system="http://www.w3.org/TR/html4/loose.dtd"/>
 
 <!-- Include external stylesheets -->
-<xsl:include href="content.xsl" />
-<xsl:include href="handbook.xsl" />
-<xsl:include href="inserts.xsl" />
+<xsl:include href="/xsl/content.xsl" />
+<xsl:include href="/xsl/handbook.xsl" />
+<xsl:include href="/xsl/inserts.xsl" />
 
-<xsl:include href="devmap.xsl" />
+<xsl:include href="/xsl/devmap.xsl" />
 
 <!-- When using <pre>, whitespaces should be preserved -->
 <xsl:preserve-space elements="pre script"/>
@@ -127,7 +127,7 @@
 
   <xsl:choose>
     <xsl:when test="/guide">
-      <xsl:apply-templates select="chapter"/>
+      <xsl:apply-templates select="faqindex|chapter"/>
     </xsl:when>
     <xsl:when test="/sections">
       <xsl:apply-templates select="/sections/section"/>
@@ -729,16 +729,16 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
   </xsl:if>
 </xsl:template>
 
-<!-- Chapter -->
-<xsl:template match="chapter">
-  <xsl:variable name="chid"><xsl:number/></xsl:variable>
+<!-- FAQ Index & Chapter -->
+<xsl:template match="faqindex|chapter">
+  <xsl:variable name="chid"><xsl:number count="faqindex|chapter"/></xsl:variable>
   <xsl:choose>
     <xsl:when test="title">
       <p class="chaphead">
         <xsl:if test="@id"><a name="{@id}"/></xsl:if>
         <a name="doc_chap{$chid}"/>
-        <xsl:if test="not(/mainpage) and count(//chapter)>1">
-          <span class="chapnum"><xsl:number/>.&#160;</span>
+        <xsl:if test="not(/mainpage) and (count(//faqindex)+count(//chapter))>1">
+          <span class="chapnum"><xsl:value-of select="$chid"/>.&#160;</span>
         </xsl:if>
         <xsl:value-of select="title"/>
       </p>
@@ -759,6 +759,40 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
   <xsl:apply-templates select="section">
     <xsl:with-param name="chid" select="$chid"/>
   </xsl:apply-templates>
+
+  <xsl:if test="name()='faqindex'">
+    <!-- Generate FAQ index -->
+
+    <xsl:for-each select="./following-sibling::chapter">
+     <xsl:if test="section/title">
+      <p class="secthead">
+        <xsl:value-of select="title"/>
+      </p>
+      <xsl:variable name="nchap"><xsl:value-of select="1+position()"/></xsl:variable>
+      <ul>
+        <xsl:for-each select="section">
+         <xsl:if test="title">
+          <li>
+           <a>
+            <xsl:attribute name="href">
+             <xsl:choose>
+              <xsl:when test="@id">
+               #<xsl:value-of select="@id"/>
+              </xsl:when>
+              <xsl:otherwise>
+               <xsl:value-of select="concat('#doc_chap', $nchap, '_sect')"/><xsl:number/>
+              </xsl:otherwise>
+             </xsl:choose>
+            </xsl:attribute>
+            <xsl:value-of select="title"/>
+           </a>
+          </li>
+         </xsl:if>
+        </xsl:for-each>
+      </ul>
+     </xsl:if>
+    </xsl:for-each>
+  </xsl:if>
 </xsl:template>
 
 
