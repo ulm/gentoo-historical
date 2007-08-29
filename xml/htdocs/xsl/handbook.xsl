@@ -370,7 +370,9 @@
       <a name= "{@id}"/>
     </xsl:if>
     <p class="secthead"><xsl:value-of select="title" /></p>
-    <xsl:apply-templates select="body" />
+    <xsl:apply-templates select="body">
+      <xsl:with-param name="chid" select="$chpos" />
+    </xsl:apply-templates>
   </xsl:if>
 </xsl:template>
 
