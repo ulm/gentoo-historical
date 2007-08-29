@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Id: virt-mail-howto.xml,v 1.1 2007/05/15 12:15:42 neysx Exp $ -->
+<!-- $Id: virt-mail-howto.xml,v 1.2 2007/08/29 13:36:10 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/id/virt-mail-howto.xml" lang="id">
@@ -26,28 +26,8 @@ Dokumen ini menjelaskan cara membuat virtual mailhosting system berbasis
 postfix, mysql, courier-imap, dan cyrus-sasl.
 </abstract>
 
-<version>1.2</version>
-<date>2006-09-04</date>
-
-<!--
-Isi
-
-I. Pendahuluan
-II. Dasar-dasar Postfix
-III. Courier-imap
-IV. Cyrus-sasl
-V. Sertifikat SSL untuk Postfix dan Apache
-VI. Menambahkan dukungan SSL dan SASL untuk Postfix
-VII. MySQL
-VIII. Apache dan phpMyAdmin
-IX. User vmail
-X. Konfigurasi Otentikasi MySQL Authentication dan vhosts
-XI. Squirrelmail
-XII. Mailman
-XIII. Penyaringan isi dan Anti-Virus
-XIV. Penyelesaian akhir
-XV. Pemecahan Masalah
--->
+<version>1.5</version>
+<date>2007-08-24</date>
 
 <chapter>
 <title>Pendahuluan</title>
@@ -105,22 +85,6 @@ Jika tidak, kemungkinan besar anda harus melakukan kompilasi ulang utuk
 mendapatkan dukungan yang anda perlukan untuk semua protokol. Selain itu, anda
 juga sebaiknya menonaktifkan variabel mail dan jaringan lain, seperti ipv6.
 </p>
-
-<impo>
-Panduan ini ditulis untuk postfix-2.0.x. Jika anda menggunakan postfix &lt; 2,
-beberapa variabel yang digunakan di panduan ini akan berbeda. Untuk itu anda
-dianjurkan untuk melakukan upgrade. Beberapa paket lain yang digunakan di sini
-juga memiliki sensitifitas terhadap versi. Jadi, sebaiknya anda membaca
-dokumentasi yang disediakan oleh masing-masing paket jika anda mendapatkan
-masalah.
-</impo>
-
-<impo>
-Panduan ini menggunakan apache-1.3.x. Apache-2 telah dianggap stabil di
-portage. Namun begitu, masih ada beberapa masalah dengan integrasi php. Sampai
-dukungan php di apache-2.0.x dianggap stabil, panduan ini akan tetap
-menggunakan versi 1.3.x.
-</impo>
 
 <impo>
 Anda memerlukan nama domain untuk menjalankan public mail server, atau paling
@@ -260,10 +224,15 @@ langkah ini. Jika anda tidak ingin menggunakan ssl, lewatkan saja.)</comment>
 <p>
 Luncurkan klien e-mail anda dan periksa apakah semua koneksi yang telah anda
 jalankan tadi sudah bekerja dengan benar untuk penerimaan dan pengiriman
-e-mail. Setelah semua pengaturan dasar sukses, kita akan melakukan banyak hal
-sekaligus untuk mendapatkan sistem e-mail yang lengkap. Lagi-lagi, periksa
-kembali apakah semua pengaturan dasar yang baru kita instal telah berfungsi
-dengan benar sebelum melanjutkan.
+e-mail. Tentu saja anda belum bisa login ke layanan apapun karena kita belum
+mengatur otentikasi, tetapi ada baiknya jika kita memeriksa koneksi terlebih
+dahulu.
+</p>
+
+<p>
+Setelah pengaturan dasar benar, kita akan melakukan banyak langkah sekaligus
+agar sistem dapat langsung bekerja. Lagi-lagi, pastikan terlebih dahulu bahwa
+semua paket yang kita instal sudah dapat berfungsi dengan baik.
 </p>
 
 </body>
@@ -330,23 +299,11 @@ emailAddress_default.
 <comment>(Jika anda tidak menemukan variabel-variabel tersebut, tambahkan saja di tempat yang sesuai.)</comment>
 
 # <i>cd misc</i>
-# <i>nano -w CA.pl</i>
-<comment>(Kita perlu menambahkan -nodes di  # create a certificate dan
-# create a certificate request code agar sertifikat ssl baru kita dapat dimuat
-tanpa password. Jika tidak, ketika anda melakukan reboot, sertifikat ssl anda
-tidak akan tersedia.)</comment>
-
-# create a certificate
-system ("$REQ -new -nodes -x509 -keyout newreq.pem -out newreq.pem $DAYS");
-
-# create a certificate request
-system ("$REQ -new -nodes -keyout newreq.pem -out newreq.pem $DAYS");
-		
+# <i>./CA.pl -newreq-nodes</i>
 # <i>./CA.pl -newca</i>
-# <i>./CA.pl -newreq</i>
 # <i>./CA.pl -sign</i>
 # <i>cp newcert.pem /etc/postfix</i>
-# <i>cp newreq.pem /etc/postfix</i>
+# <i>cp newkey.pem /etc/postfix</i>
 # <i>cp demoCA/cacert.pem /etc/postfix</i>
 <comment>(Sekarang kita ulangi langkah tadi untuk apache.)</comment>
 
@@ -398,7 +355,7 @@ smtp_use_tls = yes
 smtp_tls_note_starttls_offer = yes
 smtpd_use_tls = yes
 #smtpd_tls_auth_only = yes
-smtpd_tls_key_file = /etc/postfix/newreq.pem
+smtpd_tls_key_file = /etc/postfix/newkey.pem
 smtpd_tls_cert_file = /etc/postfix/newcert.pem
 smtpd_tls_CAfile = /etc/postfix/cacert.pem
 smtpd_tls_loglevel = 3
@@ -414,8 +371,12 @@ Anda dapat mengaktifkannya nanti jika anda mau.)</comment>
 
 <p>
 Sekarang kita akan memeriksa apakah konfigurasi kita telah diterapkan oleh
-postfix.
+postfix. Untuk ini kita akan menggunakan <c>telnet</c> (yang disediakan oleh
+<c>net-misc/netkit-telnetd</c>), namun anda juga bisa menggunakan <c>nc</c>
+(yang disediakan oleh <c>net-analyzer/netcat</c>):
 </p>
+
+
 
 <pre caption="Memeriksa dukungan sasl dan tls">
 # <i>telnet localhost 25</i>
@@ -453,6 +414,41 @@ menyimpan informasi otentikasi dan virtual domain kita.
 </chapter>
 
 <chapter>
+<title>User vmail</title>
+<section>
+<body>
+
+<p>
+Sebelum menyiapkan lingkungan mailhosting virtual, kita perlu membuat akun user
+yang akan kita gunakan untuk menampung mailbox virtual. Untuk kemudahan, kita
+akan menggunakan nama <e>vmail</e> untuk user ini.
+</p>
+
+<pre caption="Membuat akun user vmail">
+# <i>adduser -d /home/vmail -s /bin/false -m vmail</i>
+</pre>
+
+<p>
+Sekarang akun user vmail sudah tersedia. Anda boleh membuat banyak akun jika
+ingin (untuk memelihara struktur pada beberapa kumpulan akun vmail anda). ID
+user, grup, dan direktori <e>home</e> direferensikan pada table MySQL.
+</p>
+
+<p>
+Selanjutnya kita perlu membuat lokasi tempat kita menyimpan mailbox:
+</p>
+
+<pre caption="Menciptakan mailbox">
+# <i>mkdir -p /home/vmail/virt-domain.com/foo</i>
+# <i>chown -R vmail:vmail /home/vmail/virt-domain.com</i>
+# <i>maildirmake /home/vmail/virt-domain.com/foo/.maildir</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
 <title>MySQL</title>
 <section>
 <body>
@@ -469,8 +465,7 @@ untuk menyelesaikan tahap ini.
 
 # <i>/usr/bin/mysql_install_db</i>
 <comment>(Setelah perintah di atas dijalankan, ikuti petunjuk di layar untuk
-menetapkan password root mysql, bukan mysqladmin. Jika tidak, database anda
-akan terbuka untuk umum.)</comment>
+menetapkan password root mysql, ika tidak, database anda akan terbuka untuk umum.)</comment>
 
 # <i>/etc/init.d/mysql start</i>
 # <i>mysqladmin -u root -p create mailsql</i>
@@ -517,8 +512,8 @@ id   alias    destination
 <comment>(Baris dipotong agar lebih mudah dibaca.)</comment>
 id email            clear     name     uid     gid     homedir     \
 	maildir                                quota  postfix
-10 foo@virt-bar.org $password realname virtid  virtid  /home/vmail \
-	/home/vmail/virt-bar.org/foo/.maildir/        y
+10 foo@virt-domain.com $password realname virtid  virtid  /home/vmail \
+       /home/vmail/virt-domain.com/foo/.maildir/        y
 13 foo@bar.com      $password realname localid localid /home/foo   \
 	/home/foo/.maildir/                           y
 </pre>
@@ -528,14 +523,14 @@ Nilai uid dan gid <c>virtid</c> harus berasal dari user dan grup <c>vmail</c>.
 </p>
 
 <pre caption="Contoh tabel transport">
-id   domain       destination
-1    bar.com      local:
-2    virt-bar.org virtual:
+id   domain           destination
+1    bar.com          local:
+2    virt-domain.com  virtual:
 </pre>
 
 <pre caption="Contoh tabel virtual">
-id   email            destination
-3   root@virt-bar.org other@email.address
+id   email                destination
+3   root@virt-domain.com  other@email.address
 </pre>
 
 </body>
@@ -553,20 +548,19 @@ mempermudah interaksi dengan database.
 </p>
 
 <pre caption="Instalasi apache dan phpmyadmin">
-# <i>emerge apache mod_php phpmyadmin</i>
+# <i>emerge apache phpmyadmin</i>
 </pre>
 
 <p>
-Ada beberapa panduan yang tersedia tentang cara menambahkan dukungan php untuk
-apache, seperti yang satu ini:
-<uri>http://www.linuxguruz.com/z.php?id=31</uri>. Selain itu, beberapa topik di
-<uri>http://forums.gentoo.org</uri> membahas cara mengatasi masalah pada proses
-instalasi (cari dengan kata kunci 'apache php'). Untuk itu, kita tidak akan
-membahasnya di sini. Konfigurasikan apache dan php, lalu lanjutkan sisa panduan
-ini. Satu petunjuk: <path>.htaccess</path> adalah direktori tempat anda
-meletakkan phpmyadmin. Jika anda tidak meletakkannya di sana, halaman index
-anda akan dapat dijamah oleh laba-laba mesin pencarian internet sehingga semua
-orang dapat membuka halaman phpmyadmin anda dengan google dan dapat membuat
+Ada banyak panduan yang tersedia tentang cara menambahkan dukungan php untuk
+apache, seperti <uri>link="/proj/en/php/">Proyek PHP Gentoo</uri>. Selain itu,
+beberapa topik di <uri>http://forums.gentoo.org</uri> membahas cara mengatasi
+masalah pada proses instalasi. Untuk itu, kita tidak akan membahasnya di sini.
+Konfigurasikan apache dan php, lalu lanjutkan sisa panduan ini. Satu petunjuk:
+gunakan <path>.htaccess</path> pada direktori tempat anda menginstal
+phpmyadmin. Jika anda tidak meletakkannya di sana, halaman index anda akan
+dapat dijamah oleh laba-laba mesin pencarian internet sehingga semua orang
+dapat membuka halaman phpmyadmin anda dengan google dan dapat membuat
 perubahan pada database anda, yang merupakan situasi <b>BURUK!</b> Ada beberapa
 panduan tentang hal ini, salah satunya adalah:
 <uri>http://www.csoft.net/docs/micro/htaccess.html.en</uri>.
@@ -583,33 +577,48 @@ sebelumnya. Direktif Apache-SSL yang harus anda gunakan adalah:
 </ul>
 
 <pre caption="Instalasi sertifikat SSL Apache">
-# <i>cp /etc/ssl/misc/new.cert.cert /etc/apache/conf/ssl/</i>
-# <i>cp /etc/ssl/misc/new.cert.key /etc/apache/conf/ssl/</i>
-# <i>nano -w /etc/apache/conf/vhosts/ssl.default-vhost.conf</i>
+# <i>cp /etc/ssl/misc/new.cert.cert /etc/apache2/ssl/</i>
+# <i>cp /etc/ssl/misc/new.cert.key /etc/apache2/ssl/</i>
+# <i>cd /etc/apache2/vhosts.d</i>
+<comment>(Periksa apakah anda sudah memiliki template ssl-vhost. Salin template
+yang telah tersedia jika anda menemukannya.)</comment>
+# <i>cp 00_default_vhost.conf ssl-vhost.conf</i>
+# <i>nano -w ssl-vhost.conf</i>
 
 <comment>(Ganti beberapa parameter berikut)</comment>
+NameVirtualHost host.domain.name:443
 
-ServerName host.domain.name
-ServerAdmin your@email.address
-SSLCertificateFile /etc/apache/conf/ssl/new.cert.cert
-SSLCertificateKeyFile /etc/apache/conf/ssl/new.cert.key
+&lt;VirtualHost host.domain.name:443&gt;
+  ServerName host.domain.name
+  ServerAdmin your@email.address
 
-# <i>/etc/init.d/apache restart</i>
+  DocumentRoot "/var/www/localhost/htdocs/phpmyadmin";
+  &lt;Directory "/var/www/localhost/htdocs/phpmyadmin"&gt;
+    ...
+  &lt;/Directory&gt;
+
+  SSLCertificateFile /etc/apache2/ssl/new.cert.cert
+  SSLCertificateKeyFile /etc/apache2/ssl/new.cert.key
+  SSLEngine on
+  ...
+&lt;/VirtualHost&gt;
+
+# <i>nano -w /etc/conf.d/apache2</i>
+<comment>(Tambahkan -D SSL -D PHP5 di APACHE2_OPTS)</comment>
+
+# <i>/etc/init.d/apache2 restart</i>
 </pre>
-
-<note>
-Jika sebelumnya anda sudah memiliki instalasi apache, kemungkinan anda harus
-me-reboot server anda untuk dapat menginstal sertifikat baru dengan sukses.
-Periksa log anda untuk memastikan apakah apache telah di-restart dengan sukses.
-</note>
 
 <p>
 Selanjutnya, konfigurasikan phpMyAdmin.
 </p>
 
 <pre caption="Konfigurasi phpMyAdmin">
-# <i>nano -w /var/www/localhost/htdocs/phpmyadmin/config.inc.php</i>
+# <i>cd /var/www/localhost/htdocs/phpmyadmin</i>
+# <i>cp config.sample.inc.php config.inc.php</i>
+# <i>nano -w config.inc.php</i>
 <comment>(Ganti beberapa parameter berikut.)</comment>
+$cfg['blowfish_secret'] = 'someverysecretpassphraze';
 
 $cfg['Servers'][$i]['host'] = 'localhost';          // MySQL hostname
 $cfg['Servers'][$i]['controluser'] = 'mailsql';     // MySQL control user settings
@@ -633,35 +642,6 @@ oleh postfix ketika seorang pengguna mendapatkan e-mail pertamanya. Jadi,
 secara umum, anda sebaiknya mengirimkan e-mail "Selamat Datang" kepada pengguna
 baru setelah anda mengatur akunnya untuk memastikan agar <path>.maildir</path>
 diciptakan.
-</p>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>User vmail</title>
-<section>
-<body>
-
-<p>
-Sekarang anda mungkin sedang memikirkan tentang user dan direktori yang akan
-anda gunakan untuk pengguna e-mail. Benar sekali. Mari kita konfigurasikan.
-</p>
-
-<pre caption="Membuat akun user vmail">
-# <i>adduser -d /home/vmail -s /bin/false vmail</i>
-# <i>uid=`cat /etc/passwd | grep vmail | cut -f 3 -d :`</i>
-# <i>groupadd -g $uid vmail</i>
-# <i>mkdir /home/vmail</i>
-# <i>chown vmail: /home/vmail</i>
-</pre>
-
-<p>
-Setelah membuat akun user vmail, gunakan uid, gid dan direktori home-nya.
-Ketika anda membuat akun lokal, gunakan uid, gid, dan direktori home tersebut.
-Kita telah membuat halaman administrasi php untuk tugas ini, tetapi kita belum
-menggunakannya, karena secara umum phpmyadmin sudah berfungsi dengan baik.
 </p>
 
 </body>
@@ -768,7 +748,7 @@ hosts         	= unix:/var/run/mysqld/mysqld.sock
 
 <pre caption="/etc/postfix/mysql-virtual-maps.cf">
 # <i>nano -w /etc/postfix/mysql-virtual-maps.cf</i>
-#myql-virtual-maps.cf
+# myql-virtual-maps.cf
 
 user        	= mailsql
 password        = $password
@@ -812,6 +792,7 @@ Terakhir, edit <path>/etc/postfix/main.cf</path> sekali lagi.
 </p>
 
 <pre caption="/etc/postfix/main.cf">
+<comment>(Pastikan bahwa anda tidak memiliki alias_maps definitions lain)</comment>
 # <i>nano -w /etc/postfix/main.cf</i>
 alias_maps = mysql:/etc/postfix/mysql-aliases.cf
 relocated_maps = mysql:/etc/postfix/mysql-relocated.cf
@@ -820,14 +801,16 @@ local_transport = local
 local_recipient_maps = $alias_maps $virtual_mailbox_maps unix:passwd.byname
 
 virtual_transport = virtual
-virtual_mailbox_domains =
-	virt-bar.com,
-	$other-virtual-domain.com
+<comment>(Domain yang dicantumkan oleh mydestination tidak boleh tercantum di
+parameter virtual_mailbox_domains)</comment>
+virtual_mailbox_domains = virt-domain.com, $other-virtual-domain.com
 
 virtual_minimum_uid = 1000
+<comment>(Gantikan $vmail-gid dengan GID grup vmail)</comment>
 virtual_gid_maps = static:$vmail-gid
 virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-maps.cf
 virtual_alias_maps = mysql:/etc/postfix/mysql-virtual.cf
+<comment>(Gantikan $vmail-uid dengan UID user vmail)</comment>
 virtual_uid_maps = static:$vmail-uid
 virtual_mailbox_base = /
 #virtual_mailbox_limit =
@@ -907,19 +890,12 @@ anda untuk membaca seluruh dokumentasi mailman, termasuk
 di sini.
 </p>
 
-<p>
-Satu catatan lain, versi mailman ini diinstal di
-<path>/usr/local/mailman</path>. Jika anda seperti penulis dan ingin mengganti
-lokasi instalasi, anda dapat melakukannya dengan merubah variabel INSTALLDIR di
-ebuild.
-</p>
-
 <pre caption="Instalasi mailman">
 # <i>emerge mailman</i>
 </pre>
 
 <pre caption="Pengaturan default: Mailman/Defaults.py">
-# <i> nano -w /var/mailman/Mailman/Defaults.py</i>
+# <i> nano -w /usr/mailman/Mailman/Defaults.py</i>
 <comment>(Ganti beberapa nilai berikut ini agar sesuai dengan domain primari
 anda, domain virtual akan kita atur nanti.)</comment>
 DEFAULT_EMAIL_HOST = 'domain.com'
@@ -940,29 +916,35 @@ add_virtualhost('www.virt.domain2.com', 'virt.domain2.com')
 
 # <i>su mailman</i>
 # <i>cd ~</i>
-# <i>bin/newlist test</i>
+# <i>./bin/newlist --urlhost='www.virt-domain.com' --emailhost='virt-domain.com' test</i>
 Enter the email of the person running the list: <i>your@email.address</i>
 Initial test password:
 Hit enter to continue with test owner notification...
-<comment>(Milis virtual domain dapat ditentukan dengan nama seperti
+<comment>(Daftar virtual domain juga dapat ditentukan dengan nama seperti
 list@domain.com)</comment>
-# <i>bin/genaliases</i>
+# <i>./bin/genaliases</i>
 <comment>(Setelah alias diciptakan, periksa apakah alias ini telah ditambahkan.)</comment>
 
 # <i>nano -w data/aliases</i>
 # STANZA START: test
 # CREATED:
-test:             "|/var/mailman/mail/mailman post test"
-test-admin:       "|/var/mailman/mail/mailman admin test"
-test-bounces:     "|/var/mailman/mail/mailman bounces test"
-test-confirm:     "|/var/mailman/mail/mailman confirm test"
-test-join:        "|/var/mailman/mail/mailman join test"
-test-leave:       "|/var/mailman/mail/mailman leave test"
-test-owner:       "|/var/mailman/mail/mailman owner test"
-test-request:     "|/var/mailman/mail/mailman request test"
-test-subscribe:   "|/var/mailman/mail/mailman subscribe test"
-test-unsubscribe: "|/var/mailman/mail/mailman unsubscribe test"
+test:             "|/usr/local/mailman/mail/mailman post test"
+test-admin:       "|/usr/local/mailman/mail/mailman admin test"
+test-bounces:     "|/usr/local/mailman/mail/mailman bounces test"
+test-confirm:     "|/usr/local/mailman/mail/mailman confirm test"
+test-join:        "|/usr/local/mailman/mail/mailman join test"
+test-leave:       "|/usr/local/mailman/mail/mailman leave test"
+test-owner:       "|/usr/local/mailman/mail/mailman owner test"
+test-request:     "|/usr/local/mailman/mail/mailman request test"
+test-subscribe:   "|/usr/local/mailman/mail/mailman subscribe test"
+test-unsubscribe: "|/usr/local/mailman/mail/mailman unsubscribe test"
 # STANZA END: test
+
+<i>./bin/newlist mailman</i>
+# <i>./bin/genaliases</i>
+
+<comment>(Kembali ke user root)</comment>
+# <i>exit</i>
 
 # <i>/etc/init.d/mailman start</i>
 # <i>rc-update add mailman default</i>
@@ -976,11 +958,11 @@ recipient_delimiter = +
 <comment>(Bacalah README.POSTFIX.gz untuk mendapatkan petunjuk dalam masalah ini.)</comment>
 
 alias_maps     =
-	hash:/var/mailman/data/aliases,
+	hash:/usr/mailman/data/aliases,
 	mysql:/etc/postfix/mysql-aliases.cf
 
 virtual_alias_maps =
-	hash:/var/mailman/data/virtual-mailman,
+	hash:/usr/mailman/data/virtual-mailman,
 	mysql:/etc/postfix/mysql-virtual.cf
 <comment>(Ini akan menambahkan dukungan file alias mailman di postfix. Tentu
 saja anda dapat menggunakan tabel mysql untuk tujuan ini, tetapi penulis tidak
@@ -1119,8 +1101,8 @@ postfix.
 </p>
 
 <pre caption="Servis-servis yang dapat menampilkan konfigurasinya">
-# <i>apachectl fullstatus</i> (memerlukan lynx)
-# <i>apachectl configtest</i> (memeriksa konfigurasi)
+# <i>apache2ctl fullstatus</i> (memerlukan lynx)
+# <i>apache2ctl configtest</i> (memeriksa konfigurasi)
 # <i>postconf -n</i> (akan memberitahukan anda semua konfigurasi yang digunakan oleh postfix)
 # <i>/etc/init.d/$service restart</i>
 </pre>
@@ -1144,7 +1126,7 @@ paling tidak, carilah komponen yang bermasalah.
 # <i>kill -USR1 `ps -C metalog -o pid=`</i>(to turn off metalog buffering)
 # <i>nano -w /var/log/mail/current</i>
 # <i>cat /var/log/mysql/mysql.log</i>
-# <i>tail /var/log/apache/error_log</i>
+# <i>tail /var/log/apache2/error_log</i>
 </pre>
 
 <p>
