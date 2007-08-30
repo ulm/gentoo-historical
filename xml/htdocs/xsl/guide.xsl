@@ -1771,11 +1771,11 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     </tr>
     <tr lang="en">
     <td align="center" class="topsep">
-        <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929" target="_top">
-          <img src="{concat($ROOT,'images/phpa-gentoo.gif')}" width="125" height="144" alt="php|architect" border="0"/>
+        <a href="http://www.gni.com" target="_top">
+          <img src="{concat($ROOT,'images/gni-logo.png')}" width="125" alt="Global Netoptex Inc." border="0"/>
       </a>
       <p class="alttext">
-	  <a href="http://www.phparch.com/bannerclick.php?AID=68&amp;BID=1&amp;BT=127929">php|architect</a>
+	  <a href="http://www.gni.com">Global Netoptex Inc.</a>
       </p>
     </td>
     </tr>
