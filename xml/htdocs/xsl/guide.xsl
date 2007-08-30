@@ -1772,7 +1772,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     <tr lang="en">
     <td align="center" class="topsep">
         <a href="http://www.gni.com" target="_top">
-          <img src="{concat($ROOT,'images/gni-logo.png')}" width="125" alt="Global Netoptex Inc." border="0"/>
+          <img src="{concat($ROOT,'images/gni_logo.png')}" width="125" alt="Global Netoptex Inc." border="0"/>
       </a>
       <p class="alttext">
 	  <a href="http://www.gni.com">Global Netoptex Inc.</a>
