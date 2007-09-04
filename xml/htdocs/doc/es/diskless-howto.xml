@@ -1,4 +1,4 @@
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/diskless-howto.xml,v 1.10 2006/10/27 11:48:24 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/diskless-howto.xml,v 1.11 2007/09/04 00:02:35 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/es/diskless-howto.xml" lang="es">
 <title>Nodos sin disco en Gentoo</title>
@@ -35,8 +35,8 @@ Esta guía te ayudará a configurar nodos sin disco en Gentoo Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.21</version>
-<date>2006-04-02</date> 
+<version>1.26</version>
+<date>2007-03-05</date> 
 
 <chapter>
 <title>Introducción</title>
@@ -95,17 +95,8 @@ conectarte a la red local.
 <chapter>
 <title>Configurando el maestro y el esclavo</title>
 <section>
-<title>Acerca de los kernels</title>
+<title>Acerca de los núcleos</title>
 <body>
-
-<note>
-Si vas a utilizar tus nodos para crear un cluster openMosix, asegúrate
-de utilizar un kernel parchado para tal motivo. El parche lo puedes
-encontrar en el portage dentro de
-<path>sys-kernel/openmosix-sources</path>. Además, deberías leer la
-<uri link="openmosix-howto.xml">Guía de openMosix</uri> para aprender
-a compilar tu kernel para openMosix.
-</note>
 
 <p>
 El kernel es el software que está entre tu hardware y todo el demás
@@ -390,8 +381,6 @@ puntos de montaje y directorios. Para crearlos ejecuta:
 # <i>mkdir /diskless/192.168.1.21/var/spool</i>
 # <i>mkdir /diskless/192.168.1.21/usr</i>
 # <i>mkdir /diskless/192.168.1.21/opt</i>
-<comment>(sólo para openMosix )</comment>
-# <i>mkdir /diskless/192.168.1.21/mfs</i>
 </pre>
 
 <p>
@@ -539,18 +528,33 @@ bloque opcional <c>group</c> te permite agrupar opciones entre
 </p>
 
 <pre caption="Archivo dhcpd.conf de ejemplo">
-# DHCP configuration file for DHCP ISC 3.0
+# 
+# Ejemplo del archivo dhcpd.conf de los clientes
+#
  
+# Desactiva el DNS dinámico
 ddns-update-style none;
  
-# Definition of PXE-specific options
-# Code 1: Multicast IP address of boot file server
-# Code 2: UDP port that client should monitor for MTFTP responses
-# Code 3: UDP port that MTFTP servers are using to listen for MTFTP requests
-# Code 4: Number of seconds a client must listen for activity before trying
-#         to start a new MTFTP transfer
-# Code 5: Number of seconds a client must listen before trying to restart
-#         a MTFTP transfer
+# Asume una puerta de enlace predeterminada para el tráfico IP
+option routers 192.168.1.1;
+
+# Provee información DNS a los clientes
+option domain-name-servers 192.168.1.1;
+option domain-name "mydomain.com";
+
+# Especifica el servidor TFTP a utilizar
+next-server 192.168.1.1;
+
+# Declara una opción del buffer específica del vendedor para los clientes PXE:
+# Código 1: Dirección IP Multicast del servidor de archivos de arranque
+# Código 2: Puerto UDP que el cliente debe monitorear para recibir 
+#           respuestas MTFTP
+# Código 3: Puerto UDP que los servidores MTFTP utilizan para escuchar 
+#           solicitudes MTFTP
+# Código 4: Número de segundos que el cliente debe escuchar por actividad antes 
+#           de iniciar una nueva transferencia MTFTP
+# Código 5: Número de segundos que el cliente debe escuchar antes de reiniciar 
+#           una transferencia MTFTP
  
 option space PXE;
 option PXE.mtftp-ip               code 1 = ip-address;
@@ -561,66 +565,35 @@ option PXE.mtftp-delay            code 5 = unsigned integer 8;
 option PXE.discovery-control      code 6 = unsigned integer 8;
 option PXE.discovery-mcast-addr   code 7 = ip-address;
  
+# Declara la subred en la cual van a existir nuestro nodos sin disco
 subnet 192.168.1.0 netmask 255.255.255.0 {
  
-  
-  class "pxeclients" {
+  # Provee a los clientes PXE con la información apropiada
+  class "pxeclient" {
     match if substring (option vendor-class-identifier, 0, 9) = "PXEClient";
-    option vendor-class-identifier "PXEClient";
     vendor-option-space PXE;
  
-    # At least one of the vendor-specific PXE options must be set in
-    # order for the client boot ROMs to realize that we are a PXE-compliant
-    # server.  We set the MCAST IP address to 0.0.0.0 to tell the boot ROM
-    # that we can't provide multicast TFTP (address 0.0.0.0 means no
-    # address).
+    # Al menos 1 de las opciones PXE específicas del fabricante deben
+    # ser definidas para que el ROM de arranque de los clientes se de
+    # cuenta que el servidor tienes las características PXE. Definimos
+    # la dirección IP MCAST a 0.0.0.0 para indicarle al ROM de arranque
+    # que no podemos proveerle un TFTP multicast.
  
     option PXE.mtftp-ip 0.0.0.0;
  
-    # This is the name of the file the boot ROMs should download.
+    # Este es el nombre del archivo que el ROM arranque debe descargar
     filename "pxelinux.0";
-    # This is the name of the server they should get it from.
-    <comment># Usa el IP maestro</comment>
-    next-server 192.168.1.1;
   }
-  <comment># Si estás utilizando etherboot sin una imagen específica </comment>
+  # Provee a los clientes Etherboot con la información apropiada
   class "etherboot" {
-        if substring (option vendor-class-identifier, 0, 9) = "Etherboot" {
-        filename "/diskless/vmlinuz";
-        }
+        match if substring(option vendor-class-identifier, 0, 9) = "Etherboot";
+        filename "vmlinuz_arch";
   }
-  
-  pool {
-    max-lease-time 86400;
-    default-lease-time 86400;
-    <comment># Esto evita que máquinas desconocidas reciban un IP</comment>
-    deny unknown-clients;
-  }
- 
+
+  # Agrega una declaración por cada máquina sin disco
   host slave21 {
-       <comment># Usa la dirección MAC del esclavo</comment>
-       hardware ethernet                00:40:63:C2:CA:C9;
-       <comment># Asigna a tu esclavo una dirección IP estática</comment>
+       hardware ethernet                00:02:A5:04:3B:66;
        fixed-address                    192.168.1.21;
-       server-name                      "master";
-       <comment># Indica la dirección IP de la puerta de enlace, si es necesario</comment>
-       option routers                   192.168.1.1;
-       <comment># Usa el IP de tu DNS, sólo si es necesario</comment>
-       option domain-name-servers       192.168.1.1;
-       option domain-name               "mydomain.com";
-       <comment># Establece el nombre de anfitrión de tu esclavo</comment>
-       option host-name                 "slave21";
-       
-       
-       <comment># Etherboot y pxe con una imagen MAC específica</comment>
-       option root-path                 "/diskless/192.168.1.21";
-       
-       if substring (option vendor-class-identifier, 0, 9) = "Etherboot" {
-                        filename "/vmlinuz_arch";
-        } else if substring (option vendor-class-identifier, 0,9) ="PXEClient" {
-                        filename "/pxelinux.0";
-        }
-                                                               
   }
 }
 </pre>
@@ -639,15 +612,13 @@ relativo al directorio <path>/diskless</path> (esto se debe a las
 opciones específicas del servidor tftp que serán explicadas más
 adelante). Dentro del bloque <c>host</c>, la opción <c>hardware
 Ethernet</c> especifica la dirección MAC, y <c>fixed-address</c>
-asigna la dirección IP estática a esa dirección MAC en particular. Es
-una, probablemente, buena idea la de incluir la opción
-<c>host-name</c> ya que es simplemente el nombre de anfitrión de un
-esclavo en particular. Hay una muy buena página de manual sobre el
-archivo <path>dhcpd.conf</path> con varias opciones que están más allá
-del ámbito de esta Guía. La puedes leer ejecutando:
+asigna la dirección IP estática a esa dirección MAC en particular. Hay
+una muy buena página de manual sobre el archivo
+<path>dhcpd.conf</path> con varias opciones que están más allá del
+ámbito de esta Guía. La puedes leer ejecutando:
 </p>
 
-<pre caption="Viendo la página del manual sobre for dhcpd.conf">
+<pre caption="Viendo la página del manual sobre dhcpd.conf">
 # <i>man dhcpd.conf</i>
 </pre>
 </body>
@@ -1178,8 +1149,6 @@ master:/home                    /home     nfs     sync,hard,intr,rw,nolock,rsize
 none                            /proc     proc    defaults                                     0 0
 <comment># Útil pero superfluo</comment>
 master:/var/log                 /var/log  nfs     hard,intr,rw                                 0 0
-<comment>(Sólo si estás configurando un cluster openMosix)</comment>
-none                            /mfs      mfs     dfsa=1                                       0 0
 </pre>
 
 <p>
@@ -1266,54 +1235,31 @@ enlaces simbólicos y los permisos.
 </section>
 
 <section>
+  <title>Configurando la red</title>
+  <body>
+    
+    <p>
+      Para evitar que el guión de inicio de red corte la conección a
+      tu servidor NFS, necesitarás agregar una opción en el archivo
+      <path>/etc/conf.d/net</path> del sistema de archivos de tu
+      cliente sin disco.
+    </p>
+    
+    <pre caption="Editando /etc/conf.d/net">
+      <comment>(Agrega esta opción a las ya existentes para la interfaz de tu cliente)</comment>
+      config_eth0=( "noop" )
+    </pre>
+    
+    <note>
+      Puedes encontrar más información en <path>/etc/conf.d/net.example</path>.
+    </note>
+    
+  </body>
+</section>
+
+<section>
 <title>Guiones de inicio</title>
 <body>
-
-<p>
-Los guiones por defecto tratarán de ejecutar <e>checkroot</e>, lo cual
-no tiene sentido hacerlo en los nodos esclavos. La manera difícil es
-la de manualmente editar el guión
-<path>/diskless/192.168.1.21/sbin/rc</path> pero esto es peligroso y
-podría malograrse si decides sincronizar el sistema de archivos de tu
-nodo nuevamente y te olvidas de dejar este archivo intacto. El truco
-es tener un archivo <path>/fastboot</path> cuando tu sistema
-arranca. Este archivo le dice a <e>checkroot</e> que no ejecute
-ninguna comprobación del sistema de archivos. Pero esto también
-causará que el archivo sea eliminado una vez que se haya concluido el
-procesos de inicialización, por lo que necesitaremos crearlo de nuevo
-al final del proceso init así:
-</p>
-
-<pre caption="Previniendo que los guiones de inicio revisen el sistema de archivos">
-<comment>(Crea el archivo /fastboot para el siguiente arranque)</comment>
-# <i>touch /diskless/192.168.1.21/fastboot</i>
-<comment>(Crea el archivo /fastboot para cada arranque)</comment>
-# <i>echo "touch /fastboot" &gt;&gt; /diskless/192.168.1.21/etc/conf.d/local.start</i>
-</pre>
-
-<p>
-Dado que el desmontar los sistemas de archivos de red debe ocurrir tan
-tarde como sea posible, tienes que editar el archivo
-<path>/etc/init.d/netmount</path> y editar lo siguiente:
-</p>
-  	 
-<pre caption="Editing /etc/init.d/netmount">
- depend() {
-    <i>before *</i>
-</pre>
-
-<note>
-La estructura base desde la versión 1.11.* en adelante no necesitan
-este cambio.
-</note>
-
-<p>
-Si realizas esto en un sistema levantado, no te olvides de ejecutar
-<c>depscan.sh</c> para solucionar las dependencias de los
-servicios. Puedes ignorar sin preocuparte cualquier advertencia sobre
-la colisión con /etc/init.d/checkroot, ya que lo desabilitamos a
-través de archivo fastboot que configuramos en el parrafo anterior.
-</p>
 
 <p>
 Necesitarás tantos guiones de inicio en
@@ -1342,10 +1288,8 @@ total 0
 lrwxrwxrwx    1 root     root           20 2003-10-18 17:28 bootmisc -> /etc/init.d/bootmisc
 lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 checkfs -> /etc/init.d/checkfs
 lrwxrwxrwx    1 root     root           17 2003-10-18 17:28 clock -> /etc/init.d/clock
-lrwxrwxrwx    1 root     root           23 2003-10-18 17:28 consolefont -> /etc/init.d/consolefont
 lrwxrwxrwx    1 root     root           22 2003-10-18 17:28 domainname -> /etc/init.d/domainname
 lrwxrwxrwx    1 root     root           20 2003-10-18 17:28 hostname -> /etc/init.d/hostname
-lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 keymaps -> /etc/init.d/keymaps
 lrwxrwxrwx    1 root     root           22 2003-10-18 17:28 localmount -> /etc/init.d/localmount
 lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 modules -> /etc/init.d/modules
 lrwxrwxrwx    1 root     root           18 2003-10-18 17:28 net.lo -> /etc/init.d/net.lo
@@ -1355,7 +1299,9 @@ lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 urandom -> /etc/init
  
 /diskless/192.168.1.21/etc/runlevels/default:
 total 0
+lrwxrwxrwx    1 root     root           23 2003-10-18 17:28 consolefont -> /etc/init.d/consolefont
 lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 distccd -> /etc/init.d/distccd
+lrwxrwxrwx    1 root     root           19 2003-10-18 17:28 keymaps -> /etc/init.d/keymaps
 lrwxrwxrwx    1 root     root           17 2003-10-18 17:28 local -> /etc/init.d/local
 lrwxrwxrwx    1 root     root           16 2003-10-18 17:28 sshd -> /etc/init.d/sshd
 lrwxrwxrwx    1 root     root           21 2003-10-18 17:28 syslog-ng -> /etc/init.d/syslog-ng
@@ -1448,7 +1394,6 @@ previamente explicado:
 /etc/mtab$$IP=192.168.1.21$$
 /etc/runlevels$$CLIENT$$<comment> (Separación limpia entre los guiones de arranque del maestro y esclavos
 </comment>
-/fastboot$$CLIENT$$
 /tmp$$IP=192.168.1.21$$
 /var$$IP=192.168.1.21$$<comment> (Crea subdirectorios en /var)</comment>
 </pre>
@@ -1469,10 +1414,6 @@ previamente explicado:
         eend $? "Error starting NFS mountd"
 </pre>
 
-<pre caption="Editando /etc/conf.d/local.start$$CLIENT$$">
-<comment>(Añade esta linea)</comment>
-touch /fastboot\$\$CLIENT\$\$
-</pre>
 </body>
 </section>
 -->
