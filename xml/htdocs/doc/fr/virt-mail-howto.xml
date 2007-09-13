@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/virt-mail-howto.xml,v 1.39 2007/03/13 11:20:06 cam Exp $-->
-
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/virt-mail-howto.xml,v 1.40 2007/09/13 13:42:13 cam Exp $-->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/fr/virt-mail-howto.xml" lang="fr">
@@ -15,8 +14,14 @@
 <author title="Correcteur">
  <mail link="seather@scygro.za.net">Scygro</mail>
 </author>
+<author title="Correcteur">
+<mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
 <author title="Traducteur">
  <mail link="cam@gentoo.org">Camille Huot</mail>
+</author>
+<author title="Traducteur">
+ <mail link="titefleur@acissi.net">Marion Agé</mail>
 </author>
 
 <abstract>
@@ -26,8 +31,8 @@ basant sur postfix, mysql, courier-imap et cyrus-sasl.
 
 <license/>
 
-<version>1.2</version>
-<date>2006-09-04</date>
+<version>1.6</version>
+<date>2007-08-24</date>
 
 <chapter>
 <title>Introduction</title>
@@ -76,22 +81,6 @@ certains paquets pour activer le support de ces protocoles. Il est également
 recommandé de désactiver les autres options liées au courrier et au réseau,
 comme ipv6.
 </p>
-
-<impo>
-Ce guide a été écrit pour postfix-2.0.x. Si vous utilisez postfix &lt; 2,
-certaines variables présentées dans ce document seront différentes. Il est
-vivement recommandé que vous mettiez à jour votre système. Quelques autres
-paquets figurant dans ce guide sont également sensibles au changement de
-version. Je vous conseille de lire la documentation incluse dans les paquets si
-vous vous trouvez en face de problèmes de ce genre.
-</impo>
-
-<impo>
-Ce document utilise apache-1.3.x. Apache-2 a été marqué stable dans Portage.
-Pourtant, il y a encore quelques problèmes avec l'intégration de PHP. Ce guide
-continuera d'utiliser la version 1.3.x jusqu'à ce que le support PHP
-d'apache-2.0.x soit marqué stable.
-</impo>
 
 <impo>
 Vous devez avoir un nom de domaine pour pouvoir faire un serveur public de
@@ -232,10 +221,16 @@ fonctionne correctement avant de continuer.
 <p>
 Lancez votre client de courrier électronique favori et vérifiez que tous les
 services que vous avez lancés répondent en envoyant et réceptionnant des
-courriels. Maintenant que le système de base fonctionne, nous allons procéder à
-plusieurs étapes d'un seul coup pour installer le reste du système. Encore une
-fois, soyez certain que ce que nous avons déjà installé fonctionne correctement
-avant de continuer.
+courriels. Bien sûr, vous ne pourrez vous identifier à aucun service parce que
+l'authentification n'a pas encore été configurée, mais il est sage de vérifier
+si les connexions en elles-même fonctionnent.
+</p>
+
+<p>
+Maintenant que le système de base fonctionne, nous allons procéder à plusieurs
+étapes d'un seul coup pour installer le reste du système. Encore une fois,
+soyez certain que ce que nous avons déjà installé fonctionne correctement avant
+de continuer.
 </p>
 
 </body>
@@ -306,23 +301,11 @@ emailAddress_default.
 
 
 # <i>cd misc</i>
-# <i>nano -w CA.pl</i>
-<comment>(Nous devons ajouter -nodes aux codes commentés par « # create a certificate » et)</comment>
-<comment>(« # create a certificate request » afin de laisser nos nouveaux certificats ssl se)</comment>
-<comment>(charger sans demander de mot de passe. Sinon, quand vous redémarrerez, vos)</comment>
-<comment>(certificats ssl ne seront pas disponibles.)</comment>
-
-# create a certificate
-system ("$REQ -new -nodes -x509 -keyout newreq.pem -out newreq.pem $DAYS");
-
-# create a certificate request
-system ("$REQ -new -nodes -keyout newreq.pem -out newreq.pem $DAYS");
-
+# <i>./CA.pl -newreq-nodes</i>
 # <i>./CA.pl -newca</i>
-# <i>./CA.pl -newreq</i>
 # <i>./CA.pl -sign</i>
 # <i>cp newcert.pem /etc/postfix</i>
-# <i>cp newreq.pem /etc/postfix</i>
+# <i>cp newkey.pem /etc/postfix</i>
 # <i>cp demoCA/cacert.pem /etc/postfix</i>
 <comment>(À présent, faire de même pour Apache.)</comment>
 
@@ -375,7 +358,7 @@ smtp_use_tls = yes
 smtp_tls_note_starttls_offer = yes
 smtpd_use_tls = yes
 #smtpd_tls_auth_only = yes
-smtpd_tls_key_file = /etc/postfix/newreq.pem
+smtpd_tls_key_file = /etc/postfix/newkey.pem
 smtpd_tls_cert_file = /etc/postfix/newcert.pem
 smtpd_tls_CAfile = /etc/postfix/cacert.pem
 smtpd_tls_loglevel = 3
@@ -390,7 +373,10 @@ tls_random_source = dev:/dev/urandom
 </pre>
 
 <p>
-Maintenant, vérifions que nos modifications ont été prises en compte par postfix.
+Maintenant, vérifions que nos modifications ont été prises en compte par
+postfix. Pour cela, nous allons utiliser <c>telnet</c> (fourni par exemple par
+<c>net-misc/netkit-telnetd</c>) bien que vous puissiez utiliser <c>nc</c>
+(fourni par <c>net-analyzer/netcat</c>)&nbsp;:
 </p>
 
 <pre caption="Vérification du support sasl et ssl">
@@ -429,6 +415,44 @@ toutes les informations d'authentification et de domaine virtuel.
 </chapter>
 
 <chapter>
+<title>L'utilisateur vmail</title>
+<section>
+<body>
+
+<p>
+Avant de paramétrer notre environnement virtuel d'hébergement de courriels,
+nous allons créer un utilisateur fonctionnel sous lequel vont tourner les
+boîtes aux lettres virtuelles. Pour plus de clarté, nous l'appellerons
+<e>vmail</e>&nbsp;:
+</p>
+
+<pre caption="Ajout de l'utilisateur vmail">
+# <i>adduser -d /home/vmail -s /bin/false -m vmail</i>
+</pre>
+
+<p>
+À présent, le compte vmail est configuré. Vous pouvez créer plusieurs comptes
+si vous le voulez (pour garder une certaine organisation dans votre ensemble de
+comptes virtuels). L'identifiant de l'utilisateur, l'identifiant du groupe et
+les répertoires personnels sont référencés dans les tables MySQL.
+</p>
+
+<p>
+En dehors du compte utilisateur, nous avons également besoin de créer
+l'emplacement réservé aux boîtes aux lettres&nbsp;:
+</p>
+
+<pre caption="Création des boîtes aux lettres">
+# <i>mkdir -p /home/vmail/virt-domain.com/foo</i>
+# <i>chown -R vmail:vmail /home/vmail/virt-domain.com</i>
+# <i>maildirmake /home/vmail/virt-domain.com/foo/.maildir</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
 <title>MySQL</title>
 <section>
 <body>
@@ -444,8 +468,8 @@ cette étape.
 
 # <i>/usr/bin/mysql_install_db</i>
 <comment>(Après avoir lancé cette commande, suivez les instructions affichées à l'écran)</comment>
-<comment>(pour ajouter un mot de passe root à mysql, pas mysqladmin, sinon votre base de)</comment>
-<comment>(données sera grande ouverte.)</comment>
+<comment>(pour ajouter un mot de passe root à mysql, sinon votre base de données sera)</comment>
+<comment>(grande ouverte.)</comment>
 
 # <i>/etc/init.d/mysql start</i>
 # <i>mysqladmin -u root -p create mailsql</i>
@@ -492,8 +516,8 @@ id   alias    destination
 <comment>(Lignes coupées pour améliorer la lisibilité.)</comment>
 id email            clear     name     uid     gid     homedir     \
         maildir                                quota  postfix
-10 foo@virt-bar.org $password realname virtid  virtid  /home/vmail \
-        /home/vmail/virt-bar.org/foo/.maildir/        y
+10 foo@virt-domain.com $password realname virtid  virtid  /home/vmail \
+        /home/vmail/virt-domain.com/foo/.maildir/        y
 13 foo@bar.com      $password realname localid localid /home/foo   \
         /home/foo/.maildir/                           y
 </pre>
@@ -506,12 +530,12 @@ l'utilisateur et du groupe <c>vmail</c>.
 <pre caption="Exemple de table transport">
 id   domain       destination
 1    bar.com      local:
-2    virt-bar.org virtual:
+2    virt-domain.com virtual:
 </pre>
 
 <pre caption="Exemple de table virtual">
 id   email            destination
-3   root@virt-bar.org other@email.address
+3   root@virt-domain.com other@email.address
 </pre>
 
 </body>
@@ -529,22 +553,21 @@ pour interagir plus facilement avec la base de données.
 </p>
 
 <pre caption="Installation d'apache et de phpmyadmin">
-# <i>emerge apache mod_php phpmyadmin</i>
+# <i>emerge apache phpmyadmin</i>
 </pre>
 
 <p>
 Il existe une ribambelle de guides qui expliquent comment installer apache avec
-php. Celui-ci, par exemple&nbsp;:
-<uri>http://www.linuxguruz.com/z.php?id=31</uri>. Il y a aussi de nombreux
-articles sur <uri>http://forums.gentoo.org/</uri> qui détaillent comment
-résoudre les problèmes d'installation (faites une recherche de «&nbsp;apache
-php&nbsp;»). Ceci étant dit, je ne vais pas en parler dans ce guide. Installez
-apache et php, puis continuez à suivre ce guide. En fait juste un mot&nbsp;:
-mettez un .htaccess pour protéger le répertoire où réside phpmyadmin. Si vous
-ne le faites pas, les moteurs de recherche vont y accéder et indexer vos pages,
-ce qui veux dire que n'importe qui pourra venir modifier les données de votre
-base de données, ce qui est à proscrire. Il existe de nombreux guides sur le
-sujet, notamment&nbsp;:
+php, y compris les guides prévenant du <uri link="/proj/en/php/">projet PHP de
+Gentoo</uri>. Il y a aussi de nombreux articles sur
+<uri>http://forums.gentoo.org/</uri> qui détaillent comment résoudre les
+problèmes d'installation. Ceci étant dit, je ne vais pas en parler dans ce
+guide. Installez apache et php, puis continuez à suivre ce guide. En fait juste
+un mot&nbsp;: mettez un .htaccess pour protéger le répertoire où réside
+phpmyadmin. Si vous ne le faites pas, les moteurs de recherche vont y accéder
+et indexer vos pages, ce qui veux dire que n'importe qui pourra venir modifier
+les données de votre base de données, ce qui est à proscrire. Il existe de
+nombreux guides sur le sujet, notamment&nbsp;:
 <uri>http://www.csoft.net/docs/micro/htaccess.html.en</uri>.
 </p>
 
@@ -560,32 +583,48 @@ certificats&nbsp;:
 </ul>
 
 <pre caption="Installation des certificats pour Apache SSL">
-# <i>cp /etc/ssl/misc/new.cert.cert /etc/apache/conf/ssl/</i>
-# <i>cp /etc/ssl/misc/new.cert.key /etc/apache/conf/ssl/</i>
-# <i>nano -w /etc/apache/conf/vhosts/ssl.default-vhost.conf</i>
-<comment>(Modifiez les paramètres suivants :)</comment>
+# <i>cp /etc/ssl/misc/new.cert.cert /etc/apache2/ssl/</i>
+# <i>cp /etc/ssl/misc/new.cert.key /etc/apache2/ssl/</i>
+# <i>cd /etc/apache2/vhosts.d</i>
+<comment>(Regardez si vous n'avez pas déjà un modèle d'hôte virtuel ssl. Si
+c'est le cas, copiez-le à la place du default_vhost)</comment>
+# <i>cp 00_default_vhost.conf ssl-vhost.conf</i>
+# <i>nano -w ssl-vhost.conf</i>
 
+ <comment>(Changez les paramètres suivants)</comment>
+NameVirtualHost host.domain.name:443
+
+&lt;VirtualHost host.domain.name:443&gt;
 ServerName host.domain.name
 ServerAdmin your@email.address
-SSLCertificateFile /etc/apache/conf/ssl/new.cert.cert
-SSLCertificateKeyFile /etc/apache/conf/ssl/new.cert.key
 
-# <i>/etc/init.d/apache restart</i>
+DocumentRoot "/var/www/localhost/htdocs/phpmyadmin";
+&lt;Directory "/var/www/localhost/htdocs/phpmyadmin"&gt;
+  ...
+  &lt;/Directory&gt;
+
+  SSLCertificateFile /etc/apache2/ssl/new.cert.cert
+  SSLCertificateKeyFile /etc/apache2/ssl/new.cert.key
+  SSLEngine on
+  ...
+&lt;/VirtualHost&gt;
+
+# <i>nano -w /etc/conf.d/apache2</i>
+<comment>(Ajoutez -D SSL -D PHP5 à APACHE2_OPTS)</comment>
+
+# <i>/etc/init.d/apache2 restart</i>
 </pre>
-
-<note>
-Si vous aviez déjà installé apache, vous devrez effectuer un redémarrage de la
-machine pour installer les nouveaux certificats. Vérifiez vos journaux système
-pour vous assurer qu'apache a redémarré correctement.
-</note>
 
 <p>
 Ensuite, configurez phpMyAdmin.
 </p>
 
 <pre caption="Configuration de phpMyAdmin">
-# <i>nano -w /var/www/localhost/htdocs/phpmyadmin/config.inc.php</i>
+# <i>cd /var/www/localhost/htdocs/phpmyadmin</i>
+# <i>cp config.sample.inc.php config.inc.php</i>
+# <i>nano -w config.inc.php</i>
 <comment>(Modifiez les paramètres suivants :)</comment>
+$cfg['blowfish_secret'] = 'unmotdepassevraimenttrèssecret';
 
 $cfg['Servers'][$i]['host'] = 'localhost';          // MySQL hostname
 $cfg['Servers'][$i]['controluser'] = 'mailsql';     // MySQL control user settings
@@ -609,35 +648,6 @@ automatiquement créés par postfix quand l'utilisateur recevra son premier
 courriel. C'est d'ailleurs une bonne idée d'envoyer un courriel de bienvenue à
 tous vos utilisateurs pour vous assurer que son .maildir s'est créé
 correctement.
-</p>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>L'utilisateur vmail</title>
-<section>
-<body>
-
-<p>
-Vous vous êtes peut-être demandé quel utilisateur et quel répertoire mettre
-pour les utilisateurs virtuels. C'est une bonne question. Occupons-nous en.
-</p>
-
-<pre caption="Ajout de l'utilisateur vmail">
-# <i>adduser -d /home/vmail -s /bin/false vmail</i>
-# <i>uid=`cat /etc/passwd | grep vmail | cut -f 3 -d :`</i>
-# <i>groupadd -g $uid vmail</i>
-# <i>mkdir /home/vmail</i>
-# <i>chown vmail: /home/vmail</i>
-</pre>
-
-<p>
-Maintenant, quand vous créez des comptes virtuels, utilisez les uid, gid et
-répertoire de l'utilisateur vmail. Nous pensions créer une page
-d'administration en PHP pour faciliter l'ajout d'utilisateurs, mais, comme
-phpmyadmin marche assez bien, on s'en passera.
 </p>
 
 </body>
@@ -728,7 +738,7 @@ hosts         = unix:/var/run/mysqld/mysqld.sock
 
 <pre caption="/etc/postfix/mysql-virtual-gid.cf (facultatif)">
 # <i>nano -w /etc/postfix/mysql-virtual-gid.cf</i>
-#myql-virtual-gid.cf
+# mysql-virtual-gid.cf
 
 user            = mailsql
 password        = $password
@@ -742,7 +752,7 @@ hosts           = unix:/var/run/mysqld/mysqld.sock
 
 <pre caption="/etc/postfix/mysql-virtual-maps.cf">
 # <i>nano -w /etc/postfix/mysql-virtual-maps.cf</i>
-#myql-virtual-maps.cf
+# mysql-virtual-maps.cf
 
 user            = mailsql
 password        = $password
@@ -787,6 +797,7 @@ Enfin, éditez <path>/etc/postfix/main.cf</path> une fois de plus.
 
 <pre caption="/etc/postfix/main.cf">
 # <i>nano -w /etc/postfix/main.cf</i>
+<comment>(Assurez-vous qu'il n'y a pas d'autres définitions d'alias_maps)</comment>
 alias_maps = mysql:/etc/postfix/mysql-aliases.cf
 relocated_maps = mysql:/etc/postfix/mysql-relocated.cf
 
@@ -794,14 +805,16 @@ local_transport = local
 local_recipient_maps = $alias_maps $virtual_mailbox_maps unix:passwd.byname
 
 virtual_transport = virtual
-virtual_mailbox_domains =
-        virt-bar.com,
-        $other-virtual-domain.com
+<comment>(Les domaines listés par les mydestination ne doivent pas être listés
+dans les paramètres virtual_mailbox_domains)</comment>
+virtual_mailbox_domains = virt-domain.com, $other-virtual-domain.com
 
 virtual_minimum_uid = 1000
+<comment>(Remplacez $vmail-gid par le GID de votre groupe vmail)</comment>
 virtual_gid_maps = static:$vmail-gid
 virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-maps.cf
 virtual_alias_maps = mysql:/etc/postfix/mysql-virtual.cf
+<comment>(Remplacez $vmail-uid par le UID de votre utilisateur vmail)</comment>
 virtual_uid_maps = static:$vmail-uid
 virtual_mailbox_base = /
 #virtual_mailbox_limit =
@@ -883,19 +896,12 @@ documentation sur mailman, surtout README.POSTFIX.gz, pour comprendre ce que
 nous allons faire.
 </p>
 
-<p>
-Une petite note supplémentaire&nbsp;: les versions actuelles de mailman
-s'installent dans <path>/usr/local/mailman</path>. Si vous êtes comme moi et
-voulez changer le chemin d'installation par défaut, on peut le faire en
-changeant la variable INSTALLDIR du fichier ebuild.
-</p>
-
 <pre caption="Installer mailman">
 # <i>emerge mailman</i>
 </pre>
 
 <pre caption="Réglages de mailman : Mailman/Defaults.py">
-# <i> nano -w /var/mailman/Mailman/Defaults.py</i>
+# <i> nano -w /usr/local/mailman/Mailman/Defaults.py</i>
 <comment>(Modifiez les valeurs ci-dessous pour qu'elles correspondent à votre domaine)</comment>
 <comment>(principal. Les domaines virtuels seront listés plus tard.)</comment>
 DEFAULT_EMAIL_HOST = 'domain.com'
@@ -903,7 +909,7 @@ DEFAULT_URL_HOST = 'www.domain.com'
 </pre>
 
 <pre caption="Réglages de mailman : Mailman/mm_cfg.py">
-# <i>nano -w /var/mailman/Mailman/mm_cfg.py</i>
+# <i>nano -w /usr/local/mailman/Mailman/mm_cfg.py</i>
 MTA = "Postfix"
 POSTFIX_STYLE_VIRTUAL_DOMAINS = ['virt-domain.com', 'virt.domain2.com']
 add_virtualhost('www.virt.domain.com', 'virt.domain.com')
@@ -916,34 +922,41 @@ add_virtualhost('www.virt.domain2.com', 'virt.domain2.com')
 
 # <i>su mailman</i>
 # <i>cd ~</i>
-# <i>bin/newlist test</i>
+# <i>./bin/newlist --urlhost='www.virt-domain.com' --emailhost='virt-domain.com' test</i>
 Enter the email of the person running the list: your@email.address
 Initial test password:
 Hit enter to continue with test owner notification...
 <comment>(Les listes qui utilisent un domaine virtuel peuvent être spécifiées en)</comment>
 <comment>(utilisant le style liste@domaine.com.)</comment>
-# <i>bin/genaliases</i>
+# <i>./bin/genaliases</i>
 <comment>(Maintenant que vos alias ont été générés, vérifiez qu'ils ont été)</comment>
 <comment>(correctement ajoutés.)</comment>
 
 # <i>nano -w data/aliases</i>
 # STANZA START: test
 # CREATED:
-test:             "|/var/mailman/mail/mailman post test"
-test-admin:       "|/var/mailman/mail/mailman admin test"
-test-bounces:     "|/var/mailman/mail/mailman bounces test"
-test-confirm:     "|/var/mailman/mail/mailman confirm test"
-test-join:        "|/var/mailman/mail/mailman join test"
-test-leave:       "|/var/mailman/mail/mailman leave test"
-test-owner:       "|/var/mailman/mail/mailman owner test"
-test-request:     "|/var/mailman/mail/mailman request test"
-test-subscribe:   "|/var/mailman/mail/mailman subscribe test"
-test-unsubscribe: "|/var/mailman/mail/mailman unsubscribe test"
+test:             "|/usr/local/mailman/mail/mailman post test"
+test-admin:       "|/usr/local/mailman/mail/mailman admin test"
+test-bounces:     "|/usr/local/mailman/mail/mailman bounces test"
+test-confirm:     "|/usr/local/mailman/mail/mailman confirm test"
+test-join:        "|/usr/local/mailman/mail/mailman join test"
+test-leave:       "|/usr/local/mailman/mail/mailman leave test"
+test-owner:       "|/usr/local/mailman/mail/mailman owner test"
+test-request:     "|/usr/local/mailman/mail/mailman request test"
+test-subscribe:   "|/usr/local/mailman/mail/mailman subscribe test"
+test-unsubscribe: "|/usr/local/mailman/mail/mailman unsubscribe test"
 # STANZA END: test
 
-<comment>(Pour lancer mailman manuellement et à chaque démarrage :)</comment>
+<comment>(Créez la liste mailman)</comment>
+# <i>./bin/newlist mailman</i>
+# <i>./bin/genaliases</i>
+
+<comment>(Retournez en super-administrateur)</comment>
+# <i>exit</i>
+
 # <i>/etc/init.d/mailman start</i>
 # <i>rc-update add mailman default</i>
+<comment>(Pour lancer mailman manuellement et à chaque démarrage.)</comment>
 </pre>
 
 <pre caption="Ajout du support des alias mailman à postfix">
@@ -953,11 +966,11 @@ recipient_delimiter = +
 <comment>(Lisez README.POSTFIX.gz pour plus de détails.)</comment>
 
 alias_maps     =
-        hash:/var/mailman/data/aliases,
+        hash:/usr/local/mailman/data/aliases,
         mysql:/etc/postfix/mysql-aliases.cf
 
 virtual_alias_maps =
-        hash:/var/mailman/data/virtual-mailman,
+        hash:/usr/local/mailman/data/virtual-mailman,
         mysql:/etc/postfix/mysql-virtual.cf
 <comment>(Postfix supporte maintenant le fichier d'alias de mailman.)</comment>
 <comment>(Vous pouvez bien sûr utiliser les tables mysql pour cela,)</comment>
@@ -1096,8 +1109,8 @@ montrent leur configuration actuelle, comme Postfix.
 </p>
 
 <pre caption="Vérifiez les configurations">
-# <i>apachectl fullstatus</i> (Requiert lynx.)
-# <i>apachectl configtest</i> (Vérifie la configuration.)
+# <i>apache2ctl fullstatus</i> (Requiert lynx.)
+# <i>apache2ctl configtest</i> (Vérifie la configuration.)
 # <i>postconf -n</i> (Vous dit exactement la configuration qu'utilise postfix.)
 # <i>/etc/init.d/$service restart</i>
 </pre>
@@ -1123,7 +1136,7 @@ le problème, ou, au moins, à vous indiquer de quel composant l'erreur provient
 # <i>kill -USR1 `ps -C metalog -o pid=`</i>(Désactive le cache de metalog.)
 # <i>nano -w /var/log/mail/current</i>
 # <i>cat /var/log/mysql/mysql.log</i>
-# <i>tail /var/log/apache/error_log</i>
+# <i>tail /var/log/apache2/error_log</i>
 </pre>
 
 <p>
