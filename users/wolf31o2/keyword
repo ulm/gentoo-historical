@@ -3,6 +3,7 @@
 EMAIL="wolf31o2@gentoo.org"
 CVSROOT="/var/cvsroot/gentoo-x86"
 COMMIT="yes"
+SENDMAIL="/usr/sbin/sendmail"
 
 usage() {
 	echo "$(basename ${0}): <keyword> <input file> [bug #]"
@@ -21,7 +22,8 @@ fi
 check_failed() {
 	if [ "${ret}" -ne 0 ]
 	then
-		failed_packages="${failed_packages} ${package}"
+		failed_packages="${failed_packages}
+	${package}"
 	fi
 }
 
@@ -40,11 +42,12 @@ do
 	do
 		ebuild="$(echo ${package} | cut -d"/" -f2)-${version}"
 		cd ${CVSROOT}/${package}
+		echo "DEBUG: ${package}"
 		cvs up
 		if [ $(echo ${1} | grep '^~') ]
 		then
 			ekeyword ${1} ${ebuild}.ebuild
-		elif [ -n "$(grep "~${1}" ${ebuild}.ebuild | grep -v ~x86-fbsd)" ]
+		elif [ -n "$(grep "~${1}" ${ebuild}.ebuild)" ] # | grep -v ~x86-fbsd)" ]
 		then
 			ekeyword ${1} ${ebuild}.ebuild
 		fi
@@ -55,9 +58,9 @@ done
 # we remove the file, then start over on just this one package.
 for package in ${packages}
 do
+	ebuild="$(echo ${package} | cut -d"/" -f2)-${version}"
 	for version in $(grep "${package} " /tmp/cpv.txt | cut -d" " -f2)
 	do
-		ebuild="$(echo ${package} | cut -d"/" -f2)-${version}"
 		cd ${CVSROOT}/${package}
 		if [ "$(cvs up | grep ^C | grep ${ebuild}.ebuild | cut -d" " -f1)" == "C" ]
 		then
@@ -71,6 +74,7 @@ do
 		rm -f .#*
 		if [ "$(cvs up | grep ^M | cut -d" " -f1)" == "M" ]
 		then
+			ebuild ${ebuild} digest
 			repoman scan
 			ret=$?
 			check_failed
@@ -99,5 +103,5 @@ done
 
 if [ -n "${failed_packages}" ]
 then
-	echo -e "From: ${EMAIL}\r\nTo: ${EMAIL}\r\nSubject: Failed commits\r\n\r\nThis email is to let you know that the following packages failed.\r\nYou will need to fix these packages manually.\r\n${failed_packages}\r\n" | sendmail -f ${EMAIL} ${EMAIL}
+	echo -e "From: ${EMAIL}\r\nTo: ${EMAIL}\r\nSubject: Failed commits\r\n\r\nThis email is to let you know that the following packages failed keywording for ${1}.\r\nYou will need to fix these packages manually.\r\n${failed_packages}\r\n" | ${SENDMAIL} -f ${EMAIL} ${EMAIL}
 fi
