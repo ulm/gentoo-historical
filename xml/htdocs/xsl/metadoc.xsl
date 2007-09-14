@@ -471,11 +471,6 @@
   <ti>
     <path>
       <xsl:choose>
-      <!-- Add ?glang={$lang} to handbook files, i.e. those with <sections> as a root element
-           because it's the only way they can know what language to use. -->
-        <xsl:when test="exslt:node-set($dfile)/sections">
-          <uri link="{$fileurl}?glang={$lang}"><xsl:value-of select="$fileurl"/></uri>
-        </xsl:when>
         <xsl:when test="exslt:node-set($dfile)/metadoc">
           <b><xsl:value-of select="$fileurl"/></b>
         </xsl:when>
@@ -500,7 +495,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.37 2007/08/20 10:41:01 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.38 2007/09/14 08:39:08 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -523,7 +518,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.37 2007/08/20 10:41:01 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.38 2007/09/14 08:39:08 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:when test="string-length($pv)=0">?!?</xsl:when>

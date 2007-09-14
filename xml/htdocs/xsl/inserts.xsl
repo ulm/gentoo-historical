@@ -6,6 +6,8 @@
                 xmlns:str="http://exslt.org/strings"
                 extension-element-prefixes="func date str">
 
+<xsl:variable name="alllang" select="'|ar|ca|cs|da|de|el|en|es|fi|fr|he|hu|id|it|ko|lt|nl|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_cn|zh_tw|'"/>
+
 <func:function name="func:gettext">
   <xsl:param name="str"/>
   <xsl:param name="PLANG"/>
@@ -29,7 +31,7 @@
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="contains('|ar|ca|cs|da|de|el|en|es|fi|fr|he|hu|id|it|ko|lt|nl|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_cn|zh_tw|',concat('|', $LANG,'|'))">
+    <xsl:when test="contains($alllang, concat('|', $LANG,'|'))">
       <xsl:variable name="insert" select="document(concat('/doc/', $LANG, '/inserts.xml'))/inserts/insert[@name=$str]"/>
       <xsl:choose>
         <xsl:when test="$insert">
@@ -347,13 +349,24 @@
 <!-- Define some globals that can be used throughout the stylesheets -->
 
 <!-- Top element name e.g. "book" -->
-<xsl:param name="TTOP"><xsl:value-of select="name(//*[1])" /></xsl:param>
+<xsl:variable name="TTOP"><xsl:value-of select="name(//*[1])" /></xsl:variable>
 
 <!-- Value of top element's link attribute e.g. "handbook.xml" -->
 <xsl:param name="link"><xsl:value-of select="//*[1]/@link" /></xsl:param>
 
 <!-- Value of top element's lang attribute e.g. "pt_br" -->
-<xsl:param name="glang"><xsl:value-of select="//*[1]/@lang" /></xsl:param>
+<xsl:variable name="glang">
+  <xsl:choose>
+    <xsl:when test="//*[1]/@lang and contains($alllang, concat('|', //*[1]/@lang,'|'))">
+      <xsl:value-of select="//*[1]/@lang" />
+    </xsl:when>
+    <!-- Default to language in path when @lang is undefined -->
+    <xsl:when test="contains($alllang, concat('|', substring-before(substring-after(substring-after($link,'/'),'/'),'/'), '|'))">
+      <xsl:value-of select="substring-before(substring-after(substring-after($link,'/'),'/'),'/')" />
+    </xsl:when>
+    <xsl:otherwise>en</xsl:otherwise>
+  </xsl:choose>
+</xsl:variable>
 
 <xsl:variable name="RTL"><xsl:if test="$glang='he' or $glang='ar'">Y</xsl:if></xsl:variable>
 

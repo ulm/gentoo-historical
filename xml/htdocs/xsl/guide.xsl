@@ -1491,8 +1491,10 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       <xsl:if test="$original/guide/version != $translation/guide/version">X</xsl:if>
     </xsl:when>
     <xsl:when test="$original/mainpage and $translation/mainpage">
-    <!-- /guide == /guide -->
       <xsl:if test="$original/mainpage/version != $translation/mainpage/version">X</xsl:if>
+    </xsl:when>
+    <xsl:when test="$original/sections and $translation/sections">
+      <xsl:if test="$original/sections/version != $translation/sections/version">X</xsl:if>
     </xsl:when>
     <!-- If we did not compare book==book, mainpage==mainpage or guide==guide, then consider versions are different -->
     <xsl:otherwise>X</xsl:otherwise>
@@ -1849,6 +1851,5 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     </div>
   </div>
 </xsl:template>
-
 
 </xsl:stylesheet>
