@@ -3,14 +3,16 @@
                 xmlns:exslt="http://exslt.org/common"
                 xmlns="http://earth.google.com/kml/2.1"
                 extension-element-prefixes="exslt">
-<xsl:output omit-xml-declaration="yes" indent="yes" cdata-section-elements="description"/>
+
+<xsl:output     omit-xml-declaration="yes"
+                indent="yes"
+                cdata-section-elements="description"/>
 
 <xsl:param name="mode"/>
 
 <xsl:variable name="rollcall" xmlns="">
  <xsl:for-each select="document('userinfo.xml', .)/userlist/user">
   <xsl:sort select="@username"/>
-  <xsl:if test="translate(status,'tired', 'TIRED')!='RETIRED'">
    <user nick="{@username}">
    <name>
    <xsl:choose>
@@ -31,8 +33,11 @@
      <xsl:value-of select="location"/>
    </location>
    <roles><xsl:value-of select="normalize-space(roles)"/></roles>
+   <location><xsl:value-of select="normalize-space(location)"/></location>
+    <xsl:if test="string-length(status) > 0">
+     <status><xsl:value-of select="translate(normalize-space(status),'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/></status>
+    </xsl:if>
    </user>
-  </xsl:if>
  </xsl:for-each>
 </xsl:variable>
 
@@ -53,13 +58,13 @@
 
 <!-- Default mode, similar to /etc/passwd -->
 <xsl:template match="/devlist">
-<xsl:text>#nick:name:location:latitude:longitude:pgpkey
+<xsl:text>#nick:name:location:latitude:longitude:pgpkey:status
 </xsl:text>
 <xsl:apply-templates select="exslt:node-set($rollcall)/user"/>
 </xsl:template>
 
 <xsl:template match="user">
- <xsl:value-of select="concat(@nick, ':', name, ':', location, ':', location/@lat, ':', location/@lon, ':', pgpkey, '&#xA;')"/>
+ <xsl:value-of select="concat(@nick, ':', name, ':', location, ':', location/@lat, ':', location/@lon, ':', pgpkey, ':', status, '&#xA;')"/>
 </xsl:template>
 
 
@@ -68,7 +73,7 @@
 <xsl:text>{
   "developers": [
 </xsl:text>
-<xsl:apply-templates select="exslt:node-set($rollcall)/user[location/@lat]" mode="yaml"/>
+<xsl:apply-templates select="exslt:node-set($rollcall)/user[location/@lat and not(status)]" mode="yaml"/>
 <xsl:text>  ]
 }
 </xsl:text>
@@ -78,7 +83,8 @@
  <xsl:variable name="single-quote">'</xsl:variable>
  <xsl:variable name="double-quote">"</xsl:variable>
  <xsl:variable name="roles" select="translate(roles, $double-quote, $single-quote)"/>
- <xsl:value-of select="concat('    {&#34;nick&#34;: &#34;', @nick,'&#34;, &#34;name&#34;: &#34;', name, '&#34;, &#34;lat&#34;: ', location/@lat, ', &#34;lon&#34;: ', location/@lon, ', &#34;roles&#34;: &#34;', $roles, '&#34;}')"/>
+ <xsl:variable name="loc" select="translate(location, $double-quote, $single-quote)"/>
+ <xsl:value-of select="concat('    {&#34;nick&#34;: &#34;', @nick,'&#34;, &#34;name&#34;: &#34;', name, '&#34;, &#34;lat&#34;: ', location/@lat, ', &#34;lon&#34;: ', location/@lon, ', &#34;roles&#34;: &#34;', $roles, '&#34;, &#34;loc&#34;: &#34;', $loc, '&#34;}')"/>
  <xsl:if test="position()!=last()">,</xsl:if>
  <xsl:text>&#xA;</xsl:text>
 </xsl:template>
@@ -89,7 +95,7 @@
 <xsl:text disable-output-escaping="yes">&lt;?xml version="1.0" encoding="UTF-8"?&gt;&#xA;</xsl:text>
 <kml>
 <Document>
-  <xsl:apply-templates select="exslt:node-set($rollcall)/user" mode="kml"/>
+  <xsl:apply-templates select="exslt:node-set($rollcall)/user[location/@lat and not(status)]" mode="kml"/>
 </Document>
 </kml>
 </xsl:template>
