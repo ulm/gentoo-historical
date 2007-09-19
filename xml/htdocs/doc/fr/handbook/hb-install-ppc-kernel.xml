@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-ppc-kernel.xml,v 1.33 2007/07/13 08:40:58 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-ppc-kernel.xml,v 1.34 2007/09/19 19:26:06 cam Exp $ -->
 
 <sections>
 
-<version>7.5</version>
-<date>2007-02-12</date>
+<version>8.5</version>
+<date>2007-08-12</date>
 
 <section>
 <title>Fuseau horaire</title>
@@ -33,7 +33,7 @@ effet, <path>GMT-8</path> signifie en fait GMT+8.
 </body>
 </section>
 <section>
-<title>Installer les sources</title>
+<title>Installer les sources du noyau</title>
 <subsection>
 <title>Choisir un noyau</title>
 <body>
@@ -49,33 +49,32 @@ Gentoo Linux</uri>.
 
 <p>
 Nous vous recommandons d'utiliser <c>gentoo-sources</c> sur PPC, c'est un noyau
-2.6.
+2.6 récent.
 </p>
 
 <pre caption="Installer les sources du noyau">
 # <i>emerge gentoo-sources</i>
 </pre>
 
-
 <p>
 Si vous examinez le contenu de <path>/usr/src</path>, vous remarquerez la
 présence d'un lien symbolique nommé <path>linux</path> qui pointe vers les
 sources de votre noyau actuel. Dans notre cas, la redirection pointe vers
-<c>gentoo-sources-2.6.15</c>. Gardez bien à l'esprit que votre version du noyau
-peut être différente.
+<c>gentoo-sources-<keyval id="kernel-version"/></c>. Gardez bien à l'esprit que
+votre version du noyau peut être différente.
 </p>
 
 <pre caption="Examiner le lien symbolique vers le noyau">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root    root    22  Mar 18 16:23 /usr/src/linux -&gt; linux-2.6.15
+lrwxrwxrwx    1 root    root    22  Mar 18 16:23 /usr/src/linux -&gt; linux-<keyval id="kernel-gentoo"/>
 </pre>
 
 <p>
 Il est maintenant temps de configurer et de compiler votre noyau. La commande
 <c>genkernel</c> est disponible sur tous les systèmes. Cette commande
 construira un noyau générique tel que celui utilisé par le LiveCD. Toutefois,
-nous expliquerons d'abord la configuration «&nbsp;manuelle&nbsp;», puisque
-c'est la meilleure façon d'optimiser votre environnement.
+nous expliquerons d'abord la configuration «&nbsp;manuelle&nbsp;», car sa
+configuration est plus efficace.
 </p>
 
 <p>
@@ -118,11 +117,11 @@ démarrage qui a fonctionnée. Tapez <c>dmesg</c> pour voir les messages du noya
 </p>
 
 <p>
-Maintenant, allez dans le dossier des sources du noyau, il est temps de
-configurer votre noyau. Il est recommandé que vous appliquiez les paramètres par
-défaut de votre configuration en exécutant la commande <c>make
-pmac32_defconfig</c>. Ensuite, vous pourrez faire un <c>make menuconfig</c> qui
-va lancer le menu de configuration basé sur ncurses.
+Maintenant, allez dans le répertoire des sources du noyau, il est temps de
+configurer votre noyau. Commencez par le préconfigurer afin qu'il puisse
+démarrer sur la plupart des machines PowerPC 32&nbsp;bits en exécutant la
+commande <c>make pmac32_defconfig</c>. Ensuite, vous pourrez faire un <c>make
+menuconfig</c> qui va lancer le menu de configuration basé sur ncurses.
 </p>
 
 <pre caption="Lancer menuconfig">
@@ -167,9 +166,11 @@ partitions Macintosh si vous utilisez un Apple.
 <pre caption="Activer le support pour les systèmes de fichiers">
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
+    <comment>(/proc sera peut-être forcé, auquel cas vous verrez ---.)</comment>
     [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
   Partition Types ---&gt;
+    [*] Advanced partition support
     [*] Amiga partition table support
     [*] Macintosh partition map support
 
@@ -181,13 +182,27 @@ File systems ---&gt;
 </pre>
 
 <p>
+Les utilisateurs de machines NewWorld ou OldWorld auront également besoin du
+support HFS. Les utilisateurs d'OldWorld en auront besoin pour copier le noyau
+compilé sur la partition MacOS. Les utilisateurs NewWorld en auront besoin pour
+configurer la partition spéciale Apple_Bootstrap&nbsp;:
+</p>
+
+<pre caption="Activer le support HFS">
+File Systems ---&gt;
+  Miscellaneous filesystems ---&gt;
+    &lt;M&gt; Apple Macintosh file system support
+    &lt;M&gt; Apple Extended HFS file system support
+</pre>
+
+<p>
 Si vous utilisez PPPoE ou un modem classique pour vous connecter à Internet,
 vous aurez besoin des options du noyau suivantes&nbsp;:
 </p>
 
 <pre caption="Sélection des pilotes PPPoE">
 Device Drivers ---&gt;
-  Networking support ---&gt;
+  Network device support ---&gt;
     &lt;*&gt; PPP (point-to-point protocol) support
     &lt;*&gt;   PPP support for async serial ports
     &lt;*&gt;   PPP support for sync tty ports
@@ -195,39 +210,42 @@ Device Drivers ---&gt;
 
 <p>
 Les deux options de compression ne vous feront pas de mal, mais ne sont pas
-absolument nécessaires. L'option <c>PPP over Ethernet</c> n'est pas obligatoire
-non plus, considérant qu'elle pourrait n'être utilisée que par <c>rp-pppoe</c>
+toujours nécessaires. L'option <c>PPP over Ethernet</c> n'est pas obligatoire
+non plus, considérant qu'elle pourrait n'être utilisée que par <c>ppp</c>
 lorsque ce dernier est configuré pour utiliser PPPoE en mode noyau.
 </p>
 
 <p>
-Si vous en avez besoin, n'oubliez pas d'ajouter le support pour votre
-carte Ethernet.
-</p>
-
-<p>
-Les utilisateurs de machine NewWorld et OldWorld souhaiteront certainement
-activer le support HFS. Les utilisateurs OldWorld en ont besoin pour copier les
-noyaux compilés sur une partition MacOS. Les utilisateurs de machine NewWorld
-en auront besoin pour configurer la partition spéciale qui accueillera le
-Apple_Bootstrap&nbsp;:
+N'oubliez pas d'ajouter le support pour votre carte Ethernet. La plupart des
+ordinateurs Apple récents utilisent le pilote Ethernet SunGEM. Les iMacs plus
+vieux utilisent généralement le pilote BMAC.
 </p>
 
 <pre caption="Activer le support HFS">
-File Systems ---&gt;
-  [*] HFS Support
+Device Drivers ---&gt;
+  Network device support ---&gt;
+    Ethernet (10 or 100Mbit) ---&gt;
+      [*] Ethernet (10 or 100Mbit)
+      &lt;*&gt;   Generic Media Independent Interface device support
+      &lt;*&gt;   MACE (Power Mac ethernet) support
+      &lt;*&gt;   BMAC (G3 ethernet) support
+      &lt;*&gt;   Sun GEM support
 </pre>
 
 <p>
-Le noyau ne gère pas encore la préemption correctement sur des machines PPC.
-L'activer peut entrainer des erreurs de compilation et des
+Le noyau ne gère pas encore la préemption complète correctement sur des
+machines PPC.  L'activer peut entrainer des erreurs de compilation et des
 «&nbsp;segfaults&nbsp;». Il est <e>très</e> recommandé de ne pas sélectionner
-cette option.
+cette option. <e>Voluntary Preemption</e> ou <e>No Forced Preemption</e>
+devrait être suffisamment sûr.
 </p>
 
 <pre caption="Vérifier que la préemption n'est pas activée">
 Kernel options ---&gt;
-  Preemption Model (No Forced Preemption (Server))
+  <comment>(En choisir un.)</comment>
+  Preemption Model
+    (X) No Forced Preemption (Server)
+    (X) Voluntary Kernel Preemption (Desktop)
 </pre>
 
 <p>
@@ -262,7 +280,7 @@ aurez besoin d'inclure ces modules et leurs dépendances dans un initrd.
 <p>
 Ne désactiver pas le support du framebuffer du noyau, car celui-ci est est
 nécessaire pour démarrer la machine. Si vous utilisez une carte graphique
-NVIDIA, vous devrez utiliser le framebuffer Open Firmware. Si vous utilisez une
+nVidia, vous devrez utiliser le framebuffer Open Firmware. Si vous utilisez une
 carte graphique ATI, vous voudrez certainement activer le pilote du framebuffer
 supporté par votre puce (Mach64, Rage128 ou Radeon).
 </p>
@@ -300,8 +318,8 @@ la section <uri link="#compiling">Compiler et installer</uri>.
 
 <p>
 Maintenant que votre noyau est configuré, il est temps de le compiler et de
-l'installer. Quittez la configuration et exécutez les commandes pour compiler
-le noyau&nbsp;:
+l'installer. Quittez le menu de configuration et exécutez les commandes
+suivantes&nbsp;:
 </p>
 
 <pre caption="Compiler le noyau">
@@ -320,17 +338,16 @@ Yaboot et BootX utilisent un noyau non-compressé contrairement à beaucoup de
 chargeurs de démarrage. Le noyau décompressé est appelé vmlinux. Une fois que
 le noyau a fini de compiler, il est placé dans <path>/usr/src/linux</path>. Sur
 un Pegasos, le Pegasos firmware nécessite un noyau compressé appelé
-zImage.chrp. Il se trouve dans
-<path>/usr/src/linux/arch/ppc/boot/images</path>.
+zImage qui se trouve dans <path>/usr/src/linux/arch/powerpc/boot/images</path>.
 </p>
 
 <pre caption="Installer le noyau">
 # <i>cd /usr/src/linux</i>
-<comment>Remplacez &lt;kernel-version&gt; par votre version du noyau.</comment>
+<comment>Votre version de noyau peut être différente.</comment>
 <comment>(Apple/IBM)</comment>
-# <i>cp vmlinux /boot/&lt;kernel-version&gt;</i>
+# <i>cp vmlinux /boot/<keyval id="kernel-name"/></i>
 <comment>(Pegasos)</comment>
-# <i>cp arch/ppc/boot/images/zImage.chrp /boot/&lt;kernel-version&gt;</i>
+# <i>cp arch/powerpc/boot/images/zImage /boot/<keyval id="kernel-name"/></i>
 </pre>
 
 <p>
@@ -365,7 +382,7 @@ version&gt; par la version du noyau que vous venez juste de compiler&nbsp;:
 </pre>
 
 <p>
-Par exemple, pour charger automatiquement le module <c>3c59x.o</c>,
+Par exemple, pour charger automatiquement le module <c>3c59x.ko</c>,
 spécifiez-le dans le fichier <path>kernel-2.6</path>.
 </p>
 
@@ -388,11 +405,6 @@ votre système</uri>.
 <section id="genkernel">
 <title>Alternative&nbsp;: utiliser genkernel</title>
 <body>
-
-<p>
-Si vous lisez cette section, vous avez choisi d'utiliser le script
-<c>genkernel</c> pour configurer votre noyau pour vous.
-</p>
 
 <p>
 Maintenant que l'arbre des sources de votre noyau est installé, il est temps de
@@ -437,9 +449,9 @@ ajoutez <c>MODULES_USB="usbcore ohci-hcd ehci-hcd usb-storage"</c> dans
 Avant de compiler vos sources, le fstab a besoin d'un léger ajustement. Le
 reste du fstab sera terminé plus tard dans le guide, ne vous inquiétez pas des
 détails pour le moment. Si vous n'avez pas créé de partition de démarrage (il
-s'agit de la partition /boot et NON PAS de la partition de bootstrap), retirez
-la ligne qui référence /boot du fichier <path>/etc/fstab</path>. À faire sur la
-plupart des ordinateurs Apple.
+s'agit de la partition <path>/boot</path> et NON PAS de la partition de
+bootstrap), retirez la ligne qui référence <path>/boot</path> du fichier
+<path>/etc/fstab</path>. À faire sur la plupart des ordinateurs Apple.
 </p>
 
 <pre caption="Retirer /boot du /etc/fstab sur les machines sans partition /boot">
@@ -487,17 +499,8 @@ démarrera probablement pas.
 </p>
 
 <pre caption="Vérifier les noms de l'image du noyau et du fichier initrd">
-# <i>ls /boot/kernel* /boot/initramfs*</i>
-</pre>
-
-<p>
-Pour que votre système réagissent aux évènements de connexions à chaud, vous
-devez installer et configurer <c>hotplug</c>&nbsp;:
-</p>
-
-<pre caption="Installer et activer hotplug">
-# <i>emerge hotplug</i>
-# <i>rc-update add hotplug default</i>
+<comment>Notez que la version de notre noyau peut être différente.</comment>
+# <i>ls /boot/kernel-genkernel-ppc-<keyval id="kernel-gentoo"/> /boot/initramfs-genkernel-ppc-<keyval id="kernel-gentoo"/></i>
 </pre>
 
 <p>
