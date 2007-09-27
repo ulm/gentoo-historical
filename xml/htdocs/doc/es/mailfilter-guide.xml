@@ -1,4 +1,4 @@
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/mailfilter-guide.xml,v 1.8 2006/06/14 14:58:06 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/mailfilter-guide.xml,v 1.9 2007/09/27 00:44:13 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/es/mailfilter-guide.xml" lang="es">
@@ -9,6 +9,9 @@
 </author>
 <author title="Contributor">
   <mail link="gentoo@hilli.dk">Jens Hilligsø</mail>
+</author>
+<author title="Editor">
+  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
 <author title="Editor Es">
   <mail link="bass@gentoo.org">José Alberto Suárez López</mail>
@@ -34,8 +37,8 @@ ClamAV, listas grises y SPF.
 
 <license/>
 
-<version>0.10</version>
-<date>2006-05-22</date>
+<version>0.14</version>
+<date>2007-08-02</date>
 
 <chapter>
 <title>Introducción</title>
@@ -326,6 +329,10 @@ La linea <c>smtp-amavis</c> especifica que un máximo de dos procesos
 pueden correr en cualquier momento. Si necesitas una concurrencia
 mayor ajusta este número a tus necesidades. Recuerda que debe ser
 igual al número de <c>$max_servers=</c> en <path>amavisd.conf</path>
+Ten en cuenta que <c>amavisd-new</c> consume bastante memoria y por lo
+tanto aumentar demasiado el número de procesos puede consumir toda la
+memoria y provocar que se utilice memoria swap lo cual puede disminuir
+notoriamente el desempeño de tu sistema.
 </note>
 
 <!-- No he traducido before-queue -->
@@ -417,6 +424,29 @@ SMTP estandar: 25, puedes indicarle a postfix que use un cierto número
 de puert, como:
 <c>smtp:mail.mydomain.tld:25000</c>.  
 </note>
+
+<p>
+  Si tus primeros intentos de enviar un correo resultan en estos
+  rebotando, es probable que hayas cometido un error de configuración
+  en algún lugar. Trata activando de manera temporal
+  <c>soft_bounce</c> mientras que solucionas tus problemas de
+  configuración. Esto previene que postfix rebote los correos por
+  errores de entrega al tratarlos como errores temporales. Postfix
+  mantiene los mensajes en la cola de correo hasta que
+  <c>soft_bounce</c> sea desactivado o eliminado.
+</p>
+
+<pre caption="Activando soft_bounce">
+  # <i>postconf -e "soft_bounce = yes"</i>
+  # <i>/etc/init.d/postfix reload</i>
+</pre>
+
+<p>
+  Una vez que tengas tu configuración funcionando de manera adecuado,
+  asegúrate de desactivar o eliminar<c>soft_bounce</c> y recargar
+  postfix.
+</p>
+
 </body>
 </section>
 
@@ -793,7 +823,7 @@ de <uri link="http://www.rfc-ignorant.org/">rfc-ignorant.org</uri>.
 Si quieres utilizar más reglas proveidas por los Ninjas SARE en el
 <uri link="http://www.rulesemporium.com/">Emporio de Reglas de
 SpamAssassin</uri>, puedes añadirlas y actualizarlas fácilmente
-utilizando <c>mail-filter/spamassassin-ruledujour</c>:
+utilizando el mecanismo <c>sa-update</c> incluido en Spamassassin.
 </p>
 
 <pre caption="Instalando rulesdujour">
@@ -805,10 +835,6 @@ Ahora edita el archivo <path>/etc/rulesdujour/config</path> y reinicia
 Amavisd-new:
 </p>
 
-<pre caption="Modificando /etc/rulesdujour/config">
-(<comment>Reinicar amavisd-new en ves de spamd</comment>)
-SA_RESTART="/etc/init.d/amavisd restart"
-</pre>
 </body>
 </section>
 </chapter>
@@ -1696,7 +1722,7 @@ Welcome to the MySQL monitor.  Commands end with ; or \g.
 Your MySQL connection id is 78 to server version: 4.0.18-log
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 mysql> <i>create database maildb;</i>
-mysql> <i>GRANT ALL PRIVILEGES ON maildb.* TO 'mail'@'localhost' IDENTIFIED BY 'very_secret_password';</i>
+mysql> <i>GRANT INSERT,UPDATE,DELETE,SELECT ON maildb.* TO 'mail'@'localhost' IDENTIFIED BY 'very_secret_password';</i>
 mysql> <i>use maildb;</i>
 </pre>
 
@@ -1868,8 +1894,10 @@ $sql_select_policy = 'SELECT *,users.id FROM users,policy'.
 
 <p>
 En Spamassassin 3.0 es posible almacenar la información de Bayes y AWL
-en una base de datos MySQL. Aquí te mostraré como conseguir esto de
-una manera fácil.
+en una base de datos MySQL. Utilizaremos MySQL ya que generalmente
+puede desempeñarse mejor que otros sistemas de gestión de base de
+datos. Además, utilizar MySQL para ambos conjuntos de datos facilita
+bastante la administración. Aquí mostraremos como hacerlo.
 </p>
 
 <p>
@@ -1884,7 +1912,7 @@ Welcome to the MySQL monitor.  Commands end with ; or \g.
 Your MySQL connection id is 78 to server version: 4.0.18-log
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 mysql> <i>create database dbname;</i>
-mysql> <i>GRANT ALL PRIVILEGES ON dbname.* TO 'dbuser'@'localhost' IDENTIFIED BY 'anoter_very_secret_password';</i>
+mysql> <i>GRANT INSERT,UPDATE,DELETE,SELECT ON dbname.* TO 'dbuser'@'localhost' IDENTIFIED BY 'another_very_secret_password';</i>
 mysql> <i>use dbname;</i>
 </pre>
 
@@ -1918,6 +1946,7 @@ necesarias. Puedes copiar y pegar lo siguiente al monitor de mysql.
           ham_count             int(11)         NOT NULL default '0',
           atime                 int(11)         NOT NULL default '0',
           PRIMARY KEY           (id, token)
+          INDEX                 (id,atime)
           ) TYPE=MyISAM;
       CREATE TABLE bayes_vars (
           id                    int(11)         NOT NULL AUTO_INCREMENT,
@@ -1973,24 +2002,32 @@ conservarla sigue las siguientes instrucciones:
 
 <note>
 Nótese que el último paso debe ser ejecutado sólo luego de que la base
-de datos MySQL y <path>local.cf</path> hayan sido actualizados.
+de datos MySQL y <path>secrets.cf</path> hayan sido actualizados.
 </note>
 
 <p>
 Ahora hay que darle a Spamassassin la información necesaria:
 </p>
 
-<pre caption="Modificando /etc/mail/spamassassin/local.cf">
+<pre caption="Modificando /etc/mail/spamassassin/secrets.cf">
 <comment>(Indica a Spamassissin que use MySQL para los datos bayesianos</comment>
 bayes_store_module              Mail::SpamAssassin::BayesStore::SQL
 bayes_sql_dsn                   DBI:mysql:sa_bayes:localhost:3306
 bayes_sql_username              db_name
 bayes_sql_password              another_very_secret_password
-<comment>(Indica a Spamassissin que utilice MySQL para los datos AWL data</comment>
+<comment>(Indica a Spamassassin que utilice MySQL para los datos AWL data</comment>
 auto_whitelist_factory          Mail::SpamAssassin::SQLBasedAddrList
 user_awl_dsn                    DBI:mysql:sa_bayes:localhost:3306
 user_awl_sql_username           db_name
 user_awl_sql_password           another_very_secret_password
+</pre>
+
+<p>
+  Seguidamente, cambia los permisos para tener una adecuada seguridad:
+</p>
+
+<pre caption="Cambiando permisos">
+  # <i>chmod 400 /etc/mail/spamassassin/secrets.cf</i>
 </pre>
 
 <note>
