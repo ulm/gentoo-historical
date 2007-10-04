@@ -39,16 +39,19 @@
 <!-- Where is this xsl being run? -->
 <xsl:param name="httphost">www</xsl:param>
 
-<!-- Get the list of retired devs from the roll-call -->
-<xsl:variable name="RETIRED-DEVS" xmlns="">
- <retired>
-  <xsl:for-each select="document('/proj/en/devrel/roll-call/userinfo.xml')/userlist/user[translate(status,'TIRED','tired')='retired']">
+<!-- Get the list of devs from the roll-call -->
+<xsl:variable name="ALL-DEVS" xmlns="">
+ <devs>
+  <xsl:for-each select="document('/proj/en/devrel/roll-call/userinfo.xml')/userlist/user">
     <user username="{@username}">
+     <xsl:if test="translate(status,'TIRED','tired')='retired'">
+      <xsl:attribute name="retired"/>
+     </xsl:if>
      <xsl:copy-of select="realname"/>
-     <xsl:copy-of select="email[substring-after(text(),'@')!='gentoo.org']"/>
+     <xsl:copy-of select="email"/>
     </user>
   </xsl:for-each>
- </retired>
+ </devs>
 </xsl:variable>
 
 <!-- img tag -->
@@ -157,7 +160,7 @@
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/forums-gentoo-org.xml" title="Gentoo Forums"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
+<!--  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/> -->
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/archives-gentoo-org.xml" title="Gentoo List Archives"/>
   
   <xsl:if test="//glsaindex or //glsa-latest">
@@ -289,7 +292,7 @@
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/forums-gentoo-org.xml" title="Gentoo Forums"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
+<!--  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/> -->
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/archives-gentoo-org.xml" title="Gentoo List Archives"/>
   
   <xsl:if test="/mainpage/newsitems">
@@ -544,8 +547,10 @@
                       </xsl:if> 
                     <xsl:text>Name and Logo Guidelines</xsl:text></a>
                     <br/>
+<!--
                     <a class="altlink" href="http://packages.gentoo.org/">Online Package Database</a>
                     <br/>
+-->
                     <a class="altlink" href="{concat($www,'/security/en/index.xml')}">Security Announcements</a>
                     <br/>
                     <a class="altlink" href="{concat($www,'/proj/en/devrel/staffing-needs/')}">Staffing&#xA0;Needs</a>
@@ -672,63 +677,121 @@
     <xsl:otherwise>/main/en/contact.xml</xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
-Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc.  Questions, Comments? <a class="highlight" href="{concat($www, $contact)}">Contact us</a>.
+Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Foundation, Inc. Questions, Comments? <a class="highlight" href="{concat($www, $contact)}">Contact us</a>.
 </xsl:template>
 
 <!-- Mail template -->
 <xsl:template match="mail">
-<a>
- <xsl:attribute name="href">
+<xsl:if test="string-length(@link)>0 or string-length(.)>0">
+ <xsl:variable name="gnick">
+  <xsl:choose>
+   <xsl:when test="string-length(@link)=0 and not(contains(text(),'@'))">
+     <!-- <mail>nick</mail> -->
+     <xsl:value-of select="."/>
+   </xsl:when>
+   <xsl:when test="string-length(@link)=0 and contains(text(),'@gentoo.org')">
+     <!-- <mail>nick@gentoo.org</mail> -->
+     <xsl:value-of select="substring-before(., '@')"/>
+   </xsl:when>
+   <xsl:when test="string-length(@link)>0 and not(contains(@link,'@'))">
+     <!-- <mail link="nick">blah blah</mail> -->
+     <xsl:value-of select="@link"/>
+   </xsl:when>
+   <xsl:when test="contains(@link,'@gentoo.org')">
+     <!-- <mail link="nick@gentoo.org">blah blah</mail> -->
+     <xsl:value-of select="substring-before(@link, '@gentoo.org')"/>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:variable name="gmail">
+  <xsl:if test="string-length($gnick)>0">
    <xsl:choose>
-    <xsl:when test="@link">
-      <xsl:value-of select="concat('mailto:', @link)"/>
+    <xsl:when test="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick and @retired]">
+     <xsl:value-of select="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/email[substring-after(text(),'@')!='gentoo.org'][1]"/>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:value-of select="concat('mailto:', .)"/>
+     <xsl:value-of select="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/email[substring-after(text(),'@')='gentoo.org'][1]"/>
     </xsl:otherwise>
    </xsl:choose>
- </xsl:attribute>
- <xsl:value-of select="."/>
-</a>
+  </xsl:if>
+ </xsl:variable>
 
-</xsl:template>
+ <xsl:variable name="gname">
+  <xsl:if test="string-length($gnick)>0">
+   <xsl:choose>
+    <xsl:when test="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname/@fullname">
+     <xsl:value-of select="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname/@fullname"/>
+    </xsl:when>
+    <xsl:when test="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname[firstname or familyname]">
+     <xsl:value-of select="concat(exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname/firstname,' ',exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname/familyname)"/>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:if>
+ </xsl:variable>
 
-<!-- Mail inside <author>...</author> -->
-<xsl:template match="/*[1]/author/mail">
-  <xsl:variable name="nick" select="substring-before(@link,'@gentoo.org')"/>
+ <xsl:variable name="href">
   <xsl:choose>
-    <xsl:when test="substring-after(@link,'@')='gentoo.org' and exslt:node-set($RETIRED-DEVS)/retired/user[@username=$nick]">
-      <!-- @gentoo.org address of a retired dev, use another email from roll-call, or no email at all -->
-      <xsl:choose>
-        <xsl:when test="exslt:node-set($RETIRED-DEVS)/retired/user[@username=$nick]/email">
-          <b><a class="altlink" href="mailto:{exslt:node-set($RETIRED-DEVS)/retired/user[@username=$nick]/email[1]}"><xsl:value-of select="."/></a></b>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="."/>
-        </xsl:otherwise>
-      </xsl:choose>
+  <xsl:when test="string-length($gname)>0 and string-length($gmail)=0 and exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick and @retired]"/>
+    <xsl:when test="string-length($gmail)>0">
+      <xsl:value-of select="concat('mailto:', $gmail)"/>
+    </xsl:when>
+    <xsl:when test="string-length(@link)>0">
+      <xsl:value-of select="concat('mailto:', @link)"/>
+    </xsl:when>
+    <xsl:when test="string-length(.)>0">
+      <xsl:value-of select="concat('mailto:', .)"/>
+    </xsl:when>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:variable name="content">
+   <xsl:choose>
+    <xsl:when test="string-length(@link)>0 and string-length(.)>0">
+     <xsl:value-of select="."/>
+    </xsl:when>
+    <xsl:when test="string-length($gname)>0">
+     <xsl:value-of select="$gname"/>
+    </xsl:when>
+    <xsl:when test="string-length($gnick)>0">
+     <xsl:value-of select="$gnick"/>
     </xsl:when>
     <xsl:otherwise>
-      <b><a class="altlink" href="mailto:{@link}"><xsl:value-of select="."/></a></b>
+     <xsl:value-of select="."/>
     </xsl:otherwise>
-  </xsl:choose>
+   </xsl:choose>
+ </xsl:variable>
 
+ <xsl:choose>
+  <xsl:when test="string-length($href)>0">
+   <a href="{$href}">
+     <xsl:choose>
+      <xsl:when test="name(..)='author'">
+       <xsl:attribute name="class">altlink</xsl:attribute>
+       <b><xsl:value-of select="$content"/></b>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of select="$content"/>
+      </xsl:otherwise>
+     </xsl:choose>
+   </a>
+  </xsl:when>
+  <xsl:otherwise><xsl:value-of select="$content"/></xsl:otherwise>
+ </xsl:choose>
+
+</xsl:if>
 </xsl:template>
 
 <!-- Author -->
 <xsl:template match="author">
-<xsl:apply-templates/>
+  <xsl:apply-templates/>
   <xsl:if test="@title">
-    <xsl:if test="$style != 'printable'">
-      <br/>
-    </xsl:if>
-    <xsl:if test="$style = 'printable'">&#160;</xsl:if>
+    <xsl:if test="$style != 'printable'"><br/></xsl:if>
+    <xsl:if test="$style  = 'printable'">&#160;</xsl:if>
     <i><xsl:value-of select="@title"/></i>
   </xsl:if>
   <br/>
-  <xsl:if test="$style != 'printable' and position()!=last()">
-    <br/>
-  </xsl:if>
+  <xsl:if test="$style != 'printable' and position() != last()"><br/></xsl:if>
 </xsl:template>
 
 <!-- FAQ Index & Chapter -->
@@ -1614,6 +1677,18 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 
 <xsl:template name="rhcol">
 <!-- Right-hand column with date/authors/ads -->
+
+  <xsl:variable name="images">
+    <!-- Source images from www.gentoo.org when on another server to
+         prevent missing images after an update -->
+    <xsl:choose>
+      <xsl:when test="$httphost != 'www'">http://www.gentoo.org/</xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$ROOT"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
   <table border="0" cellspacing="4px" cellpadding="4px">
     <!-- Add a "printer-friendly" button when link attribute exists -->
     <xsl:if test="/book or /guide">
@@ -1746,7 +1821,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     <tr lang="en">
     <td align="center" class="topsep">
             <a href="http://www.vr.org">
-	    <img src="{concat($ROOT,'images/vr-ad.png')}" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" border="0"/>
+	    <img src="{concat($images,'images/vr-ad.png')}" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" border="0"/>
         </a>
 	    <p class="alttext">
 	      <a href="http://www.vr.org/">VR Hosted</a>
@@ -1756,7 +1831,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     <tr lang="en">
       <td align="center" class="topsep">
       <a href="http://www.tek.net" target="_top">
-        <img src="{concat($ROOT,'images/tek-gentoo.gif')}" width="125" height="125" alt="Tek Alchemy" border="0"/>
+        <img src="{concat($images,'images/tek-gentoo.gif')}" width="125" height="125" alt="Tek Alchemy" border="0"/>
       </a>
       <p class="alttext">
 	  <a href="http://www.tek.net/">Tek Alchemy</a>
@@ -1766,7 +1841,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     <tr lang="en">
     <td align="center" class="topsep">
       <a href="http://www.sevenl.net" target="_top">
-        <img src="{concat($ROOT,'images/sponsors/sevenl.gif')}" width="125" height="144" alt="SevenL.net" border="0"/>
+        <img src="{concat($images,'images/sponsors/sevenl.gif')}" width="125" height="144" alt="SevenL.net" border="0"/>
       </a>
       <p class="alttext">
 	  <a href="http://www.sevenl.net/">SevenL.net</a>
@@ -1776,7 +1851,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     <tr lang="en">
     <td align="center" class="topsep">
         <a href="http://www.gni.com" target="_top">
-          <img src="{concat($ROOT,'images/gni_logo.png')}" width="125" alt="Global Netoptex Inc." border="0"/>
+          <img src="{concat($images,'images/gni_logo.png')}" width="125" alt="Global Netoptex Inc." border="0"/>
       </a>
       <p class="alttext">
 	  <a href="http://www.gni.com">Global Netoptex Inc.</a>
