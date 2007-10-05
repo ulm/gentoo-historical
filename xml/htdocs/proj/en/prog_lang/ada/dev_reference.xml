@@ -44,22 +44,24 @@
 				  <dt><b>Ada libraries</b></dt>
 				  <dd>
 					  These are built for every installed gnat and profile-dependent files are
-					  installed to profile specific dirs, similarly to those of gnat, however they
-					  go in a "library place". This is handled automatically by gnat.eclass, inner 
+					  installed to profile specific dirs, similarly to those of gnat, except that they
+						go in a "library place". This is handled automatically by <c>gnat.eclass</c>, inner 
 					  workings of which are discussed below.
 				  </dd>
 				  <dt><b>Executables/other programs</b></dt>
-				  <dd>The stuff that is to be executed directly or otherwise is not supposed to be linked
-					  against. The prominent examples would be gps, c2ada, etc. These require no special 
-					  treatment and can be built in a regular way with any active compiler or can 
-					  depend on a particular variant. One particular issue should be observed however. 
-					  If the execuables link against any of the 
-					  profile-specific Ada libraries, when user switches gnat profile the particular 
-					  binary versions of these libs will become unavailable. In fact, the linker will
-					  attempt to select the library by name and will try to link against the binary
-					  incompatible variant, resulting in execution failure. To resolve this, such binaries
-					  should be compiled with LD_RUN_PATH defined and containing the locations of the 
-					  needed variants of the libs.
+					<dd>
+						The stuff that is to be executed directly or otherwise is not supposed to be linked
+						against. The prominent examples would be <c>gps</c>, <c>c2ada</c>, etc. 
+						These require no special 
+						treatment and can be built in a regular way with any active compiler or can 
+						depend on a particular variant. One particular issue should be observed however. 
+						If the execuables link against any of the 
+						profile-specific Ada libraries, when user switches gnat profile the particular 
+						binary versions of these libs will become unavailable. In fact, the linker will
+						attempt to select the library by name and will try to link against the binary
+						incompatible variant, resulting in execution failure. To resolve this, such binaries
+						should be compiled with <c>LD_RUN_PATH</c> defined and containing the locations of the 
+						needed variants of the libs.
 				  </dd>
 			  </dl>
 			  <p>
@@ -69,9 +71,14 @@
 			  </p>
 		  </body>
 	  </section>
+	</chapter>
+
+
+	<chapter>
+			<title>gnatbuild.eclass and eselect-gnat</title>
 
 	  <section>
-		  <title>gnatbuild.eclass and eselect-gnat</title>
+		  <title>General notes.</title>
 		  <body>
 			  <p>
 				  The <c>gnatbuildeclass</c> has been modelled after the <c>toolchain.eclass</c>,
@@ -87,9 +94,98 @@
 				  It is possible they change it again to GPL-3 and FSF will likely want to do so as well.
 				  Therefore attention needs to be paid to the licenses when these packages are updated.
 			  </p>
+
+			  <p>
+				  <c>gnat</c> (both versions) can be considered a "yet another gcc frontend", therefore 
+				  it is built similarly to other <c>gcc</c> based languages. There is, however, a significant
+				  distinction. It may be argued, that Ada is a "real language", in the sense that it
+				  requires an Ada-enabled compiler to build itself. This makes the build procedure
+				  significantly different from, e.g., <c>gpc</c> or <c>gdc</c> in that we first 
+				  need to provide a bootstrap compiler and then setup a bootstrap environment.
+					In practice, the bootstraps need to be created only once, as <c>gcc</c> (and <c>gnat</c>) 
+					internally
+					build itself twice (stage1 and stage2) and then build the final binary and libs with 
+					stage2. Plus, so far, all the new versions of gcc could be built with the oldest at that time
+					backend of gnat - 3.4. If, however, a version of <c>gcc</c> is released that cannot 
+					be built with an old bootstrap (for example, the transition from 2.8 to the later versions
+					was problemmatic), a new one may need to be issued.
+				</p>
+
+				<p>
+				  If you take a look at the <c>src_compile</c>, you will notice that all the code dealing
+				  with running <c>configure</c> and <c>make</c> is preceded by the block setting many 
+				  env vars. Such as (here and everywhere you can refere to the appropriate eclass or ebuild
+				  in portage to see all of the code):
+			  </p>
+				<pre caption="Setting up bootstrap environment in gnatbuild.eclass">
+					<comment>	# Set some paths to our bootstrap compiler.</comment>
+					export <ident>PATH</ident>=<const>"${GNATBOOT}/bin:${PATH}"</const>
+					<comment># !ATTN! the *installed* compilers have ${PN} as part of their
+		# LIBPATH, while the *bootstrap* uses hardset "gnatgcc" in theirs
+		# (which is referenced as GNATLIB below)</comment>
+	<ident>GNATLIB</ident>=<const>"${GNATBOOT}/lib/gnatgcc/${BOOT_TARGET}/${BOOT_SLOT}"</const>
+
+		export CC="${GNATBOOT}/bin/gnatgcc"
+		export INCLUDE_DIR="${GNATLIB}/include"
+		export LIB_DIR="${GNATLIB}"
+		export LDFLAGS="-L${GNATLIB}"
+		...
+				</pre>
+
+				<p>
+					These setting serve the purpose of letting the gnat build scripts find the bootstrap
+					compiler, so that we do not have to depend on having some version of Ada-enabled 
+					<c>gcc</c> already installed on the system. While pretty plain, this part may get somewhat
+					tricky. What vars you need to set or avoid depends on the version of toolchain 
+					the build host has active. The most "abusive" package in the toolchain was traditionally
+					<c>binutils</c>. In fact there were many bugs reporting build failures with <c>configure</c>
+					complaining that <c>CC</c> is
+					unable to find <c>collect1</c> or some other part of the bootstrap compiler. The most
+					common cause of these bugs was related to an old version of <c>binutils</c> having been
+					installed on user's computer. Correspondingly, it was necessary to force gnat to depend
+					on a appropriately recent version of <c>binutils</c>. Fortunately, it seems that toolschain
+					has largerly stabilized in the last year or so, as this has not been necessary for
+					quite a while.
+				</p>
+
+
+				<p>
+				</p>
+			</body>
+		</section>
+
+		<section>
+			<title>Install locations</title>
+			<body>
+				<p>
+					To be completed.
+				</p>
+			</body>
+		</section>
+
+		<section>
+			<title>eselect-gnat workings</title>
+			<body>
+				<p>
+					To be completed.
+				</p>
 		  </body>
 	  </section>
   </chapter>
+
+
+	<chapter>
+		<title>gnat.eclass and libraries</title>
+		<section>
+			<title>Overview</title>
+			<body>
+				<p>
+					To be completed.
+				</p>
+			</body>
+		</section>
+	</chapter>
+
 </guide>
 
 <!-- vim: set tabstop=2: -->
