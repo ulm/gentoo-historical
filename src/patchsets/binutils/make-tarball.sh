@@ -21,7 +21,7 @@ rm -rf tmp
 rm -f binutils-${bver}-*.tar.bz2
 
 mkdir -p tmp/patch
-cp -r ../README* ${bver}/*.patch tmp/patch/ || exit 1
+cp -r ../README* ${bver}/*.patch ${bver}/README.history tmp/patch/ || exit 1
 if [[ -n ${uver} ]] ; then
 	mkdir -p tmp/uclibc-patches
 	cp -r ../README* ${bver}/uclibc/*.patch tmp/uclibc-patches/ || exit 1
