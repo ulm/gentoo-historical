@@ -1,0 +1,196 @@
+add experimental support for GNU_HASH on mips
+
+http://sourceware.org/ml/binutils/2007-08/msg00387.html
+
+--- binutils-2.18/bfd/elfxx-mips.c
++++ binutils-2.18/bfd/elfxx-mips.c
+@@ -497,6 +497,8 @@ static struct mips_got_entry *mips_elf_c
+    bfd_vma, unsigned long, struct mips_elf_link_hash_entry *, int);
+ static bfd_boolean mips_elf_sort_hash_table_f
+   (struct mips_elf_link_hash_entry *, void *);
++static bfd_boolean mips_elf_sort_gnu_hash_table_f
++  (struct mips_elf_link_hash_entry *, void *);
+ static bfd_vma mips_elf_high
+   (bfd_vma);
+ static bfd_boolean mips16_stub_section_p
+@@ -2819,6 +2821,64 @@ mips_elf_sort_hash_table_f (struct mips_
+   return TRUE;
+ }
+ 
++/* No sorting of dynindx is done here, since it is done by gun hash
++   routine. Just track the lowest entry. */
++static bfd_boolean
++mips_elf_sort_gnu_hash_table (struct bfd_link_info *info)
++{
++  struct mips_elf_hash_sort_data hsd;
++  struct mips_got_info *g;
++  bfd *dynobj;
++
++  dynobj = elf_hash_table (info)->dynobj;
++
++  g = mips_elf_got_info (dynobj, NULL);
++
++  hsd.low = NULL;
++  mips_elf_link_hash_traverse (((struct mips_elf_link_hash_table *)
++				elf_hash_table (info)),
++			       mips_elf_sort_gnu_hash_table_f,
++			       &hsd);
++  /* Now we know which dynamic symbole has the lowest dynamic symbol
++     table index in the GOT. */
++  g->global_gotsym = hsd.low;
++
++  return TRUE;
++}
++
++static bfd_boolean
++mips_elf_sort_gnu_hash_table_f (struct mips_elf_link_hash_entry *h, void *data)
++{
++  struct mips_elf_hash_sort_data *hsd = data;
++
++  if (h->root.root.type == bfd_link_hash_warning)
++    h = (struct mips_elf_link_hash_entry *) h->root.root.u.i.link;
++
++  /* Symbols without dynamic symbol table entries aren't interesting
++     at all */
++  if (h->root.dynindx == -1)
++    return TRUE;
++
++  /* For gnu hash, symbols that don't need got is forced to have got entry.
++     This is redundant, but since gnu hash restricts the .dynsym order and
++     symbols that don't need got is *not* placed on upper part of external
++     part of got, it is forced to have got entry.
++     Track the lowest entry. */
++  if (hsd->low == NULL)
++    hsd->low = (struct elf_link_hash_entry *)h;
++  else if (hsd->low->dynindx > h->root.dynindx)
++    hsd->low = (struct elf_link_hash_entry *)h;
++
++  /* Mark symbols that really needs GOT entry.
++     Global symbols that don't need GOT entries get -1.
++     We mark entry that really need GOT to st_other member.
++     Also refer to glibc's mips/dl-machine.h */
++  if (h->root.got.offset != MINUS_ONE)
++    h->root.other |= STO_MIPS_GNUHASH;
++
++  return TRUE;
++}
++
+ /* If H is a symbol that needs a global GOT entry, but has a dynamic
+    symbol table index lower than any we've seen to date, record it for
+    posterity.  */
+@@ -3532,8 +3592,12 @@ mips_elf_multi_got (bfd *abfd, struct bf
+   set_got_offset_arg.value = 1;
+   htab_traverse (g->got_entries, mips_elf_set_global_got_offset,
+ 		 &set_got_offset_arg);
+-  if (! mips_elf_sort_hash_table (info, 1))
+-    return FALSE;
++  if (info->emit_hash)
++    if (! mips_elf_sort_hash_table (info, 1))
++      return FALSE;
++  if (info->emit_gnu_hash)
++    if (! mips_elf_sort_gnu_hash_table (info))
++      return FALSE;
+ 
+   /* Now go through the GOTs assigning them offset ranges.
+      [assigned_gotno, local_gotno[ will be set to the range of local
+@@ -7248,11 +7312,19 @@ _bfd_mips_elf_always_size_sections (bfd 
+      higher.  Therefore, it make sense to put those symbols
+      that need GOT entries at the end of the symbol table.  We
+      do that here.  */
+-  if (! mips_elf_sort_hash_table (info, 1))
+-    return FALSE;
++  if (info->emit_hash)
++    if (! mips_elf_sort_hash_table (info, 1))
++      return FALSE;
++  if (info->emit_gnu_hash)
++    if (! mips_elf_sort_gnu_hash_table (info))
++      return FALSE;
+ 
+-  if (g->global_gotsym != NULL)
++  if (g->global_gotsym != NULL) {
+     i = elf_hash_table (info)->dynsymcount - g->global_gotsym->dynindx;
++    if (info->emit_gnu_hash) {
++      i += g->global_gotsym->dynindx;
++    }
++  }
+   else
+     /* If there are no global symbols, or none requiring
+        relocations, then GLOBAL_GOTSYM will be NULL.  */
+@@ -7484,6 +7556,18 @@ _bfd_mips_elf_size_dynamic_sections (bfd
+ 	      needed_relocs += arg.needed;
+ 	    }
+ 
++	  /*  -export-dynamic might have increased the symbol. For gnu hash
++	      to keep 1:1 entry with dynsym and got, increase additional sym
++	      to got entry. */
++	  if (info->emit_gnu_hash)
++	    {
++	      int increase;
++	      increase = elf_hash_table (info)->dynsymcount - g->global_gotno;
++	      s->size += increase * MIPS_ELF_GOT_SIZE (output_bfd);
++	      g->global_gotno += increase;
++	      mips_elf_resolve_final_got_entries (g);
++	    }
++
+ 	  if (needed_relocs)
+ 	    mips_elf_allocate_dynamic_relocations (dynobj, info,
+ 						   needed_relocs);
+@@ -10296,8 +10380,12 @@ _bfd_mips_elf_final_link (bfd *abfd, str
+ 	 section above.  */
+ 
+       dynsecsymcount = count_section_dynsyms (abfd, info);
+-      if (! mips_elf_sort_hash_table (info, dynsecsymcount + 1))
+-	return FALSE;
++      if (info->emit_hash)
++	if (! mips_elf_sort_hash_table (info, dynsecsymcount + 1))
++	  return FALSE;
++      if (info->emit_gnu_hash)
++	if (! mips_elf_sort_gnu_hash_table (info))
++	  return FALSE;
+ 
+       /* Make sure we didn't grow the global .got region.  */
+       dynobj = elf_hash_table (info)->dynobj;
+--- binutils-2.18/binutils/readelf.c
++++ binutils-2.18/binutils/readelf.c
+@@ -6934,6 +6934,7 @@ get_mips_symbol_other (unsigned int othe
+     {
+     case STO_OPTIONAL:  return "OPTIONAL";
+     case STO_MIPS16:    return "MIPS16";
++    case STO_MIPS_GNUHASH: return "GNUHASH";
+     default:      	return NULL;
+     }
+ }
+--- binutils-2.18/include/elf/mips.h
++++ binutils-2.18/include/elf/mips.h
+@@ -727,6 +727,9 @@ extern void bfd_mips_elf32_swap_reginfo_
+    is optional - if, at final link time, it cannot be found, no
+    error message should be produced.  */
+ #define STO_OPTIONAL		(1 << 2)
++/* This bit is used to mark symbol that needs GOT entry when
++   gnu hash is specified as hash style. */
++#define STO_MIPS_GNUHASH         (1 << 3)
+ /* A macro to examine the STO_OPTIONAL bit.  */
+ #define ELF_MIPS_IS_OPTIONAL(other)	((other) & STO_OPTIONAL)
+ 
+--- binutils-2.18/ld/emultempl/mipself.em
++++ binutils-2.18/ld/emultempl/mipself.em
+@@ -25,12 +25,18 @@ mips_after_parse (void)
+   /* .gnu.hash and the MIPS ABI require .dynsym to be sorted in different
+      ways.  .gnu.hash needs symbols to be grouped by hash code whereas the
+      MIPS ABI requires a mapping between the GOT and the symbol table.  */
+-  if (link_info.emit_gnu_hash)
++  /* This constraint is solved by re-ordering GOT section, GOT is now
++     sorted in 1:1 with gnu hash, which is also 1:1 mapping with .dynsym */
++  if (link_info.emit_gnu_hash && 0)
+     {
+       einfo ("%X%P: .gnu.hash is incompatible with the MIPS ABI\n");
+       link_info.emit_hash = TRUE;
+       link_info.emit_gnu_hash = FALSE;
+     }
++  /* In current MIPS gnu hash method, both is not an option. force it
++     to gnu hash if both is selected. */
++  if (link_info.emit_gnu_hash && link_info.emit_hash)
++    link_info.emit_hash = FALSE;
+   after_parse_default ();
+ }
+ EOF
