@@ -1,0 +1,105 @@
+add support for dragonfly bsd
+
+http://bugs.gentoo.org/189079
+
+--- binutils-2.17_gentoo/bfd/config.bfd
++++ binutils-2.17/bfd/config.bfd
+@@ -507,7 +507,7 @@
+     targ_selvecs=i386bsd_vec
+     targ_underscore=yes
+     ;;
+-  i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu)
++  i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu | i[3-7]86-*-dragonfly*)
+     targ_defvec=bfd_elf32_i386_freebsd_vec
+     targ_selvecs=i386coff_vec
+     # FreeBSD <= 4.0 supports only the old nonstandard way of ABI labelling.
+--- binutils-2.17_gentoo/bfd/configure.in
++++ binutils-2.17/bfd/configure.in
+@@ -219,7 +219,7 @@
+ 	TRAD_HEADER='"hosts/i386bsd.h"'
+ 	;;
+ changequote(,)dnl
+-  i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu)
++  i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu | i[3-7]86-*-dragonfly*)
+ changequote([,])dnl
+ 	COREFILE=''
+ 	TRAD_HEADER='"hosts/i386bsd.h"'
+@@ -600,6 +600,8 @@
+     bfd_elf32_crx_vec)          tb="$tb elf32-crx.lo elf32.lo $elf" ;;    
+     bfd_elf32_d10v_vec)		tb="$tb elf32-d10v.lo elf32.lo $elf" ;;
+     bfd_elf32_d30v_vec)		tb="$tb elf32-d30v.lo elf32.lo $elf" ;;
++    bfd_elf32_i386_dragonfly_vec)
++				tb="$tb elf32-i386.lo elf-vxworks.lo elf32.lo $elf" ;;
+     bfd_elf32_dlx_big_vec)	tb="$tb elf32-dlx.lo elf32.lo $elf" ;;
+     bfd_elf32_fr30_vec)		tb="$tb elf32-fr30.lo elf32.lo $elf" ;;
+     bfd_elf32_frv_vec)		tb="$tb elf32-frv.lo elf32.lo $elf" ;;
+--- binutils-2.17_gentoo/gas/configure.tgt
++++ binutils-2.17/gas/configure.tgt
+@@ -191,7 +191,7 @@
+   i386-*-freebsdaout*)			fmt=aout em=386bsd ;;
+   i386-*-freebsd[12].*)			fmt=aout em=386bsd ;;
+   i386-*-freebsd[12])			fmt=aout em=386bsd ;;
+-  i386-*-freebsd* | i386-*-kfreebsd*-gnu)
++  i386-*-freebsd* | i386-*-kfreebsd*-gnu | i386-*-dragonfly*)
+ 				    	fmt=elf em=freebsd ;;
+   i386-*-sysv*)				fmt=coff ;;
+   i386-*-sco3.2v5*coff)			fmt=coff ;;
+@@ -381,7 +381,8 @@
+   z8k-*-coff | z8k-*-sim)		fmt=coff ;;
+ 
+   *-*-aout | *-*-scout)			fmt=aout ;;
+-  *-*-freebsd* | *-*-kfreebsd*-gnu)	fmt=elf em=freebsd ;;
++  *-*-freebsd* | *-*-kfreebsd*-gnu | *-*-dragonfly*)
++					fmt=elf em=freebsd ;;
+   *-*-bsd*)				fmt=aout em=sun3 ;;
+   *-*-generic)				fmt=generic ;;
+   *-*-xray | *-*-hms)			fmt=coff ;;
+--- binutils-2.17_gentoo/ld/configure.host
++++ binutils-2.17/ld/configure.host
+@@ -18,7 +18,7 @@
+ 
+ case "${host}" in
+ 
+-*-*-freebsd* | *-*-kfreebsd*-gnu)
++*-*-freebsd* | *-*-kfreebsd*-gnu | *-*-dragonfly*)
+   HOSTING_CRT0='-dynamic-linker `[ -f \`${CC} --print-prog-name=ld-elf.so.1\` ] || echo /usr/libexec/``${CC} --print-prog-name=ld-elf.so.1` `${CC} --print-file-name=crt1.o` `${CC} --print-file-name=crti.o` `${CC} --print-file-name=crtbegin.o`'
+   HOSTING_LIBS='-L`dirname \`${CC} --print-file-name=libc.so\`` '"$HOSTING_LIBS"' `if [ -f ../gcc/crtend.o ]; then echo ../gcc/crtend.o; else ${CC} --print-file-name=crtend.o; fi` `${CC} --print-file-name=crtn.o`'
+   ;;
+@@ -227,7 +227,7 @@
+   HOSTING_CRT0=`echo "$HOSTING_CRT0" | sed -e "s,\\\`specs.*\"\\\`,/lib64/ld-linux-x86-64.so.2,"`
+   ;;
+ 
+-*-*-freebsd* | *-*-kfreebsd*-gnu)
++*-*-freebsd* | *-*-kfreebsd*-gnu | *-*-dragonfly*)
+   ;;
+ 
+ *-*-linux*)
+--- binutils-2.17_gentoo/ld/configure.tgt
++++ binutils-2.17/ld/configure.tgt
+@@ -194,7 +194,7 @@
+ i[3-7]86-*-kaos*)	targ_emul=elf_i386 ;;
+ i[3-7]86-*-freebsdaout* | i[3-7]86-*-freebsd[12].* | i[3-7]86-*-freebsd[12])
+ 			targ_emul=i386bsd ;;
+-i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu)
++i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu | i[3-7]86-*-dragonfly*)
+ 		        targ_emul=elf_i386_fbsd
+ 			targ_extra_emuls="elf_i386 i386bsd" ;;
+ x86_64-*-freebsd* | x86_64-*-kfreebsd*-gnu)
+@@ -581,7 +581,7 @@
+ NATIVE_LIB_DIRS='/usr/local/lib /lib /usr/lib'
+ case "${target}" in
+ 
+-*-*-freebsd*)
++*-*-freebsd* | *-*-dragonfly*)
+   NATIVE_LIB_DIRS='/lib /usr/lib /usr/local/lib'
+   ;;
+ 
+@@ -616,7 +616,7 @@
+ *-*-linux*)
+   ;;
+ 
+-*-*-freebsd*)
++*-*-freebsd* | *-*-dragonfly*)
+   ;;
+ 
+ *-*-netbsd*)
