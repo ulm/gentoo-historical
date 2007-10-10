@@ -21,6 +21,8 @@
 <xsl:include href="/xsl/handbook.xsl" />
 <xsl:include href="/xsl/inserts.xsl" />
 
+<xsl:include href="/xsl/mail.xsl" />
+
 <xsl:include href="/xsl/devmap.xsl" />
 
 <!-- When using <pre>, whitespaces should be preserved -->
@@ -38,21 +40,6 @@
 
 <!-- Where is this xsl being run? -->
 <xsl:param name="httphost">www</xsl:param>
-
-<!-- Get the list of devs from the roll-call -->
-<xsl:variable name="ALL-DEVS" xmlns="">
- <devs>
-  <xsl:for-each select="document('/proj/en/devrel/roll-call/userinfo.xml')/userlist/user">
-    <user username="{@username}">
-     <xsl:if test="translate(status,'TIRED','tired')='retired'">
-      <xsl:attribute name="retired"/>
-     </xsl:if>
-     <xsl:copy-of select="realname"/>
-     <xsl:copy-of select="email"/>
-    </user>
-  </xsl:for-each>
- </devs>
-</xsl:variable>
 
 <!-- img tag -->
 <xsl:template match="img">
@@ -682,104 +669,28 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 
 <!-- Mail template -->
 <xsl:template match="mail">
-<xsl:if test="string-length(@link)>0 or string-length(.)>0">
- <xsl:variable name="gnick">
-  <xsl:choose>
-   <xsl:when test="string-length(@link)=0 and not(contains(text(),'@'))">
-     <!-- <mail>nick</mail> -->
-     <xsl:value-of select="."/>
-   </xsl:when>
-   <xsl:when test="string-length(@link)=0 and contains(text(),'@gentoo.org')">
-     <!-- <mail>nick@gentoo.org</mail> -->
-     <xsl:value-of select="substring-before(., '@')"/>
-   </xsl:when>
-   <xsl:when test="string-length(@link)>0 and not(contains(@link,'@'))">
-     <!-- <mail link="nick">blah blah</mail> -->
-     <xsl:value-of select="@link"/>
-   </xsl:when>
-   <xsl:when test="contains(@link,'@gentoo.org')">
-     <!-- <mail link="nick@gentoo.org">blah blah</mail> -->
-     <xsl:value-of select="substring-before(@link, '@gentoo.org')"/>
-   </xsl:when>
-  </xsl:choose>
- </xsl:variable>
-
- <xsl:variable name="gmail">
-  <xsl:if test="string-length($gnick)>0">
-   <xsl:choose>
-    <xsl:when test="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick and @retired]">
-     <xsl:value-of select="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/email[substring-after(text(),'@')!='gentoo.org'][1]"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:value-of select="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/email[substring-after(text(),'@')='gentoo.org'][1]"/>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:if>
- </xsl:variable>
-
- <xsl:variable name="gname">
-  <xsl:if test="string-length($gnick)>0">
-   <xsl:choose>
-    <xsl:when test="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname/@fullname">
-     <xsl:value-of select="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname/@fullname"/>
-    </xsl:when>
-    <xsl:when test="exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname[firstname or familyname]">
-     <xsl:value-of select="concat(exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname/firstname,' ',exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick]/realname/familyname)"/>
-    </xsl:when>
-   </xsl:choose>
-  </xsl:if>
- </xsl:variable>
-
- <xsl:variable name="href">
-  <xsl:choose>
-  <xsl:when test="string-length($gname)>0 and string-length($gmail)=0 and exslt:node-set($ALL-DEVS)/devs/user[@username=$gnick and @retired]"/>
-    <xsl:when test="string-length($gmail)>0">
-      <xsl:value-of select="concat('mailto:', $gmail)"/>
-    </xsl:when>
-    <xsl:when test="string-length(@link)>0">
-      <xsl:value-of select="concat('mailto:', @link)"/>
-    </xsl:when>
-    <xsl:when test="string-length(.)>0">
-      <xsl:value-of select="concat('mailto:', .)"/>
-    </xsl:when>
-  </xsl:choose>
- </xsl:variable>
-
- <xsl:variable name="content">
-   <xsl:choose>
-    <xsl:when test="string-length(@link)>0 and string-length(.)>0">
-     <xsl:value-of select="."/>
-    </xsl:when>
-    <xsl:when test="string-length($gname)>0">
-     <xsl:value-of select="$gname"/>
-    </xsl:when>
-    <xsl:when test="string-length($gnick)>0">
-     <xsl:value-of select="$gnick"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:value-of select="."/>
-    </xsl:otherwise>
-   </xsl:choose>
+ <xsl:variable name="mail">
+  <xsl:call-template name="smart-mail">
+   <xsl:with-param name="mail" select="."/>
+  </xsl:call-template>
  </xsl:variable>
 
  <xsl:choose>
-  <xsl:when test="string-length($href)>0">
-   <a href="{$href}">
+  <xsl:when test="string-length(exslt:node-set($mail)/mail/@link)>0">
+   <a href="{concat('mailto:',exslt:node-set($mail)/mail/@link)}">
      <xsl:choose>
       <xsl:when test="name(..)='author'">
        <xsl:attribute name="class">altlink</xsl:attribute>
-       <b><xsl:value-of select="$content"/></b>
+       <b><xsl:value-of select="exslt:node-set($mail)/mail/text()"/></b>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:value-of select="$content"/>
+       <xsl:value-of select="exslt:node-set($mail)/mail/text()"/>
       </xsl:otherwise>
      </xsl:choose>
    </a>
   </xsl:when>
-  <xsl:otherwise><xsl:value-of select="$content"/></xsl:otherwise>
+  <xsl:otherwise><xsl:value-of select="exslt:node-set($mail)/mail/text()"/></xsl:otherwise>
  </xsl:choose>
-
-</xsl:if>
 </xsl:template>
 
 <!-- Author -->
