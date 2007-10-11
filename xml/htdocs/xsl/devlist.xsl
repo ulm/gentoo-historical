@@ -30,13 +30,18 @@
        <xsl:attribute name="lon"><xsl:value-of select="location/@longitude"/></xsl:attribute>
        <xsl:attribute name="lat"><xsl:value-of select="location/@latitude"/></xsl:attribute>
      </xsl:if>
-     <xsl:value-of select="location"/>
+     <xsl:value-of select="normalize-space(location)"/>
    </location>
    <roles><xsl:value-of select="normalize-space(roles)"/></roles>
-   <location><xsl:value-of select="normalize-space(location)"/></location>
-    <xsl:if test="string-length(status) > 0">
+   <xsl:if test="string-length(status) > 0">
      <status><xsl:value-of select="translate(normalize-space(status),'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/></status>
-    </xsl:if>
+   </xsl:if>
+   <xsl:if test="email[@role='gentoo']">
+    <email role="gentoo"><xsl:value-of select="email[@role='gentoo'][1]"/></email>
+   </xsl:if>
+   <xsl:if test="email[@role!='gentoo']">
+    <email role="other"><xsl:value-of select="email[@role!='gentoo'][1]"/></email>
+   </xsl:if>
    </user>
  </xsl:for-each>
 </xsl:variable>
@@ -48,6 +53,9 @@
     </xsl:when>
     <xsl:when test="$mode='kml'">
       <xsl:apply-templates mode="kml"/>
+    </xsl:when>
+    <xsl:when test="$mode='xml'">
+      <xsl:apply-templates mode="xml"/>
     </xsl:when>
     <xsl:otherwise>
       <xsl:apply-templates/>
@@ -111,6 +119,39 @@
       <coordinates><xsl:value-of select="concat(location/@lon, ',', location/@lat)"/></coordinates>
     </Point>
   </Placemark>
+</xsl:template>
+
+
+<!-- xml for sites where no roll-call is available -->
+<xsl:template match="/devlist" mode="xml" xmlns=''>
+<xsl:text disable-output-escaping="yes">&lt;?xml version="1.0" encoding="UTF-8"?&gt;&#xA;</xsl:text>
+ <xsl:element name="userlist">
+  <xsl:apply-templates select="exslt:node-set($rollcall)/user" mode="xml"/>
+ </xsl:element>
+</xsl:template>
+
+<xsl:template match="user" mode="xml" xmlns=''>
+   <xsl:element name="user">
+    <xsl:attribute name="username"><xsl:value-of select="@nick"/></xsl:attribute>
+    <realname><xsl:attribute name="fullname"><xsl:value-of select="name/text()"/></xsl:attribute></realname>
+    <pgpkey><xsl:value-of select="pgpkey"/></pgpkey>
+    <location>
+     <xsl:if test="location/@lon and location/@lat">
+       <xsl:attribute name="longitude"><xsl:value-of select="location/@lon"/></xsl:attribute>
+       <xsl:attribute name="latitude"><xsl:value-of select="location/@lat"/></xsl:attribute>
+     </xsl:if>
+     <xsl:value-of select="location"/>
+    </location>
+    <xsl:if test="status">
+      <status><xsl:value-of select="status"/></status>
+    </xsl:if>
+    <xsl:if test="email[@role='gentoo']">
+      <email role="gentoo"><xsl:value-of select="email[@role='gentoo']"/></email>
+    </xsl:if>
+    <xsl:if test="email[@role='other']">
+      <email role="other"><xsl:value-of select="email[@role='other']"/></email>
+    </xsl:if>
+  </xsl:element>
 </xsl:template>
 
 </xsl:stylesheet>
