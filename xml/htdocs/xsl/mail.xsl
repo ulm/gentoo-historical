@@ -9,8 +9,51 @@
 
 <!-- Get the list of devs from the roll-call -->
 <xsl:variable name="ALL-DEVS" xmlns="">
+ <!-- The following embedded <xsl:choose> tags may look a bit verbose,
+      but they save using document() twice, once to test, once to load.
+      The roll-call is a large file and using document() twice on it is quite slow -->
+ <xsl:choose>
+  <xsl:when test="$httphost='www'">
+   <!-- On www.g.o (default case), roll-call must be userinfo.xml -->
+   <xsl:call-template name="load-devs">
+    <xsl:with-param name="roll-call" select="document('/proj/en/devrel/roll-call/userinfo.xml')"/>
+   </xsl:call-template>
+  </xsl:when>
+  <xsl:otherwise>
+    <!-- Just in case the roll-call is available, wherever we are -->
+    <xsl:variable name="local" select="document('/proj/en/devrel/roll-call/userinfo.xml')"/>
+    <xsl:choose>
+      <xsl:when test="not($local/missing)">
+       <xsl:call-template name="load-devs">
+        <xsl:with-param name="roll-call" select="$local"/>
+       </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <!-- On dev.g.o, try /doc/roll-call.xml as a fallback -->
+        <xsl:variable name="fallback" select="document('/doc/roll-call.xml')"/>
+        <xsl:choose>
+          <xsl:when test="$httphost='dev' and not($fallback/missing)">
+           <xsl:call-template name="load-devs">
+            <xsl:with-param name="roll-call" select="$fallback"/>
+           </xsl:call-template>
+          </xsl:when>
+          <xsl:otherwise>
+           <!-- No other choice than to hit www.g.o which could fail, *is slow* AND *disables caching* -->
+           <xsl:call-template name="load-devs">
+            <xsl:with-param name="roll-call" select="document('http://www.gentoo.org/proj/en/devrel/roll-call/devlist.xml?mode=xml')"/>
+           </xsl:call-template>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:otherwise>
+ </xsl:choose>
+</xsl:variable>
+
+<xsl:template name="load-devs" xmlns="">
+<xsl:param name="roll-call"/>
  <devs>
-  <xsl:for-each select="document('/proj/en/devrel/roll-call/userinfo.xml')/userlist/user">
+  <xsl:for-each select="$roll-call/userlist/user">
     <user username="{@username}">
      <xsl:if test="translate(status,'TIRED','tired')='retired'">
       <xsl:attribute name="retired"/>
@@ -20,7 +63,7 @@
     </user>
   </xsl:for-each>
  </devs>
-</xsl:variable>
+</xsl:template>
 
 <!-- Process mail tag, see if we have a Gentoo dev, add @gentoo.org is required
      and pull name from roll-call if required
