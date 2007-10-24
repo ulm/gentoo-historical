@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/gcc-optimization.xml,v 1.1 2007/08/03 22:16:26 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/gcc-optimization.xml,v 1.2 2007/10/24 22:56:58 chiguire Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/en/gcc-optimization.xml">
+<guide link="/doc/en/gcc-optimization.xml" lang="es">
 
 <title>Guía de Compilación Optimizada</title>
 
@@ -25,8 +25,8 @@ teoria detrás de la optimización en general.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.4</version>
-<date>2007-07-28</date>
+<version>1.7</version>
+<date>2007-10-13</date>
 
 <chapter>
 <title>Introducción</title>
@@ -113,8 +113,9 @@ banderas CFLAGS y CXXFLAGS agresivas están más cerca de dañar sus
 programas que de hacerles ningún bien. Recuerde que la razón de que
 las banderas existan en primer lugar es porque están diseñadas para
 usarse en sitios específicos para propósitos específicos. ¡Sólo porque
-una CFLAG particular sea buena para un bit de código ni significa que
-esté diseñada para compilar todo lo que quiera instalar en su máquina.
+una CFLAG particular sea buena para un bit de código no significa que
+esté diseñada para compilar todo lo que quiera instalar en su
+máquina¡.
 </p>
 </body>
 </section>
@@ -145,18 +146,19 @@ el código.)
 
 <p>
 La meta detrás de usar CFLAGS y CXXFLAGS es crear código específico
-para su sistema; debería funcionar perfectamente mientra es delgado y
+para su sistema; debería funcionar perfectamente mientra es ligero y
 rápido, si es posible. Algunas veces estás condiciones son mutuamente
 excluyentes, pero nosotros jugaremos con combinaciones que sabemos que
-funcionan bien.  Mencionaremos más adelante las banderas agresivas
-para que conozca con cuales tener cuidado. No discutiremos cada opción
-listada en el manual de <c>gcc</c> (hay cientos), pero hablaremos de
-las básicas, las banderas más comunes.
+funcionan bien. Idealmente, las mejores están disponibles para cada
+arquitectura de CPU.  Mencionaremos más adelante las banderas
+agresivas para que conozca con cuales tener cuidado. No discutiremos
+cada opción listada en el manual de <c>gcc</c> (hay cientos), pero
+hablaremos de las básicas, las banderas más comunes.
 </p>
 
 <note>
-Siempre que no esté seguro de que hace la bandera actual, revise el
-capítulo relevante en <uri
+Siempre que no esté seguro de que hace actualmente la bandera, revise
+el capítulo relevante en <uri
 link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Optimize-Options.html#Optimize
 -Options">manual de gcc</uri> si aún continúa atascado, pruebe Google,
 o revise las <uri link="http://gcc.gnu.org/lists.html">listas de
@@ -184,8 +186,10 @@ caprichos y todo.
 
 <p>
 A pesar que la variable CHOST en <path>/etc/make.conf</path>
-especifica la arquitectura usada, <c>-march</c> también se usaría para
-que sus programas sean optimizados para su procesador específico.
+especifica la arquitectura general usada, <c>-march</c> también se
+usaría para que sus programas sean optimizados para su procesador
+específico. Las arquitecturas x86 y x86-64 (entre otras) también
+deberían hacer uso de la bandera <c>-march</c>
 </p>
 
 <p>
@@ -208,40 +212,61 @@ CXXFLAGS="${CFLAGS}"
 </pre>
 
 <p>
-Aquí está otro para una CPU de 64-bit Sparc:
+Aquí hay otro para una CPU de 64-bit AMD:
 </p>
 
-<pre caption="/etc/make.conf: Sparc">
-CFLAGS="-march=ultrasparc"
+<pre caption="/etc/make.conf: AMD:64">
+CFLAGS="-march=athlon64"
 CXXFLAGS="${CFLAGS}"
 </pre>
 
 
 <p>
 También están disponibles las banderas <c>-mcpu</c> y
-<c>-mtune</c>. Cada una de ellas <e>sólo</e> se usaran cuando no haya
-ninguna opción <c>-march</c> disponible. ¿Cuál es la diferencia entre
-ellas? <c>-march</c> es mucho más específica en cuanto a que
-características del procesador se usaran cuando se compile código, es
-la mejor opción. <c>-mcpu</c> producirá un código mucho más genérico,
-menos optimizado para su máquina. <c>-mtune</c> es incluso más
-genérico que <c>-mcpu</c>. Siempre que sea posible, utilice
-<c>-march</c>. Para algunas arquitecturas menos comunes como PowerPC y
-Alpha, deberá usar <c>-mcpu</c>
+<c>-mtune</c>. Cada una de ellas <e>sólo</e> se usara cuando no haya
+ninguna opción <c>-march</c> disponible. Ciertas arquitecturas de
+procesador pueden requerir <c>-mtune</c> o incluso de
+<c>-mcpu</c>. Desgraciadamente, el comportamiento de <c>gcc</c> no es
+muy consistente con cómo cada bandera se comporta desde una
+arquitectura a la siguiente.
+</p>
+
+<p>
+En CPUs x86 y x86-64, <c>-mcpu</c> generará código epecífico para esta
+CPU usando todas sus instrucciones disponibles y el ABI correcto; no
+tendrá compatibilidad hacia atrás para CPUs antiguas/diferentes. Si no
+necesita ejecutar código en otro sitio que en el sistema que está
+corriendo Gentoo, continue para usar <c>-march</c>. Sólo debería
+considerar usar <c>-mtune</c> cuando necesite generar código para CPUs
+antiguas como i386 e i486. <c>-mtune</c> produce un código más
+genérico que <c>-march</c>; aunque afinará el código para cierto CPU,
+no tendrá en cuenta los juegos de instrucciones disponibles y ABI. No
+use <c>-mcpu</c> en sistemas x86 o x86-64, ya que está obsoleto para
+estas arquitecturas.
+</p>
+
+<p>
+Sólo CPUs no x86/x86-64 (como Sparc, Alpha y PowerPC) pueden requerir
+<c>-mtune</c> o <c>-mcpu</c> en lugar de <c>-march</c>. En estas
+arquitecturas, <c>-mtune</c>/ <c>-mcpu</c> algunas veces se comportará
+como <c>-march</c> en (x86/x86-64) . . .  pero con un nombre de
+bandera distinto. De nuevo, el comportamiento de <c>gcc</c> y el
+nombramiento de banderas no es consistente entre arquitecturas, así
+que asegurese de revisar <uri
+link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Submodel-Options.html#Submodel-Options">manual</uri>
+de <c>gcc</c> para determinatr cual de ellos se ajusta a su sistema.
 </p>
 
 <note>
-Para más sugerencias de configuraciones de <c>-march</c>, por favor
-lea el capítulo 5 de la <uri link="/doc/es/handbook/">Guía de
-Instalación de Gentoo </uri> apropiada a su arquitectura. También, lea
-el manual de <c>gcc</c> listado en <uri
+Para más sugerencias de configuraciones de
+<c>-march</c>/<c>-mtune</c>/ <c>-mcpu</c>, por favor lea el capítulo 5
+de la <uri link="/doc/es/handbook/">Guía de Instalación de Gentoo
+</uri> apropiada a su arquitectura. También, lea el manual de
+<c>gcc</c> listado en <uri
 link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Submodel-Options.html#Submodel
--Options">architecture-specific options</uri>, así como explicaciones
-más detalladas sobre las diferencias entre <c>-march</c>,
-<c>-mcpu</c>, y <c>-mtune</c>. Esto ayudará bastante para determinar
-cual configuración de <c>-march</c> debería usar, especialmente desde
-que en algunas arquitecturas, como x86, <c>-mcpu</c> está obsoleto y
-en su lugar debe usarse <c>-mtune</c>.
+-Options">architecture-specific options</uri>, con explicaciones más
+detalladas sobre las diferencias entre <c>-march</c>, <c>-mcpu</c>, y
+<c>-mtune</c>.
 </note>
 </body>
 </section>
@@ -251,8 +276,8 @@ en su lugar debe usarse <c>-mtune</c>.
 <body>
 
 <p>
-Lo siguiente es la variables <c>-O</c>. Controla el total de niveles
-de optimización. Hace que la compilación de código tome algo más de
+Lo siguiente es la variable <c>-O</c>. Controla el total de niveles de
+optimización. Hace que la compilación de código tome algo más de
 tiempo, y puede tomar mucha más memoria, especialmente cuando
 incrementa el nivel de optimización.
 </p>
@@ -294,9 +319,8 @@ Examinemos cada nivel de optimización:
   <li>
     <c>-O2</c>: Un paso por encima de <c>-O1</c>. Este es el nivel
     <e>recomendado</e> de optimización a no ser que tenga necesidades
-    especiales (como con <c>-Os</c>, se explicará
-    brevemente). <c>-O2</c> activará unas pocas banderas más añadidas
-    a las que se activan con <c>-O1</c>. Con <c>-O2</c>, el compilador
+    especiales. <c>-O2</c> activará unas pocas banderas más añadidas a
+    las que se activan con <c>-O1</c>. Con <c>-O2</c>, el compilador
     intentará incrementar el rendimiento del código sin comprometer el
     tamaño y sin tomar mucho más tiempo de compilación.
   </li>
@@ -321,7 +345,7 @@ Examinemos cada nivel de optimización:
     todas las opciones de <c>-O2</c> que no incrementan el tamaño del
     código generado Es útil para máquinas que tienen la capacidad de
     disco limitada y/o tienen CPUs con poca caché. Sin embargo, puede
-    causar algunos problemas, los cuales es por qué es filtrado por
+    causar algunos problemas, los cual es por qué es filtrado por
     muchos de los ebuilds del árbol. Usar <c>-Os</c> no es
     aconsejable.
   </li>
@@ -370,12 +394,12 @@ usando esta bandera hará la depuración de dura a imposible.
 <p>
 En particular, provoca que localizar problemas en aplicaciones
 escritas en Java sea mucho más complicada, aunque Java no es el único
-código afectado por usar esta bandera; la vuelta atrás será útil. Así
-mientras la bandera puede ayudar, también puede hacer la depuración
-difícil. Si no planea hacer muchas depuraciones y no tiene añadida
-ninguna otra CFLAG relacionada con la depuración como <c>-ggdb</c> (y
-no está instalando paquete con la variable USE <c>debug</c>), entonces
-pruebe usando <c>-fomit-frame-pointer</c>.
+código afectado por usar esta bandera. Asi aunque la bandera puede
+ayudar, el depurado será duro; la vuelta atrás en particualar será
+inútil. Sin embargo, si no planea hacer muchas depuraciones y no tiene
+añadida ninguna otra CFLAG relacionada con la depuración como
+<c>-ggdb</c> (y no está instalando paquete con la variable USE
+<c>debug</c>), entonces pruebe usando <c>-fomit-frame-pointer</c>.
 </p>
 
 <impo>
@@ -384,6 +408,7 @@ pruebe usando <c>-fomit-frame-pointer</c>.
 desaconsejado, ya que <c>-fomit-frame-pointer</c> ya hace el trabajo
 apropiado. Es más, <c>-momit-leaf-frame-pointer</c> ha demostrado que
 impacta negativamente en el rendimiento del código.
+
 <!--
 source for this info:
 http://www.coyotegulch.com/products/acovea/aco5p4gcc40.html
@@ -402,7 +427,7 @@ link="http://es.wikipedia.org/wiki/Streaming_SIMD_Extensions">SSE</uri>,
 <uri link="http://es.wikipedia.org/wiki/SSE2">SSE2</uri>, <uri
 link="http://en.wikipedia.org/wiki/SSSE3">SSE3</uri>, <uri
 link="http://es.wikipedia.org/wiki/MMX">MMX</uri>, and <uri
-link="http://en.wikipedia.org/wiki/3dnow">3DNow!</uri> para
+link="http://es.wikipedia.org/wiki/3DNow%21">3DNow!</uri> para
 arquitecturas x86-64. Son útiles principalmente en multimedia, juegos
 y otras tareas intensivas de computación en punto flotante, aunque
 también contienen muchos otros realces matemáticos. Estos juegos de
@@ -443,7 +468,8 @@ configuración de <c>-march</c> apropiada.
 <chapter>
 <title>PUFs de Optimización</title>
 <section>
-<title>¡Pero tengo un mejor rendimiento con -funroll-loops -fomg-optimize!</title>
+<title>¡Pero tengo un mejor rendimiento con -funroll-loops
+-fomg-optimize!</title>
 <body>
 
 <p>
@@ -452,11 +478,11 @@ más banderas es mejor. Las banderas agresivas solo dañaran sus
 aplicaciones cuando use un sistema completo. Incluso el <uri
 link="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Optimize-Options.html#Optimize
 -Options">manual</uri> de <c>gcc</c> dice que usar
-<c>-funroll-loops</c> y <c>-funroll-all-loops</c> crea código grande y
-que corre lento. Aún por algunas razones, estas dos banderas, junto
-con <c>-ffast-math</c>, <c>-fforce-mem</c>, <c>-fforce-addr</c>, y
-similares, continúan siendo muy populares entre pardillos que quieren
-saber más que nadie.
+<c>-funroll-loops</c> y <c>-funroll-all-loops</c> crea código más
+grande y que corre más lento. Aún por algunas razones, estas dos
+banderas, junto con <c>-ffast-math</c>, <c>-fforce-mem</c>,
+<c>-fforce-addr</c>, y similares, continúan siendo muy populares entre
+pardillos que quieren saber más que nadie.
 </p>
 
 <p>
@@ -468,10 +494,10 @@ banderas: ¡nada bueno!
 </p>
 
 <p>
-No necesita usar estas banderas globalmente en CFLAGS o CXXFLAGS. Solo
+No necesita usar estas banderas globalmente en CFLAGS o CXXFLAGS. Sólo
 dañaran el rendimiento. Puede sonarle como que tiene un sistema de
 alto rendimiento corriendo en un filo sangrante, pero no harán otra
-cosa que hinchar su código y marcar sus bichos como INVALID o WONTFIX.
+cosa que inflar su código y marcar sus bichos como INVALID o WONTFIX.
 </p>
 
 <p>
@@ -547,6 +573,13 @@ resume dónde y cómo trabaja el filtrado/reemplazo de banderas.
 </p>
 
 <p>
+El <uri
+link="http://devmanual.gentoo.org/ebuild-writing/functions/src_compile/build-environment/index.html">Manual
+del Desarrollador de Gentoo </uri> esboza dónde y cómo trabajan el
+filtrado/ reemplazo de banderas.
+</p>
+
+<p>
 Es posible evitar el filtrado de <c>-O</c> por el listado redundante
 de banderas para un cierto nivel, como <c>-O3</c>, haciendo cosas
 como:
@@ -575,7 +608,7 @@ banderas inaceptables. Cuando reporte sus problemas en Bugzilla, las
 banderas que usó en <path>/etc/make.conf</path> serán fácilmente
 visibles y se le instará a recompilar sin esas banderas. ¡Protéjase de
 los problemas de recompilar no usando banderas redundantes en primer
-lugar!
+lugar! No asuma automáticamente que sabe más que los desarrolladores.
 </p>
 </body>
 </section>
@@ -585,13 +618,13 @@ lugar!
 <body>
 
 <p>
-No lo use. Habrá escuchado que pueden acelerar los tiempos de carga de
-las aplicaciones o reducir el tamaño de los binarios, pero en
-realidad, LDFLAGS está más cerca de hacer que sus aplicaciones dejen
-de funcionar. No están soportadas y sus bichos seran marcados como
-INVALID si reporta los errores de los paquetes mientras usa
-LDFLAGS. Como mínimo tendrá que recompilar todos los paquetes
-afectados sin soporte de LDFLAGS.
+Probablemente no debería marcarlo. Habrá escuchado que pueden acelerar
+los tiempos de carga de las aplicaciones o reducir el tamaño de los
+binarios, pero en realidad, LDFLAGS está más cerca de hacer que sus
+aplicaciones dejen de funcionar. No están oficialmente soportadas y
+sus bichos seran marcados como INVALID si reporta los errores de los
+paquetes mientras usa LDFLAGS. Como mínimo tendrá que recompilar todos
+los paquetes afectados sin soporte de LDFLAGS.
 </p>
 </body>
 </section>
