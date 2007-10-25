@@ -414,8 +414,63 @@ gnat_config_file=<const>"${D}/${CONFIG_PATH}/${CTARGET}-${PN}-${SLOT}"</const> <
 	<title>eselect-gnat workings</title>
 	<body>
 		<p>
-			To be completed.
+			<c>eselect-gnat</c> was modelled after the <c>eselect-compiler</c> module, that was
+			supposed to supersede the <c>gcc-config</c> script at the time of development. Of
+			course that got shot down and now we are "stuck" with <c>gnat</c> using the "more
+			modern" tool, while <c>gcc</c> is still handled by legacy <c>gcc-config</c> script. 
+			Nonetheless, <c>eselect-gnat</c> works well with the way Ada support is setup in
+			Gentoo, and below I describe its inner workings.
 		</p>
+
+		<p>
+			Inheriting all the general features of <c>gcc</c>, the run-time behavior of
+			<c>gnat</c> can be extensively regulated by env vars. As such, the approach that was
+			adopted consists of the compiler producing the "specs" file tat contains all the
+			principal locations during its build, and <c>eselect-gnat</c> using this generated
+			file to create an appropriate entry under the <c>/etc/env.d</c>. There are no
+			additional "hidden entries", everything rotates around the way env settings are 
+			managed in Gentoo. Thus, <c>eselect gnat set</c>, <c>update</c> and <c>unset</c>
+			actions directly operate on the env entry (re)creating a new or deleting an existing
+			one. This env file has the name of the form <c>${MARKER}${gnat_profile}</c> with
+			<c>MARKER</c> currently set to <c>MARKER="55gnat-"</c> and <c>gnat_profile</c>
+			having a usial form of <c>${ARCH}-${compiler_name}-${SLOT}</c>, such as
+			<c>x86_64-pc-linux-gnu-gnat-gcc-4.2</c> for example. The generation of the original
+			specs file for each compiler is performed by the <c>create_eselect_conf</c> function
+			in the <c>prep-env</c> part of the <c>gnatbuild_src_install</c> function in
+			<c>gnatbuild.eclass</c>. And the specs file location is defined near the op of
+			<c>gnatbuild.eclass</c> as:
+		</p>
+		<pre caption="gnat profile specs location">
+<comment># ATTN! the one below should match the path defined in eselect-gnat module</comment>
+CONFIG_PATH=<const>"/usr/share/gnat/eselect"</const>
+gnat_config_file=<const>"${D}/${CONFIG_PATH}/${CTARGET}-${PN}-${SLOT}"</const> </pre>
+
+		<p>
+			The <c>${CONFIG_PATH}</c> serves as the top directory where all the information
+			necessary for the <c>gnat.eselect</c> is stored. Every gnat installs a single file
+			that has a name/SLOT specific name, thus overwriting the one for older version
+			within the same grouping but avoiding collision with a different compiler or SLOT.
+			Every installed library created a subdir under <c>${CONFIG_PATH}</c> that, in turn,
+			contains library spec files for every gnat profile it was compiled with. More on the
+			libs below, in the corresponding section. The location for <c>${CONFIG_PATH}</c> has
+			been purposedly chosen outside normally config-protected locations, so that spec
+			files are removed when the corresponding version of compiler is unmerged. The same
+			goes for the libs. 
+			Therefore, figuring out what variants of gnat are installed is a simple matter of
+			scanning <c>${CONFIG_PATH}</c> for the specs files and then splitting them into the
+			<c>${ARCH}</c>, <c>${compiler_name}</c> and <c>SLOT</c> components. Right now every
+			lib is supposed to create a separate directory for itself and every regular file
+			under <c>${CONFIG_PATH}</c> is expected to be a specs file for some compiler
+			variant.
+		</p>
+		<p>
+			<c>eselect-gnat</c> provides common actions, such as <c>show</c> and <c>list</c> as
+			well as <c>set</c> and <c>update</c>. As all the relevant information for all
+			gnat profiles is concentrated under <c>${CONFIG_PATH</c>, determination of 
+			The <c>set</c> accepts the name of the gnat
+			profile to activate as an argument and update simply rege
+		</p>
+
 	</body>
 	</section>
 </chapter>
@@ -428,7 +483,87 @@ gnat_config_file=<const>"${D}/${CONFIG_PATH}/${CTARGET}-${PN}-${SLOT}"</const> <
 	<title>Overview</title>
 	<body>
 		<p>
-			To be completed.
+			As was described above, in Gentoo we provide multiple SLOTted versions of <c>gnat</c>
+			compilers that users can have installed in parallel. Unlike with many other languages,
+			Ada compilers tend to follows the standard rather tightly. Therefore most, if not all,
+			the common libs are expected to compile cleanly with any compiler, provided it implements
+			the necessary version of Ada standard. Therefore it was decided to provide users with the
+			ability to have libs compiled for all the installed gnat variants and to make eselect
+			to switch to an appropriate lib image when a certain <c>gnat</c> profile is activated.
+		</p>
+		<p>
+			The libs are managed by <c>gnat.eclass</c>, which automates their handling. The principal
+			action happens in the <c>src_compile</c> function. All the installed gnat profiles are 
+			geting activated in turn and the lib gets compiled multiple times for every profile.
+			The <c>src_install</c> function then collects the compiled parts and installs them
+			in appropriate locations. The detailed workings of the eclass will be considered
+			below. Here I will just note again, that <c>gnat.eclass</c> is designed to be used
+			with the "common Ada libs" and thus should be used only where appropriate. It makes
+			no sense to use it to build some directly executable application for example.
+		</p>
+	</body>
+	</section>
+
+	<section>
+	<title>Detailed sequence of multi-build.</title>
+	<body>
+		<p>
+			As was already mentioned, the principal "magic" happens in <c>src_compile</c>. Here
+			we have to:
+		</p>
+		<ol>
+			<li>copy the source directory, so that the build does not poison the original,</li>
+			<li>activate the next compiler profile,</li>
+			<li>
+				call the <c>lib_compile</c> callback, which now holds stuff that normally
+				happens in <c>src_compile</c> of a normal ebuild.
+			</li>
+			<li>call the <c>lib_install</c> callback. This function is supposed to be similar to
+				the normal <c>src_install</c> except that it only needs to concern itself with
+				installing the gnat-profile specific stuff. The compiled <c>.a</c> or <c>.so</c>
+				files or config scrits are the most common "ingredients" that are processed by it.
+			</li>
+		</ol>
+		<p>
+			and cycle through these steps untill we go through all the installed <c>gnat</c> 
+			compilers. The following code fragment is responsible for doing just this.
+		</p>
+		<pre caption="fragment of gnat_src_compile function">
+gnat_src_compile() {
+	<comment>...</comment>
+	compilers=( $(find_compilers ) )
+	if [[ -n ${compilers[@]} ]] ; then
+		local i
+		for (( i = 0 ; i &lt; ${#compilers[@]} ; i = i + 1 )) ; do
+		<comment># copy sources</comment>
+			mkdir ${DL}
+			cp -dpR "${S}" ${SL}
+			<comment># setup environment</comment>
+			generate_envFile ${compilers[${i}]} ${BuildEnv} &amp;&amp; \
+			expand_BuildEnv ${BuildEnv} &amp;&amp; \
+			. ${BuildEnv}  || die "failed to switch to ${compilers[${i}]}"
+			...
+			<comment># call compilation callback</comment>
+			cd ${SL}
+			gnat_filter_flags ${compilers[${i}]}
+			lib_compile ${compilers[${i}]} || die "failed compiling for ${compilers[${i}]}"
+
+			<comment># call install callback</comment>
+			cd ${SL}
+			lib_install ${compilers[${i}]} || die "failed installing profile-specific part for ${compiler
+			<comment># move installed and cleanup</comment>
+			mv ${DL} ${DL}-${compilers[${i}]}
+			rm -rf ${SL}
+		done
+	else
+		die "please make sure you have at least one gnat compiler installed!"
+	fi
+} </pre>
+
+
+		<p>
+			Next, the <c>src_install</c> function.
+			Here, we need to 
 		</p>
 	</body>
 	</section>
