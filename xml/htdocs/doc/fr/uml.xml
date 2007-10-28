@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/uml.xml,v 1.17 2005/10/12 09:03:34 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/uml.xml,v 1.18 2007/10/28 21:03:34 titefleur Exp $ -->
 
 <!-- Le contenu de ce document est sous licence CC-BY-SA. -->
 <!-- Voir http://creativecommons.org/licenses/by-sa/1.0 -->
@@ -23,8 +23,8 @@
 </author>
 
 <abstract>
-Ce guide montre aux développeurs Gentoo Linux comment mettre en place
-et utiliser le Mode Utilisateur Linux (User-Mode Linux) pour tester les
+Ce guide montre aux développeurs Gentoo Linux comment mettre en place et
+utiliser le Mode Utilisateur Linux (User-Mode Linux) pour tester les
 modifications du système potentiellement dangereuses.
 </abstract>
 
@@ -32,14 +32,22 @@ modifications du système potentiellement dangereuses.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.11</version>
-<date>2005-02-05</date>
+<version>0.15</version>
+<date>2006-11-17</date>
 
 <chapter>
 <title>Installer le Mode Utilisateur Linux</title>
 
 <section>
 <body>
+
+<impo>
+Avant que vous ne puissiez utiliser le Mode Utilisateur Linux, vous <e>devez</e>
+utiliser un profil non-NPTL, et utiliser &lt;<c>glibc</c>-2.4. Suivez les
+instructions pour <uri link="/doc/fr/gentoo-upgrading.xml#instructions">le
+changement de profil</uri>. Vous devrez lancer <c>emerge -e world</c> après
+être passé au profil non-NPTL.
+</impo>
 
 <p>
 Comme en fait état le site du Mode Utilisateur Linux
@@ -49,7 +57,7 @@ lui-même&nbsp;». Spécifiquement, le Mode Utilisateur Linux offre une machine
 virtuelle sur laquelle un utilisateur peut «&nbsp;exécuter des programmes
 bogués, expérimenter de nouveaux noyaux ou distributions, et fouiner dans les
 entrailles de Linux, tout cela sans compromettre son installation principale de
-Linux&nbsp;».  Les changements expérimentaux dans les paquets centraux de
+Linux&nbsp;». Les changements expérimentaux dans les paquets centraux de
 Gentoo, comme <e>sys-apps/baselayout</e> ou <e>sys-libs/glibc</e>, peuvent
 potentiellement casser le système et le rendre non-démarrable&nbsp;; avec le
 Mode Utilisateur Linux, nous pouvons tester ces changements sans risquer de
@@ -57,18 +65,28 @@ casser le système.
 </p>
 
 <p>
-Mettre en place le Mode Utilisateur Linux est globalement identique à
-l'installation normale d'un noyau. D'abord, installez les sources du noyau
-(convenablement corrigées pour le Mode Utilisateur Linux). Ensuite, configurez
-le noyau du Mode Utilisateur Linux de la manière habituelle.  UML a été intégré
-dans le noyau officiel depuis la version 2.6.9.
+La majorité des noyaux 2.6 ont le support UML. Bien que vous puissiez utiliser
+votre noyau actuel, il peut être plus sage de garder séparés les arbres des
+noyaux UML. Après tout, vous allez construire un nouveau noyau avec une
+configuration différente et vous aimeriez peut-être avoir des systèmes
+hétérogènes sur votre système Linux principal (plusieurs noyaux UML différents).
 </p>
 
-<pre caption="Installer les sources du noyau UML">
-<comment>(Nous utilisons un noyau 2.6 officiel.)</comment>
-<comment>(Vous pourriez aussi utiliser usermode-sources.)</comment>
-# <i>emerge sys-kernel/development-sources</i>
-# <i>cd /usr/src/linux</i>
+<p>
+Donc téléchargez un bon arbre du noyau (comme l'officiel de <uri
+link="http://www.kernel.org">kernel.org</uri>) et décompressez-le à un
+emplacement de développement local.
+</p>
+
+<p>
+Ensuite, configurez ce noyau UML comme vous le feriez pour n'importe quel autre
+système, mais ajoutez <e>ARCH=um</e> afin que le logiciel de construction du
+noyau sache que celui-ci est destiné à tourner en tant que processus invité sur
+un système principal.
+</p>
+
+<pre caption="Contruire le noyau UML">
+# <i>cd /srv/aegis/src/uml-linux</i>
 # <i>make menuconfig <comment>ARCH=um</comment></i>
 # <i>make linux <comment>ARCH=um</comment></i>
 # <i>cp linux /usr/local/bin/linux</i>
@@ -79,10 +97,9 @@ La partie <e>ARCH=um</e> est <e>extrêmement</e> importante&nbsp;!
 </warn>
 
 <p>
-Veuillez vérifier que <path>/usr/local/bin</path> est défini dans votre
-variable d'environnement <c>PATH</c>. Modifiez le fichier
-<path>/etc/env.d/00basic</path> et lancez <c>env-update</c> si ce n'est pas le
-cas.
+Veuillez vérifier que <path>/usr/local/bin</path> est défini dans votre variable
+d'environnement <c>PATH</c>. Modifiez le fichier <path>/etc/env.d/00basic</path>
+et lancez <c>env-update</c> si ce n'est pas le cas.
 </p>
 
 <pre caption="Modifier /etc/env.d/00basic">
@@ -93,22 +110,22 @@ cas.
 
 <p>
 Pour que le noyau en Mode Utilisateur Linux puisse démarrer correctement un
-système Gentoo, il doit être configuré pour ne <e>pas</e> monter
-automatiquement <path>/dev</path> (devfs) par défaut. De plus, assurez-vous
-d'avoir inclus <e>tmpfs</e> (le «&nbsp;Système de Fichiers en Mémoire
-Virtuelle&nbsp;» - «&nbsp;Virtual Memory Filesystem&nbsp;»), les fichiers de
-démarrage de Gentoo Linux stockant par défaut leurs informations dans une
-petite partition tmpfs. (Les noyaux binaires disponibles depuis le site du Mode
-Utilisateur Linux montent automatiquement <path>/dev</path> et n'incluent pas
-le support de tmpfs&nbsp;; ne les utilisez pas.)
+système Gentoo, il doit être configuré pour ne <e>pas</e> monter automatiquement
+<path>/dev</path> (devfs) par défaut. De plus, assurez-vous d'avoir inclus
+<e>tmpfs</e> (le «&nbsp;Système de Fichiers en Mémoire Virtuelle&nbsp;» -
+«&nbsp;Virtual Memory Filesystem&nbsp;»), les fichiers de démarrage de Gentoo
+Linux stockant par défaut leurs informations dans une petite partition tmpfs.
+(Les noyaux binaires disponibles depuis le site du Mode Utilisateur Linux
+montent automatiquement <path>/dev</path> et n'incluent pas le support de
+tmpfs&nbsp;; ne les utilisez pas.)
 </p>
 
 <p>
 Je recommande chaudement de lire la documentation du Mode Utilisateur Linux,
 mais l'idée de base est&nbsp;: l'exécution du programme
-<path>/usr/local/bin/linux</path> démarre le noyau du Mode Utilisateur et
-essaie de mettre en place le système stocké dans le fichier
-<path>root_fs</path> qui devrait être situé dans le répertoire courant.
+<path>/usr/local/bin/linux</path> démarre le noyau du Mode Utilisateur et essaie
+de mettre en place le système stocké dans le fichier <path>root_fs</path> qui
+devrait être situé dans le répertoire courant.
 </p>
 
 <p>
@@ -137,16 +154,16 @@ virtuel en Mode Utilisateur Linux et le système hôte.
 <p>
 Le fichier <path>root_fs</path>, nécessaire au Mode Utilisateur Linux, est un
 simple fichier qui contient un système de fichiers Gentoo Linux complet. Pour
-générer ce fichier, le support du «&nbsp;Loopback device&nbsp;» doit être
-activé dans le noyau de l'hôte (non-Mode Utilisateur).
+générer ce fichier, le support du «&nbsp;Loopback device&nbsp;» doit être activé
+dans le noyau de l'hôte (non-Mode Utilisateur).
 </p>
 
 <p>
 La génération du fichier <path>root_fs</path> lui-même sera notre dernière
 étape. D'abord, nous devons générer un système de fichiers Gentoo dans un chroot
 ordinaire. Nous avons besoin de l'archive stage disponible, qui peut être
-téléchargée séparément, extraite depuis un CD d'installation, ou depuis un .iso d'un
-CD d'installation.
+téléchargée séparément, extraite depuis un CD d'installation, ou depuis un .iso
+d'un CD d'installation.
 </p>
 
 <pre caption="Monter un .iso d'un CD d'installation">
@@ -170,16 +187,16 @@ Continuez et démontez l'iso. Vous n'en avez plus besoin.
 </p>
 
 <p>
-Démarrez l'installation et compilez le système de la manière habituelle décrite
-dans le Manuel.
+Compilez le système de la manière habituelle: chrootez dans
+<path>/mnt/gentoo</path> et les instructions d'installation de Gentoo.
 </p>
 
 <p>
 Installez d'autres paquets si vous le désirez. Vous pouvez donner un nom d'hôte
 à votre système Gentoo virtuel, si vous le désirez. Dans
 <path>/etc/fstab</path>, vous ferez en sorte que <path>/dev/ROOT</path> soit
-<path>/dev/ubd/0</path>, avec un type de système de fichiers ext2, ext3 ou
-reiserfs. Placez <path>/dev/SWAP</path> à <path>/dev/ubd/1</path>, et mettez
+<path>/dev/ubda</path>, avec un type de système de fichiers ext2, ext3 ou
+reiserfs. Placez <path>/dev/SWAP</path> à <path>/dev/ubdb</path>, et mettez
 <path>/dev/BOOT</path> en commentaire.
 </p>
 
@@ -202,8 +219,8 @@ d'exécution par défaut&nbsp;:
 </pre>
 
 <p>
-Quittez le chroot, démontez tous les montages de type bind, archivez la
-nouvelle distribution Gentoo et faites le nettoyage&nbsp;:
+Quittez le chroot, démontez tous les montages de type bind, archivez la nouvelle
+distribution Gentoo et faites le nettoyage&nbsp;:
 </p>
 
 <pre caption="Finaliser l'installation">
@@ -264,6 +281,14 @@ en Mode Utilisateur Linux. La seule chose qui manque pour que ce système soit
 complètement fonctionnel est la mise en réseau du système virtuel et de l'hôte.
 </p>
 
+<note>
+Si vous recevez des erreurs du type «&nbsp;No space left on device&nbsp;»
+(NdT&nbsp;: «&nbsp;Plus de place disponible sur le périphérique&nbsp;»), vous
+devrez allouer plus de mémoire à votre système en Mode Utilisateur en ajoutant
+<c>mem=xxxMB</c> à la fin de la ligne du processus du noyau. Par exemple&nbsp;:
+<c>linux ubd0=root_fs ubd1=swap_fs mem=128MB</c>.
+</note>
+
 </body>
 </section>
 </chapter>
@@ -271,6 +296,7 @@ complètement fonctionnel est la mise en réseau du système virtuel et de l'hô
 <chapter>
 <title>Configuration du réseau</title>
 <section>
+<title>Utiliser un réseau existant</title>
 <body>
 
 <p>
@@ -298,7 +324,7 @@ Ensuite, faites ce qui suit sur le système <e>hôte</e>&nbsp;:
 <comment>(Si une erreur fatale se produit, veuillez supprimer /dev/net/tun et réessayer.)</comment>
 # <i>modprobe iptable_nat</i>
 # <i>iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</i>
-# <i>echo 1 > /proc/sys/net/ipv4/ip_forward</i>
+# <i>echo 1 &gt; /proc/sys/net/ipv4/ip_forward</i>
 </pre>
 
 <p>
@@ -344,8 +370,8 @@ round-trip min/avg/max = 92.0/105.8/119.6 ms
 </pre>
 
 <p>
-Dans le système en Mode Utilisateur, nous assignons l'adresse IP privée 192.168.0.1
-à l'interface eth0 et nous activons l'interface. L'hôte a une
+Dans le système en Mode Utilisateur, nous assignons l'adresse IP privée
+192.168.0.1 à l'interface eth0 et nous activons l'interface. L'hôte a une
 adresse IP privée 192.168.0.254 et nous lui envoyons un ping pour être certain
 que notre réseau fonctionne. La ligne <e>route</e> ajoute une passerelle par
 défaut, notre hôte&nbsp;; nous utilisons <e>scp</e> pour récupérer un
@@ -354,6 +380,52 @@ un ping vers www.gentoo.org pour voir si notre résolution des noms (et en
 général l'accès vers Internet) fonctionne depuis notre système en Mode
 Utilisateur. Maintenant, le système en Mode Utilisateur peut utiliser
 <c>emerge</c> à volonté&nbsp;!
+</p>
+
+</body>
+</section>
+<section>
+<title>Utiliser un réseau virtuel</title>
+<body>
+
+<p>
+Avant de trop vous excité, précisons qu'il ne s'agit pas d'un réseau privé
+virtuel. C'est un réseau uniquement accessible aux instances UML. Le paquet
+<c>usermode-utilities</c> fournit un outil appelé <c>uml_switch</c> qui définit
+les extrémités du commutateur.
+</p>
+
+<pre caption="Activation des extrémités d'un commutateur UML">
+<comment>(Si les informations du commutateur doivent rester en avant-plan&nbsp;:)</comment>
+$ <i>uml_switch -unix ~/tmp/switch.sock</i>
+
+<comment>(Si elles doivent aller en arrière-plan&nbsp;:)</comment>
+$ <i>uml_switch -unix ~/tmp/switch.sock &amp;&gt; ~/tmp/switch.log &amp;</i>
+</pre>
+
+<p>
+Pour démarrer les instances UML sur le commutateur, lancez la commande suivante.
+Votre interface réseau (virtuelle) va être connectée au processus
+<c>uml_switch</c> et va utiliser l'adresse MAC donnée.
+</p>
+
+<pre caption="Lancement de la première instance UML">
+$ <i>linux ubd0=first_rootfs ubd1=first_swapfs eth0=daemon,10:00:01:02:00:00,,~/tmp/switch.sock</i>
+</pre>
+
+<p>
+Vous pouvez toujours connecter le système au réseau existant, ou avoir un second
+processus attaché à la fois au virtuel et à l'existant&nbsp;:
+</p>
+
+<pre caption="Lancement de la seconde instance UML">
+$ <i>linux ubd0=second_rootfs ubd1=second_swapfs eth0=daemon,10:00:01:02:00:01,,~/tmp/switch.sock \
+  eth1=tuntap,,,192.168.1.43</i>
+</pre>
+
+<p>
+Plus d'informations à propos de la configuration de tuntap peuvent être trouvées
+dans la section précédente.
 </p>
 
 </body>
