@@ -54,7 +54,7 @@
 <xsl:param name="roll-call"/>
  <devs>
   <xsl:for-each select="$roll-call/userlist/user">
-    <user username="{@username}">
+    <user username="{translate(@username,'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')}">
      <xsl:if test="translate(status,'TIRED','tired')='retired'">
       <xsl:attribute name="retired"/>
      </xsl:if>
@@ -71,25 +71,25 @@
   -->
 <xsl:template name="smart-mail" xmlns="">
 <xsl:param name="mail"/>
-
 <xsl:if test="string-length($mail/@link)>0 or string-length($mail/text())>0">
+
  <xsl:variable name="gnick">
   <xsl:choose>
    <xsl:when test="string-length($mail/@link)=0 and not(contains($mail/text(),'@'))">
      <!-- <mail>nick</mail> -->
-     <xsl:value-of select="$mail/text()"/>
+     <xsl:value-of select="translate($mail/text(),'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/>
    </xsl:when>
    <xsl:when test="string-length($mail/@link)=0 and contains($mail/text(),'@gentoo.org')">
      <!-- <mail>nick@gentoo.org</mail> -->
-     <xsl:value-of select="substring-before($mail/text(), '@')"/>
+     <xsl:value-of select="translate(substring-before($mail/text(), '@'),'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/>
    </xsl:when>
    <xsl:when test="string-length($mail/@link)>0 and not(contains($mail/@link,'@'))">
      <!-- <mail link="nick">blah blah</mail> -->
-     <xsl:value-of select="$mail/@link"/>
+     <xsl:value-of select="translate($mail/@link,'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/>
    </xsl:when>
    <xsl:when test="contains($mail/@link,'@gentoo.org')">
      <!-- <mail link="nick@gentoo.org">blah blah</mail> -->
-     <xsl:value-of select="substring-before($mail/@link, '@gentoo.org')"/>
+     <xsl:value-of select="translate(substring-before($mail/@link, '@gentoo.org'),'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/>
    </xsl:when>
   </xsl:choose>
  </xsl:variable>
