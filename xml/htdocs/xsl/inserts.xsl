@@ -326,7 +326,14 @@
 
 <xsl:template match="keyval">
   <xsl:variable name="id" select="@id"/>
-  <xsl:value-of select="exslt:node-set($VALUES)/values/key[@id=$id]"/>
+  <xsl:choose>
+   <xsl:when test="exslt:node-set($VALUES)/values/key[@id=$id]">
+    <xsl:value-of select="exslt:node-set($VALUES)/values/key[@id=$id]"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <span class="missing-value">${<xsl:value-of select="$id"/>}</span>
+   </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 
