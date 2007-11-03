@@ -222,6 +222,18 @@ Related bugreports:
             <xsl:when test="@range = 'ge'">
               &gt;=
             </xsl:when>
+            <xsl:when test="@range = 'rlt'">
+              revision &lt;
+            </xsl:when>
+            <xsl:when test="@range = 'rle'">
+              revision &lt;=
+            </xsl:when>
+            <xsl:when test="@range = 'rgt'">
+              revision &gt;
+            </xsl:when>
+            <xsl:when test="@range = 'rge'">
+              revision &gt;=
+            </xsl:when>
           </xsl:choose>
         <xsl:if test="@name">
           <xsl:value-of select="@name"/>-
