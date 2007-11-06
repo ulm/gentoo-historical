@@ -1,18 +1,21 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/udev-guide.xml,v 1.25 2007/10/18 19:45:02 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/udev-guide.xml,v 1.26 2007/11/06 20:33:05 scen Exp $ -->
 
 <guide link="/doc/it/udev-guide.xml" lang="it">
 <title>Guida a udev su Gentoo</title>
 
 <author title="Autore">
-  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+  <mail link="swift"/>
 </author>
 <author title="Contributi">
-  <mail link="greg_g@gentoo.org">Gregorio Guidi</mail>
+  <mail link="greg_g"/>
 </author>
+<author title="Redazione">
+  <mail link="nightmorph"/>
+ </author>
 <author title="Traduzione">
-  <mail link="scen@gentoo.org">Davide Cendron</mail>
+  <mail link="scen"/>
 </author>
 
 <abstract>
@@ -23,8 +26,8 @@ Questo documento spiega cos'è e come si può usare udev su Gentoo.
  <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.32</version>
-<date>2007-08-02</date>
+<version>0.33</version>
+<date>2007-10-30</date>
 
 <chapter>
 <title>Cos'è udev?</title>
@@ -416,6 +419,65 @@ Per ulteriori informazioni riguardanti la scrittura di regole per udev,
 assicurarsi di leggere la <uri
 link="http://www.reactivated.net/udevrules.php">guida</uri> di Daniel Drake.
 </p>
+
+</body>
+</section>
+<section>
+<title>udev carica i moduli in un ordine non previsto</title>
+<body>
+
+<p>
+Qualche volta udev carica i moduli in un ordine non indesiderato, non previsto o
+abbastanza casuale. Tale comportamento è abbastanza comune in special modo per i
+sistemi che hanno dispositivi multipli dello stesso tipo, per esempio
+periferiche multimediali. Questo influenza i numeri assegnati ai dispositivi;
+per esempio, nelle schede sonore talvolta potrebbero invertirsi di numero.
+</p>
+
+<p>
+Ci sono alcune soluzioni per correggere la numerazione dei dispositivi e/o
+l'ordine di caricamento dei moduli. Idealmente, basterebbe usare i parametri
+del modulo per specificare il numero di dispositivo desiderato. Alcuni moduli,
+come ALSA, include il parametro "index" (indice, ndt). I moduli che usano il
+parametro index possono essere adeguati come mostrato. Questo esempio è per
+sistemi con due schede sonore. La scheda con un indice uguale a 0 viene
+designata come prima scheda. Una volta che i parametri vengono modificati, i
+file di configurazione del modulo devono essere aggiornati.
+</p>
+
+<pre caption="Specificare i parametri del modulo">
+# <i>echo "option snd-ice1724 index=0" >> /etc/modules.d/alsa</i>
+# <i>echo "option snd-ymfpci index=1" >> /etc/modules.d/alsa</i>
+# <i>update-modules</i>
+</pre>
+
+<p>
+L'esempio precedente è la soluzione preferibile, purtroppo non tutti i moduli
+supportano dei parametri come index. Per tali moduli, bisogna forzare il loro
+corretto ordine di caricamento. Per prima cosa, bisogna impedire ad udev di
+caricare automaticamente i moduli inserendoli in una "lista nera" (blacklist).
+Assicurarsi di usare il nome esatto del modulo che viene caricato. Per i
+dispositivi PCI, bisogna usare i nomi dei moduli ottenuti dall'output di
+<c>pcimodules</c>, disponibile nel pacchetto <c>pciutils</c>. L'esempio seguente
+usa i moduli DVB.
+</p>
+
+<pre caption="Inserire i moduli nella lista nera">
+# <i>echo "blacklist b2c2-flexcop-pci" >> /etc/modules.d/dvb</i>
+# <i>echo "blacklist budget" >> /etc/modules.d/dvb</i>
+# <i>update-modules</i>
+</pre>
+
+<p>
+Successivamente, caricare i moduli nell'ordine corretto. Aggiungerli al file
+<path>/etc/modules.autoload.d/kernel-2.6</path> <e>nell'ordine esatto con cui si
+desidera vengano caricati</e>.
+</p>
+
+<pre caption="Caricare i moduli nell'ordine corretto">
+# <i>echo "budget" >> /etc/modules.autoload.d/kernel-2.6</i>
+# <i>echo "b2c2-flexcop-pci" >> /etc/modules.autoload.d/kernel-2.6</i>
+</pre>
 
 </body>
 </section>
