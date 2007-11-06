@@ -1438,13 +1438,13 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
           <!-- Compare versions in master files -->
           <xsl:if test="$original/book/version != $translation/book/version">X</xsl:if>
           <!-- Compare versions in original chapters vs. translated chapters that have the same position -->
-          <xsl:for-each select="$original/book/part">
+          <xsl:for-each select="$translation/book/part">
             <xsl:variable name="part" select="position()"/>
             <xsl:for-each select="chapter">
               <xsl:variable name="chap" select="position()"/>
               <xsl:variable name="ov" select="document($original/book/part[$part]/chapter[$chap]/include/@href)/sections/version"/>
               <xsl:variable name="tv" select="document($translation/book/part[$part]/chapter[$chap]/include/@href)/sections/version"/>
-              <xsl:if test="$ov != $tv or not($tv)">X</xsl:if>
+              <xsl:if test="$ov != $tv or not($tv) or not($ov)">X</xsl:if>
             </xsl:for-each>
           </xsl:for-each>
         </xsl:when>
@@ -1456,6 +1456,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
         <!-- Compare chapters at same position (/$part/$chap/) in English handbook and in translated one -->
           <xsl:variable name="ov" select="document($original/book/part[position()=$part]/chapter[position()=$chap]/include/@href)/sections/version"/>
           <xsl:variable name="tv" select="document($translation/book/part[position()=$part]/chapter[position()=$chap]/include/@href)/sections/version"/>
+          <xsl:if test="not ($ov)">NoOriginal</xsl:if>
           <xsl:if test="$ov != $tv or not($tv)">X</xsl:if>
         </xsl:otherwise>
       </xsl:choose>
@@ -1559,20 +1560,25 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
                 <xsl:with-param name="translation" select ="/"/>
               </xsl:call-template>
             </xsl:variable>
-            <xsl:if test="string-length($versions) > 0">
-              <xsl:variable name="pdocdate">
-                <xsl:call-template name="maxdate">
-                  <xsl:with-param name="thedoc" select="document($pfile)"/>
-                </xsl:call-template>
-              </xsl:variable>
-              <xsl:variable name="res">
-                <xsl:apply-templates select="func:gettext('Outdated')">
-                  <xsl:with-param name="docdate" select="$pdocdate"/>
-                  <xsl:with-param name="paramlink" select="$pfile"/>
-                </xsl:apply-templates>
-              </xsl:variable>
-              <xsl:copy-of select="$res"/>
-            </xsl:if>
+            <xsl:choose>
+              <xsl:when test="contains($versions,'NoOriginal')">
+                <xsl:value-of select="func:gettext('NoOriginal')"/>
+              </xsl:when>
+              <xsl:when test="string-length($versions) > 0">
+                <xsl:variable name="pdocdate">
+                  <xsl:call-template name="maxdate">
+                    <xsl:with-param name="thedoc" select="document($pfile)"/>
+                  </xsl:call-template>
+                </xsl:variable>
+                <xsl:variable name="res">
+                  <xsl:apply-templates select="func:gettext('Outdated')">
+                    <xsl:with-param name="docdate" select="$pdocdate"/>
+                    <xsl:with-param name="paramlink" select="$pfile"/>
+                  </xsl:apply-templates>
+                </xsl:variable>
+                <xsl:copy-of select="$res"/>
+              </xsl:when>
+            </xsl:choose>
           </xsl:otherwise>
         </xsl:choose>
       </xsl:otherwise>
