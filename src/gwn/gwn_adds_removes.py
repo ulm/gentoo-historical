@@ -3,7 +3,7 @@ import sys, time, urllib2, libxml2
 from datetime import datetime
 
 DEV_LIST = 'http://www.gentoo.org/proj/en/devrel/roll-call/userinfo.xml'
-PACKAGE_LINK = 'http://packages.gentoo.org/packages/?category=%s;name=%s'
+PACKAGE_LINK = 'http://packages.gentoo.org/package/%s/%s'
 ATTIC_LINK = 'http://sources.gentoo.org/viewcvs.py/gentoo-x86/%s/%s/?hideattic=0'
 OUTPUT_CHARSET = 'utf-8'
 
