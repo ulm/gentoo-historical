@@ -534,10 +534,8 @@
                       </xsl:if> 
                     <xsl:text>Name and Logo Guidelines</xsl:text></a>
                     <br/>
-<!--
                     <a class="altlink" href="http://packages.gentoo.org/">Online Package Database</a>
                     <br/>
--->
                     <a class="altlink" href="{concat($www,'/security/en/index.xml')}">Security Announcements</a>
                     <br/>
                     <a class="altlink" href="{concat($www,'/proj/en/devrel/staffing-needs/')}">Staffing&#xA0;Needs</a>
