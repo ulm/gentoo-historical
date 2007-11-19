@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/udev-guide.xml,v 1.19 2007/09/22 01:30:14 rane Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/udev-guide.xml,v 1.20 2007/11/19 04:54:58 rane Exp $ -->
 
 <guide link="/doc/pl/udev-guide.xml" lang="pl">
 <title>Praca z udev w Gentoo</title>
@@ -12,21 +12,23 @@
 <author title="Współpracownik">
   <mail link="greg_g@gentoo.org">Gregorio Guidi</mail>
 </author>
+<author title="Redaktor">
+<mail link="nightmorph"/>
+</author>
 <author title="Tłumaczenie">
   <mail link="edi15ta@gazeta.pl">Mateusz Kotyrba</mail>
 </author>
 
 <abstract>
-Ten dokument wyjaśnia czym jest udev oraz opisuje jak go używać, aby sprostał
-naszym wymaganiom.
+Ten dokument wyjaśnia czym jest udev oraz jak go używać.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.32</version>
-<date>2007-08-02</date>
+<version>0.33</version>
+<date>2007-10-30</date>
 
 <chapter>
 <title>Czym jest udev?</title>
@@ -402,14 +404,71 @@ link="http://www.reactivated.net/udevrules.php">tekście</uri> Daniela Drake'a.
 </body>
 </section>
 <section>
+<title>udev ładuje moduły w niemożliwej do przewidzenia kolejności</title>
+<body>
+
+<p>
+Czasami udev ładuje moduły w niepożądanej, niemożliwej do przewidzenia i
+pozornie przypadkowej kolejności. To zjawisko występuje najczęściej w systemach,
+które posiadają wiele urządzeń tego samego typu, takich jak urządzenia
+multimedialne. Może to wpłynąć na przydzielanie numerów urządzeniom; na
+przykład, karty dzwiękowe mogą niekiedy wymieniać się numerami.
+</p>
+
+<p>
+Jest kilka sposobów na przypisanie numerów urządzeniom i/lub ustalenie
+kolejności ładowania modułów. W najlepszym przypadku, aby określić pożądany
+numer urządzenia, można użyć parametrów modułu. Niektóre moduły, takie jak ALSA,
+zawierają parametr "index". Moduły używające tego parametru mogą zostać
+dostosowane w następujący sposób. Przykład jest oparty na systemie z dwiema
+kartami dzwiękowymi. Karta o indeksie 0 jest oznaczona jako pierwsza karta. Aby
+zmienić jej parametry, należy zaktualizować pliki konfiguracyjne modułu.
+</p>
+
+<pre caption="Ustalanie parametrów modułu">
+# <i>echo "option snd-ice1724 index=0" >> /etc/modules.d/alsa</i>
+# <i>echo "option snd-ymfpci index=1" >> /etc/modules.d/alsa</i>
+# <i>update-modules</i>
+</pre>
+
+<p>
+Powyższy przykład prezentuje najlepszą sytuację. Lecz nie wszystkie moduły
+wspierają parametry takie jak "index". Dla tych modułów należy wymusić poprawną
+kolejność ich ładowania. Po pierwsze, konieczne jest powstrzymanie udev od
+automatycznego ładowania modułów przez wpisanie ich na czarną listę. Wpisując,
+należy być pewnym nazwy ładowanego modułu. Dla urządzeń PCI, trzeba użyć nazwy
+modułu uzyskanego z wyjścia <c>pcimodules</c>, dostępnego w pakiecie
+<c>pciutils</c>. Poniższy przykład opisuje użycie modułu DVB
+</p>
+
+<pre caption="Wpisywanie modułów na czarną listę">
+# <i>echo "blacklist b2c2-flexcop-pci" >> /etc/modules.d/dvb</i>
+# <i>echo "blacklist budget" >> /etc/modules.d/dvb</i>
+# <i>update-modules</i>
+</pre>
+
+<p>
+Następnie należy załadować moduły w poprawnej kolejności. Trzeba dodać je do
+<path>/etc/modules.autoload.d/kernel-2.6</path> <e>w dokładnie takiej kolejności
+w jakiej mają zostać załadowane</e>.
+</p>
+
+<pre caption="Ładowanie modułów w poprawnej kolejności">
+# <i>echo "budget" >> /etc/modules.autoload.d/kernel-2.6</i>
+# <i>echo "b2c2-flexcop-pci" >> /etc/modules.autoload.d/kernel-2.6</i>
+</pre>
+
+</body>
+</section>
+<section>
 <title>Inne problemy</title>
 <body>
 
 <p>
 Jeśli węzły urządzeń nie są tworzone podczas ładowania modułu z
 <path>/etc/modules.autoload.d/kernel-2.6</path>, ale są tworzone jeśli
-załadujemy moduł ręcznie, wtedy powinniśmy spróbować zaktualizować pakiet
-baselayout do wersji <c>sys-apps/baselayout-1.8.12</c> lub późniejszej.
+załadujemy moduł ręcznie, należy spróbować aktualizacji pakietu baselayout do
+wersji <c>sys-apps/baselayout-1.8.12</c> lub nowszej.
 </p>
 
 <p>
