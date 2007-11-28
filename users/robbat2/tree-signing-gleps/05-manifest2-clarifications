@@ -1,7 +1,7 @@
 GLEP: xx+5
 Title: Manifest2 filetypes
-Version: $Revision: 1.1 $
-Last-Modified: $Date: 2007/11/28 00:22:11 $
+Version: $Revision: 1.2 $
+Last-Modified: $Date: 2007/11/28 04:29:20 $
 Author: Robin Hugh Johnson <robbat2@gentoo.org> 
 Status: Draft
 Type: Standards Track
@@ -37,53 +37,97 @@ When generating or validating a Manifest, the package manager should endeavour
 to ignore files created by a version control system, backup files from . A
 non-exhaustive list is suggested here: .cvs/, .svn/, .git/, .hg/, .#*, *.rej,
 *.orig, *.bak, *~.
+Additionally, for a transitional Manifest1->Manifest2 system, old-style
+digest files located in a 'files/' directory, may be excluded from
+Manifest2 generation, or included with a type of MISC.
 
 Filetype: AUX
 -------------
-The AUX type is used for all items under the 'files' subdirectory. They should
-be verified relative to $FILESDIR. The string 'files/' is left out of the
-Manifest line. The absence of a file mentioned by AUX must be treated as an
-error. The AUX type is intended to denote potentially executable content
-(either directly or indirectly), that must be treated as dangerous if modified
-or absent.
+- The AUX type is used for all items under the 'files' subdirectory. 
+- They should be verified relative to $FILESDIR. 
+- The string 'files/' is left out of the Manifest line. 
+- The absence of a file mentioned by AUX must be treated as an error. 
+- The AUX type is intended to denote potentially executable content
+  (either directly or indirectly), that must be treated an error if
+  modified or absent.
 
 Filetype: EBUILD
 ----------------
-The EBUILD type is used solely for files ending in .ebuild, and located in the same
-directory as the Manifest file. The absence of a file mentioned by EBUILD
-must be treated as an error.
+- The EBUILD type is used solely for files ending in .ebuild, 
+- The files are located in the same directory as the Manifest file. 
+- The modification or absence of a file mentioned by EBUILD must be
+  treated as an error.
 
 Filetype: DIST
 --------------
-The DIST type is used for distfiles, which may be found directly via the
-$DISTDIR setting of the package manager. These should be considered as an
-absolute path. During simple verification of a Manifest, a missing DIST file
-should not be consider as a validation error (it is however a failure to fetch
-or unpack).
+- The DIST type is used for distfiles
+- They may be found directly via the $DISTDIR setting of the package manager. 
+- During simple verification of a Manifest, a missing DIST file should
+  not be consider as a validation error (it is however a failure to
+  fetch or unpack).
 
 Filetype: MISC
 --------------
-The MISC type covers all remaining files in a directory. MISC was originally
-intended to mark all content that was not used in some way that directly
-affected execution of the package manager. This includes metadata.xml and
-ChangeLog entries.
+- The MISC type covers all remaining files in a directory. 
+- MISC was originally intended to mark all content that was not used in
+  some way that directly affected execution of the package manager. 
+- This includes metadata.xml and ChangeLog entries, and any other purely
+  informational content.
+- MISC entries where the file is missing may optionally be ignored as by
+  non-strict package managers.
 
 Filetype: MANIFEST (new)
 ------------------------
-The MANIFEST type is explicitly to cover all nested Manifest files.
-During validation, this serves as an indicator that the package manager may
-need to check subtree Manifest file. A missing MANIFEST file may be treated as
-a minor (eg excluding an entire category) or critical validation failure.
-[TODO expand on how to know if it's a critical failure]
+- The MANIFEST type is explicitly to cover all nested Manifest files.
+- During validation, this serves as an indicator that the package
+  manager may need to check subtree Manifest file. 
+- A missing MANIFEST file may be treated as a minor (eg excluding an
+  entire category) or critical validation failure.
+- [TODO expand on how to know if it's a critical failure]
 
 Filetype: EXE (new)
 -------------------
-The EXE type is identical to the AUX type, except that it does not imply the
-prefix 'files/' in front of each filename. If repeated use of a common path
-prefix is considered a bloat problem, a Manifest file should be added inside
-the common directory, however this should be done blindly, as bloat by inodes
-is more significant for the majority of use cases. This filetype should be used
-for the eclasses, profiles, and scripts directories of a repository.
+- The EXE type is identical to the AUX type, except that it does not
+  imply the prefix 'files/' in front of each filename. 
+- If the file gets sourced, executed, or causes a change (patches) in
+  how something is sourced or execututed, it belongs in the EXE
+  filetype.
+- This filetype should be used for the eclasses, profiles, and scripts
+  directories of a repository for important files.
+- This may ultimately replace use of the AUX filetype.
+
+On bloat
+--------
+If repeated use of a common path prefix is considered a bloat problem, a
+Manifest file should be added inside the common directory, however this
+should not be done blindly, as bloat by inodes is more significant for
+the majority of use cases. 
+
+Chosing a filetype
+------------------
+1. Is it an ebuild? => EBUILD, break
+2. Is it a Manifest? => MANIFEST, break
+3. Is it a distfile? => DIST, break
+4. (if compatibility) Is it located within a files/ subdirectory of a
+   package? => AUX, continue
+5. Does it get sourced, executed, or cause something that is
+   sourced/executed to be changed? (scripts, patches etc) => EXE, break
+6. Do we know that it does NOT fill any of the requirements for the EXE
+   filetype?  => MISC, break
+7. Failsafe point, consider it to be dangerous => EXE, break
+
+The logic behind 5, 6, 7 is ensuring that every item that by it's
+presence or absense may be dangerous should always be treated strictly.
+(Consider epatch given a directory of patches ${FILESDIR}/${PV}/, where
+it blindly includes them, or alternatively, the package.mask file or a
+profile being altered/missing).
+
+Backwards Compatibility
+=======================
+For generation of existing package Manifests, the AUX entries must
+continue to be present for the standard Portage deprecation cycle.
+The new entries may be included already in all Manifest files, as they
+will be ignored by older Portage versions.
 
 References
 ==========
