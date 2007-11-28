@@ -1,0 +1,99 @@
+GLEP: xx+5
+Title: Manifest2 filetypes
+Version: $Revision: 1.1 $
+Last-Modified: $Date: 2007/11/28 00:22:11 $
+Author: Robin Hugh Johnson <robbat2@gentoo.org> 
+Status: Draft
+Type: Standards Track
+Content-Type: text/plain
+Requires: GLEP44
+Created: November 2007
+Post-History: ...
+Updates: GLEP44
+
+Abstract
+========
+Clarification of the Manifest2 [GLEP44] specification, including new types to
+help in the tree-signing specification.
+
+Motivation
+==========
+[GLEP44] was not entirely clear on the usage of filetype specifiers, and PMS
+does not mention them. This document serves to provide some of the internal
+logic used by Portage at the point of writing, as well as adding new types to
+cover the rest of the tree, for the purposes of tree-signing coverage.
+
+Specification
+=============
+General
+-------
+For any given directory with a Manifest file, every file located in that
+directory, or a sub-directory must be listed in that Manifest file.
+The Manifest file does not contain an entry for itself.
+
+Excluded files
+--------------
+When generating or validating a Manifest, the package manager should endeavour
+to ignore files created by a version control system, backup files from . A
+non-exhaustive list is suggested here: .cvs/, .svn/, .git/, .hg/, .#*, *.rej,
+*.orig, *.bak, *~.
+
+Filetype: AUX
+-------------
+The AUX type is used for all items under the 'files' subdirectory. They should
+be verified relative to $FILESDIR. The string 'files/' is left out of the
+Manifest line. The absence of a file mentioned by AUX must be treated as an
+error. The AUX type is intended to denote potentially executable content
+(either directly or indirectly), that must be treated as dangerous if modified
+or absent.
+
+Filetype: EBUILD
+----------------
+The EBUILD type is used solely for files ending in .ebuild, and located in the same
+directory as the Manifest file. The absence of a file mentioned by EBUILD
+must be treated as an error.
+
+Filetype: DIST
+--------------
+The DIST type is used for distfiles, which may be found directly via the
+$DISTDIR setting of the package manager. These should be considered as an
+absolute path. During simple verification of a Manifest, a missing DIST file
+should not be consider as a validation error (it is however a failure to fetch
+or unpack).
+
+Filetype: MISC
+--------------
+The MISC type covers all remaining files in a directory. MISC was originally
+intended to mark all content that was not used in some way that directly
+affected execution of the package manager. This includes metadata.xml and
+ChangeLog entries.
+
+Filetype: MANIFEST (new)
+------------------------
+The MANIFEST type is explicitly to cover all nested Manifest files.
+During validation, this serves as an indicator that the package manager may
+need to check subtree Manifest file. A missing MANIFEST file may be treated as
+a minor (eg excluding an entire category) or critical validation failure.
+[TODO expand on how to know if it's a critical failure]
+
+Filetype: EXE (new)
+-------------------
+The EXE type is identical to the AUX type, except that it does not imply the
+prefix 'files/' in front of each filename. If repeated use of a common path
+prefix is considered a bloat problem, a Manifest file should be added inside
+the common directory, however this should be done blindly, as bloat by inodes
+is more significant for the majority of use cases. This filetype should be used
+for the eclasses, profiles, and scripts directories of a repository.
+
+References
+==========
+[GLEP44] Mauch, M. (2005) GLEP44 - Manifest2 format.
+  http://www.gentoo.org/proj/en/glep/glep-0044.html	
+
+Copyright
+=========
+Copyright (c) 2006 by Robin Hugh Johnson. This material may be
+distributed only subject to the terms and conditions set forth in the
+Open Publication License, v1.0.
+
+vim: tw=72 ts=2 expandtab:
