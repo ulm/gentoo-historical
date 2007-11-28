@@ -1,11 +1,12 @@
 GLEP: xx+1
 Title: Security of distribution of Gentoo software - Infrastructure to User distribution - MetaManifest
-Version: $Revision: 1.4 $
-Last-Modified: $Date: 2006/10/27 09:40:49 $
+Version: $Revision: 1.5 $
+Last-Modified: $Date: 2007/11/28 00:27:53 $
 Author: Robin Hugh Johnson <robbat2@gentoo.org>, 
 Status: Draft
 Type: Standards Track
 Content-Type: text/plain
+Requires: GLEP44, GLEPxx+5
 Created: October 2006
 Post-History: ...
 
@@ -66,34 +67,28 @@ Procedure for creating the MetaManifest file:
 ---------------------------------------------
 1. Start at the root of the Gentoo Portage tree (gentoo-x86, although
    this procedure applies to overlays as well).
-2. Initialize a list, empty. This will contain the relative paths of
-   every item for our MetaManifest.
+2. Initialize two empty lists: COVERED, ALL.
+2.1 'ALL' will contain every file in the tree.
+2.2 'COVERED' will contain every file that is mentioned in an existing
+    Manifest2.
 3. Traverse the tree, depth-first.
-3.0. At the top level only, ignore the distfiles and packages entries.
-3.1. If a directory contains a Manifest file, include ONLY the Manifest
-     file in the list, and do not process any other in this directory,
-     or any child directories.
-3.2. For directories not containing a Manifest file, add every file to
-     the list, and repeat item #3 for every child directory.
-4. Your list now contains every Manifest in the tree, as well as all
-   items that are not contained in any other manifest.
+3.1. At the top level only, ignore the distfiles and packages
+     directories.
+3.2  Place every file (including the Manifest itself) in the directory
+     in the ALL list.
+3.3. If a directory contains a Manifest file, extract all AUX, MISC, and
+     EBUILD items from it, and place them into the COVERED list.
+4. Produce a new list, UNCOVERED, as the set difference between ALL and
+   COVERED. This is every item that is not covered by another Manifest.
 5. If an existing MetaManifest file is present, remove it.
-6. For each item in the list:
-6.1. If the item is an existing Manifest, the Manifest2 type is
-     'MANIFEST' - this is a specialization of the 'AUX' type.
-6.2. If the item is under licenses, scripts, or metadata, the Manifest2
-     type is 'MISC'.
-6.3. If the item is under eclasses or profiles, the Manifest2 type is
-     'AUX'.
-6.4. All other items (category metadata.xml, skel.*) are of Manifest2
-      type 'MISC'.
-7. For each item in the list (they all have types now), produce the
-   hashes, and add to the MetaManifest file.
+6. For each file in the list, assign a Manifest2 type per [GLEPxx+5].
+7. For each file in the list, produce the hashes, and add with the
+   filetype to the MetaManifest file.
 8. The MetaManifest must ultimately be GnuPG-signed.
 8.1. For the initial implementation, the same key as used for tarball
      signing is sufficient.
 8.2. For the future, the key used for fully automated signing by infra
-     should NOT be on the same keyring as developer keys. See [GLEPxx+3
+     should not be on the same keyring as developer keys. See [GLEPxx+3
      for further notes].
 
 The above does not conflict the proposal contained in GLEP33, which
@@ -101,9 +96,10 @@ restructure eclasses to include subdirectories and Manifest files, as
 the Manifest rules above still provide indirect verification for all
 files after the GLEP33 restructuring if it comes to pass.
 
-If per-category Manifests are added, the size of the MetaManifest will
-be greatly reduced, and this specification was written with such a
-possible future addition in mind.
+If other Manifests are added (such as per-category, or protecting
+versioned eclases), the size of the MetaManifest will be greatly
+reduced, and this specification was written with such a possible future
+addition in mind.
 
 MetaManifest generation will take place as part of the existing process
 by infrastructure that takes the contents of CVS and prepares it for
@@ -123,50 +119,33 @@ hash verification procedures as defined by the Manifest2 format - which
 compromise checking the file length, and that the hashes match.
 
 TODO(from ciaranm): Deal with excludes properly - a missing package.mask
-SHOULD be treated as an error.
-TODO: talk to genone re Manifest2 hashes, and AUX stripping/adding 'files/'
-
-Brief overview of Manifest2 verification:
------------------------------------------
-Excluding the Manifest1 compatibility data (lines starting with the name
-of a hash), each line is in the following format:
-FILETYPE FILENAME LEN (HASHNAME HASH)+
-Filetype behavior, where the filename is relative to, and behavior when
-an entry in the Manifest2 is not present:
-|--------|-----------|------------|
-|Filetype|Relative to|Missing-fail|
-|--------|-----------|------------|
-|MISC    |Manifest-bd|NO          |
-|AUX     |$FILESDIR  |YES         |
-|DIST    |$DISTDIR   |N/A         |
-|EBUILD  |N/A fileext|YES         |
-|--------|-----------|------------|
-Manifest-bd = basedir(Manifest)
+should be treated as an error.
 
 Procedure for verifying an item in the MetaManifest:
 ----------------------------------------------------
-1. Check the GnuPG signature on the MetaManifest against the keyring of
-   automated Gentoo keys. See [GLEPxx+3] for full details regarding
-   verification of GnuPG signatures. 
-1.1. Do not continue if the signature check fails.
-2. For a verification of the tree following an rsync:
-2.1. M2-verify every entry in the MetaManifest
-2.2. (optional if Manifests will be checked before use) M2-verify each
-     normal Manifest file listed in the MetaManifest.
-3. If checking at the installation of a package:
-3.1. M2-verify the entry in MetaManifest for the Manifest
-3.2. M2-verifying the contents of the Manifest. 
-3.3. Perform M2-verification of all eclasses used (both directly and
-     indirectly) by the ebuild. 
-3.4. For initial implementations, it is acceptable to check EVERY item
-     in the eclass directory, rather than tracking the exact files used
-     by every eclass (see note #1). Later implementations should strive
-     to only verify individual eclasses as needed.
-
-Notes:
-1. Tracking of exact files is of specific significance to the libtool
-eclass, as it stores patches under eclass/ELT-patches, and as such that
-would not be picked up by any tracing of the inherit function.
+NEEDS REWRITE
+XX 1. Check the GnuPG signature on the MetaManifest against the keyring of
+XX    automated Gentoo keys. See [GLEPxx+3] for full details regarding
+XX    verification of GnuPG signatures. 
+XX 1.1. Do not continue if the signature check fails.
+XX 2. For a verification of the tree following an rsync:
+XX 2.1. M2-verify every entry in the MetaManifest
+XX 2.2. (optional if Manifests will be checked before use) M2-verify each
+XX      normal Manifest file listed in the MetaManifest.
+XX 3. If checking at the installation of a package:
+XX 3.1. M2-verify the entry in MetaManifest for the Manifest
+XX 3.2. M2-verifying the contents of the Manifest. 
+XX 3.3. Perform M2-verification of all eclasses used (both directly and
+XX      indirectly) by the ebuild. 
+XX 3.4. For initial implementations, it is acceptable to check EVERY item
+XX      in the eclass directory, rather than tracking the exact files used
+XX      by every eclass (see note #1). Later implementations should strive
+XX      to only verify individual eclasses as needed.
+XX 
+XX Notes:
+XX 1. Tracking of exact files is of specific significance to the libtool
+XX eclass, as it stores patches under eclass/ELT-patches, and as such that
+XX would not be picked up by any tracing of the inherit function.
 
 Implementation Notes
 ====================
@@ -190,8 +169,8 @@ Patrick Lauer <patrick@gentoo.org> - Prodding me to get all of the
 tree-signing work finished, and helping to edit.
 Ciaran McCreesh <ciaranm@...> - Manifest2 implementation in paludis
 Brian Harring <ferring@gmail.com> - Manifest2 implementation in pkgcore
-TODO:
 Marius Mauch <genone@gentoo.org> - Manifest2 implementation in portage
+TODO:
 Ned Ludd <solar@gentoo.org> - Security concept review
 
 Copyright
