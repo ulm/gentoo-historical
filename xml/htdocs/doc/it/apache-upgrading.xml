@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/apache-upgrading.xml,v 1.4 2007/08/02 16:13:20 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/apache-upgrading.xml,v 1.5 2007/12/11 22:01:08 scen Exp $ -->
 
 <guide link="/doc/it/apache-upgrading.xml" lang="it">
 <title>Aggiornamento di Apache</title>
@@ -8,11 +8,17 @@
 <author title="Autore">
   <mail link="vericgar@gentoo.org">Michael Stewart</mail>
 </author>
+<author title="Redazione">
+  <mail link="hollow"/>
+</author>
+<author title="Redazione">
+  <mail link="nightmorph"/>
+</author>
 <author title="Traduzione">
   <mail link="sergio.bevilacqua@yoda2000.net">Sergio Bevilacqua</mail>
 </author>
 <author title="Traduzione">
-  <mail link="scen@gentoo.org">Davide Cendron</mail>
+  <mail link="scen"/>
 </author>
 
 <abstract>
@@ -24,12 +30,80 @@ aggiornare la propria installazione di Apache.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.5</version>
-<date>2007-07-30</date>
+<version>2.6</version>
+<date>2007-11-29</date>
 
-<chapter>
-<title>Introduzione</title>
+<chapter id="upgrade-2.2.6-r4">
+<title>Aggiornare dalle versioni &lt;2.2.6-r4</title>
 <section>
+<body>
+
+<p>
+Gli ebuild di Apache hanno utilizzato
+<path>/etc/apache2/apache2-builtin-mods</path> per moltissimo tempo per
+selezionare i moduli integrati durante la fase di compilazione. Tuttavia questa
+modalità ha diversi svantaggi:
+</p>
+
+<ul>
+  <li>
+    Non è possibile selezionare moduli integrati durante la fase iniziale di
+    merge
+  </li>
+  <li>
+    Portage non sa quali moduli sono stati installati. Ciò è fastidioso
+    specialmente per i pacchetti binari.
+  </li>
+  <li>
+    Portage tenterà di sovrascrivere <path>apache2-builtin-mods</path> ad ogni
+    aggiornamento
+  </li>
+</ul>
+
+<p>
+Per rimediare a questa situazione
+<path>/etc/apache2/apache2-builtin-mods</path> è stato reso deprecato e migrato
+alla nuova variabile di tipo <c>USE_EXPAND</c> denominata
+<c>APACHE2_MODULES</c>. Per convertire la propria selezione personalizzata di
+moduli al nuovo formato usare il seguente comando:
+</p>
+
+<pre caption="Convertire apache2-builtin-mods ad APACHE2_MODULES">
+$ <i>echo APACHE2_MODULES=\"$(sed '/^mod_/s/mod_\(.*\)\s\+\(shared\|static\)/\1/;t n;d;:n' /etc/apache2/apache2-builtin-mods)\" >> /etc/make.conf</i>
+# <i>rm /etc/apache2/apache2-builtin-mods</i>
+
+<comment>(Ora è possibile aggiornare apache in sicurezza:)</comment>
+# <i>emerge -uva '>=www-servers/apache-2.2.6-r4'</i>
+</pre>
+
+<p>
+In aggiunta alla nuova variabile <c>APACHE2_MODULES</c> le flag USE locali sono
+state rimosse:
+</p>
+
+<ul>
+  <li>
+    Tutte le flag USE MPM sono state spostate nella variabile di tipo
+    <c>USE_EXPAND</c> denominata <c>APACHE2_MPMS</c>
+  </li>
+  <li><c>no-suexec</c> ora è diventata <c>suexec</c></li>
+  <li><c>static-modules</c> ora è diventata <c>static</c></li>
+</ul>
+
+<p>
+Per una descrizione dettagliata delle vecchie e delle corrispondenti nuove flag
+USE vedere il capitolo <uri link="#use-2.2.6-r4">seguente</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="upgrade-2.0.52-r3">
+<title>Aggiornare dalle versioni &lt;2.0.52-r3</title>
+<section>
+<title>Introduzione</title>
+
 <body>
 
 <p>
@@ -64,12 +138,6 @@ rendevano difficoltoso il mantenimento del pacchetto:
 </ul>
 
 <p>
-La soluzione? Il gruppo di Apache è stato allargato, aggiungendo molti nuovi
-membri, che hanno lavorato insieme per generare un'eclass, aggiornare tutti i
-moduli e risolvere un buon numero di bug.
-</p>
-
-<p>
 Questo documento spiega come aggiornare senza danneggiare il proprio sistema. Se
 si è sviluppatori o si vuole sapere cosa è stato cambiato, o come gli ebuild
 devono essere modificati per utilizzare le eclass, visitare <uri
@@ -78,11 +146,8 @@ link="/doc/en/apache-developer.xml">la guida di riferimento per Apache</uri>.
 
 </body>
 </section>
-</chapter>
-
-<chapter id="upgrade">
-<title>Istruzioni per l'aggiornamento</title>
 <section>
+<title>Aggiornare</title>
 <body>
 
 <p>
@@ -135,8 +200,9 @@ disponibilità di nuove revisioni.
 
 <p>
 Sono state aggiunte alcune nuove flag USE, è consigliabile rivedere il contenuto
-di <path>/etc/portage/package.use</path>. Consultare la <uri link="#use">lista
-delle flag USE di Apache</uri> per ulteriori dettagli.
+di <path>/etc/portage/package.use</path>. Consultare la <uri
+link="#use-2.2.6-r4">lista delle flag USE di Apache</uri> per ulteriori
+dettagli.
 </p>
 
 <pre caption="Verifica delle flag USE e ricompilazione">
@@ -175,7 +241,7 @@ Una volta completata la migrazione dei cambiamenti al nuovo file di
 configurazione, è necessario cancellare il vecchio file di configurazione (o
 spostarlo in una diversa posizione). Il nuovo script
 <path>/etc/init.d/apache{|2}</path> verifica che non esistano copie dei vecchi
-file, e non permette l'avvio di Apache fino a che questi files non sono stati
+file, e non permette l'avvio di Apache fino a che questi file non sono stati
 rimossi, indicando l'avvenuta riconfigurazione di Apache usando i nuovi
 percorsi.
 </p>
@@ -212,13 +278,13 @@ supporto anche nel canale IRC <path>#gentoo-apache</path> su
 </section>
 </chapter>
 
-<chapter id="use">
-<title>Flag USE supportate da Apache</title>
+<chapter id="use-pre-2.2.6-r4">
+<title>Flag USE supportate nelle versioni &lt;2.2.6-r4</title>
 <section>
 <body>
 
 <p>
-Ci sono alcuni USE-flags locali per Apache ed i suoi moduli. Apache supporta
+Ci sono alcuni flag USE locali per Apache ed i suoi moduli. Apache supporta
 molte altre flag USE generiche come <c>ssl</c>, ma l'effetto che hanno non è
 molto diverso da quello che manifestano in altri contesti, quindi non vengono
 incluse in questa lista. <c>emerge --verbose --pretend apache</c> mostra tutte
@@ -228,12 +294,10 @@ le flag USE supportate.
 <table>
 <tr>
   <th>Flag USE</th>
-  <th>Pacchetti</th>
   <th>Descrizione</th>
 </tr>
 <tr>
   <ti>apache2</ti>
-  <ti>depend.apache eclass (tutti i moduli)</ti>
   <ti>
     Deve sempre essere impostata se si desidera utilizzare Apache 2.0,
     diversamente verrà usato Apache 1.3. L'eclass utilizza questa USE per
@@ -241,28 +305,47 @@ le flag USE supportate.
   </ti>
 </tr>
 <tr>
+  <ti>debug</ti>
+  <ti>
+    Abilita un aggancio (hook) che permette ai moduli esterni di inserirsi e
+    fare qualcosa dopo che un processo figlio è andato in crash. Ci sono già due
+    moduli, <c>mod_whatkilledus</c> and <c>mod_backtrace</c> che fanno uso di
+    questo aggancio.
+  </ti>
+</tr>
+<tr>
+  <ti>doc</ti>
+  <ti>Installa il manuale di Apache e della configurazione</ti>
+</tr>
+<tr>
+  <ti>ldap</ti>
+  <ti>
+    Installa <c>mod_ldap</c> e <c>mod_auth_ldap</c>/<c>mod_authnz_ldap</c>.
+  </ti>
+</tr>
+<tr>
+  <ti>ssl</ti>
+  <ti>Installa <c>mod_ssl</c>.</ti>
+</tr>
+<tr>
+  <ti>mpm-itk</ti>
+  <ti>Compila il MPM <uri link="http://mpm-itk.sesse.net/">itk</uri></ti>
+</tr>
+<tr>
   <ti>mpm-leader</ti>
-  <ti>apache-2*</ti>
   <ti>
     Compila il MPM <uri
     link="http://httpd.apache.org/docs/2.0/mod/leader.html">leader</uri>
-    </ti>
-</tr>
-<tr>
-  <ti>mpm-metux</ti>
-  <ti>apache-2*</ti>
-  <ti>Compila il MPM <uri link="http://www.metux.de/mpm/">metux</uri></ti>
+  </ti>
 </tr>
 <tr>
   <ti>mpm-peruser</ti>
-  <ti>apache-2*</ti>
   <ti>
     Compila il MPM <uri link="http://www.telana.com/peruser.php">peruser</uri>
   </ti>
 </tr>
 <tr>
   <ti>mpm-prefork</ti>
-  <ti>apache-2*</ti>
   <ti>
     Compila il MPM <uri
     link="http://httpd.apache.org/docs/2.0/mod/prefork.html">prefork</uri>
@@ -270,7 +353,6 @@ le flag USE supportate.
 </tr>
 <tr>
   <ti>mpm-threadpool</ti>
-  <ti>apache-2*</ti>
   <ti>
     Compila il MPM <uri
     link="http://httpd.apache.org/docs/2.0/mod/threadpool.html">
@@ -279,54 +361,453 @@ le flag USE supportate.
 </tr>
 <tr>
   <ti>mpm-worker</ti>
-  <ti>apache-2*</ti>
   <ti>
     Compila il MPM <uri
     link="http://httpd.apache.org/docs/2.0/mod/worker.html">worker</uri>
     </ti>
 </tr>
 <tr>
-  <ti>no-suexec</ti>
-  <ti>apache</ti>
-  <ti>
-    Disabilita la compilazione del modulo suexec (per coloro che non vogliono
-    avere un binario suid potenzialmente pericoloso all'interno del sistema)
-  </ti>
-</tr>
-<tr>
   <ti>static-modules</ti>
-  <ti>apache</ti>
   <ti>
     Effettua il linking statico dei moduli all'interno del binario di Apache,
     in modo che non sia richiesto LoadModule per il caricamento degli stessi.
   </ti>
 </tr>
+</table>
+
+<note>
+Sebbene ci siano molte flag USE <c>mpm-*</c>, esse sono mutualmente esclusive.
+È possibile abilitare una ed una soltanto delle flag USE <c>mpm-*</c>. (Se non
+se ne abilita nessuna, verranno usate <c>mpm-prefork</c> o <c>mpm-worker</c>,
+a seconda che la flag USE threads sia abilitata o no.)
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="use-2.2.6-r4">
+<title>USE flag supportate nella versione 2.2.6-r4 e successive</title>
+<section>
+<body>
+
+<p>
+Con l'avvento della variabile <c>APACHE2_MODULES</c> era necessaria una pulizia
+generale delle flag USE. La seguente tabella elenca le USE flag supportate da
+<c>apache-2.2.6-r4</c> e versioni successive nonché le loro equivalenti per le
+versioni precedenti.
+</p>
+
+<table>
 <tr>
-  <ti>lingerd</ti>
-  <ti>apache-1*</ti>
+  <th>Flag USE</th>
+  <th>Vecchia flag USE</th>
+  <th>Descrizione</th>
+</tr>
+<tr>
+  <ti>debug</ti>
+  <ti>debug</ti>
   <ti>
-    Aggiunge il supporto per <uri
-    link="http://www.iagora.com/about/software/lingerd/">lingerd</uri>
+    Abilita un aggancio (hook) che permette ai moduli esterni di inserirsi e
+    fare qualcosa dopo che un processo figlio è andato in crash. Ci sono già due
+    moduli, <c>mod_whatkilledus</c> e <c>mod_backtrace</c> che fanno uso di
+    questo aggancio.
   </ti>
 </tr>
 <tr>
-  <ti>no-htdocs</ti>
-  <ti>gentoo-webroot-default</ti>
+  <ti>doc</ti>
+  <ti>doc</ti>
+  <ti>Installa il manuale di Apache e della configurazione</ti>
+</tr>
+<tr>
+  <ti>ldap</ti>
+  <ti>ldap</ti>
+  <ti>Installa <c>mod_ldap</c> e <c>mod_authnz_ldap</c></ti>
+</tr>
+<tr>
+  <ti>ssl</ti>
+  <ti>ssl</ti>
+  <ti>Installa <c>mod_ssl</c></ti>
+</tr>
+<tr>
+  <ti>static</ti>
+  <ti>static-modules</ti>
   <ti>
-    Disabilita l'installazione della webroot predefinita in
-    <path>/var/www/localhost</path> in modo che i file in quella posizione non
-    siano sovrascritti. La webroot viene installata in
-    <path>/usr/share/doc/gentoo-webroot-default-*/webroot/</path>.
+    Collega staticamente i moduli nel binario di apache, in modo che non sia più
+    necessaria la direttiva LoadModule per caricare i moduli di base in Apache
+  </ti>
+</tr>
+<tr>
+  <ti>suexec</ti>
+  <ti>no-suexec</ti>
+  <ti>Installa <c>mod_suexec</c> ed il binario di supporto <c>suexec</c></ti>
+</tr>
+<tr>
+  <ti>threads</ti>
+  <ti>threads</ti>
+  <ti>
+    Seleziona il MPM predefinito se nessuno di essi è specificato in
+    APACHE2_MPMS
   </ti>
 </tr>
 </table>
 
-<note>
-Le mpm-* USE-flags sono mutuamente esclusive. Solo una deve essere abilitata
-tramite le flag USE mpm-*. (Se non ne viene abilitata una, viene compilato
-mpm-prefork o mpm-worker, a seconda che la flag globale threads sia impostata
-o no.)
-</note>
+<p>
+La tabella seguente elenca i valori supportati per la variabile
+<c>APACHE2_MPMS</c> in <c>apache-2.2.6-r4</c> e la loro corrispondente USE flag
+locale precedente.
+</p>
+
+<table>
+<tr>
+  <th>Flag</th>
+  <th>Vecchia flag USE</th>
+  <th>Descrizione</th>
+</tr>
+<tr>
+  <ti>event</ti>
+  <ti>mpm-event</ti>
+  <ti>Una variante sperimentale del MPM worker standard</ti>
+</tr>
+<tr>
+  <ti>itk</ti>
+  <ti>mpm-itk</ti>
+  <ti>Permette di eseguire ciascun host virtuale  con un uid e gid separato</ti>
+</tr>
+<tr>
+  <ti>peruser</ti>
+  <ti>mpm-peruser</ti>
+  <ti>
+    Peruser è una implementazione funzionante del MPM perchild che permette
+    l'esecuzione dei processi figli di apache ciascuno con il proprio utente e
+    gruppo, facendo gestire a ciascuno il proprio insieme di host virtuali
+  </ti>
+</tr>
+<tr>
+  <ti>prefork</ti>
+  <ti>mpm-prefork</ti>
+  <ti>Implementa un server web non-threaded e pre-forking</ti>
+</tr>
+<tr>
+  <ti>worker</ti>
+  <ti>mpm-worker</ti>
+  <ti>
+    Multi-Processing Module implementa un server web multi-processo
+    multi-thread ibrido
+  </ti>
+</tr>
+</table>
+
+<p>
+La tabella seguente elenca le variabili <c>APACHE2_MODULES</c> supportate a
+partire da <c>apache-2.2.6-r4</c>.
+</p>
+
+<table>
+<tr>
+  <th>Flag</th>
+  <th>Descrizione</th>
+</tr>
+<tr>
+  <ti>actions</ti>
+  <ti>
+    Provvede ad eseguire script CGI basati sul tipo di media o metodo richiesto
+  </ti>
+</tr>
+<tr>
+  <ti>alias</ti>
+  <ti>
+    Provvede a mappare varie parti filesystem dell'host nell'albero del
+    documento e ad effettuare il reindirizzamento degli URL.
+  </ti>
+</tr>
+<tr>
+  <ti>asis</ti>
+  <ti>Invia file che contengono le proprie intestazioni HTTP</ti>
+</tr>
+<tr>
+  <ti>auth_basic</ti>
+  <ti>Autenticazione di base</ti>
+</tr>
+<tr>
+  <ti>auth_digest</ti>
+  <ti>Autenticazione utente tramite l'Autenticazione MD5 Digest</ti>
+</tr>
+<tr>
+  <ti>authn_alias</ti>
+  <ti>
+    Dà la possibilità di creare fornitori di autenticazioni estese basati sugli
+    attuali fornitori
+  </ti>
+</tr>
+<tr>
+  <ti>authn_anon</ti>
+  <ti>
+    Permette l'accesso anonimo (tramite l'utente "anonymous") in aree sottoposte
+    ad autenticazione
+  </ti>
+</tr>
+<tr>
+  <ti>authn_dbd</ti>
+  <ti>Autenticazione utente tramite un database SQL</ti>
+</tr>
+<tr>
+  <ti>authn_dbm</ti>
+  <ti>Autenticazione utente tramite file DBM</ti>
+</tr>
+<tr>
+  <ti>authn_default</ti>
+  <ti>Modulo di riserva per l'autenticazione</ti>
+</tr>
+<tr>
+  <ti>authn_file</ti>
+  <ti>Autenticazione utente tramite file di testo</ti>
+</tr>
+<tr>
+  <ti>authz_dbm</ti>
+  <ti>Autorizzazione di gruppo tramite file DBM</ti>
+</tr>
+<tr>
+  <ti>authz_default</ti>
+  <ti>Modulo di riserva per l'autorizzazione</ti>
+</tr>
+<tr>
+  <ti>authz_groupfile</ti>
+  <ti>Autorizzazione di gruppo tramite file di testo in chiaro</ti>
+</tr>
+<tr>
+  <ti>authz_host</ti>
+  <ti>Autorizzazione di gruppo basata su host (nome o indirizzo IP)</ti>
+</tr>
+<tr>
+  <ti>authz_owner</ti>
+  <ti>Autorizzazione basata sulla proprietà del file</ti>
+</tr>
+<tr>
+  <ti>authz_user</ti>
+  <ti>Autorizzazione utente</ti>
+</tr>
+<tr>
+  <ti>autoindex</ti>
+  <ti>
+    Genera automaticamente gli indici delle directory, in modo simile al comando
+    Unix <c>ls</c>
+  </ti>
+</tr>
+<tr>
+  <ti>cache</ti>
+  <ti>Cache dei contenuti legati agli URI</ti>
+</tr>
+<tr>
+  <ti>cern_meta</ti>
+  <ti>Semantiche metafile httpd del CERN</ti>
+</tr>
+<tr>
+  <ti>charset_lite</ti>
+  <ti>Specifica la traduzione o la ricodifica del set di caratteri</ti>
+</tr>
+<tr>
+  <ti>dav</ti>
+  <ti>Funzionalità "Distributed Authoring and Versioning" (WebDAV)</ti>
+</tr>
+<tr>
+  <ti>dav_fs</ti>
+  <ti>fornitore filesystem per mod_dav</ti>
+</tr>
+<tr>
+  <ti>dav_lock</ti>
+  <ti>modulo generico di bloccaggio per mod_dav</ti>
+</tr>
+<tr>
+  <ti>dbd</ti>
+  <ti>Gestisce le connessioni al database SQL</ti>
+</tr>
+<tr>
+  <ti>deflate</ti>
+  <ti>Comprime i contenuti prima di inviarli al client</ti>
+</tr>
+<tr>
+  <ti>dir</ti>
+  <ti>
+    Fornisce i reindirizzamenti di tipo "trailing slash" e offre i file degli
+    indici delle directory
+  </ti>
+</tr>
+<tr>
+  <ti>disk_cache</ti>
+  <ti>Gestore archiviazione cache dei contenuti legati agli URI</ti>
+</tr>
+<tr>
+  <ti>dumpio</ti>
+  <ti>Se lo si desidera scarica tutto l'I/O su un log di errore</ti>
+</tr>
+<tr>
+  <ti>env</ti>
+  <ti>
+    Modifica l'ambiente che viene passato agli script CGI e alle pagine SSI
+  </ti>
+</tr>
+<tr>
+  <ti>expires</ti>
+  <ti>
+    Generazione delle intestazioni HTTP di Scadenza e Controllo Cache in accordo
+    con i criteri specificati dall'utente
+  </ti>
+</tr>
+<tr>
+  <ti>ext_filter</ti>
+  <ti>
+    Passa il corpo della risposta attraverso un programma esterno prima di
+    spedirlo al client
+  </ti>
+</tr>
+<tr>
+  <ti>file_cache</ti>
+  <ti>Memorizza in cache una lista statica di file in memoria</ti>
+</tr>
+<tr>
+  <ti>filter</ti>
+  <ti>
+    Modulo di configurazione filtro intelligente sensibile al contesto
+  </ti>
+</tr>
+<tr>
+  <ti>headers</ti>
+  <ti>
+    Personalizzazione delle richieste HTTP e delle intestazioni delle risposte
+  </ti>
+</tr>
+<tr>
+  <ti>ident</ti>
+  <ti>Controlli ident RFC 1413</ti>
+</tr>
+<tr>
+  <ti>imagemap</ti>
+  <ti>Elaborazione mappe immagini lato server</ti>
+</tr>
+<tr>
+  <ti>include</ti>
+  <ti>Analisi lato server dei documenti html (Server Side Includes)</ti>
+</tr>
+<tr>
+  <ti>info</ti>
+  <ti>Fornisce una panoramica esaustiva della configurazione del server</ti>
+</tr>
+<tr>
+  <ti>log_config</ti>
+  <ti>Registrazione delle richieste fatte dal server</ti>
+</tr>
+<tr>
+  <ti>log_forensic</ti>
+  <ti>Registrazione Forense delle richieste fatte dal server</ti>
+</tr>
+<tr>
+  <ti>logio</ti>
+  <ti>Registrazione dei byte in entrate e uscita per ogni richiesta</ti>
+</tr>
+<tr>
+  <ti>mem_cache</ti>
+  <ti>Cache dei contenuti legata agli URIs</ti>
+</tr>
+<tr>
+  <ti>mime</ti>
+  <ti>
+    Associa l'estensione richiesta del file alla modalità di funzionamento dello
+    stesso (gestori e filtri) e al contenuto (mime-type, linguaggio, set di
+    caratteri e codifica)
+  </ti>
+</tr>
+<tr>
+  <ti>mime_magic</ti>
+  <ti>
+    Determina il tipo MIME di un file analizzando alcuni byte del suo contenuto
+  </ti>
+</tr>
+<tr>
+  <ti>negotiation</ti>
+  <ti>Fornisce la negoziazione dei contenuti</ti>
+</tr>
+<tr>
+  <ti>proxy</ti>
+  <ti>Server proxy/gateway HTTP/1.1</ti>
+</tr>
+<tr>
+  <ti>proxy_ajp</ti>
+  <ti>Modulo di supporto AJP per mod_proxy</ti>
+</tr>
+<tr>
+  <ti>proxy_balancer</ti>
+  <ti>estensione di mod_proxy per il bilanciamento di carico</ti>
+</tr>
+<tr>
+  <ti>proxy_connect</ti>
+  <ti>
+    estensione di mod_proxy per la gestione delle richieste di tipo CONNECT
+  </ti>
+</tr>
+<tr>
+  <ti>proxy_ftp</ti>
+  <ti>Modulo di supporto FTP per mod_proxy</ti>
+</tr>
+<tr>
+  <ti>proxy_http</ti>
+  <ti>Modulo di supporto HTTP per mod_proxy</ti>
+</tr>
+<tr>
+  <ti>rewrite</ti>
+  <ti>
+    Fornisce un motore di riscrittura basato su regole per riscrivere al volo
+    gli URL richiesti
+  </ti>
+</tr>
+<tr>
+  <ti>setenvif</ti>
+  <ti>
+    Permette l'impostazione di variabili d'ambiente basate sulle caratteristiche
+    della richiesta
+  </ti>
+</tr>
+<tr>
+  <ti>speling</ti>
+  <ti>
+    Cerca di correggere gli URL errati che gli utenti potrebbero aver imputato
+    ignorando la scrittura in maiuscolo e permettendo fino ad un errore di
+    scrittura
+  </ti>
+</tr>
+<tr>
+  <ti>status</ti>
+  <ti>
+    Fornisce informazioni riguardo all'attività e alle prestazioni del server
+  </ti>
+</tr>
+<tr>
+  <ti>unique_id</ti>
+  <ti>
+    Fornisce una variabile d'ambiente con un identificatore univoco per ciascuna
+    richiesta
+  </ti>
+</tr>
+<tr>
+  <ti>userdir</ti>
+  <ti>Directory specifiche per utente</ti>
+</tr>
+<tr>
+  <ti>usertrack</ti>
+  <ti>
+    Registrazione della sequenza di click sui collegamenti durante l'attività di
+    un utente in un sito
+  </ti>
+</tr>
+<tr>
+  <ti>version</ti>
+  <ti>Configurazione dipendente dalla versione</ti>
+</tr>
+<tr>
+  <ti>vhost_alias</ti>
+  <ti>Fornisce hosting virtuale massiccio configurato dinamicamente</ti>
+</tr>
+</table>
 
 </body>
 </section>
