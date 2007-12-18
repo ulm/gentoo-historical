@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/infrastructure/ldap.xml,v 1.16 2007/07/31 07:07:03 robbat2 Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/infrastructure/ldap.xml,v 1.17 2007/12/18 01:29:57 robbat2 Exp $ -->
 
 <guide link="/proj/en/infrastructure/ldap.xml">
 <title>Gentoo Infrastructure LDAP guide</title>
 
 <author title="Author">
   <mail link="lcars@gentoo.org">Andrea Barisani</mail>
+</author>
+<author title="Author">
+  <mail link="robbat2@gentoo.org">Robin H. Johnson</mail>
 </author>
 <author title="Editor">
   <mail link="lmedinas@gmail.com">Luis Medinas</mail>
@@ -24,8 +27,8 @@ and administrators.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.5</version>
-<date>2007-02-23</date>
+<version>1.6</version>
+<date>2007-12-17</date>
 
 <chapter>
 <title>Key Concepts</title>
@@ -64,39 +67,46 @@ see if that user is in the database and authorized for access.
 <p>
 LDAP is used by Gentoo to secure the infrastructure. Gentoo resources are spread
 across the globe and LDAP gives us a central location to manage them. There are
-four levels of access or OU (organizational unit): anonymous, user, recruiters
-and infra, that are used to connect or <e>bind</e> to the LDAP database.
+four levels of access: anonymous, user, recruiter and infra that are used to
+control what can be changed in the LDAP database.  These are controlled via
+special values in the gentooAccess attribute.</p>
+
+<p>
+You must connect or <e>bind</e> to the LDAP database either anonymously, or a
+known user. Binding anonymously will always grant only the anonymous level,
+while binding as a known user will grant you the level based on your user and
+potentially where you are connecting from.
 </p>
 
 <p>
-The <e>anonymous</e> OU is used for simple <e>read only</e> informational queries.
-All developers and staff can bind to LDAP as anonymous. If you don't specify an
-OU when you bind anonymous is assumed.
+The <e>anonymous</e> level is used for simple <e>read only</e> informational
+queries.  All developers and staff can bind to LDAP as anonymous. If you don't
+specify a mode when you bind, anonymous is assumed.
 </p>
 
 <p>
-The <e>user</e> OU is used to add or change information in your own LDAP
-record. Things like your latitude and longitude, ssh public key and so on.
-All developers and staff are members of the user OU.
+The <e>user</e> level is used to add or change information in your own LDAP
+record. Things like your latitude and longitude, ssh public key and so on.  All
+users can access the <e>user</e> level, by binding as themselves with the mode
+specified, and providing their password.
 </p>
 
 <p>
-<e>recruiters</e> is a special OU used by recruiters to create new LDAP entries
-or to alter existing ones for any user including their own. If you are a
-Recruiter you <e>must</e> bind to LDAP as 'recruiter' for any operation including
-another users record or your own.
+The <e>recruiter</e> level enables recruiters to add new users, and perform
+some administrative changes to users.
 </p>
 
 <p>
-The <e>infra</e> OU is also a special OU that is used by members of the Infrastructure
-Project to manage the various resources within Gentoo. Although this is used
-mainly for managing machine accounts, the infra OU can also alter any other users
-record.
+The <e>infra</e> level enables the infrastructure team full power over LDAP,
+and is additionally protected by only being available from ldap1.gentoo.org
+(toucan.gentoo.org).
 </p>
 
 <note>
-All write operations performed by recruiters or infra must be performed on
-ldap1.gentoo.org (roadrunner.gentoo.org).
+All write operations performed by infra must be performed on ldap1.gentoo.org
+(toucan.gentoo.org). Normal user and recruiter write operations may be
+performed on any LDAP-connected Gentoo box, however it is strongly recommended
+that you use dev.gentoo.org (woodpecker.gentoo.org).
 </note>
 
 </body>
@@ -110,11 +120,11 @@ ldap1.gentoo.org (roadrunner.gentoo.org).
 <body>
 
 <p>
-Currently we have two LDAP servers available. The <e>master</e> server and a
-<e>slave</e> server. The <e>master</e> LDAP server is reachable at
-<e>ldap1.gentoo.org</e>. The <e>slave</e> server is <e>ldap2.gentoo.org</e> and
-it connects every 60 seconds to the <e>master</e> looking up changes and
-resyncing the database if necessary.
+Currently we have three LDAP servers available. The <e>master</e> server and two
+<e>slave</e> servers. The <e>master</e> LDAP server is reachable at
+<e>ldap1.gentoo.org</e>. The <e>slave</e> servers are <e>ldap2.gentoo.org</e>,
+<e>ldap3.gentoo.org</e> and it connects every 60 seconds to the <e>master</e>
+to replicate changes from the master.
 </p>
 
 <p>
@@ -122,14 +132,14 @@ Every update operation must be done on <e>ldap1.gentoo.org</e>, if an update
 (which means writing some entry) is performed on the <e>slave</e> a referral to
 the <e>master</e> is issued. This is transparently handled and all attempts to
 update against the slave will be redirected to the <e>master</e>. Connections
-are validated via TLS + password. The password is your toucan one and it's going
-to be the same for all LDAP_aware boxes in the future.
+are validated via TLS + password. The password is your dev one and is the same
+for all LDAP-aware boxes.
 </p>
 
 <p>
 We use a custom script, <c>perl_ldap</c> that uses <e>Net::LDAP</e>, for accessing
 and modifying the database, it allows only a predefined set of actions but it
-should cover 90% of the cases. In the following chapters we explain how to use it.
+should cover 95% of the cases. In the following chapters we explain how to use it.
 </p>
 
 <note>
@@ -149,9 +159,11 @@ in #gentoo-infra for help with this.
 
 <p>
 The following attributes are included in the Gentoo Schema. Note the 'Access
-Level' needed for each attribute.
+Level' needed to write each attribute. Anonymous reading is allowed unless
+otherwise noted. Required fields are emphasised.
 </p>
 
+<!-- Please keep this list in alphabetical order, sorted by the attribute name -->
 <table>
   <tr>
     <th>Attribute Name</th>
@@ -161,25 +173,46 @@ Level' needed for each attribute.
     <th>Format</th>
   </tr>
   <tr>
-    <ti>gentooLocation</ti>
+    <ti>birthday</ti>
+    <ti>user (not globally readable)</ti>
+    <ti>developer birthday</ti>
+    <ti>single, optional</ti>
+    <ti>UTF-8</ti>
+  </tr>
+  <tr>
+    <ti><e>gentooAccess</e></ti>
+    <ti>infra, top level recruiters only</ti>
+    <ti>developer access level</ti>
+    <ti>multiple, required</ti>
+    <ti>UTF-8</ti>
+  </tr>
+  <tr>
+    <ti>gentooAlias</ti>
     <ti>infra, recruiters</ti>
-    <ti>developer location</ti>
+    <ti>alternate names for this developer</ti>
+    <ti>multiple, required</ti>
+    <ti>UTF-8</ti>
+  </tr>
+  <tr>
+    <ti>gentooGPGFingerprint, gpgfingerprint</ti>
+    <ti>user</ti>
+    <ti>GPG key fingerprint</ti>
+    <ti>single, optional</ti>
+    <ti>UTF-8</ti>
+  </tr>
+  <tr>
+    <ti><e>gentooGPGkey, gpgkey</e></ti>
+    <ti>user</ti>
+    <ti>GPG key uid</ti>
     <ti>single, required</ti>
     <ti>UTF-8</ti>
   </tr>
   <tr>
-    <ti>gentooLatitude, lat</ti>
+    <ti>gentooIM</ti>
     <ti>user</ti>
-    <ti>latitude coordinate</ti>
-    <ti>single, optional</ti>
-    <ti>numeric string</ti>
-  </tr>
-  <tr>
-    <ti>gentooLongitude, lon</ti>
-    <ti>user</ti>
-    <ti>longitude coordinate</ti>
-    <ti>single, optional</ti>
-    <ti>numeric string</ti>
+    <ti>instant messaging ID</ti>
+    <ti>multiple, optional</ti>
+    <ti>UTF-8</ti>
   </tr>
   <tr>
     <ti>gentooJoin</ti>
@@ -189,62 +222,65 @@ Level' needed for each attribute.
     <ti>UTF-8</ti>
   </tr>
   <tr>
-    <ti>gentooAccess</ti>
-    <ti>infra, recruiters</ti>
-    <ti>developer access level</ti>
-    <ti>multiple, required</ti>
+    <ti>gentooLatitude, lat</ti>
+    <ti>user</ti>
+    <ti>latitude coordinate</ti>
+    <ti>single, optional</ti>
+    <ti>signed decimal string</ti>
+  </tr>
+  <tr>
+    <ti><e>gentooLocation</e></ti>
+    <ti>user</ti>
+    <ti>developer location</ti>
+    <ti>single, required</ti>
     <ti>UTF-8</ti>
   </tr>
   <tr>
-    <ti>gentooStatus</ti>
+    <ti>gentooLongitude, lon</ti>
+    <ti>user</ti>
+    <ti>longitude coordinate</ti>
+    <ti>single, optional</ti>
+    <ti>signed decimal string</ti>
+  </tr>
+  <tr>
+    <ti>gentooRetire</ti>
+    <ti>infra, recruiters</ti>
+    <ti>developer retirement date</ti>
+    <ti>single, optional</ti>
+    <ti>UTF-8</ti>
+  </tr>
+  <tr>
+    <ti><e>gentooRoles</e></ti>
+    <ti>user</ti>
+    <ti>developer projects</ti>
+    <ti>single, required</ti>
+    <ti>UTF-8</ti>
+  </tr>
+  <tr>
+    <ti><e>gentooStatus</e></ti>
     <ti>infra, recruiters</ti>
     <ti>developer status</ti>
     <ti>single, required</ti>
     <ti>UTF-8</ti>
   </tr>
   <tr>
-    <ti>gentooGPGkey, gpgkey</ti>
-    <ti>user</ti>
-    <ti>gpg key uid</ti>
-    <ti>single, optional</ti>
-    <ti>UTF-8</ti>
-  </tr>
-  <tr>
-    <ti>gentooGPGFingerprint, gpgfingerprint</ti>
-    <ti>user</ti>
-    <ti>gpg key fingerprint</ti>
-    <ti>single, optional</ti>
-    <ti>UTF-8</ti>
-  </tr>
-  <tr>
-    <ti>gentooRoles</ti>
-    <ti>infra,recruiters</ti>
-    <ti>developer projects</ti>
-    <ti>single, optional</ti>
-    <ti>UTF-8</ti>
-  </tr>
-  <tr>
-    <ti>gentooHerd, herd</ti>
-    <ti>infra,recruiters</ti>
-    <ti>developer herd</ti>
-    <ti>single, optional</ti>
-    <ti>UTF-8</ti>
-  </tr>
-  <tr>
-    <ti>sshPublicKey</ti>
+    <ti><e>sshPublicKey</e></ti>
     <ti>user</ti>
     <ti>OpenSSH public key</ti>
-    <ti>multiple, optional</ti>
-    <ti>UTF-8</ti>
-  </tr>
-  <tr>
-    <ti>birthday</ti>
-    <ti>user</ti>
-    <ti>developer birthday</ti>
-    <ti>single, optional</ti>
+    <ti>multiple, required</ti>
     <ti>UTF-8</ti>
   </tr>
 </table>
+
+<note>
+All dates are presently expected to be in the form DD MMMM YYYY, and are being
+being migrated to ISO8601, after which, the field will have validation enabled.
+</note>
+
+<p
+>The following attributes were in use at some point in the past, but have
+been retired: <e>gentooHerd</e>, <e>gentooAltMail</e>, <e>gentooForumsUID</e>.
+</p>
 
 </body>
 </section>
@@ -320,7 +356,7 @@ The following are the most common options.
 
 <ul>
   <li>
-    <c>-b OU</c> used to bind to the LDAP server. If you don't specify
+    <c>-b MODE</c> used to bind to the LDAP server. If you don't specify
     <e>user</e>, the script will default to <e>anonymous</e> and be <e>read
     only</e>.
   </li>
@@ -339,7 +375,7 @@ The following are the most common options.
     <c>-C ATTRIBUTE NEWVALUE &lt;username&gt;</c> creates a new attribute for
     the specified user
   </li>
-  <li><c>-E ATTRIBUTE</c> erases an attribute</li>
+  <li><c>-E ATTRIBUTE OLDVALUE &lt;username&gt;</c> erases an attribute</li>
 </ul>
 
 </body>
@@ -370,9 +406,13 @@ of the most commonly changed attributes.
 # <i>perl_ldap -b user -M gentooGPGkey "1AF343E" &lt;username&gt;</i>
 </pre>
 
-<pre caption="Change your public SSH key">
-<comment>(substitute 'pubkey' with the path to your public SSH key. ex: "~/.ssh/id_dsa.pub". You should have one sshPublicKey attribute per key!)</comment>
-# <i>perl_ldap -b user -M sshPublicKey "$(cat pubkey)" &lt;username&gt;</i>
+<pre caption="Add a new public SSH key">
+<comment>(substitute 'pubkey' with the path to your public SSH key. ex: "~/.ssh/id_dsa.pub". You should have one sshPublicKey attribute per key! No newlines!)</comment>
+# <i>perl_ldap -b user -A sshPublicKey "$(cat pubkey)" &lt;username&gt;</i>
+</pre>
+
+<pre caption="Erase an old public SSH key">
+# <i>perl_ldap -b user -E sshPublicKey "$(cat oldpubkey)" &lt;username&gt;</i>
 </pre>
 
 </body>
@@ -390,55 +430,43 @@ a recruiter.
 </p>
 
 <p>
-When dealing with users that belong to a sub-OU the <c>-o OU | -b OU</c> option
-must be used, this will be clarified in the examples. The command <c>-b OU</c>
-must be used if the <e>binding user</e> belongs to a sub-OU, the command
-<c>-o OU</c> must be used if <e>the target user</e> belongs to a sub-OU.
+When dealing with users that belong to a sub-OU the <c>-o OU</c> option
+must be used, this will be clarified in the examples. The command <c>-o OU</c>
+must be used if <e>the target user</e> belongs to a sub-OU.
 </p>
 
 <p>
 The following examples will show you how to change attributes for users, recruiters
-and infra. All write operations performed by one user against another user
-must be performed on ldap1.gentoo.org (roadrunner.gentoo.org).
+and infra. All write operations performed by infra against another user must be
+performed on ldap1.gentoo.org (toucan.gentoo.org).
 </p>
 
 <p>
-Some attributes, like gentooRoles and sshPublickey, allow multi_values. To append an
-additional value to the exiting ones use <c>-C</c>. To overwrite the existing values
-use <c>-M</c>.
+Some attributes, like <e>sshPublickey</e>, and <e>mail</e>, allow multi-values. To append an
+additional value to the exiting ones use <c>-C</c>. You may not use <c>-M</c>
+with multi-valued attributes.
 </p>
 
 <pre caption="Modify (overwrite) an existing attribute for a user">
-# <i>perl_ldap -b recruiters -M gentooGPGkey "1AF343E" &lt;username&gt;</i>
-</pre>
-
-<pre caption="Modify (overwrite) an existing attribute if the target user is recruiters or infra">
-# <i>perl_ldap -b recruiters -o recruiters -M gentooGPGkey "1AF343E" &lt;username&gt;</i>
-# <i>perl_ldap -b recruiters -o infra -M gentooGPGkey "1AF343E" &lt;username&gt;</i>
+# <i>perl_ldap -b user -M gentooGPGkey "0x1AF343EB" &lt;username&gt;</i>
 </pre>
 
 <pre caption="Delete an attribute for a user">
-# <i>perl_ldap -b recruiters -E gentooRoles &lt;username&gt;</i>
-
-<comment>(If value is specified then only the matching attribute is removed, this is useful for multi_valued attributes.)</comment>
-# <i>perl_ldap -b recruiters -E gentooRoles "forums" &lt;username&gt;</i>
+# <i>perl_ldap -b user -E mail "myoldaddress@example.com" &lt;username&gt;</i>
 </pre>
 
-<pre caption="Add a new user">
-# <i>perl_ldap -b recruiters -A &lt;username&gt;</i>
+<pre caption="Add a new user (infra, recruiters)">
+# <i>perl_ldap -b user -A &lt;username&gt;</i>
 </pre>
 
-<pre caption="Delete a user">
-# <i>perl_ldap -b recruiters -D &lt;username&gt;</i>
+<pre caption="Delete a user (infra)">
+# <i>perl_ldap -b user -D &lt;username&gt;</i>
 </pre>
 
-<pre caption="Create or modify multi_value attributes">
+<pre caption="Create or modify multi-value attributes">
 <comment>(Create a new attribute while preserving the existing ones. Use the command multiple times to add addtional attributes)</comment>
-# <i>perl_ldap -b recruiters -C gentooRoles "forums" &lt;username&gt;</i>
-# <i>perl_ldap -b recruiters -C gentooRoles "devrel" &lt;username&gt;</i>
-
-<comment>(overwrite the existing values with a new one)</comment>
-# <i>perl_ldap -b recruiters -M gentooRoles "forums" &lt;username&gt;</i>
+# <i>perl_ldap -b user -C mail "myaltaddress@example.com" &lt;username&gt;</i>
+# <i>perl_ldap -b user -C mail "backup@example.com" &lt;username&gt;</i>
 </pre>
 
 </body>
@@ -449,15 +477,18 @@ use <c>-M</c>.
 
 <p>
 Infra can change their own attributes or those of another user. You <b>must</b>
-bind as <e>infra</e> to change any attributes, including your own. To change
-your own attributes use the examples from the "users" section above. To change
-another users record use the examples from the "recruiters" section.
+bind as <e>user</e> to change any attributes, including your own. To change
+your own attributes use the examples from the "users" section above from any
+LDAP-aware machine. To change another users record, you must be using perl_ldap
+from ldap1.gentoo.org.
 </p>
 
 <p>
 The attribute <c>gentooAccess</c> controls which boxes a user can login to. Only
 infra and a few selected recruiters are allowed to create and modify this
-multi_value attribute. The FQDN must be used (ex. roadrunner.gentoo.org).
+multi-value attribute. The FQDN must be used (ex. roadrunner.gentoo.org).
+Some special values also exist: infra.group, infra-ldapadmin.group,
+infra-cvsadmin.group, infra-system.group, recruiters.group.
 </p>
 
 </body>
@@ -472,6 +503,7 @@ multi_value attribute. The FQDN must be used (ex. roadrunner.gentoo.org).
 <ul>
   <li>Master LDAP Server - ldap1.gentoo.org</li>
   <li>Slave LDAP Server - ldap2.gentoo.org</li>
+  <li>Slave LDAP Server - ldap3.gentoo.org</li>
   <li><uri link="http://www.tldp.org/HOWTO/html_single/LDAP-HOWTO">LDAP HOWTO</uri></li>
 </ul>
 
