@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/base/embedded/handbook/cross-compiling-packages.xml,v 1.1 2007/08/26 13:21:49 vapier Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/base/embedded/handbook/cross-compiling-packages.xml,v 1.2 2007/12/24 20:26:21 vapier Exp $ -->
 
 <sections>
 
@@ -42,6 +42,169 @@ There are a few important variables that we will use throughout this section.
   <ti>The virtual / portage can find its config files (like make.conf)</ti>
  </tr>
 </table>
+
+<p>
+You can either set this all by hand, but that obviously gets quite tedious very
+quickly.  A better idea is to stick these into a shell script so you can avoid
+typing it out all the time.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Filesystem Setup</title>
+<body>
+
+<p>
+Cross-compiling a system generally involves two directory trees.  The first is
+where all development files are normally installed.  This is your sysroot.  The
+other tree is where only your runtime files are installed.  You emerge all of
+your fun packages into your sysroot (without trimming down any files), and then
+either install via binary packages or copying files by hand all the stuff you
+need in your runtime tree.
+</p>
+
+<p>
+The common convention is to use your <path>/usr/CTARGET/</path> tree as your
+sysroot as the include/library directories in this tree are already encoded
+into the gcc cross-compiler for searching.  You could use another directory
+and then add custom -I/-L paths to your CPPFLAGS/LDFLAGS, but this has
+historically proven to be problematic.  Yes it works most of the time, but
+the corner cases are why this method is discouraged.  In the embedded handbook,
+we'll assume you're using the sysroot as your development ROOT.
+</p>
+
+<p>
+For your runtime system, you'll need a much slimmer/trimmed down setup.  The
+files you remove from a normal installed package is why this tree is not
+suitable for compiling against.  If you build binary packages while installing
+into your sysroot, then you can use those binary packages in conjunction with
+the <c>INSTALL_MASK</c> variable to trim out most things.  See the make.conf(5)
+man page for more information.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Environment Setup</title>
+<body>
+
+<p>
+Once you've select your sysroot path, you'll have to setup the portage
+environment just like you setup your host when you first installed.  That
+means you have to create the <path>make.conf</path> and <path>make.profile</path>
+for your target system.  You'll also need to setup <path>make.globals</path>.
+</p>
+
+<pre caption="SYSROOT/etc/make.conf">
+ACCEPT_KEYWORDS="ppc"
+ARCH="ppc"
+CHOST="powerpc-softfloat-linux-uclibc"
+CFLAGS="-Os -pipe"
+CXXFLAGS="${CFLAGS}"
+GENTOO_MIRRORS="http://open-systems.ufl.edu/mirrors/gentoo \
+    http://prometheus.cs.wmich.edu/gentoo \
+    http://mirror.datapipe.net/gentoo \
+    http://ftp.ucsb.edu/pub/mirrors/linux/gentoo/"
+INPUT_DEVICES="keyboard"
+MAKEOPTS="-j2"
+USE="-* minimal"
+</pre>
+
+<p>
+The <path>make.globals</path> file is common arch-independent defaults.  So we
+can just cheat and symlink it.
+</p>
+
+<pre caption="SYSROOT/etc/make.globals">
+# <i>ln -s /etc/make.globals SYSROOT/etc/make.globals</i>
+</pre>
+
+<p>
+Then for the <path>make.profile</path>, just create a symlink like normal.
+</p>
+
+<pre caption="SYSROOT/etc/make.profile">
+# <i>ln -s /usr/portage/profiles/uclibc/ppc SYSROOT/etc/make.profile</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Helper: xmerge</title>
+<body>
+
+<p>
+A simple wrapper script will setup the environment variables to point to the
+right places and then run <c>emerge</c>.  This script expects you to have setup
+the environment variable <c>SYSROOT</c> already.
+</p>
+
+<pre caption="sample xmerge">
+#!/bin/sh
+export CBUILD=$(portageq envvar CHOST)
+export PORTAGE_CONFIGROOT=${SYSROOT}
+if [ "$1" = "--root" ] ; then
+	export ROOT=$2
+	shift 2
+else
+	export ROOT=${SYSROOT}
+fi
+exec emerge "$@"
+</pre>
+
+<p>
+Now you can use this for both installing into your development root (sysroot)
+and into your runtime root.  For the latter, simply specify by using the --root
+option.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Helper: pkg-config</title>
+<body>
+
+<p>
+Many packages are moving to installing pkg-config files (*.pc) and using those
+to discover needed libraries and includes.  To ease the build process, you
+should install a pkg-config wrapper for your target which will tell pkg-config
+to only search your cross-compiler paths rather than your host paths.
+</p>
+
+<p>
+You should install this into your PATH so that configure scripts will detect it
+properly.  Name it with a CTARGET prefix and the script will do the rest.  In
+other words, the canonical name is <c>CTARGET-pkg-config</c>.  Older configure
+scripts would only search for <c>pkg-config</c>, so in those cases you will
+need to export the <c>PKG_CONFIG</c> variable to the wrapper script.
+</p>
+
+<pre caption="cross-pkg-config wrapper">
+#!/bin/sh
+CTARGET=${0%-pkg-config}
+SYSROOT="/usr/${CTARGET}"
+export PKG_CONFIG_LIBDIR="${SYSROOT}/usr/lib/pkgconfig"
+unset PKG_CONFIG_ALLOW_SYSTEM_CFLAGS PKG_CONFIG_ALLOW_SYSTEM_LIBS
+exec pkg-config "$@"
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Uninstall</title>
+<body>
+
+<p>
+If you want to uninstall and delete your work, then you can safely remove the
+sysroot tree without affecting any native packages.  See also the section in
+the <uri link="cross-compiler.xml">crossdev guide</uri> about uninstalling.
+</p>
 
 </body>
 </section>
