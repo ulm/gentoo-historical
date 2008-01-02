@@ -1,23 +1,24 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/ldap-howto.xml,v 1.35 2006/11/29 15:48:57 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/ldap-howto.xml,v 1.36 2008/01/02 00:45:06 nightmorph Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/en/ldap-howto.xml" disclaimer="obsolete">
+<guide link="/doc/en/ldap-howto.xml" disclaimer="draft">
 <title>Gentoo Guide to OpenLDAP Authentication</title>
 
 <author title="Author">
   <mail link="sj7trunks@pendulus.net">Benjamin Coles</mail>
 </author>
-
 <author title="Editor">
   <mail link="swift@gentoo.org">Sven Vermeulen</mail>
 </author>
-
 <author title="Editor">
   <mail link="tseng@gentoo.org">Brandon Hale</mail>
 </author>
 <author title="Editor">
   <mail link="bennyc@gentoo.org">Benny Chuang</mail>
+</author>
+<author title="Editor">
+  <mail link="jokey"/>
 </author>
 
 
@@ -30,8 +31,8 @@ OpenLDAP for authentication purposes between a group of Gentoo boxes.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.22</version>
-<date>2005-10-21</date>
+<version>0.23</version>
+<date>2008-01-01</date>
 
 <chapter>
 <title>Getting Started with OpenLDAP</title>
@@ -155,43 +156,65 @@ Lets first emerge all necessary components on our server:
 </p>
 
 <pre caption="Install OpenLDAP">
-# <i>emerge openldap pam_ldap nss_ldap migrationtools</i>
-# <i>chown ldap:ldap /var/lib/openldap-ldbm /var/lib/openldap-data /var/lib/openldap-slurp</i>
+# <i>emerge ">=net-nds/openldap-2.3.38" pam_ldap nss_ldap</i>
 </pre>
 
 <p>
-Edit <path>/etc/openldap/slapd.conf</path> and add the following right after 
-<c>core.schema</c>:
+Now generate an encrypted password we'll use later on:
+</p>
+
+<pre caption="Generate password">
+# slappasswd
+New password: my-password
+Re-enter new password: my-password
+{SSHA}EzP6I82DZRnW+ou6lyiXHGxSpSOw2XO4
+</pre>
+
+<p>
+Now edit the LDAP Server config at <path>/etc/openldap/slapd.conf</path>:
 </p>
 
 <pre caption="/etc/openldap/slapd.conf">
-<comment># Include the needed data schemes</comment>
+<comment># Include the needed data schemes below core.schema</comment>
 include         /etc/openldap/schema/cosine.schema
 include         /etc/openldap/schema/inetorgperson.schema
 include         /etc/openldap/schema/nis.schema
 
-<comment># Use md5 to hash the passwords</comment>
-password-hash {md5}
+<comment>Uncomment modulepath and hdb module</comment>
+# Load dynamic backend modules:
+modulepath    /usr/lib/openldap/openldap
+# moduleload    back_shell.so
+# moduleload    back_relay.so
+# moduleload    back_perl.so
+# moduleload    back_passwd.so
+# moduleload    back_null.so
+# moduleload    back_monitor.so
+# moduleload    back_meta.so
+moduleload    back_hdb.so
+# moduleload    back_dnssrv.so
 
-<comment># Define SSL and TLS properties (optional)</comment>
-TLSCertificateFile /etc/ssl/ldap.pem
-TLSCertificateKeyFile /etc/openldap/ssl/ldap.pem
-TLSCACertificateFile /etc/ssl/ldap.pem
+<comment># Uncomment sample access restrictions (Note: maintain indentation!)</comment>
+access to dn.base="" by * read
+access to dn.base="cn=Subschema" by * read
+access to *
+   by self write
+   by users read
+   by anonymous auth
 
-<comment>(Further down...)</comment>
 
-database        ldbm
+<comment># BDB Database definition</comment>
+
+database        hdb
 suffix          "dc=genfic,dc=com"
+checkpoint      32      30 # &lt;kbyte&gt; &lt;min&gt;
 rootdn          "cn=Manager,dc=genfic,dc=com"
-rootpw          <i>{MD5}Xr4ilOzQ4PCOq3aQ0qbuaQ==</i>
+rootpw          <i>{SSHA}EzP6I82DZRnW+ou6lyiXHGxSpSOw2XO4</i>
 directory       /var/lib/openldap-ldbm
 index           objectClass     eq
-
-<comment>(You can get an encrypted password like above with slappasswd -h {Md5})</comment>
 </pre>
 
 <p>
-Next we edit the LDAP configuration file:
+Next we edit the LDAP Client configuration file:
 </p>
 
 <pre caption="/etc/openldap/ldap.conf">
@@ -199,23 +222,8 @@ Next we edit the LDAP configuration file:
 <comment>(Add the following...)</comment>
 
 BASE         dc=genfic, dc=com
-URI          ldaps://auth.genfic.com:636/
+URI          ldap://auth.genfic.com:389/
 TLS_REQCERT  allow
-</pre>
-
-<p>
-Now you will generate an SSL certificate to secure your directory.
-Answer the question you receive as good as possible. When asked for your
-<e>Common Name</e>, enter the name the clients will use when contacting
-the server. This is usually the full domainname (e.g. 
-<path>auth.genfic.com</path>).
-</p>
-
-<pre caption="Generating SSL Certificate">
-# <i>cd /etc/ssl</i>
-# <i>openssl req -config /etc/ssl/openssl.cnf -new -x509 -nodes -out \
-ldap.pem -keyout /etc/openldap/ssl/ldap.pem -days 999999</i>
-# <i>chown ldap:ldap /etc/openldap/ssl/ldap.pem</i>
 </pre>
 
 <p>
@@ -224,7 +232,8 @@ the existing line:
 </p>
 
 <pre caption="/etc/conf.d/slapd">
-OPTS="-h 'ldaps:// ldapi://%2fvar%2frun%2fopenldap%2fslapd.sock'"
+<comment># Note: we don't use cn=config here, so stay with this line:</comment>
+OPTS="-h 'ldap:// ldapi://%2fvar%2frun%2fopenldap%2fslapd.sock'"
 </pre>
 
 <p>
@@ -253,60 +262,22 @@ verbosity and solve the issue you have.
 </chapter>
 
 <chapter>
-<title>Migrate Existing Data</title>
+<title>Client Configuration</title>
 <section>
-<title>Migrate User Accounts</title>
+<title>Migrate existing data to ldap</title>
 <body>
 
 <p>
-Next, we migrate the user accounts. Open 
-<path>/usr/share/migrationtools/migrate_common.ph</path> and edit the 
-following:
-</p>
-
-<pre caption="/usr/share/migrationtools/migrate_common.ph">
-$DEFAULT_BASE = "dc=genfic,dc=com";
-$EXTENDED_SCHEMA = 1;
-<comment># Comment these lines out unless you have a mail schema loaded</comment>
-<comment>#$DEFAULT_MAIL_DOMAIN = "genfic.com";</comment>
-<comment>#$DEFAULT_MAIL_HOST = "mail.genfic.com";</comment>
-</pre>
-
-<p>
-Now run the migration scripts:
-</p>
-
-<pre caption="Running the migration scripts">
-# <i>export ETC_SHADOW=/etc/shadow</i>
-# <i>cd /usr/share/migrationtools</i>
-# <i>./migrate_base.pl > /tmp/base.ldif</i>
-# <i>./migrate_group.pl /etc/group /tmp/group.ldif</i>
-# <i>./migrate_hosts.pl /etc/hosts /tmp/hosts.ldif</i>
-# <i>./migrate_passwd.pl /etc/passwd /tmp/passwd.ldif</i>
-</pre>
-
-<p>
-This last step migrated the files above to ldif files read by LDAP. Now lets add the files to our directory:
-</p>
-
-<pre caption="Importing the data to our directory">
-# <i>ldapadd -D "cn=Manager,dc=genfic,dc=com" -W -f /tmp/base.ldif</i>
-# <i>ldapadd -D "cn=Manager,dc=genfic,dc=com" -W -f /tmp/group.ldif</i>
-# <i>ldapadd -D "cn=Manager,dc=genfic,dc=com" -W -f /tmp/passwd.ldif</i>
-# <i>ldapadd -D "cn=Manager,dc=genfic,dc=com" -W -f /tmp/hosts.ldif</i>
-</pre>
-
-<p>
-If you come across an error in your ldif files, you can resume from where you
-left off by using <c>ldapadd -c</c>.
+Go to <uri
+link="http://www.padl.com/OSS/MigrationTools.html">http://www.padl.com/OSS/MigrationTools.html</uri>
+and fetch the scripts there. Configuration is stated on the page. We don't ship
+this anymore because the scripts are a potential security hole if you leave
+them on the system after porting. When you've finished migrating your data,
+continue to the next section.
 </p>
 
 </body>
 </section>
-</chapter>
-
-<chapter>
-<title>Client Configuration</title>
 <section>
 <title>Configuring PAM</title>
 <body>
@@ -323,37 +294,38 @@ additional information (used by <path>nsswitch.conf</path>).
 </pre>
 
 <p>
-Now edit <path>/etc/pam.d/system-auth</path> so it looks like the following:
+Now add the following lines in the right places to <path>/etc/pam.d/system-auth</path>:
 </p>
 
 <pre caption="/etc/pam.d/system-auth">
-auth    required    pam_env.so
-auth    sufficient  pam_unix.so likeauth nullok shadow
-auth    sufficient  pam_ldap.so use_first_pass
-auth    required    pam_deny.so
+<comment># Note: only add them. Don't kill stuff already in there or your box won't let you login again!</comment>
 
-account requisite  pam_unix.so
-account sufficient pam_localuser.so
-account required   pam_ldap.so
+auth       sufficient   pam_ldap.so use_first_pass
+account    sufficient   pam_ldap.so
+password   sufficient   pam_ldap.so use_authtok use_first_pass
+session    optional     pam_ldap.so
 
-password    required pam_cracklib.so retry=3
-password    sufficient pam_unix.so nullok use_authtok shadow md5
-password    sufficient pam_ldap.so use_authtok use_first_pass
-password    required pam_deny.so
+<comment># Example file:</comment>
+#%PAM-1.0
 
-session required    pam_limits.so
-session required    pam_unix.so
-session required    pam_mkhomedir.so skel=/etc/skel/ umask=0066
-session optional    pam_ldap.so
+auth       required     pam_env.so
+auth       sufficient   pam_unix.so try_first_pass likeauth nullok
+<i>auth       sufficient   pam_ldap.so use_first_pass</i>
+auth       required     pam_deny.so
+
+<i>account    sufficient   pam_ldap.so</i>
+account    required     pam_unix.so
+
+password   required     pam_cracklib.so difok=2 minlen=8 dcredit=2 ocredit=2 try_first_pass retry=3
+password   sufficient   pam_unix.so try_first_pass use_authtok nullok md5 shadow
+<i>password   sufficient   pam_ldap.so use_authtok use_first_pass</i>
+password   required     pam_deny.so
+
+session    required     pam_limits.so
+session    required     pam_unix.so
+<i>session    optional     pam_ldap.so</i>
+
 </pre>
-
-<!--  Should work now, see #87930
-<note>
-If you find that login on using ssh on these system fails, try interchanging the
-two <c>auth sufficient</c> lines. However, you might find that <c>su</c> and
-other tools refuse to function correctly if you do.
-</note>
--->
 
 <p>
 Now change <path>/etc/ldap.conf</path> to read:
@@ -363,12 +335,10 @@ Now change <path>/etc/ldap.conf</path> to read:
 <comment>#host 127.0.0.1</comment>
 <comment>#base dc=padl,dc=com</comment>
 
-ssl start_tls
-ssl on
 suffix          "dc=genfic,dc=com"
 <comment>#rootbinddn uid=root,ou=People,dc=genfic,dc=com</comment>
 
-uri ldaps://auth.genfic.com/
+uri ldap://auth.genfic.com/
 pam_password exop
 
 ldap_version 3
@@ -500,10 +470,9 @@ toplevel should be the most restrictive ones.
 <body>
 
 <p>
-You can start using the directory to authenticate users in 
-apache/proftpd/qmail/samba. You can manage it with Webmin, which provides a 
-really easy management interface. You can also use gq or 
-directory_administrator. 
+You can start using the directory to authenticate users in
+apache/proftpd/qmail/samba. You can manage it with Webmin, which provides an
+easy management interface. You can also use phpldapadmin, luma, diradm or lat. 
 </p>
 
 </body>
