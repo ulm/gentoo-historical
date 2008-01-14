@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/vpnc-howto.xml,v 1.5 2008/01/10 06:15:12 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/vpnc-howto.xml,v 1.6 2008/01/14 17:37:35 neysx Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/vpnc-howto.xml">
@@ -15,6 +15,9 @@
 <author title="Contributor">
   <mail link="opfer@gentoo.org">Christian Faulhammer</mail>
 </author>
+<author title="Contributor">
+  <mail link="fischer@unix-ag.uni-kl.de">Thomas Fischer</mail>
+</author>
 
 <abstract>
 This document details how to connect your workstation to a Cisco VPN
@@ -25,8 +28,8 @@ concentrator utilizing vpnc to manage the connection.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.3</version>
-<date>2008-01-09</date>
+<version>1.4</version>
+<date>2008-01-14</date>
 
 <chapter>
 <title>Introduction</title>
@@ -755,7 +758,8 @@ where its default is to not display screen output.
 </p>
 
 <note>
-The init scripts don't handle DNS separation.
+The init scripts don't handle DNS separation, but you can use the custom
+scripts to achieve that. See <uri link="#tipsscript">Tips and Tricks</uri>.
 </note>
 
 </body>
@@ -765,12 +769,13 @@ The init scripts don't handle DNS separation.
 <chapter>
 <title>Tips and Tricks</title>
 <section>
+<title>Graphical remote access</title>
 <body>
 
 <p>
-If you are looking for a linux application that supports RDP (Remote Desktop
-Protocol) then give <c>grdesktop</c> a try. It's a GUI app written in Gtk that
-fits in well with a gnome desktop, but doesn't require it. If you don't want
+If you are looking for a Linux application that supports RDP (Remote Desktop
+Protocol) then give <c>grdesktop</c> a try. It's a GUI app written in GTK+ that
+fits in well with a Gnome desktop, but doesn't require it. If you don't want
 the GUI configuration dialogs that grdesktop provides, then just install
 <c>rdesktop</c>. Ultimately, grdesktop is just a frontend for rdesktop.
 </p>
@@ -802,6 +807,47 @@ the WINS server at IP address 192.168.125.11 about a host named wintelbox1.
 # <i>nmblookup -U 192.168.125.11 -R 'wintelbox1'</i>
 querying wintelbox1 on 192.168.125.11
 172.25.230.76 wintelbox1
+</pre>
+
+</body>
+</section>
+<section id="tipsscript">
+<title>Custom scripts on boot</title>
+<body>
+
+<p>
+The custom-made scripts for the init.d file can be used to setup a user-defined
+routing for the vpnc connection. The examples below show how to setup the
+routing table so that only connections to 123.234.x.x are routed over the VPN
+and all other connections use the default gateway. The example uses
+work-preup.sh to save the current default gateway before starting vpnc (which
+resets the default gateway using the VPN connection). Once vpnc has been
+started, work-postup.sh deletes this new default gateway, restores the old
+default gateway and sets the route for all connections to 123.234.x.x to use
+the vpnc connection.
+</p>
+
+<pre caption="/etc/vpnc/scripts.d/work-preup.sh">
+#!/bin/sh
+route -n | grep -E '^0.0.0.0 ' | cut -c 17-32 >/var/tmp/defaultgw
+</pre>
+
+<pre caption="/etc/vpnc/scripts.d/work-postup.sh">
+#!/bin/sh
+route del -net 0.0.0.0 netmask 0.0.0.0 dev tun1
+route add default gw $(cat /var/tmp/defaultgw)
+route add -net 123.234.0.0 netmask 255.255.0.0 dev tun1
+</pre>
+
+<p>
+The example scripts assume that the vpnc connection uses tun1 as tun device.
+You can set the device name in the connection's configuration file.
+</p>
+
+<pre caption="/etc/vpnc/work.conf">
+Interface name tun1
+IPSec gateway vpn.mywork.com
+Pidfile /var/run/vpnc.work.pid
 </pre>
 
 </body>
