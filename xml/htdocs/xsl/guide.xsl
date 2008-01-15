@@ -1853,7 +1853,12 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       <br/>
       <font size="0.90em">
       Posted on <xsl:copy-of select="func:format-date($thenews/date)"/>
-      by <xsl:value-of select="$thenews/poster"/>
+       <xsl:variable name="poster">
+        <xsl:call-template name="smart-mail">
+         <xsl:with-param name="mail" select="$thenews/poster"/>
+        </xsl:call-template>
+       </xsl:variable>
+      by <xsl:value-of select="$poster"/>
       </font>
     </p>
     
