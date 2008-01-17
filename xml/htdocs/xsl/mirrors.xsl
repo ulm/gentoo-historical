@@ -54,9 +54,11 @@
             <xsl:variable name="c" select="@country"/>
             <xsl:variable name="n" select="key('country', @country)"/>
             <section id="{str:encode-uri(translate($n, ' ', ''),true())}">
-              <title>
+              <xsl:if test="count($the-mirrors//mirrorgroup[@region=$r])>1 or not($n=$r)">
+               <title>
                 <xsl:value-of select="$n"/>
-              </title>
+               </title>
+              </xsl:if>
               <body>
               <p>
                <xsl:for-each select="mirror[uri[contains('nN',@partial)]]">
