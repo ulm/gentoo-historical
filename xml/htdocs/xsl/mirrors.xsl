@@ -85,15 +85,20 @@
 
 <xsl:template match="uri" mode="mirror">
   <uri link="{.}">
+    <xsl:variable name="ipv6-only">
+     <xsl:if test="contains('nN', @ipv4) and contains('yY', @ipv6)">
+      <xsl:text>/ipv6 only</xsl:text>
+     </xsl:if>
+    </xsl:variable>
     <xsl:choose>
     <xsl:when test="contains('yY', @partial)">
-      <xsl:value-of select="concat(preceding-sibling::name, ' (', key('country', ../../@country) , '/', @protocol, ')')"/>
+      <xsl:value-of select="concat(preceding-sibling::name, ' (', key('country', ../../@country) , '/', @protocol, $ipv6-only, ')')"/>
     </xsl:when>
     <xsl:when test="contains('nN', @partial)">
-      <xsl:value-of select="concat(preceding-sibling::name, ' (', @protocol, ')')"/>
+      <xsl:value-of select="concat(preceding-sibling::name, ' (', @protocol, $ipv6-only, ')')"/>
     </xsl:when>
     </xsl:choose>
-    <xsl:if test="contains('yY', @ipv6)">
+    <xsl:if test="contains('yY', @ipv4) and contains('yY', @ipv6)">
      <xsl:text>*</xsl:text>
     </xsl:if>
   </uri>
