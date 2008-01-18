@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/java/Attic/java-devel.xml,v 1.28 2007/12/28 16:38:52 betelgeuse Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/java/Attic/java-devel.xml,v 1.29 2008/01/18 16:31:20 elvanor Exp $ -->
 
 <guide link="/doc/en/java-devel.xml">
 <title>Gentoo Java Packaging Guide</title>
@@ -25,8 +25,8 @@ This document serves two purposes. The first is to discuss the specifics of how 
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.0.4</version>
-<date>2007-09-03</date>
+<version>1.0.5</version>
+<date>2008-01-18</date>
 
 <chapter>
 <title>Background</title>
@@ -462,7 +462,7 @@ src_install() {
 <body>
 
 <p>
-Currently there are four Java related eclasses.
+Currently there are six Java related eclasses.
 </p>
 
 <table>
@@ -491,6 +491,10 @@ Currently there are four Java related eclasses.
 <tr>
   <ti><uri link="#java-vm-2.eclass">java-vm-2.eclass</uri></ti>
   <ti>Helper functions for packages that provide a VM</ti>
+</tr>
+<tr>
+	<ti><uri link="#java-osgi.eclass">java-osgi.eclass</uri></ti>
+	<ti>Helper functions for packages that need to be OSGi compliant (special manifest inside the jar)</ti>
 </tr>
 </table>
 
@@ -608,6 +612,89 @@ Some variables you can set from your ebuild. (Usually not needed)
 
 </body>
 </section>
+
+<section id="java-osgi.eclass">
+	<title>java-osgi.eclass</title>
+	<body>
+		
+		<p>
+			You should inherit this eclass when your package needs to be OSGi compliant. This eclass contains functions similar to those those in java-utils-2, but that creates a jar containing a manifest with special values. This manifest will allow the jar to be used as an OSGi bundle in applications based on OSGi, for example Eclipse.
+		</p>
+		<p>
+			If a package is using this eclass, it means that another Gentoo package based on OSGi needs it. Thus, version bumps of the package should still use the install functions on this eclass.
+		</p>
+		<p>
+			Some of the functions in this eclass requests a Manifest file. In this case, be careful about the file you provide. The best is usually to copy the Manifest from a safe source, eg. from Eclipse's bundled jars for example. Note that upstream Eclipse creates those files manually.
+		</p>
+		
+		<ul>
+			<li><c>java-osgi_dojar</c>
+				<ul>
+					<li>
+						Similar to java-pkg_dojar. Installs a jar, and records it in the package env. Make sure the jar name does not contain a version. The manifest in the jar will be filled with headers populated from the arguments given to this function.
+					</li>
+					<li>Takes four parameters:
+						<ul>
+							<li>path to the jar (like in java-pkg_dojar)</li>
+							<li>bundle symbolic name</li>
+							<li>bundle name</li>
+							<li>export-package-header. This is the most important thing, you must provide a valid OSGi export header. Refer to the OSGi documentation for help with this</li>
+     					</ul>
+					</li>
+				</ul>
+			</li>
+			<li><c>java-osgi_newjar</c>
+				<ul>
+					<li>
+						Similar to java-pkg_newjar. Use this if you need to rename the jar. The manifest in the jar will be filled with headers populated from the arguments given to this function.
+					</li>
+					<li>Takes four or five parameters:
+						<ul>
+							<li>path to the jar (like in java-pkg_newjar)</li>
+							<li>(Optional) name of the renamed jar. If absent, it will be ${PN}.jar</li>
+							<li>bundle symbolic name</li>
+							<li>bundle name</li>
+							<li>export-package-header. This is the most important thing, you must provide a valid OSGi export header. Refer to the OSGi documentation for help with this</li>
+						</ul>
+					</li>
+				</ul>
+			</li>			
+			<li><c>java-osgi_dojar-fromfile</c>
+				<ul>
+					<li>
+						Similar to java-osgi_dojar, except that instead of creating the manifest from the given arguments, it takes a path to a Manifest file.
+					</li>
+					<li>Takes three or four parameters:
+						<ul>
+							<li>(Optional) --no-auto-version. This option disables automatic rewriting of the version in the Manifest file. If not present, the Gentoo package version will be written to the Manifest</li>
+							<li>path to the jar</li>
+							<li>path to the Manifest file</li>
+							<li>bundle name</li>
+						</ul>
+					</li>
+				</ul>
+			</li>
+			<li><c>java-osgi_newjar-fromfile</c>
+				<ul>
+					<li>
+						Similar to java-osgi_newjar, except that instead of creating the manifest from the given arguments, it takes a path to a Manifest file.
+					</li>
+					<li>Takes from three to five parameters:
+						<ul>
+							<li>(Optional) --no-auto-version. This option disables automatic rewriting of the version in the Manifest file. If not present, the Gentoo package version will be written to the Manifest</li>
+							<li>path to the jar</li>
+							<li>(Optional) name of the renamed jar. If absent, it will be ${PN}.jar</li>
+							<li>path to the Manifest file</li>
+							<li>bundle name</li>
+						</ul>
+					</li>
+				</ul>
+			</li>
+		</ul>
+		
+	</body>
+</section>
+
 </chapter>
 
 <chapter id="java-utils-2.eclass">
@@ -670,13 +757,8 @@ one of them, this can be useful when testing a new ebuild with every compiler.
   </li>
   <li><c>java-pkg_dohtml</c>
   <ul>
-    <li>
-      Installs html documentation. For compatibility with old ebuilds it automatically
-      detects if the arguments contain javadocs and installs them to the standard
-      javadoc locations. New ebuilds however should use java-pkg_dojavadoc.
+    <li>Deprecated, use dohtml now.
     </li>
-    <li>Takes one or more paths to a documentation</li>
-    <li>will not die on errors</li>
   </ul>
   </li>
   <li><c>java-pkg_dojavadoc</c>
