@@ -149,7 +149,7 @@
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/forums-gentoo-org.xml" title="Gentoo Forums"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
-<!--  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/> -->
+  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/archives-gentoo-org.xml" title="Gentoo List Archives"/>
   
   <xsl:if test="//glsaindex or //glsa-latest">
@@ -284,6 +284,17 @@
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
   <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/archives-gentoo-org.xml" title="Gentoo List Archives"/>
   
+  <xsl:if test="/*[1][@redirect]">
+    <!-- Immediate HTML refresh in case redirect is not supported -->
+    <meta http-equiv="Refresh">
+      <xsl:attribute name="content"><xsl:value-of select="concat('0; URL=', /*[1]/@redirect)"/></xsl:attribute>
+    </meta>
+    <xsl:message>
+      <!-- Redirect using http header when supported -->
+      <xsl:value-of select="concat('%%GORG%%Redirect=',/*[1]/@redirect)"/>
+    </xsl:message>
+  </xsl:if>    
+
   <xsl:if test="/mainpage/newsitems">
     <link rel="alternate" type="application/rss+xml" title="Gentoo Linux News RDF" href="http://www.gentoo.org/rdf/en/gentoo-news.rdf" />
   </xsl:if>
