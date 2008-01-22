@@ -387,17 +387,17 @@
         | <a class="menulink" href="http://bugs.gentoo.org">Bugs</a>
         | <a class="menulink" href="http://www.cafepress.com/officialgentoo/">Store</a>
         |
-        <a class="menulink" href="{concat($www,'/news/en/gwn/gwn.xml')}">
+        <a class="menulink" href="{concat($www,'/news/en/gmn/')}">
          <xsl:choose>
-          <xsl:when test="starts-with($tpath, '/news/**/gwn/')">
+          <xsl:when test="starts-with($tpath, '/news/**/gmn/')">
             <xsl:attribute name="class">highlight</xsl:attribute>
             <xsl:attribute name="href"><xsl:value-of select="$link"/></xsl:attribute>
           </xsl:when> 
-          <xsl:when test="not($isEnglish='Y' or document(concat('/news/', $glang, '/gwn/gwn.xml'))/missing)">
-            <xsl:attribute name="href"><xsl:value-of select="concat('/news/',$glang,'/gwn/gwn.xml')"/></xsl:attribute>
+          <xsl:when test="not($isEnglish='Y' or document(concat('/news/', $glang, '/gmn/index.xml'))/missing)">
+            <xsl:attribute name="href"><xsl:value-of select="concat('/news/',$glang,'/gmn/index.xml')"/></xsl:attribute>
           </xsl:when> 
          </xsl:choose>
-        GWN</a>
+        GMN</a>
         |
         <a class="menulink" href="{concat($www,'/main/en/where.xml')}">
          <xsl:choose>
