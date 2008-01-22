@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/vpnc-howto.xml,v 1.2 2008/01/11 14:09:56 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/vpnc-howto.xml,v 1.3 2008/01/22 17:22:57 yoswink Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/en/vpnc-howto.xml" lang="es">
+<guide link="/doc/es/vpnc-howto.xml" lang="es">
 
 <title>Cómo vpnc en Gentoo </title>
 
@@ -14,6 +14,9 @@
 </author>
 <author title="Colaborador">
   <mail link="opfer@gentoo.org">Christian Faulhammer</mail>
+</author>
+<author title="Colaborador">
+  <mail link="fischer@unix-ag.uni-kl.de">Thomas Fischer</mail>
 </author>
 <author title="Traductor">
   <mail link="srinclan@gmail.com">Sergio D. Rodríguez Inclan</mail>
@@ -29,8 +32,8 @@ conexión.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.3</version>
-<date>2008-01-09</date>
+<version>1.4</version>
+<date>2008-01-14</date>
 
 <chapter>
 <title>Introducción</title>
@@ -741,7 +744,7 @@ La versión 0.4.0-r1 de vpnc contiene un guión de inicio
 configuraciones. El guión por defecto busca a
 (<path>/etc/vpnc/vpnc.conf</path>), pero son posibles tantas
 configuraciones como pueda imaginar. Antes y después de apagar y al
-inicio, guións personalizados que están conectados por su nombre al
+inicio, guiones personalizados que están conectados por su nombre al
 correspondiente guión de inicio, pueden ser ejecutados (desde la
 versión 0.5.1-r1). Sus nombres terminan en <path>-preup.sh</path>,
 <path>-postup.sh</path>, <path>-predown.sh</path> y
@@ -789,7 +792,9 @@ pantalla.
 </p>
 
 <note>
-Los guiones de inicio no manejan la separación de DNS.
+Los guiones de inicio no manejan la separación de DNS, pero puede usar los
+guiones personalizables para hacerlo. Mire <uri link="#tipsscript">Consejos y
+trucos</uri>
 </note>
 </body>
 </section>
@@ -798,12 +803,13 @@ Los guiones de inicio no manejan la separación de DNS.
 <chapter>
 <title>Consejos y Trucos</title>
 <section>
+<title>Acceso remoto gráfico</title>
 <body>
 
 <p>
 Si esta buscando una aplicación para linux que soporte RDP (Protocolo
 de Escritorio Remoto) dele a <c>grdesktop</c> una oportunidad. Es una
-aplicación GUI escrita en Gtk que encaja bien en un escritorio Gnome,
+aplicación GUI escrita en Gtk+ que encaja bien en un escritorio Gnome,
 pero no lo requiere. Si no desea los diálogos de configuración GUI que
 grdesktop provee, entonces solo instale <c>rdesktop</c>. Ultimamente,
 grdesktop es sólo una interfase para rdesktop.
@@ -839,6 +845,51 @@ dirección IP 192.168.125.11, acerca del host llamado wintelbox1.
 querying wintelbox1 on 192.168.125.11
 172.25.230.76 wintelbox1
 </pre>
+
+</body>
+</section>
+<section id="tipsscript">
+<title>Guiones personalizados en el inicio</title>
+<body>
+
+<p>
+Los guiones personalizados en el directorio init.d pueden ser usados para
+configurar el enrutamiento de un usuario definido para la conexión del vpnc.
+Los ejemplos siguientes muestran cómo configurar la tabla de enrutado de manera
+que sólo las conexiones hacia 123.234.x.x estén enrutadas por la VPN y todas
+las otras conexiones usan la puerta de enlace por defecto. El ejemplo usa
+work-preup.sh para guardar la puerta de enlace por defecto actual antes de
+iniciar vpnc (el cuál reinicia la puerta de enlace por defecto usando la
+conexión VPN). Una vez que vpnc ha iniciado. work-postup.sh borra ésta nueva
+puerta de enlace, restaura la antígua puerta de enlace por defecto y establece
+la ruta para todas las conexiones hacia 123.234.x.x para usar la conexión de
+vpnc.
+</p>
+
+<pre caption="/etc/vpnc/scripts.d/work-preup.sh">
+#!/bin/sh
+route -n | grep -E '^0.0.0.0 ' | cut -c 17-32 >/var/tmp/defaultgw
+</pre>
+
+<pre caption="/etc/vpnc/scripts.d/work-postup.sh">
+#!/bin/sh
+route del -net 0.0.0.0 netmask 0.0.0.0 dev tun1
+route add default gw $(cat /var/tmp/defaultgw)
+route add -net 123.234.0.0 netmask 255.255.0.0 dev tun1
+</pre>
+
+<p>
+Los guines de ejemplo asumen que la conexíón vpnc usa tun1 como dispositivo
+tun.  Puede configurar el nombre del dispositivo en el archivo de configuración
+de la conexión.
+</p>
+
+<pre caption="/etc/vpnc/work.conf">
+Interface name tun1
+IPSec gateway vpn.mywork.com
+Pidfile /var/run/vpnc.work.pid
+</pre>
+
 </body>
 </section>
 </chapter>
