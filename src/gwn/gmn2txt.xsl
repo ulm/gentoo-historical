@@ -7,6 +7,14 @@
 <xsl:strip-space elements="*"/>
 <xsl:preserve-space elements="pre"/>
 
+<!-- Usage: replace YYYYMMDD-newsletter.xml with the actual file name ;-)
+
+$ xsltproc ‐‐param httphost www ‐‐path "../../../proj/en/devrel/roll-call ../../../xsl" gmn2txt.xsl YYYYMMDD-newsletter.xml
+
+Or use my little ruby script available on request ;-)
+
+-->
+
 <xsl:param name="wrap-pos" select="'78'"/>
 
 <xsl:param name="lang" select="/guide/@lang"/>
