@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/Attic/bootstrap-macos.xml,v 1.24 2008/01/09 18:23:21 grobian Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/Attic/bootstrap-macos.xml,v 1.25 2008/02/02 17:23:26 grobian Exp $ -->
 
 <guide link="/proj/en/gentoo-alt/prefix/bootstrap-macos.xml" lang="en">
   <title>Gentoo Prefixed Portage Bootstrap Process for Mac OS X</title>
@@ -19,8 +19,8 @@
   <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
   <license/>
 
-  <version>1.5</version>
-  <date>2008-01-09</date>
+  <version>1.6</version>
+  <date>2008-02-02</date>
 
   <chapter>
     <title>Bootstrapping on OS X</title>
@@ -40,7 +40,7 @@
           Prefixed Portage is tested and supported on Mac OS X Tiger and
           Leopard on PPC and x86 architectures.  Tests on PPC Panther
           were successful, but the platform itself isn't fully
-          supported.
+          supported any more.
         </p>
       </body>
     </section><!-- }}} -->
@@ -140,80 +140,36 @@ $ <i>hash -r</i>
 $ <i>emerge --oneshot sed</i>
         </pre>
         <p>
-          Next, we emerge the <c>bash</c> shell and its dependency
-          ncurses.  <c>bash</c> is used extensively within portage and
-          other applications.
+          Next, we emerge the <c>bash</c> shell Portage heavily relies
+          on.  Since its dependencies cannot be compiled at this stage,
+          we ignore those for the moment.  The same holds for
+          <c>wget</c> which we emerge at the same time.
         </p>
-        <pre caption="emerge bash">
-$ <i>emerge --oneshot bash</i>
-        </pre>
-        <note>
-          It is safe to ignore the "1 config files in XXX need updating"
-          message that appears till the end of the bootstrap process.
-        </note>
-        <p>
-          We continue getting some autotools stuff into our prefix.
-        </p>
-        <pre caption="emerge autotools">
-$ <i>emerge --oneshot --nodeps "m4"</i>
-$ <i>emerge --oneshot --nodeps "=autoconf-2.1*" "=autoconf-2.6*" "autoconf-wrapper"</i>
-$ <i>emerge --oneshot --nodeps "=automake-1.4*" "=automake-1.5*" "=automake-1.6*" "=automake-1.7*" "=automake-1.8*" "automake-wrapper"</i>
-        </pre>
-        <note><c>>=automake-1.9</c> and <c>libtool</c> are not (yet)
-          installed at this stage.</note>
-        <p>
-          Next, we have to get some tools in order to finalise getting
-          the autotools in our prefix.  Because we installed <c>wget</c>
-          in a temporary location, let's not forget to install it
-          properly by emerging it now:
-        </p>
-        <pre caption="emerge wget">
+        <pre caption="emerge bash and wget">
+$ <i>emerge --oneshot --nodeps bash</i>
 $ <i>emerge --oneshot --nodeps wget</i>
         </pre>
         <p>
-          After this we can emerge texinfo, which <c>automake-1.9</c>
-          needs.
+          We continue getting more tools in our prefix.  We no longer
+          ignore dependencies, so a lot of packages will be emerged at
+          this stage.  Slowly our prefix gets more robust as we progress
+          here.
         </p>
-        <pre caption="emerge texinfo">
-$ <i>emerge --oneshot --nodeps help2man texinfo</i>
-        </pre>
-        <p>
-          Now we can finish installing the autotools:
-        </p>
-        <pre caption="finalise emerge autotools">
-$ <i>emerge --oneshot --nodeps "=automake-1.9*" "=automake-1.10*"</i>
-$ <i>emerge --oneshot --nodeps libtool</i>
-        </pre>
-        <p>
-          Now we have some decent autotooling stuff around, we can get
-          some decent core utilities in our prefix.
-        </p>
-        <pre caption="emerge coreutils">
-$ <i>emerge --oneshot --nodeps sys-apps/coreutils</i>
-        </pre>
-        <p>
-          Finally we emerge <c>python</c>, <c>findutils</c> and
-          <c>tar</c> in our prefix.  These are the last packages that we
-          temporarily installed to bootstrap our system.
-        </p>
-        <pre caption="emerge remaining packages">
-$ <i>emerge --oneshot --nodeps python</i>
-$ <i>emerge --oneshot --nodeps findutils</i>
-$ <i>emerge --oneshot --nodeps tar</i>
+        <pre caption="emerge several tools">
+$ <i>emerge --oneshot coreutils</i>
+$ <i>emerge --oneshot findutils</i>
+$ <i>emerge --oneshot tar</i>
+$ <i>emerge --oneshot grep</i>
 $ <i>emerge --oneshot gawk</i>
         </pre>
-        <note>Mac OS X Leopard (10.5) users should <b>also</b> emerge
-          python here.</note>
         <p>
-          Before we continue to emerge all ebuilds from <c>system</c>,
-          we first install <c>portage</c>.  We need to overwrite the
-          version that was installed by the bootstrap script.
-          Installing a new portage will make sure it uses the tools
-          provided by the prefix, and forget about the temporary
-          installed tools.
+          Now we have a good bunch of programs that Portage needs, we
+          can replace the bootstrapped Portage by a properly installed
+          one, using portage itself.  We need to temporarily tell
+          Portage that the bootstrapped Portage can be overwritten.
         </p>
         <pre caption="emerge portage">
-$ <i>env FEATURES="-collision-protect" emerge --oneshot --nodeps portage</i>
+$ <i>env FEATURES="-collision-protect" emerge --oneshot portage</i>
         </pre>
         <p>
           Some, if not many, scripts and tools within a Gentoo system
@@ -222,33 +178,26 @@ $ <i>env FEATURES="-collision-protect" emerge --oneshot --nodeps portage</i>
           be emerged too late if we wouldn't do it manually now:
         </p>
         <pre caption="emerge baselayout-prefix">
-$ <i>emerge --oneshot --nodeps baselayout-prefix</i>
+$ <i>emerge --oneshot baselayout-prefix</i>
         </pre>
         <p>
-          Now we're about to start the big work, we remove the temporary
-          directory and its use as we got it all in our prefix now.
+          Now we have emerged everything we bootstrapped before, we
+          remove the temporary directory and its use as it is no longer
+          necessary.
         </p>
         <pre caption="remove tmp directory">
 $ <i>rm -Rf $EPREFIX/tmp/*</i>
 $ <i>hash -r</i>
         </pre>
         <p>
-          Next, we do the real work where all packages get reemerged in
-          such an order that they make use of packages in the prefix
-          itself.
+          Before we do any further merges, we are going to update our
+          tree.  Since snapshots in prefix are actually (anonymous) SVN
+          checkouts of the tree, we need <c>subversion</c> to update it.
         </p>
-        <pre caption="emerge system">
-$ <i>emerge -e system</i>
+        <pre caption="emerge subversion">
+$ <i>emerge --oneshot subversion</i>
         </pre>
         <p>
-          This will happily install a lot of stuff and reinstall what
-          you emerged before.  This is necessary to avoid compilation
-          failures due to dependencies.
-        </p>
-        <p>
-          We can now update the tree.  Since snapshots now are actually
-          (anonymous) SVN checkouts of the tree, we can immediately use
-          SVN commands on the tree instead of checking a tree out first.
           Because Portage knows how to deal with the SVN tree, and the
           bootstrap script has set a correct <c>SYNC</c> variable in
           your <path>etc/make.conf</path>, updating the tree is done
@@ -265,16 +214,20 @@ $ <i>emerge --sync</i>
           case-sensitive.
         </note>
         <p>
-          To really do this properly, after emerging <c>system</c>, one
-          should re-emerge <c>system</c>, because now all packages can
-          be compiled with all tools from the prefix, instead of based
-          on tools in the system root.  Before you do though, this is
-          the good time to set your general <c>USE</c>-flags, such as
-          <c>nls</c> to get localised messages in
-          <path>$EPREFIX/etc/make.conf</path>.  In that file, you
-          can also set <c>CFLAGS</c> for your compilation.  Be
-          conservative with <c>CFLAGS</c>!  Note that the code below is
-          an example, and is meant for inspiration only.
+          Next, we let Portage emerge all packages that complete a
+          system install that we eventually need to finalise this prefix
+          installation.
+        </p>
+        <pre caption="emerge system">
+$ <i>emerge -u system</i>
+        </pre>
+        <p>
+          Now is a good time to set the preferences for our soon to be
+          prefix.  This includes customisations such as general
+          <c>USE</c>-flags, <c>CFLAGS</c> and <c>MAKEOPTS</c> in
+          <path>$EPREFIX/etc/make.conf</path>.  Be conservative with
+          <c>CFLAGS</c>!  Note that the code below is an example, and is
+          meant for inspiration only.
         </p>
         <pre caption="Customising the prefix installation - example">
 $ <i>echo 'USE="unicode nls"' >> $EPREFIX/etc/make.conf</i>
@@ -284,15 +237,20 @@ $ <i>echo 'CXXFLAGS="${CFLAGS}"' >> $EPREFIX/etc/make.conf</i>
         <note>
           You have to replace <c>&lt;my-cpu-flags&gt;</c> with something
           that matches your CPU.
-          Intel-based Mac users (e.g. MacBook, Core2Duo) should at least
+          Intel-based Mac users (e.g. MacBook, CoreDuo) should at least
           have <c>-march=prescott</c> here to avoid compilation errors
-          due to SSE instructions not being enabled.  PPC users can use
-          their CPU's alias to enable CPU specific tuning, e.g.
-          <c>-mcpu=G5 -mtune=G5 -faltivec</c>.
+          due to SSE instructions not being enabled.  Core2Duo users can
+          use <c>-march=nocona</c>.  PPC users can use their CPU's alias
+          to enable CPU specific tuning, e.g.  <c>-mcpu=G5
+            -mtune=G5</c>.
         </note>
         <p>
-          Since we're about to rebuild our system for the last time, we
-          can unset all hacks we made to help the bootstrap process.
+          Since we have everything in place for a self-catered rebuild,
+          we can unset all hacks we made to help the bootstrap process,
+          and start the final stage to install the prefix system.  This
+          final stage recompiles everything in the system, but now all
+          packages can be compiled with tools from the prefix, instead
+          of those from the host system.
         </p>
         <pre caption="Unsetting LDFLAGS and CPPFLAGS variables">
 $ <i>unset LDFLAGS</i>
