@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/udev-guide.xml,v 1.26 2007/10/28 13:39:55 titefleur Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/udev-guide.xml,v 1.27 2008/02/13 20:32:52 titefleur Exp $ -->
 
 <guide link="/doc/fr/udev-guide.xml" lang="fr">
 <title>Guide udev pour Gentoo</title>
@@ -11,6 +11,9 @@
 </author>
 <author title="Contributeur">
   <mail link="greg_g@gentoo.org">Gregorio Guidi</mail>
+</author>
+<author title="Correcteur">
+  <mail link="nightmorph"/>
 </author>
 <author title="Traducteur">
   <mail link="neysx@gentoo.org">Xavier Neys</mail>
@@ -25,8 +28,8 @@ Ce document explique ce qu'est udev et comment l'utiliser.
 
 <license/>
 
-<version>0.32</version>
-<date>2007-08-02</date>
+<version>0.33</version>
+<date>2007-10-30</date>
 
 <chapter>
 <title>Qu'est udev&nbsp;?</title>
@@ -412,6 +415,65 @@ périphérique le nom correct.
 Pour plus d'informations sur l'écriture des règles udev, reportez-vous au
 <uri link="http://www.reactivated.net/udevrules.php">guide</uri> de Daniel Drake.
 </p>
+
+</body>
+</section>
+<section>
+<title>udev charge les modules dans un ordre aléatoire</title>
+<body>
+
+<p>
+Il arrive qu'udev charge les modules dans un ordre indésiré, imprévisible ou qui
+semble aléatoire. Cela apparaît surtout sur les systèmes qui possèdent
+plusieurs périphériques de même type, tels que les périphériques multimédia.
+Cela peut affecter les numéros assignés aux périphériques&nbsp;; par exemple,
+les cartes son échangent parfois leur numéro.
+</p>
+
+<p>
+Il existe plusieurs solutions pour fixer les numéros de périphériques et/ou
+l'ordre de chargement des modules. Dans le meilleur des cas, vous pouvez
+simplement utiliser les paramètres du module pour spécifier le numéro désiré
+au périphérique. Certains modules, tels que ALSA, incluent le paramètre "index".
+Les modules qui utilisent ce paramètre peuvent être ajustés comme indiqué.
+Cet exemple concerne un système avec deux cartes son. La carte avec l'indice 0
+est désignée comme la première carte. Une fois que les paramètres sont changés,
+les fichiers de configuration des modules doivent être mis à jour.
+</p>
+
+<pre caption="Spécification des paramètres des modules">
+# <i>echo "option snd-ice1724 index=0" >> /etc/modules.d/alsa</i>
+# <i>echo "option snd-ymfpci index=1" >> /etc/modules.d/alsa</i>
+# <i>update-modules</i>
+</pre>
+
+<p>
+La solution dans l'exemple ci-dessus est celle qui est préférée mais tous les
+modules ne possèdent pas un paramètre tel que l'indice. Pour ceux-là, vous
+devrez forcer l'ordre correct de chargement des modules. Tout d'abord, vous
+devez empêcher udev de charger automatiquement les modules en les mettant sur la
+liste noire. Assurez-vous d'utiliser le nom exact du module qui est chargé. Pour
+les périphériques PCI, vous devrez utiliser les noms des modules obtenus sur la
+sortie de la commande <c>pcimodules</c>, disponible dans le paquet
+<c>pciutils</c>. L'exemple suivant illustre le cas des modules DVB.
+</p>
+
+<pre caption="Mettre les modules sur la liste noire">
+# <i>echo "blacklist b2c2-flexcop-pci" >> /etc/modules.d/dvb</i>
+# <i>echo "blacklist budget" >> /etc/modules.d/dvb</i>
+# <i>update-modules</i>
+</pre>
+
+<p>
+Esuite, chargez les modules dans l'ordre correct. Ajoutez-les au fichier
+<path>/etc/modules.autoload.d/kernel-2.6</path> <e>dans l'odre exact où vous
+voulez qu'ils soient chargés</e>.
+</p>
+
+<pre caption="Chargement des modules dans l'ordre correct">
+# <i>echo "budget" >> /etc/modules.autoload.d/kernel-2.6</i>
+# <i>echo "b2c2-flexcop-pci" >> /etc/modules.autoload.d/kernel-2.6</i>
+</pre>
 
 </body>
 </section>
