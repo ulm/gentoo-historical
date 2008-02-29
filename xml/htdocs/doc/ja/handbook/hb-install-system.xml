@@ -4,15 +4,21 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-system.xml,v 1.24 2006/08/28 16:56:52 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-system.xml,v 1.25 2008/02/29 14:45:39 shindo Exp $ -->
 
-<!-- Original revision: 1.97 -->
+<!-- Original revision: 1.108 -->
 <!-- Translator: igarashi -->
+<!-- Translator: Taku Murakami -->
 
 <sections>
 
-<version>2.23</version>
-<date>2006-07-19</date>
+<abstract>
+stage3のインストール及び設定が済めば、Gentoo base systemを自由に使えるようになります。
+本章では、そこまでの進め方を説明します。
+</abstract>
+
+<version>8.2</version>
+<date>2007-10-24</date>
 
 <section>
 <title>chrootする</title>
@@ -67,18 +73,19 @@ Gentooサイトの<uri link="/main/en/mirrors.xml">mirror list</uri>
 
 <pre caption="DNS情報をコピーする">
 <comment>("-L"オプションは、シンボリックリンクをコピーしないようにするために必要です)</comment>
-# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/</i>
 </pre>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="not(func:keyval('arch')='IA64')">
 <title>/procと/devファイルシステムのマウント</title>
 <body>
 
 <p>
-chroot後の環境でもカーネルが提供する情報を参照できるようにするために、<path>/mnt/gentoo/proc</path>に<path>/proc</path>ファイルシステムをマウントしてください。
-そして、<path>/dev</path>ファイルシステムをbindマウントします。
+chroot後の環境でもカーネルが提供する情報を参照できるようにするために、
+<path>/mnt/gentoo/proc</path>に<path>/proc</path>ファイルシステムをマウントしてください。
+それから、<path>/dev</path>ファイルシステムをbindマウントします。
 </p>
 
 <pre caption="/procと/devのマウント">
@@ -88,6 +95,25 @@ chroot後の環境でもカーネルが提供する情報を参照できるよ�
 
 </body>
 </subsection>
+<subsection test="func:keyval('arch')='IA64'">
+<title>/proc、/sys、/devファイルシステムのマウント</title>
+<body>
+
+<p>
+chroot後の環境でもカーネルが提供する情報を参照できるようにするために、
+<path>/mnt/gentoo/proc</path>に<path>/proc</path>ファイルシステムをマウントしてください。
+それから、<path>/dev</path>、<path>/sys</path>ファイルシステムをbindマウントします。
+</p>
+
+<pre caption="/proc、/sys、/devのマウント">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount -o bind /sys /mnt/gentoo/sys</i>
+</pre>
+
+</body>
+</subsection>
+
 <subsection>
 <title>新しい環境に入る</title>
 <body>
@@ -164,12 +190,8 @@ CHOST、CFLAGSやその他の重要な変数の初期設定値を指定してい
 </p>
 
 <p>
-以前は、ユーザがprofileを変更することは、ほとんどありませんでした。
-しかし、現在はx86、hppa、alphaユーザは二つのprofileのうち一つを選ぶことができます。
-一つは2.4カーネル用で、もう一つは2.6カーネル用です。
-この要件は、2.6カーネルの統合を整備するために必要とされました。
-ppcとppc64アーキテクチャも同様にいくつかのprofileが利用可能です。
-これについては後で説明します。
+以前は、ユーザがそういったprofileを触ることはありませんでした。
+しかし、場合によってはprofileの変更が必要と判断される事もあるかもしれません。
 </p>
 
 <p>
@@ -178,79 +200,36 @@ ppcとppc64アーキテクチャも同様にいくつかのprofileが利用可�
 
 <pre caption="システムprofileの確認">
 # <i>ls -FGg /etc/make.profile</i>
-lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2006.0/
+lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/<keyval id="profile"/>
 </pre>
 
 <p>
-上記三つのアーキテクチャのうちの一つを使用しているなら、デフォルトのprofileはLinux 2.6系システムのものを提供します。
-これは推奨設定ですが、もちろん別のprofileを使うこともできます。
+デフォルトのprofileでは、Linux 2.6系システムのものが提供されています。
+これは推奨の設定ですが、別のprofileを使うという選択肢もあります。
 </p>
 
 <p>
-より古いLinux 2.4系のprofileを使用したシステムをインストールしたいと思うユーザもいるでしょう。
-このようにするもっともな理由があるユーザは、添付されているprofileの存在を最初に確認してください。x86上では、以下のコマンドで確認できます。
+アーキテクチャによっては、<c>desktop</c>と<c>server</c>subprofileを利用できる場合があります。
+<path>2007.0/</path>profile以下を調べて、使用予定のアーキテクチャで利用可能なものがないかを確認してみて下さい。
+自身の要件に合うかを決めるのに、<c>desktop</c>profileの<path>make.defaults</path>を確認したいと思うかもしれません。
 </p>
 
-<pre caption="添付されているprofileが存在するかどうかの確認">
-# <i>ls -d /usr/portage/profiles/default-linux/x86/no-nptl/2.4</i>
-/usr/portage/profiles/default-linux/x86/no-nptl/2.4
+<p>
+使用予定のアーキテクチャで利用可能なprofileを、<path>/usr/portage/profiles/</path>で確認したら、
+お好みで別のprofileを使用することもできます。
+</p>
+
+<pre caption="profileの変更">
+# <i>ln -snf /usr/portage/profiles/&lt;profile name&gt; /etc/make.profile</i>
 </pre>
 
-<p>
-上記の例では、2.4系のprofileがあることを示しています
-(つまり、ファイルやディレクトリが見つからないというエラーは表示されていません)。
-デフォルトのままにしておくことが推奨されますが、変更したいなら、以下のようにします。
+<p test="func:keyval('arch')='AMD64'">
+32ビットアプリケーション･ライブラリが存在しない、純粋の64ビット環境がほしいなら、
+non-multilib profileを使用して下さい。
 </p>
 
-<pre caption="2.4 profileに変更する">
-<comment>(使用しているアーキテクチャであることを確認してください。以下の例はx86向けです。)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/x86/no-nptl/2.4 /etc/make.profile</i>
-<comment>(2.4 profileにあるファイルの表示)</comment>
-# <i>ls -FGg /etc/make.profile/</i>
-total 12
--rw-r--r--  1 939 Dec 10 14:06 packages
--rw-r--r--  1 347 Dec  3  2004 parent
--rw-r--r--  1 573 Dec  3  2004 virtuals
-</pre>
-
-<p>
-2006.0には、ppc用に複数の新しいprofileがあります。
-</p>
-
-<pre caption="PPCのprofile">
-<comment>(一般的なPPCのprofileで、すべてのPPCマシン用、最低限必要)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0 /etc/make.profile</i>
-<comment>(G3のprofile)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G3 /etc/make.profile</i>
-<comment>(G3 Pegasosのprofile)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G3/Pegasos/ /etc/make.profile</i>
-<comment>(G4 (Altivec)のprofile)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G4 /etc/make.profile</i>
-<comment>(G4 (Altivec) Pegasosのprofile)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.0/G4/Pegasos/ /etc/make.profile</i>
-</pre>
-
-<p>
-2006.0には、ppc64用に複数の新しいprofileがあります。
-</p>
-
-<pre caption="PPC64のprofile">
-<comment>(一般的な64bitユーザランドPPC64のprofileで、すべてのPPC64マシン用です)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/64bit-userland /etc/make.profile</i>
-<comment>(一般的な32bitユーザランドPPC64のprofileで、すべてのPPC64マシン用です)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/32bit-userland /etc/make.profile</i>
-<comment>(各ユーザランド用には以下のようにサブprofileがあり、上記から選んだユーザランドで(userland)を置き換えます)</comment>
-<comment>(JS20用の970のprofile)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/970 /etc/make.profile</i>
-<comment>(G5のprofile)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/970/pmac /etc/make.profile</i>
-<comment>(POWER3のprofile)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power3 /etc/make.profile</i>
-<comment>(POWER4のprofile)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power4 /etc/make.profile</i>
-<comment>(POWER5のprofile)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.0/(userland)/power5 /etc/make.profile</i>
-<comment>(multilibのprofileは、現在のリリースの時点では安定版ではありません。)</comment>
+<pre test="func:keyval('arch')='AMD64'" caption="Switching to a non-multilib profile">
+# <i>ln -snf /usr/portage/profiles/default-linux/amd64/2007.0/no-multilib /etc/make.profile</i>
 </pre>
 
 </body>
@@ -277,7 +256,8 @@ Gentooならば、パッケージをコンパイルするときにつけるべ�
 <p>
 <c>USE</c>変数には、コンパイルオプションに対応するキーワードを定義します。
 たとえば、<e>ssl</e>はプログラムに備わるSSLサポートをコンパイルします。
-<e>-X</e>はXサーバのサポートを削除します。(キーワードの前にマイナス記号をつけます。)<e>gnome gtk -kde -qt</e>は、GNOME(とGTK)サポートを有効にし、KDE(とQt)サポートを無効にしてプログラムをコンパイルします。システムを完全にGNOME向けに調整します。
+<e>-X</e>はXサーバのサポートを削除します。(キーワードの前にマイナス記号をつけます。)<e>gnome gtk -kde -qt3 -qt4</e>は、
+GNOME(とGTK)サポートを有効にし、KDE(とQt)サポートを無効にしてプログラムをコンパイルします。システムを完全にGNOME向けに調整します。
 </p>
 
 <p>
@@ -309,13 +289,13 @@ DVD、ALSA、CD-Rサポートを含むKDEベースのシステムのための<c>
 </pre>
 
 <pre caption="USEフラグの設定">
-USE="-gtk -gnome qt kde dvd alsa cdr"
+USE="-gtk -gnome qt3 qt4 kde dvd alsa cdr"
 </pre>
 
 </body>
 </subsection>
 <subsection>
-<title>自由選択: GLIBCのロケール</title>
+<title>自由選択: glibcのロケール</title>
 <body>
 
 <p>
@@ -345,11 +325,6 @@ ja_JP/EUC-JP
 次のステップでは、<c>locale-gen</c>を実行します。これにより、
 <path>/etc/locale.gen</path>ファイルで指定した全てのロケールが生成されます。
 </p>
-
-<note>
-<c>locale-gen</c>は<c>glibc-2.3.6-r4</c>以降で利用可能です。
-これよりも古いバージョンのglibcであれば、すぐにアップデートして下さい。
-</note>
 
 <p>
 では、<uri link="?part=1&amp;chap=7">カーネル設定</uri>へ進んでください。
