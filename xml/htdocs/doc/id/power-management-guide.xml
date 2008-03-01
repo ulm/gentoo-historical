@@ -23,8 +23,8 @@ komputer jinjing seperti laptop. Panduan ini berisi cara pengaturannya.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.37</version>
-<date>2007-12-03</date>
+<version>1.39</version>
+<date>2008-01-31</date>
 
 <chapter>
 <title>Pendahuluan</title>
@@ -162,9 +162,9 @@ mendapatkan dukungan terbaik.
 
 <p>
 Terdapat tiga source kernel di Portage. Penulis menganjurkan anda untuk
-menggunakan <c>gentoo-sources</c> atau <c>suspend2-sources</c>. Kernel kedua
-berisi banyak tambalan untuk <e>Software Suspend 2</e>, bacalah bab tentang
-<uri link="#doc_chap7">sleep states</uri> untuk perinciannya. Ketika
+menggunakan <c>gentoo-sources</c> atau <c>tuxonice-sources</c>. Kernel kedua
+berisi banyak tambalan untuk TuxOnIce, bacalah bab tentang <uri
+link="#doc_chap7">sleep states</uri> untuk perinciannya. Ketika
 mengkonfigurasi kernel, aktifkan paling tidak opsi-opsi berikut ini:
 </p>
 
@@ -860,14 +860,14 @@ dapat dilakukan dengan <c>setterm -blank &lt;jumlah-menitM&gt;</c>, <c>setterm
 X.org, edit <path>/etc/X11/xorg.conf</path> seperti berikut:
 </p>
 
-<pre caption="Pengaturan cahaya LCD untuk X.org dan XFree86">
-Section "ServerLayout"
+<pre caption="Pengaturan cahaya LCD untuk X.org">
+Section "ServerFlags"
   Identifier  [...]
   [...]
-  Option  "BlankTime"  "5"  <comment># Kosongkan layar setelah 5 menit (palsu)</comment>
-  Option  "StandbyTime"  "10"  <comment># Kosongkan layar 10 menit (DPMS)</comment>
-  Option  "SuspendTime"  "20"  <comment># Suspend penuh setelah 20 menit</comment>
-  Option  "OffTime"  "30"  <comment># Matikan setelah setengah jam</comment>
+  Option  "blank time"  "5"  <comment># Kosongkan layar setelah 5 menit (palsu)</comment>
+  Option  "standby time"  "10"  <comment># Kosongkan layar 10 menit (DPMS)</comment>
+  Option  "suspend time"  "20"  <comment># Suspend penuh setelah 20 menit</comment>
+  Option  "off time"  "30"  <comment># Matikan setelah setengah jam</comment>
   [...]
 EndSection
 
@@ -875,15 +875,10 @@ EndSection
 
 Section "Monitor"
   Identifier  [...]
-  Option  "DPMS"  "true"
+  Option  "DPMS"
   [...]
 EndSection
 </pre>
-
-<p>
-Pengaturan ini dapat digunakan untuk XFree86 dan
-<path>/etc/X11/XF86Config</path>.
-</p>
 
 </body>
 </section>
@@ -898,27 +893,27 @@ baterai digunakan dan tambahkan skrip ini ke runlevel <c>battery</c>. Skrip
 berikut ini dapat digunakan pada kebanyakan laptop IBM Thinkpad dan Toshiba.
 Anda harus mengaktifkan opsi yang diperlukan di kernel (hanya untuk IBM
 Thinkpad). Untuk laptop Toshiba, instal <c>sys-power/acpitool</c> dan lewatkan
-konfigurasi <c>ibm_acpi</c> berikut ini.
+konfigurasi <c>thinkpad_acpi</c> (dahulu bernama <c>ibm_acpi</c>) berikut ini.
 </p>
 
 <warn>
 Dukungan untuk pengaturan cahaya masih dianggap eksperimental pada ibm-acpi.
 Pengaturan ini mengakses hardware secara langsung dan mungkin dapat
 mengakibatkan kerusakan pada sistem anda. Kunjungilah <uri
-link="http://ibm-acpi.sourceforge.net/">website ibm-acpi</uri>.
+link="http://ibm-acpi.sourceforge.net/">website thinkpad_acpi</uri>.
 </warn>
 
 <p>
-Untuk dapat mengatur tingkat cahaya LCD, modul <c>ibm_acpi</c> harus dimuat
+Untuk dapat mengatur tingkat cahaya LCD, modul <c>thinkpad_acpi</c> harus dimuat
 dengan parameter eksperimental.
 </p>
 
-<pre caption="Muat modul ibm_acpi secara otomatis">
+<pre caption="Muat modul thinkpad_acpi secara otomatis">
 <comment>(Bacalah peringatan di atas tentang hal ini!)</comment>
-# <i>echo "options ibm_acpi experimental=1" >> /etc/modules.d/ibm_acpi</i>
+# <i>echo "options thinkpad_acpi experimental=1" >> /etc/modules.d/thinkpad_acpi</i>
 # <i>/sbin/update-modules</i>
-# <i>echo ibm_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
-# <i>modprobe ibm_acpi</i>
+# <i>echo thinkpad_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
+# <i>modprobe thinkpad_acpi</i>
 </pre>
 
 <p>
@@ -930,7 +925,7 @@ energi yang digunakan.
 
 <pre caption="/etc/conf.d/lcd-brightness">
 <comment># Bacalah /proc/acpi/ibm/brightness untuk mengetahui nilai-nilai yang tersedia</comment>
-<comment># Bacalah /usr/src/linux/Documentation/ibm-acpi.txt</comment>
+<comment># Bacalah /usr/src/linux/Documentation/thinkpad-acpi.txt</comment>
 
 <comment># Tingkat cahaya pada modus AC. Default adalah 7.</comment>
 BRIGHTNESS_AC=7
@@ -962,7 +957,7 @@ set_brightness() {
         eend $?
     else
         ewarn "Setting LCD brightness is not supported."
-        ewarn "For IBM Thinkpads, check that ibm_acpi is loaded into the kernel"
+        ewarn "For IBM Thinkpads, check that thinkpad_acpi is loaded into the kernel"
         ewarn "For Toshiba laptops, you've got to install sys-power/acpitool"
     fi
 }
@@ -1380,23 +1375,24 @@ atau samba sebelum melakukan hibernate.
 
 <p>
 Terdapat dua implementasi yang berbeda untuk S4. Implementasi yang asli adalah
-<e>swsusp</e>, dan yang kedua adalah <e>suspend2</e> dengan antarmuka yang
-lebih bagus (termasuk dukungan fbsplash). Tersedia <uri
-link="http://suspend2.net/features.html#compare">perbandingan fitur</uri> di
-<uri link="http://suspend2.net">website suspend2</uri>. Dahulu ada
-<e>Suspend-to-Disk</e> (pmdisk), pencabangan dari swsusp, tetapi telah
-digabungkan kembali.
+<e>swsusp</e>, dan yang kedua dan yang lebih baru adalah <e>tuxonice</e>
+(sebelumnya bernama suspen2) yang memiliki antarmuka yang lebih bagus (termasuk
+dukungan fbsplash). <uri
+link="http://tuxonice.net/features.html#compare">Perbandingan
+fitur-fiturnya</uri> bisa anda baca di <uri link="http://tuxonice">website
+tuxonice</uri>. Dahulu ada <e>Suspend-to-Disk</e> (pmdisk), pencabangan dari
+swsusp, tetapi telah digabungkan kembali.
 </p>
 
 <p>
-Suspend2 belum diikutsertakan pada kernel resmi, untuk itu anda harus menambal
+TuxOnIcebelum diikutsertakan pada kernel resmi, untuk itu anda harus menambal
 sendiri source kernel anda dengan tambalan-tambalan yang disediakan oleh <uri
-link="http://suspend2.net">suspend2.net</uri> atau menggunakan
-<c>sys-kernel/suspend2-sources</c>.
+link="http://tuxonice.net">tuxonice.net</uri> atau menggunakan
+<c>sys-kernel/tuxonice-sources</c>.
 </p>
 
 <p>
-Bagian kernel untuk swusp dan suspend2 adalah sebagai berikut:
+Bagian kernel untuk swusp dan TuxOnIce adalah sebagai berikut:
 </p>
 
 <pre caption="Konfigurasi kernel untuk beberapa tipe suspend">
@@ -1406,8 +1402,8 @@ Power Management Options ---&gt;
       <comment>(gantikan /dev/SWAP dengan partisi swap anda)</comment>
       (/dev/SWAP)      Default resume partition
 
-  <comment>(hibernate dengan suspend2)</comment>
-  Software Suspend 2
+  <comment>(hibernate dengan TuxOnIce)</comment>
+  Enhanced Hibernation (TuxOnIce)
     --- Image Storage (you need at least one writer)
     [*]     File Writer
     [*]    Swap Writer
@@ -1457,17 +1453,17 @@ tersebut sebelum melakukan hibernate. Konfigurasi untuk ini ada di
 </pre>
 
 <p>
-Bagian berikut ini menjelaskan pengaturan suspend2 termasuk dukungan fbsplash
+Bagian berikut ini menjelaskan pengaturan TuxOnIce termasuk dukungan fbsplash
 yang akan ditampilkan ketika suspend atau resume.
 </p>
 
 <p>
 Konfigurasi bagian pertama mirip dengan konfigurasi swusp. Jika anda tidak
 menentukan lokasi partisi swap pada konfigurasi kernel, anda harus
-menentukannya sebagai parameter kernel, <c>resume2=swap:/dev/SWAP</c>. Jika
-proses boot gagal karena imej rusak, tambahkan parameter <c>noresume2</c>.
+menentukannya sebagai parameter kernel, <c>resume=swap:/dev/SWAP</c>. Jika
+proses boot gagal karena imej rusak, tambahkan parameter <c>noresume</c>.
 Sebagai tambahan, skrip init <c>hibernate-cleanup</c> akan menghapus imej
-suspend2 selama proses boot berlangsung.
+TuxOnIce selama proses boot berlangsung.
 </p>
 
 <pre caption="Penghapusan imej selama proses boot">
@@ -1476,10 +1472,10 @@ suspend2 selama proses boot berlangsung.
 
 <p>
 Sekarang edit <path>/etc/hibernate/suspend2.conf</path>, aktifkan opsi
-<c>suspend2</c> yang anda perlukan. Jangan dulu aktifkan opsi <c>fbsplash</c>.
+<c>TuXOnIce</c> yang anda perlukan. Jangan dulu aktifkan opsi <c>fbsplash</c>.
 </p>
 
-<pre caption="Hibernate dengan suspend2">
+<pre caption="Hibernate dengan TuxOnIce">
 # <i>nano -w /etc/hibernate/suspend2.conf</i>
 <comment>(Jangan lupa membuat backup sebelumnya!)</comment>
 # <i>hibernate</i>
@@ -1487,15 +1483,15 @@ Sekarang edit <path>/etc/hibernate/suspend2.conf</path>, aktifkan opsi
 
 <p>
 Sekarang konfigurasikan <c>fbsplash</c>. Untuk menggunakan fbsplash ketika
-proses hibernate, diperlukan paket <c>sys-apps/suspend2-userui</c>. Sebagai
+proses hibernate, diperlukan paket <c>sys-apps/tuxonice-userui</c>. Sebagai
 tambahan, anda harus mengaktifkan flag USE <c>fbsplash</c>.
 </p>
 
-<pre caption="Instalasi suspend2-userui">
-# <i>echo "sys-apps/suspend2-userui fbsplash" >> /etc/portage/package.use</i>
+<pre caption="Instalasi tuxonice-userui">
+# <i>echo "sys-apps/tuxonice-userui fbsplash" >> /etc/portage/package.use</i>
 <comment>(Paket ini mungkin ditandai ~arch, jadi tambahkan dulu)</comment>
-# <i>echo "sys-apps/suspend2-userui" >> /etc/portage/package.keywords</i>
-# <i>emerge suspend2-userui</i>
+# <i>echo "sys-apps/tuxonice-userui" >> /etc/portage/package.keywords</i>
+# <i>emerge tuxonice-userui</i>
 </pre>
 
 <p>
@@ -1510,33 +1506,33 @@ jalankan perintah berikut:
 
 <p>
 Jika anda tidak menginginkan layar kosong pada awal proses resume, anda harus
-menambahkan tool <c>suspend2ui_fbsplash</c> ke imej initrd anda. Dengan
+menambahkan tool <c>tuxoniceui_fbsplash</c> ke imej initrd anda. Dengan
 anggapan anda telah menciptakan imej intrd dengan perintah
 <c>splash_geninitramfs</c> dan menyimpannya sebagai
 <path>/boot/fbsplash-emergence-1024x768</path>, berikut cara melakukannya:
 </p>
 
-<pre caption="Menambahkan suspend2ui_fbsplash ke imej initrd">
+<pre caption="Menambahkan tuxoniceui_fbsplash ke imej initrd">
 # <i>mount /boot</i>
 # <i>mkdir ~/initrd.d</i>
 # <i>cp /boot/fbsplash-emergence-1024x768 ~/initrd.d/</i>
 # <i>cd ~/initrd.d</i>
 # <i>gunzip -c fbsplash-emergence-1024x768 | cpio -idm --quiet -H newc</i>
 # <i>rm fbsplash-emergence-1024x768</i>
-# <i>cp /usr/sbin/suspend2ui_fbsplash sbin/</i>
-# <i>find . | cpio --quiet --dereference -o -H newc | gzip -9 > /boot/fbsplash-suspend2-emergence-1024x768</i>
+# <i>cp /usr/sbin/tuxoniceui_fbsplash sbin/</i>
+# <i>find . | cpio --quiet --dereference -o -H newc | gzip -9 > /boot/fbsplash-tuxonice-emergence-1024x768</i>
 </pre>
 
 <p>
 Selanjutnya konfigurasikan <path>grub.conf</path> (atau <path>lilo.conf</path>)
-agar kernel suspend2 anda menggunakan
-<path>/boot/fbsplash-suspend2-emergence-1024x768</path> sebagai imej initrd.
+agar kernel tuxonice anda menggunakan
+<path>/boot/fbsplash-tuxonice-emergence-1024x768</path> sebagai imej initrd.
 Sekarang anda dapat (pura-pura) mencobanya untuk mengetahui apakah semuanya
 telah diatur dengan benar.
 </p>
 
 <pre caption="Pengujian hibernate dengan fbsplash">
-# <i>suspend2ui_fbsplash -t</i>
+# <i>tuxoniceui_fbsplash -t</i>
 </pre>
 
 <p>
@@ -1681,15 +1677,15 @@ saya tidak dapat shutdown dengan benar.
 </p>
 
 <p>
-<b>T:</b> Saya ingin menggunakan suspend2, tetapi saya mendapatkan pesan
+<b>T:</b> Saya ingin menggunakan TuxOnIce, tetapi saya mendapatkan pesan
 tentang partisi swap yang terlalu kecil dan saya tidak dapat merubah ukurannya.
 </p>
 
 <p>
-<b>J:</b> Jika anda tidak memiliki ruang kosong lagi pada harddisk, anda dapat
+<b>J:</b> Jika anda masih memiliki ruang kosong lagi pada harddisk, anda dapat
 menggunakan <e>filewriter</e> sebagai pengganti <e>swapwriter</e>.
 <c>hibernate-script</c> mendukung opsi ini. Informasi lebih lanjut bisa anda
-dapatkan dari <path>/usr/src/linux/Documentation/power/suspend2.txt</path>.
+dapatkan dari <path>/usr/src/linux/Documentation/power/tuxonice.txt</path>.
 </p>
 
 <p>
