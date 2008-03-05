@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/articles/l-posix3.xml,v 1.4 2007/04/18 15:55:36 shadoww Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/pl/articles/l-posix3.xml,v 1.5 2008/03/05 04:09:02 rane Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/pl/articles/l-posix3.xml" disclaimer="articles" lang="pl">
@@ -14,12 +14,12 @@
 </author>
 
 <abstract>
-W trzeciej i ostatniej części artykułu o wątkach w systemie POSIX, Daniel 
-dokładnie omawia zmienne warunkowe (ang. conditional variables). Są to 
-struktury w POSIX, które pozwalają na "wybudzanie" wątków wtedy, gdy określone 
-warunki zostały spełnione. Wygląda to, jak posługiwanie się sygnałami, ale w 
+W trzeciej i ostatniej części artykułu o wątkach w systemie POSIX, Daniel
+dokładnie omawia zmienne warunkowe (ang. conditional variables). Są to
+struktury w POSIX, które pozwalają na "wybudzanie" wątków wtedy, gdy określone
+warunki zostały spełnione. Wygląda to, jak posługiwanie się sygnałami, ale w
 odniesieniu do wątków. Daniel dokonuje także podsumowania, korzystając
-ze wszystkich możliwości wątków, jakie zostały tu wcześniej omówione, aby 
+ze wszystkich możliwości wątków, jakie zostały tu wcześniej omówione, aby
 stworzyć aplikację bazującą na operacjach wielowątkowych.
 </abstract>
 
@@ -38,70 +38,70 @@ Gentoo Linux Documentation team -->
 <body>
 
 <p>
-<uri link="/doc/en/articles/l-posix2.xml">Poprzednią część</uri> tego artykułu 
-zakończyłem wspominając o pewnym problemie, a mianowicie, jak wątek może 
-radzić sobie z sytuacją, w której czeka, aż pewien warunek zwróci prawdę. 
-Mógłby nieustannie blokować i odblokowywać jakiś muteks, za każdym razem 
-dokonując sprawdzenia we współdzielonej strukturze, czy nie pojawiła się 
-oczekiwana zmiana. Czynność taka jednak powoduje niepotrzebne zużycie zasobów, 
-zaś regularne sprawdzanie jest bardzo nieefektywne. Najlepszym rozwiązaniem 
+<uri link="/doc/en/articles/l-posix2.xml">Poprzednią część</uri> tego artykułu
+zakończyłem wspominając o pewnym problemie, a mianowicie, jak wątek może
+radzić sobie z sytuacją, w której czeka, aż pewien warunek zwróci prawdę.
+Mógłby nieustannie blokować i odblokowywać jakiś muteks, za każdym razem
+dokonując sprawdzenia we współdzielonej strukturze, czy nie pojawiła się
+oczekiwana zmiana. Czynność taka jednak powoduje niepotrzebne zużycie zasobów,
+zaś regularne sprawdzanie jest bardzo nieefektywne. Najlepszym rozwiązaniem
 jest tutaj korzystanie z funkcji pthread_cond_wait().
 </p>
 
 <p>
-Zrozumienie zasad działania pthread_cond_wait() jest bardzo ważne. Ta funkcja 
-jest sercem systemu sygnałów dla wątków w POSIX, bywa też najtwardszym orzechem 
+Zrozumienie zasad działania pthread_cond_wait() jest bardzo ważne. Ta funkcja
+jest sercem systemu sygnałów dla wątków w POSIX, bywa też najtwardszym orzechem
 do zgryzienia w tej tematyce.
 </p>
 
 <p>
-Na początek rozpatrzymy scenariusz, gdzie wątek blokuje muteks, aby sprawdzić, 
-czy pewna lista jest pusta. Jego zadaniem bowiem jest usunięcie 
-węzła (ang. node) z listy, chociaż gdy jest ona pusta, to nie może on wykonać 
+Na początek rozpatrzymy scenariusz, gdzie wątek blokuje muteks, aby sprawdzić,
+czy pewna lista jest pusta. Jego zadaniem bowiem jest usunięcie
+węzła (ang. node) z listy, chociaż gdy jest ona pusta, to nie może on wykonać
 swojego zadania. Oto, co się więc dzieje.
 </p>
 
 <p>
-Po zablokowaniu muteksu na swój użytek, nasz wątek wywoła 
-pthread_cond_wait(&amp;mojwarunek,&amp;mojmuteks), co jest raczej 
+Po zablokowaniu muteksu na swój użytek, nasz wątek wywoła
+pthread_cond_wait(&amp;mojwarunek,&amp;mojmuteks), co jest raczej
 skomplikowane, więc prześledzimy wszystkie operacje krok po kroku.
 </p>
 
 <p>
-Pierwszą czynnością wykonywaną przez pthread_cond_wait() jest jednoczesne 
-odblokowanie muteksu "mojmuteks" (tak, żeby inne wątki mogły modyfikować 
-listę) oraz czekanie na warunek "mojwarunek" (dzięki czemu funkcja wybudzi 
-się, gdy zostanie to zasygnalizowane przez inny wątek). Następnie, przy 
-odblokowanym muteksie, inne wątki mogą modyfikować listę, na przykład przez 
-dodawanie do niej elementów. 
+Pierwszą czynnością wykonywaną przez pthread_cond_wait() jest jednoczesne
+odblokowanie muteksu "mojmuteks" (tak, żeby inne wątki mogły modyfikować
+listę) oraz czekanie na warunek "mojwarunek" (dzięki czemu funkcja wybudzi
+się, gdy zostanie to zasygnalizowane przez inny wątek). Następnie, przy
+odblokowanym muteksie, inne wątki mogą modyfikować listę, na przykład przez
+dodawanie do niej elementów.
 </p>
 
 <p>
-pthread_cond_wait() jednak nie zwraca wartości w tym momencie. Odblokowanie 
-muteksu następuje natychmiast, ale oczekiwanie na warunek "mojwarunek" to 
-zazwyczaj operacja blokująca. Zatem nasz wątek zostanie uśpiony, przy czym nie 
-będzie zużywać cykli procesora dopóki nie zostanie wybudzony. A na to właśnie 
-czekamy. Nasz wątek pozostaje uśpiony w oczekiwaniu na pewien warunek i nie 
-wykonuje żadnego kosztownego sprawdzania. Z perspektywy wątku jest to 
+pthread_cond_wait() jednak nie zwraca wartości w tym momencie. Odblokowanie
+muteksu następuje natychmiast, ale oczekiwanie na warunek "mojwarunek" to
+zazwyczaj operacja blokująca. Zatem nasz wątek zostanie uśpiony, przy czym nie
+będzie zużywać cykli procesora dopóki nie zostanie wybudzony. A na to właśnie
+czekamy. Nasz wątek pozostaje uśpiony w oczekiwaniu na pewien warunek i nie
+wykonuje żadnego kosztownego sprawdzania. Z perspektywy wątku jest to
 oczekiwanie na wartość zwróconą przez pthread_cond_wait().
 </p>
 
 <p>
-Kontynuując wyjaśnienie, powiedzmy, że inny wątek, na przykład "wątek 2" 
-blokuje muteks i dodaje element do naszej listy. Zaraz po odblokowaniu 
-muteksu, "wątek 2" wywołuje funkcję pthread_cond_broadcast(&amp;mojwarunek). 
-Dzięki temu wszystkie wątki oczekujące na spełnienie warunku "mojwarunek" 
-zostaną w tej chwili wybudzone. Oznacza to, że pierwszy wątek, który tkwi w 
+Kontynuując wyjaśnienie, powiedzmy, że inny wątek, na przykład "wątek 2"
+blokuje muteks i dodaje element do naszej listy. Zaraz po odblokowaniu
+muteksu, "wątek 2" wywołuje funkcję pthread_cond_broadcast(&amp;mojwarunek).
+Dzięki temu wszystkie wątki oczekujące na spełnienie warunku "mojwarunek"
+zostaną w tej chwili wybudzone. Oznacza to, że pierwszy wątek, który tkwi w
 pthread_cond_wait(), będzie mógł wykonywać swoje operacje.
 </p>
 
 <p>
-Zobaczmy teraz co dzieje się z pierwszym wątkiem. Po tym, jak "wątek 2" wywoła 
-pthread_cond_broadcast(&amp;mojwarunek), czytelnik może stwierdzić, że 
-pthread_cond_wait() w pierwszym wątku natychmiast zwróci jakąś wartość. A 
-tak nie jest! Funkcja ta najpierw wykona jeszcze jedną operację, mianowicie 
-ponownie zablokuje muteks. Dopiero wtedy wątek numer 1 będzie mógł rozpocząć 
-działanie i sprawdzić, czy na liście wystąpiły jakieś interesujące zmiany. 
+Zobaczmy teraz co dzieje się z pierwszym wątkiem. Po tym, jak "wątek 2" wywoła
+pthread_cond_broadcast(&amp;mojwarunek), czytelnik może stwierdzić, że
+pthread_cond_wait() w pierwszym wątku natychmiast zwróci jakąś wartość. A
+tak nie jest! Funkcja ta najpierw wykona jeszcze jedną operację, mianowicie
+ponownie zablokuje muteks. Dopiero wtedy wątek numer 1 będzie mógł rozpocząć
+działanie i sprawdzić, czy na liście wystąpiły jakieś interesujące zmiany.
 </p>
 
 </body>
@@ -142,7 +142,7 @@ typedef struct wezel {
   struct wezel *nast;
 } Wezel;
 typedef struct kolejka {
-  wezel *glowa, *ogon; 
+  wezel *glowa, *ogon;
 } Kolejka;
 void KolStworz(kolejka *mojpocz);
 void KolDodaj(kolejka *mojpocz, wezel *mojwez);
@@ -157,23 +157,23 @@ Wezel *KolSprawdz(kolejka *mojpocz);
 ** Date: 16 Jun 2000
 **
 
-** Ten zestaw funkcji do obsługi kolejki był projektowany z myślą 
-** o wątkach. Kod został przepisany tak, żeby było odwrotnie (po 
+** Ten zestaw funkcji do obsługi kolejki był projektowany z myślą
+** o wątkach. Kod został przepisany tak, żeby było odwrotnie (po
 ** prostu typowy zestaw nudnych a szybkich funkcji dla obsługi kolejki)
-** Po co? Ponieważ sensowniej jest utrzymywać wielowątkowość jako 
-** opcjonalny dodatek. Rozpatrzymy sytuację, w której chcemy dodać 5 
-** węzłów do kolejki. W wersji wielowątkowej każde wywołanie KolDodaj() 
-** powodowałoby blokowanie muteksu 5 razy. To sporo zbędnych operacji. 
-** Jednak po usunięciu podziału na wątki, operacja wywołująca blokuje 
-** muteks tylko na początku, dodaje 5 elementów, a następnie zwalnia. 
-** Działanie takie pozwala na optymalizację, która nie jest dostępna 
-** przy innym podejściu. Dzięki temu także, kod jest użyteczny dla 
+** Po co? Ponieważ sensowniej jest utrzymywać wielowątkowość jako
+** opcjonalny dodatek. Rozpatrzymy sytuację, w której chcemy dodać 5
+** węzłów do kolejki. W wersji wielowątkowej każde wywołanie KolDodaj()
+** powodowałoby blokowanie muteksu 5 razy. To sporo zbędnych operacji.
+** Jednak po usunięciu podziału na wątki, operacja wywołująca blokuje
+** muteks tylko na początku, dodaje 5 elementów, a następnie zwalnia.
+** Działanie takie pozwala na optymalizację, która nie jest dostępna
+** przy innym podejściu. Dzięki temu także, kod jest użyteczny dla
 ** aplikacji jednowątkowych.
 **
-** Możemy także łatwo wprowadzić podział na wątki w tej strukturze danych 
-** poprzez korzystanie z typu data_control, zdefiniowanego w control.c 
+** Możemy także łatwo wprowadzić podział na wątki w tej strukturze danych
+** poprzez korzystanie z typu data_control, zdefiniowanego w control.c
 ** oraz control.h
-</comment> 
+</comment>
 */
 #include &lt;stdio.h&gt;
 #include "kolejka.h"
@@ -215,23 +215,23 @@ typedef struct data_control {
 ** Author: Daniel Robbins
 ** Date: 16 Jun 2000
 **
-** Te funkcje umożliwiają łatwe wprowadzenie podziału na wątki w jakiejkolwiek 
-** strukturze danych. Należy po prostu skojarzyć strukturę data_control 
-** ze strukturą danych (na przykład tworząc nową strukturę). Następnie 
-** można zwyczajnie blokować i zwalniać muteks, lub wykonywać 
-** wait/signal/broadcast na zmiennej warunkowej w strukturze data_control 
+** Te funkcje umożliwiają łatwe wprowadzenie podziału na wątki w jakiejkolwiek
+** strukturze danych. Należy po prostu skojarzyć strukturę data_control
+** ze strukturą danych (na przykład tworząc nową strukturę). Następnie
+** można zwyczajnie blokować i zwalniać muteks, lub wykonywać
+** wait/signal/broadcast na zmiennej warunkowej w strukturze data_control
 ** zgodnie z zapotrzebowaniem.
 **
 
-** struktury data_control zawierają zmienną całkowitoliczbową zwaną "active". 
-** Służy ona do specyficznego modelu wielowątkowego, gdzie każdy wątek sprawdza 
-** stan tej zmiennej przy każdym blokowaniu muteksu. Jeśli wynosi ona 0, to 
-** wątki nie wykonują swoich funkcji, tylko zatrzymują się. Jeśli wynosi 1, to 
-** działają zwyczajnie. Toteż, dzięki ustawieniu "active" wartości 0, wątek 
+** struktury data_control zawierają zmienną całkowitoliczbową zwaną "active".
+** Służy ona do specyficznego modelu wielowątkowego, gdzie każdy wątek sprawdza
+** stan tej zmiennej przy każdym blokowaniu muteksu. Jeśli wynosi ona 0, to
+** wątki nie wykonują swoich funkcji, tylko zatrzymują się. Jeśli wynosi 1, to
+** działają zwyczajnie. Toteż, dzięki ustawieniu "active" wartości 0, wątek
 ** zarządzający może łatwo poinformować inne wątki, żeby się zakończyły.
-** control_activate() oraz control_deactivate() to funkcje, które również 
-** rozgłaszają zmienną warunkową z data_control, dzięki czemu wszystkie wątki 
-** zablokowane przy pthread_cond_wait() zostaną wybudzone, aby zauważyć zmianę 
+** control_activate() oraz control_deactivate() to funkcje, które również
+** rozgłaszają zmienną warunkową z data_control, dzięki czemu wszystkie wątki
+** zablokowane przy pthread_cond_wait() zostaną wybudzone, aby zauważyć zmianę
 ** i w rezultacie się zakończyć.
 </comment>
 */
@@ -291,7 +291,7 @@ Jeszcze jeden plik, zanim przejdziemy do gwoździa programu. Oto:
 </pre>
 
 <p>
-Korzystamy z tego kodu aby obsłużyć nieodwracalne błędy grupy wątków 
+Korzystamy z tego kodu aby obsłużyć nieodwracalne błędy grupy wątków
 wykonujących jedno określone zadanie (ang. work crew).
 </p>
 
@@ -311,7 +311,7 @@ Oto kod dla grupy wątków:
 #include "control.h"
 #include "kolejka.h"
 #include "dbug.h"
-/* 
+/*
 <comment>
 Kolejka "work_Kolejka" zawiera zadania dla poszczególnych wątków.
 </comment>
@@ -320,9 +320,9 @@ struct work_Kolejka {
   data_control control;
   kolejka work;
 } wq;
-/* 
+/*
 <comment>
-Dodałem numer zadania (ang. job number) do węzła. Zazwyczaj węzeł zawierałby 
+Dodałem numer zadania (ang. job number) do węzła. Zazwyczaj węzeł zawierałby
 dodatkowe dane do analizy.
 </comment>
 */
@@ -330,10 +330,10 @@ typedef struct work_Wezel {
   struct Wezel *nast;
   int jobnum;
 } wWezel;
-/* 
+/*
 <comment>
-Kolejka "cleanup_Kolejka" zawiera identyfikatory wątków zatrzymanych. Zanim wątek 
-ulegnie przyłączeniu, dodaje się do tej kolejki. Monitoruje ją wątek główny, 
+Kolejka "cleanup_Kolejka" zawiera identyfikatory wątków zatrzymanych. Zanim wątek
+ulegnie przyłączeniu, dodaje się do tej kolejki. Monitoruje ją wątek główny,
 który, gdy dostrzeże zmiany, zostanie wybudzony i usunie zakończony wątek.
 </comment>
 */
@@ -341,15 +341,15 @@ struct cleanup_Kolejka {
   data_control control;
   kolejka cleanup;
 } cq;
-/* 
+/*
 <comment>
 Dodałem numerowanie wątków (pomocniczo, dla celów instruktażowych) oraz
-identyfikatory wątków do węzłów w kolejce sprzątania. Zostaje on przekazany 
-nowym wątkom podczas ich tworzenia. Tuż przed zakończeniem wątku, węzeł ten 
-jest przyłączany do kolejki sprzątającej (ang. cleanup queue). Wątek główny 
-odpowiedzialny jest za monitorowanie i operacje czyszczenia po naszej grupie 
+identyfikatory wątków do węzłów w kolejce sprzątania. Zostaje on przekazany
+nowym wątkom podczas ich tworzenia. Tuż przed zakończeniem wątku, węzeł ten
+jest przyłączany do kolejki sprzątającej (ang. cleanup queue). Wątek główny
+odpowiedzialny jest za monitorowanie i operacje czyszczenia po naszej grupie
 wątków zadaniowych (ang. working threads).
-</comment> 
+</comment>
 */
 typedef struct cleanup_Wezel {
   struct wezel *nast;
@@ -365,7 +365,7 @@ void *MojaFunkcjaDlaWatku(void *mojarg) {
     while (wq.work.glowa==NULL &amp;&amp; wq.control.active) {
       pthread_cond_wait(&amp;wq.control.warunek, &amp;wq.control.muteks);
     }
-    if (!wq.control.active) 
+    if (!wq.control.active)
       break;
     //mamy cos!
     mywork=(wWezel *) KolSprawdz(&amp;wq.work);
@@ -382,7 +382,7 @@ void *MojaFunkcjaDlaWatku(void *mojarg) {
   pthread_cond_signal(&amp;cq.control.warunek);
   printf("Konczenie watku nr %d...\n",mojwezel-&gt;threadnum);
   return NULL;
-  
+
 }
 #define NUM_WORKERS 4
 int numthreads;
@@ -391,25 +391,25 @@ void koncz_watek(void) {
   printf("przylaczanie watkow...\n");
   while (numthreads) {
     pthread_mutex_lock(&amp;cq.control.muteks);
-  /* 
-  <comment>w poniższym kodzie czekamy, aż pojawi się nowy węzeł w kolejce 
-  do sprzątania. To pozwala na uniknięcie fałszywych wybudzeń. Nawet, 
-  jeśli wyjdziemy z pthread_cond_wait(), to nie zakładamy, że warunek, 
+  /*
+  <comment>w poniższym kodzie czekamy, aż pojawi się nowy węzeł w kolejce
+  do sprzątania. To pozwala na uniknięcie fałszywych wybudzeń. Nawet,
+  jeśli wyjdziemy z pthread_cond_wait(), to nie zakładamy, że warunek,
   na który czekamy, jest spełniony.
   </comment>
   */
     while (cq.cleanup.glowa==NULL) {
       pthread_cond_wait(&amp;cq.control.warunek,&amp;cq.control.muteks);
     }
-  /* 
-  <comment>W tym momencie przetrzymujemy muteks, a w kolejce jest element 
-  wymagający przetwarzania. Najpierw odłączamy węzeł z kolejki. Następnie 
+  /*
+  <comment>W tym momencie przetrzymujemy muteks, a w kolejce jest element
+  wymagający przetwarzania. Najpierw odłączamy węzeł z kolejki. Następnie
   wywołujemy pthread_join() na zawartym w nim identyfikatorze wątku "TID".
-  Gdy pthread_join() zwróci wartość, można stwierdzić, że po wątku jest 
-  posprzątane. Dopiero wtedy można zwolnić pamięć zaalokowaną dla węzła 
-  za pomocą funkcji free() i zdekrementować liczbę działających wątków. 
+  Gdy pthread_join() zwróci wartość, można stwierdzić, że po wątku jest
+  posprzątane. Dopiero wtedy można zwolnić pamięć zaalokowaną dla węzła
+  za pomocą funkcji free() i zdekrementować liczbę działających wątków.
   Ewentualnie należy czekać i powtórzyć całą operację.
-  </comment> 
+  </comment>
   */
       ob_wezel = (cWezel *) KolSprawdz(&amp;cq.cleanup);
       pthread_mutex_unlock(&amp;cq.control.muteks);
@@ -455,7 +455,7 @@ int main(void) {
   wWezel *mywork;
   inicjalizuj_struktury();
   /* TWORZENIE */
-  
+
   if (stworz_watek()) {
     printf("Tworzenie nie powiodlo sie, sprzatam.\n");
     koncz_watek();
@@ -490,19 +490,19 @@ int main(void) {
 <body>
 
 <p>
-Czas na szybki przegląd kodu. Pierwsza zdefiniowana struktura nazywa się 
-"wq" i zawiera data_control oraz głowę kolejki. Struktura data_control będzie 
-używana do zarządzania dostępem do całej kolejki, włączając w to jej węzły. 
-Następny krok to zdefiniowanie właściwych węzłów z zadaniami. Aby kod był 
-adekwatny do założeń tego przykładu i artykułu, wszystko, co jest tam zawarte, 
+Czas na szybki przegląd kodu. Pierwsza zdefiniowana struktura nazywa się
+"wq" i zawiera data_control oraz głowę kolejki. Struktura data_control będzie
+używana do zarządzania dostępem do całej kolejki, włączając w to jej węzły.
+Następny krok to zdefiniowanie właściwych węzłów z zadaniami. Aby kod był
+adekwatny do założeń tego przykładu i artykułu, wszystko, co jest tam zawarte,
 to numer zadania.
 </p>
 
 <p>
-Następnie tworzymy kolejkę sprzątania. Komentarze powinny wyjaśnić zasady jej 
-funkcjonowania. OK, na razie pominiemy funkcje MojaFunkcjaDlaWatku(), 
-koncz_watek(), stworz_watek() oraz inicjalizuj_struktury() i przeskoczymy do 
-main(). Pierwsze, co robimy, to inicjalizacja struktur, jak data_control i 
+Następnie tworzymy kolejkę sprzątania. Komentarze powinny wyjaśnić zasady jej
+funkcjonowania. OK, na razie pominiemy funkcje MojaFunkcjaDlaWatku(),
+koncz_watek(), stworz_watek() oraz inicjalizuj_struktury() i przeskoczymy do
+main(). Pierwsze, co robimy, to inicjalizacja struktur, jak data_control i
 wszystkie kolejki, w tym kolejkę z zadaniami.
 </p>
 
@@ -513,25 +513,25 @@ wszystkie kolejki, w tym kolejkę z zadaniami.
 <body>
 
 <p>
-Teraz czas na inicjalizację naszych wątków. Po przejrzeniu kodu funkcji 
-stworz_watek() można stwierdzić, że wygląda on dosyć zwyczajnie, poza jedną 
-sprawą. Warto zauważyć, że alokujemy węzeł do sprzątania, a także 
-inicjalizujemy jego komponenty: numer wątku "threadnum" oraz jego identyfikator 
-"TID". Przekazujemy ten węzeł do każdego, nowo utworzonego wątku jako argument 
+Teraz czas na inicjalizację naszych wątków. Po przejrzeniu kodu funkcji
+stworz_watek() można stwierdzić, że wygląda on dosyć zwyczajnie, poza jedną
+sprawą. Warto zauważyć, że alokujemy węzeł do sprzątania, a także
+inicjalizujemy jego komponenty: numer wątku "threadnum" oraz jego identyfikator
+"TID". Przekazujemy ten węzeł do każdego, nowo utworzonego wątku jako argument
 w funkcji pthread_create(). Dlaczego?
 </p>
 
 <p>
-Robimy tak, ponieważ gdy wątek istnieje, przyłączy on swój węzeł do sprzątania 
-do odpowiedniej kolejki i zakończy swoje działanie. Wówczas wątek główny 
-wykryje zmianę w kolejce (przy pomocy zmiennej warunkowej) i usunie z niej ten 
-węzeł. Ponieważ przechowujemy tam "TID", będzie wiadomo dokładnie który wątek 
-zakończył swoje działanie, a zatem główny wątek może spokojnie wywołać 
-pthread_join(TID), finalizując zakończenie odpowiedniego wątku. Bez tego, 
-wszystkie wątki musiałyby być kończone wedle ściśle ustalonej kolejności, na 
-przykład takiej, w jakiej były tworzone. Takie rozwiązanie mogłoby wymusić 
-oczekiwanie na zakończenie jednego wątku, podczas gdy dziesięć innych 
-czekałoby bezczynnie na przyłączenie. Na tym przykładzie ewidentnie widać, jak 
+Robimy tak, ponieważ gdy wątek istnieje, przyłączy on swój węzeł do sprzątania
+do odpowiedniej kolejki i zakończy swoje działanie. Wówczas wątek główny
+wykryje zmianę w kolejce (przy pomocy zmiennej warunkowej) i usunie z niej ten
+węzeł. Ponieważ przechowujemy tam "TID", będzie wiadomo dokładnie który wątek
+zakończył swoje działanie, a zatem główny wątek może spokojnie wywołać
+pthread_join(TID), finalizując zakończenie odpowiedniego wątku. Bez tego,
+wszystkie wątki musiałyby być kończone wedle ściśle ustalonej kolejności, na
+przykład takiej, w jakiej były tworzone. Takie rozwiązanie mogłoby wymusić
+oczekiwanie na zakończenie jednego wątku, podczas gdy dziesięć innych
+czekałoby bezczynnie na przyłączenie. Na tym przykładzie ewidentnie widać, jak
 bardzo ten sposób przyśpiesza zamykanie setek wątków.
 </p>
 
@@ -542,15 +542,15 @@ bardzo ten sposób przyśpiesza zamykanie setek wątków.
 <body>
 
 <p>
-Gdy już mamy działające wątki z przypisanymi zadaniami (w 
-MojaFunkcjaDlaWatku(), zaraz do tego dojdziemy), to wątek główny rozpoczyna 
-dodawanie elementów do kolejki zadań. Najpierw blokuje muteks dla "wq", żeby 
-następnie zaalokować 16000 pakietów zadaniowych, dodając je do tej kolejki 
-jeden po drugim. Dalej pthread_cond_broadcast() jest wywoływana w celu 
-wybudzenia wszystkich wątków, żeby te mogły robić swoje. Następuje dwu 
-sekundowe zatrzymanie pracy głównego wątku za pomocą funkcji sleep(2), po czym 
-kolejka z zadaniami jest dezaktywowana. Pociąga to za sobą zakończenie wątków 
-z przydzielonymi zadaniami. Wówczas główny wątek wywołuje funkcję 
+Gdy już mamy działające wątki z przypisanymi zadaniami (w
+MojaFunkcjaDlaWatku(), zaraz do tego dojdziemy), to wątek główny rozpoczyna
+dodawanie elementów do kolejki zadań. Najpierw blokuje muteks dla "wq", żeby
+następnie zaalokować 16000 pakietów zadaniowych, dodając je do tej kolejki
+jeden po drugim. Dalej pthread_cond_broadcast() jest wywoływana w celu
+wybudzenia wszystkich wątków, żeby te mogły robić swoje. Następuje dwu
+sekundowe zatrzymanie pracy głównego wątku za pomocą funkcji sleep(2), po czym
+kolejka z zadaniami jest dezaktywowana. Pociąga to za sobą zakończenie wątków
+z przydzielonymi zadaniami. Wówczas główny wątek wywołuje funkcję
 koncz_watek(), aby po nich posprzątać.
 </p>
 
@@ -561,41 +561,41 @@ koncz_watek(), aby po nich posprzątać.
 <body>
 
 <p>
-Czas przyjrzeć się MojaFunkcjaDlaWatku(), czyli funkcji przetwarzanej przez 
-każdy z grupy wątków zadaniowych. Gdy taki wątek zostaje stworzony, to 
-natychmiast blokuje muteks kolejki z zadaniami, bierze jeden węzeł i zaczyna 
-go przetwarzać. Jeśli nie ma dostępnych zadań, wywoływana jest funkcja 
-pthread_cond_wait(). Można dostrzec, że dzieje się to w niewielkiej pętli 
-while(), a to jest bardzo ważne. Po wybudzeniu za pomocą pthread_cond_wait() 
-nigdy nie powinno się zakładać, że dany warunek jest spełniony. Jest to bowiem 
-bardzo prawdopodobne, ale zawsze może się okazać inaczej. Pętla while() 
-spowoduje ponowne wywoływanie pthread_cond_wait() na wypadek, gdyby się 
+Czas przyjrzeć się MojaFunkcjaDlaWatku(), czyli funkcji przetwarzanej przez
+każdy z grupy wątków zadaniowych. Gdy taki wątek zostaje stworzony, to
+natychmiast blokuje muteks kolejki z zadaniami, bierze jeden węzeł i zaczyna
+go przetwarzać. Jeśli nie ma dostępnych zadań, wywoływana jest funkcja
+pthread_cond_wait(). Można dostrzec, że dzieje się to w niewielkiej pętli
+while(), a to jest bardzo ważne. Po wybudzeniu za pomocą pthread_cond_wait()
+nigdy nie powinno się zakładać, że dany warunek jest spełniony. Jest to bowiem
+bardzo prawdopodobne, ale zawsze może się okazać inaczej. Pętla while()
+spowoduje ponowne wywoływanie pthread_cond_wait() na wypadek, gdyby się
 okazało, że jednak nasza lista jest nadal pusta.
 </p>
 
 <p>
-Jeśli istnieje węzeł z zadaniem, to wypisywany jest jego numer, po czym 
-pamięć jest zwalniana i na tym zadanie się kończy. Prawdziwy program robiłby 
-coś bardziej zmyślnego. Po pętli while() muteks jest blokowany, żeby można 
-było sprawdzić stan zmiennej "active", a także upewnić się, czy w kolejce 
-pojawiły się nowe węzły. Jak to wynika z tego kodu, jeśli pętla while() 
-natrafi na "wq.control.active" równe zeru, to zatrzyma się i kod odpowiedzialny 
+Jeśli istnieje węzeł z zadaniem, to wypisywany jest jego numer, po czym
+pamięć jest zwalniana i na tym zadanie się kończy. Prawdziwy program robiłby
+coś bardziej zmyślnego. Po pętli while() muteks jest blokowany, żeby można
+było sprawdzić stan zmiennej "active", a także upewnić się, czy w kolejce
+pojawiły się nowe węzły. Jak to wynika z tego kodu, jeśli pętla while()
+natrafi na "wq.control.active" równe zeru, to zatrzyma się i kod odpowiedzialny
 za sprzątanie zostanie wówczas wywołany.
 </p>
 
 <p>
-Część kodu odpowiedzialnego za sprzątanie, znajdująca się poza wątkiem głównym 
-jest ciekawa. Najpierw odblokowana zostaje kolejka z zadaniami, ponieważ 
-pthread_cond_wait() zwracając wartość blokuje również muteks. Następnie 
-blokowana jest kolejka "cleanup", w celu dodania do niej węzła zawierającego 
-"TID" (który zostanie później wykorzystany przez wątek główny do sprzątania), 
-po czym muteks ten jest zwalniany. Wątki oczekujące na "cq" (kolejka cleanup, 
-nasza zmienna) są powiadamiane za pomocą 
-pthread_cond_signal(&amp;cq.control.warunek), dzięki czemu wątek główny dowie 
-się, że pojawił się nowy węzeł do przetworzenia. Nie ma potrzeby używania 
-pthread_cond_broadcast() w tym momencie, ponieważ tylko jeden wątek oczekuje 
-na nowe elementy w "cq". Wątek zadaniowy wypisuje komunikat o swoim 
-zakończeniu, po czym ulega przyłączeniu, gdy tylko nastąpi pthread_join() 
+Część kodu odpowiedzialnego za sprzątanie, znajdująca się poza wątkiem głównym
+jest ciekawa. Najpierw odblokowana zostaje kolejka z zadaniami, ponieważ
+pthread_cond_wait() zwracając wartość blokuje również muteks. Następnie
+blokowana jest kolejka "cleanup", w celu dodania do niej węzła zawierającego
+"TID" (który zostanie później wykorzystany przez wątek główny do sprzątania),
+po czym muteks ten jest zwalniany. Wątki oczekujące na "cq" (kolejka cleanup,
+nasza zmienna) są powiadamiane za pomocą
+pthread_cond_signal(&amp;cq.control.warunek), dzięki czemu wątek główny dowie
+się, że pojawił się nowy węzeł do przetworzenia. Nie ma potrzeby używania
+pthread_cond_broadcast() w tym momencie, ponieważ tylko jeden wątek oczekuje
+na nowe elementy w "cq". Wątek zadaniowy wypisuje komunikat o swoim
+zakończeniu, po czym ulega przyłączeniu, gdy tylko nastąpi pthread_join()
 (czyli po wywołaniu koncz_watek()).
 </p>
 
@@ -606,11 +606,11 @@ zakończeniu, po czym ulega przyłączeniu, gdy tylko nastąpi pthread_join()
 <body>
 
 <p>
-Prosty przykład użycia zmiennej warunkowej prezentuje funkcja koncz_watek(). 
+Prosty przykład użycia zmiennej warunkowej prezentuje funkcja koncz_watek().
 Działa ona w pętli, dopóki istnieją wątki z zadaniami. Czeka na nowe węzły w
-kolejce sprzątania. Jeśli pojawi się nowy węzeł, to zostaje on odłączony, a 
-kolejka jest zwalniana (żeby inne węzły mogły być dalej dodawane). 
-Identyfikator "TID" zawarty w nim posłuży do przyłączenia tego wątku, po czym 
+kolejce sprzątania. Jeśli pojawi się nowy węzeł, to zostaje on odłączony, a
+kolejka jest zwalniana (żeby inne węzły mogły być dalej dodawane).
+Identyfikator "TID" zawarty w nim posłuży do przyłączenia tego wątku, po czym
 pamięć zostanie zwolniona a liczba wątków zdekrementowana.
 </p>
 
@@ -621,11 +621,11 @@ pamięć zostanie zwolniona a liczba wątków zdekrementowana.
 <body>
 
 <p>
-To koniec serii "Wszystko o wątkach systemu POSIX". Mam nadzieję, że po jej 
-lekturze czytelnik będzie w stanie implementować obsługę wielu wątków w swoich 
-programach. Więcej informacji można znaleźć w sekcji 
-<uri link="#resources">Źródła</uri>, gdzie została zawarta, między innymi, 
-paczka ze wszystkimi kodami źródłowymi (w oryginalnym wydaniu, przyp. tłum.) 
+To koniec serii "Wszystko o wątkach systemu POSIX". Mam nadzieję, że po jej
+lekturze czytelnik będzie w stanie implementować obsługę wielu wątków w swoich
+programach. Więcej informacji można znaleźć w sekcji
+<uri link="#resources">Źródła</uri>, gdzie została zawarta, między innymi,
+paczka ze wszystkimi kodami źródłowymi (w oryginalnym wydaniu, przyp. tłum.)
 programów w tym artykule. Do zobaczenia!
 </p>
 
@@ -640,15 +640,15 @@ programów w tym artykule. Do zobaczenia!
 
 <ul>
   <li>
-    <uri link="/doc/en/files/l-posix-thread-3.tar.gz"> 
+    <uri link="/doc/en/files/l-posix-thread-3.tar.gz">
   Paczka z kodami źródłowymi</uri> programów z tego artykułu.
   </li>
   <li>
-    <uri link="l-posix1.xml">Część pierwsza</uri> oraz 
+    <uri link="l-posix1.xml">Część pierwsza</uri> oraz
     <uri link="l-posix2.xml">Część druga</uri> tego artykułu autorstwa Daniela.
   </li>
   <li>
-    Wspaniałym źródłem jest dokumentacja (<c>man -k pthread</c>) 
+    Wspaniałym źródłem jest dokumentacja (<c>man -k pthread</c>)
   </li>
   <li>
     Dokładne wyjaśnienie wątków w POSIX znajduje się w tej książce:
@@ -660,8 +660,8 @@ programów w tym artykule. Do zobaczenia!
   <li>
     Wątki są także omówione tu: <uri
     link="http://search.borders.com/fcgi-bin/db2www/search/search.d2w/Deogons?&amp;mediaType=Book&amp;prodID=2362607">UNIX
-    Network Programming - Networking APIs: Sockets and XTI</uri>, autorstwa 
-    W. Richard'a Stevens'a (Prentice Hall, 1997). To klasyka, aczkolwiek nie 
+    Network Programming - Networking APIs: Sockets and XTI</uri>, autorstwa
+    W. Richard'a Stevens'a (Prentice Hall, 1997). To klasyka, aczkolwiek nie
     pokrywa takiej ilości materiału, co powyższa pozycja.
   </li>
   <li>
@@ -675,34 +675,34 @@ programów w tym artykule. Do zobaczenia!
     wątki w POSIX</uri>
     autorstwa Mark'a Hays'a z uniwersytetu w Arizonie.
   </li>
-<li> 
-<uri link="http://hwaci.com/sw/pttcl/pttcl.html">Wprowadzenie do linuksowych 
-wątków w TCL</uri>, czyli zmiany, jakie należy wprowadzić w TCLu, aby była 
-możliwość korzystania z wątków. 
-</li> 
+<li>
+<uri link="http://hwaci.com/sw/pttcl/pttcl.html">Wprowadzenie do linuksowych
+wątków w TCL</uri>, czyli zmiany, jakie należy wprowadzić w TCLu, aby była
+możliwość korzystania z wątków.
+</li>
   <li>
-Inny poradnik 
-<uri link="http://dis.cs.umass.edu/~wagner/threads_html/tutorial.html"> Wątki w 
+Inny poradnik
+<uri link="http://dis.cs.umass.edu/~wagner/threads_html/tutorial.html"> Wątki w
 POSIX dla początkujących</uri>, autorstwa Tom'a Wagner'a i Don'a Towsley'a z
-Wydziału Informatyki na Uniwersytecie w Massachusetts w Amherst 
+Wydziału Informatyki na Uniwersytecie w Massachusetts w Amherst
   </li>
   <li>
 <uri link="http://moss.csc.ncsu.edu/~mueller/pthreads/">FSU PThreads</uri> to
 biblioteka języka C, która implementuje wątki POSIX dla systemów SunOS 4.1.x,
-Solaris 2.x, SCO UNIX, FreeBSD, Linuksa i pod DOS'em 
+Solaris 2.x, SCO UNIX, FreeBSD, Linuksa i pod DOS'em
   </li>
   <li>
-Strona domowa dla referencji, pt. 
-<uri link="http://www.sai.msu.su/sal/C/2/PCTHREADS.html">Wątki w POSIX i DCE 
-pod Linuksem</uri> 
+Strona domowa dla referencji, pt.
+<uri link="http://www.sai.msu.su/sal/C/2/PCTHREADS.html">Wątki w POSIX i DCE
+pod Linuksem</uri>
   </li>
   <li>
-Warto sprawdzić: <uri link="http://pauillac.inria.fr/~xleroy/linuxthreads/"> 
-Biblioteka LinuxThreads</uri> 
+Warto sprawdzić: <uri link="http://pauillac.inria.fr/~xleroy/linuxthreads/">
+Biblioteka LinuxThreads</uri>
   </li>
   <li>
-  <uri link="http://www.users.itl.net.ua/~prool/proolix.html">Proolix</uri> 
-  to prosty system operacyjny w standardzie POSIX dla układów i8086+, 
+  <uri link="http://www.users.itl.net.ua/~prool/proolix.html">Proolix</uri>
+  to prosty system operacyjny w standardzie POSIX dla układów i8086+,
   stale ulepszany.
   </li>
   </ul>
