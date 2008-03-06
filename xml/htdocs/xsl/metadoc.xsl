@@ -408,7 +408,12 @@
     <xsl:for-each select="exslt:node-set($metadoc)/metadoc/members/lead">
       <xsl:variable name="nickname" select="text()"/>
       <xsl:variable name="fullname" select="concat(exslt:node-set($userfile)/userlist/user[@username = $nickname]/realname/firstname, ' ', exslt:node-set($userfile)/userlist/user[@username = $nickname]/realname/familyname)"/>
-      <xsl:variable name="email"    select="exslt:node-set($userfile)/userlist/user[@username = $nickname]/email"/>
+      <xsl:variable name="email">
+        <xsl:choose>
+          <xsl:when test="exslt:node-set($userfile)/userlist/user[@username = $nickname]/email[contains(text(),'@gentoo.org')]"><xsl:value-of select="exslt:node-set($userfile)/userlist/user[@username = $nickname]/email[contains(text(),'@gentoo.org')]"/></xsl:when>
+          <xsl:otherwise><xsl:value-of select="exslt:node-set($userfile)/userlist/user[@username = $nickname]/email"/></xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
       <tr>
         <ti><xsl:value-of select="$fullname"/></ti>
         <ti><xsl:value-of select="$nickname"/></ti>
@@ -427,6 +432,7 @@
       <xsl:variable name="email">
         <xsl:choose>
           <xsl:when test="@mail"><xsl:value-of select="@mail"/></xsl:when>
+          <xsl:when test="exslt:node-set($userfile)/userlist/user[@username = $nickname]/email[contains(text(),'@gentoo.org')]"><xsl:value-of select="exslt:node-set($userfile)/userlist/user[@username = $nickname]/email[contains(text(),'@gentoo.org')]"/></xsl:when>
           <xsl:otherwise><xsl:value-of select="exslt:node-set($userfile)/userlist/user[@username = $nickname]/email"/></xsl:otherwise>
         </xsl:choose>
       </xsl:variable>
@@ -495,7 +501,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.38 2007/09/14 08:39:08 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.39 2008/03/06 16:59:02 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -518,7 +524,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.38 2007/09/14 08:39:08 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.39 2008/03/06 16:59:02 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:when test="string-length($pv)=0">?!?</xsl:when>
