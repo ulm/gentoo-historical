@@ -47,7 +47,9 @@
 			</body></section>
 		</chapter>
 		</xsl:if>
+
 		<xsl:apply-templates select='extrachapter[@position="goals"]'/>
+
 		<xsl:if test="dev">
 		<chapter>
 			<title>Developers</title>
@@ -68,11 +70,14 @@
       <p>
        All developers can be reached by e-mail using <c>nickname@gentoo.org</c>.
       </p>
-      
-                        </body></section>
+      </body></section>
 		</chapter>
 		</xsl:if>
 		<xsl:apply-templates select='extrachapter[@position="devs"]'/>
+
+		<xsl:apply-templates select='recruitment'/>
+		<xsl:apply-templates select='extrachapter[@position="recruitment"]'/>
+
 		<xsl:if test="subproject|extraproject">
 		<chapter>
 			<title>Subprojects</title>
@@ -161,8 +166,40 @@
 		</xsl:if>		
 	
 		<xsl:apply-templates select='extrachapter[@position="bottom" or (not(@position) or @position="")]'/>
+
 	</guide>
 </xsl:template>
+
+<xsl:template match="recruitment">
+  <chapter id="JOBS">
+   <title>Recruitment</title>
+   <xsl:apply-templates select='job'/>
+  </chapter>
+</xsl:template>
+
+<xsl:template match="job">
+  <section>
+   <title><xsl:value-of select="summary"/></title>
+   <body>
+   <dl>
+    <dt>Job description</dt>
+    <dd><xsl:apply-templates select='details'/></dd>
+
+    <dt>Requirements</dt>
+    <dd><xsl:apply-templates select='requirements'/></dd>
+
+    <dt>Contact<xsl:if test="count(contact)>1">s</xsl:if></dt>
+    <dd>
+     <xsl:for-each select="contact">
+      <xsl:if test="position()>1">, </xsl:if>
+      <mail><xsl:value-of select="."/></mail>
+     </xsl:for-each>
+    </dd>
+   </dl>
+   </body>
+  </section>
+</xsl:template>
+
 <xsl:template match="name|description">
 <xsl:value-of select="normalize-space(text())"/>
 </xsl:template>
