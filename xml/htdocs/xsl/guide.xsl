@@ -1402,16 +1402,14 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 </xsl:template>
 
 <!-- Table Heading, no idea why <th> hasn't been used -->
+<!-- 2008-03-09: th uses th, default is align:left for historical reasons -->
 <xsl:template match="th">
-<td class="infohead">
+<th class="infohead">
+  <xsl:if test="@align='left' or @align='right'">
+    <xsl:attribute name="style"><xsl:value-of select="concat('text-align:',@align)"/></xsl:attribute>
+  </xsl:if>
   <xsl:if test="@colspan">
     <xsl:attribute name="colspan"><xsl:value-of select="@colspan"/></xsl:attribute>
-    <!-- Center only when item spans several columns as
-         centering all <th> might disrupt some pages.
-         We might want to use a plain html <th> tag later.
-         Tip: to center a single-cell title, use <th colspan="1">
-       -->
-    <xsl:attribute name="style">text-align:center</xsl:attribute>
   </xsl:if>
   <xsl:if test="@rowspan">
     <xsl:attribute name="rowspan"><xsl:value-of select="@rowspan"/></xsl:attribute>
@@ -1419,7 +1417,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
   <b>
     <xsl:apply-templates/>
   </b>
-</td>
+</th>
 </xsl:template>
 
 <!-- Unnumbered List -->
