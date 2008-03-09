@@ -174,6 +174,10 @@
 <xsl:template match="recruitment">
   <chapter id="JOBS">
    <title>Recruitment</title>
+   <section><body><p>
+   We are currently looking for users interested in helping the project with
+   the following jobs:
+   </p></body></section>
    <xsl:apply-templates select='job'/>
   </chapter>
 </xsl:template>
