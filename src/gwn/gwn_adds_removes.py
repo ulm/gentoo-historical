@@ -45,8 +45,9 @@ def developers():
 	devs = {}
 	
 	for i in rows[1:]:
+		ths = i.xpathEval('th/b')
 		tds = i.xpathEval('td')
-		devs[tds[0].content] = tds[1].content.decode('utf-8')
+		devs[ths[0].content] = tds[0].content.decode('utf-8')
 	
 	doc.freeDoc()
 	return devs
@@ -102,5 +103,6 @@ if __name__ == '__main__':
 	else:
 		data = parse(sys.argv[1])
 		devs = developers()
+		print devs
 		attic = len(sys.argv) == 3 and sys.argv[2] == '--attic'
 		write(data, devs, attic)
