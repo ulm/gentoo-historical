@@ -103,6 +103,5 @@ if __name__ == '__main__':
 	else:
 		data = parse(sys.argv[1])
 		devs = developers()
-		print devs
 		attic = len(sys.argv) == 3 and sys.argv[2] == '--attic'
 		write(data, devs, attic)
