@@ -4,145 +4,121 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/handbook/2008.0/hb-install-hppa-kernel.xml,v 1.1 2008/03/07 02:52:33 r0bertz Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/handbook/2008.0/hb-install-hppa-kernel.xml,v 1.2 2008/03/19 15:21:08 r0bertz Exp $ -->
+<!-- English CVS version: 1.12 -->
 
 <sections>
 
-<version>9.0</version>
-<date>2008-02-29</date>
+<version>8.4</version>
+<date>2008-01-12</date>
 
 <section>
-<title>Timezone</title>
+<title>时区</title>
 <body>
 
 <p>
-You first need to select your timezone so that your system knows where it is
-located. Look for your timezone in <path>/usr/share/zoneinfo</path>, then copy
-it to <path>/etc/localtime</path>. Please avoid the
-<path>/usr/share/zoneinfo/Etc/GMT*</path> timezones as their names do not
-indicate the expected zones. For instance, <path>GMT-8</path> is in fact
-GMT+8.
+您首先需要选择您自己的时区，这样可以让系统知道它的位置在哪里。您可以在<path>/usr/share/zoneinfo</path>中找到您所在的时区，然后把它复制到<path>/etc/localtime</path>。请不要使用<path>/usr/share/zoneinfo/Etc/GMT*</path>下的时区，因为它们“名不副实”。例如，<path>GMT-8</path>事实上是GMT+8区。
 </p>
 
-<pre caption="Setting the timezone information">
+<pre caption="设置时区信息">
 # <i>ls /usr/share/zoneinfo</i>
-<comment>(Suppose you want to use GMT)</comment>
+<comment>（假设您要用GMT）</comment>
 # <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
 </pre>
 
 </body>
 </section>
 <section>
-<title>Installing the Sources</title>
+<title>安装源码</title>
 <subsection>
-<title>Choosing a Kernel</title>
+<title>选择内核</title>
 <body>
 
 <p>
-The core around which all distributions are built is the Linux kernel. It is the
-layer between the user programs and your system hardware. Gentoo provides its
-users several possible kernel sources. A full listing with description is
-available at the <uri link="/doc/en/gentoo-kernel.xml">Gentoo Kernel
-Guide</uri>. 
+Linux内核是所有发行版的核心。它位于用户程序和系统硬件之间。Gentoo提供给我们几个可选的内核源码。完整的清单参见<uri link="/doc/en/gentoo-kernel.xml">Gentoo内核指南</uri>。
 </p>
 
 <p>
-For HPPA we have <c>gentoo-sources</c>.
+对于HPPA架构，我们有<c>hppa-sources</c>。默认情况下这些源代码是基于2.6内核的。
 </p>
 
-<pre caption="Installing a kernel source">
-# <i>emerge gentoo-sources</i>
+<pre caption="安装内核源码">
+# <i>emerge hppa-sources</i>
 </pre>
 
 <p>
-When you take a look in <path>/usr/src</path> you should see a symlink called
-<path>linux</path> pointing to your kernel source. In this case, the installed
-kernel source points to <c>hppa-sources-<keyval id="kernel-version"/></c>.  Your
-version may be different, so keep this in mind. 
+当您查看<path>/usr/src</path>时，您将会看到一个叫做<path>linux</path>的符号链接指向您安装的内核源码。在我们这个例子中，安装的源码是<c>hppa-sources-<keyval id="kernel-version"/></c>。你的内核版本可能与此不同，请记得这一点。
 </p>
 
-<pre caption="Viewing the kernel source symlink">
+<pre caption="查看内核源码符号链接">
 # <i>ls -l /usr/src/linux</i>
 lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
 </pre>
 
 <p>
-Now it is time to configure and compile your kernel source. All architectures 
-can use <c>genkernel</c> for this, which will build a generic kernel as used 
-by the Installation CD. We explain the "manual" configuration first though, as
-it is the best way to optimize your environment.
+现在，我们开始配置和编译您的内核。您可以用<c>genkernel</c>来做这件事。这将会建立一个和安装光盘所用的内核类似的通用内核。不过我们将首先说明如何手动配置一个内核，因为这是优化您系统环境的最佳方法。
 </p>
 
 <p>
-If you want to manually configure your kernel, continue now with <uri
-link="#manual">Default: Manual Configuration</uri>. If you want to use 
-<c>genkernel</c> you should read <uri link="#genkernel">Alternative: Using 
-genkernel</uri> instead.
+如果您希望手动配置您的内核，点击<uri link="#manual">默认：手动配置</uri>。如果您希望使用<c>genkernel</c>，您可以阅读<uri link="#genkernel">备选：使用genkernel</uri>。
 </p>
 
 </body>
 </subsection>
 </section>
 <section id="manual">
-<title>Default: Manual Configuration</title>
+<title>默认：手动配置</title>
 <subsection>
-<title>Introduction</title>
+<title>介绍</title>
 <body>
 
 <p>
-Manually configuring a kernel is often seen as the most difficult procedure a
-Linux user ever has to perform. Nothing is less true -- after configuring a
-couple of kernels you don't even remember that it was difficult ;)
+手动配置内核经常被Linux使用者认为是最困难的步骤。事实并非如此——但是当您手动配置几次内核之后，您就不会再觉得它有多么难了。:)
 </p>
 
 <p>
-However, one thing <e>is</e> true: you must know your system when you start
-configuring a kernel manually. Most information can be gathered by emerging 
-pciutils (<c>emerge pciutils</c>) which contains <c>lspci</c>. You will now 
-be able to  use <c>lspci</c> within the chrooted environment. You may safely 
-ignore any <e>pcilib</e> warnings (like pcilib: cannot open 
-/sys/bus/pci/devices) that <c>lspci</c> throws out. Alternatively, you can run 
-<c>lspci</c> from a <e>non-chrooted</e> environment. The results are the same. 
-You can also run <c>lsmod</c> to see what kernel modules the Installation CD 
-uses (it might provide you with a nice hint on what to enable).
+然而，一件事情<e>是</e>真的：在手动配置内核之前，您必须了解您的系统。您可以安装pciutils（<c>emerge pciutils</c>），用其中的<c>lspci</c>来了解您需要的大部分信息。您现在可以在chroot的环境中运行<c>lspci</c>。您可以忽略任何<e>pcilib</e>的警告。（类似于pcilib: cannot open/sys/bus/pci/devices）。此外，您也可以在非chroot的环境执行<c>lspci</c>。结果相同。您还可以运行<c>lsmod</c>来查看安装光盘使用了哪些内核模块。（这也是个不错的提示，它可以教你该选择哪些模块）。
 </p>
 
 <p>
-Now go to your kernel source directory and execute <c>make menuconfig</c>. This
-will fire up an ncurses-based configuration menu.
+现在进入到您的内核目录并且执行<c>make menuconfig</c>。这将会启动一个基于ncureses的配置菜单。
 </p>
 
-<pre caption="Invoking menuconfig">
+<pre caption="开始menuconfig">
 # <i>cd /usr/src/linux</i>
 # <i>make menuconfig</i>
 </pre>
 
 <p>
-You will be greeted with several configuration sections. We'll first list some
-options you must activate (otherwise Gentoo will not function, or not function
-properly without additional tweaks).
+您将会看到一些配置条目。首先我们将会列出一些您必须启用的选项（否则Gentoo将不能正常运行或者根本不能运行）。
 </p>
 
 </body>
 </subsection>
 <subsection>
-<title>Activating Required Options</title>
+<title>必须启用的选项</title>
 <body>
 
 <p>
-First go to <c>File Systems</c> and select support for the filesystems you use.
-<e>Don't</e> compile them as modules, otherwise your Gentoo system will not be
-able to mount your partitions. Also select <c>Virtual memory</c> and <c>/proc
-file system</c>.
+首先，开启“development and experimental code/drivers”。您必须激活它，否则，您将无法看到一些非常重要的代码/驱动。
 </p>
 
-<pre caption="Selecting necessary file systems">
+<pre caption="选择experimental code/drivers">
+General setup ---&gt;
+  [*] Prompt for development and/or incomplete code/drivers
+</pre>
+
+<p>
+现在进入<c>File Systems</c>并且选择您使用的文件系统。请<e>不要</e>把它们编译成模块，否则您的Gentoo系统将不能挂载您的分区。同时您也要启用<c>Virtual memory</c>和<c>/proc file system</c>的支持。
+</p>
+
+<pre caption="选择需要的文件系统">
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
 
-<comment>(Select one or more of the following options as needed by your system)</comment>
+<comment>（依照你系统的需要启用下面所列出的一个或是多个选项）</comment>
   &lt;*&gt; Reiserfs support
   &lt;*&gt; Ext3 journalling file system support
   &lt;*&gt; JFS filesystem support
@@ -151,11 +127,10 @@ File systems ---&gt;
 </pre>
 
 <p>
-If you are using PPPoE to connect to the Internet or you are using a dial-up
-modem, you will need the following options in the kernel:
+如果您在使用PPPoE接入Interne或者您在使用拨号的调制解调器，您需要下面的选项：
 </p>
 
-<pre caption="Selecting PPPoE necessary drivers">
+<pre caption="选择PPPoE驱动">
 Device Drivers ---&gt;
   Networking support ---&gt;
     &lt;*&gt; PPP (point-to-point protocol) support
@@ -164,22 +139,18 @@ Device Drivers ---&gt;
 </pre>
 
 <p>
-The two compression options won't harm but are not definitely needed, neither
-does the <c>PPP over Ethernet</c> option, that might only be used by <c>ppp</c>
-when configured to do kernel mode PPPoE.
+两个压缩选项不会造成什么错误，不过它们不是必需的。<c>PPP over Ethernet</c>选项也不是必需的，只在使用<c>rp-pppoe</c>并被配置成是使用核心PPPoE时才会用到它。
 </p>
 
 <p>
-If you require it, don't forget to include support in the kernel for your
-ethernet card.
+如果您需要它，请不要忘记在内核中包含对您的网卡的支持。
 </p>
 
 <p>
-If you have a HIL mouse or keyboard, do not forget to compile in support for
-them.
+如果你有HIL鼠标或键盘，不要忘记编译进对它们的支持。
 </p>
 
-<pre caption="Activating HIL support">
+<pre caption="启用HIL支持">
 Input core support ---&gt;
   [*] Keyboard support
   [*] Mouse support
@@ -187,19 +158,19 @@ Input core support ---&gt;
 </pre>
 
 <p>
-If you have no mouse on your HIL port, only use the basic support:
+如果你的HIL口上没有鼠标，只使用基本支持就可以了：
 </p>
 
-<pre caption="Basic HIL support">
+<pre caption="基本HIL支持">
 HIL support ---&gt;
   [*] HIL Keyboard (basic) support
 </pre>
 
 <p>
-If you however want <e>full</e> HIL support, select the following options:
+不过如果你想要<e>完整</e>的HIL支持，请选中下面的选项：
 </p>
 
-<pre caption="Full HIL support">
+<pre caption="完整的HIL支持">
 HIL support ---&gt;
   [*] HP System Device Controller i8042 Support
   [*] HIL MLC Support
@@ -208,10 +179,10 @@ HIL support ---&gt;
 </pre>
 
 <p>
-Also include display driver support:
+也请包括显示驱动支持：
 </p>
 
-<pre caption="Display Driver support">
+<pre caption="显示驱动支持">
 Graphics support ---&gt;
   [*] Support for frame buffer devices
       [*] HP STI frame buffer device support
@@ -220,143 +191,107 @@ Graphics support ---&gt;
 </pre>
 
 <p>
-When you're done configuring your kernel, continue with <uri
-link="#compiling">Compiling and Installing</uri>.
+当您配置完您的内核之后，请继续<uri link="#compiling">编译与安装</uri>。
 </p>
 
 </body>
 </subsection>
 <subsection id="compiling">
-<title>Compiling and Installing</title>
+<title>编译与安装</title>
 <body>
 
 <impo>
-If you want to compile a 64-bit kernel, you'll need to emerge <c>kgcc64</c>
-<e>after</e> you've finished installing Gentoo and rebooted. However, running a
-64-bit kernel is discouraged. You should only run a 64-bit kernel if you have
-more than 4GB of RAM or if your server requires it, i.e. on the A500.
+如果你想编译一个64位的内核，在你安装完Gentoo并重启<e>之后</e>，你将需要emerge <c>kgcc64</c>。不过，我们并不推荐您运行64位内核。只有在这两种情况下你才需要运行64位内核，一是你有4G以上内存，二是你的服务器（比如A500）需要64位内核。
 </impo>
 
 <p>
-Now that your kernel is configured, it is time to compile and install it. Exit 
-the configuration and start the compilation process:
+既然现在您的内核已经配置成功了，那么就是时候编译并且安装它了。退出配置界面并且开启编译进程：
 </p>
 
-<pre caption="Compiling the kernel">
+<pre caption="编译内核">
 # <i>make &amp;&amp; make modules_install</i>
 </pre>
 
 <p>
-When the kernel has finished compiling, copy the kernel image to
-<path>/boot</path>. Use whatever name you feel is appropriate for your kernel
-choice and remember it as you will need it later on when you configure your
-bootloader. Remember to replace <path>&lt;kernel-version&gt;</path> with the
-name and version of your kernel.
+当内核编译完成后，复制内核镜像到<path>/boot</path>。您可以给内核任意命名，然后记住它。因为在您配置您的系统引导程序的时候您需要用到它。记得用您内核的名字和版本来替代<path>&lt;kernel-version&gt;</path>。
 </p>
 
-<pre caption="Installing the kernel">
+<pre caption="安装内核">
 # <i>cp vmlinux /boot/&lt;kernel-version&gt;</i>
 </pre>
 
 <p>
-Now continue with <uri link="#kernel_modules">Configuring Kernel
-Modules</uri>.
+现在请从<uri link="#kernel_modules">配置内核模块</uri>继续。
 </p>
 
 </body>
 </subsection>
 </section>
 <section id="genkernel">
-<title>Alternative: Using genkernel</title>
+<title>备选：使用genkernel</title>
 <body>
 
 <p>
-If you are reading this section, you have chosen to use our <c>genkernel</c>
-script to configure your kernel for you.
+如果您在阅读这部分，那么您选择了使用<c>genkernel</c>脚本来配置您自己的内核。
 </p>
 
 <p>
-Now that your kernel source tree is installed, it's now time to compile your
-kernel by using our <c>genkernel</c> script to automatically build a kernel for
-you. <c>genkernel</c> works by configuring a kernel nearly identically to the
-way our Installation CD kernel is configured. This means that when you use
-<c>genkernel</c> to build your kernel, your system will generally detect all
-your hardware at boot-time, just like our Installation CD does. Because
-genkernel doesn't require any manual kernel configuration, it is an ideal
-solution for those users who may not be comfortable compiling their own
-kernels.
+现在您的内核源码树已经安装了，是时候用<c>genkernel</c>脚本自动编译您的内核了。<c>genkernel</c>是使用类似安装光盘中的内核配置来配置内核的。这表明当您用<c>genkernel</c>建立内核时，您的系统在启动时候将会如同安装光盘那样识别您所有的硬件。因为genkernel不需要手动配置内核，所以它对于那些不想自己编译特定内核的用户来说是一个理想的解决方案。
 </p>
 
 <p>
-Now, let's see how to use genkernel. First, emerge the genkernel ebuild:
+现在让我们来看看如何使用genkernel吧。首先，安装genkernel：
 </p>
 
-<pre caption="Emerging genkernel">
+<pre caption="安装genkernel">
 # <i>emerge genkernel</i>
 </pre>
 
 <p>
-Now, compile your kernel sources by running <c>genkernel all</c>.
-Be aware though, as <c>genkernel</c> compiles a kernel that supports almost all 
-hardware, this compilation will take quite a while to finish!
+现在执行<c>genkernel all</c>编译您的内核源码。请注意，<c>genkernel</c>编译出的内核支持几乎所有硬件，编译需要一段很长的时间。
 </p>
 
 <p>
-Note that, if your boot partition doesn't use ext2 or ext3 as filesystem you
-need to manually configure your kernel using <c>genkernel --menuconfig all</c>
-and add support for your filesystem <e>in</e> the kernel (i.e. <e>not</e> as a
-module).
+另外需要注意的是，如果您的启动分区没有使用ext2或者ext3文件系统，您必须使用<c>genkernel --menuconfig all</c>来手动配置您的内核，把您所使用的文件系统编译进内核。（<e>不能</e>编译为模块！）
 </p>
 
-<pre caption="Running genkernel">
+<pre caption="运行genkernel">
 # <i>genkernel all</i>
 </pre>
 
 <p>
-Once <c>genkernel</c> completes, a kernel, full set of modules and 
-<e>initial root disk</e> (initrd) will be created. We will use the kernel 
-and initrd when configuring a boot loader later in this document. Write
-down the names of the kernel and initrd as you will need it when writing
-the bootloader configuration file. The initrd will be started immediately after 
-booting to perform hardware autodetection (just like on the Installation CD) 
-before your "real" system starts up.
+一旦<c>genkernel</c>运行完成，一个包括全部模块和initrd的内核将被建立。在后面配置引导程序时我们将会用到这个内核和initrd。请记下内核和initrd的名字，因为您将在配置引导程序的时候用到他们。initrd将会在启动真正的系统前自动识别硬件（如同安装光盘一样）。
 </p>
 
-<pre caption="Checking the created kernel image name and initrd">
+<pre caption="查看内核和initrd的名字">
 # <i>ls /boot/kernel* /boot/initramfs*</i>
 </pre>
 
 </body>
 </section>
 <section id="kernel_modules">
-<title>Configuring Kernel Modules</title>
+<title>配置内核模块</title>
 <subsection>
-<title>Configuring the Modules</title>
+<title>配置内核模块</title>
 <body>
 
 <p>
-You should list the modules you want automatically loaded in 
-<path>/etc/modules.autoload.d/kernel-2.6</path>.
-You can add extra options to the modules too if you want.
+您可以在<path>/etc/modules.autoload.d/kernel-2.6</path>中列出您需要自动加载的模块。如果您愿意，您也可以加上模块的选项。
 </p>
 
 <p>
-To view all available modules, run the following <c>find</c> command. Don't
-forget to substitute "&lt;kernel version&gt;" with the version of the kernel you
-just compiled:
+要查看所有可用的模块，运行如下的<c>find</c>命令。不要忘记把“&lt;kernel version&gt;”替换成你刚编译好的内核版本：
 </p>
 
-<pre caption="Viewing all available modules">
+<pre caption="查看所有可用的模块">
 # <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
 </pre>
 
 <p>
-For instance, to automatically load the <c>3c59x.ko</c> module, edit the
-<path>kernel-2.6</path> file and enter the module
-name in it.
+例如，要自动加载<c>3c59x.ko</c>模块，编辑<path>kernel-2.6</path>然后输入模块的名字。
 </p>
 
-<pre caption="Editing /etc/modules.autoload.d/kernel-2.6">
+<pre caption="编辑/etc/modules.autoload.d/kernel-2.6">
 # <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
 </pre>
 
@@ -365,8 +300,7 @@ name in it.
 </pre>
 
 <p>
-Continue the installation with <uri link="?part=1&amp;chap=8">Configuring 
-your System</uri>.
+现在请从<uri link="?part=1&amp;chap=8">配置您的系统</uri>一章来继续您的安装。
 </p>
 
 </body>
