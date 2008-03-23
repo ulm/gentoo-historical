@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/power-management-guide.xml,v 1.14 2008/01/08 10:49:20 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/power-management-guide.xml,v 1.15 2008/03/23 01:23:42 chiguire Exp $ -->
 <guide link="/doc/es/power-management-guide.xml" lang="es">
 <title>Guía de Administración de Energía</title>
 
@@ -33,8 +33,8 @@ de duración de la batería en sistemas móviles como los portátiles.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.37</version>
-<date>2007-12-03</date>
+<version>1.39</version>
+<date>2008-01-31</date>
 
 <chapter>
 <title>Introducción</title>
@@ -181,10 +181,10 @@ asegurará de tener el soporte más actualizado.
 
 <p>
 Existen diferentes fuentes del núcleo en Portage. Le recomendamos usar
-<c>gentoo-sources</c> o <c>suspend2-sources</c>. La última contiene
-parches para Software Suspend 2, vea el capítulo sobre los <uri
-link="#doc_chap7">estados de sueño</uri> para más detalles. Cuando
-configure el núcleo, active al menos estas opciones:
+<c>gentoo-sources</c> o <c>tuxonice-sources</c>. La última contiene
+parches para TuxonIce, vea el capítulo sobre los <uri
+link="#doc_chap7">estados de sueño</uri> para más detalles. Al
+configurar el núcleo, al menos active estas opciones:
 </p>
 
 <pre caption="Configuración mínima del núcleo para la Administración de Energía (Núcleo 2.6)">
@@ -894,14 +894,12 @@ esa tarea. Hay dos lugares en común: Se puede blanquear el terminal con
 Para X.org, modifique  <path>/etc/X11/xorg.conf</path> en forma similar a ésto:
 </p>
 
-<pre caption="Ajustes para suspender el LCD en X.org y XFree86">
-Section "ServerLayout"
-  Identifier  [...]
-  [...]
-  Option  "BlankTime"  "5"  <comment># Blanquea la pantalla luego de 5 minutos (Falso)</comment>
-  Option  "StandbyTime"  "10"  <comment># Apaga la pantalla luego de minutos (DPMS)</comment>
-  Option  "SuspendTime"  "20"  <comment># Suspensión total luego de 20 minutos</comment>
-  Option  "OffTime"  "30"  <comment># Apagado completo pasado una media hora</comment>
+<pre caption="Ajustes para suspender el LCD en X.org">
+Section "ServerFlags"
+  Option  "blank time"  "5"  <comment># Blank the screen after 5 minutes (Fake)</comment>
+  Option  "standby time"  "10"  <comment># Turn off screen after 10 minutes (DPMS)</comment>
+  Option  "suspend time"  "20"  <comment># Full suspend after 20 minutes</comment>
+  Option  "off time"  "30"  <comment># Turn off after half an hour</comment>
   [...]
 EndSection
 
@@ -909,14 +907,10 @@ EndSection
 
 Section "Monitor"
   Identifier  [...]
-  Option  "DPMS"  "true"
+  Option  "DPMS"
   [...]
 EndSection
 </pre>
-
-<p>
-Esto es lo mismo para XFree86 y <path>/etc/X11/XF86Config</path>.
-</p>
 </body>
 </section>
 
@@ -932,40 +926,41 @@ en su nivel de ejecución <c>battery</c>. El siguiente guión debería
 funcionar en la mayoría de los portátiles IBM Thinkpad y
 Toshiba. Tiene que activar la opción apropiada en su núcleo (Sólo para
 pórtatiles IBM Thinkpad). Para pórtatiles Toshiba, instale el paquete
-<c>app-laptop/acpitool</c> y salte la configuración de <c>ibm_acpi</c>
-descrita más abajo.
+<c>app-laptop/acpitool</c> y salte la configuración de
+<c>thinkpad_acpi</c> (antiguamente conocido como <c>ibm_acpi</c>) como
+se describe a continuación.
 </p>
 
 <warn>
 El soporte para el ajusto del brillo está marcado como experimental en
-ibm-acpi. Este accede directamente al hardware y puede causar daño severo
-a su sistema. Por favor, lea el <uri link="http://ibm-acpi.sourceforge.net/">
-sitio web ibm-acpi</uri>.
+thinkpad_acpi. Este accede directamente al hardware y puede causar
+daño severo a su sistema. Por favor, lea el <uri
+link="http://ibm-acpi.sourceforge.net/"> sitio web thinkpad_acpi</uri>.
 </warn>
 
 <p>
 Para poder ajustar el nivel de brillo debe ser cargado el módulo
-<c>ibm_acpi</c> con el parámetro experimental.
+<c>thinkpad_acpi</c> con el parámetro experimental.
 </p>
 
-<pre caption="Cargar automáticamente el módulo ibm_acpi">
+<pre caption="Cargar automáticamente el módulo thinkpad_acpi">
 <comment>(¡Por favor, lea las advertencias indicadas arriba antes de seguir!)</comment>
-# <i>echo "options ibm_acpi experimental=1" >> /etc/modules.d/ibm_acpi</i>
+# <i>echo "options thinkpad_acpi experimental=1" >> /etc/modules.d/thinkpad_acpi</i>
 # <i>/sbin/update-modules</i>
-# <i>echo ibm_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
-# <i>modprobe ibm_acpi</i>
+# <i>echo thinkpad_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
+# <i>modprobe thinkpad_acpi</i>
 </pre>
 
 <p>
-Esto debería funcionar sin mensajes de error y debería ser creado el
-archivo <path>/proc/acpi/ibm/brightness</path> luego de que sea cargado
+Esto debería funcionar sin mensajes de error y debería crearse el
+archivo <path>/proc/acpi/ibm/brightness</path> luego que sea cargado
 el módulo. Un guión de inicio se ocupará de elegir el brillo de acuerdo
 a la fuente de energía.
 </p>
 
 <pre caption="/etc/conf.d/lcd-brightness">
 <comment># Vea /proc/acpi/ibm/brightness para los valores disponibles</comment>
-<comment># Por favor lea /usr/src/linux/Documentation/ibm-acpi.txt</comment>
+<comment># Por favor lea /usr/src/linux/Documentation/thinkpad-acpi.txt</comment>
 
 <comment># Nivel de brillo en modo CA (Corriente Alterna). El valor por defecto es 7.</comment>
 BRIGHTNESS_AC=7
@@ -997,7 +992,7 @@ set_brightness() {
         eend $?
     else
         ewarn "Setting LCD brightness is not supported."
-        ewarn "For IBM Thinkpads, check that ibm_acpi is loaded into the kernel"
+        ewarn "For IBM Thinkpads, check that thinkpad_acpi is loaded into the kernel"
         ewarn "For Toshiba laptops, you've got to install sys-power/acpitool"
     fi
 }
@@ -1423,24 +1418,23 @@ NFS o Samba antes de hibernar.
 
 <p>
 Existen dos implementaciones distintas para S4. El original denominado
-swsusp y luego está la más nueva, swsusp2, que tiene una interfaz
-agradable (incluyendo soporte para fbsplash). Una <uri
-link="http://suspend2.net/features.html#compare">comparación de
-características </uri> está disponible en la <uri
-link="http://suspend2.net">página Web de suspend2</uri>. Solía existir
-Suspend-to-Disk (pmdisk), un proyecto clon de swsusp, pero fue
-incorporado al anterior.
+swsusp y luego está la más nueva, tuxonice (antiguamente suspend2),
+que tiene una interfaz más agradable (con soporte para fbsplash). Una
+<uri link="http://tuxonice.net/features.html#compare">comparación de
+características</uri> está disponible en la <uri
+link="http://tuxonice.net">página Web de tuxonice</uri>. Antes existía
+Suspend-to-Disk (pmdisk), un fork de swsusp, pero fue re-incorporado.
 </p>
 
 <p>
-Suspend2 todavía no está incluido en el núcleo principal, por tanto,
-tendrá que parchar sus fuentes del núcleo con los parches ofrecidos
-por <uri link="http://suspend2.net">suspend2.net</uri> o usar
-<c>sys-kernel/suspend2-sources</c>.
+TuxOnIce no está incluido en el núcleo principal, por tanto, tendrá
+que parchar sus fuentes del núcleo con los parches ofrecidos por <uri
+link="http://tuxonice.net">tuxonice.net</uri> o usar
+<c>sys-kernel/tuxonice-sources</c>.
 </p>
 
 <p>
-La parte relacionada al núcleo para swsup y suspend2 es como sigue:
+La parte relacionada al núcleo para swsup y TuxOnIce es como sigue:
 </p>
 
 <pre caption="Configuración del núcleo para los diversos tipos de suspensión">
@@ -1450,8 +1444,8 @@ Power Management Options ---&gt;
       <comment>(reemplace /dev/SWAP con su partición de intercambio</comment>
       (/dev/SWAP)      Default resume partition
 
-  <comment>(hibernación con swsusp2)</comment>
-  Software Suspend 2
+  <comment>(hibernación con TuxOnIce)</comment>
+  Enhanced Hibernation (TuxOnIce)
     --- Image Storage (you need at least one writer)
     [*]     File Writer
     [*]    Swap Writer
@@ -1521,17 +1515,17 @@ núcleo. Adicionalmente, el guión de inicio <c>hibernate-cleanup</c>
 invalida las imagenes suspend2 durante el proceso de arranque.
 </p>
 
-<pre caption="Invalidando las imagenes suspend2 durante el proceso de arranque">
+<pre caption="Invalidando las imagenes TuxOnIce durante el proceso de arranque">
 # <i>rc-update add hibernate-cleanup boot</i>
 </pre>
 
 <p>
 Ahora edite <path>/etc/hibernate/hibernate.conf</path>, active las
-opciones <c>suspend2</c> que necesite. No active las opciones
+opciones <c>TuxOnIce</c> que necesite. No active las opciones
 <c>fbsplash</c> en <c>common.conf</c> por ahora.
 </p>
 
-<pre caption="Hibernando con suspend2">
+<pre caption="Hibernando con TuxOnIce">
 # <i>nano -w /etc/hibernate/suspend2.conf</i>
 <comment>(Asegúrese de tener un respaldo de sus datos)</comment>
 # <i>hibernate</i>
@@ -1540,15 +1534,15 @@ opciones <c>suspend2</c> que necesite. No active las opciones
 <p>
 Por favor configure ahora <c>fbsplash</c> si no lo ha hecho hasta
 ahora. Para activar el soporte de fbsplash durante la hibernación, se
-necesita el paquete <c>sys-apps/suspend2-userui</c>. Adicionalmente,
-debe activar la bandera USE <e>fbsplash</e>.
+necesita el paquete <c>sys-apps/tuxonice-userui</c>. Además debe
+activar el parámetro USE <e>fbsplash</e>.
 </p>
 
-<pre caption="Instalando suspend2-userui">
-# <i>echo sys-apps/suspend2-userui fbsplash >> /etc/portage/package.use</i>
+<pre caption="Instalando tuxonice-userui">
+# <i>echo sys-apps/tuxonice-userui fbsplash >> /etc/portage/package.use</i>
 <comment>(Podrá estar marcado como ~arch, primero debemos tomarlo en cuenta)</comment>
-# <i>echo "sys-apps/suspend2-userui" >> /etc/portage/package.keywords</i>
-# <i>emerge suspend2-userui</i>
+# <i>echo "sys-apps/tuxonice-userui" >> /etc/portage/package.keywords</i>
+# <i>emerge tuxonice-userui</i>
 </pre>
 
 <p>
@@ -1564,33 +1558,33 @@ siguiente comando:
 <p>
 Si no quiere que aparezca una pantalla negra en la primera parte del
 proceso de vuelta, tiene que agregar la herramienta
-<c>suspend2ui_fbsplash</c> a su imagen initrd. Asumiendo que creó la
+<c>tuxonice_fbsplash</c> a su imagen initrd. Asumiendo que creó la
 imagen initrd con <c>splash_geninitramfs</c> y la guardó como
 <path>/boot/fbsplash-emergence-1024x768</path>, aquí es como se hace
 esto.
 </p>
 
-<pre caption="Agregando suspend2ui_fbsplash a la imagen initrd">
+<pre caption="Agregando tuxoniceui_fbsplash a la imagen initrd">
 # <i>mount /boot</i>
 # <i>mkdir ~/initrd.d</i>
 # <i>cp /boot/fbsplash-emergence-1024x768 ~/initrd.d/</i>
 # <i>cd ~/initrd.d</i>
 # <i>gunzip -c fbsplash-emergence-1024x768 | cpio -idm --quiet -H newc</i>
 # <i>rm fbsplash-emergence-1024x768</i>
-# <i>cp /usr/sbin/suspend2ui_fbsplash sbin/</i>
+# <i>cp /usr/sbin/tuxoniceui_fbsplash sbin/</i>
 # <i>find . | cpio --quiet --dereference -o -H newc | gzip -9 > /boot/fbsplash-suspend2-emergence-1024x768</i>
 </pre>
 
 <p>
 A continuación, ajuste <path>grub.conf</path> (o
-<path>lilo.conf</path>)de manera que el núcleo suspend2 use
-<path>/boot/fbsplash-suspend2-emergence-1024x768</path> como imagen
+<path>lilo.conf</path>)de manera que el núcleo TuxOnIce use
+<path>/boot/fbsplash-tuxonice-emergence-1024x768</path> como imagen
 initrd. Ahora puede hacer una prueba para ver si todo fue configurado
 correctamente.
 </p>
 
 <pre caption="Prueba para la hibernación fbsplash">
-# <i>suspend2ui_fbsplash -t</i>
+# <i>tuxoniceui_fbsplash -t</i>
 </pre>
 
 <p>
@@ -1615,10 +1609,10 @@ existe.
 <p>
 <e>R:</e>Asegúrese que su procesador soporta la característica de
 calibración de frecuencia de la CPU y que haya elegido el controlador
-CPUFreq adecuado (kernel 2.6.7): ARM Integrator,
-ARM-SA1100,ARM-SA1110, AMD Elan - SC400, SC410, AMD mobile K6-2+, AMD
-mobile K6-3+, AMD mobile Duron, AMD mobile Athlon, AMD Opteron, AMD
-Athlon 64, Cyrix Media GXm, Intel mobile PIII e Intel mobile PIII-M en
+cpufreq adecuado (kernel 2.6.7): ARM Integrator, ARM-SA1100,
+ARM-SA1110, AMD Elan - SC400, SC410, AMD mobile K6-2+, AMD mobile
+K6-3+, AMD mobile Duron, AMD mobile Athlon, AMD Opteron, AMD Athlon
+64, Cyrix Media GXm, Intel mobile PIII e Intel mobile PIII-M en
 algunos chipsets, Intel Pentium 4, Intel Xeon, Intel Pentium M
 (Centrino), National Semiconductors Geode GX, Transmeta Crusoe, VIA
 Cyrix 3 / C3, UltraSPARC-III, SuperH SH-3, SH-4, varios "PowerBook" e
@@ -1649,10 +1643,9 @@ nunca cambia.
 <p>
 <e>R:</e> Es probable que haya activado en su núcleo el soporte para
 multiprocesamiento simétrico (CONFIG_SMP). Desactívelo y debería
-funcionar. Algunos núcleos antiguos tienen un error que causa
-ésto. En ese caso, ejecute <c>emerge x86info</c>, actualice su núcleo
-tal como se pide y chequee la frecuencia actual con <c>x86info
--mhz</c>.
+funcionar. Algunos núcleos antiguos tienen un error que causa ésto. En
+ese caso, ejecute <c>emerge x86info</c>, actualice su núcleo tal como
+se pide y chequee la frecuencia actual con <c>x86info -mhz</c>.
 </p>
 
 <p>
@@ -1663,7 +1656,7 @@ no es tan amplio como lo es en otro SO.
 <p>
 <e>R:</e> Puede combinar la calibración de la frecuencia con la
 regulación de temperatura de la CPU ("ACPI CPU throttling") para
-obtener un mínimo más bajo de frecuencia. Note que la regulación de
+obtener un mínimo de frecuencia más bajo. Note que la regulación de
 temperatura del procesador no ahorra mucha energía y se usa
 principalmente con propósitos de gestión térmica (mantener su portátil
 a baja temperatura y en silencio). Puede leer el estado actual de
@@ -1742,7 +1735,7 @@ DynamicClocks.
 </p>
 
 <p>
-<e>P:</e> Quiero usar suspend2 pero me dice que mi partición de
+<e>P:</e> Quiero usar TuxOnIce pero me dice que mi partición de
 intercambio es muy pequeña. Redimensionarla no es una opción.
 </p>
 
@@ -1751,7 +1744,7 @@ intercambio es muy pequeña. Redimensionarla no es una opción.
 escritor a archivo en vez del escritor de swap. El guión
 <c>hibernate-script</c> lo reconoce también. Puede encontrar más
 información en el archivo
-<path>/usr/src/linux/Documentation/power/suspend2.txt</path>.
+<path>/usr/src/linux/Documentation/power/tuxonice.txt</path>.
 </p>
 
 <p>
