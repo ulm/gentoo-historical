@@ -48,7 +48,12 @@
       <title><xsl:value-of select="$da-news/news/title" /></title>
       <link>http://www.gentoo.org<xsl:value-of select="." /></link>
       <dc:subject><xsl:value-of select="$da-news/news/@category" /></dc:subject>
-      <dc:creator><xsl:value-of select="$da-news/news/poster" /></dc:creator>
+      <xsl:variable name="poster">
+        <xsl:call-template name="smart-mail">
+         <xsl:with-param name="mail" select="$da-news/news/poster"/>
+        </xsl:call-template>
+       </xsl:variable>
+      <dc:creator><xsl:value-of select="$poster" /></dc:creator>
       <!-- <dc:date><xsl:value-of select="document(.)/news/date" /></dc:date> -->
       <xsl:variable name="xmlnews"><xsl:apply-templates select="$da-news/news/body"/></xsl:variable>
       <xsl:variable name="txtnews"><xsl:apply-templates select="exslt:node-set($xmlnews)" mode="txtnews"/></xsl:variable>
