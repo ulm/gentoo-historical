@@ -6,11 +6,15 @@
    <title><xsl:value-of select="summary"/></title>
    <body>
    <dl>
-    <dt>Job description</dt>
-    <dd><xsl:apply-templates select='details'/></dd>
+    <xsl:if test="details/text() or details/*">
+      <dt>Job description</dt>
+      <dd><xsl:apply-templates select='details'/></dd>
+    </xsl:if>
 
-    <dt>Requirements</dt>
-    <dd><xsl:apply-templates select='requirements'/></dd>
+    <xsl:if test="requirements/text() or requirements/*">
+      <dt>Requirements</dt>
+      <dd><xsl:apply-templates select='requirements'/></dd>
+    </xsl:if>
 
     <dt>Contact<xsl:if test="count(contact)>1">s</xsl:if></dt>
     <dd>
@@ -22,6 +26,12 @@
    </dl>
    </body>
   </section>
+</xsl:template>
+
+<xsl:template match="requirements//node()|requirements//@*|details//node()|details//@*">
+  <xsl:copy>
+    <xsl:apply-templates select="node()|@*"/>
+  </xsl:copy>
 </xsl:template>
 
 <xsl:template match="job" mode="table">
