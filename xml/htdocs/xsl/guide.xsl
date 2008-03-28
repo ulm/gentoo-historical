@@ -1807,6 +1807,16 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     </tr>
     <tr lang="en">
     <td align="center" class="topsep">
+            <a href="http://osuosl.org/contribute">
+	    <img src="{concat($images,'images/osuosl.png')}" width="125" height="50" alt="Support OSL" border="0"/>
+        </a>
+	    <p class="alttext">
+	      <a href="http://osuosl.org/contribute">Support OSL</a>
+	    </p>
+    </td>
+    </tr>
+    <tr lang="en">
+    <td align="center" class="topsep">
             <a href="http://www.vr.org">
 	    <img src="{concat($images,'images/vr-ad.png')}" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" border="0"/>
         </a>
