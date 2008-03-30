@@ -557,7 +557,7 @@
                     <br/>
              		    <a class="altlink" href="http://vendors.gentoo.org/">Supporting&#xA0;Vendors</a>
                     <br/>
-                    <a class="altlink" href="http://sources.gentoo.org/">View&#xA0;our&#xA0;CVS</a>
+                    <a class="altlink" href="http://sources.gentoo.org/">View&#xA0;our&#xA0;Sources</a>
                    <br/><br/>
                    Graphics:
                    <br/>
