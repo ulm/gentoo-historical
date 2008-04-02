@@ -1,124 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:exslt="http://exslt.org/common"
-                xmlns:func="http://exslt.org/functions"
-                extension-element-prefixes="exslt func"
+                extension-element-prefixes="exslt"
                 version="1.0">
 
-<xsl:output encoding="UTF-8" method="xml" indent="no" doctype-system="/dtd/project.dtd"/>
-<xsl:include href="/xsl/inserts.xsl"/>
+<xsl:include href="/xsl/job.xsl"/>
+
+<xsl:output encoding="UTF-8" method="xml" indent="no" doctype-system="/dtd/guide.dtd"/>
 
 <xsl:template match="/staffingNeeds">
-<project>
-  <name>Staffing Needs</name>
-  <longname>Gentoo Linux Staffing Needs</longname>
-
-  <date>today</date>
-  <author title="Script"><mail link="devrel@gentoo.org">Gentoo Developer Relations</mail></author>
-
-  <description>
-    This page lists requests for Gentoo Developers the Gentoo Recruiters have received.
-  </description>
-  <longdescription><p>
-    This page aims to list the areas in which Gentoo actively seeks to
-    expand development efforts. Positions are open to both existing
-    Gentoo developers and also those wishing to become a Gentoo
-    developer. The priorities shown are sorted from highest to lowest.
-  </p></longdescription>
-  <extrachapter position="bottom">
-    <title>Gentoo Linux Staffing Needs</title>
-    <section>
-    <body>
-      <p>
-        This page does not list the only areas where contributions are
-        welcome, but is only a reflection of where developers are
-        needed the most. If you are interested in helping out in
-        another area, then do not hesitate to contact the relevant
-        development group anyway.
-      </p>
-      <p>
-        If you are interested in helping the Gentoo Documentation
-        Project, then please see
-        the <uri link="/proj/en/gdp/roadmap.xml">GDP Roadmap</uri> for
-        bugs that require attention.
-      </p>
-      <p>
-        If you are interested in helping out with any of the following tasks,
-        please contact the <mail link="recruiters@gentoo.org">Gentoo Recruiters</mail>,
-        CCing the displayed "Contact" on your application.
-      </p>
-      <table>
-        <tr>
-          <th>Priority</th>
-          <th>Summary</th>
-          <th>Description</th>
-        </tr>
-        <xsl:for-each select="needed">
-          <!-- Key by priority; then alphabetically...
-         No @priority is treated lowest, so this works as we need it to. -->
-          <xsl:sort select="summary/@priority" order="ascending"/>
-          <!-- Yes, this is messy; but XSLT doesn't natively
-         support case-insensitive sorting. This does it. -->
-          <xsl:sort select="translate(summary, 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
-          <tr>
-            <ti>
-              <xsl:choose>
-                <xsl:when test="summary/@priority != ''">
-                  <xsl:value-of select="summary/@priority"/>
-                </xsl:when>
-                <xsl:otherwise>1</xsl:otherwise>
-              </xsl:choose>
-            </ti>
-            <ti>
-              <xsl:value-of select="summary"/>
-            </ti>
-            <ti>
-              Requested on
-              <xsl:value-of select="func:format-date(summary/@dateRequested,'en')"/> by
-              <xsl:choose>
-                <xsl:when test="contact/@herd != ''">the </xsl:when>
-                <xsl:when test="contact/@team != ''">the </xsl:when>
-              </xsl:choose>
-              <xsl:choose>
-                <xsl:when test="contact/@name != ''">
-                  <mail link="{contact}">
-              <xsl:value-of select="contact/@name"/>
-              <xsl:choose>
-                <!-- IMPORTANT: Do not split up the two
-                     lines below -->
-                <xsl:when test="contact/@herd != ''"> Herd</xsl:when>
-                <xsl:when test="contact/@team != ''"> Team</xsl:when>
-              </xsl:choose>
-                  </mail>:
-                </xsl:when>
-                <xsl:otherwise>
-                  <mail link="{contact}">
-              <xsl:value-of select="contact"/>
-              <xsl:choose>
-                <!-- IMPORTANT: Do not split up the two
-                     lines below -->
-                <xsl:when test="contact/@herd != ''"> Herd</xsl:when>
-                <xsl:when test="contact/@team != ''"> Team</xsl:when>
-              </xsl:choose>
-                  </mail>:
-                </xsl:otherwise>
-              </xsl:choose>
-              <xsl:text> </xsl:text>
-              <xsl:apply-templates select="description"/>
-            </ti>
-          </tr>
-        </xsl:for-each>
-      </table>
-    </body>
-    </section>
-  </extrachapter>
-</project>
+<guide>
+<xsl:apply-templates/>
+</guide>
 </xsl:template>
 
 
-<xsl:template match="description//node()|description//@*">
+<xsl:template match="today">
+  <!--<date><xsl:value-of select="exslt:node-set($devaway)/devaway/@date"/></date>-->
+  <date>today</date>
+</xsl:template>
+
+<xsl:template match="jobs">
+  <xsl:variable name="projects" select="document('/proj/en/index.xml')/projects"/>
+  <chapter><title>Calls for recruitment</title><section><body><table>
+  <tr>
+  <th>Project</th>
+  <th>Job</th>
+  <th>Description</th>
+  <th>Requirements</th>
+  <th>Contacts</th>
+  </tr>
+  <xsl:for-each select="document($projects)/project/subproject">
+    <xsl:sort select="translate(normalize-space(document(string(@ref))/project/name),'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/>
+    <xsl:call-template name="a-project">
+     <xsl:with-param name="prefix" select="''"/>
+     <xsl:with-param name="project-page" select="@ref"/>
+    </xsl:call-template>
+  </xsl:for-each>
+  </table></body></section></chapter>
+</xsl:template>
+
+<xsl:template name="a-project">
+ <xsl:param name="prefix"/>
+ <xsl:param name="project-page"/>
+
+ <xsl:variable name="project" select="document($project-page)"/>
+ <xsl:if test="$project/project/recruitment">
+ <xsl:apply-templates select="$project/project/recruitment/job" mode="table">
+  <xsl:with-param name="rows" select="count($project/project/recruitment/job)"/>
+  <xsl:with-param name="link" select="$project-page"/>
+  <xsl:with-param name="name" select="concat($prefix, $project/project/name)"/>
+ </xsl:apply-templates>
+ </xsl:if>
+
+ <!-- Do subprojects -->
+ <xsl:for-each select="$project/project/subproject">
+  <xsl:sort select="translate(normalize-space(document(string(@ref))/project/name),'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/>
+    <xsl:call-template name="a-project">
+     <xsl:with-param name="prefix" select="concat($project/project/name, ' — ')"/>
+     <xsl:with-param name="project-page" select="@ref"/>
+    </xsl:call-template>
+ </xsl:for-each>
+
+</xsl:template>
+
+<xsl:template match="*|@*|text()">
   <xsl:copy>
-    <xsl:apply-templates select="node()|@*"/>
+    <xsl:apply-templates select="*|@*|text()"/>
   </xsl:copy>
 </xsl:template>
 
