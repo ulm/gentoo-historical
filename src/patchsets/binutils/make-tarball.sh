@@ -1,9 +1,14 @@
 #!/bin/bash
 
-if [[ $# -lt 2 ]] || [[ $# -gt 3 ]] ; then
+usage()
+{
 	echo "Usage: $0 <binutils ver> <patch ver> [uclibc ver]"
 	exit 1
-fi
+}
+
+[[ $# -eq 0 ]] && usage
+[[ $# -gt 3 ]] && usage
+
 bver=$1
 pver=$2
 uver=$3
@@ -15,6 +20,11 @@ fi
 if [[ -n ${uver} ]] && [[ ! -d ./${bver}/uclibc ]] ; then
 	echo "Error: ${bver} doesnt support uClibc :("
 	exit 1
+fi
+
+if [[ -z ${pver} ]] ; then
+	pver=$(awk '{print $1; exit}' ./${bver}/README.history)
+	[[ -z ${pver} ]] && usage
 fi
 
 rm -rf tmp
