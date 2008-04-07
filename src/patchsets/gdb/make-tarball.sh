@@ -16,6 +16,12 @@ if [[ -z ${pver} ]] ; then
 	fi
 fi
 
+if grep -qs Header:.*gentoo ${gver}/*.patch ; then
+	echo "error: files were not added with cvs -kb"
+	grep Header:.*gentoo ${gver}/*.patch
+	exit 1
+fi
+
 tar=gdb-${gver}-patches-${pver}.tar.lzma
 
 rm -rf tmp
