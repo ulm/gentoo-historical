@@ -16,7 +16,7 @@ if [[ -z ${pver} ]] ; then
 	fi
 fi
 
-tar=gdb-${gver}-patches-${pver}.tar.bz2
+tar=gdb-${gver}-patches-${pver}.tar.lzma
 
 rm -rf tmp
 rm -f ${tar}
@@ -27,7 +27,7 @@ mkdir -p tmp/extra
 cp `find extra -type f '!' -wholename '*/CVS/*'` tmp/extra/ || exit 1
 cp ../README* tmp/
 
-tar -jcf ${tar} -C tmp . || exit 1
+tar cf - -C tmp . | lzma > ${tar} || exit 1
 rm -r tmp
 
 du -b ${tar}
