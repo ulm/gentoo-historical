@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/openrc-migration.xml,v 1.4 2008/04/14 20:43:07 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/openrc-migration.xml,v 1.5 2008/04/14 21:49:37 nightmorph Exp $ -->
 
 <guide link="/doc/en/openrc-migration.xml">
 <title>Baselayout and OpenRC Migration Guide</title>
@@ -24,7 +24,7 @@ OpenRC.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.2</version>
+<version>1.3</version>
 <date>2008-04-14</date>
 
 <chapter>
@@ -191,56 +191,55 @@ Please note the difference between <b>module_</b> and <b>modules_</b>.
 
 </body>
 </section>
-<section id="volume">
-<title>Volume management</title>
+<section id="boot">
+<title>Boot runlevel</title>
 <body>
 
 <p>
-Volume management services for your block storage devices should be
-automatically migrated for you when you switch to OpenRC and baselayout-2.
-However, in case they aren't, you'll need to follow the instructions below.
+The <c>boot</c> runlevel performs several important steps for every machine. For
+example, making sure your root filesystem is mounted read/write, that your
+filesystems are checked for errors, that your mountpoints are available, and
+that the <path>/proc</path> pseudo-filesystem is started at boot.
 </p>
 
 <p>
-Volume management services for your block storage devices are no longer run by
-default. This means that lvm, raid, swap, device-mapper (dm), dm-crypt, evms, and the
-like will not be run automatically. If you use these addons, you will have to
-add the proper initscript to the <c>boot</c> runlevel. Otherwise, it's possible
-your system will not boot. When you install the various volume management
-services, they will install an appropriate initscript in
-<path>/etc/init.d</path>. You must ensure the appropriate initscript is in the
-<c>boot</c> runlevel.
+With OpenRC, volume management services for your block storage devices are no
+longer run automatically at boot. This includes lvm, raid, swap, device-mapper
+(dm), dm-crypt, evms, and the like. You must ensure the appropriate initscript
+for these services is in the <c>boot</c> runlevel, otherwise it's possible that
+your system will not boot!
 </p>
 
 <p>
 While the OpenRC ebuild will attempt to do this migration for you, you should
-verify that it migrated all the volume management services properly.
+verify that it migrated all the volume management services properly:
 </p>
 
-<pre caption="Check all services in boot runlevel">
+<pre caption="Display all services in boot runlevel">
 # <i>ls -l /etc/runlevels/boot/</i>
 </pre>
 
 <p>
-If you know you use mdraid, lvm, and swap but do not see them above, you would run
-the following to add initscripts to the <c>boot</c> runlevel.
+If you don't see root, procfs, mtab, swap, and fsck in the above listing,
+perform the following to add them to the <c>boot</c> runlevel:
+</p>
+
+<pre caption="Adding missing volume management services to the boot runlevel">
+# <i>rc-update add root boot</i>
+# <i>rc-update add procfs boot</i>
+# <i>rc-update add mtab boot</i>
+# <i>rc-update add fsck boot</i>
+# <i>rc-update add swap boot</i>
+</pre>
+
+<p>
+If you know you use mdraid and lvm but do not see them above, you would run
+the following to add initscripts to the <c>boot</c> runlevel:
 </p>
 
 <pre caption="Adding missing volume management services to the boot runlevel">
 # <i>rc-update add raid boot</i>
 # <i>rc-update add lvm boot</i>
-# <i>rc-update add swap boot</i>
-</pre>
-
-<p>
-Also, make sure your root filesystem is mounted read/write, that your
-filesystems are checked for errors, that your mountpoints are available, and
-that the <path>/proc</path> pseudo-filesystem is started at boot. Here's a handy
-shell script to make it happen:
-</p>
-
-<pre caption="Adding other critical services to the boot runlevel">
-# <i>for x in root fsck mtab procfs ; do rc-update add $x boot ; done</i>
 </pre>
 
 </body>
