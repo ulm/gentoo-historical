@@ -49,8 +49,14 @@ This is a Gentoo Linux Security Advisory
   <th>Latest Revision</th>
   <ti>
    <xsl:choose>
-    <xsl:when test="func:is-date(substring(revised,1,10))">
-     <xsl:value-of select="concat(func:format-date(substring(revised,1,10)),substring(revised,11))"/>
+    <xsl:when test="revised/@count and func:is-date(revised)='YES'">
+     <xsl:value-of select="concat(func:format-date(revised,'en'),'; ',revised/@count)"/>
+    </xsl:when>
+    <xsl:when test="func:is-date(revised)='YES'">
+     <xsl:value-of select="func:format-date(revised,'en')"/>
+    </xsl:when>
+    <xsl:when test="func:is-date(substring(revised,1,10))='YES'">
+     <xsl:value-of select="concat(func:format-date(substring(revised,1,10),'en'),substring(revised,11))"/>
     </xsl:when>
     <xsl:otherwise>
       <xsl:value-of select="revised"/>
