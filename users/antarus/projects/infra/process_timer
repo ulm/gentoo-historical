@@ -1,0 +1,112 @@
+#!/usr/bin/python
+# Copyright Alec Warner 2008
+# Released in the public domain.
+
+"""Find tasks that have been running over X time.
+
+Look in /proc, match on some regexes, offer to print pids that match
+options given by the user.
+"""
+
+
+__author__ = """Alec Warner <antarus@gentoo.org>"""
+
+import logging
+import optparse
+import os
+import re
+
+PROC_PATH='/proc'
+
+def GetOpts():
+  """Parse the options."""
+
+  parser = optparse.OptionParser()
+  parser.add_option('-p', '--prog', help='program to search for')
+  parser.add_option('-t', '--time', help='max time prog can run')
+  parser.add_option('-w', '--walltime', help='match time against walltime')
+  parser.add_option('-v', '--verbose', help='increase loglevel')
+  opts, args = parser.parse_args()
+
+  if not opts.prog:
+    parser.error('--prog is required')
+
+  if not opts.walltime:
+    opts.walltime = True
+
+  if opts.verbose:
+    logging.getLogger().setLevel(10)
+
+  logging.debug('opts are %s' % opts)
+
+  return opts, args
+
+def FindPids(search_str):
+  """Return PIDS for all processes that have match search_str.
+  Args:
+    search_str: match /proc/*/cmdline to this string.
+  Returns:
+    (pid, cmdline), PIDS of processes that match search_str
+  """
+  matches = set()
+
+  pid_re = re.compile(r'[0-9]+')
+
+  files = os.listdir(PROC_PATH)
+  files = [f for f in files if pid_re.match(f)]
+
+  # we shouldn't output ourselves
+  my_pid = str(os.getpid())
+  if my_pid in files:
+    files.remove(my_pid)
+
+  logging.debug('pids avaialble: %s' % files)
+
+  for pid in files:
+    PID_DIR_PATH = os.path.join(PROC_PATH, pid)
+    cmdline = open(os.path.join(PID_DIR_PATH, 'cmdline')).read()
+    logging.debug('cmdline: %s' % cmdline)
+    if search_str in cmdline:
+      logging.debug('matched %s' % pid)
+      matches.add((pid, cmdline))
+
+  logging.debug('pids matched: %s' % matches)
+
+  return matches
+
+
+def CalculateTime(pid):
+  """Calculate walltime, runtime, and other random time bits for PID.
+  Args:
+    pid: pid to make time calculations for.
+  Returns:
+    A tuple of random crap.
+
+  These times are in 'jiffies' or as far as I can tell USER_HZ or 1/100ths
+  of a second slices.
+  """
+
+  PID_DIR_PATH = os.path.join(PROC_PATH, pid)
+  data = open(os.path.join(PID_DIR_PATH, 'stat')).read().split(' ')
+  utime, stime, cutime, cstime = data[13:17]
+  starttime = data[21]
+
+  wall = int(utime) + int(stime)
+  cwall = int(cutime) + int(cstime)
+
+  return (utime, stime, cutime, cstime, wall, cwall, starttime)
+
+
+def Main():
+  """Main Driver function."""
+
+  opts, args = GetOpts()
+  pids = FindPids(opts.prog)
+  for pid in pids:
+    times = CalculateTime(pid[0])
+    if opts.walltime:
+      if times[4] / 100 > opts.time:
+        print pid[0]
+
+if __name__ == "__main__":
+  Main()
