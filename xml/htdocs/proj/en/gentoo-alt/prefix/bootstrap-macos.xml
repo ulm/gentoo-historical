@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/Attic/bootstrap-macos.xml,v 1.30 2008/04/25 10:49:08 grobian Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/Attic/bootstrap-macos.xml,v 1.31 2008/05/04 20:25:32 grobian Exp $ -->
 
 <guide link="/proj/en/gentoo-alt/prefix/bootstrap-macos.xml" lang="en">
   <title>Gentoo Prefix Bootstrap Process for Mac OS X</title>
@@ -19,8 +19,8 @@
   <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
   <license/>
 
-  <version>1.9</version>
-  <date>2008-04-25</date>
+  <version>1.10</version>
+  <date>2008-05-04</date>
 
   <chapter>
     <title>Bootstrapping on OS X</title>
@@ -93,18 +93,21 @@ $ <i>export PATH="$EPREFIX/usr/bin:$EPREFIX/bin:$EPREFIX/tmp/usr/bin:$EPREFIX/tm
 $ <i>chmod 755 bootstrap-prefix.sh</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX tree</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX/tmp wget</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp tar</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX/tmp sed</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp bash</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp python</i> (10.5: see note!)
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp gawk</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp python</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp coreutils</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX/tmp findutils</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp tar15</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp patch9</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp grep</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp gawk</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp bash</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX portage</i>
         </pre>
-        <note>Mac OS X Leopard (10.5) users should <b>NOT</b> bootstrap
-          python!  It fails to compile and is not necessary.</note>
-        <note>Please note that <c>wget</c>, <c>sed</c>, <c>python</c>,
-          etc. are installed in <path>$EPREFIX/tmp</path>!</note>
+        <note>
+          Please note that <c>wget</c>, <c>sed</c>, <c>python</c>, etc.
+          are installed in <path>$EPREFIX/tmp</path>!
+        </note>
         <p>
           The script will setup the <path>$EPREFIX</path>
           directory, download a portage tree snapshot, unpack it and
@@ -147,9 +150,38 @@ $ <i>emerge --oneshot sed</i>
           we ignore those for the moment.
         </p>
         <pre caption="emerge bash and wget">
-$ <i>emerge --oneshot "&lt;bash-3.2_p33"</i>
 $ <i>emerge --oneshot --nodeps wget</i>
+$ <i>emerge --oneshot bash</i>
         </pre>
+        <note>
+          It is safe to ignore the "1 config files in XXX need updating"
+          message that appears till the end of the bootstrap process.
+        </note>
+        <p>
+          Now, we will emerge a compiler and linker, setup to make use
+          of the Gentoo Prefix environment.  The packages to emerge
+          include the <c>baselayout</c> package.  Some, if not many,
+          scripts and tools within a Gentoo system assume the
+          availability of the <c>baselayout</c> package for all
+          communication using the Gentoo colour scheme.
+        </p>
+        <pre caption="emerge linker and compiler">
+$ <i>emerge --oneshot --nodeps baselayout-prefix</i>
+$ <i>emerge --oneshot --nodeps flex</i>
+$ <i>emerge --oneshot --nodeps binutils-config</i>
+$ <i>emerge --oneshot --nodeps odcctools</i>
+$ <i>emerge --oneshot --nodeps gcc-config</i>
+$ <i>emerge --oneshot --nodeps gcc-apple</i>
+        </pre>
+        <p>
+          Since the tools for building are now installed in your Prefix,
+          the little helpers we used before are no longer necessary.
+          They may even cause trouble, so we unset them.
+        </p>
+        <pre caption="unset no longer needed environment variables">
+$ <i>unset LDFLAGS CPPFLAGS CHOST CC CXX HOSTCC</i>
+        </pre>
+        <note>tcsh users can use <c>unsetenv LDFLAGS</c>, etc.</note>
         <p>
           We continue getting more tools in our Prefix.  We no longer
           ignore dependencies, so a lot of packages will be emerged at
@@ -157,12 +189,13 @@ $ <i>emerge --oneshot --nodeps wget</i>
           here.
         </p>
         <pre caption="emerge several tools">
-$ <i>emerge --oneshot "&lt;m4-1.4.11"</i>
 $ <i>emerge --oneshot coreutils</i>
 $ <i>emerge --oneshot findutils</i>
 $ <i>emerge --oneshot tar</i>
 $ <i>emerge --oneshot grep</i>
 $ <i>emerge --oneshot gawk</i>
+$ <i>emerge --oneshot patch</i>
+$ <i>emerge --oneshot make</i>
         </pre>
         <p>
           Now we have a good bunch of programs that Portage needs, we
@@ -174,15 +207,6 @@ $ <i>emerge --oneshot gawk</i>
         </p>
         <pre caption="emerge portage">
 $ <i>env FEATURES="-collision-protect" emerge --oneshot portage</i>
-        </pre>
-        <p>
-          Some, if not many, scripts and tools within a Gentoo system
-          assume the availability of the <c>baselayout</c> package.  We
-          make sure here we have it, for this reason.  In fact, it would
-          be emerged too late if we wouldn't do it manually now:
-        </p>
-        <pre caption="emerge baselayout-prefix">
-$ <i>emerge --oneshot baselayout-prefix</i>
         </pre>
         <p>
           Now we have emerged everything we bootstrapped before, we
@@ -250,21 +274,14 @@ $ <i>echo 'CXXFLAGS="${CFLAGS}"' >> $EPREFIX/etc/make.conf</i>
         </note>
         <p>
           Since we have everything in place for a self-catered rebuild,
-          we can unset all hacks we made to help the bootstrap process,
-          and start the final stage to install the Prefix system.  This
-          final stage recompiles everything in the system, but now all
-          packages can be compiled with tools from the Prefix, instead
-          of those from the host system.
+          we can start the final stage to install the Prefix system.
+          This final stage recompiles everything in the system, but now
+          all packages can be compiled with tools from the Prefix,
+          instead of those from the host system.
         </p>
-        <pre caption="Unsetting LDFLAGS and CPPFLAGS variables">
-$ <i>unset LDFLAGS</i>
-$ <i>unset CPPFLAGS</i>
+        <pre caption="doing the final system installation">
 $ <i>emerge -e system</i>
         </pre>
-        <note>
-          tcsh users can use <c>unsetenv LDFLAGS</c> and alike for
-          <c>CPPFLAGS</c>.
-        </note>
         <p>
           After <c>system</c> has emerged successfully, your Prefix will
           be set up properly, and you can emerge the whichever tools you
