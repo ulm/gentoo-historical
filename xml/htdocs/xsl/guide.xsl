@@ -1855,6 +1855,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       </p>
     </td>
     </tr>
+    <xsl:if test="number(translate(func:today(),'-','')) &lt;= 20080808">
     <tr lang="en">
     <td align="center" class="topsep">
         <a href="http://www.linuxworldexpo.com" target="_top">
@@ -1865,6 +1866,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       </p>
     </td>
     </tr>
+    </xsl:if>
     <tr>
     <td align="center" class="topsep"/>
     </tr>
