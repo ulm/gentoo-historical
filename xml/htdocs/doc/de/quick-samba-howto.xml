@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/quick-samba-howto.xml,v 1.23 2007/10/27 16:11:18 keytoaster Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/quick-samba-howto.xml,v 1.24 2008/05/12 16:08:55 keytoaster Exp $ -->
 
-<!-- English CVS Version: 1.34 -->
+<!-- English CVS Version: 1.40 -->
 
 <guide link="/doc/de/quick-samba-howto.xml" lang="de">
-<title>Gentoo Samba3/CUPS/CLAM AV Howto</title>
+<title>Gentoo Samba3/CUPS Howto</title>
 <author title="Autor">
-  <mail link="daff at dword dot org">Andreas "daff" Ntaflos</mail>
+  Andreas "daff" Ntaflos <!--daff at dword dot org-->
 </author>
 <author title="Autor">
   <mail link="joshua@sungentoo.homeunix.com">Joshua Preston</mail>
@@ -25,21 +25,20 @@
 
 <abstract>
 Aufsetzen, installieren und konfigurieren eines Samba-Servers unter Gentoo, der
-Dateien und Drucker ohne Treiber-Installation sowie automatisches Scannen nach
-Viren bereitstellt.
+Dateien und Drucker ohne Treiber-Installation bereitstellt.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.22</version>
-<date>2007-10-14</date>
+<version>1.25</version>
+<date>2008-05-01</date>
 
 <chapter>
 <title>Einleitung zu diesem Howto</title>
 <section>
-<title>Ziel</title>
+<title>Zweck</title>
 <body>
 
 <p>
@@ -61,18 +60,16 @@ Dieses Howto war ursprünglich nicht als Howto gedacht, sondern als FAQ. Es war
 geplant, um die Funktionalität und Leistungsfähigkeit von Gentoo Linux und
 Portage sowie die Flexibilität der USE-Flags zu untersuchen. Wie bei so vielen
 anderen Projekten auch, wurde bald deutlich, was im Gentoo Reich noch fehlte:
-es gab keine Samba Howtos, die auf Gentoo User abzielten. Solche User sind
-anspruchsvoller als die meisten; sie verlangen Performance, Flexibilität und
-Anpassungsfähigkeit. Dies beinhaltet aber nicht, das dieses Howto nicht auch für
-andere Distributionen gedacht ist, sondern eher, dass es für eine besonders
+es gab keine Samba Howtos, die auf Gentoo-Benutzer abzielten. Solche Benutzer
+sind anspruchsvoller als die meisten; sie verlangen Performance, Flexibilität
+und Anpassungsfähigkeit. Dies beinhaltet aber nicht, das dieses Howto nicht auch
+für andere Distributionen gedacht ist, sondern eher, dass es für eine besonders
 maßgeschneiderte Samba-Version vorgesehen ist.
 </p>
 
 <p>
 In diesem Howto wird beschrieben, wie Dateien und Drucker von Windows-PCs und
-*nix-PCs gemeinsam genutzt werden können. Es soll außerdem den Gebrauch der VFS
-(Virtual File System)-Funktionalität von Samba demonstrieren, um automatischen
-Schutz vor Viren mit einzubeziehen. Zu guter Letzt zeigt es, wie Freigaben
+*nix-PCs gemeinsam genutzt werden können. Außerdem zeigt es, wie Freigaben
 gemountet und manipuliert werden.
 </p>
 
@@ -126,7 +123,6 @@ behandelt:
 <ul>
   <li>Auf dem Samba Server:
     <ul>
-      <li>Installation und Konfiguration von ClamAV</li>
       <li>Installation und Konfiguration von Samba</li>
       <li>Installation und Konfiguration von CUPS</li>
       <li>Drucker zu CUPS hinzufügen</li>
@@ -160,14 +156,11 @@ Folgende Pakete werden benötigt:
 
 <ul>
   <li>net-fs/samba</li>
-  <li>app-antivirus/clamav</li>
   <li>net-print/cups</li>
   <li>net-print/foomatic</li>
   <li>net-print/hplip (falls Sie einen HP Drucker benutzen wollen)</li>
   <li>Einen beliebigen Kernel (2.6)</li>
-  <li>
-    Einen Drucker (PS oder non-PS, vielleicht nicht zu neu oder ausgefallen)
-  </li>
+  <li>Einen Drucker (PS oder non-PS)</li>
   <li>
     Ein funktionierendes Netzwerk (home/office/etc) mit mindestens zwei
     Rechnern
@@ -175,12 +168,10 @@ Folgende Pakete werden benötigt:
 </ul>
 
 <p>
-Das Hauptpaket, das wir verwenden, heißt net-fs/samba, jedoch benötigen Sie
-einen Kernel mit aktivierter cifs-Unterstützung, um eine Samba- oder
-Windows-Freigabe mounten zu können. CUPS wird ebenfalls installiert werden,
-falls das nicht schon geschehen ist. Weiterhin wird app-antivirus/clamav
-benötigt, weitere Pakete sollten einfach anzupassen sein, um mit Samba zu
-arbeiten.
+Das Hauptpaket, das wir hier verwenden, heißt <c>net-fs/samba</c>, jedoch
+benötigen Sie einen Kernel mit aktivierter CIFS-Unterstützung, um eine Samba-
+oder Windows-Freigabe eines anderen Computers mounten zu können. CUPS wird
+ebenfalls installiert werden, falls das nicht schon geschehen ist
 </p>
 
 </body>
@@ -199,7 +190,7 @@ für Samba zur Verfügung stehen.
 </p>
 
 <pre caption="Samba verwendet folgende USE-Variablen:">
-kerberos acl cups ldap pam readline python oav
+kerberos acl cups ldap pam readline python winbind
 </pre>
 
 <p>
@@ -274,11 +265,13 @@ emergen von Samba eingebunden oder ausgeschlossen werden.
   </ti>
 </tr>
 <tr>
-  <th><b>oav</b></th>
+  <th><b>winbind</b></th>
   <ti>
-    Bietet das Scannen von Samba-Freigaben beim Zugriff mit Hilfe des FRISK
-    F-Prot Daemons, Kaspersky AntiVirus, OpenAntiVirus.org Scanner-Daemon,
-    Sophos Sweep (SAVI), Symantec CarrierScan und Trend Micro(VSAPI).
+    Winbind ermöglicht einen vereinheitlichten Logon mit einer Samba-Umgebung.
+    Es benutzt eine Unix-Implementierung von Windows RPC-Aufrufen, PAM und den
+    Name-Service-Switch (von der C-Bibliothek unterstützt), um Windows NT Domain
+    Benutzer erscheinen zu lassen und als Unix-Benutzer auf einem Unix-System
+    zu arbeiten.
   </ti>
 </tr>
 </table>
@@ -292,7 +285,7 @@ Samba-Funktionen sicherlich zu erwähnen wären, sind:
   <li>
     ACLs mit ext2/ext3 sind durch Erweiterte Attribute (EAs) implementiert. EA
     und ACL Kernel-Optionen für ext2 und ext3 müssen aktiviert sein (abhängig
-    vom     verwendeten Dateisystem - beide können aktiviert werden).
+    vom verwendeten Dateisystem - beide können aktiviert werden).
   </li>
   <li>
     Obwohl Active Directory, ACLs und PDC Funktionen außerhalb des Rahmens
@@ -331,7 +324,6 @@ Setup, dass für dieses Howto verwendet wurde, ist:
 </p>
 
 <ul>
-  <li>oav</li>
   <li>cups</li>
   <li>readline</li>
   <li>pam</li>
@@ -343,35 +335,14 @@ USE-Flags ausdrücklich eingebunden oder ausgeschlossen.
 </p>
 
 <pre caption="Samba-Emerge">
-# <i>echo "net-fs/samba oav readline cups pam" &gt;&gt; /etc/portage/package.use</i>
+# <i>echo "net-fs/samba readline cups pam" &gt;&gt; /etc/portage/package.use</i>
 # <i>emerge net-fs/samba</i>
 </pre>
-
-<note>
-Für die folgenden Architekturen muss <e>~</e> zu den <e>KEYWORDS</e> hinzugefügt
-werden: x86, ppc, sparc, hppa, ia64 und alpha.
-</note>
 
 <p>
 Hierdurch werden Samba und CUPS (wenn noch nicht auf dem System vorhanden)
 emerged.
 </p>
-
-</body>
-</section>
-<section>
-<title>ClamAV emergen</title>
-<body>
-
-<p>
-Da das <e>oav</e> USE-Flag lediglich ein Interface zum Scannen nach Viren beim
-Zugriff liefert, muss der eigentliche Viren-Scanner emerged werden. In
-diesem Howto wird der Viren-Scanner Clam AV verwendet.
-</p>
-
-<pre caption="Clam AV emergen">
-# <i>emerge app-antivirus/clamav</i>
-</pre>
 
 </body>
 </section>
@@ -453,13 +424,6 @@ hosts deny = 0.0.0.0/0
 security = share
 <comment># Keine Passworte, also verwenden wir ein Gastkonto!</comment>
 guest ok = yes
-<comment># Wir werden nun den Zugriff auf den Viren-Scanner einrichten.
-# Hinweis: Dadurch, dass dies im Abschnitt [global] steht, wird das Scannen
-# für ALLE Freigaben ermöglicht. Optional kann dies auch nur für eine einzelne
-# Freigabe verwendet werden, so dass nur diese gescannt wird.</comment>
-<comment># Für Samba 3.x. Dies aktiviert das Scannen durch ClamAV beim Zugriff.</comment>
-vfs object = vscan-clamav
-vscan-clamav: config-file = /etc/samba/vscan-clamav.conf
 
 <comment># Nun stellen wir die Drucker-Treiber-Informationen ein!</comment>
 [print$]
@@ -495,12 +459,6 @@ wenn wir uns mit <c>cupsaddsmb</c> und den möglichen Problemen
 befassen. Verwenden Sie einen dedizierten User, wie <c>printeruser</c> oder
 <c>printer</c> oder <c>printme</c> oder so ähnlich. Das schadet nicht und wird
 Sie sicherlich vor einer Menge Problemen bewahren.
-</warn>
-
-<warn>
-Das Einschalten von ClamAVs Scannen, wenn auf eine Datei zugegriffen wird, im
-Abschnitt <c>[global]</c> verlangsamt die Geschwindigkeit Ihres Samba-Servers
-drastisch.
 </warn>
 
 <p>
@@ -541,117 +499,6 @@ dass Windows-Systeme einfach per NetBIOS gefunden werden können:
 # <i>nano -w /etc/nsswitch.conf</i>
 <comment>(Die Zeile hosts editieren)</comment>
 hosts: files dns <i>wins</i>
-</pre>
-
-</body>
-</section>
-<section>
-<title>Konfiguration von Clam AV</title>
-<body>
-
-<p>
-Die zu verwendende Konfigurationsdatei, wie in <path>smb.conf</path>
-eingestellt, ist die Datei <path>/etc/samba/vscan-clamav.conf</path>. Während
-die Optionen auf die Standardwerte gesetzt sind, müssen eventuell die Aktionen
-für infizierte Dateien geändert werden.
-</p>
-
-<pre caption="/etc/samba/vscan-clamav.conf">
-[samba-vscan]
-<comment>; Runtime-Konfiguration für vscan-samba unter Verwendung von clamd
-; alle Optionen stehen auf den Standardwerten.</comment>
-
-<comment>; Dateien größer als X Bytes nicht scannen. Wenn dies auf 0 steht
-; (Standard) ist die Funktion deaktiviert (um zum Beispiel alle Dateien
-; zu scannen).</comment>
-max file size = 0
-
-<comment>; Datei-Zugriffe loggen (yes/no). Wenn auf yes gesetzt, wird jeder
-; Zugriff geloggt. Wenn auf no gesetzt (Standard), wird nur der Zugriff auf
-; infizierte Dateien geloggt.</comment>
-verbose file logging = no
-
-<comment>; Wenn auf yes steht (Standard), wird eine Datei beim Öffnen
-; gescannt.</comment>
-scan on open = yes
-
-<comment>; Wenn auf yes (Standard), wird eine Datei beim Schließen
-; gescannt.</comment>
-scan on close = yes
-
-<comment>; Soll der Zugriff auf eine Datei verweigert werden, wenn die
-; Kommunikation mit clamd ausfällt?
-: (Standard: yes)</comment>
-deny access on error = yes
-
-<comment>; Soll der Zugriff auf eine Datei verweigert werden, falls der Daemon
-; mit einem geringfügigen Fehler (corruption, etc.) ausfällt?
-; (Standard: yes)</comment>
-deny access on minor error = yes
-
-<comment>; Soll eine Warn-Mitteilung via Windows Messenger Service gesendet
-; werden, falls ein Virus gefunden wird?
-; (Standard: yes)</comment>
-send warning message = yes
-
-<comment>; Was soll mit einer infizierten Datei geschehen?
-; quarantine: Versuchen, die Datei in ein Quarantäne-Verzeichnis zu verschieben;
-;             Datei löschen, falls das Verschieben fehlschlägt.
-; delete:     Infizierte Dateien löschen.
-; nothing:    Keine Aktion.</comment>
-infected file action = <comment>delete</comment>
-
-<comment>; Wo sollen infizierte Dateien abgelegt werden - Sie sollten dies
-; ändern! Das Ziel muss auf dem gleichen physikalischen Gerät liegen, wie die
-; Freigabe.</comment>
-quarantine directory  = /tmp
-
-<comment>; Präfix für Dateien in Quarantäne</comment>
-quarantine prefix = vir-
-
-<comment>; Da Windows versucht, eine Datei in einem (sehr) kurzen Zeitraum
-; vielfach zu öffnen, verwendet samba-vscan eine Liste der zuletzt geöffneten
-; Dateien, um mehrfaches Scannen von Dateien zu vermeiden. Diese Einstellung
-; bestimmt die maximale Anzahl von Einträgen in dieser Liste.
-;
-; (Standard: 100)</comment>
-max lru files entries = 100
-
-<comment>; Ein Eintrag wird, nach Ablauf der maximalen Lebensdauer (in
-; Sekunden) für einen Eintrag in der Liste der zuletzt geöffneten
-; Dateien, gelöscht.</comment>
-lru file entry lifetime = 5
-
-<comment>; Socket-Name für clamd (Standard: /var/run/clamd)</comment>
-clamd socket name = /var/run/clamd
-</pre>
-
-<p>
-Es ist grundsätzlich eine gute Idee, den Virenscanner sofort zu starten. Fügen
-Sie ihn dem <e>default</e>-Runlevel hinzu und starten Sie anschließend sofort
-den <c>clamd</c>-Dienst. Dieser Dienst besteht aus zwei Prozessen: freshclam
-hält die Datenbank mit den Virus-Definitionen auf dem neuesten Stand, während es
-sich bei clamd um den eigentlichen Anti-Virus-Daemon handelt. Zunächst sollten
-Sie die Pfade für die Log-Dateien festlegen, so dass Sie Ihren Bedürfnissen
-entsprechen.
-</p>
-
-<pre caption="Prüfen der Speicherorte für Log-Dateien">
-#<i>vim /etc/clamd.conf</i>
-<comment>(Prüfen Sie die Zeile "LogFile "/var/log/clamd.log")</comment>
-#<i>vim /etc/freshclam.conf</i>
-<comment>(Prüfen Sie die Zeile "UpdateLogFile /var/log/freshclam.log")</comment>
-#<i>vim /etc/conf.d/clamd</i>
-<comment>(Setzen Sie "START_CLAMD=yes" und "START_FRESHCLAM=yes")</comment>
-</pre>
-
-<p>
-Starten Sie jetzt den Viren-Scanner.
-</p>
-
-<pre caption="clamd zum Bootup hinzufügen und starten">
-# <i>rc-update add clamd default</i>
-# <i>/etc/init.d/clamd start</i>
 </pre>
 
 </body>
@@ -715,8 +562,8 @@ Deny From All
 </pre>
 
 <p>
-Editieren Sie die Datei <path>/etc/cups/mime.convs</path> und entfernen Sie die
-Kommentare. Die Änderungen an <path>mime.convs</path> und
+Editieren Sie die Datei <path>/etc/cups/mime.convs</path>, um einige Zeilen zu
+entkommentieren. Die Änderungen an <path>mime.convs</path> und
 <path>mime.types</path> sind notwendig, um Microsoft Office Dokumente mit CUPS
 drucken zu können.
 </p>
@@ -1041,12 +888,12 @@ gegeben haben, falls Sie hier unterschiedliche Namen verwendet haben.
 <body>
 
 <note>
-Vergessen Sie nicht zuerst <c>emerge samba</c> auf den Clienten, die auf die
-Freigaben zugreifen werden, ausführen.
+Vergessen Sie nicht zuerst <c>net-fs/mount-cifs</c> oder <c>net-fs/samba</c> auf
+den Clients, die auf die Freigaben zugreifen werden, auszuführen.
 </note>
 
 <p>
-Nun ist es Zeit, Ihren Kernel so zu konfigurieren, dass er cifs unterstützt. Da
+Nun ist es Zeit, Ihren Kernel so zu konfigurieren, dass er CIFS unterstützt. Da
 ich annehme, dass wir alle zumindest einmal einen Kernel kompiliert haben,
 müssen wir sicherstellen, dass wir die richtigen Optionen in unserem Kernel
 ausgewählt haben. Der Einfachheit halber bauen wir ein Modul, weil es leichter
@@ -1114,8 +961,8 @@ drucken kann. :-)
 
 <p>
 Nun gut, das sollte es gewesen sein. Sie sollten nun eine verwendbare
-Druck-Umgebung, die sowohl zu Windows als auch zu *nix freundlich ist, als auch
-eine völlig viren-frei arbeitende Freigabe haben!
+Druckumgebung, die sowohl zu Windows als auch zu *nix freundlich ist, als auch
+eine funktionierende Freigabe haben!
 </p>
 
 </body>
