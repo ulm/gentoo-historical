@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/apache-upgrading.xml,v 1.7 2007/07/30 19:25:17 keytoaster Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/apache-upgrading.xml,v 1.8 2008/05/12 21:06:21 keytoaster Exp $ -->
 
-<!-- English CVS Version: 1.8 -->
+<!-- English CVS Version: 1.12 -->
 
 <guide link="/doc/de/apache-upgrading.xml" lang="de">
 <title>Apache upgraden</title>
@@ -10,25 +10,99 @@
 <author title="Autor">
   <mail link="vericgar@gentoo.org">Michael Stewart</mail>
 </author>
+<author title="Bearbeiter">
+  <mail link="hollow"/>
+</author>
+<author title="Bearbeiter">
+  <mail link="nightmorph"/>
+</author>
 <author title="Übersetzer">
   <mail link="Thesan@thaor.net">Stefan Becker</mail>
 </author>
 
 <abstract>
-Dieses Dokument beschreibt die Vorgehensweise die Endanwender benutzen sollten
-für ein Upgrade ihrer Apache-Installation.
+Dieses Dokument beschreibt die Vorgehensweise die Endanwender für ein Upgrade
+ihrer Apache-Installation benutzen sollten.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.5</version>
-<date>2007-07-30</date>
+<version>2.8</version>
+<date>2007-12-11</date>
 
-<chapter>
-<title>Einleitung</title>
+<chapter id="upgrade-2.2.6-r4">
+<title>Upgraden von &lt;2.2.6-r4</title>
 <section>
+<body>
+
+<p>
+Die Apache-Ebuilds haben für eine lange Zeit
+<path>/etc/apache2/apache2-builtin-mods</path> benutzt, um die built-in Module
+zur Kompilierzeit auszuwählen. Dieses Verhalten hat jedoch einige Nachteile:
+</p>
+
+<ul>
+  <li>
+    Das Auwählen der built-in Module während des ersten Merges ist nicht möglich
+  </li>
+  <li>
+    Portage weiß nicht, welche Module installiert wurden. Dies ist besonders
+    nervig für binäre Pakete.
+  </li>
+  <li>
+    Portage wird versuchen, <path>apache2-builtin-mods</path> bei jedem Upgrade
+    zu überschreiben.
+  </li>
+</ul>
+
+<p>
+Um diese Lage zu bessern, wird <path>/etc/apache2/apache2-builtin-mods</path>
+nicht mehr länger benutzt und wurde zu den neuen Variablen
+<c>APACHE2_MODULES</c> und <c>USE_EXPAND</c> migriert. Um Ihre persönliche
+Modulauswahl ins neue Format zu konvertieren, benutzen Sie folgenden Befehl:
+</p>
+
+<pre caption="Konvertieren der apache2-builtin-mods zu APACHE2_MODULES">
+$ <i>echo APACHE2_MODULES=\"$(sed '/^mod_/s/mod_\(.*\)\s\+\(shared\|static\)/\1/;t n;d;:n' /etc/apache2/apache2-builtin-mods)\" >> /etc/make.conf</i>
+# <i>rm /etc/apache2/apache2-builtin-mods</i>
+
+<comment>(Sie können nun Apache sicher upgraden:)</comment>
+# <i>emerge -uva '>=www-servers/apache-2.2.6-r4'</i>
+</pre>
+
+<p>
+Zusätzlich zu dem neuen <c>APACHE2_MODULES</c> wurden die lokalen USE-Flags
+aufgeräumt:
+</p>
+
+<ul>
+  <li>
+    Alle MPM USE-Flags wurden in die <c>APACHE2_MPMS</c> <c>USE_EXPAND</c>
+    Variable verschoben
+  </li>
+  <li>
+    <c>no-suexec</c> ist jetzt <c>suexec</c>
+  </li>
+  <li>
+    <c>static-modules</c> ist jetzt <c>static</c>
+  </li>
+</ul>
+
+<p>
+Eine detaillierte Beschreibung der alten und entsprechenden neuen USE-Flags
+finden Sie <uri link="#use-2.2.6-r4">unten</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="upgrade-2.0.52-r3">
+<title>Upgraden von &lt;2.0.52-r3</title>
+<section>
+<title>Einführung</title>
 <body>
 
 <p>
@@ -64,33 +138,23 @@ allem, wofür das Apache Team verantwortlich ist, schwierig machten:
 </ul>
 
 <p>
-Die Lösung? Das Apache Team wurde vergrößert. Einige neue Entwickler wurden in
-das Team aufgenommen, welche dann zusammen daran gearbeitet haben eine Eclass
-zu entwickeln, alle Module zu aktualisieren und eine ganze Reihe von Bugs zu
-beheben.
-</p>
-
-<p>
-Dieses Dokument beschreibt wie Sie Ihren Apache upgraden ohne ihr System kaputt
-zu machen. Wenn Sie ein Entwickler sind oder gerne wissen möchten was wir
-geändert haben, oder wie Ebuilds angepasst werden müssen um die Vorteile unserer
-Eclass nutzen zu können, sehen Sie sich die <uri
-link="/doc/de/apache-developer.xml">Apache Developer Reference</uri> an.
+Dieses Dokument beschreibt, wie Sie Ihren Apache upgraden ohne ihr System kaputt
+zu machen. Wenn Sie ein Entwickler sind oder gerne wissen möchten, was wir
+geändert haben, oder wie Ebuilds angepasst werden müssen, um die Vorteile
+unserer Eclass nutzen zu können, sehen Sie sich die <uri
+link="/proj/en/apache/apache-developer.xml">Apache Developer Reference</uri> an.
 </p>
 
 </body>
 </section>
-</chapter>
-
-<chapter id="Upgrade">
-<title>Anleitung fürs Upgrade</title>
 <section>
+<title>Upgraden</title>
 <body>
 
 <p>
-Wir haben viel an der Art verändert wie Apache mit Gentoo funktioniert. Jedes
-Paket das im direkten Zusammenhang mit Apache steht muss aktualisiert werden
-und einige Dinge die bisher funktioniert haben, funktionieren jetzt nicht mehr.
+Es gab viele Änderungen daran, wie Apache unter Gentoo funktioniert. Jedes
+Paket, das im direkten Zusammenhang mit Apache steht, muss aktualisiert werden
+und einige Dinge, die bisher funktioniert haben, funktionieren jetzt nicht mehr.
 </p>
 
 <p>
@@ -139,12 +203,12 @@ vielleicht eine neue Revision gibt.
 Da wir einige neue USE-Flags eingeführt haben, möchten Sie vielleicht einen
 Blick darauf werfen und entsprechende Zeilen in ihre
 <path>/etc/portage/package.use</path> einfügen. Für weitere Informationen
-schauen Sie sich die <uri link="#use">von Apache unterstützten USE-Flags</uri>
-an.
+schauen Sie sich die <uri link="#use-2.2.6-r4">von Apache unterstützten
+USE-Flags</uri> an.
 </p>
 
-<pre caption="Überprüfen der USE-Flags und erneutes kompillieren">
-<comment>(Prüfen Sie die USE-Flags und machen Sie die nötigen Updates)</comment>
+<pre caption="Überprüfen der USE-Flags und erneutes Kompilieren">
+<comment>(Prüfen Sie die USE-Flags und die nötigen Updates)</comment>
 # <i>emerge --pretend --verbose --update --newuse --deep apache subversion \
 mod_php mod_bandwidth mod_layout mod_ldap_userdir mod_loopback mod_mp3 \
 mod_random mod_throttle mod_watch</i>
@@ -221,11 +285,10 @@ Sie können auch <path>#gentoo-apache</path> auf dem Server
 </section>
 </chapter>
 
-<chapter id="use">
-<title>Von Apache unterstütze USE-Flags</title>
+<chapter id="use-pre-2.2.6-r4">
+<title>Unterstütze USE-Flags in &lt;2.2.6-r4</title>
 <section>
 <body>
-
 
 <p>
 Es gibt einige spezifische USE-Flags für Apache und seine Module. Apache
@@ -239,37 +302,57 @@ erhalten führen Sie <c>emerge --verbose --pretend apache</c> aus.
 <table>
 <tr>
   <th>USE-Flag</th>
-  <th>Pakete</th>
   <th>Beschreibung</th>
 </tr>
 <tr>
   <ti>apache2</ti>
-  <ti>depend.apache eclass (alle Module)</ti>
   <ti>
-    Dieses USE-Flag sollte immer gesetzt sein wenn Sie die Apache-2.0 Reihe
+    Dieses USE-Flag sollte immer gesetzt sein, wenn Sie die Apache-2.0 Reihe
     verwenden, allerdings nicht wenn Sie die Apache-1.3 Versionen einsetzen.
-    Die Eclass benutzt dieses USE-Flag um festzustellen welche Apache Version
+    Die Eclass benutzt dieses USE-Flag, um festzustellen welche Apache-Version
     benutzt wird.
   </ti>
 </tr>
 <tr>
+  <ti>debug</ti>
+  <ti>
+    Aktiviert einen Hook, der es externen Modulen ermöglicht, sich
+    einzuschalten und etwas zu tun, nachdem ein Child gecrasht ist. Es gibt
+    bereits zwei Module, <c>mod_whatkilledus</c> und <c>mod_backtrace</c>, die
+    Gebrauch von diesem Hook machen.
+  </ti>
+</tr>
+<tr>
+  <ti>doc</ti>
+  <ti>
+    Installiere das Apache-Manual und Konfiguration.
+  </ti>
+</tr>
+<tr>
+  <ti>ldap</ti>
+  <ti>
+    Installiert <c>mod_ldap</c> und <c>mod_auth_ldap</c>/<c>mod_authnz_ldap</c>.
+  </ti>
+</tr>
+<tr>
+  <ti>ssl</ti>
+  <ti>
+    Installiert <c>mod_ssl</c>.
+  </ti>
+</tr>
+<tr>
+  <ti>mpm-itk</ti>
+  <ti>Erstellt das <uri link="http://mpm-itk.sesse.net/">itk</uri> MPM</ti>
+</tr>
+<tr>
   <ti>mpm-leader</ti>
-  <ti>apache-2*</ti>
   <ti>
     Erstellt das <uri
     link="http://httpd.apache.org/docs/2.0/mod/leader.html">leader</uri> MPM
   </ti>
 </tr>
 <tr>
-  <ti>mpm-metux</ti>
-  <ti>apache-2*</ti>
-  <ti>
-    Erstellt das <uri link="http://www.metux.de/mpm/">metux</uri> MPM
-  </ti>
-</tr>
-<tr>
   <ti>mpm-peruser</ti>
-  <ti>apache-2*</ti>
   <ti>
     Erstellt das <uri link="http://www.telana.com/peruser.php">peruser</uri>
     MPM
@@ -277,7 +360,6 @@ erhalten führen Sie <c>emerge --verbose --pretend apache</c> aus.
 </tr>
 <tr>
   <ti>mpm-prefork</ti>
-  <ti>apache-2*</ti>
   <ti>
     Erstellt das <uri
     link="http://httpd.apache.org/docs/2.0/mod/prefork.html">prefork</uri> MPM
@@ -285,7 +367,6 @@ erhalten führen Sie <c>emerge --verbose --pretend apache</c> aus.
 </tr>
 <tr>
   <ti>mpm-threadpool</ti>
-  <ti>apache-2*</ti>
   <ti>
     Erstellt das <uri
     link="http://httpd.apache.org/docs/2.0/mod/threadpool.html">threadpool</uri>
@@ -294,57 +375,449 @@ erhalten führen Sie <c>emerge --verbose --pretend apache</c> aus.
 </tr>
 <tr>
   <ti>mpm-worker</ti>
-  <ti>apache-2*</ti>
   <ti>
     Erstellt das <uri
     link="http://httpd.apache.org/docs/2.0/mod/worker.html">worker</uri> MPM
   </ti>
 </tr>
 <tr>
-  <ti>no-suexec</ti>
-  <ti>apache</ti>
-  <ti>
-    Das suexec-Modul wird nicht erstellt (für alle die kein potenziell
-    unsicherers suid-Programm in ihrem System wollen)
-  </ti>
-</tr>
-<tr>
   <ti>static-modules</ti>
-  <ti>apache</ti>
   <ti>
     Die Basismodule werden statisch in das Apache-Binary verlinkt, so dass
-    LoadModule nicht benötigt wird um diese Module zu laden.
-  </ti>
-</tr>
-<tr>
-  <ti>lingerd</ti>
-  <ti>apache-1*</ti>
-  <ti>
-    Liefert Unterstützung für
-    <uri link="http://www.iagora.com/about/software/lingerd/">lingerd</uri>
-  </ti>
-</tr>
-<tr>
-  <ti>no-htdocs</ti>
-  <ti>gentoo-webroot-default</ti>
-  <ti>
-    Verhindert die Installation des Standard-Webroots nach
-    <path>/var/www/localhost</path>, so dass angepasste Dateien dort nicht
-    überschrieben werden. Stattdessen wird das Standard-Webroot nach
-    <path>/usr/share/doc/gentoo-webroot-default-*/webroot/</path> installiert.
+    LoadModule nicht benötigt wird, um diese Module zu laden.
   </ti>
 </tr>
 </table>
 
 <note>
-Obwohl es viele mpm-* USE-Flags gibt schließen sie sich gegenseitig aus. Sie
-sollten genau eines der mpm-* USE-Flags setzen. (Wenn Sie keines setzen wird
-mpm-prefork oder mpm-worker benutzt, abhängig davon ob das threads USE-Flag
-gesetzt ist.)
+Auch wenn es viele <c>mpm-*</c> USE-Flags gibt, schließen diese sich gegenseitig
+aus. Sie sollten nur ein einziges der <c>mpm-*</c> USE-Flags aktivieren. (Falls
+Sie keines aktivieren, wird entweder <c>mpm-prefork</c> oder <c>mpm-worker</c>
+benutzt, abhängig davon, ob das threads USE-Flag gesetzt ist.)
 </note>
 
 </body>
 </section>
 </chapter>
 
+<chapter id="use-2.2.6-r4">
+<title>Unterstütze USE-Flags in 2.2.6-r4 und höher</title>
+<section>
+<body>
+
+<p>
+Mit der Einführung von <c>APACHE2_MODULES</c> war ein generelles Aufräumen der
+USE-Flags erforderlich. Die folgende Tabelle listet alle unterstützten USE-Flags
+für <c>apache-2.2.6-r4</c> und höher auf, ebenso das entsprechende Flag in
+älteren Versionen.
+</p>
+
+<table>
+<tr>
+  <th>USE-Flag</th>
+  <th>Altes USE-Flag</th>
+  <th>Beschreibung</th>
+</tr>
+<tr>
+  <ti>debug</ti>
+  <ti>debug</ti>
+  <ti>
+    Aktiviert einen Hook, der es externen Modulen ermöglicht, sich
+    einzuschalten und etwas zu tun, nachdem ein Child gecrasht ist. Es gibt
+    bereits zwei Module, <c>mod_whatkilledus</c> und <c>mod_backtrace</c>, die
+    Gebrauch von diesem Hook machen.
+  </ti>
+</tr>
+<tr>
+  <ti>doc</ti>
+  <ti>doc</ti>
+  <ti>
+    Installiere das Apache-Manual und Konfiguration.
+  </ti>
+</tr>
+<tr>
+  <ti>ldap</ti>
+  <ti>ldap</ti>
+  <ti>
+    Installiert <c>mod_ldap</c> und <c>mod_auth_ldap</c>/<c>mod_authnz_ldap</c>.
+  </ti>
+</tr>
+<tr>
+  <ti>ssl</ti>
+  <ti>ssl</ti>
+  <ti>
+    Installiert <c>mod_ssl</c>.
+  </ti>
+</tr>
+<tr>
+  <ti>static</ti>
+  <ti>static-modules</ti>
+  <ti>
+    Die Basismodule werden statisch in das Apache-Binary verlinkt, so dass
+    LoadModule nicht benötigt wird, um diese Module zu laden.
+  </ti>
+</tr>
+<tr>
+  <ti>suexec</ti>
+  <ti>no-suexec</ti>
+  <ti>Installiert <c>mod_suexec</c> und die <c>suexec</c> Hilfs-Binary</ti>
+</tr>
+<tr>
+  <ti>threads</ti>
+  <ti>threads</ti>
+  <ti>
+    Wählt die standardmäßige MPM aus, wenn keine in APACHE2_MPMS gesetzt ist
+  </ti>
+</tr>
+</table>
+
+<p>
+Die folgende Tabelle listet unterstützte <c>APACHE2_MPMS</c> seit
+<c>apache-2.2.6-r4</c> und deren entsprechendes, vorheriges, lokales USE-Flag
+auf.
+</p>
+
+<table>
+<tr>
+  <th>Flag</th>
+  <th>Altes USE-Flag</th>
+  <th>Beschreibung</th>
+</tr>
+<tr>
+  <ti>event</ti>
+  <ti>mpm-event</ti>
+  <ti>Eine experimentelle Variante der standardmäßigen worker MPM</ti>
+</tr>
+<tr>
+  <ti>itk</ti>
+  <ti>mpm-itk</ti>
+  <ti>
+    Ermöglicht es, jeden virtuellen Host unter einer separaten uid und gid
+    auszuführen
+  </ti>
+</tr>
+<tr>
+  <ti>peruser</ti>
+  <ti>mpm-peruser</ti>
+  <ti>
+    Peruser ist eine funktionierende Implementierung der perchild MPM, die es
+    erlaubt, jeden Apache-Kindprozess unter seinem eigenen Benutzer und seiner
+    eigenen Gruppe auszuführen, wobei jeder seinen eigenen Satz an virtuellen
+    Hosts handhabt
+  </ti>
+</tr>
+<tr>
+  <ti>prefork</ti>
+  <ti>mpm-prefork</ti>
+  <ti>Implementiert einen non-threaded, pre-forking Webserver</ti>
+</tr>
+<tr>
+  <ti>worker</ti>
+  <ti>mpm-worker</ti>
+  <ti>
+    Multi-Processing Module, welches einen hybriden, multi-threaded,
+    multi-prozess Webserver implementiert
+  </ti>
+</tr>
+</table>
+
+<p>
+Die folgende Tabelle listet unterstützte <c>APACHE2_MODULES</c> seit
+<c>apache-2.2.6-r4</c> auf.
+</p>
+
+<table>
+<tr>
+  <th>Flag</th>
+  <th>Beschreibung</th>
+</tr>
+<tr>
+  <ti>actions</ti>
+  <ti>
+    CGI-Skripte basierend auf dem Media-Typ und der Request-Methode ausführen
+  </ti>
+</tr>
+<tr>
+  <ti>alias</ti>
+  <ti>
+    Bereitstellen von "Mapping" verschiedener Teile des Host-Dateisystems im
+    Dokumentbaum und für URL-Umleitung
+  </ti>
+</tr>
+<tr>
+  <ti>asis</ti>
+  <ti>Sendet Dateien, die ihre eigenen HTTP-Header enthalten</ti>
+</tr>
+<tr>
+  <ti>auth_basic</ti>
+  <ti>Grundlegende Authentifikation</ti>
+</tr>
+<tr>
+  <ti>auth_digest</ti>
+  <ti>Benutzerauthentifikation unter Benutzung von MD5 Digest Authentifikation</ti>
+</tr>
+<tr>
+  <ti>authn_alias</ti>
+  <ti>
+    Stellt die Fähigkeit bereit, erweiterte Authentifikationsprovider zu
+    erstellen, basierend auf eigentlichen Providern
+  </ti>
+</tr>
+<tr>
+  <ti>authn_anon</ti>
+  <ti>Erlaubt "anonymous" Benutzerzugriff zu authentifizierten Bereichen</ti>
+</tr>
+<tr>
+  <ti>authn_dbd</ti>
+  <ti>Benutzerauthentifizierung unter Benutzung einer SQL-Datenbank</ti>
+</tr>
+<tr>
+  <ti>authn_dbm</ti>
+  <ti>Benutzerauthentifikation unter Benutzung von DBM-Dateien</ti>
+</tr>
+<tr>
+  <ti>authn_default</ti>
+  <ti>Authentifikationsausweichlösungsmodul</ti>
+</tr>
+<tr>
+  <ti>authn_file</ti>
+  <ti>Benutzerauthentifikation unter Benutzung von Textdateien</ti>
+</tr>
+<tr>
+  <ti>authz_dbm</ti>
+  <ti>Gruppenautorisierung unter Benutzung von DBM-Dateien</ti>
+</tr>
+<tr>
+  <ti>authz_default</ti>
+  <ti>Autorisierungsausweichlösungsmodul</ti>
+</tr>
+<tr>
+  <ti>authz_groupfile</ti>
+  <ti>Gruppenautorisierung unter Benutzung von Textdateien</ti>
+</tr>
+<tr>
+  <ti>authz_host</ti>
+  <ti>Gruppenautorisierungen basierend auf Host (Name oder IP-Adresse)</ti>
+</tr>
+<tr>
+  <ti>authz_owner</ti>
+  <ti>Autorisierung basierend Dateieigentümerschaft</ti>
+</tr>
+<tr>
+  <ti>authz_user</ti>
+  <ti>Benutzerautorisierung</ti>
+</tr>
+<tr>
+  <ti>autoindex</ti>
+  <ti>
+    Generiert Verzeichnisindizes automatisch, ähnlich zum Unix-Befehl <c>ls</c>
+  </ti>
+</tr>
+<tr>
+  <ti>cache</ti>
+  <ti>Inhaltscache "keyed" zu URIs</ti>
+</tr>
+<tr>
+  <ti>cern_meta</ti>
+  <ti>CERN httpd metafile semantics</ti>
+</tr>
+<tr>
+  <ti>charset_lite</ti>
+  <ti>Spezifiziere Zeichensatzübersetzung oder -kodierung</ti>
+</tr>
+<tr>
+  <ti>dav</ti>
+  <ti>Verteilte Authoring und Versioning (WebDAV) Funktionalität</ti>
+</tr>
+<tr>
+  <ti>dav_fs</ti>
+  <ti>Dateisystemprovider für mod_dav</ti>
+</tr>
+<tr>
+  <ti>dav_lock</ti>
+  <ti>Generisches Sperrmodul für mod_dav</ti>
+</tr>
+<tr>
+  <ti>dbd</ti>
+  <ti>Verwaltet SQL-Datenbankverbindungen</ti>
+</tr>
+<tr>
+  <ti>deflate</ti>
+  <ti>Komprimiere Inhalt bevor er an Clients geliefert wird</ti>
+</tr>
+<tr>
+  <ti>dir</ti>
+  <ti>
+    Provides für "trailing slash" Umleitungen und Verzeichnisindexdateien
+  </ti>
+</tr>
+<tr>
+  <ti>disk_cache</ti>
+  <ti>Inhaltscachespeichermanager "keyed" zu URIs</ti>
+</tr>
+<tr>
+  <ti>dumpio</ti>
+  <ti>Gibt kompletten I/O zum Error-Log falls gewünscht</ti>
+</tr>
+<tr>
+  <ti>env</ti>
+  <ti>
+    Modifiziert die Umgebung, welche an CGI-Skripte und SSI-Seiten übergeben wird
+  </ti>
+</tr>
+<tr>
+  <ti>expires</ti>
+  <ti>
+    Generierung von Expires und Cache-Controll HTTP Headers, nach
+    benutzerspezifizierten Kriterien
+  </ti>
+</tr>
+<tr>
+  <ti>ext_filter</ti>
+  <ti>
+    Leite den Antwortkörper durch ein externes Programm vor Auslieferung an
+    einen Client
+  </ti>
+</tr>
+<tr>
+  <ti>file_cache</ti>
+  <ti>Cachet eine statische Liste von Dateien im Speicher</ti>
+</tr>
+<tr>
+  <ti>filter</ti>
+  <ti>Kontext-sensitive kluges Filterkonfigurationsmodul</ti>
+</tr>
+<tr>
+  <ti>headers</ti>
+  <ti>Anpassung von HTTP Request und Response Headern</ti>
+</tr>
+<tr>
+  <ti>ident</ti>
+  <ti>RFC 1413 ident lookups</ti>
+</tr>
+<tr>
+  <ti>imagemap</ti>
+  <ti>Server-side imagemap Verarbeitung</ti>
+</tr>
+<tr>
+  <ti>include</ti>
+  <ti>Server-parsed HTML-Dokumente (Server Side Includes)</ti>
+</tr>
+<tr>
+  <ti>info</ti>
+  <ti>Stellt eine umfassende Übersicht der Serverkonfiguration bereit</ti>
+</tr>
+<tr>
+  <ti>log_config</ti>
+  <ti>Loggen der Anfragen an den Server</ti>
+</tr>
+<tr>
+  <ti>log_forensic</ti>
+  <ti>Forensisches Loggen der Anfragen an den Server</ti>
+</tr>
+<tr>
+  <ti>logio</ti>
+  <ti>Loggen von Eingabe- und Ausgabebytes pro Anfrage</ti>
+</tr>
+<tr>
+  <ti>mem_cache</ti>
+  <ti>Inhaltscache "keyed" zu URIs</ti>
+</tr>
+<tr>
+  <ti>mime</ti>
+  <ti>
+    Verbindet die Endung des angefragten Dateinamens mit dem Verhalten
+    (Handler und Filter) und dem Inhalt (MIME-Typ, Sprache, Zeichensatz,
+    Kodierung) der Datei
+  </ti>
+</tr>
+<tr>
+  <ti>mime_magic</ti>
+  <ti>
+    Stellt den MIME-Typ einer Datei durch Anschauen der ersten Bytes des Inhalts
+    fest
+  </ti>
+</tr>
+<tr>
+  <ti>negotiation</ti>
+  <ti>Provides für content negotiation</ti>
+</tr>
+<tr>
+  <ti>proxy</ti>
+  <ti>HTTP/1.1 Proxy/Gateway-Server</ti>
+</tr>
+<tr>
+  <ti>proxy_ajp</ti>
+  <ti>AJP Unterstützungsmodul für mod_proxy</ti>
+</tr>
+<tr>
+  <ti>proxy_balancer</ti>
+  <ti>mod_proxy Erweiterung für Ausgleichen der Load</ti>
+</tr>
+<tr>
+  <ti>proxy_connect</ti>
+  <ti>mod_proxy Erweiterung für CONNECT Anfragenhandhabung</ti>
+</tr>
+<tr>
+  <ti>proxy_ftp</ti>
+  <ti>FTP Unterstützungsmodul für mod_proxy</ti>
+</tr>
+<tr>
+  <ti>proxy_http</ti>
+  <ti>HTTP Unterstützungsmodul für mod_proxy</ti>
+</tr>
+<tr>
+  <ti>rewrite</ti>
+  <ti>
+    Stellt eine regelbasierte Umleitungs-Engine bereit, um angeforderte URLs
+    on-the-fly umzuleiten.
+  </ti>
+</tr>
+<tr>
+  <ti>setenvif</ti>
+  <ti>
+    Ermöglicht das Setzen von Umgebungsvariablen basierend auf Eigenschaften
+    der Anfrage
+  </ti>
+</tr>
+<tr>
+  <ti>speling</ti>
+  <ti>
+    Versucht irrtümliche URLs, die Benutzer eingegeben haben können, zu
+    korrigieren, indem Großschreibung ignoriert wird und bis zu eine
+    Fehlbuchstabierung erlaubt wird
+  </ti>
+</tr>
+<tr>
+  <ti>status</ti>
+  <ti>Stellt Informationen zu Serveraktivitäten und -performanz bereit</ti>
+</tr>
+<tr>
+  <ti>unique_id</ti>
+  <ti>
+    Stellt eine Umgebungsvariable mit einem eindeutigen Bezeichner für jede
+    Anfrage bereit
+  </ti>
+</tr>
+<tr>
+  <ti>userdir</ti>
+  <ti>Benutzerspezifische Verzeichnisse</ti>
+</tr>
+<tr>
+  <ti>usertrack</ti>
+  <ti>Clickstream-Loggen von Benutzeraktivität auf einer Seite</ti>
+</tr>
+<tr>
+  <ti>version</ti>
+  <ti>Versionsabhängige Konfiguration</ti>
+</tr>
+<tr>
+  <ti>vhost_alias</ti>
+  <ti>Provides für dynamisch konfiguriertes Massen-Virtual-Hosting</ti>
+</tr>
+</table>
+
+</body>
+</section>
+</chapter>
 </guide>
