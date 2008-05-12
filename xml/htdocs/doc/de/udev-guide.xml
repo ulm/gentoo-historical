@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/udev-guide.xml,v 1.29 2007/10/27 16:12:08 keytoaster Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/udev-guide.xml,v 1.30 2008/05/12 16:38:54 keytoaster Exp $ -->
 
-<!-- English CVS Version: 1.43 -->
+<!-- English CVS Version: 1.44 -->
 
 <guide link="/doc/de/udev-guide.xml" lang="de">
 <title>Gentoo udev Leitfaden</title>
@@ -13,7 +13,10 @@
 </author>
 <author title="Mitarbeiter">
   <mail link="greg_g@gentoo.org">Gregorio Guidi</mail>
- </author>
+</author>
+<author title="Bearbeiter">
+  <mail link="nightmorph"/>
+</author>
 <author title="Übersetzer">
   <mail link="grahl@gentoo.org">Jan Hendrik Grahl</mail>
 </author>
@@ -26,10 +29,12 @@ Dieses Dokument erklärt was udev ist und wie Sie udev verwenden können, um Ihr
 Bedürfnissen zu entsprechen.
 </abstract>
 
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.32</version>
-<date>2007-08-02</date>
+<version>0.33</version>
+<date>2007-10-30</date>
 
 <chapter>
 <title>Was ist udev?</title>
@@ -420,6 +425,64 @@ Für weitere Informationen zum Schreiben von udev-Regeln, lesen Sie bitte
 Daniel Drakes
 <uri link="http://www.reactivated.net/udevrules.php">Leitfaden</uri>.
 </p>
+
+</body>
+</section>
+<section>
+<title>udev lädt Module in nicht vorhersehbarer Reihenfolge</title>
+<body>
+
+<p>
+Manchmal lädt udev Module in unerwünschter, unvorhersehbarer oder anscheinend
+zufälliger Reihenfolge. Dies ist besonders für Systeme, die mehrere Geräte des
+selben Typs sowie Multimediageräte, haben. Dies kann die zugewiesene Nummer der
+Geräte betreffen; z.B. können Soundkarten dadurch ihre Nummern tauschen.
+</p>
+
+<p>
+Es gibt einige Lösungen, um die Gerätenummern und/oder Modulladereihenfolge
+zu beheben. Idealerweise können Sie einfach Modulparameter verwenden, um Ihre
+gewünschte Gerätenummer anzugeben. Einige Module, z.B. ALSA, haben einen
+Parameter "index". Module, die diesen Parameter benutzen, können wie folgt
+gezeigt angepasst werden. Dieses Beispiel ist für ein System mit zwei
+Soundkarten. Die Karte mit einem Index von 0 wird als erste Karte ausgewiesen.
+Sobald die Parameter geändert sind, müssen die Modulkonfigurationsdateien
+aktualisiert werden.
+</p>
+
+<pre caption="Angeben von Modulparametern">
+# <i>echo "option snd-ice1724 index=0" >> /etc/modules.d/alsa</i>
+# <i>echo "option snd-ymfpci index=1" >> /etc/modules.d/alsa</i>
+# <i>update-modules</i>
+</pre>
+
+<p>
+Das obige Beispiel ist die bevorzugte Lösung, aber nicht alle Module
+unterstützen Parameter wie index. Für diese Module müssen Sie die korrekte
+Modulladereihenfolge erzwingen. Zuerst müssen Sie udev anweisen, diese Module
+nicht mehr länger automatisch zu laden, indem Sie sie "blacklisten". Stellen Sie
+sicher, dass Sie den exakten Namen des Moduls, das geladen wird, verwenden. Für
+PCI-Geräte müssen Sie die Modulnamen verwenden, die Sie aus Ausgabe des Befehls
+<c>pcimodules</c>, verfügbar im Paket <c>pciutils</c>, entnehmen. Das folgende
+Beispiel verwendet DVB-Module.
+</p>
+
+<pre caption="Blacklisten von Modulen">
+# <i>echo "blacklist b2c2-flexcop-pci" >> /etc/modules.d/dvb</i>
+# <i>echo "blacklist budget" >> /etc/modules.d/dvb</i>
+# <i>update-modules</i>
+</pre>
+
+<p>
+Als Nächstes laden Sie die Module in der richtigen Reihenfolge. Fügen Sie sie
+der Datei <path>/etc/modules.autoload.d/kernel-2.6</path> <e>in der exakten
+Reihenfolge, in der Sie sie geladen haben wollen</e> hinzu.
+</p>
+
+<pre caption="Laden von Modulen in der richtigen Reihenfolge">
+# <i>echo "budget" >> /etc/modules.autoload.d/kernel-2.6</i>
+# <i>echo "b2c2-flexcop-pci" >> /etc/modules.autoload.d/kernel-2.6</i>
+</pre>
 
 </body>
 </section>
