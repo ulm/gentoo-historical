@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-overview.xml,v 1.7 2006/10/11 04:48:51 pebenito Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-overview.xml,v 1.8 2008/05/20 15:45:43 pebenito Exp $ -->
 
 <sections>
 <version>1.5</version>
-<date>2006-09-01</date>
+<date>2008-05-16</date>
 
 <!--
 <section><title>Mandatory Access Control</title>
@@ -71,7 +71,7 @@
 </p>
 </body></subsection>
 
-<subsection><title>Configure SELinux Identity Mapping (2006.1+)</title><body>
+<subsection><title>Configure SELinux Identity Mapping</title><body>
 <p>
    The SELinux policy has several generic SELinux identities that should
    be sufficient for all users.  This mapping only needs to be configured
@@ -108,33 +108,6 @@
 </p>
 </body></subsection>
 
-<subsection><title>Configuring SELinux Identities (pre 2006.1)</title><body>
-<p>
-   SELinux identities are contained in the users file in the policy directory.
-   The syntax for the file is simple.  For example, to allow the user
-   <c>pebenito</c> the roles <c>staff_r</c> and <c>sysadm_r</c>, add to the end
-   of the file something like:
-</p>
-<pre caption="Example user line">user pebenito roles { staff_r sysadm_r };</pre>
-<p>
-   Then load the policy.  There must also be a Linux username <c>pebenito</c>.
-   If a user does not have a <c>user</c> line in the file, their identity will
-   be <c>user_u</c>, and only be allowed the <c>user_r</c> role.
-</p>
-
-<impo>
-   Normal users that have identities should be allowed <c>user_r</c>, not
-   <c>staff_r</c>. Administrators should be allowed <c>staff_r</c> and 
-   <c>sysadm_r</c>.  All users must be allowed <c>user_r</c> or
-   <c>staff_r</c> otherwise they will be unable to log in remotely.
-</impo>
-<p>
-   When giving a user an identity their home directory and contents should also be
-   appropriately labeled.  The user's home directory will be labeled based on
-   the first role listed for the user, in the users file.  For the above example,
-   the user pebenito will have his home directory labeled as <c>staff_home_dir_t</c>.
-</p>
-</body></subsection>
 </section>
 
 <section><title>SELinux Contexts</title>
@@ -214,187 +187,7 @@ drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
 </section>
 
 <section>
-<title>SELinux Policy Files (pre 2006.1)</title>
-<subsection><body>
-<p>
-   The SELinux policy usually resides in <c>/etc/security/selinux/src/policy</c>.
-   It is comprised of several files and directories for generating the policy.
-   For easing the creation of the policy, macros from the m4 text processor
-   are used to reuse common rules.  The policy files are processed
-   by m4, and then the policy compiler <c>checkpolicy</c> verifies that
-   there are no syntactic errors, and creates a binary policy file.  The binary
-   policy then can be loaded into a running SELinux kernel.
-</p>
-</body></subsection>
-<subsection><title>Makefile</title><body>
-<p>
-   The policy Makefile handles the compiling and installation of policy.  It
-   has one configurable option for controlling the <uri link="#doc_chap6">policy version</uri>,
-   and has four targets.
-</p>
-<table>
-<tr><th>Command</th><th>Description</th></tr>
-<tr><ti>make policy</ti>
-    <ti>Compiles the current policy into the binary policy file.</ti></tr>
-<tr><ti>make install</ti>
-    <ti>Compiles and installs the current policy into the /etc/security/selinux/src directory.</ti></tr>
-<tr><ti>make load</ti>
-    <ti>Compile, install, and load the current policy into the current running kernel.</ti></tr>
-<tr><ti>make relabel</ti>
-    <ti>Relabels the filesystems using the file contexts in the policy.</ti></tr>
-</table>
-</body></subsection>
-
-<subsection><title>assert.te</title><body>
-<p>
-   The rules in this file will be checked in the final phase of
-   compilation.  If a permission granted in the policy matches one of
-   these assertions, the policy compiler will reject the policy.  This can
-   aid in ensuring certain accesses are never allowed.
-</p>
-</body></subsection>
-
-<subsection><title>attrib.te</title><body>
-<p>
-   A type attribute can be used to identify a set of types with a similar
-   property.  Each type can have any number of attributes, and each
-   attribute can be associated with any number of types.  Attributes are
-   explicitly declared in this file, and can then be associated with particular
-   types in type declarations.  Attribute names can then be used throughout
-   the configuration to express the set of types that are associated with
-   the attribute.
-</p>
-</body></subsection>
-
-<subsection><title>constraints</title><body>
-<p>
-   This file defines additional constraints on permissions
-   in the form of expressions that must be satisfied in order
-   for specified permissions to be granted.  These constraints
-   are used to further refine the type enforcement tables and
-   the role allow rules.  Typically, these constraints are used
-   to restrict changes in user identity or role to certain domains.
-</p>
-</body></subsection>
-
-<subsection><title>domains/</title><body>
-<p>
-   This directory contains the type enforcement rules.  This directory contains
-   the files <c>admin.te</c>, <c>staff.te</c>, and <c>user.te</c>, which
-   contain the access vectors for the <c>sysadm_r</c>, <c>staff_r</c>, and 
-   <c>user_r</c> roles.  The <c>program/</c> directory consists of all of the
-   active policies for various programs and daemons.  The <c>misc/</c> directory
-   contains all other policy files.
-</p>
-</body></subsection>
-
-<subsection><title>file_contexts/</title><body>
-<p>
-   This directory contains the files that describe the security contexts
-   for all files on persistent filesystems.  It contains the file <c>types.fc</c>
-   which has all of the security contexts for the general system.  The
-   directory <c>program/</c> contains the security contexts for the daemons
-   in the <c>domains/program/</c> directory.  These are one-to-one mapped;
-   for example, the domains/program/syslogd.te policy file corresponds to the
-   file_contexts/program/syslogd.fc security contexts file.
-</p>
-</body></subsection>
-
-<subsection><title>flask/</title><body>
-<p>
-   This directory contains contains configuration files independent of the
-   policy.  These files contain definitions corresponding to definitions
-   in the kernel headers.  These files <e>should not</e> be modified.
-</p>
-</body></subsection>
-
-<subsection><title>fs_use</title><body>
-<p>
-   This file describes the labelling behavior for files on various filesystem
-   types.  For example, ext3 uses persistent labelling, while tmpfs uses
-   transitional security IDs.  In general, this file should <e>not</e>
-   need to be modified.
-</p>
-</body></subsection>
-
-<subsection><title>genfs_contexts</title><body>
-<p>
-   This file contains the security contexts for files in a filesystem that
-   do not support persistent file labels, such as <c>/proc</c>.
-</p>
-</body></subsection>
-
-<subsection><title>initial_sid_contexts</title><body>
-<p>
-   This file contains the initial context for each security ID.  In general,
-   this file should <e>not</e> need to be modified.
-</p>
-</body></subsection>
-
-<subsection><title>macros/</title><body>
-<p>
-   This directory contains the m4 macros used to ease creation and maintenance
-   of the policy.  It contains the macro file <c>admin_macros.te</c> for
-   describing administration domains, such as <c>sysadm_t</c>.  The
-   <c>user_macros.te</c> contains macros used in user domains such as <c>user_t</c>
-   and <c>staff_t</c>.  The <c>global_macros.te</c> contains macros used throughout
-   the entire policy.
-</p>
-</body></subsection>
-
-<subsection><title>mls</title><body>
-<p>
-   This file contains the configuration for SELinux multi-level security.
-   Multi-level Security is experimental, and is not supported by Gentoo.
-</p>
-</body></subsection>
-
-<subsection><title>net_contexts</title><body>
-<p>
-   This file defines the security contexts of network objects such as ports,
-   interfaces, and nodes.  This will need to be modified if daemons run on
-   nonstandard ports.
-</p>
-</body></subsection>
-
-<subsection><title>rbac</title><body>
-<p>
-   In the past this file was a centralized place for declaring roles.
-   The role declarations have since since been divided up into TE files.
-   This file now only has the rule for allowing a role change from the sysadm_r
-   role to the system_r role.
-</p>
-</body></subsection>
-
-<subsection><title>tmp/</title><body>
-<p>
-   This directory is used for holding intermediate files when compiling the
-   policy.  It can be safely removed, if needed.
-</p>
-</body></subsection>
-
-<subsection><title>tunable.te</title><body>
-<p>
-   This is the main configuration file of the policy.
-</p>
-</body></subsection>
-
-<subsection><title>types/</title><body>
-<p>
-   This directory contains files for declaring general types of the system
-   which do not appear in the individual program policies.
-</p>
-</body></subsection>
-
-<subsection><title>users</title><body>
-<p>
-   This file describes the SELinux identities, and the roles they can enter.
-</p>
-</body></subsection>
-</section>
-
-<section>
-<title>SELinux Policy Files (2006.1+)</title>
+<title>SELinux Policy Files</title>
 <subsection><body>
 <p>
    The SELinux policy source files are no longer installed onto the system.
@@ -447,25 +240,8 @@ drwxr-xr-x  root     root     system_u:object_r:etc_t          etc
 </p>
 <note>
   The policy management infrastructure (libsemanage) will automatically
-  create and use the correct version policies.  No extra steps need be taken. (2006.1+)
+  create and use the correct version policies.  No extra steps need be taken.
 </note>
-</body></subsection>
-<subsection><title>Compiling the Right Version Policy (pre 2006.1)</title>
-<body>
-<p>
-   The only adjustment needed is in the policy Makefile.  There is a line
-   near the top that looks like this:
-</p>
-<pre caption="Makefile contents">
-POLICYCOMPAT = -c 15
-</pre>
-<p>
-   Normally, checkpolicy will create a policy for the current version.  The
-   policy versions that checkpolicy can create can be determined by running
-   <c>checkpolicy -V</c>.  With the above option uncommented, a compatibility
-   policy can be created.  The above statement will create a version 15 policy;
-   it can be changed to 16.
-</p>
 </body></subsection>
 <subsection><title>Policy Versions</title>
 <body>
@@ -498,7 +274,10 @@ POLICYCOMPAT = -c 15
     <ti>2.6.14 - 2.6.18</ti></tr>
 <tr><ti>21</ti>
     <ti>Object classes in range transitions.</ti>
-    <ti>2.6.19 - current</ti></tr>
+    <ti>2.6.19 - 2.6.24</ti></tr>
+<tr><ti>22</ti>
+    <ti>Policy capabilities (features).</ti>
+    <ti>2.6.25 - current</ti></tr>
 </table>
 </body></subsection>
 </section>
@@ -558,9 +337,9 @@ user_ping: active
 # setsebool user_ping 0
 </pre>
 <p>
-  To set the value of a boolean, and make it the devault value, use the <c>-P</c> option.  (2006.1+)
+  To set the value of a boolean, and make it the devault value, use the <c>-P</c> option.
 </p>
-<pre caption="Change default value (2006.1+)">
+<pre caption="Change default value">
 # setsebool -P user_ping 1
 </pre>
 </body></subsection>
