@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/quick-samba-howto.xml,v 1.7 2008/01/29 11:04:50 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/quick-samba-howto.xml,v 1.8 2008/05/23 01:47:07 chiguire Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 <guide link="/doc/es/quick-samba-howto.xml" lang="es">
-<title>Guía Gentoo Samba3/CUPS/ClamAV</title>
+<title>Guía Gentoo Samba3/CUPS</title>
 <author title="Autor">
   Andreas "daff" Ntaflos<!--daff at dword dot org-->
 </author>
@@ -22,16 +22,15 @@
 <abstract>
 Preparar, instalar y configurar un servidor Samba bajo Gentoo para
 compartir impresoras y archivos sin necesidad de instalar
-controladores, al mismo tiempo que se provee un barrido de virus
-automáticamente.
+controladores.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.24</version>
-<date>2007-12-20</date>
+<version>1.25</version>
+<date>2008-05-01</date>
 
 <chapter>
 <title>Introducción a esta guía</title>
@@ -70,10 +69,7 @@ altamente personalizada de Samba.
 
 <p>
 Se describirá como compartir archivos e impresoras entre PCs Windows y
-PCs *nix. También se demostrará el uso de la característica VFS
-(Sistema de Archivos Virtual) de Samba para incorporar protección
-automática contra virus. Como punto final, también se mostrará como
-montar y manipular lo compartido.
+PCs *nix. También se mostrará como montar y manipular lo compartido.
 </p>
 
 <p>
@@ -126,7 +122,6 @@ todos los tópicos cubiertos como son presentados:
 <ul>
   <li>En el servidor Samba:
     <ul>
-      <li>Instalación y configuración de ClamAV</li>
       <li>Instalación y configuración de Samba</li>
       <li>Instalación y configuración de CUPS</li>
       <li>Cómo agregar impresoras a CUPS</li>
@@ -161,13 +156,11 @@ Necesitaremos lo siguiente:
 
 <ul>
   <li>net-fs/samba</li>
-  <li>app-antivirus/clamav</li>
   <li>net-print/cups</li>
   <li>net-print/foomatic</li>
   <li>net-print/hplip (si tienes una impresora HP)</li>
   <li>Un núcleo apropiado (de preferencia 2.6)</li>
-  <li>Una impresora (PS o no-PS, quizás no MUY nueva o
-  estrafalaria)</li>
+  <li>Una impresora (PS o no-PS)</li>
   <li>
     Una conexión a red funcionando (casa/oficina/etc que consista en
     más de una máquina)
@@ -177,13 +170,8 @@ Necesitaremos lo siguiente:
 <p>
 El paquete principal que utilizaremos es net-fs/samba. Sin embargo,
 necesitarás un núcleo con soporte para cifs activado, de manera que
-puedas montar lo compartido por otra máquina a través de samba o
-Windows. CUPS también será instalado si es que aún no lo está. Además
-utilizaremos app-antivirus/clamav, pero otros antivirus también deben
-funcionar con pocas modificaciones para que trabajen con Samba. El
-ebuild de samba proveido por Gentoo tiene soporte para todo tipo de
-tecnologías de escaneo de virus, como Sophos, FProt, Fsav, Trend,
-Icap, Nai, ...
+puedas montar lo compartido por otra máquina a través de Samba o
+Windows. CUPS también será instalado si es que aún no lo está. 
 </p>
 </body>
 </section>
@@ -201,7 +189,7 @@ banderas USE disponibles en Samba.
 </p>
 
 <pre caption="Samba utiliza las siguientes variables USE:">
-kerberos acl cups ldap pam readline python oav
+kerberos acl cups ldap pam readline python winbind
 </pre>
 
 <p>
@@ -270,12 +258,13 @@ para incluir o no cierto soporte al momento de instalar Samba.
   </ti>
 </tr>
 <tr>
-  <th><b>oav</b></th>
+  <th><b>winbind</b></th>
   <ti>
-    Provee revisión durante el acceso de lo compartido por Samba
-    utilizando el demonio FRISK F-Prot, Kaspersky AntiVirus,
-    OpenAntiVirus.org ScannerDaemon, Sophos Sweep (SAVI), Symantec
-    CarrierScan, y Trend Micro (VSAPI).
+    Winbind permite una autenticación unificada dentro del ambiente
+    Samba. Utiliza una implementación Unix de las llamadas RPC de
+    Windows, PAM y el switch de nombre de servicio (soportado por la
+    librería de c) para permitir a los usuarios de dominio de Windows
+    NT aparecer y trabajar como usuarios Unix en un sistema Unix.
   </ti>
 </tr>
 </table>
@@ -328,7 +317,6 @@ la siguiente:
 </p>
 
 <ul>
-  <li>oav</li>
   <li>cups</li>
   <li>readline</li>
   <li>pam</li>
@@ -340,7 +328,7 @@ banderas USE son incluidas o excluidas específicamente.
 </p>
 
 <pre caption="Emerge Samba">
-# <i>echo "net-fs/samba oav readline cups pam" &gt;&gt; /etc/portage/package.use</i>
+# <i>echo "net-fs/samba readline cups pam" &gt;&gt; /etc/portage/package.use</i>
 # <i>emerge net-fs/samba</i>
 </pre>
 
@@ -352,22 +340,6 @@ Las siguientes arquitecturas necesitarán añadir <e>~</e> a sus
 <p>
 Esto emergerá Samba y CUPS (si CUPS no está instalado todavía).
 </p>
-</body>
-</section>
-
-<section>
-<title>Emergiendo ClamAV</title>
-<body>
-
-<p>
-Debido a que la bandera USE <e>oav</e> sólo provee una interfaz para
-la revisión en busca de algún virus durante el acceso, el antivirus en
-sí debe ser emergido. El antivirus elegido en esta guía es ClamAV.
-</p>
-
-<pre caption="Emerge Clamav">
-# <i>emerge app-antivirus/clamav</i>
-</pre>
 </body>
 </section>
 
@@ -446,14 +418,6 @@ hosts deny = 0.0.0.0/0
 security = share
 <comment># ¡No hay contraseñas, así que vamos a utilizar una cuenta invitada!</comment>
 guest ok = yes
-<comment># Ahora implementaremos el antivirus en tiempo real.
-# NOTA: Al poner esto en nuestra sección [Global], somos capaces
-# de revisar TODO lo compartido, puedes opcionalmente mover esto 
-# a un lugar específico y sólo revisar ese sitio en especial.</comment>
-
-<comment># Para Samba 3.x. Esto activa la revisión en tiempo real de ClamAV.</comment>
-vfs object = vscan-clamav
-vscan-clamav: config-file = /etc/samba/vscan-clamav.conf
 
 <comment># ¡Ahora configuraremos la información de los manejadores de la impresora!</comment>
 [print$]
@@ -518,12 +482,6 @@ cualquier otro. No hace ningún daño y de seguro te protegerá de muchos
 problemas.
 </warn>
 
-<warn>
-Activar la revisión durante el acceso de ClamAV en la sección
-<c>[global]</c> reducirá el desempeño de su servidor Samba de manera
-dramática.
-</warn>
-
 <p>
 Ahora creemos los directorios requeridos en una configuración mínima
 de Samba para compartir la impresora instalada a través de la red.
@@ -564,112 +522,6 @@ NetBIOS:
 # <i>nano -w /etc/nsswitch.conf</i>
 <comment>(Edita los anfitriones: line)</comment>
 hosts: files dns <i>wins</i>
-</pre>
-</body>
-</section>
-
-<section>
-<title>Configurando ClamAV</title>
-<body>
-
-<p>
-El archivo de configuración especificado para ser utilizando en
-<path>smb.conf</path> es
-<path>/etc/samba/vscan-clamv.conf</path>. Aunque las opciones están
-definidas en sus valores por defecto, la acción a tomar al encontrar
-un archivo infectado quizás necesite ser cambiada.
-</p>
-
-<pre caption="/etc/samba/vscan-clamav.conf">
-[samba-vscan]
-<comment>; configuración en tiempo de ejecución para vscan-samba utilizando
-; clamd. Todas las opciones están en sus valores por defecto</comment>
-
-<comment>; no revisar archivos más grandes de X bytes. Si se define a 0 (por defecto),
-; se deshabilita esta característica (i.e. se revisan todos los archivos)</comment>
-max file size = 0
-
-<comment>; registrar todos los accesos a los archivos (yes/no). Si lo defines en yes, 
-; todos los accesos serán registrados. Si está en no (por defecto), sólo los accesos 
-; a archivos infectados serán registrado</comment>
-verbose file logging = no
-
-<comment>; si lo defines a yes (por defecto), un archivo será revisado durante 
-; su apertura</comment>
-scan on open = yes
-<comment>; si lo defines a yes, un archivo será revisado durante su cierre 
-; (por defecto yes)</comment>
-scan on close = yes
-
-<comment>; si la comunicación a clamd falla, ¿debería ser denegado el acceso al archivo?
-; (por defecto: yes)</comment>
-deny access on error = yes
-
-<comment>; si el demonio falla por un error menor (corrupción, etc.),
-; ¿debe negarse el acceso?
-; (por defecto: yes)</comment>
-deny access on minor error = yes
-
-<comment>; ¿enviar un mensaje de advertencia a través del servicio Windows Messenger
-; cuando se encuentre un virus?
-; (por defecto: yes)</comment>
-send warning message = yes
-
-<comment>; qué hacer con un archivo infectado
-; quarantine: tratar de moverlo a un directorio de cuarentena; borrarlo si lo anterior falla
-; delete:     eliminar el archivo infectado
-; nothing:    nada</comment>
-infected file action = <comment>delete</comment>
-
-<comment>; donde colocar los archivos infectados - ¡de verdad vas a querer cambiarlo!
-; ¡tiene que estar en el mismo dispositivo físico que la unidad compartida!</comment>
-quarantine directory  = /tmp
-<comment>; prefijo de los archivos en cuarentena</comment>
-quarantine prefix = vir-
-
-<comment>; ya que Windows intenta abrir un archivo varias veces en un tiempo (muy) corto
-; samba-vscan utiliza el mecanismo archivo abierto recientemente para evitar
-; múltiples escaneadas de un mismo archivo. Esta opción especifica el máximo número de
-; elementos en la lista. (por defecto: 100)</comment>
-max lru files entries = 100
-
-<comment>; una entrada en la lista es invalidada luego que supera su periodo de 
-; vida (en segundos).(Por defecto: 5)</comment>
-lru file entry lifetime = 5
-
-<comment>; nombre del socket de clamd (por defecto: /var/run/clamd)</comment>
-clamd socket name = /tmp/clamd
-
-<comment>; número de puerto al cual escucha ScannerDaemon</comment>
-oav port = 8127
-</pre>
-
-<p>
-Es, generalmente, una buena idea iniciar la revisión de virus
-inmediatamente. Añádelo al nivel de ejecución <e>default</e> y luego
-inicia el servicio <c>clamd</c> de inmediato. El servicio consta de
-dos procesos: freshclam que mantiene las definiciones de la base de
-datos de virus actualizadas mientras que clamd es el demonio
-anti-virus en sí. Primero, quizás, quieras definir las rutas a los
-archivos de bitácora de manera que encaje con tus necesidades.
-</p>
-
-<pre caption="Revisando la ubicación de las bitácoras">
-# <i>vim /etc/clamd.conf</i>
-<comment>(Revisa la línea "LogFile /var/log/clamd.log")</comment>
-# <i>vim /etc/freshclam.conf</i>
-<comment>(Revisa la línea "UpdateLogFile /var/log/freshclam.log")</comment>
-# <i>vim /etc/conf.d/clamd</i>
-<comment>(Define "START_CLAMD=yes" y "START_FRESHCLAM=yes")</comment>
-</pre>
-
-<p>
-Ahora, inicia el anti-virus.
-</p>
-
-<pre caption="Añadir clamd a la rutina de arranque e iniciarlo">
-# <i>rc-update add clamd default</i>
-# <i>/etc/init.d/clamd start</i>
 </pre>
 </body>
 </section>
@@ -1066,7 +918,7 @@ lo(s) cliente(s) que van a acceder a los recursos compartidos.
 
 <p>
 Ahora es tiempo de configurar nuestro núcleo para que soporte
-cifs. Dado que asumiré que todos hemos compilado el núcleo al menos
+CIFS. Dado que asumiré que todos hemos compilado el núcleo al menos
 una vez, hay que asegurarnos que estén seleccionadas todas las
 opciones adecuadas. En nombre de la simplicidad, compila las opciones
 como módulo para facilitar el uso. Es la opinión del autor que los
@@ -1134,7 +986,7 @@ impresora disponible desde la cual imprimir. :-)
 <p>
 Bueno, eso debe ser todo. ¡Ahora debes tener un exitoso ambiente de
 impresión que es amigable tanto para Windows como par *nix además de
-archivos compartidos libres de virus!.
+archivos compartidos!.
 </p>
 </body>
 </section>
