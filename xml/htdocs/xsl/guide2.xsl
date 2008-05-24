@@ -1989,6 +1989,16 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     </tr>
     <tr lang="en">
     <td align="center" class="topsep">
+        <a href="http://www.bytemark.co.uk/" target="_top">
+          <img src="{concat($images,'images/sponsors/bytemark_ad.png')}" width="125" alt="Bytemark" border="0"/>
+      </a>
+      <p class="alttext">
+	  <a href="http://www.bytemark.co.uk/">Bytemark</a>
+      </p>
+    </td>
+    </tr>
+    <tr lang="en">
+    <td align="center" class="topsep">
         <a href="http://www.gni.com" target="_top">
           <img src="{concat($images,'images/gni_logo.png')}" width="125" alt="Global Netoptex Inc." border="0"/>
       </a>
