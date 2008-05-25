@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# $Header: /var/cvsroot/gentoo/users/antarus/projects/infra/process_timer,v 1.5 2008/05/02 07:24:58 antarus Exp $
+# $Header: /var/cvsroot/gentoo/users/antarus/projects/infra/process_timer,v 1.6 2008/05/25 12:22:44 antarus Exp $
 # Copyright Alec Warner 2008
 # Released in the public domain.
 
@@ -12,7 +12,6 @@ TODO: cmdline is an 'array' of null terminated strings and we don't handle that
 correctly right now.
 """
 
-
 __author__ = """Alec Warner <antarus@gentoo.org>"""
 
 import logging
@@ -22,34 +21,80 @@ import re
 
 PROC_PATH='/proc'
 
+TIME_KEYS = ('walltime', 'utime', 'stime', 'cutime', 'cstime', 'cwalltime',
+             'starttime')
+
 def GetOpts():
   """Parse the options."""
 
   parser = optparse.OptionParser()
   parser.add_option('-p', '--prog', help='program to search for')
-  parser.add_option('-t', '--time', help='max time prog can run in seconds')
-  parser.add_option('-w', '--walltime', action='store_true',
-                    help='match time against walltime')
-  parser.add_option('-v', '--verbose', help='increase loglevel')
+  parser.add_option('-t', '--time', help='max time prog can run (in format: 3h30m10s)',
+                    default='10s')
+  parser.add_option('-m', '--match_time', type='choice',
+                    default='walltime', choices=TIME_KEYS, 
+                    help='match time against a given choice')
+  parser.add_option('-v', '--verbose', help='increase loglevel', action='store_true')
   opts, args = parser.parse_args()
 
   if opts.time:
-    opts.time = int(opts.time)
+    opts.time = StringToEpochTime(opts.time)
 
   if not opts.prog:
     parser.error('--prog is required')
 
-  if not opts.walltime:
-    opts.walltime = True
-
   if opts.verbose:
-    for i in range(int(opts.verbose)):
-      logging.getLogger().setLevel(logging.getLogger().getEffectiveLevel() - 10)
+    map(logging.getLogger().setLevel(
+        logging.getLogger().getEffectiveLevel() - 10),
+        xrange(int(opts.verbose)))
 
   logging.info('opts are %s' % opts)
 
   return opts, args
 
+
+time_re = re.compile(r'(\d)+(\w)')
+
+
+def StringToEpochTime(str_time):
+  """Return time in Epoch time given a string identifier.
+
+  To support strings such as '3h30m' this function recursively calls itself
+  with substrings as a argument (first call parses '3h', second call parses '30m'
+  results are summed.)
+
+  Args:
+    str_time: a string representing a time interval, eg. '3h5m' or '52w'
+  Returns:
+    Unix timestamp of the amount of time specified.
+  """
+  
+  result = 0
+  match = time_re.match(str_time)
+  if not match:
+    raise ValueError('argument not in valid format ((\d)+(\w))+: %s' % str_time)
+  else:
+    value, identifier = match.groups()
+    value = int(value)
+    if identifier == 's':
+      result += value
+    elif identifier == 'm':
+      result += value * 60
+    elif identifier == 'h':
+      result += value * 3600
+    elif identifier == 'd':
+      result += value * 86400
+    elif identifier == 'w':
+      result += value * 604800
+    else:
+      raise ValueError('Time identifier not one of "smhdw"')
+
+    s = ''.join(match.groups())
+    str_time = str_time[str_time.find(s) + len(s):]
+    if len(str_time):
+      result += StringToEpochTime(str_time)
+    else:
+      return result
 
 def FindPids(search_str):
   """Return PIDS for all processes that have match search_str.
@@ -74,11 +119,12 @@ def FindPids(search_str):
 
   for pid in files:
     PID_DIR_PATH = os.path.join(PROC_PATH, pid)
-    cmdline = open(os.path.join(PID_DIR_PATH, 'cmdline')).read()
+    cmdline = open(os.path.join(PID_DIR_PATH, 'cmdline')).read().split('\0')
     logging.debug('cmdline: %s' % cmdline)
-    if search_str in cmdline:
+    match = filter(None, [search_str in command for command in cmdline])
+    if match:
       logging.debug('matched %s' % pid)
-      matches.add((pid, cmdline))
+      matches.add((pid, str(cmdline)))
 
   logging.info('pids matched: %s' % matches)
 
@@ -108,7 +154,7 @@ def CalculateTime(pid):
         'stime' : stime,
         'cutime' : cutime,
         'cstime' : cstime,
-        'wall' : wall,
+        'walltime' : wall,
         'cwall' : cwall,
         'starttime' : starttime }
 
@@ -123,9 +169,10 @@ def Main():
   for pid in pids:
     times = CalculateTime(pid[0])
     logging.info("Times: %s: %s" % (pid[1], times))
-    if opts.walltime:
-      if times['wall'] / 100 > opts.time:
-        print pid[0]
+    if opts.match_time:
+      if opts.match_time in times:
+        if times[opts.match_time] / 100 > opts.time: 
+          print pid[0]
 
 if __name__ == "__main__":
   Main()
