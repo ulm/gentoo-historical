@@ -1989,11 +1989,11 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     </tr>
     <tr lang="en">
     <td align="center" class="topsep">
-        <a href="http://www.bytemark.co.uk/" target="_top">
+        <a href="http://www.bytemark.co.uk/r/gentoo-home" target="_top">
           <img src="{concat($images,'images/sponsors/bytemark_ad.png')}" width="125" alt="Bytemark" border="0"/>
       </a>
       <p class="alttext">
-	  <a href="http://www.bytemark.co.uk/">Bytemark</a>
+	  <a href="http://www.bytemark.co.uk/r/gentoo-home">Bytemark</a>
       </p>
     </td>
     </tr>
