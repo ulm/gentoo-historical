@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/autofailure.xml,v 1.8 2008/01/25 18:01:06 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/autofailure.xml,v 1.9 2008/06/07 11:50:23 flameeyes Exp $ -->
 
 <guide link="/proj/en/qa/autofailure.xml" lang="en">
 <title>How to fix autotools failures</title>
@@ -18,8 +18,8 @@ run in an ebuild, giving advices on how to fix those.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.6</version>
-<date>2008-01-25</date>
+<version>0.7</version>
+<date>2008-06-07</date>
 
 <chapter> <!-- Introduction -->
 <title>Introduction</title>
@@ -349,6 +349,80 @@ WANT_AUTOMAKE="latest"
 
 inherit autotools
 </pre>
+
+</body>
+</section>
+
+<section>
+<title>Errors in build phase about autoconf version</title>
+
+<body>
+
+<p>
+Sometimes you can get errors during the build of a package, related to the
+<c>autoconf</c> version, even though you didn't rebuild autotools files, or
+actaully <e>because</e>you didn't rebuild autotools files.
+</p>
+
+<pre caption="common error in build phase">
+${S}/missing --run
+automake-1.10 --gnu  src/Makefile
+aclocal.m4:14: error: this file was generated for autoconf 2.61.
+You have another version of autoconf.  If you want to use that,
+you should regenerate the build system entirely.
+aclocal.m4:14: the top level
+autom4te-2.62: /usr/bin/m4 failed with exit status: 63
+automake-1.10: autoconf failed with exit status: 63
+make[2]: *** [Makefile.in] Error 1
+</pre>
+
+<p>
+This message comes from the code added by the so-called "maintainer mode"
+provided by <c>automake</c>. This mode is mostly intended to make sure that
+developers, and users building manually, get the correct version of
+<path>configure</path> and <path>Makefile.in</path> even if they were modified
+after running <c>make dist</c> to package the sources.
+</p>
+
+<p>
+While maintainer mode is quite important for both developers and users building
+manually, it comes a bit in the way for ebuilds, as it will automatically run
+autotools if you patch the <path>configure.ac</path> or <path>Makefile.am</path>
+files, even when autotools are not in the build-time dependencies on the
+ebuild.
+</p>
+
+<p>
+Even worse, if the <c>automake</c> version used by the package is not installed
+(for instance if the package uses the old 1.8 version, while the user only has
+the last 1.10 version, it will skip the rebuild entirely, making the actual
+result non-deterministic from the ebuild point of view.
+</p>
+
+<p>
+The error above is caused by a package that had one of its
+<path>Makefile.am</path> files modified, usually by a patch, without rebuilding
+the autotools. In these cases, <c>automake</c> will be invoked to just rebuild
+the involved <path>Makefile.in</path>, but it will work only if the
+<c>autoconf</c> version in the system is the same as the one used to create the
+original <path>configure</path> script. This is not the case once a new
+<c>autoconf</c> version is released.
+</p>
+
+<p>
+This is solved by rebuilding autotools properly as described above, through the
+<c>eautoreconf</c> function (or other method depending on eventual higher level
+eclasses), instead of leaving maintainer mode to take care of it.
+</p>
+
+<impo>
+Newer autotools practises suggest to leave maintainer mode forced on, which is
+what happens if the <path>configure.ac</path> file does not call the
+<c>AM_MAINTAINER_MODE</c> macro. For the projects that still provide an option,
+it's possible to disable maintainer mode (and thus returning to a deterministic
+rebuild from the ebuild point of view) through the
+<c>--disable-maintainer-mode</c> option at <c>econf</c>.
+</impo>
 
 </body>
 </section>
