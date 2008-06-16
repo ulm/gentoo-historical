@@ -6,14 +6,14 @@ if [ $# -ne 1 ]; then
 fi
 pver=$1
 
-tar=netkit-rsh-0.17-patches-${pver}.tar.bz2
+tar=netkit-rsh-0.17-patches-${pver}.tar.lzma
 
-rm -r tmp
+rm -rf tmp
 mkdir -p tmp/patch
 cp *.patch tmp/patch/ || exit 1
 
-tar -jcf ${tar} -C tmp . || exit 1
+tar cf - -C tmp . | lzma > ${tar} || exit 1
 
-rm -r tmp
+rm -rf tmp
 
 du -b ${tar}
