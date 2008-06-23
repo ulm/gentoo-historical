@@ -1,0 +1,207 @@
+backport of upstream fix
+
+http://bugs.gentoo.org/223249
+
+	PR ld/4424
+	* config.bfd (targ_selvecs): Add bfd_elf64_alpha_vec for
+	alpha/FreeBSD.  Add bfd_elf64_sparc_vec for sparc64/FreeBSD.
+	Add bfd_elf32_i386_vec and bfd_efi_app_ia32_vec for i386/FreeBSD.
+	(targ64_selvecs): Set for i386/FreeBSD.
+	* elf-bfd.h (elf_backend_data): Add relocs_compatible.
+	(_bfd_elf_default_relocs_compatible): Declare.
+	(_bfd_elf_relocs_compatible): Declare.
+	* elfxx-target.h (elf_backend_relocs_compatible): Define.
+	(elfNN_bed): Init new relocs_compatible field.
+	* elflink.c (_bfd_elf_default_relocs_compatible): New function.
+	(_bfd_elf_relocs_compatible): New function.
+	(elf_link_add_object_symbols): Call bed->relocs_compatible.
+	* elf32-i386.c (elf_backend_relocs_compatible): Define.
+	* elf64-alpha.c: Likewise.
+	* elf64-sparc.c: Likewise.
+	* elf64-x86-64.c: Likewise.
+
+--- bfd/elf64-x86-64.c
++++ bfd/elf64-x86-64.c
+@@ -3658,6 +3658,7 @@ static const struct bfd_elf_special_sect
+   elf64_x86_64_reloc_name_lookup
+ 
+ #define elf_backend_adjust_dynamic_symbol   elf64_x86_64_adjust_dynamic_symbol
++#define elf_backend_relocs_compatible	    _bfd_elf_relocs_compatible
+ #define elf_backend_check_relocs	    elf64_x86_64_check_relocs
+ #define elf_backend_copy_indirect_symbol    elf64_x86_64_copy_indirect_symbol
+ #define elf_backend_create_dynamic_sections elf64_x86_64_create_dynamic_sections
+--- bfd/elf64-sparc.c
++++ bfd/elf64-sparc.c
+@@ -870,6 +870,8 @@ const struct elf_size_info elf64_sparc_s
+ 
+ #define elf_backend_create_dynamic_sections \
+   _bfd_sparc_elf_create_dynamic_sections
++#define elf_backend_relocs_compatible \
++  _bfd_elf_relocs_compatible
+ #define elf_backend_check_relocs \
+   _bfd_sparc_elf_check_relocs
+ #define elf_backend_adjust_dynamic_symbol \
+--- bfd/elf64-alpha.c
++++ bfd/elf64-alpha.c
+@@ -5329,6 +5329,8 @@ static const struct elf_size_info alpha_
+ 
+ #define elf_backend_add_symbol_hook \
+   elf64_alpha_add_symbol_hook
++#define elf_backend_relocs_compatible \
++  _bfd_elf_relocs_compatible
+ #define elf_backend_check_relocs \
+   elf64_alpha_check_relocs
+ #define elf_backend_create_dynamic_sections \
+--- bfd/elf32-i386.c
++++ bfd/elf32-i386.c
+@@ -3816,9 +3816,10 @@ elf_i386_hash_symbol (struct elf_link_ha
+ #define bfd_elf32_bfd_is_local_label_name     elf_i386_is_local_label_name
+ #define bfd_elf32_bfd_link_hash_table_create  elf_i386_link_hash_table_create
+ #define bfd_elf32_bfd_reloc_type_lookup	      elf_i386_reloc_type_lookup
+-#define bfd_elf32_bfd_reloc_name_lookup elf_i386_reloc_name_lookup
++#define bfd_elf32_bfd_reloc_name_lookup	      elf_i386_reloc_name_lookup
+ 
+ #define elf_backend_adjust_dynamic_symbol     elf_i386_adjust_dynamic_symbol
++#define elf_backend_relocs_compatible	      _bfd_elf_relocs_compatible
+ #define elf_backend_check_relocs	      elf_i386_check_relocs
+ #define elf_backend_copy_indirect_symbol      elf_i386_copy_indirect_symbol
+ #define elf_backend_create_dynamic_sections   elf_i386_create_dynamic_sections
+@@ -3904,7 +3905,8 @@ elf_i386_vxworks_link_hash_table_create 
+ }
+ 
+ 
+-#undef	elf_backend_post_process_headers
++#undef elf_backend_relocs_compatible
++#undef elf_backend_post_process_headers
+ #undef bfd_elf32_bfd_link_hash_table_create
+ #define bfd_elf32_bfd_link_hash_table_create \
+   elf_i386_vxworks_link_hash_table_create
+--- bfd/elfxx-target.h
++++ bfd/elfxx-target.h
+@@ -378,6 +378,9 @@
+ #ifndef elf_backend_omit_section_dynsym
+ #define elf_backend_omit_section_dynsym _bfd_elf_link_omit_section_dynsym
+ #endif
++#ifndef elf_backend_relocs_compatible
++#define elf_backend_relocs_compatible _bfd_elf_default_relocs_compatible
++#endif
+ #ifndef elf_backend_check_relocs
+ #define elf_backend_check_relocs	0
+ #endif
+@@ -636,6 +639,7 @@ static struct elf_backend_data elfNN_bed
+   elf_backend_link_output_symbol_hook,
+   elf_backend_create_dynamic_sections,
+   elf_backend_omit_section_dynsym,
++  elf_backend_relocs_compatible,
+   elf_backend_check_relocs,
+   elf_backend_check_directives,
+   elf_backend_as_needed_cleanup,
+--- bfd/elflink.c
++++ bfd/elflink.c
+@@ -3243,6 +3243,40 @@ elf_finalize_dynstr (bfd *output_bfd, st
+ 
+   return TRUE;
+ }
++
++/* Return TRUE iff relocations for INPUT are compatible with OUTPUT.
++   The default is to only match when the INPUT and OUTPUT are exactly
++   the same target.  */
++
++bfd_boolean
++_bfd_elf_default_relocs_compatible (const bfd_target *input,
++				    const bfd_target *output)
++{
++  return input == output;
++}
++
++/* Return TRUE iff relocations for INPUT are compatible with OUTPUT.
++   This version is used when different targets for the same architecture
++   are virtually identical.  */
++
++bfd_boolean
++_bfd_elf_relocs_compatible (const bfd_target *input,
++			    const bfd_target *output)
++{
++  const struct elf_backend_data *obed, *ibed;
++
++  if (input == output)
++    return TRUE;
++
++  ibed = xvec_get_elf_backend_data (input);
++  obed = xvec_get_elf_backend_data (output);
++
++  if (ibed->arch != obed->arch)
++    return FALSE;
++
++  /* If both backends are using this function, deem them compatible.  */
++  return ibed->relocs_compatible == obed->relocs_compatible;
++}
+ 
+ /* Add symbols from an ELF object file to the linker hash table.  */
+ 
+@@ -4628,7 +4662,8 @@ elf_link_add_object_symbols (bfd *abfd, 
+   if (! dynamic
+       && is_elf_hash_table (htab)
+       && htab->root.creator == abfd->xvec
+-      && bed->check_relocs != NULL)
++      && bed->check_relocs != NULL
++      && (*bed->relocs_compatible) (abfd->xvec, htab->root.creator))
+     {
+       asection *o;
+ 
+--- bfd/elf-bfd.h
++++ bfd/elf-bfd.h
+@@ -700,6 +700,10 @@ struct elf_backend_data
+   bfd_boolean (*elf_backend_omit_section_dynsym)
+     (bfd *output_bfd, struct bfd_link_info *info, asection *osec);
+ 
++  /* Return TRUE if relocations of targets are compatible to the extent
++     that CHECK_RELOCS will properly process them.  PR 4424.  */
++  bfd_boolean (*relocs_compatible) (const bfd_target *, const bfd_target *);
++
+   /* The CHECK_RELOCS function is called by the add_symbols phase of
+      the ELF backend linker.  It is called once for each section with
+      relocs of an object file, just after the symbols for the object
+@@ -1926,6 +1930,12 @@ extern void bfd_elf64_write_relocs
+ extern bfd_boolean bfd_elf64_slurp_reloc_table
+   (bfd *, asection *, asymbol **, bfd_boolean);
+ 
++extern bfd_boolean _bfd_elf_default_relocs_compatible
++  (const bfd_target *, const bfd_target *);
++
++extern bfd_boolean _bfd_elf_relocs_compatible
++  (const bfd_target *, const bfd_target *);
++
+ extern struct elf_link_hash_entry *_bfd_elf_archive_symbol_lookup
+   (bfd *, struct bfd_link_info *, const char *);
+ extern bfd_boolean bfd_elf_link_add_symbols
+--- bfd/config.bfd
++++ bfd/config.bfd
+@@ -140,7 +140,7 @@ case "${targ}" in
+ #ifdef BFD64
+   alpha*-*-freebsd* | alpha*-*-kfreebsd*-gnu)
+     targ_defvec=bfd_elf64_alpha_freebsd_vec
+-    targ_selvecs=ecoffalpha_little_vec
++    targ_selvecs="bfd_elf64_alpha_vec ecoffalpha_little_vec"
+     want64=true
+     # FreeBSD <= 4.0 supports only the old nonstandard way of ABI labelling.
+     case "${targ}" in
+@@ -188,7 +188,7 @@ case "${targ}" in
+     ;;
+   sparc64-*-freebsd* | sparc64-*-kfreebsd*-gnu)
+     targ_defvec=bfd_elf64_sparc_freebsd_vec
+-    targ_selvecs="bfd_elf32_sparc_vec sunos_big_vec"
++    targ_selvecs="bfd_elf64_sparc_vec bfd_elf32_sparc_vec sunos_big_vec"
+     ;;
+   sparc64-*-netbsd* | sparc64-*-openbsd*)
+     targ_defvec=bfd_elf64_sparc_vec
+@@ -535,7 +535,8 @@ case "${targ}" in
+     ;;
+   i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu | i[3-7]86-*-dragonfly*)
+     targ_defvec=bfd_elf32_i386_freebsd_vec
+-    targ_selvecs=i386coff_vec
++    targ_selvecs="bfd_elf32_i386_vec bfd_efi_app_ia32_vec i386coff_vec"
++    targ64_selvecs="bfd_elf64_x86_64_freebsd_vec bfd_elf64_x86_64_vec bfd_efi_app_x86_64_vec"
+     # FreeBSD <= 4.0 supports only the old nonstandard way of ABI labelling.
+     case "${targ}" in
+       i[3-7]86-*-freebsd3* | i[3-7]86-*-freebsd4 | i[3-7]86-*-freebsd4.0*)
