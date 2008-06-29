@@ -1,3 +1,4 @@
+# Get devaway.xml from http://www.gentoo.org/dyn/devaway/devaway.xml?passthru=1
 import xml.dom.minidom
 
 dom = xml.dom.minidom.parse('/home/anant/gentoo/gentoo/xml/htdocs/proj/en/devrel/roll-call/userinfo.xml')
