@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# $Header: /var/cvsroot/gentoo/users/antarus/projects/infra/process_timer,v 1.6 2008/05/25 12:22:44 antarus Exp $
+# $Header: /var/cvsroot/gentoo/users/antarus/projects/infra/process_timer,v 1.7 2008/07/06 18:53:46 robbat2 Exp $
 # Copyright Alec Warner 2008
 # Released in the public domain.
 
@@ -12,6 +12,7 @@ TODO: cmdline is an 'array' of null terminated strings and we don't handle that
 correctly right now.
 """
 
+
 __author__ = """Alec Warner <antarus@gentoo.org>"""
 
 import logging
@@ -21,8 +22,7 @@ import re
 
 PROC_PATH='/proc'
 
-TIME_KEYS = ('walltime', 'utime', 'stime', 'cutime', 'cstime', 'cwalltime',
-             'starttime')
+TIME_KEYS = ['walltime', 'utime', 'stime', 'cutime', 'cstime', 'starttime', 'cpu', 'ccpu']
 
 def GetOpts():
   """Parse the options."""
@@ -52,9 +52,7 @@ def GetOpts():
 
   return opts, args
 
-
 time_re = re.compile(r'(\d)+(\w)')
-
 
 def StringToEpochTime(str_time):
   """Return time in Epoch time given a string identifier.
@@ -96,6 +94,7 @@ def StringToEpochTime(str_time):
     else:
       return result
 
+
 def FindPids(search_str):
   """Return PIDS for all processes that have match search_str.
   Args:
@@ -119,12 +118,16 @@ def FindPids(search_str):
 
   for pid in files:
     PID_DIR_PATH = os.path.join(PROC_PATH, pid)
-    cmdline = open(os.path.join(PID_DIR_PATH, 'cmdline')).read().split('\0')
-    logging.debug('cmdline: %s' % cmdline)
-    match = filter(None, [search_str in command for command in cmdline])
-    if match:
-      logging.debug('matched %s' % pid)
-      matches.add((pid, str(cmdline)))
+    CMDLINE_FILE = os.path.join(PID_DIR_PATH, 'cmdline')
+    try:
+      cmdline = open(CMDLINE_FILE).read().split('\0')
+      logging.debug('cmdline: %s' % cmdline)
+      match = filter(None, [search_str in command for command in cmdline])
+      if match:
+        logging.debug('matched %s' % pid)
+        matches.add((pid, str(cmdline)))
+    except IOError:
+        continue
 
   logging.info('pids matched: %s' % matches)
 
@@ -142,20 +145,29 @@ def CalculateTime(pid):
   of a second slices on recent linux kernels.
   """
 
-  PID_DIR_PATH = os.path.join(PROC_PATH, pid)
-  data = open(os.path.join(PID_DIR_PATH, 'stat')).read().split(' ')
-  utime, stime, cutime, cstime = data[13:17]
-  starttime = data[21]
+  # Initialize to zero, because the /proc files CAN go away while we are running
+  utime = stime = cutime = cstime = wall = starttime = 0
 
-  wall = int(utime) + int(stime)
-  cwall = int(cutime) + int(cstime)
+  PID_DIR_PATH = os.path.join(PROC_PATH, pid)
+  # Yup, the file can go away very fast.
+  try:
+    data = open(os.path.join(PID_DIR_PATH, 'stat')).read().split(' ')
+    utime, stime, cutime, cstime = data[13:17]
+    starttime = data[21]
+  except IOError:
+    _
+  # If this one goes away, we're in shit anyway
+  uptime = open(os.path.join(PROC_PATH, 'uptime')).read().split(' ')[0] 
+
+  wall = int(float(uptime)*100 - float(starttime))
 
   d = { 'utime' : utime,
         'stime' : stime,
         'cutime' : cutime,
         'cstime' : cstime,
+        'cpu' : int(utime) + int(stime),
+        'ccpu' : int(cutime) + int(cstime),
         'walltime' : wall,
-        'cwall' : cwall,
         'starttime' : starttime }
 
   return d
