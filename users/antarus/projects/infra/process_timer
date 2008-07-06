@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# $Header: /var/cvsroot/gentoo/users/antarus/projects/infra/process_timer,v 1.9 2008/07/06 19:06:22 robbat2 Exp $
+# $Header: /var/cvsroot/gentoo/users/antarus/projects/infra/process_timer,v 1.10 2008/07/06 19:11:06 robbat2 Exp $
 # Copyright Alec Warner 2008
 # Released in the public domain.
 
@@ -68,9 +68,12 @@ def StringToEpochTime(str_time):
   """
   
   # Shortcut
-  result = int(str_time)
-  if str_time == str(result):
-    return result
+  try:
+    result = int(str_time)
+    if str_time == str(result):
+      return result
+  except ValueError:
+    None
   
   result = 0
   match = time_atom_re.match(str_time)
@@ -157,8 +160,8 @@ def CalculateTime(pid):
   # Yup, the file can go away very fast.
   try:
     data = open(os.path.join(PID_DIR_PATH, 'stat')).read().split(' ')
-    utime, stime, cutime, cstime = data[13:17]
-    starttime = data[21]
+    utime, stime, cutime, cstime = map(int, data[13:17])
+    starttime = int(data[21])
   except IOError:
     _
   # If this one goes away, we're in shit anyway
@@ -170,8 +173,8 @@ def CalculateTime(pid):
         'stime' : stime,
         'cutime' : cutime,
         'cstime' : cstime,
-        'cpu' : int(utime) + int(stime),
-        'ccpu' : int(cutime) + int(cstime),
+        'cpu' : utime + stime,
+        'ccpu' : cutime + cstime,
         'walltime' : wall,
         'starttime' : starttime }
 
