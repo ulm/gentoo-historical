@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/nagios-guide.xml,v 1.3 2008/07/07 19:04:38 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/nagios-guide.xml,v 1.4 2008/07/07 20:02:46 swift Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide disclaimer="draft">
@@ -216,8 +216,11 @@ be able to see the monitoring states for the local system.
 
 </body>
 </section>
-<section>
+</chapter>
+<chapter>
 <title>Installing Client Daemons</title>
+<section>
+<title>Introduction</title>
 <body>
 
 <p>
@@ -238,6 +241,12 @@ There are two methods available to monitor remote hosts.
 <p>
 We first focus on using the NRPE method as it is the most popular one.
 </p>
+
+</body>
+</section>
+<section>
+<title>Installing NRPE</title>
+<body>
 
 <p>
 With NRPE, each remote host runs a daemon (the NRPE deamon) which allows the
@@ -263,6 +272,81 @@ launch the NRPE daemon:
 <pre caption="Launching the NRPE daemon">
 # <i>/etc/init.d/nrpe start</i>
 </pre>
+
+<p>
+Finally, we need to configure the main Nagios system to connect to this
+particular NRPE instance and request the necessary metrics. To introduce you to
+Nagios' object syntax, our next section will cover this a bit more throroughly.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configuring a Remote Host</title>
+<body>
+
+<note>
+The following hands-on tutorial is an example, used to introduce the user to
+Nagios' object model. Do not see this as the &quot;Best Practice&quot; for
+configuring Nagios.
+</note>
+
+<p>
+First, edit <path>/etc/nagios/nagios.cfg</path> and place a <c>cfg_dir</c>
+directive. This will tell Nagios to read in all object configuration files in
+the said directory - in our example, the directory will contain the definitions
+for remote systems.
+</p>
+
+<pre caption="Editing /etc/nagios/nagios.cfg">
+cfg_dir=/etc/nagios/objects/remote
+</pre>
+
+<p>
+Create the directory and start with the first file,
+<path>nrpe-command.cfg</path>. In this file, we configure a Nagios command
+called <c>check_nrpe</c> which will be used to trigger a plugin (identified by
+the placeholder <c>$ARG1$</c>) on the remote system (identified by the
+placeholder <c>$HOSTADDRESS$</c>). The <c>$USER1$</c> variable is a default
+pointer to the Nagios installation directory (for instance,
+<path>/usr/nagios/libexec</path>).
+</p>
+
+<pre caption="Defining the check_nrpe command">
+# <i>nano /etc/nagios/objects/remote/nrpe-command.cfg</i>
+
+define command {
+  command_name check_nrpe
+  command_line $USER1$/check_nrpe -H $HOSTADDRESS$ -c $ARG1$
+}
+</pre>
+
+<p>
+Next, create a file <path>nrpe-hosts.cfg</path> where we define the remote
+host(s) to monitor. In this example, we define two remote systems:
+</p>
+
+<pre caption="Defining two remote hosts">
+# <i>nano /etc/nagios/objects/remote/nrpe-hosts.cfg</i>
+
+define host {
+  use linux-server
+  host_name webber
+  alias Gentoo Linux Web Server
+  address 192.168.2.1
+}
+
+define host {
+  use linux-server
+  host_name isync
+  alias Gentoo Linux RSync server
+  address 192.168.2.2
+}
+</pre>
+
+<p>
+Finally, define the service(s) you want to check on these hosts.
+</p>
 
 </body>
 </section>
