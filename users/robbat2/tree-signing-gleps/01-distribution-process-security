@@ -1,7 +1,7 @@
 GLEP: xx+1
 Title: Security of distribution of Gentoo software - Infrastructure to User distribution - MetaManifest
-Version: $Revision: 1.13 $
-Last-Modified: $Date: 2008/07/01 07:09:56 $
+Version: $Revision: 1.14 $
+Last-Modified: $Date: 2008/07/11 01:27:37 $
 Author: Robin Hugh Johnson <robbat2@gentoo.org>, 
 Status: Draft
 Type: Standards Track
@@ -50,6 +50,11 @@ guarantee: A user can prove that the tree from the Gentoo infrastructure
 has not been tampered with since leaving the Gentoo infrastructure.
 No other guarantees, either implicit or explicit are made.
 
+Additionally, distributing a set of the most recent MetaManifests from a
+trusted source allows validation of trees that come from community
+mirrors, and allows detection of malicious (either by deliberate delay,
+replay [C08a, C08b] or alteration community mirrors.
+
 =============
 Specification
 =============
@@ -96,10 +101,19 @@ Procedure for creating the MetaManifest file:
 6. For each file in UNCOVERED, assign a Manifest2 type, produce the
    hashes, and add with the filetype to the MetaManifest file.
 
-7. The MetaManifest must ultimately be GnuPG-signed.
-7.1. For the initial implementation, the same key as used for snapshot
+7. For unique identification of the MetaManifest, a header line should
+   be included, using the exact contents of the metadata/timestamp.x
+   file, so that a MetaManifest may be tied back to a tree as 
+   distributed by the rsync mirror system. The string of
+   'metadata/timestamp.x' should be included to identify this revision
+   of MetaManifest generation. Eg:
+   "Timestamp: metadata/timestamp.x: 1215722461 Thu Jul 10 20:41:01 2008 UTC"
+   The package manager MUST not use the identifying string as a filename.
+
+8. The MetaManifest must ultimately be GnuPG-signed.
+8.1. For the initial implementation, the same key as used for snapshot
      tarball signing is sufficient.
-7.2. For the future, the key used for fully automated signing by infra
+8.2. For the future, the key used for fully automated signing by infra
      should not be on the same keyring as developer keys. See [GLEPxx+3
      for further notes].
 
@@ -141,25 +155,29 @@ filetypes may be ignored on missing is discussed in [GLEPxx+5].
    verification of GnuPG signatures. 
 1.1. Abort if the signature check fails.
 
-2. For a verification of the tree following an rsync:
-2.1. Build a set 'ALL' of every file covered by the rsync. (exclude
+2. Check the Timestamp header. If it is significently out of date
+   compared to the local clock or a trusted source, halt or require
+   manual intervention from the user.
+
+3. For a verification of the tree following an rsync:
+3.1. Build a set 'ALL' of every file covered by the rsync. (exclude
      distfiles/, packages/, local/)
-2.2. M2-verify every entry in the MetaManifest, descending into inferior
+3.2. M2-verify every entry in the MetaManifest, descending into inferior
      Manifests as needed. Place the relative path of every checked item
      into a set 'COVERED'.
-2.3. Construct the set 'UNCOVERED' by set-difference between the ALL and
+3.3. Construct the set 'UNCOVERED' by set-difference between the ALL and
      COVERED sets.
-2.4. For each file in the UNCOVERED set, assign a Manifest2 filetype.
-2.5. If the filetype for any file in the UNCOVERED set requires a halt
+3.4. For each file in the UNCOVERED set, assign a Manifest2 filetype.
+3.5. If the filetype for any file in the UNCOVERED set requires a halt
      on error, abort and display a suitable error.
-2.6. Completed verification
+3.6. Completed verification
 
-3. If checking at the installation of a package:
-3.1. M2-verify the entry in MetaManifest for the Manifest
-3.2. M2-verify all relevant metadata/ contents if metadata/ is being
+4. If checking at the installation of a package:
+4.1. M2-verify the entry in MetaManifest for the Manifest
+4.2. M2-verify all relevant metadata/ contents if metadata/ is being
      used in any way (optionally done before dependancy checking).
-3.3. M2-verifying the contents of the Manifest. 
-3.4. Perform M2-verification of all eclasses and profiles used (both
+4.3. M2-verifying the contents of the Manifest. 
+4.4. Perform M2-verification of all eclasses and profiles used (both
      directly and indirectly) by the ebuild.
 
 Notes:
@@ -184,13 +202,40 @@ commit as they do presently, and the MetaManifest is added by
 Infrastructure during the tree generation process, and distributed to
 users.
 
+----------------------------------------------------
+Timestamps & Additional distribution of MetaManifest
+----------------------------------------------------
+As discussed by [C08a,C08b], malicious third-party mirrors may use the
+principles of exclusion and replay to deny an update to clients, while
+at the same time recording the identity of clients to attack.
+
+This should be guarded against by including a timestamp in the header of
+the MetaManifest, as well as distributing the latest MetaManifests by a
+trusted channel.
+
+On all rsync mirrors directly maintained by the Gentoo infrastructure,
+and not on community mirrors, there should be a new module
+'gentoo-portage-metamanifests'. Within this module, all MetaManifests
+for a recent timeframe (eg one week) should be kept, named as
+"MetaManifest.$TS", where $TS is the timestamp from inside the file.
+The most recent MetaManifest should always be symlinked as
+MetaManifest.current. The possibility of serving the recent
+MetaManifests via HTTPS should also be explored to mitigate MITM
+attacks.
+
+The package manager should obtain MetaManifest.current and use it to
+decide is the tree is too out of date per operation #2 of the
+verification process. The decision about freshness should be a
+user-configuration setting, with the ability to override.
+
 =======================
 Backwards Compatibility
 =======================
-There are no backwards compatibility issues, as old versions of Portage
-do not look for a Manifest file at the top level of the tree.
-Manifest2-aware versions of Portage ignore entries that they are not
-certain how to handle.
+- There are no backwards compatibility issues, as old versions of
+  Portage do not look for a Manifest file at the top level of the tree.
+- Manifest2-aware versions of Portage ignore all entries that they are
+  not certain how to handle. Enabling headers and PGP signing to be
+  conducted easily.
 
 ======
 Thanks
@@ -203,6 +248,17 @@ I'd like to thank the following people for input on this GLEP.
 - Marius Mauch (genone) & Zac Medico (zmedico): Portage Manifest2
 TODO:
 - Ned Ludd (solar) - Security concept review
+
+==========
+References
+==========
+
+[C08a] Cappos, J et al. (2008). "Package Management Security".
+    University of Arizona Technical Report TR08-02. Available online
+    from: ftp://ftp.cs.arizona.edu/reports/2008/TR08-02.pdf
+[C08b] Cappos, J et al. (2008). "Attacks on Package Managers"
+    Available online at:
+    http://www.cs.arizona.edu/people/justin/packagemanagersecurity/
 
 =========
 Copyright
