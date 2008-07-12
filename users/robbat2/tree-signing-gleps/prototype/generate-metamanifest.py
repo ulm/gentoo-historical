@@ -1,5 +1,5 @@
 #!/usr/bin/python -O
-# $Header: /var/cvsroot/gentoo/users/robbat2/tree-signing-gleps/prototype/generate-metamanifest.py,v 1.1 2008/07/12 08:15:08 robbat2 Exp $
+# $Header: /var/cvsroot/gentoo/users/robbat2/tree-signing-gleps/prototype/generate-metamanifest.py,v 1.2 2008/07/12 08:40:17 robbat2 Exp $
 # Protoype of the MetaManifest generation script.
 # Robin H. Johnson <robbat2@gentoo.org>
 # 2008-07-12
@@ -30,6 +30,16 @@ from portage.manifest import Manifest
 class MetaManifest(Manifest):
   def getFullname(self):
     return os.path.join(self.pkgdir, "MetaManifest")
+  # This is a horrible, horrible hack
+  def sign(self):
+    try:
+      ts = open(mysettings["PORTDIR"],'metadata','timestamp.x')
+      ts = ts.read().rstrip('\n').strip()
+    except Exception:
+      ts = 'File not available'
+    f = open(self.getFullname(), "a")
+    f.write("Timestamp: metadata/timestamp.x: "+ts+"\n")
+    f.close()
 
 # Again, borrowed from repoman
 mysettings = portage.config(local_config=False, config_incrementals=portage.const.INCREMENTALS)
@@ -91,4 +101,4 @@ mm = MetaManifest(mysettings["PORTDIR"], mysettings["DISTDIR"],
     fetchlist_dict={}, manifest1_compat=manifest1_compat)
 for i in uncovered_list:
   mm.addFile('MISC', i)
-mm.write()
+mm.write(sign=True)
