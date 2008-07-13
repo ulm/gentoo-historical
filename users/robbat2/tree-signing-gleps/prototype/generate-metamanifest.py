@@ -1,5 +1,5 @@
 #!/usr/bin/python -O
-# $Header: /var/cvsroot/gentoo/users/robbat2/tree-signing-gleps/prototype/generate-metamanifest.py,v 1.2 2008/07/12 08:40:17 robbat2 Exp $
+# $Header: /var/cvsroot/gentoo/users/robbat2/tree-signing-gleps/prototype/generate-metamanifest.py,v 1.3 2008/07/13 01:01:23 robbat2 Exp $
 # Protoype of the MetaManifest generation script.
 # Robin H. Johnson <robbat2@gentoo.org>
 # 2008-07-12
@@ -33,7 +33,8 @@ class MetaManifest(Manifest):
   # This is a horrible, horrible hack
   def sign(self):
     try:
-      ts = open(mysettings["PORTDIR"],'metadata','timestamp.x')
+      ts = os.path.join(mysettings["PORTDIR"],'metadata','timestamp.x')
+      ts = open(ts,'r')
       ts = ts.read().rstrip('\n').strip()
     except Exception:
       ts = 'File not available'
