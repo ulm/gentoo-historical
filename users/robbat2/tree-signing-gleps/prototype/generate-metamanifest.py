@@ -1,5 +1,5 @@
 #!/usr/bin/python -O
-# $Header: /var/cvsroot/gentoo/users/robbat2/tree-signing-gleps/prototype/generate-metamanifest.py,v 1.3 2008/07/13 01:01:23 robbat2 Exp $
+# $Header: /var/cvsroot/gentoo/users/robbat2/tree-signing-gleps/prototype/generate-metamanifest.py,v 1.4 2008/07/13 01:09:27 robbat2 Exp $
 # Protoype of the MetaManifest generation script.
 # Robin H. Johnson <robbat2@gentoo.org>
 # 2008-07-12
@@ -69,6 +69,10 @@ for parent, dirs, files in os.walk(mysettings["PORTDIR"]):
 
     # Exclude the bad file globs
     if EXCLUDE_FILES_RE.match(f):
+      continue
+
+    # Exclude ourselves at the toplevel only
+    if mysettings["PORTDIR"] == parent and f.startswith('MetaManifest'):
       continue
 
     # We have to create the covered set directly.
