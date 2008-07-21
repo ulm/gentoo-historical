@@ -13,9 +13,6 @@ It is a non-goal of this script to validate XML contents.
 CAVEATS:
 TEXT, <pkg>, <pkg>, TEXT. is difficult to parse into text and requires icky
 rules; see _GetTextFromNode for the nasty details.
-
-TODO(antarus): Some XML entries have weird blobs of whitespace that strip() does
-not want to remove.
 """
 
 __author__ = "Alec Warner <antarus@gentoo.org>"
@@ -82,11 +79,17 @@ def _GetTextFromNode(node):
   no children are 'raw text' nodes that do not need spaces.  Nodes that have
   children are 'complex' nodes (often <pkg> nodes) that usually require a
   trailing space to ensure sane output.
+
+  Strip out \n and \t as they are not valid in use.local.desc.
   """
 
   if node.nodeValue:
     children = 0
-    return (node.nodeValue.strip(), children)
+    data = node.nodeValue
+
+    data = data.replace("\t", '')
+    data = data.replace("\n", '')
+    return (data.strip(), children)
   else:
     desc = ''
     base_children = 1
