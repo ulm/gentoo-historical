@@ -11,8 +11,14 @@ flags.
 
 __author__ = "Alec Warner <antarus@gentoo.org>"
 
+import logging
 import optparse
 import os
+import sys
+
+from xml.dom import minidom
+
+METADATA_XML = 'metadata.xml'
 
 
 class RepositoryError(Exception):
@@ -27,24 +33,86 @@ class UseFlag(object):
     pass
 
 
-def FindMetadataFiles(repo_path):
+def FindMetadataFiles(repo_path, category_path, output=sys.stdout):
   """Locate metadata files in repo_path.
   
   Args:
     repo_path: path to repository.
+    category_path: path to a category file (None is ok).
+    output: file-like object to write output to.
   Returns:
-    sequence of files.
+    Nothing.
   Raises; RepositoryError.
   """
 
-  osp = os.path.sep
-  profile_path = os.path.join(repo_path, osp, 'profiles')
-  categories = GetCategories(profile_path)
+  profile_path = os.path.join(repo_path, 'profiles')
+  logging.info('path to profile is: %s' % profile_path)
+  categories = GetCategories(profile_path, category_path)
+  packages = []
   for cat in categories:
-    cat_path = os.path.join(profile_path, osp, cat_path)
+    cat_path = os.path.join(repo_path, cat)
+    logging.debug('path to category %s is %s' % (cat, cat_path))
+    tmp_pkgs = GetPackages(cat_path)
+    pkg_paths = [os.path.join(cat_path, pkg) for pkg in tmp_pkgs]
+    packages.extend(pkg_paths)
+
+  total = len(packages)
+  for num, pkg_path in enumerate(packages):
+    metadata_path = os.path.join(pkg_path, METADATA_XML)
+    logging.info('processing %s (%s/%s)' % (metadata_path, num, total))
+    f = open(metadata_path, 'rb')
+    metadata = GetLocalFlagInfoFromMetadataXml(f)
+    pkg_split = pkg_path.split('/')
+    for k, v in metadata.iteritems():
+      output.write('%s/%s:%s - %s\n' % (pkg_split[-2],pkg_split[-1], k, v))
 
 
-def GetCategories(profile_path):
+def _GetTextFromNode(node, children=0):
+  if node.nodeValue:
+    children = 0
+    return node.nodeValue.strip()
+  else:
+    desc = ''
+    children = 1
+    for child in node.childNodes:
+      child_desc = _GetTextFromNode(child, children).strip()
+      if children:
+        desc += ' ' + child_desc
+      else:
+        desc += child_desc
+    return desc
+
+
+def GetLocalFlagInfoFromMetadataXml(metadata_file):
+  """Determine use.local.desc information from metadata files.
+  
+  Args:
+    metadata_file: a file-like object holding metadata.xml
+  """
+
+  d = {}
+
+  dom_tree = minidom.parseString(metadata_file.read())
+  flag_tags = dom_tree.getElementsByTagName('flag')
+  for flag in flag_tags:
+    use_flag = flag.getAttribute('name')
+    desc = _GetTextFromNode(flag)
+    desc.strip()
+    d[use_flag] = desc
+
+  return d
+
+
+def GetPackages(cat_path):
+  """Return a list of packages for a given category."""
+
+  files = os.listdir(cat_path)
+  if METADATA_XML in files:
+    files.remove(METADATA_XML)
+
+  return files
+
+def GetCategories(profile_path, categories_path):
   """Return a set of categories for a given repository.
 
   Args:
@@ -54,8 +122,8 @@ def GetCategories(profile_path):
   Raises: RepositoryError.
   """
 
-  osp = os.path.sep
-  categories_path = os.path.join(profile_path, osp, 'categories')
+  if not categories_path:
+    categories_path = os.path.join(profile_path, 'categories')
   try:
     f = open(categories_path, 'rb')
   except (IOError, OSError), e:
@@ -69,19 +137,24 @@ def GetOpts():
   """Simple Option Parsing."""
 
   parser = optparse.OptionParser()
-  parser.add_option('--repo_path', '', 'path to repository from '
-                    'which the documentation will be generated.')
+  parser.add_option('-r', '--repo_path', help=('path to repository from '
+                    'which the documentation will be generated.'))
+  parser.add_option('-c', '--category_path', help=('path to a category',
+                    'file if repo_path lacks a profile/category file'))
 
   opts, unused_args = parser.parse_args()
 
   if not opts.repo_path:
     parser.error('--repo_path is a required option')
 
+  logging.error('REPO_PATH is %s' % opts.repo_path)
+
   return (opts, unused_args)
 
 def Main():
   """Main."""
-  pass
+  opts, unused_args = GetOpts()
+  FindMetadataFiles(opts.repo_path, opts.category_path)
 
 if __name__ == '__main__':
   Main()
