@@ -7,6 +7,13 @@
 This module attempts to read metadata.xml files in an ebuild repository and
 uses the <flag> xml tags to generate a set of documentation for local USE
 flags.
+
+CAVEATS:
+TEXT, <pkg>, <pkg>, TEXT. is difficult to parse into text and requires icky
+rules; see _GetTextFromNode for the nasty details.
+
+TODO(antarus): Some XML entries have weird blobs of whitespace that strip() does
+not want to remove.
 """
 
 __author__ = "Alec Warner <antarus@gentoo.org>"
@@ -24,13 +31,6 @@ METADATA_XML = 'metadata.xml'
 class RepositoryError(Exception):
   """Basic Exception for repository problems."""
   pass
-
-
-class UseFlag(object):
-  """A simple UseFlag wrapper."""
-
-  def __init__(self):
-    pass
 
 
 def FindMetadataFiles(repo_path, category_path, output=sys.stdout):
@@ -64,23 +64,39 @@ def FindMetadataFiles(repo_path, category_path, output=sys.stdout):
     metadata = GetLocalFlagInfoFromMetadataXml(f)
     pkg_split = pkg_path.split('/')
     for k, v in metadata.iteritems():
-      output.write('%s/%s:%s - %s\n' % (pkg_split[-2],pkg_split[-1], k, v))
+      output.write('%s/%s:%s - %s\n' % (pkg_split[-2] ,pkg_split[-1], k, v))
 
 
-def _GetTextFromNode(node, children=0):
+def _GetTextFromNode(node):
+  """Given an XML node, try to turn all it's children into text.
+
+  Args:
+    node: a Node instance.
+  Returns:
+    some text.
+
+  This function has a few tweaks 'children' and 'base_children' which attempt
+  to aid the parser in determining where to insert spaces.  Nodes that have
+  no children are 'raw text' nodes that do not need spaces.  Nodes that have
+  children are 'complex' nodes (often <pkg> nodes) that usually require a
+  trailing space to ensure sane output.
+  """
+
   if node.nodeValue:
     children = 0
-    return node.nodeValue.strip()
+    return (node.nodeValue.strip(), children)
   else:
     desc = ''
-    children = 1
+    base_children = 1
     for child in node.childNodes:
-      child_desc = _GetTextFromNode(child, children).strip()
+      child_desc, children = _GetTextFromNode(child)
+      child_desc.strip()
+      logging.error('Children: %s' % children)
       if children:
         desc += ' ' + child_desc
       else:
         desc += child_desc
-    return desc
+    return (desc, base_children)
 
 
 def GetLocalFlagInfoFromMetadataXml(metadata_file):
@@ -96,7 +112,7 @@ def GetLocalFlagInfoFromMetadataXml(metadata_file):
   flag_tags = dom_tree.getElementsByTagName('flag')
   for flag in flag_tags:
     use_flag = flag.getAttribute('name')
-    desc = _GetTextFromNode(flag)
+    desc, unused_children = _GetTextFromNode(flag)
     desc.strip()
     d[use_flag] = desc
 
