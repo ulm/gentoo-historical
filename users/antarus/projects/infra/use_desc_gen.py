@@ -34,7 +34,7 @@ class RepositoryError(Exception):
 
 def FindMetadataFiles(repo_path, category_path, output=sys.stdout):
   """Locate metadata files in repo_path.
-  
+
   Args:
     repo_path: path to repository.
     category_path: path to a category file (None is ok).
@@ -96,7 +96,7 @@ def _GetTextFromNode(node):
     for child in node.childNodes:
       child_desc, children = _GetTextFromNode(child)
       child_desc.strip()
-      logging.error('Children: %s' % children)
+      logging.debug('Children: %s' % children)
       if children:
         desc += ' ' + child_desc
       else:
@@ -106,7 +106,7 @@ def _GetTextFromNode(node):
 
 def GetLocalFlagInfoFromMetadataXml(metadata_file):
   """Determine use.local.desc information from metadata files.
-  
+
   Args:
     metadata_file: a file-like object holding metadata.xml
   """
@@ -152,7 +152,7 @@ def GetCategories(profile_path, categories_path):
         categories_path, e))
   categories = [cat.strip() for cat in f.readlines()]
   return categories
-  
+
 
 def GetOpts():
   """Simple Option Parsing."""
@@ -172,10 +172,12 @@ def GetOpts():
 
   return (opts, unused_args)
 
+
 def Main():
   """Main."""
   opts, unused_args = GetOpts()
   FindMetadataFiles(opts.repo_path, opts.category_path)
+
 
 if __name__ == '__main__':
   Main()
