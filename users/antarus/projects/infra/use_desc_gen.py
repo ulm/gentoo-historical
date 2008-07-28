@@ -160,7 +160,7 @@ def GetOpts():
   parser = optparse.OptionParser()
   parser.add_option('-r', '--repo_path', help=('path to repository from '
                     'which the documentation will be generated.'))
-  parser.add_option('-c', '--category_path', help=('path to a category',
+  parser.add_option('-c', '--category_file', help=('path to a category',
                     'file if repo_path lacks a profile/category file'))
 
   opts, unused_args = parser.parse_args()
