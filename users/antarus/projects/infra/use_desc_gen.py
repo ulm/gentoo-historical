@@ -128,8 +128,8 @@ def GetPackages(cat_path):
   """Return a list of packages for a given category."""
 
   files = os.listdir(cat_path)
-  if METADATA_XML in files:
-    files.remove(METADATA_XML)
+  func = lambda f: f != METADATA_XML and f != 'CVS' and f != '.svn'
+  files = filter(func, files)
 
   return files
 
@@ -176,7 +176,7 @@ def GetOpts():
 def Main():
   """Main."""
   opts, unused_args = GetOpts()
-  FindMetadataFiles(opts.repo_path, opts.category_path)
+  FindMetadataFiles(opts.repo_path, opts.category_file)
 
 
 if __name__ == '__main__':
