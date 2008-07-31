@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.14 2008/01/25 18:11:51 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.15 2008/07/31 08:45:47 flameeyes Exp $ -->
 
 <guide link="/proj/en/qa/asneeded.xml" lang="en">
 <title>--as-needed introduction and fixing guide</title>
@@ -18,8 +18,8 @@ steps to fix simple cases where --as-needed fails to build a package.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.8</version>
-<date>2007-04-17</date>
+<version>0.9</version>
+<date>2008-07-31</date>
 
 <chapter> <!-- Introduction -->
 <title>Introduction</title>
@@ -149,6 +149,48 @@ rebuild the dependencies failing to link against before filing a bug.
 
 </body>
 </section>
+
+<section>
+<title>Properly filtering --as-needed</title>
+
+<body>
+
+<p>
+Sometimes it is needed to filter <c>--as-needed</c> as the software is
+designed in such a way that it is not fixable to make use of
+it. Unfortunately just filtering the flag is often not the best choice
+because <path>LDFLAGS</path> can be tricky (they can be concatenated
+through commas, making it impossible to filter them out), and because
+it is possible to set it as a default through GCC's spec files.
+</p>
+
+<p>
+If you really need to disable the <c>--as-needed</c> behaviour,
+because of design choices that conflicts with the way
+<c>--as-needed</c> works (and thus not just because the package is
+broken, and fixable, when building with <c>--as-needed</c>), what you
+should be doing is something along these lines.
+</p>
+
+<pre caption="correct filter for --as-needed behaviour">
+inherit flag-o-matic
+...
+
+pkg_setup() {
+    append-ldflags -Wl,--no-as-needed
+}
+</pre>
+
+<warn>
+Please consider using this filtering <e>only</e> if you know that the
+design of the software conflicts with <c>--as-needed</c>. Do not use
+this construct if your package simply fails to build after enabling
+this behaviour.
+</warn>
+
+</body>
+</section>
+
 </chapter>
 
 <chapter>
@@ -174,47 +216,7 @@ a developer or you have a patch to fix --as-needed issues, you can file a bug in
 
 </body>
 </section>
-<section>
-<title>Binutils bugs</title>
-<body>
 
-<p>
-As stated above, the 2.16 binutils series and the early 2.17 prereleases suffer
-from problems when linking with <c>--as-needed</c>, which leads to <c>ld</c>
-segfaulting when trying to link complex C++ libraries like <path>wxGTK</path>.
-</p>
-
-<p>
-In this case the first thing to do is to use the latest prerelease available
-from upstream. At the date of writing the last prerelease is 2.16.92 that is
-said to solve most if not all the problems with <c>--as-needed</c> flag and
-does not fail anymore with <path>wxGTK</path> for once.
-</p>
-
-<p>
-If the last snapshot doesn't work, you might consider filtering the flag with
-the following code, after reporting the case upstream with as many details
-possible.
-</p>
-
-<pre caption="filtering the --as-needed flag in an ebuild">
-inherit flag-o-matic
-...
-
-<stmt>pkg_setup()</stmt> {
-    <keyword>filter-ldflags</keyword> -Wl,--as-needed --as-needed
-}
-</pre>
-
-<impo>
-These problems should be gone as of 2.16.92 and thus the filtering is
-unnecessary, as anyone using <c>--as-needed</c> and finding segfaults should
-simply update binutils. For this reason you might want to do this locally but
-you should <e>not</e> commit flags filtering for this reason.
-</impo>
-
-</body>
-</section>
 <section>
 <title>Failure in compile, unrecognized option</title>
 <body>
