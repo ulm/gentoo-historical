@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.15 2008/07/31 08:45:47 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.16 2008/07/31 09:41:56 flameeyes Exp $ -->
 
 <guide link="/proj/en/qa/asneeded.xml" lang="en">
 <title>--as-needed introduction and fixing guide</title>
@@ -18,7 +18,7 @@ steps to fix simple cases where --as-needed fails to build a package.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.9</version>
+<version>0.11</version>
 <date>2008-07-31</date>
 
 <chapter> <!-- Introduction -->
@@ -304,29 +304,36 @@ library providing them.
 <body>
 
 <p>
-This is hopefully the less frequent failure but it's also one of the most
-impractical to find, although is no different to fix than other failures.
-Basically the <c>./configure</c> script of an autotooled package can fail to
-find a given library (and thus abort if the support is a strict requirement, or
-simply ignore the presence of a library) if that library does not link against
-its right dependencies.
+Albeit less common than other kind of failures, <c>./configure</c>
+execution can fail because of <c>--as-needed</c> too. With this kind
+of failures, though, it's difficult to give a single and simple
+solution, as there are multiple reasons that might make the script
+fail.
 </p>
 
 <p>
-The quickest way to find possible failures because of the above is to look into
-<path>AC_CHECK_LIB</path> calls inside the configure script; when the fifth 
-parameter is used (<e>other-libraries</e>) it often means that those libraries 
-need to be linked in the same binary with the one to check, as they are not 
-linked in automatically.  While this works in a normal situation, when using the
-<c>--as-needed</c> flag, they are probably dropped because they are not used by
-the test program.
+The most common option between those that we have now is that a
+library is checked for, but that library wasn't linked to all its
+prerequisites (and thus required them to be passed afterward). As
+<c>--as-needed</c> makes the linker ignore all the libraries not
+needed by the current target, the prerequisites will result missing.
 </p>
 
 <p>
-The fixes are the usual ones explained above, but instead of being applied to
-the failing package they have to be applied to the library that's failing to be
-detected.
+To check a <path>configure.ac</path> or <path>configure.in</path> file
+for this kind of failures, you can look for the <c>AC_CHECK_LIB</c>
+macro, and see whether the fifth parameter is used
+(<e>other-libraries</e>). When it is, it often means that those
+libraries need to be linked in the final binary to satisfy the
+dependencies of the library to check for. At that point, the library
+need to be fixed.
 </p>
+
+<pre caption="example of AC_CHECK_LIB call with fifth-parameter">
+AC_CHECK_LIB([foo], [foo_something],
+             [have_foo=yes], [have_foo=no],
+             [-ldl -lnsl])
+</pre>
 
 <note>
 While applying patches to libraries to fix <c>--as-needed</c> support, it is
@@ -335,6 +342,33 @@ flag don't need to rebuild the library. For this reason, those who want to use
 <c>--as-needed</c> are invited to run an <c>emerge -e world</c> so that
 libraries are rebuilt.
 </note>
+
+<p>
+Another possible failure during <c>./configure</c> execution happens
+when the code is going to check for functions or other particular
+items (symbols, behaviour) and mistakenly pass the dependency
+libraries through the <path>LDFLAGS</path> variable.
+</p>
+
+<pre caption="example of mistake in library checks">
+PKG_CHECK_MODULES([FOO], [foo])
+
+...
+
+save_LDFLAGS=$LDFLAGS
+LDFLAGS="$LDFLAGS $FOO_LIBS"
+
+AC_CHECK_FUNCS([foo_choice1 foo_choice2 foo_choice3])
+
+LDFLAGS=$save_LDFLAGS
+</pre>
+
+<p>
+In this case the solution is very quick: just replace LDFLAGS with
+LIBS in both saving and restoring. This way the libraries will be
+passed in the correct order (see the following section for more
+insight about this kind of problem).
+</p>
 
 </body>
 </section>
