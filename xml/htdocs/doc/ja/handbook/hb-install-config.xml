@@ -4,15 +4,21 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-config.xml,v 1.17 2006/08/20 16:24:33 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-config.xml,v 1.18 2008/08/01 22:51:12 shindo Exp $ -->
 
-<!-- Original revision: 1.78 -->
+<!-- Original revision: 1.99 -->
 <!-- Translator: Infonomad -->
+<!-- Translator: masuda -->
 
 <sections>
 
-<version>2.19</version>
-<date>2006-05-27</date>
+<abstract>
+いくつかの重要な設定ファイルを編集する必要があります。
+この章ではこれらのファイルの概要と編集の方法を説明します。
+</abstract>
+
+<version>9.2</version>
+<date>2008-05-02</date>
 
 <section>
 <title>ファイルシステム情報</title>
@@ -55,60 +61,84 @@ Linuxにおいて、システムに使用されている全パーティション
 </li>
 </ul>
 
-<p>
-Gentooが提供している元々の<path>/etc/fstab</path><e>有効なfstab</e>ではありません。ということで<c>nano</c>(もしくはお好みのエディタ)を起動して、自分の<path>/etc/fstab</path>を作成しましょう。
-</p>
+<impo>
+Gentooが提供している元々の<path>/etc/fstab</path><e>有効なfstab</e>ではありません。
+自分のシステムの<path>/etc/fstab</path>を作成しなければなりません。
+</impo>
 
 <pre caption="/etc/fstabを開く">
 # <i>nano -w /etc/fstab</i>
 </pre>
 
+</body>
+<body test="func:keyval('/boot')">
+
 <p>
-では<path>/boot</path>パーティションのオプションをどのように書くかを見てみましょう。これは単なる例ですので、自分のアーキテクチャが<path>/boot</path>パーティションを必要としないなら(例えば Appleの<b>PPC</b>マシン等)、そのままコピーしないでください。
+では<path>/boot</path>パーティションのオプションをどのように書くかを見てみましょう。
+これは単なる例であり、<path>/boot</path>を作っていない、もしくは作ることができなかったのなら、そのままコピーしないでください。
 </p>
 
 <p>
-ここでの一般的なx86でのパーティション例では<path>/boot</path>は<path>/dev/hda1</path>で、ファイルシステムとしては<c>ext2</c>です。ブート中にチェックされる必要があります。そこでこう書きます。
+ディフォルトの<keyval id="arch"/>パーティションの例では、よくあるように<path>/boot</path>が<path><keyval id="/boot"/></path>パーティション、ファイルシステムが<c>ext2</c>となっています。
+ブート中にチェックされる必要があります。
+そこでこう書きます。
 </p>
 
 <pre caption="/etc/fstabでの/boot行の例">
-/dev/hda1   /boot     ext2    defaults        1 2
+<keyval id="/boot"/>   /boot     ext2    defaults        1 2
 </pre>
 
 <p>
 <path>/boot</path>自身のシステムのセキュリティを向上させるためにパーティションが自動的にマウントされたくないユーザーもいます。そういう方々は<c>defaults</c>の代わりに<c>noauto</c>にしてください。これはこのパーティションを使いたいときは毎回手動でマウントする必要があるという事です。
 </p>
 
+</body>
+<body>
+
 <p>
-さて、パフォーマンスを改善するのに多くのユーザーはマウントオプションとして<c>noatime</c>オプションを付け加えたいと思ってるでしょう。アクセス時間が記録されないので、その結果はより高速なシステムになります。(一般的にはその記録の必要はないので)。
+パーティション分割の構成に合ったルールを追加し、CD-ROMドライブのためのルールを付け加えてください。
+そして、その他のパーティションやドライブがあれば、当然それらも忘れないでください。
 </p>
 
-<pre caption="/etc/fstabの改善された/boot行">
-/dev/hda1   /boot     ext2    defaults,noatime    1 2
+<p>
+ここで<path>/etc/fstab</path>を作るために、以下の<e>例</e>を使います。
+</p>
+
+<pre caption="完全な/etc/fstabの例" test="func:keyval('arch')='HPPA'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda3   none         swap    sw                   0 0
+/dev/sda4   /            ext3    noatime              0 1
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-このまま進めるなら、次の3行で終わりにしましょう。(<path>/boot</path>、<path>/</path>とスワップパーティション用)
-</p>
+<pre caption="完全な/etc/fstabの例" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS' or func:keyval('arch')='x86' or func:keyval('arch')='AMD64'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+/dev/sda2   none         swap    sw                   0 0
+/dev/sda3   /            ext3    noatime              0 1
 
-<pre caption="/etc/fstabの3行">
-/dev/hda1   /boot     ext2    defaults,noatime  1 2
-/dev/hda2   none      swap    sw                0 0
-/dev/hda3   /         ext3    noatime           0 1
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<p>
-終了するには、<path>/proc</path>、 <c>tmpfs</c>(要)とCD-ROMドライブ(もちろん他のパーティションやドライブがあればそれらも)のルールも追加しなければなりません。
-</p>
+<pre caption="完全な/etc/fstabの例" test="func:keyval('arch')='SPARC'">
+/dev/sda1   /               ext3        noatime              0 1
+/dev/sda2   none            swap        sw                   0 0
+/dev/sda4   /usr            ext3        noatime              0 2
+/dev/sda5   /var            ext3        noatime              0 2
+/dev/sda6   /home           ext3        noatime              0 2
 
-<pre caption="完成した/etc/fstabの例">
-/dev/hda1   /boot     ext2    defaults,noatime     1 2
-/dev/hda2   none      swap    sw		   0 0
-/dev/hda3   /         ext3    noatime		   0 1
+<comment># You must add the rules for openprom</comment>
+openprom    /proc/openprom  openpromfs  defaults             0 0
 
-none        /proc     proc    defaults		   0 0
-none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
-/dev/cdroms/cdrom0    /mnt/cdrom    auto      noauto,user    0 0
+/dev/cdrom  /mnt/cdrom      auto        noauto,user          0 0
+</pre>
+
+<pre caption="完全な/etc/fstabの例" test="func:keyval('arch')='PPC' or
+func:keyval('arch')='PPC64'">
+/dev/sda4   /            ext3    noatime              0 1
+/dev/sda3   none         swap    sw                   0 0
+
+/dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
 <p>
@@ -116,12 +146,10 @@ none        /dev/shm  tmpfs   nodev,nosuid,noexec  0 0
 </p>
 
 <p>
-さあ上記の例を使って、自分の<path>/etc/fstab</path>を作成しましょう。もし<b>SPARC</b>ユーザーなら、自分の<path>/etc/fstab</path>に次の行も追加しなければなりません。
+パフォーマンスを改善するのに多くのユーザーはマウントオプションとして
+noatimeオプションを付け加えたいと考えることがあります。
+アクセス時間が記録されないので、その結果はより高速なシステムになります(一般的にその記録はほとんど必要ありません)。
 </p>
-
-<pre caption="/etc/fstabにopenpromファイルシステムを追加">
-none        /proc/openprom  openpromfs    defaults      0 0
-</pre>
 
 <p>
 <path>/etc/fstab</path>を再チェックして、保存・終了して次に進んでください。
@@ -133,18 +161,14 @@ none        /proc/openprom  openpromfs    defaults      0 0
 <section>
 <title>ネットワーク情報</title>
 <subsection>
-<title>Host名、Domain名等</title>
+<title>ホスト名、ドメイン名等</title>
 <body>
 
 <p>
-ユーザーが決めなければならない選択の一つは自分のPCの名前です。至極簡単に思えますが<e>多くの</e>ユーザーは自分のLinux-pcに適当な名前を見付けるのに苦労してます。事を早く進めるために、選んだ名前は後で変更できることを知っておいてください。判りやすいように、ここでは単にマシンを<c>tux</c>、Domain名を<c>homenetwork</c>と呼ぶことにします。
+ユーザーが決めなければならない選択の一つは自分のPCの名前です。至極簡単に思えますが<e>多くの</e>ユーザーは自分のLinux-pcに適当な名前を見付けるのに苦労してます。事を早く進めるために、選んだ名前は後で変更できることを知っておいてください。判りやすいように、ここでは単にマシンを<c>tux</c>、ドメイン名を<c>homenetwork</c>と呼ぶことにします。
 </p>
 
-<p>
-次の例ではこれらの名前を使います。最初にhost名を設定します。
-</p>
-
-<pre caption="host名を設定">
+<pre caption="ホスト名を設定">
 # <i>nano -w /etc/conf.d/hostname</i>
    
 <comment>(HOSTNAME変数に自分のホスト名を設定してください)</comment>
@@ -152,27 +176,38 @@ HOSTNAME="<i>tux</i>"
 </pre>
 
 <p>
-次にdomain名を設定します。
+次に、<e>もし</e>ドメイン名が必要なら、<path>/etc/conf.d/net</path>に設定します。
+ISPやネットワーク管理者からそう言われているか、DHCPサーバは持っておらずDNSサーバを持っているときのみドメインが必要になります。
+もしネットワークにつなげるときDHCPの設定を行っていれば、DNSやドメイン名に悩む必要はありません。
 </p>
 
 <pre caption="domain名を設定">
-# <i>nano -w /etc/conf.d/domainname</i>
+# <i>nano -w /etc/conf.d/net</i>
    
-<comment>(DNSDOMAIN変数に自分のドメイン名を設定してください)</comment>
-DNSDOMAIN="<i>homenetwork</i>"
+<comment>(dns_domain変数に自分のドメイン名を設定してください)</comment>
+dns_domain_lo="<i>homenetwork</i>"
 </pre>
+
+<note>
+ドメイン名を設定しないことを選択した場合、<path>/etc/issue</path>を編集することで、ログイン画面の"This is hostname.(none)"というメッセージを取り除くことができます。
+そのファイルから文字列<c>.\O</c>を削除するだけです。
+</note>
 
 <p>
 もしNISドメインがあれば(これについてわからなければ、それが無いということです)、それも定義しなければなりません。
 </p>
 
 <pre caption="NISドメイン名を設定">
-# <i>nano -w /etc/conf.d/domainname</i>
+# <i>nano -w /etc/conf.d/net</i>
    
-<comment>(NISDOMAIN変数に自分のNISドメイン名を設定してください)</comment>
-NISDOMAIN="<i>my-nisdomain</i>"
+<comment>(nis_domain変数に自分のNISドメイン名を設定してください)</comment>
+nis_domain_lo="<i>my-nisdomain</i>"
 </pre>
 
+<note>
+DNSとNISの設定に関する情報がもっと欲しい場合は、<path>/etc/conf.d/net.example</path>に示されている例を読んでください。
+DNS/NISの設定管理を楽にするため、<c>openresolv</c>をemergeしてもよいでしょう。
+</note>
 
 </body>
 </subsection>
@@ -193,7 +228,10 @@ bonding、ブリッジ、802.1Q VLANや無線ネットワークなどの高度�
 </p>
 
 <p>
-DHCPは標準で使用されるので、それ以上の設定は必要ありません。
+DHCPは標準で使用されています。
+DHCPを動作させるためには、DHCPクライアントをインストールする必要があります。
+これについては<uri link="?part=1&amp;chap=9#networking-tools">必要なシステムツールをインストールする</uri>に記述されています。
+忘れずにDHCPクライアントのインストールしてください。
 </p>
 
 <p>
@@ -221,7 +259,7 @@ DHCPは標準で使用されるので、それ以上の設定は必要ありま�
 
 <pre caption="eth0のIP情報を手動で設定する">
 config_eth0=( "192.168.0.2 netmask 255.255.255.0 brd 192.168.0.255")
-routes_eth0=( "default gw 192.168.0.1" )
+routes_eth0=( "default via 192.168.0.1" )
 </pre>
 
 <p>
@@ -252,7 +290,7 @@ dhcp_eth0="nodns nontp nonis"
 <body>
 
 <p>
-ブート時にネットワークインターフェースを有効にさせるには、それぞれのスクリプトをdefaultのランレベルに追加する必要があります。もしPCMCIAインターフェイスがあるなら、PCMCIAインターフェイスはPCMCIA起動スクリプトによって起動されるのでこの工程を省略してください。
+ブート時にネットワークインターフェースを有効にさせるには、それぞれのスクリプトをdefaultのランレベルに追加する必要があります。
 </p>
 
 <pre caption="defaultのランレベルにnet.eth0を追加">
@@ -265,7 +303,7 @@ dhcp_eth0="nodns nontp nonis"
 
 <pre caption="別の起動スクリプトを作成">
 # <i>cd /etc/init.d</i>
-# <i>ln -s net.eth0 net.eth1</i>
+# <i>ln -s net.lo net.eth1</i>
 # <i>rc-update add net.eth1 default</i>
 </pre>
 
@@ -300,26 +338,22 @@ dhcp_eth0="nodns nontp nonis"
 保存・終了して次へ進みましょう。
 </p>
 
-<p>
-もしPCMCIAが無ければ、<uri link="#doc_chap3">システム情報</uri>に進むことができます。 PCMCIAのあるユーザーは続くPCMCIAの項目を読んでください。
+<p test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
+もしPCMCIAが無ければ、<uri link="#sysinfo">システム情報</uri>に進むことができます。
+PCMCIAユーザーは続くPCMCIAの項目を読んでください。
 </p>
 
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='AMD64' or func:keyval('arch')='x86' or substring(func:keyval('arch'),1,3)='PPC'">
 <title>自由選択:PCMCIAを作動させる</title>
 <body>
 
-<note>
-pcmcia-csはx86、amd64及びppcプラットフォームでのみ有効。
-</note>
-
 <p>
-PCMCIAのあるユーザーは最初に<c>pcmcia-cs</c>パッケージをインストールしなければなりません。これには2.6カーネルで動作させるユーザーも含まれます(たとえこのパッケージのPCMCIAドライバを使わなくとも)。この段階ではxorg-x11のインストールを避けるために<c>USE="-X"</c>が必要となります。
-</p>
+PCMCIAユーザーは最初に<c>pcmciautils</c>パッケージをインストールしなければなりません。</p>
 
-<pre caption="pcmcia-csのインストール">
-# <i>USE="-X" emerge pcmcia-cs</i>
+<pre caption="pcmciautilsのインストール">
+# <i>emerge pcmciautils</i>
 </pre>
 
 <p>
@@ -333,7 +367,7 @@ PCMCIAのあるユーザーは最初に<c>pcmcia-cs</c>パッケージをイン�
 </body>
 </subsection>
 </section>
-<section>
+<section id="sysinfo">
 <title>システム情報</title>
 <subsection>
 <title>rootのパスワード</title>
@@ -345,14 +379,6 @@ PCMCIAのあるユーザーは最初に<c>pcmcia-cs</c>パッケージをイン�
 
 <pre caption="rootのパスワードを設定">
 # <i>passwd</i>
-</pre>
-
-<p>
-もしrootをシリアルコンソール経由でログインさせたければ、<path>/etc/securetty</path>に<c>tts/0</c>を追記してください。
-</p>
-
-<pre caption="/etc/securettyにtts/0を追記">
-# <i>echo "tts/0" &gt;&gt; /etc/securetty</i>
 </pre>
 
 </body>
@@ -391,8 +417,9 @@ Gentooではキーボード設定を扱うのには<path>/etc/conf.d/keymaps</pa
 <c>KEYMAP</c>の設定には特に注意してください。もし間違った<c>KEYMAP</c>を選ぶとキーボードをタイプするときにとんでもなく変な結果になるでしょう。
 </p>
 
-<note>
-USBベースの<b>SPARC</b>と<b>SPARC</b>互換なシステムのユーザーは"sunkeymap"の代りにi386のキーマップ(例えば"us")を選択する必要があるかも知れません。<b>PPC</b>ではほとんどのシステムでx86キーマップが使われます。ブート時にADBキーマップを使えるようにしたいユーザーはカーネルでADBキーコード送出を有効にし、<path>/etc/conf.d/keymaps</path>にmac/ppcのキーマップを設定しなければなりません。
+<note test="substring(func:keyval('arch'),1,3)='PPC'">
+PPCではほとんどのシステムでx86キーマップが使われます。
+ブート時にADBキーマップを使えるようにしたいユーザーは、カーネルでADBキーコード送出を有効にし、<path>/etc/conf.d/keymaps</path>にmac/ppcのキーマップを設定しなければなりません。
 </note>
 
 <p>
@@ -408,29 +435,31 @@ Gentooではクロックオプションの設定には<path>/etc/conf.d/clock</p
 </pre>
  
 <p>
-もし自分のハードウェアクロックがUTCを使っていなければ、<c>CLOCK="local"</c>をこのファイルに付け加える必要があります。そうしなければ時刻の食い違いに気づくでしょう。さらに、Windowsではハードウェアクロックはローカルタイムを使ってるとしていますので、デュアルブートしたい方はこの値を適したものにしなければなりません。そうしなければ、自分の時刻は狂うでしょう。
+ハードウェアクロックにUTCを使っていないのなら、<c>CLOCK="local"</c>をこのファイルに追加する必要があります。
+さもなければ、いくらか時間がずれてしまうでしょう。
+</p>
+
+<p>
+さらに<c>sys-libs/timezone-data</c>パッケージを更新すると、自動的に<path>/etc/localtime</path>がアップデートされるよう、先に<path>/etc/localtime</path>へコピーしたタイムゾーンを定義すべきです。
+例えば、もしタイムゾーンにGMTを使用しているとするなら、<c>TIMEZONE="GMT"</c>を追加します。
 </p>
 
 <p>
 <path>/etc/conf.d/clock</path>の設定が終われば、保存・終了してください。
 </p>
 
-<p>
+<p test="not(func:keyval('arch')='PPC64')">
 IBM PPC64のシステム上にGentooをインストールしていなければ 、<uri link="?part=1&amp;chap=9">必要なシステムツールをインストールする</uri>に進んでください。
 </p>
       
 </body>
 </subsection>
-<subsection>
+<subsection test="func:keyval('arch')='PPC64'">
 <title>コンソールを設定する</title>
 <body>
-   
-<note>
-続くセクションはIBM PPC64のハードウェアプラットフォームに適用されます。
-</note>
 	        
 <p>
-もしIBM PPC64システム上でGentooが稼働し、仮想コンソールを使っているなら、仮想コンソールでログインプロンプトを表示させるために<path>/etc/inittab</path>内の適切な行のコメントを外さなくてはなりません。
+もし仮想コンソールを使っているなら、仮想コンソールでログインプロンプトを表示させるために<path>/etc/inittab</path>内の適切な行のコメントを外さなくてはなりません。
 </p>
 	     
 <pre caption="/etc/inittabのhvcもしくはhvsiサポートを有効にする">
