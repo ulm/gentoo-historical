@@ -17,6 +17,7 @@ rules; see _GetTextFromNode for the nasty details.
 
 __author__ = "Alec Warner <antarus@gentoo.org>"
 
+import errno
 import logging
 import optparse
 import os
@@ -51,7 +52,12 @@ def FindMetadataFiles(repo_path, category_path, output=sys.stdout):
   for cat in categories:
     cat_path = os.path.join(repo_path, cat)
     logging.debug('path to category %s is %s' % (cat, cat_path))
-    tmp_pkgs = GetPackages(cat_path)
+    try:
+      tmp_pkgs = GetPackages(cat_path)
+    except OSError, e:
+      if e.errno == errno.ENOENT:
+        logging.error('skipping %s because it was not in %s' % (cat,
+                                                                repo_path))
     pkg_paths = [os.path.join(cat_path, pkg) for pkg in tmp_pkgs]
     packages.extend(pkg_paths)
 
