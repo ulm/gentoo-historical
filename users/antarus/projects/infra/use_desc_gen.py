@@ -21,6 +21,7 @@ import errno
 import logging
 import optparse
 import os
+import re
 import sys
 
 from xml.dom import minidom
@@ -93,8 +94,8 @@ def _GetTextFromNode(node):
     children = 0
     data = node.nodeValue
 
-    data = data.replace("\t", '')
-    data = data.replace("\n", '')
+    whitespace = re.compile('\s+')
+    data = whitespace.sub(' ', data)
     return (data.strip(), children)
   else:
     desc = ''
