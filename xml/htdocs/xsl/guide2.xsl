@@ -1957,6 +1957,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
         </form>
       </td>
     </tr>
+	<!-- VR -->
     <tr lang="en">
     <td align="center" class="topsep">
             <a href="http://www.vr.org">
@@ -1967,6 +1968,8 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 	    </p>
     </td>
     </tr>
+	<!-- /VR -->
+	<!-- Tek -->
     <tr lang="en">
       <td align="center" class="topsep">
       <a href="http://www.tek.net" target="_top">
@@ -1977,6 +1980,8 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       </p>
       </td>
     </tr>
+	<!-- /Tek -->
+	<!-- SevenL -->
     <tr lang="en">
     <td align="center" class="topsep">
       <a href="http://www.sevenl.net" target="_top">
@@ -1987,6 +1992,8 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       </p>
     </td>
     </tr>
+	<!-- /SevenL -->
+	<!-- bytemark -->
     <tr lang="en">
     <td align="center" class="topsep">
         <a href="http://www.bytemark.co.uk/r/gentoo-home" target="_top">
@@ -1997,6 +2004,8 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       </p>
     </td>
     </tr>
+	<!-- /bytemark -->
+	<!-- GNi -->
     <tr lang="en">
     <td align="center" class="topsep">
         <a href="http://www.gni.com" target="_top">
@@ -2006,19 +2015,8 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 	  <a href="http://www.gni.com">Global Netoptex Inc.</a>
       </p>
     </td>
-    <xsl:if test="number(translate(func:today(),'-','')) &lt;= 20080808">
-    <tr lang="en">
-    <td align="center" class="topsep">
-        <a href="http://www.linuxworldexpo.com" target="_top">
-          <img src="{concat($images,'images/Linuxworld125X125.gif')}" width="125" alt="Linux World Expo" border="0"/>
-      </a>
-      <p class="alttext">
-	  <a href="http://www.linuxworldexpo.com">Linux World Expo</a>
-      </p>
-    </td>
     </tr>
-    </xsl:if>
-    </tr>
+	<!-- /GNi -->
     <tr>
     <td align="center" class="topsep"/>
     </tr>
