@@ -87,6 +87,9 @@ def _GetTextFromNode(node):
   children are 'complex' nodes (often <pkg> nodes) that usually require a
   trailing space to ensure sane output.
 
+  NOTE: The above comment is now bullocks as the regex handles spacing;  I may
+  remove the 'children' crap in a future release but it works for now.
+
   Strip out \n and \t as they are not valid in use.local.desc.
   """
 
@@ -96,18 +99,13 @@ def _GetTextFromNode(node):
 
     whitespace = re.compile('\s+')
     data = whitespace.sub(' ', data)
-    return (data.strip(), children)
+    return (data, children)
   else:
     desc = ''
     base_children = 1
     for child in node.childNodes:
       child_desc, children = _GetTextFromNode(child)
-      child_desc.strip()
-      logging.debug('Children: %s' % children)
-      if children:
-        desc += ' ' + child_desc
-      else:
-        desc += child_desc
+      desc += child_desc
     return (desc, base_children)
 
 
