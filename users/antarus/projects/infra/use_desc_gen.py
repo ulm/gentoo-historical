@@ -25,6 +25,7 @@ import re
 import sys
 
 from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 
 METADATA_XML = 'metadata.xml'
 
@@ -120,7 +121,7 @@ def GetLocalFlagInfoFromMetadataXml(metadata_file):
 
   try:
     dom_tree = minidom.parseString(metadata_file.read())
-  except xml.paraser.expat.ExpatError, e:
+  except ExpatError, e:
     logging.error('%s (in file: %s)' % (e, metadata_file))
     return d
 
