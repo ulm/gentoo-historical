@@ -120,7 +120,7 @@ def GetLocalFlagInfoFromMetadataXml(metadata_file):
 
   try:
     dom_tree = minidom.parseString(metadata_file.read())
-  except xml.paraser.expat.ExpatError e:
+  except xml.paraser.expat.ExpatError, e:
     logging.error('%s (in file: %s)' % (e, metadata_file))
     return d
 
