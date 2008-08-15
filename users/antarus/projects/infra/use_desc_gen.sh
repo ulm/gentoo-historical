@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: use_desc_gen.sh,v 1.1 2008/08/15 04:45:18 cardoe Exp $
+# $Id: use_desc_gen.sh,v 1.2 2008/08/15 19:23:34 ulm Exp $
 
 export PATH=/home/cardoe/work/gentoo/users/antarus/projects/infra/:${PATH}
 
@@ -44,8 +44,10 @@ grep -v -f /tmp/${pid}.grep "${1}/profiles/use.local.desc" > /tmp/${pid}.new.use
 # the secret sauce, append to new use.local.desc
 use_desc_gen --repo_path "${1}" --category_file "/tmp/${pid}.categories" >> /tmp/${pid}.new.use
 
-# let's keep it sorted
-cat "/tmp/${pid}.new.use" | sort -t ' ' -k1,1 >> /tmp/${pid}.use.local.desc
+# let's keep it sorted: use major category, minor category, and package name
+# as primary, secondary, and tertiary sort keys, respectively
+sort -t: -k1,1 -k2 /tmp/${pid}.new.use | sort -s -t/ -k1,1 \
+    >> /tmp/${pid}.use.local.desc
 
 # clean up
 rm -rf /tmp/${pid}.categories
