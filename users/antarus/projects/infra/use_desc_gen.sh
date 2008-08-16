@@ -1,5 +1,8 @@
 #!/bin/sh
-# $Id: use_desc_gen.sh,v 1.2 2008/08/15 19:23:34 ulm Exp $
+# Written by Douglas Goldstein <cardoe@gentoo.org>
+# This code is hereby placed into the public domain
+#
+# $Id: use_desc_gen.sh,v 1.3 2008/08/16 00:45:49 cardoe Exp $
 
 export PATH=/home/cardoe/work/gentoo/users/antarus/projects/infra/:${PATH}
 
