@@ -1,0 +1,47 @@
+From f4b2033653fedef4912c1e473608ff92fbb6d9fe Mon Sep 17 00:00:00 2001
+From: Jean-Baptiste Kempf <jb@videolan.org>
+Date: Wed, 20 Aug 2008 13:56:05 -0700
+Subject: [PATCH] TTA: Sanity check to avoid overflow and typo
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+i_rate can go up to 2^32-1.
+If you * 1.044 it is going to not fit in a int (_framelength)
+(cherry picked from commit d487b81dde82b458dd6ffe6cb73aa798d6b0b855)
+
+Signed-off-by: Rémi Denis-Courmont <rdenis@simphalempin.com>
+---
+ modules/demux/tta.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/modules/demux/tta.c b/modules/demux/tta.c
+index 9333381..4abca25 100644
+--- a/modules/demux/tta.c
++++ b/modules/demux/tta.c
+@@ -94,7 +94,7 @@ static int Open( vlc_object_t * p_this )
+         if( !p_demux->b_force ) return VLC_EGENERIC;
+ 
+         /* User forced */
+-        msg_Err( p_demux, "this doesn't look like a flac stream, "
++        msg_Err( p_demux, "this doesn't look like a true-audio stream, "
+                  "continuing anyway" );
+     }
+ 
+@@ -116,8 +116,12 @@ static int Open( vlc_object_t * p_this )
+     fmt.audio.i_channels = GetWLE( &p_header[6] );
+     fmt.audio.i_bitspersample = GetWLE( &p_header[8] );
+     fmt.audio.i_rate = GetDWLE( &p_header[10] );
+-    if( fmt.audio.i_rate == 0 )
++    if( fmt.audio.i_rate == 0 || /* Avoid divide by 0 */
++        fmt.audio.i_rate > ( 1 << 20 ) /* Avoid i_framelength overflow */ )
++    {
++        msg_Warn( p_demux, "Wrong sample rate" );
+         goto error;
++    }
+ 
+     p_sys->i_datalength = GetDWLE( &p_header[14] );
+     p_sys->i_framelength = TTA_FRAMETIME * fmt.audio.i_rate;
+-- 
+1.5.6.5
+
