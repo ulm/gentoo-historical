@@ -2,7 +2,7 @@
 # Written by Douglas Goldstein <cardoe@gentoo.org>
 # This code is hereby placed into the public domain
 #
-# $Id: use_desc_gen.sh,v 1.5 2008/08/23 06:53:25 cardoe Exp $
+# $Id: use_desc_gen.sh,v 1.6 2008/08/23 21:28:28 robbat2 Exp $
 
 usage() {
 	prog=$(basename $1)
@@ -43,7 +43,7 @@ echo "" >> /tmp/${pid}.use.local.desc
 #grep -v -f /tmp/${pid}.grep "${1}/profiles/use.local.desc" > /tmp/${pid}.new.use
 
 # the secret sauce, append to new use.local.desc
-./use_desc_gen --repo_path "${1}" > /tmp/${pid}.new.use
+python use_desc_gen --repo_path "${1}" > /tmp/${pid}.new.use
 
 # let's keep it sorted: use major category, minor category, and package name
 # as primary, secondary, and tertiary sort keys, respectively
