@@ -176,15 +176,19 @@
 
 <title>
   <xsl:choose>
-    <xsl:when test="/guide/@type='project'">Gentoo Linux Projects</xsl:when>
-    <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter</xsl:when>
-    <xsl:when test="/sections">Gentoo Linux Handbook Page</xsl:when>
-    <xsl:otherwise><xsl:value-of select="func:gettext('GLinuxDoc')"/></xsl:otherwise>
+    <xsl:when test="/guide/@type='project'">Gentoo Linux Projects — </xsl:when>
+    <xsl:when test="/guide/@type='newsletter'">Gentoo Linux Newsletter — </xsl:when>
+    <xsl:when test="/sections">Gentoo Linux Handbook Page — </xsl:when>
   </xsl:choose>
---
   <xsl:choose>
     <xsl:when test="subtitle"><xsl:if test="/guide/@type!='newsletter'"><xsl:value-of select="title"/>:</xsl:if> <xsl:value-of select="subtitle"/></xsl:when>
     <xsl:otherwise><xsl:value-of select="title"/></xsl:otherwise>
+  </xsl:choose>
+  <xsl:choose>
+    <xsl:when test="/guide/@type='project'"/>
+    <xsl:when test="/guide/@type='newsletter'"/>
+    <xsl:when test="/sections"/>
+    <xsl:otherwise> — <xsl:value-of select="func:gettext('GLinuxDoc')"/></xsl:otherwise>
   </xsl:choose>
 </title>
 
