@@ -4,15 +4,20 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-working-rcscripts.xml,v 1.7 2006/03/16 17:11:24 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-working-rcscripts.xml,v 1.8 2008/09/14 11:16:55 shindo Exp $ -->
 
-<!-- Original revision: 1.25 -->
+<!-- Original revision: 1.31 -->
 <!-- Translator: igarashi -->
 
 <sections>
 
-<version>1.21</version>
-<date>2005-05-29</date>
+<abstract>
+Gentoo では、ほかの特徴にくわえて、依存関係に従った実行順の決定と仮想的なinitスクリプトが可能となる特別なinitスクリプト形式を採用しています。この章では、こうした特徴をすべて説明し、これらのスクリプトをどのように扱うのかを説明します。
+</abstract>
+
+
+<version>1.25</version>
+<date>2007-10-11</date>
 
 <section>
 <title>ランレベル</title>
@@ -263,12 +268,16 @@ initスクリプトを追加または、削除するには、<c>rc-update</c>に
 </pre>
 
 <p>
-<c>rc-update show</c>コマンドは、すべての利用可能なinitスクリプトとそれがどのランレベルで実行されるかを表示します。
+<c>rc-update -v show</c>コマンドは、すべての利用可能なinitスクリプトとそれがどのランレベルで実行されるかを表示します。
 </p>
 
 <pre caption="initスクリプトの情報を参照する">
-# <i>rc-update show</i>
+# <i>rc-update -v show</i>
 </pre>
+
+<p>
+(<c>-v</c>なしで）<c>rc-update show</c>を実行し、有効なinitスクリプトとそれらのランレベルをみることができます。
+</p>
 
 </body>
 </subsection>
@@ -298,7 +307,7 @@ Gentooはそのようなサービスを設定する簡単な方法を提供し�
 </p>
 
 <pre caption="/etc/conf.d/apache2に定義される変数">
-APACHE2_OPTS="-D PHP4"
+APACHE2_OPTS="-D PHP5"
 </pre>
 
 <p>
@@ -435,6 +444,21 @@ depend() {
 }
 </pre>
 
+<p>
+もし、サービスがローカルディスクに書き込みをしなければならないものであれば、
+<c>localmount</c>が必要となります。
+もし、<path>/var/run</path> にpidファイルのように何か書き込むのであれば、
+<c>bootmisc</c>のあとに開始されなければいけません。
+</p>
+
+<pre caption="Example depend() function">
+depend() {
+  need localmount
+  after bootmisc
+}
+</pre>
+
+
 </body>
 </subsection>
 <subsection>
@@ -449,23 +473,73 @@ depend() {
 <pre caption="start()関数の例">
 start() {
   ebegin "Starting my_service"
-  start-stop-daemon --start --quiet --exec /path/to/my_service
+  start-stop-daemon --start --exec /path/to/my_service \
+     --pidfile /path/to/my_pidfile
+
   eend $?
 }
 </pre>
 
 <p>
-<c>start()</c>関数のより多くの例が必要なら、<path>/etc/init.d</path>ディレクトリにある利用可能なinitスクリプトのソースコードを見てください。<c>start-stop-daemon</c>コマンドに関しては、より詳しい情報が必要なら、素晴らしいmanページが以下のようにして利用可能です。
+<c>--exec</c> と <c>--pidfile</c> の両方がstart, stop関数のなかで必要です。
+もしサービスがpidファイルを作らないならば、
+できる限り<c>--make-pidfile</c>を使ってください。
+ただし、テストをして確認してください。
+そうでなければ、pidファイルを使用しないでください。
+<c>--quiet</c>を<c>start-stop-daemon</c>オプションに加えることもできますが、
+これは、サービスがかなり冗長なメッセージを出さない限りおすすめできません。
+<c>--quiet</c>を使うことで、サービス開始に失敗した際のデバッグが困難になるかもしれません。
 </p>
 
-<pre caption="start-stop-daemonコマンドのmanページを参照する">
-# <i>man start-stop-daemon</i>
-</pre>
+<note>
+<c>--exec</c> が、サービスを呼び出したり停止するシェルスクリプトではなく（これはinitスクリプトがサポートする事柄です）、実際にサービスを呼び出すようにしてください。
+</note>
+
+<p>
+<c>start()</c>関数のより多くの例が必要なら、/etc/init.dディレクトリにある利用可能なinitスクリプトのソースコードを見てください。
+</p>
 
 <p>
 定義可能な他の関数には、<c>stop()</c>と<c>restart()</c>があります。
 これらの関数を定義することは強制されません! Gentooのinitシステムは、<c>start-stop-daemon</c>を使用する場合には、自動的にinitシステム自身がこれらの関数を適切に処理します。
 </p>
+
+<p>
+とはいうものの、<c>stop()</c>関数を<e>作らなくてよい</e>程度のものなので、
+ここで、例を挙げます
+</p>
+
+<pre caption="stop()関数の例">
+stop() {
+  ebegin "Stopping my_service"
+  start-stop-daemon --stop --exec /path/to/my_service \
+    --pidfile /path/to/my_pidfile
+  eend $?
+}
+</pre>
+
+<p>
+もし、あなたのサービスが他のスクリプト（たとえば、bash, python または perl）を起動し、このスクリプトがその後名前が変わる（たとえば<c>foo.py</c>が<c>foo</c>に）ならば、<c>--name</c>を<c>start-stop-daemon</c>に追加する必要があるでしょう。スクリプトの名前がどう変わるのか指定する必要があります。
+この例では、サービスが<c>foo.py</c>を起動し、そしてこの名前が<c>foo</c>に変わります。
+</p>
+
+<pre caption="fooスクリプトを起動するサービス">
+start() {
+  ebegin "Starting my_script"
+  start-stop-daemon --start --exec /path/to/my_script \
+    --pidfile /path/to/my_pidfile --name foo
+  eend $?
+}
+</pre>
+
+<p>
+start-stop-daemonコマンドに関してより詳しい情報が必要なら、素晴らしいmanページが以下のようにして利用可能です。 
+</p>
+
+<pre caption="start-stop-daemonコマンドのmanページを参照する">
+$ <i>man start-stop-daemon</i>
+</pre>
+
 
 <p>
 Gentooのinitスクリプトの構文は、Bourne Again シェル(bash)準拠です。よって、initスクリプトでは、bash構文のスクリプトを自由に使用することができます。
@@ -561,6 +635,25 @@ Gentooではあなたのしたいようにランレベルの動作を変更で�
                local | offline
             net.eth0 |
 </pre>
+
+<p>
+たとえば<c>net.eth0</c>をofflineランレベルから削除した場合でも、
+<c>udev</c>は適当なサービスを検知、開始しするすべてのデバイスを起動しようとします。
+そのため、開始する必要のないネットワークサービスを（udevによって開始される他デバイスに対するサービスも同様に）<path>/etc/conf.d</path>に付け加える必要があります。
+</p>
+
+<pre caption="/etc/conf.d/rc内でサービスを開始するデバイスを無効にする">
+RC_COLDPLUG="yes"
+<comment>（つぎに、自動的に開始する必要のないサービスを指定します。）</comment>
+RC_PLUG_SERVICES="!net.eth0"
+</pre>
+
+<note>
+For more information on device initiated services, please see the comments
+inside <path>/etc/conf.d/rc</path>.
+
+
+</note>
 
 <p>
 ここで、ブートローダの設定を編集して、<c>offline</c>ランレベルのための新しいエントリを追加してください。例えば、<path>/boot/grub/grub.conf</path>では、以下のようになります。
