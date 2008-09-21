@@ -67,7 +67,15 @@ def FindMetadataFiles(repo_path, category_path, output=sys.stdout):
   for num, pkg_path in enumerate(packages):
     metadata_path = os.path.join(pkg_path, METADATA_XML)
     logging.info('processing %s (%s/%s)' % (metadata_path, num, total))
-    f = open(metadata_path, 'rb')
+    try:
+      f = open(metadata_path, 'rb')
+    except IOError, e:
+      if e.errno == errno.ENOENT:
+        logging.error('Time to shoot the maintainer: %s does not contain a metadata.xml!' % (pkg_path))
+        continue
+      else:
+        # remember to re-raise if it's not a missing file
+        raise e
     metadata = GetLocalFlagInfoFromMetadataXml(f)
     pkg_split = pkg_path.split('/')
     for k, v in metadata.iteritems():
