@@ -1681,7 +1681,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
   </xsl:variable>
 
   <table border="0" cellspacing="4px" cellpadding="4px">
-    <!-- Add a "printer-friendly" button when link attribute exists -->
+    <!-- Add a "printer-friendly" -->
     <xsl:if test="/book or /guide">
      <tr>
       <td class="topsep" align="center">
@@ -1703,6 +1703,27 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
             </xsl:choose>
           </xsl:variable>
           <a title="{$PrintTip}" class="altlink" href="{$href}"><xsl:value-of select="func:gettext('Print')"/></a>
+        </p>
+      </td>
+     </tr>
+    </xsl:if>
+    <!-- Add link to full handbook -->
+    <xsl:if test="$TTOP='book' and $full=0">
+     <tr>
+      <td class="topsep" align="center">
+        <p class="altmenu">
+          <xsl:variable name="ShowFullHBTip"><xsl:value-of select="func:gettext('ShowFullHBTip')"/></xsl:variable>
+          <xsl:variable name="href">
+            <xsl:choose>
+              <xsl:when test="$part != 0 and $chap != 0">
+                <xsl:value-of select="concat($link, '?full=1#book_part',$part,'_chap',$chap)"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="concat($link, '?full=1')"/>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:variable>
+          <a title="{$ShowFullHBTip}" class="altlink" href="{$href}"><xsl:value-of select="func:gettext('ShowFullHB')"/></a>
         </p>
       </td>
      </tr>
