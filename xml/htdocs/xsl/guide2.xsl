@@ -604,11 +604,10 @@
                 community are all hallmarks of the Gentoo experience.
                 To learn more, read our <b><a href="/main/en/about.xml">about
                 page</a></b>.<br/><br/>
-                This is how our home page could look like if infra solved bugs
-                <a href="http://bugs.gentoo.org/204402">#204402</a> and
-                <a href="http://bugs.gentoo.org/141909">#141909</a> so that GLSAs,
+                This is how our home page could look like if bug
+                <a href="http://bugs.gentoo.org/141909">#141909</a> were solved so that GLSAs,
                 latest packages and blog posts could be featured here.<br/>
-                If you like what you see, ping infra!</span>
+                </span>
               </p>
 <!--
               <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;=$newsitemcount]/text()">
@@ -621,8 +620,8 @@
 -->
 
       <xsl:variable name="GLSAs" select="document('http://gentoo.neysx.org/dyn/glsa-index.xml')"/>
-      <xsl:variable name="new-packages" select="document('http://packages.gentoo.org/feed/newpackage')"/>
-      <xsl:variable name="planet" select="document('http://planet.gentoo.org/rss20.xml')"/>
+      <xsl:variable name="new-packages" select="document('/dyn/new-packages.xml')"/>
+      <xsl:variable name="planet" select="document('/dyn/planet.xml')"/>
 
       <xsl:variable name="all-news" xmlns="">
        <news>
@@ -2096,7 +2095,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
         <img class="newsicon" src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
       </xsl:when>
       <xsl:when test="$thenews/@category='planet'">
-        <img class="newsicon" src="http://people.gentoo.org/neysx/G-Earth.jpg" alt="Planet Earth"/>
+        <img class="newsicon" src="http://dev.gentoo.org/~neysx/G-Earth.jpg" alt="Planet Earth"/>
       </xsl:when>
     </xsl:choose>
                   
