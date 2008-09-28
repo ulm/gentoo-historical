@@ -2095,7 +2095,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
         <img class="newsicon" src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
       </xsl:when>
       <xsl:when test="$thenews/@category='planet'">
-        <img class="newsicon" src="http://dev.gentoo.org/~neysx/G-Earth.jpg" alt="Planet Earth"/>
+        <img class="newsicon" src="/images/G-Earth.jpg" alt="Planet Earth"/>
       </xsl:when>
     </xsl:choose>
                   
