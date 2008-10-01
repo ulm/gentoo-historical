@@ -79,8 +79,11 @@ def FindMetadataFiles(repo_path, category_path, output=sys.stdout):
     metadata = GetLocalFlagInfoFromMetadataXml(f)
     pkg_split = pkg_path.split('/')
     for k, v in metadata.iteritems():
-      output.write('%s/%s:%s - %s\n' % (pkg_split[-2] ,pkg_split[-1], k, v))
-
+      try:
+        output.write('%s/%s:%s - %s\n' % (pkg_split[-2] ,pkg_split[-1], k, v))
+      except UnicodeEncodeError, e:
+        logging.error('Unicode found in %s, not generating to output' % (pkg_path))
+        continue
 
 def _GetTextFromNode(node):
   """Given an XML node, try to turn all it's children into text.
