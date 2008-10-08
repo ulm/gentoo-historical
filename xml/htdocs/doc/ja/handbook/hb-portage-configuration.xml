@@ -4,15 +4,19 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-portage-configuration.xml,v 1.7 2006/03/18 13:22:58 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-portage-configuration.xml,v 1.8 2008/10/08 16:03:11 shindo Exp $ -->
 
-<!-- Original revision: 1.10 -->
+<!-- Original revision: 1.17 -->
 <!-- Translator: igarashi -->
 
 <sections>
 
-<version>1.4</version>
-<date>2005-01-22</date>
+<abstract>
+Portageは、設定ファイル内で設定できる変数や環境変数としての変数を通して、自在に設定可能です。
+</abstract>
+
+<version>1.9</version>
+<date>2008-02-28</date>
 
 <section>
 <title>Portage設定</title>
@@ -48,7 +52,7 @@ Portageはアプリケーションをビルドする際に、コンパイラとc
     CHOST変数は、アプリケーションのconfigureスクリプトのためのビルドホスト情報を定義します。
   </li>
   <li>
-    MAKEOPTS変数は、<c>make</c>コマンドに渡され、通常、コンパイル時の並列数を定義するために設定されます。makeオプションに関するより詳細な情報は、makeのmanページにあります。
+    MAKEOPTS変数は、<c>make</c>コマンドに渡され、通常、コンパイル時の並列数を定義するために設定されます。<c>make</c>オプションに関するより詳細な情報は、makeのmanページにあります。
   </li>
 </ul>
 
@@ -64,6 +68,11 @@ USE変数は、configureやコンパイルの実行中にも使用されます�
 
 <p>
 Portageは、特定のソフトウェアタイトルの新しいバージョンのマージが完了したとき、もう使用されない古いバージョンをシステムから削除します。Portageは、古いバージョンをアンマージする前に、5秒間だけユーザのアクションを待ちます。この5秒は、CLEAN_DELAY変数によって定義されます。
+</p>
+
+<p>
+EMERGE_DEFAULT_OPTSを設定することで、<c>emerge</c>が実行されるとき、常に特定のオプションを使用するようにできます。
+いくつかの有用なオプションとしては、--ask、--verbose、--treeなどでしょう。
 </p>
 
 </body>
@@ -92,11 +101,11 @@ $ <i>emerge --info | grep 'CONFIG_PROTECT='</i>
 </pre>
 
 <p>
-Portageの設定ファイル保護機能に関するより詳細な情報は、以下のように<c>emerge</c>を通して見ることができます。
+Portageの設定ファイル保護機能に関するより詳細な情報は、<c>emerge</c>のmanpageのCONFIGURATION FILESの章で見ることができます。
 </p>
 
 <pre caption="設定ファイル保護機能に関するより詳細な情報の参照">
-$ <i>emerge --help config</i>
+$ <i>man emerge</i>
 </pre>
 
 </body>
@@ -150,7 +159,7 @@ GENTOO_MIRRORS変数とSYNC変数は、<c>mirrorselect</c>アプリケーショ�
 </pre>
 
 <p>
-あなたの環境が、proxyサーバを使用する必要があるなら、プロキシサーバを定義するために、HTTP_PROXY変数とFTP_PROXY変数とRSYNC_PROXY変数を使用できます。
+あなたの環境が、proxyサーバを使用する必要があるなら、プロキシサーバを定義するために、http_proxy変数とftp_proxy変数とRSYNC_PROXY変数を使用できます。
 </p>
 
 </body>
@@ -187,15 +196,43 @@ Portageツリーを更新する目的で、Portageによって使用されるrsy
 
 <ul>
   <li>
-    RSYNC_EXCLUDEFROM変数は、rsyncコマンドが更新処理中に無視すべき、パッケージおよび/またはカテゴリを記述しておくファイルを指します。
+    PORTAGE_RSYNC_OPTSは、それぞれスペース区切りで、同期する時に使われるデフォルトの変数を設定します。
+    これらは、<e>正確に</e>何をしようとしているのかわからない限り、変更すべきではありません。
+    特定の必須オプションはPORTAGE_RSYNC_OPTSが空でも使用されることに注意してください。
   </li>
   <li>
-    RSYNC_RETRIES変数は、接続をあきらめてしまう前に、SYNC変数によって指定されるミラーに接続を試してみるべき回数を定義します。この変数はデフォルトで3です。
+    PORTAGE_RSYNC_EXTRA_OPTSは同期する時の追加オプションを設定するために使用されます。
+    各オプションはスペース区切りです。
+    <ul>
+      <li>
+	 --timeout=&lt;number&gt;: これは、rsyncが通信がタイムアウトしたと見なすまでに、何秒間接続を待機させておくことができるかを定義します。
+	 この変数のデフォルトは180ですが、ダイヤルアップユーザや低速なコンピュータを使用している人は300以上に設定したほうがよいかもしれません。
+      </li>
+      <li>
+	 --exclude-from=/etc/portage/rsync_excludes: これは、rsyncがアップデート処理を行う間、無視すべきパッケージまたはカテゴリを記入したファイルを指しています。
+	 この場合は <path>/etc/portage/rsync_excludes</path>を指しています。
+	 このファイルの構文を知りたい場合は<uri link="?part=3&amp;chap=5">Portageツリーの一部を使う</uri>を読んでください。
+      </li>
+      <li>
+	--quiet: スクリーンへの出力を減らします。
+      </li>
+      <li>
+	--verbose: 完全なファイルリストを表示します。
+      </li>
+      <li>
+	--progress: 各ファイルに対して進行度合いを表示します。
+      </li>
+    </ul>
   </li>
   <li>
-    RSYNC_TIMEOUT変数は、rsyncコマンドが接続をタイムアウトとして判断する前に、待つ秒数を定義します。この変数のデフォルトは180ですが、ダイアルアップユーザや遅いコンピュータのユーザは、おそらく300以上に設定したいでしょう。
+    PORTAGE_RSYNC_RETRIESは、rsyncがSYNC変数で指定されたミラーへの接続試行をやめるまでに、何回接続を試みるか定義します。
+    この変数のデフォルトは3です。
   </li>
 </ul>
+
+<p>
+これらのオプションのさらに詳細な情報や他のオプションについては、<c>man rysnc</c>を読んでください。
+</p>
 
 </body>
 </subsection>
