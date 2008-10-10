@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/guide-localization.xml,v 1.48 2007/10/04 20:19:59 neysx Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/guide-localization.xml,v 1.49 2008/10/10 16:03:49 jkt Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/guide-localization.xml">
@@ -29,8 +29,8 @@ European locale. It uses Germany as a case-study, since it is translated from
 the German doc. Includes configuration for use of the euro currency symbol.
 </abstract>
 
-<version>1.36</version>
-<date>2007-10-04</date>
+<version>1.37</version>
+<date>2008-10-10</date>
 
 <chapter>
 <title>Time zone</title>
@@ -137,10 +137,10 @@ take one name of a locale in <c>ab_CD</c> format given above.
   <th>Explanation</th>
 </tr>
 <tr>
-  <ti>LC_ALL</ti>
+  <ti>LANG</ti>
   <ti>
-    Define all locale settings at once. This is the top level setting for
-    locales which will override any other setting.
+    Defines all locale settings at once, while allowing further individual
+    customization via the LC_* settings below.
   </ti>
 </tr>
 <tr>
@@ -186,27 +186,32 @@ take one name of a locale in <c>ab_CD</c> format given above.
   <ti>Defines default paper size.</ti>
 </tr>
 <tr>
-  <ti>LANG</ti>
+  <ti>LC_ALL</ti>
   <ti>
-    Defines all locale settings at once. This setting can be overridden by
-    individual LC_* settings above or even by LC_ALL.
+    A special variable for overriding all other settings.
   </ti>
 </tr>
 </table>
 
 <note>
-Even though most programs work with LC_ALL only, some of them misbehave if
-LC_ALL is set but LANG isn't. If you want to play safe, set them <e>both</e>.
+Some programs are written in such a way that they expect traditional English
+ordering of the alphabet, while some locales, most notably the Estonian one, use
+a different ordering. Therefore it's recommended to explicitly set LC_COLLATE to C
+when dealing with system-wide settings.
 </note>
 
+<warn>
+For the same reason, using LC_ALL is strongly discouraged. Please use it only
+when testing and never set it in a startup file.
+</warn>
+
 <p>
-Most typically users only set the LANG variable and perhaps LC_CTYPE variable
-on user level by adding definitions to shells startup files defining
-the environment variable manually from command line:
+Most typically users only set the LANG variable on the global basis:
 </p>
 
-<pre caption="Setting the user locale in ~/.bashrc">
-export LANG="de_DE@euro"
+<pre caption="Setting the default system locale in /etc/env.d/02locale">
+LANG="de_DE.utf8@euro"
+LC_COLLATE="C"
 </pre>
 
 <note>
@@ -215,19 +220,30 @@ currency symbol (€)
 </note>
 
 <p>
-It is also possible to set a system-wide locale for all users and programs:
+It's also possible, and pretty common especially in a more traditional UNIX
+environment, to leave the global settings unchanged, i.e. in the "<c>C</c>"
+locale. Users can still specify their preferred locale in their own shell RC
+file:
 </p>
 
-<pre caption="Setting the default system locale in /etc/env.d/02locale">
-LC_ALL="de_DE@euro"
-LANG="de_DE@euro"
+<pre caption="Setting the user locale in ~/.bashrc">
+export LANG="de_DE.utf8@euro"
+export LC_COLLATE="C"
 </pre>
 
 <p>
-A common practice is to use only per user locale settings and leave the
-default system locale unset. In this case system locale defaults to a
-special value <c>"C"</c>, which for historical reasons maps to the English
-locale.
+Another way of configuring system is to leave it in the default C locale, but
+enable UTF-8 character representation at the same time. This option is achieved
+using the following settings in <path>/etc/env.d/02locale</path>:
+</p>
+
+<pre caption="Using traditional C locale while specifying UTF-8">
+LC_CTYPE=de_DE.utf8
+</pre>
+
+<p>
+Using the above snippet, users will be able to see localized file names
+properly, while not being forced to your preferred language.
 </p>
 
 <p>
@@ -261,7 +277,7 @@ Now, verify that the changes have taken effect:
 </p>
 
 <pre caption="Verify env changes">
-$ <i>env | grep -i LC_</i>
+$ <i>locale</i>
 </pre>
 
 <p>
