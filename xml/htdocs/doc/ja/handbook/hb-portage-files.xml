@@ -4,14 +4,19 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-portage-files.xml,v 1.4 2006/03/16 17:11:24 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-portage-files.xml,v 1.5 2008/10/11 02:39:43 shindo Exp $ -->
 
 <sections>
 
-<version>1.7</version>
-<date>2005-06-27</date>
+<abstract>
+一度でもPortageのことを深く知りたいと思ったら、portageのファイルとデータがどこに保存されているか知るべきです。
+</abstract>
 
-<!-- Original revision: 1.11 -->
+
+<version>1.12</version>
+<date>2008-04-17</date>
+
+<!-- Original revision: 1.19 -->
 <!-- Translator: kobayashi -->
 
 
@@ -93,6 +98,8 @@ Portage設定変数を環境変数で定義することもできますが、私�
 </ul>
 
 <p>
+これらはファイルである必要はありません。
+パッケージごとにひとつのファイルを持つディレクトリであっても大丈夫です。
 <path>/etc/portage</path>ディレクトリに関するより多くの情報と作成できるファイルの完全なリストはPortageのmanページで見つけることができます。
 </p>
 
@@ -174,17 +181,6 @@ Portageにビルド済みパッケージで作業するよう指示したとき�
 </body>
 </subsection>
 <subsection>
-<title>RPMファイル</title>
-<body>
-
-<p>
-PortageはRPMファイルを扱うことができないにもかかわらず、<c>ebuild</c>コマンド(<uri link="?part=3&amp;chap=6">The Ebuild Application</uri>を参照)を使うことによって生成することができます。
-PortageがデフォルトでRPMファイルを保管する場所は<path>/usr/portage/rpm</path>で、RPMDIR変数で定義されます。
-</p>
-
-</body>
-</subsection>
-<subsection>
 <title>Portageデータベース</title>
 <body>
 
@@ -242,7 +238,7 @@ Portageは、各々のパッケージがemergeされるごとに専用のビル�
 <body>
 
 <p>
-初期設定ではPortageは、すべてのファイルをルート(<path>/</path>)を基点するファイルシステム名前空間にインストールしますが、ROOT環境変数を設定することで変更することができます。
+初期設定ではPortageは、すべてのファイルをルート（<path>/</path>）を基点するファイルシステム名前空間にインストールしますが、ROOT環境変数を設定することで変更することができます。
 これは、新規のビルドイメージを作成するときに役に立ちます。(訳注: ROOT環境変数を変更して、仮の名前空間にインストールして確認してみる場合など)
 </p>
 
@@ -257,9 +253,106 @@ Portageは、各々のパッケージがemergeされるごとに専用のビル�
 
 <p>
 Portageはebuildごとのログファイルを作成することができます。
-しかし、この機能は、PORT_LOGDIR変数にPortage(portageユーザ)が書き込み可能な位置を設定しているときだけ有効になります。
+しかし、この機能は、PORT_LOGDIR変数にPortage（portageユーザ）が書き込み可能な位置を設定しているときだけ有効になります。
 初期設定ではこの変数は設定されていません。
+もしPORT_LOGDIRが設定されていないならば、現在のロギングシステムではまったくビルドログを受け取れないでしょう。
+ですが、新しい<c>elog</c>から何らかのログを受け取っているかもしれません。
+PORT_LOGDIRをきちんと定義しelogを使用する場合、以下で説明されるように、ビルドログやelogによって保存されるログを取得することができます。
+
 </p>
+
+<p>
+Portageは<e>elog</e>の利用による、きめ細かなロギングの管理方法を提供します。
+</p>
+
+<ul>
+  <li>
+    PORTAGE_ELOG_CLASSES: これはどんな種類のメッセージが記録されるか設定するものです。
+    <c>info</c>、<c>warn</c>、 <c>error</c>、<c>log</c>、<c>qa</c>を、スペースで区切ってどんな組み合せでも利用できます。
+    <ul>
+      <li><c>info</c>: ebulidによって出力される"einfo"メッセージを記録する</li>
+      <li><c>warn</c>: ebulidによって出力される"ewarn"メッセージを記録する</li>
+      <li><c>error</c>: ebulidによって出力される"eerror"メッセージを記録する</li>
+      <li><c>log</c>: いくつかのebulidの中で見受けられる"elog"メッセージを記録する</li>
+      <li><c>qa</c>: ebulidによって出力される"QA Notice"メッセージを記録する</li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_SYSTEM: ここではログを処理するためのモジュールを選択します。
+    左側を空欄にすると、ロギングは行われません。
+    <c>save</c>、<c>custom</c>、<c>syslog</c>、<c>mail</c>、<c>save_summary</c>、<c>mail_summary</c>を、スペースで区切ってでどんな組合せでも利用できます。
+    elogを使用するためには、少なくともひとつのモジュールを選ばなくてはなりません。
+    <ul>
+      <li>
+<c>save</c>: これは$PORT_LOGDIRが定義されていないとき、<path>$PORT_LOGDIR/elog</path>、もしくは <path>/var/log/portage/elog</path>にパッケージごとひとつのログを保存します。
+      </li>
+      <li>
+<c>custom</c>: $PORTAGE_ELOG_COMMANDでユーザが定義したコマンドにすべてのメッセージを渡します。これについては後述します。
+      </li>
+      <li>
+<c>syslog</c>: インストールされているシステムロガーにメッセージを送ります。
+      </li>
+      <li>
+<c>mail</c>: $PORTAGE_ELOG_MAILURI（これについては後述します）でユーザが定義したメールサーバにすべてのメッセージを渡します。
+elogのメール機能は&gt;=<c>portage-2.1.1</c>が必要です。
+      </li>
+      <li>
+<c>save_summary</c>: <c>save</c>と似ていますが、$PORT_LOGDIRが定義されていないとき、すべてのメッセージを<path>$PORT_LOGDIR/elog/summary.log</path>か<path>/var/log/portage/elog/summary.log</path>に追記します。
+      </li>
+      <li>
+<c>mail_summary</c>: <c>mail</c>と似ていますが、emergeが終了すると、すべてのメッセージを1通のメールにして送信します。
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_COMMAND: これは<c>custom</c>が有効のときにのみ使用されます。
+    ここにはログメッセージを処理するためのコマンドを記述します。
+    次の2つの変数が使用できることに注意してください。
+    ${PACKAGE}はパッケージの名前とバージョンです。一方、${LOGFILE}はログファイルの絶対パスです。
+    ここでは使用方法の一例を示します。
+    <ul>
+      <li>
+        PORTAGE_ELOG_COMMAND="/path/to/logger -p '\${PACKAGE}' -f '\${LOGFILE}'"
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILURI: これは、アドレス、ユーザ、パスワード、メールサーバ、ポート番号といった、<c>mail</c>モジュールの設定を含みます。
+    デフォルトの設定は"root@localhost localhost"です。
+  </li>
+  <li>
+    これは特定のポート（デフォルトはポート25です）に対してユーザ名とパスワード認証を必要とするSMTPサーバの例です。
+    <ul>
+      <li>
+PORTAGE_ELOG_MAILURI="user@some.domain
+username:password@smtp.some.domain:995"
+      </li>
+    </ul>
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILFROM: ログメールの"from"アドレスを設定できます。
+    設定していな場合のデフォルトは"portage"です。
+  </li>
+  <li>
+    PORTAGE_ELOG_MAILSUBJECTでログメールの件名を設定できます。
+    次の2つの変数を使用できることに注目してください。
+    ${PACKAGE}は、パッケージの名前とバージョンを表示します。
+    一方、${HOST}は、Portageが動作しているホストの完全修飾ドメイン名になります。
+  </li>
+  <li>
+    次は使用方法の一例です。
+    <ul>
+      <li>
+PORTAGE_ELOG_MAILSUBJECT="package \${PACKAGE} was merged on \${HOST}
+with some messages"
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<impo>
+Portage-2.0.*で<c>enotice</c>を使用している場合、elogとは互換性がないため、完全にenoticeを削除しなければなりません。
+</impo>
 
 </body>
 </subsection>
