@@ -2,7 +2,7 @@
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- English CVS version: 1.48 -->
+<!-- English CVS version: 1.49 -->
 
 <guide link="/doc/zh_cn/guide-localization.xml" lang="zh_cn">
 <title>Gentoo Linux本地化指南</title>
@@ -35,8 +35,8 @@
 本指南帮助用户将他们的Gentoo Linux发行版本地化为任何欧洲的locale。本文是由德语文档翻译而来的，因此它以德国作为案例分析。其中包含欧元货币符号的使用配置。
 </abstract>
 
-<version>1.36</version>
-<date>2007-10-04</date>
+<version>1.37</version>
+<date>2007-10-10</date>
 
 <chapter>
 <title>时区</title>
@@ -115,15 +115,15 @@ Locale的设置保存在环境变量中。典型情况下设置在<path>/etc/env
   <th>说明</th>
 </tr>
 <tr>
-  <ti>LC_ALL</ti>
+  <ti>LANG</ti>
   <ti>
-    一次性定义全部locale设置。这是最高优先级的locale设置，将覆盖所有其它设置。
+    一次性定义全部locale设置，但是允许通过下面的LC_*设置进一步作单项定制。
   </ti>
 </tr>
 <tr>
   <ti>LC_COLLATE</ti>
   <ti>
-    定义按字母排序字符串。例如这会影响目录列表的分类显示。
+    定义字符串的字母排序方式。例如这会影响目录列表的分类显示。
   </ti>
 </tr>
 <tr>
@@ -157,23 +157,28 @@ Locale的设置保存在环境变量中。典型情况下设置在<path>/etc/env
   <ti>定义默认的纸张尺寸。</ti>
 </tr>
 <tr>
-  <ti>LANG</ti>
+  <ti>LC_ALL</ti>
   <ti>
-    一次性定义全部locale设置。此设置能被单个LC_*或者甚至LC_ALL的设置覆盖。
+    一个用于覆盖所有其它设置的特殊变量。
   </ti>
 </tr>
 </table>
 
 <note>
-尽管大多数程序只根据LC_ALL来运行，不过如果设置了LC_ALL而没有设置LANG，有些程序还是会不遵守规矩。如果想玩得安全一点，将它们<e>两个一起</e>设置。
+有些程序在编写时假定按照传统的英语字母表顺序排序，而有些locale，最明显的是爱沙尼亚语的，使用一种不同的排序方式。因此在作系统全局设置时，建议明确地将LC_COLLATE设定为C。
 </note>
 
+<warn>
+基于同样的原因，强烈反对使用LC_ALL。除非作测试请不要使用它，并且决不要把它设置在启动文件中。
+</warn>
+
 <p>
-最典型的情况是用户只在用户级设置LANG变量，可能还有LC_CTYPE，通过添加定义到shell启动文件中，手动从命令行定义环境变量。
+最典型的情况是用户只在全局基础上设置LANG变量：
 </p>
 
-<pre caption="在~/.bashrc中设置用户的locale">
-export LANG="de_DE@euro"
+<pre caption="在~/etc/env.d/02locale中设置默认的系统locale">
+LANG="de_DE@euro"
+LC_COLLATE="C"
 </pre>
 
 <note>
@@ -181,16 +186,24 @@ export LANG="de_DE@euro"
 </note>
 
 <p>
-也可能为所有用户和程序设置一个系统全局locale：
+也有可能，特别在一个较传统的UNIX环境中很普遍，保留全局设置不变，比如locale为“<c>C</c>”。用户仍可以在他们自己的shell RC文件中指定首选的locale：
 </p>
 
-<pre caption="在/etc/env.d/02locale中设置默认的系统locale">
-LC_ALL="de_DE@euro"
-LANG="de_DE@euro"
+<pre caption="在~/.bashrc中设置用户locale">
+export LANG="de_DE@euro"
+export LC_COLLATE="C"
 </pre>
 
 <p>
-通常的做法是只使用每个用户的locale设置，而不设置默认的系统locale。这种情况下系统locale默认为一个特定值<c>"C"</c>，由于历史原因这个值映射为英语locale。
+另一种系统配置方式是保留默认的C locale，同时要能够表现UTF-8字符。这种选择可以通过在<path>/etc/env.d/02locale</path>中使用下述设置来实现：
+</p>
+
+<pre caption="使用传统的C locale同时指定UTF-8">
+LC_CTYPE=de_DE.utf8
+</pre>
+
+<p>
+使用以上所述的做法，用户将能够正确地看到本地化的文件名，而不是被强制为你首选的语言。
 </p>
 
 <p>
@@ -218,7 +231,7 @@ $ <i>source ~/.bashrc</i>
 </p>
 
 <pre caption="检验环境更改">
-$ <i>env | grep -i LC_</i>
+$ <i>locale</i>
 </pre>
 
 <p>
