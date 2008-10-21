@@ -1,21 +1,18 @@
 http://bugs.gentoo.org/221281
 temacs segfaults in dump-emacs under Linux 2.6.25
-Patch backported from Emacs 22, it comprises the following changes:
+Patch backported from Emacs 22 and upstream bug 900.
+It comprises parts of the following changes:
+
+2008-10-21  Jan Djärv  <jan.h.d@swipnet.se>
+
+	* emacs.c (main): Unconditionally set PER_LINUX32 and exec
+	temacs when dumping if HAVE_PERSONALITY_LINUX32 is defined
 
 2005-07-01  Masatake YAMATO  <jet@gyve.org>
 
 	* emacs.c (main): Passing ADD_NO_RANDOMIZE to `personality'.
 
 2004-10-20  Jan Djärv  <jan.h.d@swipnet.se>
-
-	* emacs.c (my_heap_start, heap_bss_diff, MAX_HEAP_BSS_DIFF):
-	New variables and constant.
-	(main): Calculate heap_bss_diff.  If we are dumping and the
-	heap_bss_diff is greater than MAX_HEAP_BSS_DIFF, set PER_LINUX32
-	and exec ourself again.
-
-	* lastfile.c: Make my_endbss and my_endbss_static available on all
-	platforms.
 
 	* configure.in (HAVE_PERSONALITY_LINUX32): New test if PER_LINUX32
 	can be set.
@@ -53,67 +50,21 @@ Patch backported from Emacs 22, it comprises the following changes:
  #undef HAVE_LIBPTHREADS
 --- emacs-21.4-orig/src/emacs.c	2002-08-29 21:27:07.000000000 +0200
 +++ emacs-21.4/src/emacs.c	2008-05-11 00:26:38.000000000 +0200
-@@ -61,6 +61,10 @@
+@@ -61,6 +61,13 @@
  #include <sys/resource.h>
  #endif
  
 +#ifdef HAVE_PERSONALITY_LINUX32
 +#include <sys/personality.h>
++#ifndef ADDR_NO_RANDOMIZE
++#define ADDR_NO_RANDOMIZE 0x0040000
++#endif
 +#endif
 +
  #ifndef O_RDWR
  #define O_RDWR 2
  #endif
-@@ -181,6 +185,16 @@
-    Tells GC how to save a copy of the stack.  */
- char *stack_bottom;
- 
-+/* The address where the heap starts (from the first sbrk (0) call).  */
-+static void *my_heap_start;
-+
-+/* The gap between BSS end and heap start as far as we can tell.  */
-+static unsigned long heap_bss_diff;
-+
-+/* If the gap between BSS end and heap start is larger than this we try to
-+   work around it, and if that fails, output a warning in dump-emacs.  */
-+#define MAX_HEAP_BSS_DIFF (1024*1024)
-+
- #ifdef HAVE_WINDOW_SYSTEM
- extern Lisp_Object Vwindow_system;
- #endif /* HAVE_WINDOW_SYSTEM */
-@@ -692,7 +706,11 @@
-       free (malloc_state_ptr);
-     }
-   else
--    malloc_using_checking = getenv ("MALLOC_CHECK_") != NULL;
-+    {
-+      if (my_heap_start == 0)
-+	my_heap_start = sbrk (0);
-+      malloc_using_checking = getenv ("MALLOC_CHECK_") != NULL;
-+    }
- }
- 
- void (*__malloc_initialize_hook) () = malloc_initialize_hook;
-@@ -725,6 +743,18 @@
-   stack_base = &dummy;
- #endif
- 
-+  if (!initialized)
-+    {
-+      extern char my_endbss[];
-+      extern char *my_endbss_static;
-+
-+      if (my_heap_start == 0)
-+	my_heap_start = sbrk (0);
-+
-+      heap_bss_diff = (char *)my_heap_start
-+	- (my_endbss > my_endbss_static ? my_endbss : my_endbss_static);
-+    }
-+
- #ifdef LINUX_SBRK_BUG
-   __sbrk (1);
- #endif
-@@ -763,6 +793,33 @@
+@@ -763,6 +770,28 @@
  	}
      }
  
@@ -123,42 +74,22 @@ Patch backported from Emacs 22, it comprises the following changes:
 +  if (!initialized
 +      && (strcmp (argv[argc-1], "dump") == 0
 +	  || strcmp (argv[argc-1], "bootstrap") == 0)
-+      && heap_bss_diff > MAX_HEAP_BSS_DIFF)
++      && !getenv ("EMACS_HEAP_EXEC"))
 +    {
-+      if (! getenv ("EMACS_HEAP_EXEC"))
-+	{
-+	  /* Set this so we only do this once.  */
-+	  putenv("EMACS_HEAP_EXEC=true");
++      /* Set this so we only do this once.  */
++      putenv ("EMACS_HEAP_EXEC=true");
 +
-+	  /* A flag to turn off address randomization which is introduced
-+	   in linux kernel shipped with fedora core 4 */
-+#define ADD_NO_RANDOMIZE 0x0040000
-+	  personality (PER_LINUX32 | ADD_NO_RANDOMIZE);
-+#undef  ADD_NO_RANDOMIZE
++      /* A flag to turn off address randomization which is introduced
++	 in linux kernel shipped with fedora core 4 */
++      personality (PER_LINUX32 | ADDR_NO_RANDOMIZE);
 +
-+	  execvp (argv[0], argv);
++      execvp (argv[0], argv);
 +
-+	  /* If the exec fails, try to dump anyway.  */
-+	  perror ("execvp");
-+	}
++      /* If the exec fails, try to dump anyway.  */
++      perror ("execvp");
 +    }
 +#endif /* HAVE_PERSONALITY_LINUX32 */
 +
  /* Map in shared memory, if we are using that.  */
  #ifdef HAVE_SHM
    if (argmatch (argv, argc, "-nl", "--no-shared-memory", 6, NULL, &skip_args))
---- emacs-21.4-orig/src/lastfile.c	1999-01-17 20:16:08.000000000 +0100
-+++ emacs-21.4/src/lastfile.c	2008-05-11 00:01:55.000000000 +0200
-@@ -40,7 +40,6 @@
- 
- char my_edata[] = "End of Emacs initialized data";
- 
--#ifdef WINDOWSNT
- /* Help unexec locate the end of the .bss area used by Emacs (which
-    isn't always a separate section in NT executables).  */
- char my_endbss[1];
-@@ -50,4 +49,3 @@
-    of the bss area used by Emacs.  */
- static char _my_endbss[1];
- char * my_endbss_static = _my_endbss;
--#endif
