@@ -713,8 +713,16 @@
                <body><table>
                 <xsl:for-each select="$planet//item[substring(pubDate,1,16)=$pubDate  and  not(contains(link, 'http://www.gentoo.org/news'))]">
                  <tr>
-                  <ti><xsl:value-of select="substring-before(title,': ')"/></ti>
-                  <ti><uri link="{link}"><xsl:value-of select="substring-after(title,': ')"/></uri></ti>
+                  <xsl:choose>
+                   <xsl:when test="contains(title,': ')"> 
+                    <ti><xsl:value-of select="substring-before(title,': ')"/></ti>
+                    <ti><uri link="{link}"><xsl:value-of select="substring-after(title,': ')"/></uri></ti>
+                   </xsl:when>
+                   <xsl:otherwise>
+                    <ti><xsl:value-of select="title"/></ti>
+                    <ti><uri link="{link}">. . .</uri></ti>
+                   </xsl:otherwise>
+                  </xsl:choose>
                  </tr>
                 </xsl:for-each>
                </table></body>
