@@ -1,4 +1,4 @@
-Debian-Patch: geometry-26kernel.diff
+Debian-Patch: geometry-26kernel.diff (from 0.97-47)
 
     Date: 2005-11-11
     Author: Otavio Salvador
@@ -6,8 +6,9 @@ Debian-Patch: geometry-26kernel.diff
      Put geometry discover inside of grub code since kernel 2.6
      doesn't do that anymore.
 
---- grub-0.95/lib/device.c.26geom	2004-11-30 16:33:00.186025728 -0500
-+++ grub-0.95/lib/device.c	2004-11-30 16:45:09.073218032 -0500
+diff -ur grub-0.97.old/lib/device.c grub-0.97/lib/device.c
+--- grub-0.97.old/lib/device.c	2008-05-20 14:05:52.000000000 +0200
++++ grub-0.97/lib/device.c	2008-05-20 14:07:36.000000000 +0200
 @@ -131,6 +131,152 @@
  #include <shared.h>
  #include <device.h>
@@ -161,32 +162,30 @@ Debian-Patch: geometry-26kernel.diff
  /* Get the geometry of a drive DRIVE.  */
  void
  get_drive_geometry (struct geometry *geom, char **map, int drive)
-@@ -151,21 +297,16 @@
+@@ -151,19 +297,15 @@
  #if defined(__linux__)
    /* Linux */
    {
 -    struct hd_geometry hdg;
-     unsigned long nr;
--    
+     unsigned long long nr;
+     
 -    if (ioctl (fd, HDIO_GETGEO, &hdg))
 -      goto fail;
- 
-     if (ioctl (fd, BLKGETSIZE, &nr))
+-
+     if (ioctl (fd, BLKGETSIZE64, &nr))
        goto fail;
      
      /* Got the geometry, so save it. */
 -    geom->cylinders = hdg.cylinders;
 -    geom->heads = hdg.heads;
 -    geom->sectors = hdg.sectors;
-     geom->total_sectors = nr;
--    
 +    get_linux_geometry(fd, geom);
 +    if (!geom->heads && !geom->cylinders && !geom->sectors)
-+        goto fail;
++      goto fail;
+     geom->total_sectors = nr / 512;
+     
      goto success;
-   }
- 
-@@ -841,6 +982,7 @@
+@@ -873,6 +1015,7 @@
  {
    char dev[PATH_MAX];	/* XXX */
    int fd;
@@ -194,7 +193,7 @@ Debian-Patch: geometry-26kernel.diff
    
    if ((partition & 0x00FF00) != 0x00FF00)
      {
-@@ -874,35 +1016,13 @@
+@@ -905,35 +1048,13 @@
        errnum = ERR_NO_PART;
        return 0;
      }
