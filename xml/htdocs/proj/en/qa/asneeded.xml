@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.16 2008/07/31 09:41:56 flameeyes Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/asneeded.xml,v 1.17 2008/11/15 16:20:12 flameeyes Exp $ -->
 
 <guide link="/proj/en/qa/asneeded.xml" lang="en">
 <title>--as-needed introduction and fixing guide</title>
 
 <author title="Author">
-  <mail link="flameeyes@gentoo.org">Diego Pettenò</mail>
+  <mail link="flameeyes@gentoo.org">Diego E. Pettenò</mail>
 </author>
 
 <abstract>
@@ -18,8 +18,8 @@ steps to fix simple cases where --as-needed fails to build a package.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.11</version>
-<date>2008-07-31</date>
+<version>0.12</version>
+<date>2008-11-15</date>
 
 <chapter> <!-- Introduction -->
 <title>Introduction</title>
@@ -145,6 +145,53 @@ As <c>--as-needed</c> depends not only on the way the package you're building is
 linked but also its dependencies, there are quite a few packages that were
 silently patched and fixed and might require rebuilding. Please make sure to
 rebuild the dependencies failing to link against before filing a bug.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Forced --as-needed</title>
+
+<body>
+
+<p>
+Using <c>--as-needed</c> through LDFLAGS is the suggested method for standard
+users and users who don't want to have too many problems with packages failing
+to build. For developers, power users, and people who want to stress test
+buildsystems, a different strategy is also available, that forces each and every
+build to use <c>--as-needed</c> during the linking phase, as long as the
+<c>gcc</c> frontend is used as linker.
+</p>
+
+<p>
+The forced approach is useful to test packages that don't respect the LDFLAGS
+variable or packages that incorrectly filter the flag (see the next section for
+details about that), and to work around the <c>libtool</c> reordering bug. A
+compiler set to force <c>--as-needed</c> is easily reversed so that if a package
+is needed to be built without the flag a single switch is required.
+</p>
+
+<p>
+To force the <c>--as-needed</c> flag on the compiler, GCC spec files are used,
+creating a new profile for the compiler that always use it during linking
+phase. For any version of <c>gcc</c> it is possible to build the modified spec
+file using the following series of commands
+</p>
+
+<pre caption="commands to set up a forced --as-needed compiler">
+# <i>export SPECSFILE=$(dirname "$(gcc -print-libgcc-file-name)")/asneeded.specs</i>
+# <i>export CURRPROFILE=/etc/env.d/gcc/$(gcc-config -c)</i>
+# <i>gcc -dumpspecs | sed -e '/link:/,+1 s:--eh-frame-hdr:\0 --as-needed:' &gt; "$SPECSFILE"</i>
+# <i>sed "${CURRPROFILE}" -e '1i\GCC_SPECS='$SPECSFILE &gt; "${CURRPROFILE}-asneeded"</i>
+# <i>gcc-config "$(basename "${CURRPROFILE}")-asneeded"</i>
+# <i>source /etc/profile</i>
+</pre>
+
+<p>
+To switch between the <c>--as-needed</c> and standard compilers, just use
+<c>gcc-config</c> like they were different compiler versions or hardened and
+standard compilers.
 </p>
 
 </body>
@@ -424,7 +471,7 @@ the libraries get fed into LDFLAGS variable (which is incorrect).
 
 <p>
 There exists a class of applications at the moment that break when using
--Wl,--as-needed.  These applications are not at fault, but rather the linker
+<c>--as-needed</c>.  These applications are not at fault, but rather the linker
 itself.  The linker is unable to detect dependencies between the initializers
 and deconstructors (.init/.fini ELF sections) when working with C++ code.  As
 such, it may discard libraries when none of the symbols are used from it, thus
