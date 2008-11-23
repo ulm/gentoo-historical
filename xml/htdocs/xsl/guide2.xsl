@@ -34,7 +34,7 @@
 
 <!-- Global definition of style parameter -->
 <xsl:param name="style">0</xsl:param>
-<xsl:param name="newsitemcount">6</xsl:param>
+<xsl:param name="newsitemcount">9</xsl:param>
 
 <!-- Category from metadoc -->
 <xsl:param name="catid">0</xsl:param>
@@ -603,11 +603,7 @@
                 configurability and a top-notch user and developer
                 community are all hallmarks of the Gentoo experience.
                 To learn more, read our <b><a href="/main/en/about.xml">about
-                page</a></b>.<br/><br/>
-                This is how our home page could look like if bug
-                <a href="http://bugs.gentoo.org/141909">#141909</a> were solved so that GLSAs,
-                latest packages and blog posts could be featured here.<br/>
-                </span>
+                page</a></b>.</span>
               </p>
 <!--
               <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;=$newsitemcount]/text()">
@@ -619,7 +615,7 @@
               </xsl:for-each>
 -->
 
-      <xsl:variable name="GLSAs" select="document('http://gentoo.neysx.org/dyn/glsa-index.xml')"/>
+      <xsl:variable name="GLSAs" select="document('/dyn/glsa-index2.xml')"/>
       <xsl:variable name="new-packages" select="document('/dyn/new-packages.xml')"/>
       <xsl:variable name="planet" select="document('/dyn/planet.xml')"/>
 
@@ -633,9 +629,40 @@
 
         <!-- GLSAs from my own glsa-index.xml, i.e. not Gentoo's -->
         <xsl:for-each select="$GLSAs//glsa">
-         <xsl:sort select="date" order="descending"/>
+         <!-- <xsl:sort select="date" order="descending"/> Can't sort on English dates, they should be sorted in the source file -->
           <xsl:if test="position() &lt;=$newsitemcount">
-           <newsitem date="{date}" glsaid="{@id}"/>
+            <!-- convert bloody dates like 'July 29, 2006: 02' to YYYY-MM-DD -->
+            <xsl:variable name="yydate">
+              <xsl:choose>
+                <xsl:when test="string-length(substring(date,1,10))=10 and substring(date,5,1)='-' and substring(date,8,1)='-' and contains('|01|02|03|04|05|06|07|08|09|10|11|12|',concat('|',substring(date,6,2),'|'))">
+                  <xsl:value-of select="substring(date,1,10)"/>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:value-of select="substring(substring-after(substring-after(date,' '),' '),1,4)"/>
+                  <xsl:text>-</xsl:text>
+                  <xsl:choose>
+                   <xsl:when test="substring-before(date,' ')='January'">01</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='February'">02</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='March'">03</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='April'">04</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='May'">05</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='June'">06</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='July'">07</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='August'">08</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='September'">09</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='October'">10</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='November'">11</xsl:when>
+                   <xsl:when test="substring-before(date,' ')='December'">12</xsl:when>
+                   <xsl:otherwise>00</xsl:otherwise>
+                  </xsl:choose>
+                  <xsl:text>-</xsl:text>
+                  <xsl:value-of select="substring-before(substring-after(date,' '),',')"/>
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:variable>
+            <xsl:if test="func:is-date($yydate)='YES'">
+              <newsitem date="{$yydate}" glsaid="{@id}"/>
+            </xsl:if>
           </xsl:if>
         </xsl:for-each>
 
@@ -675,9 +702,40 @@
        </news>
       </xsl:variable>
 
+      <xsl:variable name="all-news1" xmlns="">
+       <news>
+        <xsl:for-each select="exslt:node-set($all-news)/news/newsitem">
+        <xsl:sort select="@date" order="descending"/>
+          <xsl:copy-of select="."/>
+        </xsl:for-each>
+       </news>
+      </xsl:variable>
+
+      <xsl:variable name="all-news0" xmlns="">
+       <news>
+        <xsl:for-each select="exslt:node-set($all-news1)/news/newsitem">
+          <xsl:choose>
+            <xsl:when test="@link or @package or @glsaid">
+              <xsl:copy-of select="."/>
+            </xsl:when>
+
+            <xsl:when test="@planet">
+             <xsl:if test="not(preceding-sibling::newsitem[1]/@planet)">
+             <!-- group consecutive blog days into a single item -->
+              <newsitem date="{@date}" blog='1'>
+                <xsl:copy-of select="."/>
+                <xsl:apply-templates select="following-sibling::*[position()=1 and @planet]" mode="moreblogs"/>
+              </newsitem>
+             </xsl:if>
+            </xsl:when>
+          </xsl:choose>
+        </xsl:for-each>
+       </news>
+      </xsl:variable>
+
       <!-- Display news items -->
       
-      <xsl:for-each select="exslt:node-set($all-news)/news/newsitem">
+      <xsl:for-each select="exslt:node-set($all-news0)/news/newsitem">
        <xsl:sort select="@date" order="descending"/>
 
        <!-- Build a newsitem that can be passed to the template that displays a newsitem -->
@@ -704,26 +762,31 @@
              </xsl:choose>
             </xsl:when>
 
-            <xsl:when test="@planet">
+            <xsl:when test="@blog">
              <xsl:attribute name="category">planet</xsl:attribute>
-             <xsl:variable name="pubDate" select="@planet"/>
                <title>Blog posts</title>
                <date><xsl:value-of select="@date"/></date>
+               <xsl:if test="@date != ./newsitem[position()=last()]/@date">
+                 <until><xsl:value-of select="./newsitem[position()=last()]/@date"/></until>
+               </xsl:if>
                <poster>planet.gentoo.org</poster>
                <body><table>
-                <xsl:for-each select="$planet//item[substring(pubDate,1,16)=$pubDate  and  not(contains(link, 'http://www.gentoo.org/news'))]">
-                 <tr>
-                  <xsl:choose>
-                   <xsl:when test="contains(title,': ')"> 
-                    <ti><xsl:value-of select="substring-before(title,': ')"/></ti>
-                    <ti><uri link="{link}"><xsl:value-of select="substring-after(title,': ')"/></uri></ti>
-                   </xsl:when>
-                   <xsl:otherwise>
-                    <ti><xsl:value-of select="title"/></ti>
-                    <ti><uri link="{link}">. . .</uri></ti>
-                   </xsl:otherwise>
-                  </xsl:choose>
-                 </tr>
+               <xsl:for-each select="./newsitem">
+                 <xsl:variable name="pubDate" select="@planet"/>
+                  <xsl:for-each select="$planet//item[substring(pubDate,1,16)=$pubDate  and  not(contains(link, 'http://www.gentoo.org/news'))]">
+                   <tr>
+                    <xsl:choose>
+                     <xsl:when test="contains(title,': ')"> 
+                      <ti><xsl:value-of select="substring-before(title,': ')"/></ti>
+                      <ti><uri link="{link}"><xsl:value-of select="substring-after(title,': ')"/></uri></ti>
+                     </xsl:when>
+                     <xsl:otherwise>
+                      <ti><xsl:value-of select="title"/></ti>
+                      <ti><uri link="{link}">. . .</uri></ti>
+                     </xsl:otherwise>
+                    </xsl:choose>
+                   </tr>
+                  </xsl:for-each>
                 </xsl:for-each>
                </table></body>
             </xsl:when>
@@ -815,6 +878,13 @@
 
 </body>
 </html>
+</xsl:template>
+
+<xsl:template match="newsitem" mode="moreblogs">
+  <xsl:copy-of select="."/>
+  <xsl:if test="following-sibling::*[1]/@planet">
+  <xsl:apply-templates select="following-sibling::newsitem[position()=1 and @planet]" mode="moreblogs"/>
+  </xsl:if>
 </xsl:template>
 
 <xsl:template name="copyright-footer">
@@ -2061,7 +2131,14 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       <b><xsl:value-of select="$thenews/title"/></b>
       <br/>
       <font size="0.90em">
-      Posted on <xsl:copy-of select="func:format-date($thenews/date)"/>
+       <xsl:choose>
+         <xsl:when test="$thenews/until">
+           Posted between <xsl:copy-of select="func:format-date($thenews/date)"/> and <xsl:copy-of select="func:format-date($thenews/until)"/> 
+         </xsl:when>
+         <xsl:otherwise>
+           Posted on <xsl:copy-of select="func:format-date($thenews/date)"/>
+         </xsl:otherwise>
+       </xsl:choose>
        <xsl:variable name="poster">
         <xsl:call-template name="smart-mail">
          <xsl:with-param name="mail" select="$thenews/poster"/>
