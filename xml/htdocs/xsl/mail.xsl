@@ -61,6 +61,16 @@
      <xsl:copy-of select="realname"/>
      <xsl:copy-of select="email"/>
     </user>
+    <!-- Add another entry for each alias, much easier later on to find right email/name based on an alias -->
+    <xsl:for-each select="alias">
+      <user username="{.}">
+       <xsl:if test="translate(../status,'TIRED','tired')='retired'">
+        <xsl:attribute name="retired"/>
+       </xsl:if>
+       <xsl:copy-of select="../realname"/>
+       <xsl:copy-of select="../email"/>
+      </user>
+    </xsl:for-each>
   </xsl:for-each>
  </devs>
 </xsl:template>
