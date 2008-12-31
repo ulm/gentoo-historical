@@ -82,7 +82,7 @@ tar -jcf gcc-${sgver}-uclibc-patches-${UCLIBC_VER}.tar.bz2 \
 tar -jcf gcc-${sgver}-piepatches-v${PIE_VER}.tar.bz2 \
 	-C tmp piepatch || exit 1 ; }
 [[ -n ${SPECS_VER}  ]] && {
-tar -jcf gcc-${sgver}-default-specs-${SPECS_VER}.tar.bz2 \
+tar -jcf gcc-${sgver}-specs-${SPECS_VER}.tar.bz2 \
 	-C tmp specs || exit 1 ; }
 [[ -n ${PP_VER}     ]] && {
 mv tmp/ssp/protector.patch tmp/ssp/gcc-${gver}-ssp.patch
