@@ -1926,20 +1926,11 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     </p>
 
     <xsl:choose>
-      <xsl:when test="$thenews/@category='alpha'">
-        <img class="newsicon" src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
-      </xsl:when>
-      <xsl:when test="$thenews/@category='kde'">
-        <img class="newsicon" src="/images/icon-kde.png" alt="KDE"/>
-      </xsl:when>
       <xsl:when test="$thenews/@category='gentoo'">
         <img class="newsicon" src="/images/icon-gentoo.png" alt="gentoo"/>
       </xsl:when>
       <xsl:when test="$thenews/@category='main'">
         <img class="newsicon" src="/images/icon-stick.png" alt="stick man"/>
-      </xsl:when>
-      <xsl:when test="$thenews/@category='ibm'">
-        <img class="newsicon" src="/images/icon-ibm.gif" alt="ibm"/>
       </xsl:when>
       <xsl:when test="$thenews/@category='linux'">
         <img class="newsicon" src="/images/icon-penguin.png" alt="tux"/>
@@ -1950,14 +1941,24 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       <xsl:when test="$thenews/@category='plans'">
         <img class="newsicon" src="/images/icon-clock.png" alt="Clock"/>
       </xsl:when>
+      <xsl:when test="$thenews/@category='planet'">
+        <img class="newsicon" src="/images/G-Earth.jpg" alt="Planet Earth"/>
+      </xsl:when>
+      <!-- old ones, kept to display very very old news items -->
+      <xsl:when test="$thenews/@category='alpha'">
+        <img class="newsicon" src="/images/icon-alpha.gif" alt="AlphaServer GS160"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='kde'">
+        <img class="newsicon" src="/images/icon-kde.png" alt="KDE"/>
+      </xsl:when>
+      <xsl:when test="$thenews/@category='ibm'">
+        <img class="newsicon" src="/images/icon-ibm.gif" alt="ibm"/>
+      </xsl:when>
       <xsl:when test="$thenews/@category='nvidia'">
         <img class="newsicon" src="/images/icon-nvidia.png" alt="Nvidia"/>
       </xsl:when>
       <xsl:when test="$thenews/@category='freescale'">
         <img class="newsicon" src="/images/icon-freescale.gif" alt="Freescale Semiconductor"/>
-      </xsl:when>
-      <xsl:when test="$thenews/@category='planet'">
-        <img class="newsicon" src="/images/G-Earth.jpg" alt="Planet Earth"/>
       </xsl:when>
     </xsl:choose>
 
