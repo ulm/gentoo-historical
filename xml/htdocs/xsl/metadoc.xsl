@@ -244,8 +244,11 @@
           </xsl:otherwise>
         </xsl:choose>
       </xsl:when>
+      <xsl:when test="$dlink/project">
+        <uri link="{$link}"><xsl:value-of select="$dlink/*[1]/name"/></uri>
+      </xsl:when>
       <xsl:otherwise>
-        <uri link="{$link}"><xsl:value-of select="exslt:node-set($dlink)//title[1]"/></uri>
+        <uri link="{$link}"><xsl:value-of select="$dlink/*[1]/title"/></uri>
       </xsl:otherwise>
     </xsl:choose>
     <xsl:copy-of select="$footnote"/>
@@ -260,29 +263,36 @@
   <xsl:param name="vpart"/>
   <xsl:param name="vchap"/>
   <xsl:variable name="link"><xsl:value-of select="exslt:node-set($metadoc)/metadoc/files/file[@id = $fileid]/text()"/></xsl:variable>
+  <xsl:variable name="dlink" select="document($link)"/>
 
   <xsl:choose>
     <xsl:when test="$vpart">
       <xsl:choose>
         <xsl:when test="$vchap">
-          <xsl:variable name="master-hb" select="document($link)"/>
           <xsl:choose>
-            <xsl:when test="$master-hb/book/part[position()=$vpart]/chapter[position()=$vchap]/abstract">
-              <xsl:value-of select="$master-hb/book/part[position()=$vpart]/chapter[position()=$vchap]/abstract"/>
+            <xsl:when test="$dlink/book/part[position()=$vpart]/chapter[position()=$vchap]/abstract">
+              <xsl:value-of select="$dlink/book/part[position()=$vpart]/chapter[position()=$vchap]/abstract"/>
             </xsl:when>
             <xsl:otherwise>
               <!-- No abstract in HB master file, get it from the included file -->
-              <xsl:value-of select="document($master-hb/book/part[position()=$vpart]/chapter[position()=$vchap]/include/@href)/*[1]/abstract"/>
+              <xsl:value-of select="document($dlink/book/part[position()=$vpart]/chapter[position()=$vchap]/include/@href)/*[1]/abstract"/>
             </xsl:otherwise>
           </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:value-of select="document($link)/book/part[position() = $vpart]/abstract"/>
+          <xsl:value-of select="$dlink/book/part[position() = $vpart]/abstract"/>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:value-of select="document($link)/*[1]/abstract"/>
+      <xsl:choose>
+       <xsl:when test="$dlink/project">
+        <xsl:value-of select="$dlink/*[1]/description"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:value-of select="$dlink/*[1]/abstract"/>
+       </xsl:otherwise>
+      </xsl:choose>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -493,7 +503,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.40 2008/03/09 21:17:04 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.41 2009/01/03 18:19:14 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -516,7 +526,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.40 2008/03/09 21:17:04 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.41 2009/01/03 18:19:14 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:when test="string-length($pv)=0">?!?</xsl:when>
