@@ -548,22 +548,57 @@
                </xsl:if>
                <poster>planet.gentoo.org</poster>
                <body><table>
-               <xsl:for-each select="./newsitem">
-                 <xsl:variable name="pubDate" select="@planet"/>
-                  <xsl:for-each select="$planet//item[substring(pubDate,1,16)=$pubDate  and  not(contains(link, 'http://www.gentoo.org/news'))]">
-                   <tr>
-                    <xsl:choose>
-                     <xsl:when test="contains(title,': ')">
-                      <ti><xsl:value-of select="substring-before(title,': ')"/></ti>
-                      <ti><uri link="{link}"><xsl:value-of select="substring-after(title,': ')"/></uri></ti>
-                     </xsl:when>
-                     <xsl:otherwise>
-                      <ti><xsl:value-of select="title"/></ti>
-                      <ti><uri link="{link}">. . .</uri></ti>
-                     </xsl:otherwise>
-                    </xsl:choose>
-                   </tr>
+                <xsl:variable name="blogentries" xmlns="">
+                  <xsl:for-each select="./newsitem">
+                   <xsl:variable name="pubDate" select="@planet"/>
+                    <xsl:for-each select="$planet//item[substring(pubDate,1,16)=$pubDate  and  not(contains(link, 'http://www.gentoo.org/news'))]">
+                     <tr>
+                      <xsl:choose>
+                       <xsl:when test="contains(title,': ')">
+                        <ti><xsl:value-of select="substring-before(title,': ')"/></ti>
+                        <ti><uri link="{link}"><xsl:value-of select="substring-after(title,': ')"/></uri></ti>
+                       </xsl:when>
+                       <xsl:otherwise>
+                        <ti><xsl:value-of select="title"/></ti>
+                        <ti><uri link="{link}">. . .</uri></ti>
+                       </xsl:otherwise>
+                      </xsl:choose>
+                     </tr>
+                    </xsl:for-each>
                   </xsl:for-each>
+                </xsl:variable>
+
+                <xsl:variable name="sortedblogentries" xmlns="">
+                 <xsl:for-each select="exslt:node-set($blogentries)/tr">
+                 <xsl:sort select="ti[1]"/>
+                   <tr>
+                    <xsl:copy-of select="ti"/>
+                   </tr>
+                 </xsl:for-each>
+                </xsl:variable>
+
+        <xsl:message><xsl:value-of select="concat('&#10;', 'New group&#10;')"/></xsl:message>
+                <xsl:for-each select="exslt:node-set($sortedblogentries)/tr">
+                  <xsl:variable name="blogposter" select="ti[1]"/>
+                   <tr>
+                    <xsl:message><xsl:value-of select="concat('&#10;', preceding-sibling::tr[1]/ti[1],':-1:',preceding-sibling::tr[1]/ti[2],'&#10;')"/></xsl:message>
+                    <xsl:message><xsl:value-of select="concat(ti[1],'::',ti[2],'&#10;')"/></xsl:message>
+                    <xsl:message><xsl:value-of select="concat(following-sibling::tr[1]/ti[1],':+1:',following-sibling::tr[1]/ti[2],'&#10;')"/></xsl:message>
+                    <xsl:choose>
+                      <xsl:when test="preceding-sibling::tr[1]/ti[1]/text()=$blogposter">
+                    <xsl:message><xsl:value-of select="concat('&#9;Inside block','&#10;')"/></xsl:message>
+                      </xsl:when>
+                      <xsl:when test="following-sibling::tr[1]/ti[1]/text()=$blogposter">
+                       <ti rowspan="{1+count(following-sibling::tr[ti[1]/text()=$blogposter])}"><xsl:value-of select="ti[1]"/></ti>
+                    <xsl:message><xsl:value-of select="concat('&#9;New block, count=', 1+count(following-sibling::tr[ti[1]/text()=$blogposter]), '&#10;')"/></xsl:message>
+                      </xsl:when>
+                      <xsl:otherwise>
+                        <xsl:copy-of select="ti[1]"/>
+                    <xsl:message><xsl:value-of select="concat('&#9;cp ti','&#10;')"/></xsl:message>
+                      </xsl:otherwise>
+                    </xsl:choose>
+                    <xsl:copy-of select="ti[2]"/>
+                   </tr>
                 </xsl:for-each>
                </table></body>
             </xsl:when>
@@ -1942,7 +1977,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
         <img class="newsicon" src="/images/icon-clock.png" alt="Clock"/>
       </xsl:when>
       <xsl:when test="$thenews/@category='planet'">
-        <img class="newsicon" src="/images/G-Earth.jpg" alt="Planet Earth"/>
+        <img class="newsicon" src="/images/G-Earth.png" alt="Planet Earth"/>
       </xsl:when>
       <!-- old ones, kept to display very very old news items -->
       <xsl:when test="$thenews/@category='alpha'">
