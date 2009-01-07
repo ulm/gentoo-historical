@@ -577,24 +577,17 @@
                  </xsl:for-each>
                 </xsl:variable>
 
-        <xsl:message><xsl:value-of select="concat('&#10;', 'New group&#10;')"/></xsl:message>
                 <xsl:for-each select="exslt:node-set($sortedblogentries)/tr">
                   <xsl:variable name="blogposter" select="ti[1]"/>
                    <tr>
-                    <xsl:message><xsl:value-of select="concat('&#10;', preceding-sibling::tr[1]/ti[1],':-1:',preceding-sibling::tr[1]/ti[2],'&#10;')"/></xsl:message>
-                    <xsl:message><xsl:value-of select="concat(ti[1],'::',ti[2],'&#10;')"/></xsl:message>
-                    <xsl:message><xsl:value-of select="concat(following-sibling::tr[1]/ti[1],':+1:',following-sibling::tr[1]/ti[2],'&#10;')"/></xsl:message>
                     <xsl:choose>
                       <xsl:when test="preceding-sibling::tr[1]/ti[1]/text()=$blogposter">
-                    <xsl:message><xsl:value-of select="concat('&#9;Inside block','&#10;')"/></xsl:message>
                       </xsl:when>
                       <xsl:when test="following-sibling::tr[1]/ti[1]/text()=$blogposter">
                        <ti rowspan="{1+count(following-sibling::tr[ti[1]/text()=$blogposter])}"><xsl:value-of select="ti[1]"/></ti>
-                    <xsl:message><xsl:value-of select="concat('&#9;New block, count=', 1+count(following-sibling::tr[ti[1]/text()=$blogposter]), '&#10;')"/></xsl:message>
                       </xsl:when>
                       <xsl:otherwise>
                         <xsl:copy-of select="ti[1]"/>
-                    <xsl:message><xsl:value-of select="concat('&#9;cp ti','&#10;')"/></xsl:message>
                       </xsl:otherwise>
                     </xsl:choose>
                     <xsl:copy-of select="ti[2]"/>
