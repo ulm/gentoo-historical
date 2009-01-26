@@ -1,34 +1,22 @@
 http://gcc.gnu.org/PR34571
 
-2007-12-26  Rask Ingemann Lambertsen  <rask@sygehus.dk>
+2009-01-11  Uros Bizjak  <ubizjak@gmail.com>
+
+	Backport from mainline:
+	2008-12-22  Uros Bizjak  <ubizjak@gmail.com>
 
 	PR target/34571
-	* config/alpha/alpha.c (alpha_cannot_force_const_mem): Use
-	symbolic_operand.
-	* varasm.c (output_constant_pool_1): Fix typo.
+	* config/alpha/predicates.md (symbolic_operand): Return 1 for a
+	label_ref with an offset.
 
-Index: gcc/config/alpha/alpha.c
-===================================================================
---- gcc/config/alpha/alpha.c	(revision 131132)
-+++ gcc/config/alpha/alpha.c	(working copy)
-@@ -1112,10 +1112,9 @@ alpha_legitimize_address (rtx x, rtx scr
- 
- static bool
- alpha_cannot_force_const_mem (rtx x)
- {
--  enum rtx_code code = GET_CODE (x);
--  return code == SYMBOL_REF || code == LABEL_REF || code == CONST;
-+  return symbolic_operand (x, GET_MODE (x));
- }
- 
- /* We do not allow indirect calls to be optimized into sibling calls, nor
-    can we allow a call to a function with a different GP to be optimized
-Index: gcc/varasm.c
-===================================================================
---- gcc/varasm.c	(revision 131132)
-+++ gcc/varasm.c	(working copy)
-@@ -3709,9 +3709,9 @@ output_constant_pool_1 (struct constant_
-       tmp = XEXP (XEXP (x, 0), 0);
+	2008-03-31  James E. Wilson  <wilson@tuliptree.org>
+
+	* varasm.c (output_constant_pool_1): In LABEL_REF check,
+	use tmp consistently.
+
+--- branches/gcc-4_3-branch/gcc/varasm.c	2009/01/11 13:42:32	143271
++++ branches/gcc-4_3-branch/gcc/varasm.c	2009/01/11 14:33:28	143272
+@@ -3710,7 +3710,7 @@
        /* FALLTHRU  */
  
      case LABEL_REF:
@@ -37,4 +25,15 @@ Index: gcc/varasm.c
        gcc_assert (!INSN_DELETED_P (tmp));
        gcc_assert (!NOTE_P (tmp)
  		  || NOTE_KIND (tmp) != NOTE_INSN_DELETED);
-       break;
+--- branches/gcc-4_3-branch/gcc/config/alpha/predicates.md	2009/01/11 13:42:32	143271
++++ branches/gcc-4_3-branch/gcc/config/alpha/predicates.md	2009/01/11 14:33:28	143272
+@@ -390,7 +390,8 @@
+   (ior (match_code "symbol_ref,label_ref")
+        (and (match_code "const")
+ 	    (match_test "GET_CODE (XEXP (op,0)) == PLUS
+-			 && GET_CODE (XEXP (XEXP (op,0), 0)) == SYMBOL_REF
++			 && (GET_CODE (XEXP (XEXP (op,0), 0)) == SYMBOL_REF
++			     || GET_CODE (XEXP (XEXP (op,0), 0)) == LABEL_REF)
+ 			 && GET_CODE (XEXP (XEXP (op,0), 1)) == CONST_INT"))))
+ 
+ ;; Return true if OP is valid for 16-bit DTP relative relocations.
