@@ -21,12 +21,12 @@
     </xsl:if>
   </xsl:variable>
   <xsl:variable name="lang" select="exslt:node-set($metadoc)/metadoc/@lang"/>
-<mainpage id="docs" lang="{$lang}" metadoc="yes">
+<mainpage lang="{$lang}" metadoc="yes">
   <title><xsl:value-of select="title"/></title>
   <author title="Author">Gentoo Documentation Project</author>
+  <license/>
   <version>Dynamically</version>
   <date><xsl:value-of select="func:today()"/></date>
-  <license/>
 
   <xsl:if test="intro">
   <chapter>
@@ -75,7 +75,7 @@
       </chapter>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:apply-templates>
+      <xsl:apply-templates select="listing|overview">
         <xsl:with-param name="metadoc"  select="$metadoc"/>
         <xsl:with-param name="pmetadoc" select="$pmetadoc"/>
         <xsl:with-param name="lang"     select="$lang"/>
@@ -503,7 +503,7 @@
     <xsl:variable name="version">
       <xsl:choose>
         <xsl:when test="starts-with($v, '$Id:')">
-          <!-- Extract version from $Id: metadoc.xsl,v 1.41 2009/01/03 18:19:14 neysx Exp $ tag -->
+          <!-- Extract version from $Id: metadoc.xsl,v 1.42 2009/01/31 15:42:58 neysx Exp $ tag -->
           <xsl:value-of select="substring-before(substring-after($v, ',v '),' ')"/>
         </xsl:when>
         <xsl:otherwise>
@@ -526,7 +526,7 @@
             <xsl:variable name="parentversion">
               <xsl:choose>
                 <xsl:when test="starts-with($pv, '$Id:')">
-                  <!-- Extract version from $Id: metadoc.xsl,v 1.41 2009/01/03 18:19:14 neysx Exp $ tag -->
+                  <!-- Extract version from $Id: metadoc.xsl,v 1.42 2009/01/31 15:42:58 neysx Exp $ tag -->
                   <xsl:value-of select="substring-before(substring-after($pv, ',v '),' ')"/>
                 </xsl:when>
                 <xsl:when test="string-length($pv)=0">?!?</xsl:when>

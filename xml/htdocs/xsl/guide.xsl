@@ -21,6 +21,7 @@
 <!-- Include external stylesheets -->
 <xsl:include href="/xsl/content.xsl" />
 <xsl:include href="/xsl/handbook.xsl" />
+<xsl:include href="/xsl/util.xsl"/>
 <xsl:include href="/xsl/inserts.xsl" />
 
 <xsl:include href="/xsl/mail.xsl" />
@@ -46,6 +47,12 @@
 
 <!-- Where is this xsl being run? -->
 <xsl:param name="httphost">www</xsl:param>
+
+<xsl:variable name="basename">
+ <xsl:call-template name="filename">
+  <xsl:with-param name="path" select="$link"/>
+ </xsl:call-template>
+</xsl:variable>
 
 <!-- img tag -->
 <xsl:template match="img">
@@ -769,8 +776,6 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     </xsl:when>
 
     <xsl:when test="title">
-     <xsl:if test="not(position()=1 and title/text()=/mainpage/title)">
-
       <p class="chaphead">
         <xsl:if test="@id">
           <a name="{@id}"/>
@@ -797,8 +802,6 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
         </span>
         <xsl:value-of select="title"/>
       </p>
-
-     </xsl:if>
     </xsl:when>
     <xsl:otherwise>
       <xsl:if test="/guide">
@@ -1185,6 +1188,19 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 <xsl:template match="uri">
 <xsl:param name="paramlink"/>
 <!-- expand templates to handle things like <uri link="http://bar"><c>foo</c></uri> -->
+<xsl:variable name="theurl">
+  <xsl:choose>
+    <xsl:when test="@link and contains(@link, '__FILE_')">
+     <xsl:value-of select="concat(substring-before(@link,'__FILE__'),$basename,substring-after(@link,'__FILE__'))" />
+    </xsl:when>
+    <xsl:when test="@link"><xsl:value-of select="@link" /></xsl:when>
+    <xsl:when test="contains(text(), '__FILE_')">
+     <xsl:value-of select="concat(substring-before(text(),'__FILE__'),$basename,substring-after(text(),'__FILE__'))" />
+    </xsl:when>
+    <xsl:otherwise><xsl:value-of select="text()" /></xsl:otherwise>
+  </xsl:choose>
+</xsl:variable>
+
 <xsl:choose>
   <xsl:when test="@link">
     <xsl:choose>
@@ -1199,10 +1215,10 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
         <!-- Handbook link pointing to another part/chapter, normal case -->
         <xsl:choose>
           <xsl:when test="$style != 'printable'">
-            <a href="{$link}{@link}"><xsl:apply-templates/></a>
+            <a href="{$link}{$theurl}"><xsl:apply-templates/></a>
           </xsl:when>
           <xsl:otherwise>
-            <a href="{$link}{@link}&amp;style=printable"><xsl:apply-templates/></a>
+            <a href="{$link}{$theurl}&amp;style=printable"><xsl:apply-templates/></a>
           </xsl:otherwise>
         </xsl:choose>
       </xsl:when>
@@ -1217,9 +1233,9 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
         <xsl:choose>
           <xsl:when test="contains(@link, 'chap=') and contains(@link, '#doc_')">
             <!-- Link points inside a chapter  (Case 1a)-->
-            <xsl:variable name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
-            <xsl:variable name="linkchap" select="substring-before(substring-after(substring-after(@link, '&amp;'), '='), '#doc_')" />
-            <xsl:variable name="linkanch" select="substring-after(@link, '#doc_')" />
+            <xsl:variable name="linkpart" select="substring-after(substring-before($theurl, '&amp;'), '=')" />
+            <xsl:variable name="linkchap" select="substring-before(substring-after(substring-after($theurl, '&amp;'), '='), '#doc_')" />
+            <xsl:variable name="linkanch" select="substring-after($theurl, '#doc_')" />
             <a href="#book_part{$linkpart}_chap{$linkchap}__{$linkanch}"><xsl:apply-templates /></a>
           </xsl:when>
           <xsl:when test="contains(@link, 'chap=') and contains(@link, '#')">
@@ -1230,13 +1246,13 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
           </xsl:when>
           <xsl:when test="contains(@link, 'chap=')">
             <!-- Link points to a chapter  (Case 2)-->
-            <xsl:variable name="linkpart" select="substring-after(substring-before(@link, '&amp;'), '=')" />
-            <xsl:variable name="linkchap" select="substring-after(substring-after(@link, '&amp;'), '=')" />
+            <xsl:variable name="linkpart" select="substring-after(substring-before($theurl, '&amp;'), '=')" />
+            <xsl:variable name="linkchap" select="substring-after(substring-after($theurl, '&amp;'), '=')" />
             <a href="#book_part{$linkpart}_chap{$linkchap}"><xsl:apply-templates /></a>
           </xsl:when>
           <xsl:otherwise>
             <!-- Link points to a part  (Case 3)-->
-            <xsl:variable name="linkpart" select="substring-after(@link, '=')" />
+            <xsl:variable name="linkpart" select="substring-after($theurl, '=')" />
             <a href="#book_part{$linkpart}"><xsl:apply-templates/></a>
           </xsl:otherwise>
         </xsl:choose>
@@ -1255,17 +1271,11 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
             <a href="{concat('#book_part',exslt:node-set($doc-struct)//bookpart[descendant::body[@uid=$bodyid]]/@pos,'_chap',exslt:node-set($doc-struct)//bookchap[descendant::body[@uid=$bodyid]]/@pos,'__',$locallink)}"><xsl:apply-templates /></a>
           </xsl:when>
           <xsl:otherwise>
-            <a href="{@link}"><xsl:apply-templates/></a>
+            <a href="{$theurl}"><xsl:apply-templates/></a>
           </xsl:otherwise>
         </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:variable name="theurl">
-          <xsl:choose>
-            <xsl:when test="@link"><xsl:value-of select="@link" /></xsl:when>
-            <xsl:otherwise><xsl:value-of select="text()" /></xsl:otherwise>
-          </xsl:choose>
-        </xsl:variable>
 
         <xsl:variable name="thelink">
           <xsl:choose>
