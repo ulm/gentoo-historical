@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+
+<xsl:template name="ads">
+ <xsl:param name="images"/>
+
+  <!-- OSL -->
+    <tr lang="en">
+    <td align="center" class="topsep">
+            <a href="http://osuosl.org/contribute">
+      <img src="{concat($images,'images/osuosl.png')}" width="125" height="50" alt="Support OSL" border="0"/>
+        </a>
+      <p class="alttext">
+        <a href="http://osuosl.org/contribute">Support OSL</a>
+      </p>
+    </td>
+    </tr>
+  <!-- /OSL -->
+
+  <!-- VR -->
+    <tr lang="en">
+    <td align="center" class="topsep">
+            <a href="http://www.vr.org">
+      <img src="{concat($images,'images/vr-ad.png')}" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" border="0"/>
+        </a>
+      <p class="alttext">
+        <a href="http://www.vr.org/">VR Hosted</a>
+      </p>
+    </td>
+    </tr>
+  <!-- /VR -->
+
+  <!-- Tek -->
+    <tr lang="en">
+      <td align="center" class="topsep">
+      <a href="http://www.tek.net" target="_top">
+        <img src="{concat($images,'images/tek-gentoo.gif')}" width="125" height="125" alt="Tek Alchemy" border="0"/>
+      </a>
+      <p class="alttext">
+    <a href="http://www.tek.net/">Tek Alchemy</a>
+      </p>
+      </td>
+    </tr>
+  <!-- /Tek -->
+
+  <!-- SevenL -->
+    <tr lang="en">
+    <td align="center" class="topsep">
+      <a href="http://www.sevenl.net" target="_top">
+        <img src="{concat($images,'images/sponsors/sevenl.gif')}" width="125" height="144" alt="SevenL.net" border="0"/>
+      </a>
+      <p class="alttext">
+    <a href="http://www.sevenl.net/">SevenL.net</a>
+      </p>
+    </td>
+    </tr>
+  <!-- /SevenL -->
+
+  <!-- GNi -->
+    <tr lang="en">
+    <td align="center" class="topsep">
+        <a href="http://www.gni.com" target="_top">
+          <img src="{concat($images,'images/gni_logo.png')}" width="125" alt="Global Netoptex Inc." border="0"/>
+      </a>
+      <p class="alttext">
+    <a href="http://www.gni.com">Global Netoptex Inc.</a>
+      </p>
+    </td>
+    </tr>
+  <!-- /GNi -->
+
+  <!-- bytemark -->
+    <tr lang="en">
+    <td align="center" class="topsep">
+        <a href="http://www.bytemark.co.uk/r/gentoo-home" target="_top">
+          <img src="{concat($images,'images/sponsors/bytemark_ad.png')}" width="125" alt="Bytemark" border="0"/>
+      </a>
+      <p class="alttext">
+    <a href="http://www.bytemark.co.uk/r/gentoo-home">Bytemark</a>
+      </p>
+    </td>
+    </tr>
+  <!-- /bytemark -->
+</xsl:template>
+
+</xsl:stylesheet>
