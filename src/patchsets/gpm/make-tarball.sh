@@ -1,11 +1,11 @@
 #!/bin/bash
 
-if [[ $# -ne 1 ]] ; then
-	echo "Usage: $0 <patch ver>"
+if [[ $# -ne 2 ]] ; then
+	echo "Usage: $0 <ver> <patch ver>"
 	exit 1
 fi
-gver=1.20.1
-pver=$1
+gver=$1
+pver=$2
 
 tar=gpm-${gver}-patches-${pver}.tar.bz2
 
@@ -13,7 +13,7 @@ rm -rf tmp
 rm -f ${tar}
 
 mkdir -p tmp/patch
-cp -r *.patch tmp/patch/ || exit 1
+cp -r $gver/*.patch tmp/patch/ || exit 1
 cp ../README* tmp/patch/
 
 tar -jcf ${tar} \
