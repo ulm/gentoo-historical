@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/openrc-migration.xml,v 1.4 2008/10/07 15:31:18 yoswink Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/openrc-migration.xml,v 1.5 2009/02/16 20:06:26 chiguire Exp $ -->
 
 <guide link="/doc/es/openrc-migration.xml" lang="es">
 <title>Guía de Migración de Baselayout y OpenRC</title>
@@ -30,8 +30,8 @@ OpenRC.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.7</version>
-<date>2008-09-11</date>
+<version>1.8</version>
+<date>2009-02-11</date>
 
 <chapter>
 <title>Trasfondo</title>
@@ -41,10 +41,10 @@ OpenRC.
 
 <p>
 Baselayout proporciona un conjunto básico de archivos que necesita
-cualquier sistema para funcionar correctamente, así como
+cualquier sistema para funcionar correctamente, tal como
 <path>/etc/hosts</path>. También proporciona la disposición básica del
-sistema de archivos tal como es usado por Gentoo (por ejemplo, los
-directorios <path>/etc</path>, <path>/var</path>, <path>/usr</path>,
+sistema de archivos usado por Gentoo (por ejemplo, los directorios
+<path>/etc</path>, <path>/var</path>, <path>/usr</path>,
 <path>/home</path>).
 </p>
 </body>
@@ -60,7 +60,7 @@ dependencias que trabaja con cualquier init proporcionado por el
 sistema, normalmente <path>/sbin/init</path>. Sin embargo, <e>no</e>
 es un reemplazo para <path>/sbin/init</path>. El init por defecto
 usado por Gentoo Linux es <c>sys-apps/sysvinit</c>, mientras que
-Gentoo/FreeBSD usa el init FreeBSD provisto por
+Gentoo/FreeBSD usa el init de FreeBSD provisto por
 <c>sys-freebsd/freebsd-sbin</c>.
 </p>
 </body>
@@ -72,18 +72,18 @@ Gentoo/FreeBSD usa el init FreeBSD provisto por
 
 <p>
 Originalmente el sistema rc de Gentoo formaba parte de baselayout 1 y
-escrito completamente en bash. Esto trae consigo varias
-limitaciones. Por ejemplo, ciertas llamadas al sistema necesitan acceso
-durante el arranque por lo que requirió agregar llamadas en C. Estas
-llamadas se enlazaron estáticamente, causando crecimiento notable al
-sistema rc al pasar el tiempo.
+estaba escrito completamente en bash. Esto trae consigo varias
+limitaciones. Por ejemplo, ciertas llamadas al sistema necesitan
+acceso durante el arranque, por lo que requirió agregar llamadas en
+C. Estas llamadas eran enlazadas estáticamente, aumentando
+notablemente el sistema rc al pasar el tiempo.
 </p>
 
 <p>
 Además, al expandir Gentoo a otras plataformas como Gentoo/FreeBSD y
 Gentoo Encastrado (embedded), se hacía imposible seguir requiriendo un
 sistema rc basado en bash. Esto propulsó el desarrollo de baselayout
-2, escrito en C y que solo requiere un interpretado de comandos que
+2, escrito en C y que solo requiere un interpretador de comandos que
 cumpla la norma POSIX. Durante el desarrollo de baselayout 2, se
 determinó que sería mejor si baselayout solo proporcionara los
 archivos base y disposición de archivos para Gentoo y que el sistema
@@ -271,14 +271,43 @@ ejecución <c>boot</c>:
 </section>
 
 <section>
+<title>Udev</title>
+<body>
+
+<p>
+OpenRC ya no inicia <c>udev</c> por defecto, aunque sí necesita estar
+presente en el nivel de ejecución <c>sysinit</c> para ser iniciado. El
+ebuild de OpenRC debe detectar si <c>udev</c> estaba activado
+previamente para agregarlo al nivel de ejecución <c>sysinit</c>. Sin
+embargo, para estar seguro, revise si <c>udev</c> esta presente:
+</p>
+
+<pre caption="Verificando udev">
+# <i>ls -l /etc/runlevels/sysinit</i>
+lrwxrwxrwx 1 root root 14 2009-01-29 08:00 /etc/runlevels/sysinit/udev -> \
+/etc/init.d/udev
+</pre>
+
+<p>
+Si <c>udev</c> no está listado, agréguelo al nivel de ejecución
+correcto:
+</p>
+
+<pre caption="Agregando udev al nivel de ejecución sysinit">
+# <i>rc-update add udev sysinit</i>
+</pre>
+</body>
+</section>
+
+<section>
 <title>La red</title>
 <body>
 
 <p>
 Debido a que baselayout y OpenRC ahora son paquetes separados, el
 guión net.eth0 podría desaparecer durante el proceso de
-actualización. Para reemplazar el guión, ejecute los siguientes
-comandos:
+actualización. Para reemplazar este guión de inicio, ejecute los
+siguientes comandos:
 </p>
 
 <pre caption="Restaurar el guión net.eth0 faltante">
@@ -288,7 +317,7 @@ comandos:
 
 <p>
 Si falta algún otro guión de red, siga las instrucciones anteriores
-para agregarlas de nuevo, reemplazando <c>eth0</c> con el nombre del
+para agregarlas otra vez, reemplazando <c>eth0</c> con el nombre del
 dispositivo de red.
 </p>
 
@@ -377,9 +406,9 @@ efecto.
 
 <p>
 La variable EDITOR ya no se encuentra en
-<path>/etc/rc.conf</path>. Ambas variables EDITOR y PAGER se
-configuran por defecto en <path>/etc/profile</path>. Debe cambiar esto
-según su necesidad en su archivo <path>~/.bashrc</path> (o equivalente) o
+<path>/etc/rc.conf</path>. Ambas variables EDITOR y PAGER, se
+configuran por defecto en <path>/etc/profile</path>. Cambie esto según
+su conveniencia en su archivo <path>~/.bashrc</path> (o equivalente) o
 cree el archivo <path>/etc/env.d/99editor</path> y configure el valor
 por defecto del sistema allí.
 </p>
@@ -392,35 +421,36 @@ re-leer el archivo con <c>source ~/.bashrc</c>.
 </impo>
 </body>
 </section>
+
 <section>
 <title>Mensajes (Log) de Arranque</title>
 <body>
 
 <p>
-Anteriormente, tu podías loguear el proceso de arranque usando
-<c>app-admin/showconsole</c>. Sin embargo, ahora OpenRC procesa
-todo los logs internamente, por consiguiente no es necesario
-utilizar la utilidad <c>showconsole</c>. Para continuar logueando
-los mensajes de arranque, necesitas establecer la variable apropiada
-en <path>/etc/rc.conf</path>. Los mensajes serán guardados en
+Anteriormente, se podía registrar el proceso de arranque con
+<c>app-admin/showconsole</c>. Sin embargo, ahora OpenRC procesa todo
+los registros de sistema internamente, por lo que no es necesario
+utilizar la utilidad <c>showconsole</c>. Para continuar registrando
+los mensajes de arranque, establezca la variable apropiada en
+<path>/etc/rc.conf</path>. Los mensajes serán guardados en
 <path>/var/log/rc.log</path>.
 </p>
 
 <pre caption="Activar mensajes de arranque en /etc/rc.conf">
 rc_logger="YES"
 </pre>
-
 </body>
 </section>
+
 <section>
 <title>Terminando</title>
 <body>
 
 <p>
-Una vez que haya terminado de actualizar los archivos de configuración
-y guiones de inicio, solo queda <b>re-iniciar</b>. Esto es necesario
-porque información del estado del sistema no es preservado durante la
-actualización, de manera que debemos proporcionarla con una
+Una vez terminado de actualizar los archivos de configuración y
+guiones de inicio, solo queda <b>re-iniciar</b>. Esto es necesario
+porque la información acerca del estado del sistema se preserva
+durante la actualización, de manera que debemos proporcionarla con una
 re-iniciación.
 </p>
 </body>
