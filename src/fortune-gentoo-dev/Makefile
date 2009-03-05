@@ -1,6 +1,6 @@
 # Copyright 1999-2007 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/src/fortune-gentoo-dev/Makefile,v 1.4 2007/04/28 23:29:32 robbat2 Exp $
+# $Header: /var/cvsroot/gentoo/src/fortune-gentoo-dev/Makefile,v 1.5 2009/03/05 22:29:46 robbat2 Exp $
 
 # These are specific to Gentoo.
 # If you are elsewhere, you might want to change them.
@@ -57,5 +57,5 @@ install_$(FORTUNE_NAME): $(FORTUNE_NAME) $(FORTUNE_NAME).dat
 install_$(FORTUNE_OFF_NAME): $(FORTUNE_OFF_NAME) $(FORTUNE_OFF_NAME).dat
 	$(INSTALL_DIR) $(DESTDIR)$(FORTUNE_OFF_DIR)
 	for i in $^ ; do \
-		$(INSTALL) $$i $(DESTDIR)$(FORTUNE_OFF_DIR)/$${i/-off} || exit 1 ; \
+		$(INSTALL) $$i $(DESTDIR)$(FORTUNE_OFF_DIR)/$${i%-off} || exit 1 ; \
 	done
