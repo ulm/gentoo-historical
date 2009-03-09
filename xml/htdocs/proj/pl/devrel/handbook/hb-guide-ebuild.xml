@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/devrel/handbook/hb-guide-ebuild.xml,v 1.17 2008/04/06 20:57:19 shadow Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/pl/devrel/handbook/hb-guide-ebuild.xml,v 1.18 2009/03/09 20:42:15 rane Exp $ -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
@@ -24,7 +24,8 @@ których znajdują się katalogi pakietów. Oto przykład: plik
 znajdować się kilka innych wersji <c>util-linux</c> razem z wersją
 <path>util-linux-2.11y.ebuild</path>. Jest tak, ponieważ <e>wszystkie pliki
 ebuild danego pakietu (niezależnie od wersji)</e> mają wspólny katalog
-<path>kategoria/pakiet</path> w głównym katalogu <path>/usr/portage</path>.
+<path>kategoria/pakiet</path> w głównym katalogu <path>/usr/portage</path>,
+jednak tylko w przypadku, gdy nie zainstalowano dodatkowych repozytoriów.
 </p>
 
 </body>
@@ -383,10 +384,215 @@ Pierwsze trzy linie powinny wyglądać mniej-więcej tak:
 </p>
 
 <p>
-Pierwsza część każdego pliku ebuild składa się z kilku zmiennych. Aby
-dowiedzieć się więcej o zmiennych należy zajrzeć do <uri
-link="http://devmanual.gentoo.org/ebuild-writing/variables/index.html">devmanuala</uri>.
+Pierwsza część każdego pliku ebuild składa się z kilku zmiennych. Dzielą się one
+na trzy kategorie wymienione poniżej:
 </p>
+
+<ul>
+  <li>READ: zmiennych tych możemy użyć, ale <e>nie wolno</e> ich ustawiać</li>
+  <li>MUST: zmienne, które <e>koniecznie należy ustawić</e></li>
+  <li>OPT: zmienne, które powinniśmy ustawić</li>
+</ul>
+
+<table>
+<tr>
+  <th>Zmienna</th>
+  <th>Kategoria</th>
+  <th>Opis</th>
+</tr>
+<tr>
+  <ti><c>P</c></ti>
+  <ti>READ</ti>
+  <ti>Nazwa i wersja pakietu.</ti>
+</tr>
+<tr>
+  <ti><c>PN</c></ti>
+  <ti>READ</ti>
+  <ti>Nazwa pakietu.</ti>
+</tr>
+<tr>
+  <ti><c>PV</c></ti>
+  <ti>READ</ti>
+  <ti>Wersja pakietu.</ti>
+</tr>
+<tr>
+  <ti><c>PR</c></ti>
+  <ti>READ</ti>
+  <ti>
+    Zawiera numer rewizji lub <c>r0</c>, jeśli pakiet nie posiada tego numeru.
+  </ti>
+</tr>
+<tr>
+  <ti><c>PVR</c></ti>
+  <ti>READ</ti>
+  <ti>Zawiera numer wersji razem z numerem rewizji.</ti>
+</tr>
+<tr>
+  <ti><c>PF</c></ti>
+  <ti>READ</ti>
+  <ti>Zawiera pełną nazwę pakietu <c>${PN}-${PVR}</c>.</ti>
+</tr>
+<tr>
+  <ti><c>A</c></ti>
+  <ti>READ</ti>
+  <ti>
+    Rozdzielona spacjami lista nazw plików z <c>SRC_URI</c>. Nie uwzględnia
+    ścieżek URL, tylko same nazwy plików.
+  </ti>
+</tr>
+<tr>
+  <ti><c>DISTDIR</c></ti>
+  <ti>READ</ti>
+  <ti>
+    Zawiera ścieżkę do katalogu <path>distfiles</path>, w którym zwykle są
+    przechowywane wszystkie pobrane pliki ze źródłami programów. Zwykle jest to
+    katalog <path>/usr/portage/distfiles</path>.
+  </ti>
+</tr>
+<tr>
+  <ti><c>FILESDIR</c></ti>
+  <ti>READ</ti>
+  <ti>
+    Zawiera ścieżkę do podkatalogu <path>files</path> z katalogu danego pakietu
+    w drzewie Portage. Nie wolno modyfikować tej zmiennej.
+  </ti>
+</tr>
+<tr>
+  <ti><c>WORKDIR</c></ti>
+  <ti>READ</ti>
+  <ti>
+    Katalog główny katalogu roboczego danego ebuilda. Nic nie powinno być
+    budowane na zewnątrz tego katalogu.
+  </ti>
+</tr>
+<tr>
+  <ti><c>S</c></ti>
+  <ti>OPT</ti>
+  <ti>
+    Katalog źródłowy naszego pakietu. Zwykle jest to <c>${WORKDIR}/${P}</c>.
+    Portage przyjmie tę wartość jako domyślną, nie trzeba jej więc ustawiać
+    samemu.
+  </ti>
+</tr>
+<tr>
+  <ti><c>T</c></ti>
+  <ti>READ</ti>
+  <ti>
+    Katalog tymczasowy naszego pakietu. Jest on używany jako wirtualny katalog
+    <path>/tmp</path> podczas przetwarzania skryptu ebuild.
+  </ti>
+</tr>
+<tr>
+  <ti><c>D</c></ti>
+  <ti>READ</ti>
+  <ti>
+    Katalog główny, do którego pakiet zostanie zainstalowany. Należy traktować
+    go jako wirtualny katalog <path>/</path>.
+  </ti>
+</tr>
+<tr>
+  <ti><c>SLOT</c></ti>
+  <ti>MUST</ti>
+  <ti>
+    Portage obsługuje instalowanie jednocześnie różnych wersji tego samego
+    programu. Na przykład jeśli chcielibyśmy zainstalować jednocześnie GCC 2.95
+    i GCC 3.2, należałoby ustawić zmienną <c>SLOT</c> w każdym pliku ebuild. W
+    tym przypadku dla GCC 2.95 ustawilibyśmy zmienną <c>SLOT</c> na <c>2</c>, a
+    dla GCC 3.2 na <c>3</c>.
+    <br/>
+    <b>Uwaga</b>: Podanie <c>0</c> jako wartości zmiennej <c>SLOT</c> oznacza,
+    że dany pakiet ma tylko jedno możliwe ustawienie <c>SLOT</c> (innymi słowy,
+    nie da się jej "SLOT-ować").
+  </ti>
+</tr>
+<tr>
+  <ti><c>LICENSE</c></ti>
+  <ti>MUST</ti>
+  <ti>
+    Zmienna ta określa jaką licencją objęty jest program, na przykład GPL-2,
+    BSD, itp... Zawartością tej zmiennej musi być poprawna licencja (jest nią
+    dowolna licencja z pliku <path>/usr/portage/license/</path>). Jesli danej
+    licencji nie ma w tym pliku, musi zostać tam dodana zanim plik ebuild
+    znajdzie się w drzewie Portage. Jeśli licencja nie zezwala na redystrybucję
+    programu, należy dodać <c>RESTRICT</c>="nomirror" do pliku ebuild.
+  </ti>
+</tr>
+<tr>
+  <ti><c>KEYWORDS</c></ti>
+  <ti>MUST</ti>
+  <ti>
+    Zmienna ta pełni teraz kilka funkcji. Przede wszystkim określa na jakie
+    architektury sprzętowe przeznaczony jest dany ebuild. Przykładowe wartości
+    to: <e>x86, ppc, sparc, mips, alpha, arm, hppa, amd64 i ia64</e>. Więcej
+    szczegółów można znaleźć w pliku profiles/arch.list. Jak nietrudno się
+    domyślić, zmienną tę ustawiamy zgodnie z architekturą docelowej maszyny.
+    Portage nie zezwoli maszynie x86 budować pakietów innych niż x86, zgodnie z
+    tym, co jest podane w zmiennej <c>KEYWORDS</c>. Pakiety, które nie wspierają
+    architektury danego komputera są automatycznie maskowane przez Portage.
+    Jeśli flaga <c>KEYWORDS</c> posiada przedrostek <e>~</e>, oznacza to, że
+    dany ebuild działa, ale powinien zostać przetestowany w kilku środowiskach,
+    zanim może zostać uznany za stabilny. Jeśli zaś przed flagą <c>KEYWORDS</c>
+    występuje znak <e>-</e>, dany pakiet nie będzie działać na danej
+    architekturze. Pakiety jest uznawany za stabilny, jeśli nic nie poprzedza
+    zmiennych zawartych w <c>KEYWORDS</c>. Ustawiając odpowiednio zmienną
+    <c>ACCEPT_KEYWORDS</c> w pliku <path>make.conf</path> definiujemy którym z
+    powyższych typów pakietów zezwalamy na instalację.
+  </ti>
+</tr>
+<tr>
+  <ti><c>DESCRIPTION</c></ti>
+  <ti>MUST</ti>
+  <ti><e>Krótki</e>, mieszczący się w jednej linii opis pakietu.</ti>
+</tr>
+<tr>
+  <ti><c>SRC_URI</c></ti>
+  <ti>MUST</ti>
+  <ti>
+    URL-e każdego pliku ze źródłami pakietu, rozdzielone białym znakiem (np.
+    spacją lub znakiem końca linii). W zmiennych SRC_URI i S nie powinno się
+    umieszczać numerów wersji. Powinniśmy zawsze stosować zmienne ${PV} lub
+    ${P}, a jeśli numer wersji nie pokrywa się z nazwą pliku zawierającego
+    źródła, należy stworzyć zmienną ${MY_P} i użyć jej zamiast dwóch
+    poprzednich.
+  </ti>
+</tr>
+<tr>
+  <ti><c>HOMEPAGE</c></ti>
+  <ti>MUST</ti>
+  <ti>
+    Strona domowa pakietu. Jeśli nie możemy znaleźć oficjalnej strony, można
+    podać odnośnik z <uri link="http://freshmeat.net/">freshmeat.net</uri> lub
+    podobnej strony z bazą danych programów. Nigdy nie należy odnosić się do
+    innej zmiennej wewnątrz tej. Musi ona zawierać tylko czysty tekst.
+  </ti>
+</tr>
+<tr>
+  <ti><c>IUSE</c></ti>
+  <ti>MUST</ti>
+  <ti>
+    W zmiennej tej zamieszczamy flagi <c>USE</c> z jakich korzysta nasz pakiet.
+    Należy pamiętać, że nie wolno tutaj umieścić <c>KEYWORDS</c>!
+  </ti>
+</tr>
+<tr>
+  <ti><c>DEPEND</c></ti>
+  <ti>OPT</ti>
+  <ti>
+    Tutaj wymieniamy zależności potrzebne do zbudowania pakietu. Więcej
+    informacji na temat składni znajdziemy w sekcji <uri
+    link="#doc_chap5">Zależności pakietu</uri>.
+  </ti>
+</tr>
+<tr>
+  <ti><c>RDEPEND</c></ti>
+  <ti>OPT</ti>
+  <ti>
+    Tutaj wymieniamy zależności potrzebne do uruchomienia programu z pakietu.
+    Jak wspomniano wyżej, więcej szczegółów można znaleźć w sekcji <uri
+    link="#doc_chap5">Zależności pakietu</uri>.
+  </ti>
+</tr>
+</table>
 
 <p>
 <b>Funkcje</b>
@@ -1378,8 +1584,8 @@ dostępne polecenia:
   <ti>Nie dotyczy</ti>
 </tr>
 <tr>
-  <ti><c>manifest</c>*</ti>
-  <ti>Tworzy plik Manifest pakietu.</ti>
+  <ti><c>digest</c>*</ti>
+  <ti>Tworzy plik digest pakietu.</ti>
   <ti>Nie dotyczy</ti>
 </tr>
 <tr>
@@ -1454,7 +1660,8 @@ zaglądając do katalogu <path>/usr/lib/portage/bin</path>.
   <ti><c>docinto</c></ti>
   <ti><path>""</path></ti>
   <ti>
-    Ustawia względny katalog wykorzystywany przez funkcję <c>dodoc</c>.
+Ustawia względny katalog (DOCDESTTREE) wykorzystywany przez funkcję
+<c>dodoc</c>.
   </ti>
   <ti><c>docinto examples</c></ti>
 </tr>
@@ -1716,9 +1923,8 @@ zaglądając do katalogu <path>/usr/lib/portage/bin</path>.
   <ti><c>prepalldocs</c></ti>
   <ti>Nie dotyczy</ti>
   <ti>
-    Rekursywnie kompresuje wszystkie pliki dokumentacji z katalogu
-    <path>/usr/share/doc</path> za pomocą narzędzia gzip, automatycznie
-    poprawiając wszelkie dowiązania symboliczne.
+  Zachowanie zostało zmienione pomiędzy wersjami Portage, w związku z czym nowe
+  ebuildy nie powinny korzystać z tej funkcji.
   </ti>
   <ti><c>prepalldocs</c></ti>
 </tr>
@@ -1844,7 +2050,8 @@ Oto inne sposoby na podawanie wersji zależności:
 <p>
 =sys-apps/bla-1.2* wybierze najnowsze wersje spośród gałęzi 1.2, ale zignoruje
 1.3 i wcześniejsze/późniejsze gałęzie. Tak więc bla-1.2.3 i bla-1.2.0 będą
-odpowiednie, zaś bla-1.3.3, bla-1.3.0 i bla-1.1.0 już nie.
+odpowiednie, zaś bla-1.3.3, bla-1.3.0 i bla-1.1.0 już nie. Warto zauważyć, że
+bla-1.22.3 też pasuje do wzorca, co czasami może spowodować problemy.
 </p>
 
 <p>
