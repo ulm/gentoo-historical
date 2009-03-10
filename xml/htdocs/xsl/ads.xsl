@@ -38,7 +38,7 @@
     <tr lang="en">
     <td align="center" class="topsep">
       <a href="http://www.sevenl.net" target="_top">
-        <img src="{concat($images,'images/sponsors/sevenl.gif')}" width="125" height="144" alt="SevenL.net" border="0"/>
+        <img src="{concat($images,'images/sponsors/sevenl_ad.png')}" width="125" height="144" alt="SevenL.net" border="0"/>
       </a>
     </td>
     </tr>
