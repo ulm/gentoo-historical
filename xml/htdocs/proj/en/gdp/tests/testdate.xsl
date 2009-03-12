@@ -131,7 +131,14 @@ first column.
     <tr>
      <th><xsl:value-of select="$LL" /></th>
      <ti><xsl:copy-of select="func:format-date($date,$LL)" /></ti>
-     <xsl:for-each select="//doc/date"><xsl:sort select="."/><ti><xsl:copy-of select="func:format-date(.,$LL)" /></ti></xsl:for-each>
+     <xsl:for-each select="//doc/date"><xsl:sort select="."/>
+       <ti>
+        <xsl:if test="$LL='he'">
+          <xsl:attribute name="dir">RTL</xsl:attribute>
+        </xsl:if>
+        <xsl:copy-of select="func:format-date(.,$LL)"/>
+       </ti>
+     </xsl:for-each>
     </tr>
   </xsl:template>
 
