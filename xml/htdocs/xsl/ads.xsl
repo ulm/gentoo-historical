@@ -63,6 +63,16 @@
     </td>
     </tr>
   <!-- /bytemark -->
+  
+  <!-- kredit -->
+    <tr lang="en">
+    <td align="center" class="topsep">
+		<a href="http://www.online-kredit-index.de/" target="_top">
+          <img src="{concat($images,'images/sponsors/kredit-ad.jpg')}" width="125" alt="Online Kredit Index" border="0"/>
+      </a>
+    </td>
+    </tr>
+  <!-- /kredit -->
 </xsl:template>
 
 </xsl:stylesheet>
