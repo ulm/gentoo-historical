@@ -1,0 +1,130 @@
+Index: luatex-beta-0.40.0/source/texk/web2c/luatexdir/image/pdftoepdf.cc
+===================================================================
+--- luatex-beta-0.40.0.orig/source/texk/web2c/luatexdir/image/pdftoepdf.cc
++++ luatex-beta-0.40.0/source/texk/web2c/luatexdir/image/pdftoepdf.cc
+@@ -24,10 +24,11 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <ctype.h>
+-#include <aconf.h>
+-#include <GString.h>
+-#include <gmem.h>
+-#include <gfile.h>
++#include <dirent.h>
++#include <poppler-config.h>
++#include <goo/GooString.h>
++#include <goo/gmem.h>
++#include <goo/gfile.h>
+ #include <assert.h>
+ #include "Object.h"
+ #include "Stream.h"
+@@ -163,7 +164,7 @@ static PdfDocument *refPdfDocument(char 
+         pdf_doc->file_path = xstrdup(file_path);
+         void **aa = avl_probe(PdfDocumentTree, pdf_doc);
+         assert(aa != NULL);
+-        GString *docName = new GString(pdf_doc->file_path);
++        GooString *docName = new GooString(pdf_doc->file_path);
+         pdf_doc->doc = new PDFDoc(docName);     // takes ownership of docName
+         if (!pdf_doc->doc->isOk() || !pdf_doc->doc->okToPrint())
+             pdftex_fail("xpdf: reading PDF image failed");
+@@ -533,7 +534,7 @@ static void copyObject(Object * obj)
+     int i, l, c;
+     Ref ref;
+     char *p;
+-    GString *s;
++    GooString *s;
+     if (obj->isBool()) {
+         pdf_printf("%s", obj->getBool()? "true" : "false");
+     } else if (obj->isInt()) {
+@@ -657,7 +658,7 @@ static void writeEncodings()
+     }
+     for (r = encodingList; r != NULL; r = n) {
+         n = r->next;
+-        delete r->font;
++        r->font->decRefCnt();
+         delete r;
+     }
+ }
+@@ -725,7 +726,7 @@ read_pdf_info(image_dict * idict, intege
+     img_totalpages(idict) = pdf_doc->doc->getCatalog()->getNumPages();
+     if (img_pagename(idict)) {
+         // get page by name
+-        GString name(img_pagename(idict));
++        GooString name(img_pagename(idict));
+         LinkDest *link = pdf_doc->doc->findDest(&name);
+         if (link == NULL || !link->isOk())
+             pdftex_fail("PDF inclusion: invalid destination <%s>",
+Index: luatex-beta-0.40.0/source/texk/web2c/luatexdir/utils/utils.c
+===================================================================
+--- luatex-beta-0.40.0.orig/source/texk/web2c/luatexdir/utils/utils.c
++++ luatex-beta-0.40.0/source/texk/web2c/luatexdir/utils/utils.c
+@@ -40,7 +40,6 @@
+ #include "ptexlib.h"
+ 
+ #include "png.h"
+-#include "xpdf/config.h"        /* just to get the xpdf version */
+ 
+ static const char __svn_version[] =
+     "$Id: utils.c 2329 2009-04-18 14:25:30Z hhenkel $ "
+@@ -1125,9 +1124,9 @@ void initversionstring(char **versions)
+     (void) asprintf(versions,
+                     "Compiled with libpng %s; using libpng %s\n"
+                     "Compiled with zlib %s; using zlib %s\n"
+-                    "Compiled with xpdf version %s\n",
++                    "Compiled with poppler\n",
+                     PNG_LIBPNG_VER_STRING, png_libpng_ver,
+-                    ZLIB_VERSION, zlib_version, xpdfVersion);
++                    ZLIB_VERSION, zlib_version);
+ }
+ 
+ /*************************************************/
+Index: luatex-beta-0.40.0/source/m4/kpse-xpdf-flags.m4
+===================================================================
+--- luatex-beta-0.40.0.orig/source/m4/kpse-xpdf-flags.m4
++++ luatex-beta-0.40.0/source/m4/kpse-xpdf-flags.m4
+@@ -12,10 +12,10 @@
+ # Set the make variables XPDF_INCLUDES and XPDF_LIBS to the CPPFLAGS and
+ # LIBS required for the `-lxpdf' library in libs/xpdf/ of the TL tree.
+ AC_DEFUN([KPSE_XPDF_FLAGS],
+-[_KPSE_LIB_FLAGS([xpdf], [xpdf], [],
++[_KPSE_LIB_FLAGS([xpdf], [xpdf], [$1],
+                  _Kpse_Xpdf_Flags[ -IBLD/libs/xpdf -IBLD/libs/xpdf/goo -IBLD/libs/xpdf/fofi -IBLD/libs/xpdf/xpdf],
+                  [BLD/libs/xpdf/libxpdf.a],
+-                 [tree],
++                 [],
+                  [], [${top_builddir}/../../libs/xpdf/xpdf/Stream.h])[]dnl
+ ]) # KPSE_XPDF_FLAGS
+ 
+@@ -27,4 +27,10 @@ AC_DEFUN([KPSE_XPDF_SELF_FLAGS],
+ AC_SUBST([XPDF_SELF_FLAGS])[]dnl
+ ]) # KPSE_XPDF_SELF_FLAGS
+ 
++AC_DEFUN([KPSE_XPDF_SYSTEM_FLAGS],
++[[PKG_CHECK_MODULES(POPPLER, poppler >= 0.10)
++XPDF_LIBS=${POPPLER_LIBS}
++XPDF_INCLUDES=${POPPLER_CFLAGS}
++]]) #KPSE_XPDF_SELF_FLAGS
++
+ m4_define([_Kpse_Xpdf_Flags], [-DPDF_PARSER_ONLY])
+Index: luatex-beta-0.40.0/source/libs/xpdf/ac/withenable.ac
+===================================================================
+--- luatex-beta-0.40.0.orig/source/libs/xpdf/ac/withenable.ac
++++ luatex-beta-0.40.0/source/libs/xpdf/ac/withenable.ac
+@@ -4,4 +4,4 @@ dnl Copyright (C) 2009 Peter Breitenlohn
+ dnl You may freely use, modify and/or distribute this file.
+ dnl
+ ## configure options and TL libraries required for xpdf
+-KPSE_WITH_LIB([xpdf], , [tree])
++KPSE_WITH_LIB([xpdf])
+Index: luatex-beta-0.40.0/source/texk/web2c/configure.ac
+===================================================================
+--- luatex-beta-0.40.0.orig/source/texk/web2c/configure.ac
++++ luatex-beta-0.40.0/source/texk/web2c/configure.ac
+@@ -196,6 +196,7 @@ AC_TYPE_LONG_LONG_INT
+ dnl FIXME: needed for libpdf -> xpdf ?
+ AC_CHECK_HEADERS([time.h])
+ 
++PKG_PROG_PKG_CONFIG
+ dnl FIXME: obsolete
+ AC_TYPE_SIGNAL
+ 
