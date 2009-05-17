@@ -1,7 +1,7 @@
 GLEP: 55
 Title: Use EAPI-suffixed ebuilds (.ebuild-EAPI)
-Version: $Revision: 1.3 $
-Last-Modified: $Date: 2009/05/17 15:50:27 $
+Version: $Revision: 1.4 $
+Last-Modified: $Date: 2009/05/17 17:00:30 $
 Author: Piotr Jaroszyński <peper@gentoo.org>
 Status: Draft
 Type: Standards Track
@@ -38,6 +38,8 @@ managers and hence there is no way to do any of the following:
   *  Extend versioning rules in an EAPI - for example, addition of the scm
      suffix - GLEP54 [#GLEP54]_ or allowing more sensible version formats like
      ``1-rc1``, ``1-alpha`` etc. to match upstream more closely.
+
+  *  Use newer bash features.
 
 
 Current behaviour
@@ -121,6 +123,44 @@ New version format
  emerge: there are no ebuilds to satisfy "sys-apps/foo"
 
 Not the best error message, especially if there are lots of them.
+
+Use newer bash features
+-----------------------
+
+``|&`` is a new type of redirection added in bash-4. It cannot be used even in
+local scope as bash still parses the whole ebuild.
+
+``sys-apps/foo-1.ebuild``::
+
+ EAPI="5"
+
+ foo() {
+    echo "foo" |& cat
+ }
+
+Result::
+
+ /var/lib/gentoo/repositories/peper/sys-apps/foo/foo-1.ebuild: line 8: syntax error near unexpected token `&'
+ /var/lib/gentoo/repositories/peper/sys-apps/foo/foo-1.ebuild: line 8: ` echo "foo" |& cat'
+ *
+ * ERROR: sys-apps/foo-1 failed.
+ * Call stack:
+ *               ebuild.sh, line 1879:  Called _source_ebuild
+ *               ebuild.sh, line 1818:  Called die
+ * The specific snippet of code:
+ *      source "${EBUILD}" || die "error sourcing ebuild"
+ *  The die message:
+ *   error sourcing ebuild
+ *
+ * If you need support, post the topmost build error, and the call stack if relevant.
+ * This ebuild is from an overlay: '/var/lib/gentoo/repositories/peper/'
+ *                                                                                                                                                                                                       ... done!
+
+ !!! All ebuilds that could satisfy "sys-apps/foo" have been masked.
+ !!! One of the following masked packages is required to complete your request:
+ - sys-apps/foo-1 (masked by: corruption)
+
+Again, not the best error.
 
 Abstract solution
 =================
