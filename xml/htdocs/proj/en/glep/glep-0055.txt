@@ -1,7 +1,7 @@
 GLEP: 55
 Title: Use EAPI-suffixed ebuilds (.ebuild-EAPI)
-Version: $Revision: 1.4 $
-Last-Modified: $Date: 2009/05/17 17:00:30 $
+Version: $Revision: 1.5 $
+Last-Modified: $Date: 2009/05/17 20:56:53 $
 Author: Piotr Jaroszyński <peper@gentoo.org>
 Status: Draft
 Type: Standards Track
@@ -217,6 +217,11 @@ second is ensuring that all the ebuilds for a single category/package-version
 are equivalent, i.e. installing any of them has exactly the same effect on a
 given system.
 
+Also note that it is not a new restriction. It is already possible to illegally
+have multiple versions with different EAPIs as e.g. ``1.0 == 1.00 == 1.00-r0``
+and hence you could have ``foo-1.0.ebuild`` with EAPI X and ``foo-1.00.ebuild``
+with EAPI Y.
+
 Summary of ideas
 ================
 
@@ -258,6 +263,39 @@ picture package managers need EAPI to parse the ebuild's version. That means tha
 picking the best version of a package requires loading EAPI (from cache or the
 ebuild) for each available ebuild.
 
+Here is more or less how the package manager figures out the best available
+version for a package with N versions available.
+
+ * EAPI in the filename
+
+   * Read the directory containing the package - readdir()
+   * For each ebuild, read its EAPI and using that parse its version - no I/O
+   * Sort the versions - no I/O
+   * Going down from the highest to the lowest version
+
+     * Get the metadata from cache - 2 x stat() + read()
+     * break if the version is visible
+
+ * EAPI in the ebuild
+
+   * Read the directory containing the package - readdir()
+   * For each ebuild load its metadata from cache to get its EAPI - N x (2 x stat() + read())
+   * Sort the versions - no I/O
+   * Going down from the highest to the lowest version
+
+     * (metadata is already loaded) - no I/O
+     * break if the version is visible - no I/O
+
+The difference is in for how many versions the package manager needs to hit
+cache. With EAPI in the ebuild it needs to do that for all versions, with EAPI
+in the filename it depends on versions visibility.
+For example, package foo has versions 1, 2, 3, 4, 5 and 6. 6 is masked, 5 is
+~arch and 1,2,3 and 4 are arch. Say, the user accepts only arch for this
+package. With EAPI in the filename it will read metadata only for versions
+6, 5 and 4. With EAPI in the ebuild it needs to load metadata for all versions.
+
+It's hard to say what's the avarage case, but surely the worst case scenario
+(when only the lowest version is visible) is uncommon.
 
 Easily fetchable EAPI inside the ebuild and one-time extension change
 ---------------------------------------------------------------------
