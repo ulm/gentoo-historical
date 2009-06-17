@@ -1160,16 +1160,18 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 
     <a name="{$preid}"/>
     <table class="ntable" width="100%" cellspacing="0" cellpadding="0" border="0">
-      <tr>
-        <td bgcolor="#7a5ada">
-          <p class="codetitle">
-          <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>
-          <xsl:if test="@caption">
-            <xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
-          </xsl:if>
-          </p>
-        </td>
-      </tr>
+      <xsl:if test="@plain!='true'">
+        <tr>
+          <td bgcolor="#7a5ada">
+            <p class="codetitle">
+            <xsl:value-of select="func:gettext('CodeListing')"/>&#160;<xsl:if test="$chid"><xsl:value-of select="$chid"/>.</xsl:if><xsl:value-of select="$prenum"/>
+            <xsl:if test="@caption">
+              <xsl:value-of select="func:gettext('SpaceBeforeColon')"/>: <xsl:value-of select="@caption"/>
+            </xsl:if>
+            </p>
+          </td>
+        </tr>
+      </xsl:if>
       <tr>
         <td bgcolor="#eeeeff" align="left" dir="ltr">
           <pre>
