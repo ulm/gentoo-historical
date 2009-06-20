@@ -1,6 +1,6 @@
 diff -ur StepMania-3.9-src.orig/configure.ac StepMania-3.9-src/configure.ac
 --- StepMania-3.9-src.orig/configure.ac	2005-11-03 17:27:02.000000000 +0200
-+++ StepMania-3.9-src/configure.ac	2007-08-07 16:57:06.000000000 +0300
++++ StepMania-3.9-src/configure.ac	2009-06-21 00:56:14.000000000 +0300
 @@ -159,39 +159,13 @@
  SM_AUDIO
  SM_TLS
@@ -46,10 +46,9 @@ diff -ur StepMania-3.9-src.orig/configure.ac StepMania-3.9-src/configure.ac
  
  SM_CHECK_CRASH_HANDLER
  
-Only in StepMania-3.9-src: configure.ac.orig
 diff -ur StepMania-3.9-src.orig/src/arch/MovieTexture/MovieTexture_FFMpeg.cpp StepMania-3.9-src/src/arch/MovieTexture/MovieTexture_FFMpeg.cpp
 --- StepMania-3.9-src.orig/src/arch/MovieTexture/MovieTexture_FFMpeg.cpp	2005-10-17 05:25:55.000000000 +0300
-+++ StepMania-3.9-src/src/arch/MovieTexture/MovieTexture_FFMpeg.cpp	2007-08-07 16:57:06.000000000 +0300
++++ StepMania-3.9-src/src/arch/MovieTexture/MovieTexture_FFMpeg.cpp	2009-06-21 00:56:20.000000000 +0300
 @@ -1,3 +1,6 @@
 +#define __STDC_CONSTANT_MACROS
 +#include <stdint.h>
@@ -61,9 +60,10 @@ diff -ur StepMania-3.9-src.orig/src/arch/MovieTexture/MovieTexture_FFMpeg.cpp St
  #if defined(_WIN32)
  #include "ffmpeg/include/ffmpeg/avformat.h"
  #else
+-#include <ffmpeg/avformat.h>
 +extern "C"
 +{
- #include <ffmpeg/avformat.h>
++#include <libavformat/avformat.h>
 +}
  #endif
 -};
@@ -71,18 +71,18 @@ diff -ur StepMania-3.9-src.orig/src/arch/MovieTexture/MovieTexture_FFMpeg.cpp St
 +#if !defined(HAVE_IMG_CONVERT)
 +extern "C"
 +{
-+#include <ffmpeg/swscale.h>
++#include <libswscale/swscale.h>
 +}
 +#endif // HAVE_IMG_CONVERT
-+    void img_convert__(AVPicture *dst, int dst_pix_fmt,
-+                       const AVPicture *src, int pix_fmt,
++    void img_convert__(AVPicture *dst, enum PixelFormat dst_pix_fmt,
++                       const AVPicture *src, enum PixelFormat pix_fmt,
 +                       int width, int height)
 +    {
 +#ifdef HAVE_IMG_CONVERT
 +        img_convert(dst, dst_pix_fmt, src, pix_fmt, width, height);
 +#else
 +        static SwsContext* context = 0;
-+        context = sws_getCachedContext(context, width, height, pix_fmt, width, height, dst_pix_fmt, 0, NULL, NULL, NULL);
++        context = sws_getCachedContext(context, width, height, pix_fmt, width, height, dst_pix_fmt, SWS_SPLINE, NULL, NULL, NULL);
 +        sws_scale(context, const_cast<uint8_t**>(src->data), const_cast<int*>(src->linesize), 0, height, dst->data, dst->linesize);
 +#endif // HAVE_IMG_CONVERT
 +    }
@@ -179,6 +179,15 @@ diff -ur StepMania-3.9-src.orig/src/arch/MovieTexture/MovieTexture_FFMpeg.cpp St
  	default: Error = ssprintf( "unknown error %i", err ); break;
  	}
  
+@@ -522,7 +574,7 @@
+ 	return f->Read( buf, size );
+ }
+ 
+-avcodec::offset_t URLRageFile_seek( avcodec::URLContext *h, avcodec::offset_t pos, int whence )
++int64_t URLRageFile_seek( avcodec::URLContext *h, int64_t pos, int whence )
+ {
+ 	RageFile *f = (RageFile *) h->priv_data;
+ 	return f->Seek( (int) pos, whence );
 @@ -573,6 +625,17 @@
  	if ( stream == NULL )
  		RageException::Throw( "AVCodec (%s): Couldn't find any video streams", GetID().filename.c_str() );
@@ -245,7 +254,7 @@ diff -ur StepMania-3.9-src.orig/src/arch/MovieTexture/MovieTexture_FFMpeg.cpp St
  	return 0;
 diff -ur StepMania-3.9-src.orig/src/Makefile.am StepMania-3.9-src/src/Makefile.am
 --- StepMania-3.9-src.orig/src/Makefile.am	2004-09-08 09:48:45.000000000 +0300
-+++ StepMania-3.9-src/src/Makefile.am	2007-08-07 16:57:06.000000000 +0300
++++ StepMania-3.9-src/src/Makefile.am	2009-06-21 00:56:14.000000000 +0300
 @@ -303,6 +303,10 @@
  		  $(XLIBS) \
  		  $(srcdir)/libresample/libresample.a
@@ -257,4 +266,3 @@ diff -ur StepMania-3.9-src.orig/src/Makefile.am StepMania-3.9-src/src/Makefile.a
  stepmania_SOURCES = $(main_SOURCES)
  stepmania_LDADD = $(main_LDADD)
  
-Only in StepMania-3.9-src/src: Makefile.am.orig
