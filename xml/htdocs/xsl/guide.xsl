@@ -1160,7 +1160,6 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 
     <a name="{$preid}"/>
     <table class="ntable" width="100%" cellspacing="0" cellpadding="0" border="0">
-      <xsl:if test="@plain!='true'">
         <tr>
           <td bgcolor="#7a5ada">
             <p class="codetitle">
@@ -1171,7 +1170,6 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
             </p>
           </td>
         </tr>
-      </xsl:if>
       <tr>
         <td bgcolor="#eeeeff" align="left" dir="ltr">
           <pre>
