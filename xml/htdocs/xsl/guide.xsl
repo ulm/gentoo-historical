@@ -1911,6 +1911,9 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     </p>
 
     <xsl:choose>
+      <xsl:when test="$thenews/@category='birthday'">
+        <img class="newsicon" src="/images/birthday_cake.png" alt="Happy Birthday"/>
+      </xsl:when>
       <xsl:when test="$thenews/@category='gentoo'">
         <img class="newsicon" src="/images/icon-gentoo.png" alt="gentoo"/>
       </xsl:when>
