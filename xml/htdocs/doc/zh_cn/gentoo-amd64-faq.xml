@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/gentoo-amd64-faq.xml,v 1.7 2009/06/19 17:42:05 r0bertz Exp $ --> 
-<!-- English CVS version: 1.33 -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/gentoo-amd64-faq.xml,v 1.8 2009/07/03 18:11:16 r0bertz Exp $ --> 
+<!-- English CVS version: 1.36 -->
 
 <guide link="/doc/zh_cn/gentoo-amd64-faq.xml" lang="zh_cn">
 <title>Gentoo Linux/AMD64常见问题</title>
@@ -37,8 +37,8 @@
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.24</version>
-<date>2009-04-24</date>
+<version>1.27</version>
+<date>2009-06-18</date>
 
 <faqindex>
 <title>问题</title>
@@ -56,13 +56,33 @@
 
 <chapter>
 <title>安装</title>
+<section id="difference">
+<title>AMD64和EM64T有什么区别？</title>
+<body>
+
+<p>
+两个都是指64位处理器，一个来自AMD（AMD64），另一个来自Intel（EM64T）。AMD的64位
+处理器包括Athlon 64、Turion、Neo、Phenom和Opteron几个系列。而Intel的64位处理器
+包括Core2、Core i<e>X</e>、Celeron、Xeon和Pentium（所有属于Core2构架的）。
+<uri link="http://en.wikipedia.org/wiki/Em64t#Intel_64">最新的几个版本</uri>的Pentium 4和Xeon芯片也支持EM64T。
+</p>
+
+<p>
+在Intel提供64位处理器之前许久，AMD就已经提供了64位的处理器。因此由于历史原因，适用于所有x86-64兼容构架的keyword是amd64。照这样，<e>AMD64</e>是一个对于所有64位芯片（无论AMD或是Intel）通用的参考。
+</p>
+  	 
+</body>
+</section>
+
 <section id="cflags">
 <title>对于AMD64/EM64T构架我应该使用哪些CFLAGS？</title>
 <body>
 
 <p>
-你应该尽可能地简化你的<c>CFLAGS</c>来避免你的系统未来可能发生的一些问题。以下是受支持的<c>CFLAGS</c>：<c>-O2 -march=k8
--pipe</c>（对于非EM64T系统）和<c>-O2 -march=nocona -pipe</c>（对于EM64T系统）。
+你应该尽可能地简化你的<c>CFLAGS</c>来避免你的系统未来可能发生的一些问题。
+以下为被支持的<c>CFLAGS</c>：对于AMD系统：<c>-O2 -march=k8 -pipe</c>。
+对于基于Core2的系统（EM64T）：<c>-O2 -march=core2 -pipe</c>。
+如果你是支持EM64T的Intel Pentium 4的用户，请使用<c>-O2 -march=nocona -pipe</c>。
 </p>
 
 </body>
@@ -170,37 +190,45 @@ Gentoo内核项目提供的所有内核都不支持Reiser4，所以AMD64小组�
 </body>
 </section>
 <section id="coolnquiet">
-<title>我应该如何使用Cool'n'Quiet或者PowerNow特性？</title>
+<title>我应该如何使用Cool'n'Quiet、PowerNow或者SpeedStep特性？</title>
 <body>
 
 <p>
 你必须把对这些特性的支持编译到你的内核中。你需要激活以下选项：
 </p>
 
-<pre caption="针对Cool'n'Quiet或者PowerNow的内核选项">
+<pre caption="针对Cool'n'Quiet、PowerNow或者SpeedStep的内核选项">
 Power management options ---&gt;
   [*] Power Management support
+  [*] ACPI (Advanced Configuration and Power Interface) Support ---&gt;
+     &lt;*&gt;   Processor
+     &lt;*&gt;     Thermal Zone
 CPU Frequency scaling ---&gt;
   [*] CPU Frequency scaling
-  [*] CPU frequency table helpers
-  [*] AMD Opteron/Athlon64 PowerNow!
+        Default CPUFreq governor (ondemand) ---&gt;
+      -*-   'performance' governor
+      &lt;*&gt;   'userspace' governor for userspace frequency scaling
+      -*-   'ondemand' cpufreq policy governor
+      &lt;*&gt;   ACPI Processor P-States driver
+      &lt;*&gt;   AMD Opteron/Athlon64 PowerNow!
+     -*- CPU idle PM support
 </pre>
 
 <p>
-然后运行<c>emerge cpudyn</c>，接着使用你最喜欢的编辑器来编辑<path>/etc/conf.d/cpudyn</path>文件。
+然后运行<c>emerge cpufrequtils</c>，接着使用你最喜欢的编辑器来编辑<path>/etc/conf.d/cpufrequtils</path>文件。
 </p>
 
-<pre caption="/etc/conf.d/cpudyn文件范例">
-INTERVAL=1
-CPU_UP=0.5
-CPU_DOWN=0.9
-THROTTLING_LOW=7
-CPUFREQ_25="/sys/devices/system/cpu/cpu0/cpufreq /sysfs/devices/system/cpu/cpu0/cpufreq"
-CPUFREQ_ACPI="/proc/acpi/processor/CPU0/throttling"
+<pre caption="/etc/conf.d/cpufrequtils文件范例">
+# Options when starting cpufreq (given to the 'cpufreq-set' program)
+START_OPTS="--governor ondemand"
+
+# Options when stopping cpufreq (given to the 'cpufreq-set' program)
+STOP_OPTS="--governor performance"
+
 </pre>
 
 <p>
-现在你只需要运行<c>rc-update add cpudyn default</c>来确保它在你每一次启动系统的时候都启动了。
+现在你只需要运行<c>rc-update add cpufrequtils boot</c>来确保它在你每一次启动系统的时候都启动了。
 </p>
 
 <note>
