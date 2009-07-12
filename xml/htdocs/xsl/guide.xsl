@@ -56,6 +56,11 @@
  </xsl:call-template>
 </xsl:variable>
 
+<!-- Debug mode, when /debug.xml exists, should never be available on www.g.o -->
+<xsl:variable name="debug">
+ <xsl:if test="document('/debug.xml')/debug/@on='1'">1</xsl:if>
+</xsl:variable>
+
 <!-- img tag -->
 <xsl:template match="img">
   <img src="{@src}" alt=""/>
@@ -774,7 +779,17 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 
   <xsl:choose>
     <xsl:when test="include">
-      <xsl:apply-templates select="document(include/@href)//chapter"/>
+      <xsl:choose>
+       <xsl:when test="$debug='1'">
+         <div style="border-left:4px solid #AAA;padding-left:4px;">
+          <div style="color:white;background:#AAA;font-weight:bold;padding:4px;margin-left:-4px;"><xsl:value-of select="include/@href"/></div>
+          <xsl:apply-templates select="document(include/@href)//chapter"/>
+         </div>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:apply-templates select="document(include/@href)//chapter"/>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:when>
 
     <xsl:when test="title">
@@ -876,7 +891,17 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 
   <xsl:choose>
     <xsl:when test="include">
-      <xsl:apply-templates select="document(include/@href)//section"/>
+      <xsl:choose>
+       <xsl:when test="$debug='1'">
+        <div style="border-left:4px solid #888;padding-left:4px;">
+         <div style="color:white;background:#888;font-weight:bold;padding:4px;margin-left:-4px;"><xsl:value-of select="include/@href"/></div>
+         <xsl:apply-templates select="document(include/@href)//section"/>
+        </div>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:apply-templates select="document(include/@href)//section"/>
+       </xsl:otherwise>
+      </xsl:choose>
     </xsl:when>
 
     <xsl:when test="title">
@@ -1123,7 +1148,17 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
  <xsl:if test="not(@test) or dyn:evaluate(@test)">
     <xsl:choose>
       <xsl:when test="include">
-        <xsl:apply-templates select="document(include/@href)//body"/>
+       <xsl:choose>
+        <xsl:when test="$debug='1'">
+         <div style="border-left:4px solid #666;padding-left:4px;">
+          <div style="color:white;background:#666;font-weight:bold;padding:4px;margin-left:-4px;"><xsl:value-of select="include/@href"/></div>
+          <xsl:apply-templates select="document(include/@href)//body"/>
+         </div>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:apply-templates select="document(include/@href)//body"/>
+        </xsl:otherwise>
+       </xsl:choose>
       </xsl:when>
      <xsl:otherwise>
       <xsl:apply-templates select="./*[not(@test) or dyn:evaluate(@test)]"/>

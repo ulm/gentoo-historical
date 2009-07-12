@@ -20,6 +20,7 @@
   <xsl:param name="doc"/>
   <doc-struct>
     <xsl:attribute name="type"><xsl:value-of select="name($doc/*[1])"/></xsl:attribute>
+    <file><xsl:value-of select="$link"/></file>
     <xsl:if test="$doc/*[1]/date">
       <date><xsl:value-of select="$doc/*[1]/date"/></date>
     </xsl:if>
@@ -36,6 +37,7 @@
               <bookchap pos="{$curchap}">
                 <xsl:if test="$full='1' or ($curpart=$part and $curchap=$chap)">
                   <xsl:variable name="inc" select="document(include/@href)"/>
+                  <file><xsl:value-of select="include/@href"/></file>
                   <xsl:if test="$inc/sections/date">
                     <date><xsl:value-of select="$inc/sections/date"/></date>
                   </xsl:if>
@@ -69,6 +71,7 @@
    <xsl:choose>
     <xsl:when test="$chapter/include">
       <xsl:variable name="inc" select="document($chapter/include/@href)"/>
+      <file><xsl:value-of select="$chapter/include/@href"/></file>
       <xsl:if test="$inc//date">
         <date><xsl:value-of select="$inc//date"/></date>
       </xsl:if>
@@ -111,6 +114,7 @@
     <xsl:choose>
       <xsl:when test="$section/include">
         <xsl:variable name="inc" select="document($section/include/@href)"/>
+        <file><xsl:value-of select="$section/include/@href"/></file>
         <xsl:if test="$inc//date">
           <date><xsl:value-of select="$inc//date"/></date>
         </xsl:if>
@@ -149,6 +153,7 @@
   <xsl:choose>
     <xsl:when test="$body/include">
       <xsl:variable name="inc" select="document($body/include/@href)"/>
+      <file><xsl:value-of select="$body/include/@href"/></file>
       <xsl:if test="$inc//date">
         <date><xsl:value-of select="$inc//date"/></date>
       </xsl:if>

@@ -267,6 +267,12 @@
   <xsl:if test="@id">
     <a name="{@id}"/>
   </xsl:if>
+
+  <xsl:if test="$debug='1'">
+    <xsl:text disable-output-escaping="yes">&lt;div style="border-left:4px solid #AAA; margin-top:4px; padding-left:4px;"&gt;</xsl:text>
+    <div style="color:white;background:#AAA;font-weight:bold;padding:4px;margin-left:-4px;"><xsl:value-of select="include/@href"/></div>
+  </xsl:if>
+
   <xsl:if test="$full = 1">
     <a name="book_part{$partnum}_chap{$chapnum}"/>
     <h3><xsl:number level="multiple" format="1. " value="position()"/><xsl:value-of select="title" /></h3>
@@ -302,6 +308,10 @@
       </xsl:apply-templates>
     </xsl:otherwise>
   </xsl:choose>
+
+  <xsl:if test="$debug='1'">
+    <xsl:text disable-output-escaping="yes">&lt;/div&gt;</xsl:text>
+  </xsl:if>
   
   <xsl:call-template name="menubar" />
 
