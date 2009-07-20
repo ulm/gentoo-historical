@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/udev-guide.xml,v 1.11 2006/04/26 17:19:22 idani Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/udev-guide.xml,v 1.12 2009/07/20 10:22:31 shindo Exp $ -->
 
 <guide link="/doc/ja/udev-guide.xml" lang="ja">
 <title>Gentoo udev ガイド</title>
@@ -12,20 +12,28 @@
 <author title="Contributor">
   <mail link="greg_g@gentoo.org">Gregorio Guidi</mail>
 </author>
+<author title="Editor">
+  <mail link="nightmorph"/>
+</author>
 <author title="翻訳">
   <mail link="igarashi@gentoo.gr.jp">五十嵐 正尚</mail>
+</author>
+<author title="翻訳">
+  <mail link="shindo@gentoo.gr.jp">シンドウナオアキ</mail>
 </author>
 
 <abstract>
 この文書では、udevとは何であるか、そして、それはユーザの要求を満たすためにどのように使用することができるかを説明します。
 </abstract>
 
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.23</version>
-<date>2006-03-25</date>
+<version>4</version>
+<date>2009-01-26</date>
 
-<!-- Original revision: 1.30 -->
+<!-- Original revision: 1.49 -->
 
 <chapter>
 <title>udevって何?</title>
@@ -138,8 +146,7 @@ libsysfsプロジェクトは、sysfsファイルシステムによって提供�
 <body>
 
 <p>
-カーネルは、デバイス構造の変更を検知すると、<path>/sbin/hotplug</path>プログラムを実行します。hotplugは、<path>/etc/hotplug.d/default</path>ディレクトリにリンクされたアプリケーションを実行します。そのディレクトリには、さらにudevアプリケーションへのシンボリックリンクが見つかるでしょう。
-hotplugは、<path>/dev</path>に必要なアクション(デバイスファイルの作成もしくは削除)を実行するudevアプリケーションに、カーネルによって提供される情報を配送します。
+カーネルがデバイス構造のイベントを検知すると、udevに対して確認するように指示します。udevは<path>/etc/udev/rules.d/</path>ディレクトリにあるルールに従います。そして、udevは、<path>/dev</path>構造上で必要なアクション（デバイスファイルの作成や削除）を行うためカーネルから提供された情報を利用します。
 </p>
 
 </body>
@@ -153,37 +160,12 @@ hotplugは、<path>/dev</path>に必要なアクション(デバイスファイ�
 <body>
 
 <p>
-udevは、(デフォルトの2005.0のプロファイルにある<c>vanilla-sources</c>もしくは<c>gentoo-sources</c>のような)カーネル2.6との組み合わせで使用されるように意図されています。
+udevは、(デフォルトの2007.0のプロファイルにある<c>gentoo-sources</c>のような)カーネル2.6との組み合わせで使用されるように意図されています。
 このようなカーネルを使用しているなら、最新の<c>sys-apps/baselayout</c>バージョンを使用しているか確認する必要があります。必要な条件はこれだけです。
 </p>
 
 <pre caption="udevのインストール">
 # <i>emerge udev</i>
-</pre>
-
-<p>
-udevは、依存するものの一つとして<c>hotplug-base</c>をインストールします。
-デバイスの接続時に、モジュールが自動的にロードされるのを望まない場合は、<c>hotplug</c>をインストールする必要はありません。<c>hotplug</c>は、ネットワークデバイスの自動起動やファームウェアのダウンロードも処理します。
-</p>
-
-<pre caption="オプション扱いのhotplugスクリプトのインストール">
-# <i>emerge hotplug</i>
-</pre>
-
-<p>
-接続済みのデバイスに対するモジュールが、起動前から自動でロードされてほしいなら、coldplugパッケージを使用してください。
-</p>
-
-<pre caption="coldplugパッケージのインストール">
-# <i>emerge coldplug</i>
-</pre>
-
-<p>
-bootランレベルに<c>coldplug</c>を追加することを忘れないでください。
-</p>
-
-<pre caption="bootランレベルにcoldplugを追加">
-# <i>rc-update add coldplug boot</i>
 </pre>
 
 <p>
@@ -195,25 +177,15 @@ General setup ---&gt;
   [*] Support for hot-pluggable devices
 
 File systems ---&gt;
+   [*] Inotify file change notification support
+   [*]   Inotify support for userspace
   Pseudo filesystems ---&gt;
     [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
 </pre>
 
 <p>
-以下のように、希望するなら<c>/dev file system support (OBSOLETE)</c>を有効のままにしておくことができます。ですが、"Automatically mount at boot"は、確実に無効にされなければなりません。
-</p>
-
-<pre caption="自動でdevfsdをマウントしてはいけません">
-File systems ---&gt;
-  Pseudo Filesystems ---&gt;
-    [*] /dev file system support (OBSOLETE)
-      [ ]   Automatically mount at boot
-</pre>
-
-<p>
-<c>genkernel</c>を使用するなら、すべての必要なカーネル設定を有効にするために、<c>--udev</c>オプションを付けて実行することを忘れないでください。
-この<c>genkernel</c>によって提供される一般的な設定は、必要なものを満たします。
+もし、<c>genkernel</c>を使っているならば、特に何もする必要はありません。Genkernelはデフォルトでudevをセットアップします。
 </p>
 
 </body>
@@ -223,12 +195,13 @@ File systems ---&gt;
 <body>
 
 <p>
-あなたのシステム環境を快適にするためにGentooが追加したudev-tweaksを使用したいなら、これ以上読まないでください。不足しているデバイスノードが少しもないように、Gentooはudevを使用しても、静的な<path>/dev</path>を維持し続けます。
+システムを快適にするためにGentooが提供しているudev設定を使用したい場合は、これ以上読まないでください。
+Gentooはudevを使いますが、デバイスノードが欠けるようなことがないよう、静的な<path>/dev</path>を継続します。
 Gentooのinitスクリプトは、devfsdデーモンを実行しませんし、ブート時にdevfsを停止状態にします。
 </p>
 
 <p>
-しかし、あなたが頑固な人で、udev開発者によって意図される(udevがまだサポートしていないことによるデバイスノード不足の障害も含む)通りに、udev-tweaksを使用しない、udevだけのシステムを走らせたいなら、必ずこのまま読み続けてください。
+しかし、あなたが頑固な人で、udev開発者が意図する(udevがまだサポートしていないことによるデバイスノード不足の障害も含む)通りに、udevだけのシステムを走らせたいなら、必ずこのまま読み続けてください。
 </p>
 
 <p>
@@ -309,79 +282,143 @@ udevのみのシステムでnVidia社が開発したドライバを使用し、X
     <path>/etc/modules.autoload.d/kernel-2.6</path>に<c>nvidia</c>モジュールが記述されているか
   </li>
   <li>
-    <c>nvidia-kernel</c>のバージョンが<c>media-video/nvidia-kernel-1.0.5336-r2</c>と同じかより大きいものであるか
-  </li>
-  <li>
     baselayoutのバージョンが<c>sys-apps/baselayout-1.8.12</c>と同じかより大きいものであるか
   </li>
 </ul>
 
+</body>
+</section>
+<section>
+<title>DevFSとudevの間で一貫しない名前付け</title>
+<body>
+
 <p>
-<c>xorg-x11</c>が立ち上がろうとしないなら、<path>/dev/nvidia</path>デバイスファイルがないことが原因かもしれません。
-この場合、そのファイルを(再)作成するために<path>/sbin/NVmakedevices.sh</path>を実行してください。
+二つの動的なデバイス管理方法に一貫した名前付けスキーマを持つという、私たちの意図にも関わらず、名前の食い違いが時々発生します。
+</p>
+<p>
+HP Smart Array 5i RAID コントローラ（正確には<c>cciss</c>カールモジュール）に関して、この種の障害が報告されました。
+udevでは、このデバイスは、X,Y,Zを規則的な番号として<path>/dev/cciss/cXdYpZ</path>という名前になります。
+devfsでは、<path>/dev/hostX/targetY/partZ</path>または<path>/dev/cciss/cXdY</path>からのシンボリックリンクになります。
+</p>
+
+<p>
+この場合、<path>/etc/fstab</path>とブートローダ設定ファイルを状況に応じてアップデートをするのを忘れないでください。
+</p>
+
+<p>
+同じことが、<c>udev</c>ではすでに作成されない<path>/dev/mouse</path>のような<path>/dev</path>に存在していたシンボリックリンクでも起きます。
+Xの設定ファイルを念入りにチェックし、マウスのDeviceルールが、存在するデバイスファイルを指しているかどうか見てください。
+</p>
+
+<p>
+devfsとudev間のターミナルの名前の違卯という別な問題もあります。
+devfsではターミナルを<c>tty</c>と呼び、udevでは<c>vc</c>と<c>tty</c>と呼びます。
+これにより、<path>/etc/security</path>を使ってrootのコンソールログインを制限している場合には問題を引き起こすかもしれません。
+rootがコンソールからログインできるよう、<path>/etc/security</path>のなかに<c>tty1</c>と<c>vc1</c>があるかどうか確かめてください。
 </p>
 
 </body>
 </section>
 <section>
-<title>LVM2での名前の消失</title>
+<title>ブロックデバイスのリネーム</title>
 <body>
 
 <p>
-<c>udev</c>とLVM2を一緒に使用するときは、ユーザが作成したボリュームグループと論理ボリュームが消失してしまうことに注意してください。それらは消失していますが、不運にも<path>/dev/dm-#</path>(#は0, 1, ...である)という名前を割り当てらています。
+最近のudev（104以上）と新しめのカーネルバージョン(2.6.19以上）が一緒になると、カーネルのlibataの実装変更によっては、ディスクデバイスの名前が変更されるかもしれません。
+<path>/dev/hdc</path>にあるCD-RWデバイスは<path>/dev/sr0</path>に変更されるかもしれません。
+一方、これは通常の問題ではなく、別な場所でデバイスを探すためにハードコードされたアプリケーションにおいて問題となりえます。
+例えば、<c>media-sound/rip</c>はディスクを見つけるのに、<path>/dev/cdrom</path>を前提しますが、
+新しいカーネルとudevにより、<path>/dev/cdrom1</path>に名前が変更されていた場合には問題となります。
 </p>
 
 <p>
-これを修正するために、<path>/etc/udev/rules.d/50-udev.rules</path>を編集し、以下の行のコメントを外してください。
+これらの問題への対応として、<path>/etc/udev/rules.d/70-persistent-cd.rules</path>を編集し、正しい名前を割り当てなければなりません。
 </p>
-
-<pre caption="/etc/udev/rules.d/50-udev.rulesのこの行のコメントを外す">
-KERNEL="dm-[0-9]*",     PROGRAM="/sbin/devmap_name %M %m", NAME="%k", SYMLINK="%c"
-</pre>
 
 <p>
-次に、<c>devmap_name</c>アプリケーションを含む<c>sys-fs/multipath-tools</c>をインストールしてください。 
+udevルールを書くためにのより詳しい情報は、Daniel Drakeの<uri link="">ガイド</uri>を読むようにしてください。
+（訳注：<uri link="http://www.gentoo.gr.jp/transdocs/udevrules/udevrules.html">日本語訳</uri>）
 </p>
-
-<pre caption="multipath-toolsのインストール">
-<comment>(執筆時には、multipath-toolsはテストブランチでだけ利用可能になっています)</comment>
-# <i>echo "=sys-fs/multipath-tools-0.4.2 ~x86" &gt;&gt; /etc/portage/package.keywords</i>
-# <i>emerge multipath-tools</i>
-</pre>
 
 </body>
 </section>
 <section>
-<title>DevFSとudevとの間で矛盾する命名規則</title>
+<title>ネットワークデバイスのリネーム</title>
 <body>
 
 <p>
-私たちが、両方の動的デバイス管理手法間(DevFSとudev間)で矛盾しない命名体系を使用するつもりでも、ときどき命名規則の違いが発生します。
+ネットワークデバイス（USB WiFiカードなど）の抜き差しにより、ネットワークデバイス名が一つずつインクリメントされることがあります。
 </p>
 
 <p>
-HP Smart Array 5i RAID コントローラ(より正確には<c>cciss</c>カーネルモジュール)に関して、命名規則の矛盾があることが報告されています。
-udevでは、そのデバイスは、<path>/dev/cciss/cXdYpZ</path>(X, Y, Z は規則的な数値)と名前を割り当てられます。devfsでは、そのデバイスは、<path>/dev/hostX/targetY/partZ</path>であり、もしくは<path>/dev/cciss/cXdY</path>からシンボリックリンクされます。
+こうしたことが起きた場合、<c>wlan0</c>、<c>wlan1</c>、<c>wlan2</c>といったものが見られます。
+これは、udevがすでにあるルールをリロードする代わりに、ルールファイルにルールを追加するためです。
+udevはルールディレクトリをinotifyにより監視していますので、カーネルコンフィグでinotifyサポートを有効にする必要があります。
+</p>
+
+<pre caption="inotifyサポートをカーネルで有効にする">
+File systems ---&gt;
+  [*] Inotify file change notification support
+  [*]   Inotify support for userspace
+</pre>
+
+<p>
+これで、udevによりネットワークデバイスに対する正しい名前が維持されます。
+</p>
+
+</body>
+</section>
+<section>
+<title>udevが予期できない順序でモジュールをロードする</title>
+<body>
+
+<p>
+ときどき、udevは意図しない、予期できない、もしくはランダムな順番でモジュールをロードします。
+とくに、マルチメディアデバイスのほか、同じタイプの複数デバイスがシステムにある場合によく起こります。
+割り当てられたデバイス番号に影響を及ぼします。たとえば、サウンドカードで番号が変わっている場合があります。
 </p>
 
 <p>
-このような場合、<path>/etc/fstab</path>とブートローダの設定ファイルを適宜変更することを忘れてはいけません。
+デバイス番号及び/又はモジュールロード順を固定するための方法はあまり多くありません。
+理想を言えば、モジュールパラメータを求めるデバイス番号を特定するために使えばよいのです。
+ALSAのようなモジュールでは、indexパラメータを持っています。
+こうしたインデックスパラメータを使っているモジュールでは、次に示すように調整することができます。
+この例では、システムは二つのサウンドカードをもっています。
+インデックスが0のカードが第一カードと指定されます。
+一度パラメータが変わってしまったならば、モジュールコンフィグファイルは更新される必要があります。
 </p>
 
+<pre caption="モジュールパラメータを指定する">
+# <i>echo "option snd-ice1724 index=0" >> /etc/modules.d/alsa</i>
+# <i>echo "option snd-ymfpci index=1" >> /etc/modules.d/alsa</i>
+# <i>update-modules</i>
+</pre>
+
 <p>
-例えば<path>/dev/mouse</path>のような、以前は<path>/dev</path>に存在していた、すべてのシンボリックリンクにも同じことが起こります。それらは、もはや<c>udev</c>は作成しません。
-Xの設定ファイルを必ずチェックして、マウスのDeviceルールが、存在するデバイスファイルを指しているか確認してください。
+上の例はよい解決策ですが、全てのモジュールがインデックスのようなパラメータをサポートしているわけではありません。
+こうしたモジュールについては、正しいモジュールロード順を強制する必要があるでしょう。
+まず、ブラックリストにそうしたモジュールを記載することで、udevの自動ロードを止めなければいけません。
+ロードされるときの正しい名前を使っていることを確認してください。
+PCI デバイスでは、<c>pciutils</c>パッケージにある<c>pcimodules</c>の出力から得られるモジュール名を使う必要があります。
+次の例は、DVBモジュールを使う例です。
 </p>
+
+<pre caption="モジュールをブラックリストに載せる">
+# <i>echo "blacklist b2c2-flexcop-pci" >> /etc/modprobe.d/dvb</i>
+# <i>echo "blacklist budget" >> /etc/modprobe.d/dvb</i>
+# <i>update-modules</i>
+</pre>
 
 <p> 
-devfsとudevでは端末デバイスの命名方法に違いがあるという別の問題があります。
-devfsは端末デバイスを<c>tty</c>と呼び、udevは<c>vc</c>と呼びます。
-これは<path>/etc/securetty</path>を使用してコンソールからrootログインを
-制限している場合に問題を引き起こします。
-rootユーザがコンソールを使用してログインできるようにするために、
-<path>/etc/securetty</path>において<c>tty1</c>が<c>vc/1</c>に変更されているこ
-とをよく確かめる必要があります。
+次に、モジュールを正しい順にロードさせます。
+それらを、<path>/etc/modules.autoload.d/kernel-2.6</path>に
+<e>ロードして欲しい適切な順で</e>加えます。
 </p> 
+
+<pre caption="適切な順番でのモジュールローディング">
+# <i>echo "budget" >> /etc/modules.autoload.d/kernel-2.6</i>
+ # <i>echo "b2c2-flexcop-pci" >> /etc/modules.autoload.d/kernel-2.6</i>
+</pre>
 
 </body>
 </section>
