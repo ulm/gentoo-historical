@@ -42,6 +42,9 @@
    <xsl:if test="email[substring-after(text(),'@')!='gentoo.org']">
     <email><xsl:value-of select="email[substring-after(text(),'@')!='gentoo.org'][1]"/></email>
    </xsl:if>
+   <xsl:for-each select="alias">
+    <alias><xsl:value-of select="."/></alias>
+   </xsl:for-each>
    </user>
  </xsl:for-each>
 </xsl:variable>
@@ -151,6 +154,9 @@
     <xsl:if test="email[substring-after(text(),'@')!='gentoo.org']">
      <email><xsl:value-of select="email[substring-after(text(),'@')!='gentoo.org'][1]"/></email>
     </xsl:if>
+    <xsl:for-each select="alias">
+     <alias><xsl:value-of select="."/></alias>
+    </xsl:for-each>
   </xsl:element>
 </xsl:template>
 
