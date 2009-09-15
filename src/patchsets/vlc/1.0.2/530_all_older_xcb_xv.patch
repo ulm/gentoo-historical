@@ -1,0 +1,51 @@
+commit f77bf7a10aa7b10a5e27701da137dcb29ae9f3bd
+Author: Rémi Denis-Courmont <remi@remlab.net>
+Date:   Sat May 23 15:45:56 2009 +0300
+
+    Support for older xcb-xv
+
+Index: vlc/configure.ac
+===================================================================
+--- vlc.orig/configure.ac
++++ vlc/configure.ac
+@@ -4174,6 +4174,11 @@ AS_IF([test "${enable_xcb}" != "no"], [
+   AS_IF([test "${enable_xvideo}" != "no"], [
+     PKG_CHECK_MODULES(XCB_XV, [xcb-xv >= 1.1.90.1], [
+       VLC_ADD_PLUGIN([xcb_xv])
++    ], [
++      PKG_CHECK_MODULES(XCB_XV, [xcb-xv], [
++        VLC_ADD_PLUGIN([xcb_xv])
++        VLC_ADD_CFLAGS([xcb_xv], [-DXCB_XV_OLD])
++      ])
+     ])
+   ])
+ 
+Index: vlc/modules/video_output/xcb/xvideo.c
+===================================================================
+--- vlc.orig/modules/video_output/xcb/xvideo.c
++++ vlc/modules/video_output/xcb/xvideo.c
+@@ -345,7 +345,11 @@ FindFormat (vout_thread_t *vout, vlc_fou
+     xcb_connection_t *conn = vout->p_sys->conn;
+     const xcb_xv_image_format_info_t *f, *end;
+ 
++#ifndef XCB_XV_OLD
+     f = xcb_xv_list_image_formats_format (list);
++#else
++    f = (xcb_xv_image_format_info_t *) (list + 1);
++#endif
+     end = f + xcb_xv_list_image_formats_format_length (list);
+     for (; f < end; f++)
+     {
+Index: vlc/src/misc/linux_specific.c
+===================================================================
+--- vlc.orig/src/misc/linux_specific.c
++++ vlc/src/misc/linux_specific.c
+@@ -91,7 +91,7 @@ void system_Init (libvlc_int_t *libvlc, 
+                "Please update to version 2.8 or newer.\n", stderr);
+         fflush (stderr);
+ #ifndef DISABLE_BUGGY_GLIBC_CHECK
+-        abort ();
++        //abort ();
+ #endif
+     }
+ #endif
