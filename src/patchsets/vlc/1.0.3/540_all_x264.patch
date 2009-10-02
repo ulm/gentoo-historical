@@ -1,0 +1,59 @@
+From 6cdaaf845e734bf124fb7af53caf5c6bdcaca63f Mon Sep 17 00:00:00 2001
+From: Alexis Ballier <aballier@gentoo.org>
+Date: Thu, 24 Sep 2009 20:05:10 +0200
+Subject: [PATCH] Fix build with libx264 >= 76, ported from [e8c090dc917ca2eb5b639a4c137084791768b347]
+
+---
+ modules/codec/x264.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+Index: vlc-1.0.2/modules/codec/x264.c
+===================================================================
+--- vlc-1.0.2.orig/modules/codec/x264.c
++++ vlc-1.0.2/modules/codec/x264.c
+@@ -1366,6 +1366,21 @@ static int  Open ( vlc_object_t *p_this 
+     p_enc->fmt_out.i_extra = 0;
+     p_enc->fmt_out.p_extra = NULL;
+ 
++#if X264_BUILD >= 76
++    p_enc->fmt_out.i_extra = x264_encoder_headers( p_sys->h, &nal, &i_nal );
++    p_enc->fmt_out.p_extra = malloc( p_enc->fmt_out.i_extra );
++    if( !p_enc->fmt_out.p_extra )
++    {
++        Close( VLC_OBJECT(p_enc) );
++        return VLC_ENOMEM;
++    }
++    void *p_tmp = p_enc->fmt_out.p_extra;
++    for( i = 0; i < i_nal; i++ )
++    {
++        memcpy( p_tmp, nal[i].p_payload, nal[i].i_payload );
++        p_tmp += nal[i].i_payload;
++    }
++#else
+     x264_encoder_headers( p_sys->h, &nal, &i_nal );
+     for( i = 0; i < i_nal; i++ )
+     {
+@@ -1387,6 +1402,7 @@ static int  Open ( vlc_object_t *p_this 
+ 
+         p_enc->fmt_out.i_extra += i_size;
+     }
++#endif
+ 
+     return VLC_SUCCESS;
+ }
+@@ -1423,10 +1439,15 @@ static block_t *Encode( encoder_t *p_enc
+ 
+     for( i = 0, i_out = 0; i < i_nal; i++ )
+     {
++#if X264_BUILD >= 76
++        memcpy( p_sys->p_buffer + i_out, nal[i].p_payload, nal[i].i_payload );
++        i_out += nal[i].i_payload;
++#else
+         int i_size = p_sys->i_buffer - i_out;
+         x264_nal_encode( p_sys->p_buffer + i_out, &i_size, 1, &nal[i] );
+ 
+         i_out += i_size;
++#endif
+     }
+ 
+     p_block = block_New( p_enc, i_out );
