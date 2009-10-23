@@ -37,7 +37,7 @@
   <!-- SevenL -->
     <tr lang="en">
     <td align="center" class="topsep">
-      <a href="http://www.sevenl.net" target="_top">
+      <a href="https://www.sevenl.net/?utm_source=gentoo-org&amp;utm_medium=sponsored-banner&amp;utm_campaign=gentoo-dedicated-servers" target="_top">
         <img src="{concat($images,'images/sponsors/sevenl_ad.png')}" width="125" height="144" alt="SevenL.net" title="SevenL.net" border="0"/>
       </a>
     </td>
