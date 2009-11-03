@@ -99,17 +99,20 @@
     </ti>
     <ti>
       <xsl:if test="$statusFilter != 'Retired'">
+       <xsl:for-each select="pgpkey">
         <xsl:choose>
-          <xsl:when test="starts-with(pgpkey, '0x')">
-            <xsl:value-of select="translate(pgpkey,'abcdef','ABCDEF')"/>
+          <xsl:when test="starts-with(., '0x')">
+            <xsl:value-of select="translate(.,'abcdef','ABCDEF')"/>
           </xsl:when>
-          <xsl:when test="string-length(pgpkey) = 8">
-            0x<xsl:value-of select="translate(pgpkey,'abcdef','ABCDEF')"/>
+          <xsl:when test="string-length(.) = 8">
+            0x<xsl:value-of select="translate(.,'abcdef','ABCDEF')"/>
           </xsl:when>
-          <xsl:when test="string-length(pgpkey) &gt; 0">
-            Invalid key specification!
+          <xsl:when test="string-length(.) &gt; 0">
+            <xsl:text>Invalid key!</xsl:text>
           </xsl:when>
         </xsl:choose>
+        <xsl:if test="not(position()=last())"><br/></xsl:if>
+       </xsl:for-each>
       </xsl:if>
       <xsl:if test="$statusFilter = 'Retired'">
         <xsl:if test="status and status != 'active'">

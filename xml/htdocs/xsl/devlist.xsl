@@ -24,7 +24,9 @@
      </xsl:otherwise>
    </xsl:choose>
    </name>
-   <pgpkey><xsl:value-of select="pgpkey"/></pgpkey>
+   <xsl:for-each select="pgpkey">
+    <pgpkey><xsl:value-of select="."/></pgpkey>
+   </xsl:for-each>
    <location>
      <xsl:if test="location/@longitude and location/@latitude">
        <xsl:attribute name="lon"><xsl:value-of select="location/@longitude"/></xsl:attribute>
@@ -75,7 +77,15 @@
 </xsl:template>
 
 <xsl:template match="user">
- <xsl:value-of select="concat(@nick, ':', name, ':', location, ':', location/@lat, ':', location/@lon, ':', pgpkey, ':', status, '&#xA;')"/>
+ <xsl:variable name="pgpkeys">
+  <xsl:for-each select="pgpkey">
+   <xsl:value-of select="."/>
+   <xsl:if test="not(position()=last())">
+    <xsl:text>,</xsl:text>
+   </xsl:if>
+  </xsl:for-each>
+ </xsl:variable>
+ <xsl:value-of select="concat(@nick, ':', name, ':', location, ':', location/@lat, ':', location/@lon, ':', $pgpkeys, ':', status, '&#xA;')"/>
 </xsl:template>
 
 
@@ -137,7 +147,9 @@
    <xsl:element name="user">
     <xsl:attribute name="username"><xsl:value-of select="@nick"/></xsl:attribute>
     <realname><xsl:attribute name="fullname"><xsl:value-of select="name/text()"/></xsl:attribute></realname>
-    <pgpkey><xsl:value-of select="pgpkey"/></pgpkey>
+    <xsl:for-each select="pgpkey">
+     <pgpkey><xsl:value-of select="."/></pgpkey>
+    </xsl:for-each>
     <location>
      <xsl:if test="location/@lon and location/@lat">
        <xsl:attribute name="longitude"><xsl:value-of select="location/@lon"/></xsl:attribute>
