@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/infrastructure/ldap.xml,v 1.27 2009/10/07 11:08:40 sping Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/infrastructure/ldap.xml,v 1.28 2009/11/10 19:07:19 robbat2 Exp $ -->
 
 <guide link="/proj/en/infrastructure/ldap.xml">
 <title>Gentoo Infrastructure LDAP guide</title>
@@ -27,8 +27,8 @@ and administrators.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.9</version>
-<date>2008-10-12</date>
+<version>1.10</version>
+<date>2009-11-10</date>
 
 <chapter>
 <title>Key Concepts</title>
@@ -149,7 +149,9 @@ server so any update you do could take up to 60 seconds for being seen on
 <e>dev.gentoo.org</e>.  We use <c>nscd</c> (Name Service Caching Daemon) to cache
 negative and positive lookups. This means that your changes may not become active
 for some time. If you need to force the change we can restart nscd for you. Ask
-in #gentoo-infra for help with this.
+in #gentoo-infra for help with this. Additionally, we use <c>nsscache</c> to
+provide resiliency against LDAP servers being temporarily unavailable for NSS
+lookups, but we do NOT keep local copys of SSH keys.
 </note>
 
 </body>
@@ -288,11 +290,6 @@ been retired: <e>gentooHerd</e>, <e>gentooAltMail</e>, <e>gentooForumsUID</e>.
 <title>LDAP aware servers</title>
 <body>
 
-<p>
-The following servers have been migrated to LDAP. All gentoo servers will eventually
-be migrated and this guide will be updated as the migration is completed.
-</p>
-
 <table>
   <tr>
     <th>Server Name</th>
@@ -332,6 +329,26 @@ be migrated and this guide will be updated as the migration is completed.
   <tr>
     <ti>sparrow.gentoo.org</ti>
     <ti>torrents.gentoo.org</ti>
+    <ti>LDAP client: accounts, sudo, ssh</ti>
+  </tr>
+  <tr>
+    <ti>hornbill.gentoo.org</ti>
+    <ti>bugs-web1.gentoo.org</ti>
+    <ti>LDAP client: accounts, sudo, ssh</ti>
+  </tr>
+  <tr>
+    <ti>hummingbird.gentoo.org</ti>
+    <ti>bugs-web2.gentoo.org</ti>
+    <ti>LDAP client: accounts, sudo, ssh</ti>
+  </tr>
+  <tr>
+    <ti>gannet.gentoo.org</ti>
+    <ti>forums-web1.gentoo.org</ti>
+    <ti>LDAP client: accounts, sudo, ssh</ti>
+  </tr>
+  <tr>
+    <ti>godwit.gentoo.org</ti>
+    <ti>forums-web2.gentoo.org</ti>
     <ti>LDAP client: accounts, sudo, ssh</ti>
   </tr>
 </table>
@@ -396,24 +413,34 @@ The following are the most common options.
 <p>
 Gentoo Developers and Staff members (recruiters and infra please refer to the
 following sections) can update their LDAP record directly. Here are examples
-of the most commonly changed attributes.
+of the most commonly changed attributes. The most common error is using a
+actual username in place of the <c>-b MODE</c> argument, which takes
+<e>user</e> as the parameter.
 </p>
 
 <pre caption="Show attributes for a user entry">
 <comment>(Substitute an actual user name for &lt;username&gt;)</comment>
 # <i>perl_ldap -s &lt;username&gt;</i>
 
-<comment>(binding as user will show additional information)</comment>
+<comment>(Binding as 'user' mode will show additional information.
+Only replace &lt;username&gt;, not "user")</comment>
 # <i>perl_ldap -b user -s &lt;username&gt;</i>
 </pre>
 
+<pre caption="Change your roles">
+# <i>perl_ldap -b user -M gentooRoles "&lt;role string&gt;" &lt;username&gt;</i>
+</pre>
+
 <pre caption="Change your GPG key">
-# <i>perl_ldap -b user -M gentooGPGkey "1AF343E" &lt;username&gt;</i>
+<comment>(Substitute your GPG key id &lt;keyid&gt;, with the leading 0x included)</comment>
+# <i>perl_ldap -b user -C gentooGPGkey "&lt;newkeyid&gt;" &lt;username&gt;</i>
+# <i>perl_ldap -b user -E gentooGPGkey "&lt;oldkeyid&gt;" &lt;username&gt;</i>
 </pre>
 
 <pre caption="Add a new public SSH key">
 <comment>(substitute 'pubkey' with the path to your public SSH key. ex: "~/.ssh/id_dsa.pub". 
-You should have one sshPublicKey attribute per key! No newlines!)</comment>
+You should have one sshPublicKey attribute per key! No newlines!
+Only replace &lt;username&gt;, not "user")</comment>
 # <i>perl_ldap -b user -C sshPublicKey "$(cat pubkey)" &lt;username&gt;</i>
 </pre>
 
