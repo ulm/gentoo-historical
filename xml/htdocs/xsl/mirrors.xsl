@@ -35,9 +35,11 @@
 
 
 <xsl:template match="/mainpage//mirrorlist">
- <!-- Generate list of mirrors, when (inside a mainpage && @select='full')
-                                  || (inside a     body && @select='partial') -->
- <xsl:variable name="the-mirrors" select="document('/main/en/mirrors3.xml')"/>
+ <!-- Given a XML file (@src) containing mirrors grouped by country,
+	  generate list of mirrors, when (inside a mainpage && @select='full')
+                                  || (inside a     body && @select='partial') 
+								  -->
+ <xsl:variable name="the-mirrors" select="document(@src)"/>
 
  <xsl:choose>
   <xsl:when test="name(..)='mainpage' and @select='full'">
