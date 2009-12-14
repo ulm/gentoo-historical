@@ -1,8 +1,7 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/xorg-config.xml,v 1.20 2009/10/06 19:20:43 scen Exp $ -->
-
-<guide link="/doc/it/xorg-config.xml" lang="it">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/xorg-config.xml,v 1.21 2009/12/14 21:17:25 scen Exp $ -->
+<guide lang="it">
 <title>Guida alla configurazione di X server</title>
 
 <author title="Autore">
@@ -25,8 +24,8 @@ significato delle varie opzioni di configurazione.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.22</version>
-<date>2009-10-02</date>
+<version>1.23</version>
+<date>2009-12-08</date>
 
 <chapter>
 <title>Cos'è il server X Window?</title>
@@ -91,6 +90,28 @@ un altro.
 <chapter>
 <title>Installare Xorg</title>
 <section>
+<title>Configurazione del kernel</title>
+
+<body>
+
+<p>
+Come impostazione predefinita, Xorg usa <c>evdev</c>, un driver generico per i
+dispositivi di input. Il supporto per <c>evdev</c> va attivato modificando la
+configurazione del kernel. (Leggere la <uri
+link="/doc/it/kernel-config.xml">Guida alla configurazione del kernel Linux in
+Gentoo</uri> per informazione su come configurare il proprio kernel).
+</p>
+
+<pre caption="Abilitare evdev nel kernel">
+Device Drivers ---&gt;
+  Input device support ---&gt;
+  &lt;*&gt;  Event interface
+</pre>
+
+</body>
+</section>
+<section>
+<title>configurazione di make.conf</title>
 <body>
 
 <p>
@@ -99,25 +120,27 @@ Prima di installare Xorg vanno configurate due importanti variabili nel file
 </p>
 
 <p>
-La prima è <c>VIDEO_CARDS</c>. Serve a specificare i driver video che si
-vogliono usare e di solito dipende dal tipo e marca della propria scheda video.
+La prima variabile è <c>VIDEO_CARDS</c>. Serve a specificare i driver video
+che si vogliono usare e di solito dipende dal tipo e marca della
+propria scheda video.
 I valori più comuni sono <c>nvidia</c> per schede Nvidia e <c>fglrx</c> per
 schede ATI Radeon. Questi sono i driver proprietari per, rispettivamente, Nvidia
 e ATI. Se si preferiscono le versioni open source, usare <c>nv</c> al posto di
 <c>nvidia</c> come valore per la variabile, tenendo ben presente che in questo
-caso non si avrà l'accelerazione 3d. I driver liberi per ATI (<c>radeon</c> e
-<c>radeonhd</c>) sono grado di fornire l'accelerazione 3D per le schede Radeon
-più datate, ma non gestiscono ancora le funzionalità dei modelli più recenti.
-La variabile <c>VIDEO_CARDS</c> può contenere più di un driver, in questo
-caso i valori nell'elenco devono essere separati da spazi.
+caso non si avrà l'accelerazione 3D. I driver liberi per ATI (<c>radeon</c> e
+<c>radeonhd</c>) sono grosso modo equivalenti al driver proprietario
+<c>fglrx</c>. Il driver <c>intel</c> va usato per sistemi desktop o portatili
+con i diffusi chipset grafici integrati Intel. La variabile <c>VIDEO_CARDS</c>
+può contenere più di un driver, in questo caso i valori nell'elenco devono
+essere separati da spazi.
 </p>
 
 <p>
 La seconda variabile è <c>INPUT_DEVICES</c> e serve per determinare i driver da
 compilare per i dispositivi di input. Nella maggior parte dei casi il valore
-<c>keyboard mouse</c> dovrebbe funzionare. Se si usano dispositivi di input
-ulteriori, come ad esempio un touchpad Synaptics per un portatile, assicurarsi
-di aggiungerli a <c>INPUT_DEVICES</c>.
+<c>evdev</c> dovrebbe funzionare. Se si usano dispositivi di input ulteriori,
+come ad esempio un touchpad Synaptics per un portatile, assicurarsi di
+aggiungerli a <c>INPUT_DEVICES</c>.
 </p>
 
 <p>
@@ -126,28 +149,28 @@ il file <path>/etc/make.conf</path>:
 </p>
 
 <pre caption="Righe di esempio per make.conf">
-<comment>(Per attivare il supporto a mouse e tastiera)</comment>
-INPUT_DEVICES="keyboard mouse"
+<comment>(Per attivare il supporto a mouse, tastiera e touchpad Synaptic)</comment>
+INPUT_DEVICES="evdev synaptics"
 <comment>(Per schede Nvidia)</comment>
 VIDEO_CARDS="nvidia"
 <comment>(O, per schede ATI Radeon)</comment>
-VIDEO_CARDS="fglrx"
+VIDEO_CARDS="radeon"
 </pre>
 
-<p>
+<note>
 Ulteriori istruzioni su come configurare le schede video nVidia e ATI si trovano
 nelle guide <uri link="/doc/it/nvidia-guide.xml">Guida nVidia per Gentoo
 Linux</uri> e <uri link="/doc/it/ati-faq.xml">Gentoo Linux ATI FAQ</uri>. Se
 non si sa quale driver scegliere, fare riferimento a queste guide per ulteriori
 informazioni.
-</p>
+</note>
 
-<note>
+<p>
 Se i valori suggeriti non funzionano, si dovrebbe eseguire <c>emerge -pv
 xorg-server</c>, controllare tutte le opzioni disponibili e scegliere quelle
-attinenti al proprio sistema. L'esempio seguente si riferisce all'architettura
-amd64 e <c>xorg-server-1.2</c>.
-</note>
+attinenti al proprio sistema. L'esempio seguente si riferisce ad un sistema con
+mouse, tastiera, touchpad Synaptic e scheda video Radeon.
+</p>
 
 <pre caption="Visualizzazione dei valori disponibili dei driver">
  <i>emerge -pv xorg-server</i>
@@ -155,16 +178,17 @@ amd64 e <c>xorg-server-1.2</c>.
 These are the packages that would be merged, in order:
 
 Calculating dependencies... done!
-[ebuild   R   ] x11-base/xorg-server-1.2.0-r3  USE="dri nptl xorg (-3dfx) -debug
--dmx -ipv6 -kdrive -minimal -sdl -xprint" INPUT_DEVICES="keyboard mouse -acecad
--aiptek -calcomp -citron -digitaledge -dmc -dynapro -elo2300 -elographics -evdev
--fpit -hyperpen -jamstudio -joystick -magellan -microtouch -mutouch -palmax
--penmount -spaceorb -summa -synaptics -tek4957 -ur98 -vmmouse -void -wacom"
-VIDEO_CARDS="nvidia -apm -ark -chips -cirrus -cyrix -dummy -epson -fbdev -fglrx
--glint -i128 (-i740) -i810 (-impact) (-imstt) -mach64 -mga -neomagic (-newport)
-(-nsc) -nv -r128 -radeon -rendition -s3 -s3virge -savage -siliconmotion -sis
--sisusb (-sunbw2) (-suncg14) (-suncg3) (-suncg6) (-sunffb) (-sunleo) (-suntcx)
--tdfx -tga -trident -tseng -v4l -vesa -vga -via -vmware -voodoo" 0 kB
+[ebuild   R   ] x11-base/xorg-server-1.6.3.901-r2  USE="hal nptl xorg -debug
+-dmx -ipv6 -kdrive -minimal -sdl -tslib" 0 kB
+[ebuild   R   ]  x11-base/xorg-drivers-1.6  INPUT_DEVICES="evdev synaptics
+-acecad -aiptek -citron -elographics -fpit -hyperpen -joystick -keyboard -mouse
+-mutouch -penmount -tslib -virtualbox -vmmouse -void -wacom"
+VIDEO_CARDS="radeon -apm -ark -ast -chips -cirrus -dummy -epson -fbdev -fglrx
+(-geode) -glint -i128 (-i740) (-impact) (-imstt) -intel -mach64 -mga -neomagic
+(-newport) -nv -nvidia -r128 -radeonhd -rendition -s3 -s3virge -savage
+-siliconmotion -sis -sisusb (-sunbw2) (-suncg14) (-suncg3) (-suncg6) (-sunffb)
+(-sunleo) (-suntcx) -tdfx -tga -trident -tseng -v4l (-vermilion) -vesa -via
+-virtualbox -vmware (-voodoo) (-xgi)" 0 kB
 </pre>
 
 <p>
@@ -185,9 +209,9 @@ funzionante.
 </note>
 
 <p>
-Quando l'installazione è terminata, potrebbe essere necessario reinizializzare
-alcune variabili d'ambiente prima di continuare. Tutto ciò che è necessario fare
-è eseguire il comando <c>env-update</c> seguito da <c>source /etc/profile</c> e
+Quando l'installazione è terminata, sarà necessario reinizializzare alcune
+variabili d'ambiente prima di continuare. Tutto ciò che è necessario fare è
+eseguire il comando <c>env-update</c> seguito da <c>source /etc/profile</c> e
 tutto dovrebbe andare a posto.
 </p>
 
@@ -203,31 +227,145 @@ tutto dovrebbe andare a posto.
 <chapter>
 <title>Configurare Xorg</title>
 <section>
-<title>Il file xorg.conf</title>
+<title>Usare HAL</title>
 <body>
 
 <p>
-Il file di configurazione di Xorg è chiamato <path>xorg.conf</path> e risiede in
-<path>/etc/X11/</path>. Xorg fornisce un esempio di file di configurazione in
-<path>/etc/X11/xorg.conf.example</path> che può essere utilizzato per creare
-la propria configurazione. Questo file di esempio è dettagliatamente commentato,
-ma se è necessaria maggiore documentazione riguardo alla sintassi, è disponibile
-la pagina di manuale:
+Le versioni recenti di X server sono progettate per funzionare così come sono,
+senza doverne modificare manualmente i file di configurazione.
 </p>
 
-<pre caption="Richiamare la pagina di manuale di xorg.conf">
-# <i>man xorg.conf</i>
+<p>
+Per prima cosa, provare a <uri link="#using_startx">lanciare X</uri> senza
+creare <path>/etc/X11/xorg.conf</path>.
+</p>
+
+<p>
+Se Xorg non parte, (se c'è qualcosa che non va con lo schermo o con la tastiera
+o il mouse), provare a risolvere il problema tramite il file di configurazione
+corrispondente.
+</p>
+
+<p>
+Come impostazione predefinita, Xorg fa uso di HAL (Hardware Abstraction Layer)
+per trovare e configurare i dispositivi come tastiere e mouse.
+</p>
+
+<p>
+HAl è fornito con molte regole preconfezionate per i disposivi, dette anche
+"policy". Questi file contenenti le policy si trovano in
+<path>/usr/share/hal/fdi/policy/</path>. Individuare quelli contenenti le regole
+che più si avvicinano alle proprie necessità e copiarli in
+<path>/etc/hal/fdi/policy/</path>.
+</p>
+
+<impo>
+Non modificare i file in <path>/usr/share/hal/fdi/</path>! Copiare solo quelli
+necessari, e modificarli una volta posizionati dentro alla locazione corretta in
+<path>/etc</path>.
+</impo>
+
+<p>
+Per esempio, per fare funzionare una normale combinazione mouse più tastiera,
+si potrebbero copiare i seguenti file in <path>/etc/hal/fdi/policy/</path>:
+</p>
+
+<pre caption="Usare i file policy di HAL">
+# <i>cp /usr/share/hal/fdi/policy/10osvendor/10-input-policy.fdi /etc/hal/fdi/policy</i>
+# <i>cp /usr/share/hal/fdi/policy/10osvendor/10-x11-input.fdi /etc/hal/fdi/policy</i>
 </pre>
 
 <p>
-La lettura della pagina del manuale non è però necessaria, essendo disponibile
-un modo per la creazione in automatico del file di configurazione.
+Ci sono moltre altre policy per HAL in <path>/usr/share/hal/fdi/</path> che
+potrebbere essere utili, come configurazioni per portatili, gestione delle
+periferiche dati, gestione dell'alimentazione e altro. Basta copiare i file
+delle policy in <path>/etc/hal/fdi/policy/</path>.
+</p>
+
+<p>
+Si possono modificare a piacere i file in <path>/etc/hal/fdi/policy</path>.
+E' possibile fare degli aggiustamenti o abilitare delle funzioni aggiuntive.
+Ecco un esempio di come modificare i file di policy.
+</p>
+
+<p>
+Un trucco molto utile è di chiudere completamente il server X premendo
+Ctrl-Alt-Backspace. E' utile quando il server X funziona male, è bloccato, ecc.
+E' una misura meno estrema rispetto a riavviare la macchina con Ctrl-Alt-Canc.
+</p>
+
+<p>
+Le versioni recenti dei server X hanno questa combinazione disabilitata come
+impostazione predefinita. E tuttavia possibile riabilitarla copiando
+<path>10-x11-input.fdi</path> in <path>/etc/hal/fdi/policy</path> e
+modificandola. Basterà aggiungere solo una linea alla sezione corretta, come
+mostrato qui sotto:
+</p>
+
+<pre caption="Modificare 10-x11-input.fdi">
+<comment>(Aprire il file con l'editor che si preferisce)</comment>
+# <i>nano -w /etc/hal/fdi/policy/10-x11-input.fdi</i>
+<comment>(Trovare la sezione "input.keys")</comment>
+&lt;match key="info.capabilities" contains="input.keys"&gt;
+<comment>(Aggiungere la stringa "terminate"/merge come mostrato)</comment>
+&lt;match key="info.capabilities" contains="input.keys"&gt;
+      &lt;merge key="input.x11_driver" type="string"&gt;keyboard&lt;/merge&gt;
+      <i>&lt;merge key="input.xkb.options" type="string"&gt;terminate:ctrl_alt_bksp&lt;/merge>&gt;</i>
+      &lt;match key="/org/freedesktop/Hal/devices/computer:system.kernel.name"
+             string="Linux"&gt;
+        &lt;merge key="input.x11_driver" type="string"&gt;evdev&lt;merge&gt;
+      &lt;/match&gt;
+    &lt;/match&gt;
+</pre>
+
+<p>
+Ora si ha a disposizione un modo pratico di chiudere un server X che non
+risponde. Ciò è utile quando i programmi sono del tutto bloccati o quando si sta
+configurando o affinando il proprio ambiente X. Si presti attenzione a
+chiudere X con questa combinazione, molti programmi non reagiscono bene alla
+chiusura forzata, e si potrebbe perdere tutto o in parte quello su cui si stava
+lavorando.
+</p>
+
+<p>
+Il lavoro con i file delle policy dovrebbe essere sufficiente ad ottenere un
+desktop X funzionante. Se Xorg ancora non parte, o ci sono altri problemi,
+allora è necessario configurare manualmente <path>xorg.conf</path> come mostrato
+nella sezione seguente.
 </p>
 
 </body>
 </section>
 <section>
-<title>Modalità predefinita: Generazione automatica di xorg.conf</title>
+<title>Il file xorg.conf</title>
+<body>
+
+
+<note>
+Configurare <path>xorg.conf</path> va visto come un'opzione da "ultima
+spiaggia". Se possibile, il suo uso va evitato, effettuando tutta la
+configurazione tramite i file di policy di HAL. Se tuttavia non si riesce ad
+ottenere una configurazione funzionante, continuare a leggere.
+</note>
+
+
+<p>
+Il file di configurazione di Xorg è chiamato <path>xorg.conf</path> e risiede in
+<path>/etc/X11/</path>. Xorg fornisce un esempio di file di configurazione in
+<path>/etc/X11/xorg.conf.example</path> che può essere utilizzato per creare la
+propria configurazione. Questo file di esempio è dettagliatamente commentato, ma
+se è necessaria maggiore documentazione riguardo alla sintassi, è disponibile la
+pagina di manuale:
+</p>
+
+<pre caption="Richiamare la pagina di manuale di xorg.conf">
+# <i>man 5 xorg.conf</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Generazione automatica di xorg.conf</title>
 <body>
 
 <p>
@@ -246,8 +384,8 @@ file di configurazione per Xorg:
 Leggere con attenzione le ultime linee stampate a schermo dopo che Xorg ha
 finito di interrogare l'hardware. Se riporta errori di qualche tipo, sarà
 necessario procedere alla scrittura manuale del file <path>xorg.conf</path>. Nel
-caso in cui abbia funzionato, viene stampato l'avviso che è stato creato il file
-<path>/root/xorg.conf.new</path>, pronto per essere provato.
+caso in cui tutto abbia funzionato, viene stampato l'avviso che è stato creato
+il file <path>/root/xorg.conf.new</path>, pronto per essere provato.
 </p>
 
 <pre caption="Provare il file xorg.conf.new">
@@ -256,42 +394,11 @@ caso in cui abbia funzionato, viene stampato l'avviso che è stato creato il fil
 
 <p>
 Se tutto è andato a buon fine, si dovrebbe vedere un semplice schema bianco e
-nero. Si può muovere il mouse per verificarne il funzionamento, e verificare se
-la risoluzione è corretta. Se si ricevono errori riguardanti "/dev/mouse",
-provare a modificare la voce "Device" riguardante il mouse nella sezione
-"InputDevice" del file <path>xorg.conf</path>, facendola puntare a
-<c>/dev/input/mice</c>. Anche se non si riesce a dedurre la risoluzione esatta,
-si può lo stesso rendersi conto se è troppo bassa. In ogni momento si può
-premere Ctrl-Alt-Backspace per chiudere l'X server.
+nero.Verificare che il mouse funzioni e che la risoluzione sia corretta. Anche
+se non si riesce a dedurre la risoluzione esatta, si può lo stesso rendersi
+conto se è troppo bassa. In ogni momento si può premere Ctrl-Alt-Backspace per
+chiudere l'X server.
 </p>
-
-</body>
-</section>
-<section>
-<title>Modalità alternativa: Generazione semiautomatica di xorg.conf</title>
-<body>
-
-<p>
-Xorg mette a disposizione uno strumento chiamato<c>xorgconfig</c> che ponendo
-delle domande all'utente riguardo al sistema (adattatore grafico, tastiera, ...)
-crea un file <path>xorg.conf</path>.
-</p>
-
-<pre caption="Generazione semiautomatica di xorg.conf">
-# <i>xorgconfig</i>
-</pre>
-
-<p>
-Un altro strumento, anch'esso fornito da Xorg, è <c>xorgcfg</c>, il quale prima
-cerca di eseguire <c>Xorg -configure</c> e poi fa partire l'X server per un
-ritocco finale alla configurazione.
-</p>
-
-<pre caption="Usare xorgcfg">
-# <i>xorgcfg</i>
-<comment>(Nel caso X si blocchi o la configurazione fallisca, provare:)</comment>
-# <i>xorgcfg -textmode</i>
-</pre>
 
 </body>
 </section>
@@ -301,8 +408,8 @@ ritocco finale alla configurazione.
 
 <p>
 Per prima cosa copiare il <path>xorg.conf.new</path> sul file
-<path>/etc/X11/xorg.conf</path> in modo da poter utilizzare i comandi
-<c>startx</c> o <c>X</c> invece di <c>Xorg -config</c>.
+<path>/etc/X11/xorg.conf</path> in modo da poter utilizzare il comando
+<c>startx</c> invece di <c>Xorg -config</c>.
 </p>
 
 <pre caption="Sovrascrivere il file xorg.conf">
@@ -311,6 +418,7 @@ Per prima cosa copiare il <path>xorg.conf.new</path> sul file
 
 </body>
 </section>
+
 <section id="using_startx">
 <title>Usare startx</title>
 <body>
@@ -334,8 +442,8 @@ base delle seguenti regole:
     <path>/etc/X11/Sessions/</path> (è possibile impostare il valore di XSESSION
     in <path>/etc/env.d/90xsession</path> per assegnarle un valore predefinito
     per tutti gli utenti del sistema). Per esempio, come utente root, eseguire
-    <c>echo XSESSION="Xfce4" > /etc/env.d/90xsession</c>. In questo modo verrà
-    creato il file <path>90xsession</path> ed impostata la sessione X
+    <c>echo XSESSION="Xfce4" &gt; /etc/env.d/90xsession</c>. In questo modo
+    verrà creato il file <path>90xsession</path> ed impostata la sessione X
     predefinita a Xfce4.
   </li>
   <li>
@@ -353,7 +461,7 @@ Nel caso in cui venga avviato <c>twm</c> (lo si riconoscerà dall'aspetto
 veramente spartano e minimale) lo si può chiudere digitando <c>exit</c> o
 premendo Ctrl-D nei terminali X visualizzati. Si può anche terminare la sessione
 X con la combinazione Ctrl-Alt-Backspace. Questa è una maniera però piuttosto
-brutale, da non utilizzarsi abitualmente, anche se non danneggia il sistema.
+brutale, da non utilizzarsi abitualmente.
 </p>
 
 </body>
@@ -368,11 +476,12 @@ brutale, da non utilizzarsi abitualmente, anche se non danneggia il sistema.
 
 <p>
 Se non si è soddisfatti della risoluzione, è necessario controllare due sezioni
-nella configurazione. Per prima cosa vi è la sezione <e>Screen</e> in cui può
-essere presente l'elenco delle risoluzioni disponibili per l'X server. Di
-predefinito questa sezione potrebbe non elencare nessuna risoluzione. In questo
-caso, Xorg valuta le risoluzioni sulla base delle informazioni presenti nella
-seconda sezione, <e>Monitor</e>.
+nella propria configurazione in <path>xorg.conf</path>. Per prima cosa vi è la
+sezione <e>Screen</e> in cui può essere presente l'elenco delle risoluzioni
+disponibili per l'X server. Come impostazione predefinita questa sezione
+potrebbe non elencare nessuna risoluzione. In questo caso, Xorg valuta le
+risoluzioni sulla base delle informazioni presenti nella seconda sezione,
+<e>Monitor</e>.
 </p>
 
 <p>
@@ -380,9 +489,7 @@ Xorg controlla i valori di <c>HorizSync</c> e <c>VertRefresh</c> nella sezione
 <e>Monitor</e> per calcolare le risoluzioni valide. Per ora, lasciare questi
 valori così come sono. Solo nel caso in cui i cambiamenti alla sezione
 <e>Screen</e> (descritti più avanti) non funzionino sarà necessario consultare
-le specifiche del monitor e introdurre i valori corretti.È possibile utilizzare
-dei programmi che ricercano le specifiche del monitor, come
-<c>sys-apps/ddcxinfo-knoppix</c>.
+le specifiche del monitor e introdurre i valori corretti.
 </p>
 
 <warn>
@@ -396,21 +503,20 @@ permanentemente il monitor.
 Procedere con il cambio della risoluzione. Nell'esempio che segue da
 <path>/etc/X11/xorg.conf</path> vengono aggiunte una linea <c>Modes</c> e una
 con un valore per <c>DefaultDepth</c> in modo che l'X server parta in modo
-predefinito con la risoluzione di 1024x768 a 24 bit. I valori riportati sono
-solo di esempio e potrebbero differire da quelli voluti nel proprio sistema.
+predefinito con la risoluzione di 1440x900 a 24 bit. I valori riportati sono
+solo di esempio e porbabilemente non sono quelli desiratati nel proprio sistema.
 </p>
 
 <pre caption="Cambiare la sezione Screen in /etc/X11/xorg.conf">
 Section "Screen"
   Identifier  "Default Screen"
-  Device    "S3 Inc. ProSavage KN133 [Twister K]"
+  Device    "RadeonHD 4550"
   Monitor   "Generic Monitor"
   <i>DefaultDepth  24</i>
   <comment># Alcune righe sono state rimosse per una maggiore
 leggibilità</comment>
-  SubSection "Display"
     Depth   24
-    <i>Modes   "1024x768"</i>
+    <i>Modes   "1440x900"</i>
   EndSubSection
 EndSection
 </pre>
@@ -427,77 +533,38 @@ Eseguendo X (<c>startx</c>) esso utilizza ora la risoluzione desiderata.
 
 <p>
 Per configurare X per l'utilizzo di una tastiera internazionale (non americana,
-NdT), bisogna cercare la sezione <e>InputDevice</e> che contiene la
-configurazione della tastiera e aggiungere l'opzione <c>XkbLayout</c> per
-specificare il layout di tastiera desiderato. L'esempio qui sotto mostra come
-fare per una tastiera belga. Basta sostituire il codice paese con quello
-appropriato (per l'Italia <c>it</c>, NdT):
+NdT), si può copiare il contenuto di
+<path>/usr/share/doc/hal-*/*/use-estonian-layout.fdi.bz2</path> in
+<path>/etc/hal/fdi/policy/10-xinput-configuration.fdi</path>:
 </p>
 
-<pre caption="Cambiare il layout della tastiera">
-Section "InputDevice"
-  Identifier  "Generic Keyboard"
-  Driver    "keyboard"
-  Option    "CoreKeyboard"
-  Option    "XkbRules"  "xorg"
-  Option    "XkbModel"  "pc105"
-  <i>Option    "XkbLayout" "be"</i>
-EndSection
+<pre caption="Uso di un file di configurazione esistente">
+# <i>bzcat /usr/share/doc/hal-*/*/use-estonian-layout.fdi > /etc/hal/fdi/policy/10-xinput-configuration.fdi</i>
 </pre>
+
+<p>
+Ora si può modificare il file <path>10-xinput-configuration.fdi</path> e
+cambiare il layout della tastiera da estone(<c>ee</c>) al proprio, per esempio
+italiano (<b>it</b>) o polacco (<b>pl</b>).
+</p>
+
+<p>
+Dopo aver finito, eseguire run <c>/etc/init.d/hald restart</c> come root
+per assicurarsi che HAL faccia uso dei file di configurazione così modificati.
+</p>
 
 </body>
 </section>
 <section>
-<title>Configurare il Mouse</title>
+<title>Messa a punto finale</title>
 <body>
 
 <p>
-Se il mouse non funziona, per prima cosa bisogna accertarsi che venga rilevato
-correttamente dal kernel. I mouse (come dispositivi) sono accessibili come
-<path>/dev/input/mouse0</path> (o <path>/dev/input/mice</path> se si utilizzano
-più dispositivi di puntamento). In altri casi viene utilizzato
-<path>/dev/psaux</path>. In ogni caso è possibile controllare se un dispositivo
-rappresenta il mouse controllando l'output di quest'ultimo e muovendo il mouse.
-Se esso rappresenta il mouse, di solito compaiono caratteri "strani" sullo
-schermo. Per terminare la sessione premere <c>Ctrl-C</c>.
-</p>
-
-<pre caption="Controllare un dispositivo">
-# <i>cat /dev/input</i>
-<comment>(Non dimenticarsi di premere Ctrl-C per terminare)</comment>
-</pre>
-
-<p>
-Se il mouse non è rilevato, verificare che tutti moduli necessari siano stati
-caricati.
-</p>
-
-<p>
-Se il mouse  è rilevato, trascrivere il nome del dispositivo appropriato nella
-sezione <e>InputDevice</e>. Nel prossimo esempio vengono specificate altre due
-opzioni: <c>Protocol</c> (che indica il protocollo di comunicazione da
-utilizzare, che è PS/2 o IMPS/2 per la maggior parte degli utenti) e
-<c>ZAxisMapping</c> (che permette l'utilizzo di una eventuale rotellina sul
-mouse).
-</p>
-
-<pre caption="Cambiare la configurazione del mouse in Xorg">
-Section "InputDevice"
-  Identifier  "TouchPad Mouse"
-  Driver    "mouse"
-  Option    "CorePointer"
-  <i>Option    "Device"    "/dev/psaux"</i>
-  <i>Option    "Protocol"    "IMPS/2"</i>
-  <i>Option    "ZAxisMapping"    "4 5"</i>
-EndSection
-</pre>
-
-<p>
-Eseguendo <c>startx</c> si può verificare il risultato. Ora si dovrebbe avere a
-disposizione sul sistema una installazione funzionante di Xorg. Il passo
-successivo, che esula dallo scopo di questa guida, è quello si sostituire il
-window manager minimale con una maggiormente dotato, o addirittura un ambiente
-desktop come KDE o GNOME.
+Eseguire <c>startx</c> e gioire del risultato!. Congratulazione, ora (si spera)
+il proprio sistema ha un ambiente X funzionante.
+Il prossimo passo è di sostituire il fin troppo minimale twm con un window
+manager con più funzioni, o con un ambiente desktop come KDE o GNOME, ma
+questo esula dallo scopo di questa guida.
 </p>
 
 </body>
@@ -511,15 +578,10 @@ desktop come KDE o GNOME.
 <body>
 
 <p>
-Per prima cosa, <c>man xorg.conf</c> fornisce una veloce ma completa guida
-sulla sintassi utilizzata dal file di configurazione. È opportuno averla aperta
-su un altro terminale mentre si modifica il file di configurazione.
-</p>
-
-<p>
-E' utile leggere il file di esempio <path>/etc/X11/xorg.conf.example</path>:
-conviene farne una copia e usarla come base per mettere a punto il proprio
-<path>xorg.conf</path>.
+Per prima cosa, <c>man xorg.conf</c> e <c>man evdev</c> forniscono una veloce
+ma completa guida sulla sintassi utilizzata da questi file di configurazione.
+È opportuno averli aperti su un altro terminale mentre si modificano
+i file di configurazione.
 </p>
 
 <p>
@@ -529,26 +591,10 @@ loro documentazione (in inglese, NdT).
 </p>
 
 <p>
-Ci sono molte risorse online sulla modifica del file <path>xorg.conf</path>.
-Alcune sono qui elencate, utilizzare <uri
-link="http://www.google.com">Google</uri> per trovarne di ulteriori. Dato che
-<path>xorg.conf</path> e <path>XF86Config</path> (il file di configurazione per
-XFree86) usano la stessa sintassi per la maggior parte delle opzioni di
-configurazione, e poiché vi sono più informazioni disponibili per
-<path>XF86Config</path>, vengono elencate anche queste ultime.
+Ci sono molte risorse online sulla modifica del file <path>xorg.conf</path>,
+utilizzare <uri link="http://www.google.com">Google</uri> per trovarle.
 </p>
 
-<ul>
-  <li>
-    <uri link="http://tldp.org/HOWTO/XFree-Local-multi-user-HOWTO/">The XFree
-    Local Multi-User HOWTO</uri>[In inglese]
-  </li>
-  <li>
-    <uri
-    link="http://www-106.ibm.com/developerworks/edu/os-dw-linuxxwin-i.html">An
-    Introduction to XFree 4.x</uri> by Chris Houser [In inglese]
-  </li>
-</ul>
 
 </body>
 </section>
@@ -564,10 +610,10 @@ link="/doc/it/?catid=desktop">Documentazione Desktop Gentoo</uri> della nostra
 documentazione.
 </p>
 <p>
-Se si sta effettuando l'aggiornamento a xorg-server-1.5 da una versione
+Se si sta effettuando l'aggiornamento a xorg-server-1.6 da una versione
 precedente, assicurarsi di leggere la corrispondente <uri
-link="/proj/it/desktop/x/x11/xorg-server-1.5-upgrade-guide.xml">
-Guida all'aggiornamento</uri>.
+link="/proj/it/desktop/x/x11/xorg-server-1.6-upgrade-guide.xml">Guida
+all'aggiornamento</uri>.
 </p>
 
 </body>
