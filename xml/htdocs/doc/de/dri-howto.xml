@@ -1,22 +1,22 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/dri-howto.xml,v 1.33 2008/11/06 09:42:02 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/dri-howto.xml,v 1.34 2009/12/19 19:18:30 keytoaster Exp $ -->
 
-<!-- English CVS Version: 1.42 -->
+<!-- English CVS Version: 1.45 -->
 
 <guide link="/doc/de/dri-howto.xml" lang="de">
 
 <title>Anleitung für Hardware 3D-Beschleunigung</title>
 
 <author title="Autor">
-  <mail link="dberkholz@gentoo.org">Donnie Berkholz</mail>
+  <mail link="dberkholz"/>
 </author>
 <author title="Bearbeiter">
-  <mail link="peesh@gentoo.org">Jorge Paulo</mail>
+  <mail link="peesh"/>
 </author>
 <author title="Bearbeiter">
-  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
+  <mail link="nightmorph"/>
 </author>
 <author title="Übersetzer">
   <mail link="js@ameds.de">Jens Schittenhelm</mail>
@@ -40,8 +40,8 @@ mit Xorg in Gentoo Linux einzurichten.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.11</version>
-<date>2008-09-10</date>
+<version>1.13</version>
+<date>2009-12-14</date>
 
 <chapter>
 <title>Einführung</title>
@@ -314,119 +314,23 @@ $ <i>glxgears</i>
 <note>
 Die FPS könnten durch die Aktualisierungsrate Ihres Monitors eingeschränkt
 sein. Beachten Sie dies, falls <c>glxgears</c> lediglich 70-100 FPS berichtet.
-<c>games-fps/ut2004-demo</c> ist ein besseres Werkzeug zum Benchmarken, da es
-Leistungsergebnisse zurückgibt, welche im Alltag auftreten könnten.
+<c>games-fps/ut2004-demo</c> oder andere 3D-Spiele sind bessere Werkzeuge zum
+Benchmarken, da sie Leistungsergebnisse zurückgeben, welche im Alltag auftreten.
 </note>
 
 </body>
 </section>
-</chapter>
-
-<chapter>
-<title>Performance Tuning</title>
 <section>
 <title>Das Meiste aus Direct Rendering herausholen</title>
 <body>
 
 <p>
-Einige Optionen können die Performance um 30 Prozent (oder mehr) steigern,
-gegenüber den Standardeinstellungen. Setzen Sie diese in
-<path>/etc/X11/xorg.conf</path>. Jedoch werden Sie zuerst überprüfen müssen
-ob Ihr Motherboard und Ihre Grafikkarte diese Optionen unterstützen.
-</p>
-
-<p>
-Lassen Sie uns zuerst nachsehen ob Ihre Grafikkarte Fast-Writes unterstützt.
-Wir tun dies durch genaue Betrachtung der Ausgabe von <c>lspci</c>. Genauer
-gesagt sehen wir uns die "VGA compatible controller" Informationen an.
-</p>
-
-<pre caption="Grafikkarte überprüfen">
-# <i>lspci -vv</i>
-01:00.0 VGA compatible controller: ATI Technologies Inc Radeon Mobility M6 LY (prog-if 00 [VGA])
-. . .
-Capabilities: [58] AGP version 2.0
-    Status: RQ=48 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
-</pre>
-
-<p>
-Es wird eine ganze Menge an Informationen produziert; wir suchen nach <b>FW</b>
-im "Status" Unterabschnitt des AGP "Capabilities" Abschnitts. Wenn <b>FW+</b>
-in der "Status" Zeile vorhanden ist, bedeutet es, dass Ihre Karte Fast-Writes
-unterstützt. Wir können nun überprüfen ob das Motherboard Fast-Writes
-unterstützt.
-</p>
-
-<impo>
-Wenn Sie nicht <b>FW+</b> sondern stattdessen <b>FW-</b> sehen, können Sie
-Fast-Writes in <path>xorg.conf</path> nicht aktivieren. Ihre Karte unterstützt
-Fast-Writes nicht.
-</impo>
-
-<p>
-Lassen Sie uns nun sicherstellen, dass auch das Motherboard Fast-Writes
-unterstützt. Dieses Mal ist der "Host bridge" Abschnitt Ihrer <c>lspci</c>
-Ausgabe relevant.
-</p>
-
-<pre caption="Überprüfung des Motherboards">
-# <i>lspci -vv</i>
-00:00.0 Host bridge: Intel Corporation 82830 830 Chipset Host Bridge (rev 02)
-. . .
-Capabilities: [a0] AGP version 2.0
-    Status: RQ=32 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
-</pre>
-
-<p>
-Untersuchen Sie auch hier den "Status" Unterabschnitt Ihres AGP "Capabilities"
-Abschnitts. Suchen Sie nach <b>FW</b>. Wenn Sie <b>FW+</b> sehen unterstützt
-Ihr Motherboard Fast-Writes.
-</p>
-
-<impo>
-Denken Sie daran dass die Information über Ihre Grafikkarte und die Information
-über Ihr Motherboard die gleiche <b>FW</b> Fähigkeit anzeigen müssen. Wenn
-eines der beiden Geräte <b>FW-</b> in "Status" anzeigt, können Sie Fast-Writes
-in <path>xorg.conf</path> nicht aktivieren.
-</impo>
-
-<p>
-Vorausgesetzt alles ist soweit in Ordnung und Ihr Motherboard und Ihre
-Grafikkarte unterstützten Fast-Writes, lassen Sie uns nun die Option in
-<path>/etc/X11/xorg.conf</path> aktivieren und die beste Performance aus Ihrer
-Hardware herausholen.
-</p>
-
-<pre caption=" xorg.conf">
-Section "Device"
-     Option     "AGPMode" "4"
-<comment>(Dies steigerte die FPS von 609 auf 618.)</comment>
-     Option     "AGPFastWrite" "True"
-<comment>(Dies hatte keinen messbaren Effekt, kann aber die Instabilität des Computers erhöhen.)</comment>
-<comment>(Eventuell muss es im BIOS zusätzlich aktiviert werden.)</comment>
-     Option     "EnablePageFlip" "True"
-<comment>(Dies steigerte die FPS von 618 auf 702. Angeblich soll es riskant sein, aber wenige Leute haben Probleme gemeldet.)</comment>
-     ...
-EndSection
-</pre>
-
-<warn>
-Aktivieren von <c>AGPFastWrite</c> bei einem VIA-Chipsatz wird mit großer
-Wahrscheinlichkeit dazu führen, dass Ihr Rechner einfriert. VIA-Chipsätze
-arbeiten nicht gut mit Fast-Writes zusammen, setzen Sie diese Einstellung also
-auf eigenes Risiko.
-</warn>
-
-<note>
-Denken Sie daran, dass Sie zuerst im BIOS die entsprechenden Optionen aktiveren
-müssen, wenn Sie wollen, dass Fast-Writes korrekt funktionieren.
-</note>
-
-<p>
-Für weitere Tuning Optionen sollte die <uri
-link="http://dri.freedesktop.org/wiki/FeatureMatrix">Feature Matrix</uri> oder
-die <uri link="http://dri.sourceforge.net/doc/dri_driver_features.phtml">Feature
-Liste</uri> auf Sourceforge konsultiert werden.
+Wenn Sie weitere Features aktivieren wollen, sei es der Performance halber oder
+aus anderen Gründen, sollten Sie die <uri
+link="http://dri.freedesktop.org/wiki/FeatureMatrix">Feature Matrix</uri> auf
+der DRI-Webseite oder die <uri
+link="http://dri.sourceforge.net/doc/dri_driver_features.phtml">Feature
+Liste</uri> auf Sourceforge konsultieren.
 </p>
 
 </body>
@@ -483,11 +387,9 @@ megaobercool, dass sie nicht unterstützt wird.
 
 <p>
 Probieren Sie die binären Treiber aus. Eine Liste für <c>ati-drivers</c> gibt es
-auf <uri>http://ati.amd.com/support/drivers/linux/linux-radeon.html</uri> (für
-x86) und auf
-<uri>http://ati.amd.com/support/drivers/linux64/linux64-radeon.html</uri> (für
-amd64). Sollte es für Ihre Karte noch keine Treiber geben, probieren Sie fbdev.
-Es ist langsam, funktioniert aber.
+unter <uri>http://support.amd.com/us/gpudownload/Pages/index.aspx</uri>. Sollte
+es für Ihre Karte noch keine Treiber geben, probieren Sie fbdev. Es ist langsam,
+funktioniert aber.
 </p>
 
 </body>
@@ -509,26 +411,6 @@ Option "ForcePCIMode" "True"
 </body>
 </section>
 </chapter>
-
-<chapter>
-<title>Danksagungen</title>
-<section>
-<body>
-
-<ol>
-  <li>
-    Christopher Webber für seinen Vorschlag, in den FAQ den Kernel neu zu
-    kompilieren.
-  </li>
-  <li>
-    Steve für seinen Vorschlag, die Konsistenz zwischen dri und DRI in der
-    XF86Config
-  </li>
-</ol>
-
- </body>
- </section>
- </chapter>
 
 <chapter>
 <title>Referenzen</title>
