@@ -1,45 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/qt/qt4-based-ebuild-howto.xml,v 1.1 2009/11/15 14:22:33 wired Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/qt/qt4-based-ebuild-howto.xml,v 1.2 2009/12/20 19:28:18 hwoarang Exp $ -->
 
 <guide link="/proj/en/desktop/kde/qt4-ebuild-howto.xml" lang="en">
-<title>Qt4-based Ebuild HowTo</title>
+<title>Qt4-based ebuild howto</title>
 
 <author title="Author">
-	<mail link="hwoarang@gentoo.org">Markos Chandras</mail>
+	<mail link="hwoarang" />
+</author>
+
+<author title="Author">
+	<mail link="ayoy" />
 </author>
 
 <abstract>
-This guide is intented to give an overview of how to create a Qt4-based ebuild. It will assist users to write proper ebuilds for Qt4 based packages. using Gentoos' qt4 eclass and splitted Qt4 dependencies
+This guide is intented to give an overview of how to create a Qt4-based ebuild. It will assist users to write proper ebuilds for Qt4 based packages using Gentoos' qt4-r2 eclass and split Qt4 dependencies.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.4</version>
-<date>2009-06-26</date>
+<version>0.5</version>
+<date>2009-12-20</date>
 
 <chapter>
-	<title>Choosing eclass and EAPI version</title>
+	<title>Introduction</title>
+	<section>
+	<title>Purpose of this howto</title>
+	<body>
+	<p>The goal of this document is to introduce qt4-r2 eclass and provide basic instructions on writing ebuilds for applications that use Qt 4 qmake build system. If you're writing an ebuild for a Qt-based application that uses cmake as a build system, you would like to take a look at cmake-utils eclass instead.</p>
+	</body>
+	</section>
+</chapter>
+<chapter>
+	<title>Required variables, inheriting eclass and EAPI version</title>
+		<section>
+		<title>Inherit qt4-r2 eclass</title>
+		<body>
+		<p>All Qt 4 qmake-based ebuilds should use qt4-r2 eclass which provides usefull tools and features (listed below) for building Qt 4 applications.</p>
+		<pre caption="Inheriting qt4-r2 eclass">
+inherit qt4-r2</pre>
+		<warn>
+		There is an old qt4 eclass in the tree. It's deprecated since 15 December 2009. Please use qt4-r2 eclass instead since we plan to drop the old eclass. If you already maintain a Qt4 ebuild which uses qt4 eclass, please consider migrate to the new eclass as soon as possible.
+		</warn>
+		</body>
+		</section>
 		<section>
 		<title>Valid EAPI version</title>
 		<body>
-		<p>The first step for your shiny Qt4-based ebuild, is to specify the right EAPI. Current eclass is EAPI 2 compatible,
-		so all you need to do is</p>
+		<p>The next step for your shiny Qt4-based ebuild, is to specify the right EAPI. Current eclass is compatible with EAPI 2 <b>only</b>,
+		so you have to use it when inheriting qt4-r2 eclass.</p>
 		<pre caption="Specify correct EAPI version">
-EAPI="2"
-		</pre>
+EAPI="2"</pre>
 		<p>That was the most important step for your ebuild.</p>
 		</body>
 		</section>
 		<section>
-		<title>Inherit qt4 eclass</title>
+		<title>Language variables</title>
 		<body>
-		<p>All qt4 based ebuilds, can use qt4 eclass which provides usefull tools and operation (listed below) for building qt4 applications.</p>
-		<pre caption="Inherit qt4 eclass">
-inherit qt4
-		</pre>
+		<p>
+		In case your ebuild provides translations, you should populate the IUSE variable with appropriate <c>linguas_*</c> USE flags. When writing ebuild it's common to group language codes that are parts of translation files' names in a variable that is later used to iterate over translations when configuring and/or installing the package.</p>
+		<p>qt4-r2 eclass provides two special variables for this purpose. <c>LANGS</c> and <c>LANGSLONG</c> are meant to ease up <c>linguas_*</c> USE flags population. All you have to do is set <c>LANGS</c> to a list of translations languages for your package (using language codes as specified in <path>${PORTDIR}/profiles/desc/linguas.desc</path>).</p>
+		<p>Some applications provide translation files with languages specified together with a country code (e.g. <path>myapp_de_DE.ts</path>). That's not always the proper solution from Gentoo point of view, since e.g. "de_DE" is an invalid <c>LINGUAS</c> member. If your package's translations files contain language codes incompatible with those used by Gentoo, the <c>LANGSLONG</c> variable might help you a bit. It will cut off the country code from the language when populating <c>linguas_*</c> IUSE. This way you can use an incompatible language code to refer to the translation file, but still you're sure that <c>linguas_*</c> use flag is specified correctly.</p>
+		<pre caption="Example of defining languages">
+LANGS="de es fr_CA hu pt_BR zh_CN"
+LANGSLONG="cs_CZ fr_FR pl_PL"</pre>
+		<p>This example results in the following IUSE set:</p>
+		<pre caption="Resulting IUSE">
+IUSE="linguas_cs linguas_de linguas_es linguas_fr linguas_fr_CA linguas_hu linguas_pl linguas_pt_BR linguas_zh_CN"</pre>
+		<impo>
+		In order for automatic <c>linguas_*</c> IUSE generation to work, <c>LANGS</c> and <c>LANGSLONG</c> <b>must</b> be set before inheriting qt4-r2 eclass.
+		</impo>
 		</body>
 		</section>
 </chapter>
@@ -56,6 +88,7 @@ inherit qt4
 	<li> x11-libs/qt-dbus</li>
 	<li> x11-libs/qt-demo</li>
 	<li> x11-libs/qt-gui</li>
+	<li> x11-libs/qt-multimedia</li>
 	<li> x11-libs/qt-opengl</li>
 	<li> x11-libs/qt-phonon</li>
 	<li> x11-libs/qt-qt3support</li>
@@ -69,10 +102,9 @@ inherit qt4
 	<p>Now all you need to do, is to specify the correct modules on DEPEND variable</p>
 	<pre caption="Simple example to demonstrate proper qt4 split dependencies usage">
 DEPEND="x11-libs/qt-gui:4
-	x11-libs/qt-sql:4"
-	</pre>
+    x11-libs/qt-sql:4"</pre>
 	<warn>
-	Even though there is a qt4 metapackage, you must NOT use it as a dependency.
+	Even though there is a <c>x11-libs/qt</c> metapackage, you <b>must NOT</b> use it as a dependency.
 	</warn>
 	</body>
 	</section>
@@ -85,19 +117,23 @@ DEPEND="x11-libs/qt-gui:4
 	<li>Release: Leads to smaller binaries, usefull for the production state.</li>
 	<li>Debug: Leads to bigger binaries, usefull for debugging during development process.</li>
 	</ul>
-	<p>Thus, qt4 eclass can use the 'debug' use flag in order to build your application with debug symbols.</p> 
+	<p>Thus, qt4-r2 eclass can use the 'debug' use flag in order to build your application with debug symbols.</p> 
 	<pre caption="Add 'debug' use flag">
-	IUSE="debug"
-	</pre>
-	<p>In case 'debug' use flag is present on IUSE, you must adjust the qt dependencies accordingly</p>
-	<pre caption="Adjusted qt4 dependencies">
-	DEPEND="x11-libs/qt-gui:4[debug?]
-		x11-libs/qt-sql:4[debug?]"
-	</pre>
+IUSE="debug"</pre>
 	<impo>
 	'debug' use flag usage implies that you have already followed the <uri link="/proj/en/qa/backtraces.xml">
 	"How to get meaningful backtraces in Gentoo"</uri> tutorial.
 	</impo>
+	</body>
+	</section>
+
+	<section>
+	<title> Package documentation</title>
+	<body>
+	<p>There is a special variable to use in case your package provides document files. <b>DOCS</b> variable can be used by the <uri link="#doc_chap5_pre1">default src_install function</uri> to install those documents. Normally the documents are located on "${S}" directory. If not, set the <b>DOCSDIR</b> variable to match the documents path. If you don't need to use DOCSDIR variable, then "${S} will be used by default.</p>
+	<pre caption="simple example of DOCS variable usage">
+DOCSDIR="${S}/docs/"
+DOCS="Authors ChangeLog Readme"</pre>
 	</body>
 	</section>
 
@@ -108,8 +144,7 @@ DEPEND="x11-libs/qt-gui:4
 		<section>
 		<title>src_prepare function</title>
 		<body>
-		<p>EAPI2 introduced the src_prepare function which is executed right after src_unpack. The default implementation does nothing.
-		Most of the time, you wont need to use this function at all. Patches are applied automatically via autopatcher</p>
+		<p>EAPI2 introduced the src_prepare function which is executed right after src_unpack. The default implementation does nothing.</p>
 		</body>
 		</section>
 		<section>
@@ -119,10 +154,9 @@ DEPEND="x11-libs/qt-gui:4
 		you want to apply using PATCHES variable</p>
 		<pre caption="Simple example for using PATCHES variable">
 PATCHES=(
-	"${FILESDIR}/fixconfig.patch"
-	"${FILESDIR}/fixgui.patch"
-)
-		</pre>
+    "${FILESDIR}/fixconfig.patch"
+    "${FILESDIR}/fixgui.patch"
+)</pre>
 		<impo>
 		Please note that PATCHES is an array, so you will always need to includes patches between parenthesis.
 		</impo>
@@ -135,17 +169,17 @@ PATCHES=(
 		<section>
 		<title>The 'magic' eqmake4 tool</title>
 		<body>
-		<p>We provide a special function for configuring Qt4 project files. That is eqmake4 which is provided by qt4 eclass. It is based on qmake, plus it uses
-	default Qt variables for proper package configuration. Packages should be configured under src_configure function.</p>
+		<p>We provide a special function for configuring Qt4 project files. That is eqmake4 which is provided by qt4-r2 eclass. It is based on qmake, plus it uses
+	default Qt variables for proper package configuration. Packages should be configured under src_configure function.
+		The <b>default src_configure phase</b> finds and configures project files ( *.pro files ) located on ${S} directory. If there are more than one project files in there, it will try to find the one named ${PN}.pro or $(basename ${PWD}).pro. In case, your package uses some weird file hieracy and you need to configure a project file on a subfolder, then you can specify the path as a parameter on eqmake4.</p>
 		<pre caption="Simple example for src_configure function">
 src_configure() {
-	eqmake4
-}
-		</pre>
+    eqmake4 "${S}"/tool/foo.pro
+}</pre>
 		<impo>
 		eqmake4 does not need a 'die' statement.
 		</impo>
-		<p>There are some rare occasions where eqmake4 fails, but qmake works. Please fill a <uri link="http://bugs.gentoo.org">bug</uri> about this in order to take care
+		<p>There are some rare occasions where eqmake4 fails, but qmake works. Please file a <uri link="http://bugs.gentoo.org">bug</uri> about this in order to take care
 	of it</p>
 	</body>
 	</section>
@@ -156,15 +190,32 @@ src_configure() {
 		<section>
 		<title>src_install function</title>
 		<body>
-		<p>Most Qt4 packages use INSTALL_ROOT variable instead of DESTDIR on their Makefiles. Make sure not to use DESTDIR on src_install,
-		otherwise you will end up with Access violation errors.
-		Below there is an example src_install for most Qt4 packages</p>
-		<pre caption="Simple example for src_install function">
+		<p>
+		The <b>default src_install function</b> n qt4-r2 eclass is the following:</p>
+		<pre caption="default src_install function">
+qt4-r2_src_install() {
+    debug-print-function $FUNCNAME "$@"
+    emake INSTALL_ROOT="${D}" DESTDIR="${D}" install || die "emake install failed"
+    # install documentation
+    if [[ -n "${DOCS}" ]]; then
+        local dir=${DOCSDIR:-${S}}
+        for doc in ${DOCS}; do
+            dodoc "${dir}/${doc}" || die "dodoc failed"
+        done
+    fi
+}</pre>
+		<p>
+		This is the most popular method to install Qt4 packages and their documentation. Rarely you will need to override this
+		function. Usually, you write an extended version of this one, to support translations installation like the following case:</p>
+		<pre caption="extended src_install function">
 src_install() {
-	emake INSTALL_ROOT="${D}" install || die "emake install failed"
-	dodoc README AUTHORS || die "dodoc failed"
-}
-		</pre>
+    # do normal installation
+    qt4-r2_src_install
+    # Install translations
+    for X in ${LINGUAS}; do
+        for Z in ${LANGS}; do
+            ...
+            ...</pre>
 		</body>
 		</section>
 </chapter>
