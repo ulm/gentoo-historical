@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/dri-howto.xml,v 1.6 2008/12/11 16:14:32 r0bertz Exp $ -->
-<!-- English CVS version: 1.43 -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/dri-howto.xml,v 1.7 2010/01/01 19:38:24 r0bertz Exp $ -->
+<!-- English CVS version: 1.45 -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide link="/doc/zh_cn/dri-howto.xml" lang="zh_cn">
+<guide lang="zh_cn">
 
 <title>硬件3D加速指南</title>
 
 <author title="作者">
-  <mail link="dberkholz@gentoo.org">Donnie Berkholz</mail>
+  <mail link="dberkholz"/>
 </author>
 <author title="编辑">
-  <mail link="peesh@gentoo.org">Jorge Paulo</mail>
+  <mail link="peesh"/>
 </author>
 <author title="编辑">
-  <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
+  <mail link="nightmorph"/>
 </author>
 <author title="译者">
   <mail link="r0bertz@gentoo.org">张乐</mail>
@@ -29,8 +29,8 @@
  See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.11</version>
-<date>2008-12-11</date>
+<version>1.13</version>
+<date>2010-01-02</date>
 
 <chapter>
 <title>解释</title>
@@ -258,92 +258,18 @@ $ <i>glxgears</i>
 </pre>
 
 <note>
-FPS可能会受你的屏幕的刷新率所限，所以如果<c>glxgears</c>显示FPS只有70-100时不要忘了这一点。<c>games-fps/ut2004-demo</c>是一个更好的测试工具，它可以给你真实世界的表现结果。
+FPS可能会受你的屏幕的刷新率所限，所以如果<c>glxgears</c>显示FPS只有70-100时不要忘了这一点。<c>games-fps/ut2004-demo</c>或者其他3D游戏是更好的测试工具，它们可以给你真实世界的表现结果。
 </note>
 
 </body>
 </section>
-</chapter>
 
-<chapter>
-<title>优化你的显卡的表现</title>
 <section>
 <title>获取直接渲染的最高性能</title>
 <body>
 
 <p>
-有一些选项可以提高表现百分之30或以上。请在<path>/etc/X11/xorg.conf</path>里设定它们。不过，首先你要检查你的主板和显卡是否支持这些选项。
-</p>
-
-<p>
-首先，我们来看看你的显卡是否支持fast write。我们通过仔细分析<c>lspci</c>的输出来检查这一点。我们主要看“VGA compatible controller”的信息。
-</p>
-
-<pre caption="显卡检查">
-# <i>lspci -vv</i>
-01:00.0 VGA compatible controller: ATI Technologies Inc Radeon Mobility M6 LY (prog-if 00 [VGA])
-. . .
-Capabilities: [58] AGP version 2.0
-    Status: RQ=48 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
-</pre>
-
-<p>
-虽然产生了很多信息，不过我们寻找的是“Capabilities”段的“Status”子段的<b>FW</b>。如果<b>FW+</b>出现在“Status”行，这表示这个显卡支持fast write。现在我们可以检查主板是否支持fast write。
-</p>
-
-<impo>
-如果你没有看到<b>FW+</b>，但是看到了<b>FW-</b>，你不能在<path>xorg.conf</path>启用fast write。你的显卡不支持fast write。
-</impo>
-
-<p>
-现在我们要确保主板也支持fast write。这次我们看你的<c>lspci</c>输出的“Host bridge”段。
-</p>
-
-<pre caption="主板检查">
-# <i>lspci -vv</i>
-00:00.0 Host bridge: Intel Corporation 82830 830 Chipset Host Bridge (rev 02)
-. . .
-Capabilities: [a0] AGP version 2.0
-    Status: RQ=32 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW+ AGP3- Rate=x1,x2,x4
-</pre>
-
-<p>
-同样，检查你的AGP“Capabilities”段的“Status”子段。寻找<b>FW</b>。如果你看到<b>FW+</b>，你的主板支持fast 
-write。
-</p>
-
-<impo>
-记住，你的显卡和主板要有一样的<b>FW</b>能力。如果有一个设备在“Status”里显示<b>FW-</b>，你就不能在<path>xorg.conf</path>里启用fast 
-write。
-</impo>
-
-<p>
-假设一切正常而且你的主板和显卡都支持fast write，让我们在<path>/etc/X11/xorg.conf</path>里启用这个选项以获取你的硬件的最佳性能。
-</p>
-
-<pre caption="xorg.conf">
-Section "Device"
-  Option     "AGPMode" "4"
-  <comment>（这样FPS能从609上升到618。）</comment>
-  Option     "AGPFastWrite" "True"
-  <comment>（这一项没有可测量的效果，不过它可能导致系统不稳定。）</comment>
-  <comment>（你还需要在你的BIOS里设定它。）</comment>
-  Option     "EnablePageFlip" "True"
-  <comment>（这一项可以使FPS从618上升到702。它也是比较“危险的”，不过很少有人报告过问题。）</comment>
-  ...
-EndSection
-</pre>
-
-<warn>
-在VIA芯片组上启用<c>AGPFastWrite</c>几乎肯定会导致你的机器死机。VIA芯片组不能很好的支持fast write，所以你要自己承担使用这个设定的风险。
-</warn>
-
-<note>
-记住如果你想让fast write正常运作，你首先需要在你的BIOS里启用相关的设定。
-</note>
-
-<p>
-如果你想要设定更多的功能，请查看DRI网页上的<uri link="http://dri.freedesktop.org/wiki/FeatureMatrix">功能矩阵</uri>或者Sourceforge上的<uri link="http://dri.sourceforge.net/doc/dri_driver_features.phtml">功能列表</uri>。
+如果你想要设定更多的特性，以获取更高的性能和其他原因，请查看DRI网页上的<uri link="http://dri.freedesktop.org/wiki/FeatureMatrix">特性矩阵</uri>或者Sourceforge上的<uri link="http://dri.sourceforge.net/doc/dri_driver_features.phtml">特性列表</uri>。
 </p>
 
 </body>
@@ -389,7 +315,7 @@ EndSection
 <body>
 
 <p>
-请试试二进制驱动。对于<c>ati-drivers</c>来说，这里有两个连接<uri>http://ati.amd.com/support/drivers/linux/linux-radeon.html</uri>（x86）和<uri>http://ati.amd.com/support/drivers/linux64/linux64-radeon.html</uri>（amd64）。如果这些也不支持，就用fbdev。虽然它比较慢，但是它可以运行的起来。
+请试试二进制驱动。对于<c>ati-drivers</c>来说，这里有个连接<uri>http://support.amd.com/us/gpudownload/Pages/index.aspx</uri>。如果这些也不支持，就用fbdev。虽然它比较慢，但是它可以运行的起来。
 </p>
 
 </body>
@@ -405,24 +331,6 @@ EndSection
 <pre caption="Enabling ForcePCIMode">
 Option "ForcePCIMode" "True"
 </pre>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>致谢</title>
-<section>
-<body>
-
-<ol>
-  <li>
-    Christopher Webber，感谢他提供了一个有关改变或者重编译内核的疑难解答问题。
-  </li>
-  <li>
-    Steve，感谢他建议在XF86Config里统一dri和DRI的大小写。
-  </li>
-</ol>
 
 </body>
 </section>
