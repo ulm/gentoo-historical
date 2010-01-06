@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/Attic/bootstrap-freebsd.xml,v 1.9 2008/03/18 21:52:27 grobian Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/Attic/bootstrap-freebsd.xml,v 1.10 2010/01/06 21:46:23 fauli Exp $ -->
 
 <guide link="/proj/en/gentoo-alt/prefix/bootstrap-freebsd.xml" lang="en">
   <title>Gentoo Prefix Bootstrap Process for FreeBSD</title>
@@ -8,6 +8,9 @@
 
   <author title="Author">
     <mail link="grobian@gentoo.org">Fabian Groffen</mail>
+  </author>
+  <author title="Contributor">
+    <mail link="fauli@gentoo.org">Christian Faulhammer</mail>
   </author>
 
   <abstract>
@@ -19,8 +22,8 @@
   <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
   <license/>
 
-  <version>1.1</version>
-  <date>2008-01-09</date>
+  <version>2.0</version>
+  <date>2010-01-07</date>
 
   <chapter>
     <title>Bootstrapping on FreeBSD</title>
@@ -29,17 +32,19 @@
       <title>Introduction</title>
       <body>
         <p>
-          An off-the-shelf FreeBSD system is bare.  Very bare.  Whoever
-          thought that bootstrapping on Solaris was hard, FreeBSD makes
-          it even harder.  The lack of tools like bash and perl requires
-          some pre-bootstrapping prior to the actual bootstrapping
-          process.  If you bootstrap on FreeBSD, make sure the
-          development tools are installed, which include system headers
-          and a compiler.  This bootstrap guide was tested on a
-          FreeBSD 6.2 i386 system.  Other architectures should not
-          differ too much.  
-          Feel free to try it out on other configurations and post to
-          the <c>gentoo-alt</c> mailing list for additional help.
+          An off-the-shelf FreeBSD system is bare.  Very bare.
+          Whoever thought that bootstrapping on Solaris was hard,
+          FreeBSD makes it even harder.  The lack of tools like bash
+          and perl requires some pre-bootstrapping prior to the actual
+          bootstrapping process.  Alternatively you can install a Bash
+          through the ports system.
+	  If you bootstrap on FreeBSD, make
+          sure the development tools are installed, which include
+          system headers and a compiler.  This bootstrap guide was
+          tested on a FreeBSD 8.0 i386 system.  Other architectures
+          should not differ too much.  Feel free to try it out on
+          other configurations and post to the <c>gentoo-alt</c>
+          mailing list for additional help.
         </p>
       </body>
     </section><!-- }}} -->
@@ -94,32 +99,31 @@ $ <i>chmod 755 bootstrap-bash.sh bootstrap-prefix.sh</i>
 $ <i>mkdir $EPREFIX/tmp</i>
 $ <i>./bootstrap-bash.sh $EPREFIX/tmp</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX tree</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp make</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX/tmp wget</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX/tmp sed</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX/tmp python</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp coreutils</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp findutils</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp tar</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp coreutils8</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp findutils3</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp tar122</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX/tmp patch9</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp grep</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp grep4</i>
 $ <i>./bootstrap-prefix.sh $EPREFIX/tmp gawk</i>
-$ <i>env SHELL=/bin/sh ./bootstrap-prefix.sh $EPREFIX portage</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX portage</i>
         </pre>
-        <note>Please note that <c>python</c>, <c>sed</c>, <c>wget</c>
-              etc. are installed in <path>$EPREFIX/tmp</path>!
-              <c>patch9</c> is not a typo, the officially released patch
-            2.5.4 doesn't compile out of the box on FreeBSD.</note>
+        <note>
+	  Please note that <c>python</c>, <c>sed</c>, <c>wget</c>
+	  etc. are installed in <path>$EPREFIX/tmp</path>!
+	  <c>patch9</c> and the like are not typing errors but build
+	  different versions that will compile out of the box on
+	  FreeBSD.
+	</note>
         <p>
           The script will setup the <path>$EPREFIX</path>
           directory, download a portage tree snapshot, unpack it and
           download and install portage.  Afterwards it will try to setup
-          some sane defaults.  We continue with a little hack necessary
-          for a successful bootstrap:
-        </p>
-        <pre caption="Setup ld directions">
-$ <i>export LDFLAGS="-L${EPREFIX}/usr/lib -Wl,-rpath=${EPREFIX}/usr/lib -L${EPREFIX}/lib -Wl,-rpath=${EPREFIX}/lib"</i>
-$ <i>export CPPFLAGS="-I${EPREFIX}/usr/include"</i>
-        </pre>
+          some sane defaults.
+	</p>
         <p>
           Let your shell take notice of all just installed programs.
         </p>
@@ -130,25 +134,27 @@ $ <i>hash -r</i>
           tcsh users can use the <c>rehash</c> command.
         </note>
         <p>
+          On Linux profiles, the following USE flags will create circular
+          dependancies, so we disable them until later.
+        </p>
+        <pre caption="Disable USE flags">
+$ <i>export USE="-berkdb -fortran -gdbm -nls -pcre -ssl"</i>
+        </pre>
+        <p>
           We continue adding some necessary tools which will deal with
           many errors and warnings you might see during emerging.
         </p>
         <pre caption="emerge sed">
-$ <i>emerge --oneshot "=sys-apps/sed-4.1.4*"</i>
+$ <i>emerge --oneshot sed</i>
         </pre>
         <p>
-          The <c>make</c> that comes with FreeBSD is a BSD version not
-          fully compatible with GNU make.  Hence we install the latter.
+          Next, we emerge the <c>bash</c> shell Portage heavily relies
+          on.  The same holds for <c>wget</c>, the download manager.
+          Since its dependencies cannot be compiled at this stage,
+          we ignore those for the moment.
         </p>
-        <pre caption="emerge make">
-$ <i>emerge --oneshot make</i>
-        </pre>
-        <p>
-          Next, we emerge the <c>bash</c> shell and its dependency
-          ncurses.  <c>bash</c> is used extensively within portage and
-          other applications.
-        </p>
-        <pre caption="emerge bash">
+        <pre caption="emerge bash and wget">
+$ <i>emerge --oneshot wget</i>
 $ <i>emerge --oneshot bash</i>
         </pre>
         <note>
@@ -156,144 +162,106 @@ $ <i>emerge --oneshot bash</i>
           message that appears till the end of the bootstrap process.
         </note>
         <p>
-          Next we start building some development tools, which are
-          missing or insufficient on FreeBSD.
-          The packages to emerge include the <c>baselayout</c> package.
-          Some, if not many, scripts and tools within a Gentoo system
-          assume the availability of the <c>baselayout</c> package for
-          all communication using the Gentoo colour scheme.
+          Now, we will emerge a compiler which will use the GNU
+          linker.  This is a requirement for many packages that follow
+          in the bootstrap process, in particular Perl.  The packages
+          to emerge include the <c>baselayout</c> package.  Some, if
+          not many, scripts and tools within a Gentoo system assume
+          the availability of the <c>baselayout</c> package for all
+          communication using the Gentoo colour scheme.
         </p>
-        <pre caption="emerge autotools">
-$ <i>emerge --oneshot m4</i>
+        <pre caption="emerge linker and compiler">
 $ <i>emerge --oneshot --nodeps baselayout-prefix</i>
-$ <i>emerge --oneshot flex</i>
-$ <i>emerge --oneshot perl</i>
-$ <i>emerge --oneshot --nodeps "=autoconf-2.1*" "=autoconf-2.6*" "autoconf-wrapper"</i>
-$ <i>emerge --oneshot --nodeps "=automake-1.4*" "=automake-1.5*" "=automake-1.6*" "=automake-1.7*" "=automake-1.8*" "automake-wrapper"</i>
-        </pre>
-        <note><c>>=automake-1.9</c> and <c>libtool</c> are not (yet)
-          installed at this stage.</note>
-        <p>
-          Next, we have to get some tools in order to finalise getting
-          the autotools in our prefix.  Because we installed <c>wget</c>
-          in a temporary location, let's not forget to install it
-          properly by emerging it now:
-        </p>
-        <pre caption="emerge wget">
-$ <i>emerge --oneshot --nodeps wget</i>
+$ <i>emerge --oneshot --nodeps xz-utils</i>
+$ <i>emerge --oneshot --nodeps m4</i>
+$ <i>emerge --oneshot --nodeps flex</i>
+$ <i>emerge --oneshot --nodeps bison</i>
+$ <i>emerge --oneshot --nodeps binutils-config</i>
+$ <i>emerge --oneshot --nodeps binutils</i>
+$ <i>emerge --oneshot --nodeps gcc-config</i>
+$ <i>emerge --oneshot --nodeps "=gcc-4.2*"</i>
         </pre>
         <p>
-          After this we can emerge texinfo, which <c>automake-1.9</c>
-          needs.
+          We continue getting more tools in our Prefix.  We no longer
+          ignore dependencies all the time, so a lot of packages will be
+          emerged at this stage.  Slowly our Prefix gets more robust as
+          we progress here.
         </p>
-        <pre caption="emerge texinfo">
-$ <i>emerge --oneshot --nodeps help2man texinfo</i>
-        </pre>
-        <p>
-          Now we can finish installing the autotools:
-        </p>
-        <pre caption="finalise emerge autotools">
-$ <i>emerge --oneshot --nodeps "=automake-1.9*" "=automake-1.10*"</i>
-$ <i>emerge --oneshot --nodeps libtool</i>
-        </pre>
-        <p>
-          Now we have some decent autotooling stuff around, we can get
-          some decent core utilities in our prefix.
-        </p>
-        <pre caption="emerge coreutils">
-$ <i>emerge --oneshot --nodeps sys-apps/coreutils</i>
-        </pre>
-        <p>
-          Finally we emerge the last packages that we temporarily
-          bootstrapped, including some dependencies such that portage
-          can fully work from inside the prefix.
-        </p>
-        <pre caption="emerge remaining packages">
-$ <i>emerge --oneshot --nodeps readline</i>
-$ <i>emerge --oneshot --nodeps python</i>
-$ <i>emerge --oneshot --nodeps findutils</i>
-$ <i>emerge --oneshot --nodeps tar</i>
-$ <i>emerge --oneshot --nodeps patch</i>
+        <pre caption="emerge several tools">
+$ <i>emerge --oneshot coreutils</i>
+$ <i>emerge --oneshot findutils</i>
+$ <i>emerge --oneshot tar</i>
+$ <i>emerge --oneshot grep</i>
+$ <i>emerge --oneshot patch</i>
 $ <i>emerge --oneshot gawk</i>
+$ <i>emerge --oneshot make</i>
+$ <i>emerge --oneshot --nodeps file</i>
+$ <i>emerge --oneshot --nodeps eselect</i>
+$ <i>emerge --oneshot pax-utils</i>
         </pre>
         <p>
-          Before we continue to emerge all ebuilds from <c>system</c>,
-          we first install <c>portage</c>.  We need to overwrite the
-          version that was installed by the bootstrap script.
-          Installing a new portage will make sure it uses the tools
-          provided by the prefix, and forget about the temporary
-          installed tools.
+          Now we have a good bunch of programs that Portage needs, we
+          can replace the bootstrapped Portage by a properly installed
+          one, using Portage itself.  Also here a few dependencies are
+          first emerged, such as the language Portage is written in:
+          <c>python</c>.  We need to temporarily tell Portage that the
+          bootstrapped Portage can be overwritten.
         </p>
         <pre caption="emerge portage">
-$ <i>env FEATURES="-collision-protect" emerge --oneshot --nodeps portage</i>
+$ <i>env FEATURES="-collision-protect" emerge --oneshot portage</i>
         </pre>
         <p>
-          Now we're about to start the big work, we remove the temporary
-          directory and its use as we got it all in our prefix now.
+          Now we have emerged everything we bootstrapped before, we
+          remove the temporary directory and its use as it is no longer
+          necessary.
         </p>
         <pre caption="remove tmp directory">
 $ <i>rm -Rf $EPREFIX/tmp/*</i>
 $ <i>hash -r</i>
         </pre>
         <p>
-          Next, we do the real work where all packages get reemerged in
-          such an order that they make use of packages in the prefix
-          itself.
-        </p>
-        <pre caption="emerge system">
-$ <i>emerge -e system</i>
-        </pre>
-        <p>
-          This will happily install a lot of stuff and reinstall what
-          you emerged before.  This is necessary to avoid compilation
-          failures due to dependencies.
-        </p>
-        <p>
-          We can now update the tree.  Since snapshots now are actually
-          (anonymous) SVN checkouts of the tree, we can immediately use
-          SVN commands on the tree instead of checking a tree out first.
-          Because Portage knows how to deal with the SVN tree, and the
-          bootstrap script has set a correct <c>SYNC</c> variable in
-          your <path>etc/make.conf</path>, updating the tree is done
-          using:
+          Before we do any further merges, we are going to update our
+          tree.  Updating the tree is done using:
         </p>
         <pre caption="Updating the tree">
 $ <i>emerge --sync</i>
         </pre>
         <p>
-          To really do this properly, after emerging <c>system</c>, one
-          should re-emerge <c>system</c>, because now all packages can
-          be compiled with all tools from the prefix, instead of based
-          on tools in the system root.  Before you do though, this is
-          the good time to set your general <c>USE</c>-flags, such as
-          <c>nls</c> to get localised messages in
-          <path>$EPREFIX/etc/make.conf</path>.  In that file, you
-          can also set <c>CFLAGS</c> for your compilation.  Be
-          conservative with <c>CFLAGS</c>!  Note that the code below is
-          an example, and is meant for inspiration only.
+          Next, we let Portage emerge all packages that complete a
+          system install that we eventually need to finalise this Prefix
+          installation.
         </p>
-        <pre caption="Customising the prefix installation - example">
+        <pre caption="emerge system">
+$ <i>emerge -u system</i>
+        </pre>
+        <p>
+          Now is a good time to set the preferences for our soon to be
+          Prefix.  This includes customisations such as general
+          <c>USE</c>-flags, <c>CFLAGS</c> and <c>MAKEOPTS</c> in
+          <path>$EPREFIX/etc/make.conf</path>.  Be conservative with
+          <c>CFLAGS</c>!  Note that the code below is an example, and is
+          meant for inspiration only.
+        </p>
+        <pre caption="Customising the Prefix installation - example">
 $ <i>echo 'USE="unicode nls"' >> $EPREFIX/etc/make.conf</i>
 $ <i>echo 'CFLAGS="-O2 -pipe"' >> $EPREFIX/etc/make.conf</i>
 $ <i>echo 'CXXFLAGS="${CFLAGS}"' >> $EPREFIX/etc/make.conf</i>
         </pre>
         <p>
-          Since we're about to rebuild our system for the last time, we
-          can unset all hacks we made to help the bootstrap process.
+          Since we have everything in place for a self-catered rebuild,
+          we can start the final stage to install the Prefix system.
+          This final stage recompiles everything in the system, but now
+          all packages can be compiled with tools from the Prefix,
+          instead of those from the host system.
         </p>
-        <pre caption="Unsetting LDFLAGS and CPPFLAGS variables">
-$ <i>unset LDFLAGS</i>
-$ <i>unset CPPFLAGS</i>
+        <pre caption="doing the final system installation">
+$ <i>unset USE</i>
 $ <i>emerge -e system</i>
         </pre>
-        <note>
-          tcsh users can use <c>unsetenv LDFLAGS</c> and alike for
-          <c>CPPFLAGS</c>.
-        </note>
         <p>
-          After <c>system</c> has emerged successfully, your prefix will
+          After <c>system</c> has emerged successfully, your Prefix will
           be set up properly, and you can emerge the whichever tools you
-          choose from the prefix tree.
+          choose from the Prefix tree.
         </p>
       </body>
     </section><!-- }}} -->
