@@ -18,7 +18,7 @@
     <tr lang="en">
     <td align="center" class="topsep">
             <a href="http://www.vr.org">
-      <img src="{concat($images,'images/vr-ad.png')}" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" title="Gentoo Centric Hosting: vr.org" border="0"/>
+      <img src="{concat($images,'images/sponsors/vr-ad.png')}" width="125" height="144" alt="Gentoo Centric Hosting: vr.org" title="Gentoo Centric Hosting: vr.org" border="0"/>
         </a>
     </td>
     </tr>
