@@ -1,15 +1,7 @@
+make bundled libtool code bearable
+
 --- jpeg/configure
 +++ jpeg/configure
-@@ -1529,7 +1529,8 @@
- 
- if test "x$LTSHARED" != xno  -o  "x$LTSTATIC" != xno; then
-   USELIBTOOL="yes"
--  LIBTOOL="./libtool"
-+  LIBTOOL="./libtool-wrap"
-+  chmod a+rx libtool-wrap
-   O="lo"
-   A="la"
-   LN='$(LIBTOOL) --mode=link $(CC)'
 @@ -1559,7 +1559,7 @@
    if test "x$LTSTATIC" = xno; then
      disable_static="--disable-static"
@@ -19,27 +11,6 @@
  fi
  
  # Select memory manager depending on user input.
---- jpeg/libtool-wrap
-+++ jpeg/libtool-wrap
-@@ -0,0 +1,18 @@
-+#!/bin/bash
-+
-+export PATH=${PATH}:/usr/bin
-+
-+doit=
-+for x in glibtool libtool ; do
-+	if type -p ${x} > /dev/null ; then
-+		doit=${x}
-+		break
-+	fi
-+done
-+
-+if [ -z "${doit}" ] ; then
-+	echo "Unable to locate libtool :("
-+	exit 1
-+fi
-+
-+exec ${doit} "$@"
 --- jpeg/ltconfig
 +++ jpeg/ltconfig
 @@ -553,7 +553,9 @@
@@ -53,6 +24,15 @@
        echo "$ac_t"no 1>&6
        can_build_shared=no
        pic_flag=
+@@ -716,7 +716,7 @@
+ 
+   # See if GNU ld supports shared libraries.
+   if $LD --help 2>&1 | egrep ': supported targets:.* elf' > /dev/null; then
+-    archive_cmds='$CC -shared ${wl}-soname $wl$soname -o $lib$libobjs'
++    archive_cmds='$CC $LDFLAGS -shared ${wl}-soname $wl$soname -o $lib$libobjs'
+     runpath_var=LD_RUN_PATH
+     ld_shlibs=yes
+   else
 @@ -1210,7 +1210,6 @@
    else
      # Only the GNU ld.so supports shared libraries on MkLinux.
