@@ -1,7 +1,7 @@
 GLEP: 58
 Title: Security of distribution of Gentoo software - Infrastructure to User distribution - MetaManifest
-Version: $Revision: 1.6 $
-Last-Modified: $Date: 2010/01/13 03:26:53 $
+Version: $Revision: 1.7 $
+Last-Modified: $Date: 2010/01/31 07:53:30 $
 Author: Robin Hugh Johnson <robbat2@gentoo.org>, 
 Status: Draft
 Type: Standards Track
@@ -9,7 +9,7 @@ Content-Type: text/x-rst
 Requires: 44, 60
 Created: October 2006
 Updated: November 2007, June 2008, July 2008, October 2008, January 2010
-Post-History: December 2009
+Post-History: December 2009, January 2010
 
 ========
 Abstract
@@ -75,19 +75,27 @@ located at the root of a repository.
 ---------------------------------------------
 Procedure for creating the MetaManifest file:
 ---------------------------------------------
+Summary:
+========
+The objective of creating the MetaManifest file(s) is to ensure that
+every single file in the tree occurs in at least one Manifest.
+
+Process:
+========
 1. Start at the root of the Gentoo Portage tree (gentoo-x86, although
    this procedure applies to overlays as well).
 
 2. Initialize two unordered sets: COVERED, ALL.
 
-   1. 'ALL' will contain every file in the tree.
-   2. 'COVERED' will contain every file that is mentioned in an existing
-      Manifest2.
+   1. 'ALL' shall contain every file that exists in the present tree.
+   2. 'COVERED' shall contain EVERY file that is mentioned in an existing
+      Manifest2. If a file is mentioned in a Manifest2, but does not
+      exist, it must still be included. No files should be excluded.
 
 3. Traverse the tree, depth-first.
 
    1. At the top level only, ignore the following directories: distfiles,
-      packages, local
+      packages, local.
    2. If a directory contains a Manifest file, extract all relevant local
       files from it (presently: AUX, MISC, EBUILD; but should follow the
       evolution of Manifest2 entry types per [#GLEP60]), and place them
@@ -121,21 +129,25 @@ Procedure for creating the MetaManifest file:
       should not be on the same keyring as developer keys. See [#GLEPxx+3
       for further notes].
 
+Notes:
+======
 The above does not conflict the proposal contained in GLEP33, which
 restructure eclasses to include subdirectories and Manifest files, as
 the Manifest rules above still provide indirect verification for all
 files after the GLEP33 restructuring if it comes to pass.
 
-If other Manifests are added (such as per-category, per first-level
-directory, or protecting versioned eclasses), the size of the
-MetaManifest will be greatly reduced, and this specification was written
-with such a possible future addition in mind.
+Additional levels of Manifests are required, such as per-category, and
+in the eclasses, profiles and metadata directories. This ensures that a
+change to a singular file causes the smallest possible overall change in
+the Manifests as propagated. Creation of the additional levels of
+Manifests uses the same process as described above, simply starting at a
+different root point.
 
 MetaManifest generation will take place as part of the existing process
 by infrastructure that takes the contents of CVS and prepares it for
 distribution via rsync, which includes generating metadata. In-tree
-Manifest files are not checked at this point, as they are assumed to be
-correct.
+Manifest files are not validated at this point, as they are assumed to
+be correct.
 
 --------------------------------------------------------
 Verification of one or more items from the MetaManifest:
@@ -208,6 +220,14 @@ commit as they do presently, and the MetaManifest is added by
 Infrastructure during the tree generation process, and distributed to
 users.
 
+Any scripts generating Manifests and the MetaManifest may find it useful
+to generate multiple levels of Manifests in parallel, and this is
+explicitly permitted, provided that every file in the tree is covered by
+at least one Manifest or the MetaManifest file. The uppermost
+Manifest (MetaManifest) is the only item that does not occur in any
+other Manifest file, but is instead GPG-signed to enable it's
+validation.
+
 --------------------------------------------
 MetaManifest and the new Manifest2 filetypes
 --------------------------------------------
@@ -247,11 +267,11 @@ MetaManifest size considerations
 With only two levels of Manifests (per-package and top-level), every
 rsync will cause a lot of traffic transferring the modified top-level
 MetaManifest. To reduce this, first-level directory Manifests are
-strongly recommended. Alternatively, if the distribution method
-efficiently handles small patch-like changes in an existing file,
-using an uncompressed MetaManifest may be acceptable (this would
-primarily be distributed version control systems). Other suggestions
-in reducing this traffic are welcomed.
+required. Alternatively, if the distribution method efficiently handles
+small patch-like changes in an existing file, using an uncompressed
+MetaManifest may be acceptable (this would primarily be distributed
+version control systems). Other suggestions in reducing this traffic are
+welcomed.
 
 =======================
 Backwards Compatibility
