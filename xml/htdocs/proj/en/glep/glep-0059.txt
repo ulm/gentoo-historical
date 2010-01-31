@@ -1,7 +1,7 @@
 GLEP: 59
 Title: Manifest2 hash policies and security implications
-Version: $Revision: 1.4 $
-Last-Modified: $Date: 2010/01/13 03:26:53 $
+Version: $Revision: 1.5 $
+Last-Modified: $Date: 2010/01/31 07:55:45 $
 Author: Robin Hugh Johnson <robbat2@gentoo.org>, 
 Status: Draft
 Type: Standards Track
@@ -10,7 +10,7 @@ Requires: 44
 Created: October 2006
 Updated: November 2007, June 2008, July 2008, October 2008, January 2010
 Updates: 44
-Post-History: December 2009
+Post-History: December 2009, January 2010
 
 Abstract
 ========
@@ -39,16 +39,20 @@ is that multiple checksums would be an increase in security, but we
 could not provably quantify the amount of security this added.
 The really bad news, is that this position is completely and utterly
 wrong. Many of you will be aghast at this. There is extremely little
-added security in multiple checksums [J04]. For any set of checksums,
-the actual strength lies in that of the strongest checksum.
+added security in multiple checksums as noted by Joux [J04]. For any set
+of checksums, the actual strength lies in that of the strongest
+checksum.
+
+Wang et al [W04] extended Joux's [J04] work on SHA-0 to cover MD4, MD5,
+HAVAL-128 and RIPEMD families of hashes.
 
 How fast can MD5 be broken?
 ---------------------------
-For a general collision, not a pre-image attack, since the original
-announcement by Wang et al [W04], the time required to break MD5 has
-been massively reduced. Originally at 1 hour on a near-supercomputer
-(IBM P690) and estimated at 64 hours with a Pentium-3 1.7Ghz. This has
-gone down to less than in two years, to 17 seconds [K06a]!
+For a general collision, not a pre-image attack, since the announcement
+by Wang et al [W04], the time required to break MD5 has been massively
+reduced. Originally at 1 hour on a near-supercomputer (IBM P690) and
+estimated at 64 hours with a Pentium-3 1.7Ghz. This has gone down to
+less than in two years, to 17 seconds [K06a].
 
 08/2004 - 1 hour, IBM pSeries 690 (32x 1.7Ghz POWER4+) = 54.4 GHz-Hours
 03/2005 - 8 hours, Pentium-M 1.6Ghz = 12.8 Ghz-Hours
@@ -61,28 +65,26 @@ may be broken over the course of 2 years (MD5 using the above data is
 >2000x), then existing checksums do not stand a significant chance of
 survival in the future. We should thus accept that whatever checksums we
 are using today, will be broken in the near future, and plan as best as
-possible. (A brief review [H04] of the present SHA1 attacks indicates an
+possible. (A brief review [H04] of the SHA1 attacks indicates an
 improvement of ~600x in the same timespan).
 
 And for those that claim implementation of these procedures is not yet
 feasible, see [K06b] for an application that can produce two
-self-extracting .exe files, with identical MD5s, and whatever payload
-you want.
+self-extracting EXE files, with identical MD5s, and whatever payload you
+want.
 
 The good news
 -------------
-Of the checksums presently used by Manifest2, one stands close to being
-completely broken: SHA1. The SHA2 series has suffered some attacks, but
-still remains reasonably solid [G07],[K08]. No attacks against RIPEMD160
-have been published, however it is constructed in the same manner as
-MD5, SHA1 and SHA2, so is also vulnerable to the new methods of
-cryptanalysis [H04].
+Of the checksums presently used by Manifest2 (SHA1, SHA256, RIPEMD160),
+one stands close to being completely broken: SHA1; and another is
+significantly weakened: RIPEMD160. The SHA2 series has suffered some
+attacks, but still remains reasonably solid [G07],[K08]. 
 
 To reduce the potential for future problems and any single checksum
 break leading to a rapid decrease in security, we should incorporate the
 strongest hash available from each family of checksums, and be prepared
 to retire old checksums actively, unless there is a overriding reason to
-keep a specific checksum.
+keep a specific checksum, such as part of a migration plan.
 
 What should be done
 -------------------
@@ -94,24 +96,35 @@ sufficient time to upgrade. We should be prepared to add stronger
 checksums wherever possible, and to remove those that have been
 defeated.
 
-An unsupported hash is not considered to be a failure unless no
-supported hashes are available.
+As soon as feasible, we should add the SHA512 and WHIRLPOOL algorithms.
+In future, as stream-based checksums are developed (in response to the
+development by NIST [AHS]), they should be considered and used.
 
-Checksum depreciation
-~~~~~~~~~~~~~~~~~~~~~
-For the current Portage, SHA1 should be gradually removed, as presents
-no advantages over SHA256. Beyond one specific problem (see the next
-paragraph), we should add SHA512 (SHA2, 512 bit size), the Whirlpool
-checksum (standardized checksum, with no known weaknesses). In future,
-as stream-based checksums are developed (in response to the development
-by NIST [AHS]), they should be considered and used.
+The SHA512 algorithm is available in Python 2.5, which has been a
+dependency of Portage since approximately Python 2.1.6.13.
 
-There is one temporary stumbling block at hand - the existing Portage
-infrastructure does not support SHA384/512 or Whirlpool, thus hampering
-their immediate acceptance. SHA512 is available in Python 2.5, while
-SHA1 is already available in Python 2.4. After Python2.5 is established
-in a Gentoo media release, that would be a suitable time to remove SHA1
-from Manifest2 files.
+The WHIRLPOOL checksum is not available within the PyCrypto library or
+hashlib that is part of Python 2.5, but there are multiple alternative
+Python implementations available, ranging from pure Python to C-based
+(python-mhash).
+
+The existence unsupported hash is not considered to be a failure unless
+no supported hashes are available for a given Manifest entry.
+
+Checksum depreciation timing
+----------------------------
+For the current Portage, both SHA1 and RIPEMD160 should be immediately
+removed, as they present no advantages over the already present SHA256.
+SHA256 cannot be replaced immediately with SHA512, as existing Portage
+versions need at least one supported algorithm present (SHA256 support
+was added in June 2006), so it must be retained for some while.
+
+Immediately:
+- Add WHIRLPOOL and SHA512.
+- Remove SHA1 and RIPEMD160.
+
+After the majority of Portage installations include SHA512 support:
+- Remove SHA256.
 
 Backwards Compatibility
 =======================
