@@ -1,6 +1,6 @@
 ﻿<?xml version='1.0' encoding="UTF-8"?>
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/printing-howto.xml,v 1.21 2010/01/06 00:30:40 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/printing-howto.xml,v 1.22 2010/02/24 12:11:21 chiguire Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -43,8 +43,8 @@ compartidas desde otros sistemas operativos.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>3.4</version>
-<date>2009-12-29</date>
+<version>3.5</version>
+<date>2010-02-16</date>
 
 <chapter>
 <title>Impresión y Gentoo Linux</title>
@@ -98,11 +98,12 @@ virtud a la misma:
   <li><uri link="#lpt">Impresora Conectada Localmente (LPT)</uri></li>
   <li><uri link="#usb">Impresora Conectada Localmente (USB)</uri></li>
   <li><uri link="#ipp">Impresora Conectada Remotamente (IPP)</uri></li>
-  <li><uri link="#smb-cifs">Impresora Conectada Remotamente (SMB-CIFS)</uri></li>
+  <li><uri link="#smb-cifs">Impresora Conectada Remotamente (SMB-CIFS)
+  </uri></li>
 </ul>
 
 <p>
-Así pues, pasamos a <path>/usr/src/linux</path> y ejecutamos <c>make
+Así pues, navegamos a <path>/usr/src/linux</path> y ejecutamos <c>make
 menuconfig</c> para configurar el núcleo. Si se usó <c>genkernel</c>
 para configurarlo, deben seguirse estas indicaciones también para
 comprobar que no falta ningún requisito.
@@ -112,10 +113,7 @@ comprobar que no falta ningún requisito.
 En los siguientes ejemplos de configuración, añadiremos el soporte
 necesario <e>integrado</e> en el núcleo, no como módulos. Ésto no es
 obligatorio; si se desea puede añadirse soporte modular. En cuyo caso,
-no hay que olvidar cargar los módulos necesarios después. También
-emplearemos una configuración del núcleo 2.6 como ejemplo; los
-usuarios del núcleo 2.4 deben encontrar las directivas para configurar
-el núcleo en otra parte.
+no hay que olvidar cargar los módulos necesarios después.
 </p>
 
 <p>
@@ -175,8 +173,8 @@ CUPS</uri>.
 <body>
 
 <p>
-Para habilitar la impresión USB, necesitamos soporte USB y soporte
-para impresora USB.
+Para habilitar la impresión USB, simplemente necesitamos soporte
+USB en su núcleo.
 </p>
 
 <pre caption="Configuración de la impresora por puerto USB">
@@ -191,8 +189,6 @@ Device Drivers --&gt;
     &lt;*&gt; EHCI HCD (USB 2.0) support <comment>( ó )</comment>
     &lt;*&gt; OHCI HCD support           <comment>( ó )</comment>
     &lt;*&gt; UHCI HCD (most Intel and VIA) support
-    <comment>(...)</comment>
-    &lt;*&gt; USB Printer support
 </pre>
 
 <p>
@@ -380,6 +376,12 @@ CUPS.
 <pre caption="Instalación de CUPS">
 # <i>emerge cups</i>
 </pre>
+
+<impo>
+Los usuarios que necesiten imprimir deben ser añadidos al grupo
+<c>lp</c>. Añádalos ejecutando (como root):
+<c>gpasswd -a username lp</c>.
+</impo>
 
 <p>
 Si la impresora está conectada localmente en el sistema, es necesario
@@ -875,7 +877,8 @@ Cubriremos las siguientes impresoras y/o controladores:
 
 <ul>
   <li><uri link="#gutenprint">Controlador Gutenprint</uri></li>
-  <li><uri link="#hplip">Controlador HPLIP</uri> (HPOJ y HPIJS quedan obsoletos)</li>
+  <li><uri link="#hplip">Controlador HPLIP</uri> (HPOJ y HPIJS quedan
+  obsoletos)</li>
   <li><uri link="#pnm2ppa">Controlador PNM2PPA</uri></li>
 </ul>
 
@@ -916,23 +919,38 @@ estarán disponibles a través de la interfaz web de CUPS.
 <body>
 
 <p>
-El <uri link="http://hpinkjet.sf.net">proyecto HPLIP</uri> incorpora
-el controlador hpijs e incluye soporte para escáner y herramientas
-para varios periféricos multi-función. Para que soporte la impresión,
-<e>debemos</e> activar el parámetro USE <c>ppds</c>.
+El <uri link="http://hplipopensource.com/hplip-web/index.html">
+proyecto HPLIP</uri> usa el controlador de impresión hpcups. También
+incluye soporte para escáner y fax, a la vez que las herramientas de
+servicio para varios periféricos multi-propósito. Para el soporte de
+impresión, se recomienda usar el nuevo controlador hpcups, que puede
+habilitar con el parámetro USE <c>hpcups</c>. El antiguo controlador
+hpijs está incluido cuando construya <c>hplip</c> con el parámetro
+USE <c>hpijs</c>.
+</p>
+
+<p>
+La instalación por defecto, habilita la generación dinámica de ficheros
+ppd en tiempo de ejecución. Algunas impresoras antiguas pueden requerir
+todavía fichero ppd estáticos. Si encuentra problemas cuando use
+<c>hp-setup</c> intente habilitar el parámetro USE <c>static-ppds</c>
+y reconstruya <c>hplip</c>.
 </p>
 
 <pre caption="Instalación de los controladores hplip">
-<comment>(Compruebe que esté activado el parámetro USE ppds)</comment>
 # <i>emerge -vp hplip</i>
 These are the packages that would be merged, in order:
 
 Calculating dependencies ...done!
-[ebuild  N    ] net-print/hplip-2.7.10  USE="<comment>ppds</comment> -X -doc -fax -minimal -parport -scanner -snmp" 14,104 kB
+[ebuild  N    ] net-print/hplip-3.9.12  USE="gtk hpcups qt4 -doc -fax -hpijs
+-libnotify -minimal -new-hpcups -parport -policykit -scanner -snmp -static-ppds
+-udev-acl" 20,871 kB
 
-Total: 1 package (1 new), Size of downloads: 14,104 kB
+Total: 1 package (1 new), Size of downloads: 20,871 kB
 
 # <i>emerge hplip</i>
+# <i>emerge hplip</i>
+<comment>(Asegúrese de que su impresora USB está conectada a su computadora)</comment>
 # <i>hp-setup</i>
 # <i>/etc/init.d/cupsd restart</i>
 </pre>
