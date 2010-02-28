@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/developersguide.xml,v 1.11 2009/10/03 17:22:17 sping Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/developersguide.xml,v 1.12 2010/02/28 16:47:07 arfrever Exp $ -->
 
 <guide link="/proj/en/Python/developersguide.xml" lang="en">
 <title>Gentoo Python Developers Guide</title>
 
 <author title="Author">
-    <mail link="dev-zero@gentoo.org">Tiziano Müller</mail>
+  <mail link="dev-zero@gentoo.org">Tiziano Müller</mail>
 </author>
 <author title="Author">
   <mail link="hawking@gentoo.org">Ali Polatel</mail>
@@ -15,21 +15,24 @@
 <author title="Author">
   <mail link="pythonhead@gentoo.org">Rob Cakebread</mail>
 </author>
+<author title="Author">
+  <mail link="arfrever@gentoo.org">Arfrever Frehtes Taifersar Arahesis</mail>
+</author>
 
 <abstract>
-This guide is supposed to be a help for (new) Python developers.  Besides
-valuable hints and tricks, there are guidelines for version bumps and drops,
-stabilization, correct eclass usage, correct dependencies and tests.
+This guide is supposed to be a help for (new) maintainers of Python packages.
+Besides valuable hints and tricks, there are guidelines for version bumps and
+drops, stabilization, correct eclass usage, correct dependencies and tests.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.3</version>
-<date>2008-06-20</date>
+<version>0.4</version>
+<date>2010-02-28</date>
 
-<chapter>
+<chapter id="Bumps_Drops_Stabilization">
 <title>Bumps, Drops, Stabilization</title>
 <section>
 <title>Version Bumps and Fixing Bugs</title>
@@ -42,7 +45,7 @@ explicitly granted by a (Co-)Lead:
 
 <ul>
   <li>dev-lang/python</li>
-  <li>dev-python/pycrypto</li>
+  <li>app-admin/eselect-python</li>
 </ul>
 
 <p>
@@ -79,7 +82,7 @@ it is a good way to transfer knowledge.
 <body>
 
 <p>
-Every team member should try to keep the package folders clean and uncluttered.
+Every team member should try to keep the package directories clean and uncluttered.
 Besides the obvious checks (last stable for an arch, last not p.masked, other
 packages depend on an exact version of this package), there are some other
 things which you should consider before dropping an old version:
@@ -109,188 +112,564 @@ things which you should consider before dropping an old version:
 </section>
 </chapter>
 
-<chapter>
-<title>Correct eclass usage</title>
+<chapter id="Writing_of_ebuilds">
+<title>Writing of ebuilds</title>
 <section>
+<title>Types of packages</title>
 <body>
 
 <p>
-There are currently 3 python related eclasses: <b>python</b>, <b>distutils</b>
-and <b>twisted</b>.
+There are 2 types of packages handled by python.eclass:
 </p>
+
+<ul>
+  <li>Packages supporting installation for multiple versions of Python</li>
+  <li>Packages not supporting installation for multiple versions of Python</li>
+</ul>
+
+<p>
+Packages supporting installation for multiple versions of Python install some files
+(usually <path>.py</path> or <path>.so</path>) into directories specific to given
+versions of Python.
+</p>
+
+<p>
+Packages not supporting installation for multiple versions of Python usually
+exhibit at least one of the following properties:
+</p>
+
+<ul>
+  <li>
+    They install Python modules outside of site-packages directories.
+  </li>
+  <li>
+    They do not install any files into directories specific to given versions of Python.
+  </li>
+  <li>
+    They install libraries linked against Python library (e.g. <path>libpython2.7.so</path>)
+    outside of directories specific to given versions of Python (e.g. in <path>/usr/lib</path>)
+    and filenames of these libraries do not contain Python version.
+  </li>
+  <li>
+    They import Python modules installed by packages not supporting installation for
+    multiple versions of Python.
+  </li>
+</ul>
 
 </body>
 </section>
 <section>
-<title>python.eclass</title>
+<title>Specification of dependency on Python</title>
 <body>
 
 <p>
-Here are some important things to remember when using this eclass:
+Ebuilds should properly specify dependency on supported version(s) of Python.
+python.eclass supports <c>PYTHON_DEPEND</c> helper variable, which allows
+to specify minimal and maximal version of Python. <c>PYTHON_DEPEND</c>
+variable should be set before 'inherit'. <c>PYTHON_DEPEND</c> variable
+should contain 1 or 2 groups of version components and can optionally begin with
+USE flag conditional in the form of "flag? " or "!flag? ". Each group of version
+components should contain major version ("2", "3" or "*") and can optionally contain
+minimal version (e.g. "2.6") and maximal version (e.g. "3.1"). Version components
+should be separated by colons. Colons followed only by empty components can be
+ommitted. "*" major version means that versions of both Python 2 and Python 3 are
+accepted. Minimal and maximal versions should contain major and minor versions.
+</p>
+
+<pre caption="Examples of PYTHON_DEPEND">
+# Dependency on any version of Python.
+<ident>PYTHON_DEPEND</ident>="*"
+
+# Dependency on any version of Python 2.
+<ident>PYTHON_DEPEND</ident>="2"
+
+# Dependency on any version of Python 3.
+<ident>PYTHON_DEPEND</ident>="3"
+
+# Dependency on any version of Python 2, which is at least 2.6.*.
+<ident>PYTHON_DEPEND</ident>="2:2.6"
+
+# Dependency on any version of Python 3, which is at least 3.2.*.
+<ident>PYTHON_DEPEND</ident>="3:3.2"
+
+# Dependency on any version of Python 2 or 3, which is at least 2.6.*.
+<ident>PYTHON_DEPEND</ident>="*:2.6"
+
+# Dependency on any version of Python 2, which is at least 2.7.*, or a version of Python 3, which is at least 3.2.*.
+<ident>PYTHON_DEPEND</ident>="2:2.7 3:3.2"
+
+# Dependency on any version of Python 2, which is at most 2.6.*.
+<ident>PYTHON_DEPEND</ident>="2::2.6"
+
+# Dependency on any version of Python 3, which is at most 3.2.*.
+<ident>PYTHON_DEPEND</ident>="3::3.2"
+
+# Dependency on any version of Python 2 or 3, which is at most 3.2.*.
+<ident>PYTHON_DEPEND</ident>="*::3.2"
+
+# Dependency on any version of Python 2, which is at least 2.5.* and at most 2.6.*.
+<ident>PYTHON_DEPEND</ident>="2:2.5:2.6"
+
+# Dependency on any version of Python 3, which is at least 3.1.* and at most 3.2.*.
+<ident>PYTHON_DEPEND</ident>="3:3.1:3.2"
+
+# Dependency on any version of Python 2 or 3, which is at least 2.6.* and at most 3.1.*.
+<ident>PYTHON_DEPEND</ident>="*:2.6:3.1"
+
+# Dependency on any version of Python 2, which is at least 2.5.* and at most 2.6.*, or a version of Python 3, which is at least 3.1.* and at most 3.2.*.
+<ident>PYTHON_DEPEND</ident>="2:2.5:2.6 3:3.1:3.2"
+
+# Dependency on any version of Python 2, when "python" USE flag is enabled.
+<ident>PYTHON_DEPEND</ident>="python? 2"
+
+# Dependency on any version of Python 2, which is at least 2.5.*, when "python" USE flag is enabled.
+<ident>PYTHON_DEPEND</ident>="python? 2:2.5"
+
+# Dependency on any version of Python 3, when "minimal" USE flag is disabled.
+<ident>PYTHON_DEPEND</ident>="!minimal? 3"
+</pre>
+
+</body>
+</section>
+<section>
+<title>Checking of USE flags of Python</title>
+<body>
+
+<p>
+Ebuilds can set <c>PYTHON_USE_WITH</c> or <c>PYTHON_USE_WITH_OR</c>
+before 'inherit' and call <b>python_pkg_setup()</b> to check if Python has been
+installed with specific USE flags. All USE flags specified in PYTHON_USE_WITH
+must be enabled, but at least one USE flag specified in PYTHON_USE_WITH_OR must
+be enabled. <c>PYTHON_USE_WITH_OPT</c> can specify a name of a USE flag,
+which conditionalizes PYTHON_USE_WITH and PYTHON_USE_WITH_OR.
+If python_set_active_version() (described below) is used, then it must be called
+before python_pkg_setup().
+</p>
+
+<pre caption="Example of PYTHON_USE_WITH (check for Tkinter)">
+<ident>PYTHON_USE_WITH</ident>="tk"
+
+<keyword>inherit</keyword> python
+
+...
+
+<stmt>pkg_setup</stmt>() {
+    <keyword>python_set_active_version</keyword> 2
+    <keyword>python_pkg_setup</keyword>
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Supporting of installation for multiple versions of Python</title>
+<body>
+
+<p>
+Ebuilds should set <c>SUPPORT_PYTHON_ABIS</c>="1" before 'inherit'.
+</p>
+
+<p>
+Ebuilds not working with some versions of Python should set <c>RESTRICT_PYTHON_ABIS</c>
+variable (e.g. after DEPEND/RDEPEND), which should contain list of space-separated
+fnmatch patterns. Such patterns can contain '*' character.
+</p>
+
+<pre caption="Examples of RESTRICT_PYTHON_ABIS">
+# Package not supporting Python 2.4.
+<ident>RESTRICT_PYTHON_ABIS</ident>="2.4"
+
+# Package not supporting Python 3.
+<ident>RESTRICT_PYTHON_ABIS</ident>="3.*"
+
+# Package not supporting Python 2.4 and 2.5.
+<ident>RESTRICT_PYTHON_ABIS</ident>="2.[45]"
+
+# Package not supporting Python 2.4 and 3.
+<ident>RESTRICT_PYTHON_ABIS</ident>="2.4 3.*"
+
+# Package not supporting Python 2.4, 2.6, 2.7 and 3.
+<ident>RESTRICT_PYTHON_ABIS</ident>="2.4 2.[67] 3.*"
+</pre>
+
+<p>
+Separate build directories must be used for different Python versions. Distutils
+by default uses "build" directory, which can be changed by "-b" option of "build"
+command of setup.py. Packages, which do not use Distutils, and very small number
+of packages, which use Distutils, usually need to use build directories outside
+of "${S}". Functions from distutils.eclass by default use "<c>${S}/build-${PYTHON_ABI}</c>"
+build directories. Packages, which do not use "${S}/build-${PYTHON_ABI}" build
+directories, need to call <b>python_copy_sources()</b> function, which copies
+sources to separate build directories.
+</p>
+
+<pre caption="Example of python_copy_sources()">
+<stmt>src_prepare</stmt>() {
+    <keyword>epatch</keyword> "<var>${FILESDIR}</var>/<var>${P}</var>-fix_build.patch"
+    <keyword>python_copy_sources</keyword>
+}
+</pre>
+
+<p>
+python_copy_sources() can be also used to copy a subdirectory of "${S}" to separate
+build directories. It can be useful in ebuilds of packages, which optionally build
+Python bindings.
+</p>
+
+<pre caption="Example of python_copy_sources() with a subdirectory of &quot;${S}&quot;">
+<stmt>src_prepare</stmt>() {
+    <keyword>default</keyword>
+
+    if <keyword>use</keyword> python; then
+        <keyword>python_copy_sources</keyword> bindings/python
+    fi
+}
+</pre>
+
+<p>
+<b>python_execute_function()</b> is used to perform appropriate actions with all enabled
+Python versions. This function requires one argument, which is name of function
+or -d / --default-function option. This function accepts some optional arguments.
+python_execute_function() executes a function, which needs to be defined earlier.
+To improve readability, it's recommended to define functions, which are used only
+in 1 place in ebuilds, directly before passing their names to python_execute_function().
+</p>
+
+<pre caption="Example of python_execute_function()">
+<stmt>src_test</stmt>() {
+    <stmt>testing</stmt>() {
+        <ident>PYTHONPATH</ident>="build-<var>${PYTHON_ABI}</var>/lib" "<keyword>$(PYTHON)</keyword>" runtests.py
+    }
+    <keyword>python_execute_function</keyword> testing
+}
+</pre>
+
+<p>
+When given actions should be executed in separate build directories created by
+python_copy_sources(), then <b>-s</b> / <b>--separate-build-dirs</b> option must be
+passed to python_execute_function().
+</p>
+
+<pre caption="Example of python_execute_function() with -s option">
+<stmt>src_prepare</stmt>() {
+    <keyword>epatch</keyword> "<var>${FILESDIR}</var>/<var>${P}</var>-fix_syntax.patch"
+    <keyword>python_copy_sources</keyword>
+}
+<stmt>src_configure</stmt>() {
+    <stmt>configuration</stmt>() {
+        "<keyword>$(PYTHON)</keyword>" configure.py \
+            --bindir="<var>${EPREFIX}</var>/usr/bin" \
+            --destdir="<var>${EPREFIX}</var>$(python_get_sitedir)"
+    }
+    <keyword>python_execute_function</keyword> -s configuration
+}
+</pre>
+
+<p>If build directories are subdirectories of "${S}", then additionally <b>--source-dir</b>
+option and path to source directory must be passed to python_execute_function().
+</p>
+
+<pre caption="Example of python_execute_function() with -s and --source-dir options">
+<stmt>src_configure</stmt>() {
+    <keyword>econf</keyword> \
+        $(use_with java) \
+        $(use_with python) \
+        $(use_with ruby)
+
+    <comment># Python bindings are built/tested/installed manually.</comment>
+    <keyword>sed</keyword> -e "/SUBDIRS =/s/ python//" -i bindings/Makefile || <keyword>die</keyword> "sed failed"
+}
+
+<stmt>src_compile</stmt>() {
+    <keyword>default</keyword>
+
+    if <keyword>use</keyword> python; then
+        <keyword>python_copy_sources</keyword> bindings/python
+        <stmt>building</stmt>() {
+            <comment># Override paths stored in bindings/python-${PYTHON_ABI}/Makefile files by 'configure'.</comment>
+            <keyword>emake</keyword> PYTHON="$(PYTHON)" PYTHON_INCLUDEDIR="$(python_get_includedir)" PYTHON_LIBDIR="$(python_get_libdir)"
+        }
+        <keyword>python_execute_function</keyword> -s --source-dir bindings/python building
+    fi
+}
+</pre>
+
+<p>
+<b>-d</b> / <b>--default-function</b> option is useful in cases, when the same
+actions, which are executed in default phase functions (e.g. emake in src_compile()),
+need to be executed. This option can be used only in a subset of ebuild phases.
+</p>
+
+<pre caption="Example of python_execute_function() with -d option">
+<stmt>src_compile</stmt>() {
+    <keyword>python_execute_function</keyword> -d -s
+}
+</pre>
+
+<p>
+python.eclass defines the following phase functions, which can be used to simplify
+some ebuilds:
 </p>
 
 <ul>
-  <li>Call python_version before using PYVER, PYVER_MINOR or PYVER_MAJOR.</li>
-  <li>
-    Insert a line "NEED_PYTHON=MY_VERSION" before the inherit to depend on
-    python.  If you don't need a specific version, put <c>virtual/python</c> in
-    DEPEND/RDEPEND.
-  </li>
-  <li>
-    If you don't use <b>distutils</b> (and/or your package installs
-    <path>.py</path> files somewhere else than site-packages), you have to call
-    python_mod_optimize and python_mod_cleanup yourself. If your package doesn't
-    install itself into a subdir, omit "/YOURPACKAGE". You can pass any path you
-    want to python_mod_optimize/cleanup. python_mod_cleanup will also remove
-    empty directories after the cleanup. If you call python as root,
-    <path>.py</path> files will get byte-compiled to <path>.pyc</path> but not
-    recorded in the package's CONTENTS. They therefore won't get removed on
-    update/removal of the package.
-  </li>
+  <li>python_src_prepare</li>
+  <li>python_src_configure</li>
+  <li>python_src_compile</li>
+  <li>python_src_test</li>
+  <li>python_src_install</li>
 </ul>
 
-<pre caption="Optimize/cleanup idiom">
-<keyword>inherit</keyword> python multilib
+<p>python_src_prepare() calls 'python_copy_sources', while other phase functions call
+'python_execute_function -d -s'. If <c>PYTHON_EXPORT_PHASE_FUNCTIONS</c>="1"
+variable has been set before 'inherit', then these phase functions are exported.
+</p>
 
-[...]
+<p>
+<c>PYTHON_ABI</c> variable can be checked inside function executed by python_execute_function().
+</p>
 
-<stmt>pkg_postinst()</stmt> {
-    <keyword>python_mod_optimize</keyword> $(python_get_sitedir)/YOURPACKAGE
-}
+<pre caption="Example of python_execute_function() with a function checking PYTHON_ABI variable">
+<stmt>src_prepare</stmt>() {
+    <keyword>python_copy_sources</keyword>
 
-<stmt>pkg_postrm()</stmt> {
-    <keyword>python_mod_cleanup</keyword>
+    patching() {
+        [[ "<var>${PYTHON_ABI}</var>" == 3.* ]] &amp;&amp; return
+        <keyword>epatch</keyword> "<var>${FILESDIR}</var>/<var>${P}</var>-python-3.patch"
+    }
+    <keyword>python_execute_function</keyword> --action-message 'Applying patches with $(python_get_implementation) $(python_get_version)' -s patching
 }
 </pre>
 
 <impo>
-If the package's setup byte-compiles installed <path>.py</path> files, it's a
-good idea to disable this and use python_mod_optimize to prevent unexpected
+<b>--action-message</b> and <b>--failure-message</b> options of python_execute_function()
+accept arguments, which are internally evaluated, so single quotes might be useful.
+</impo>
+
+<p>
+Sometimes another eclass defines a specialized function, which performs building,
+installation etc., but is designed for non-Python packages. In such cases, it's
+possible to call python_execute_function() with name of such a function.
+</p>
+
+<pre caption="Example of python_execute_function() with a function from another eclass">
+<stmt>src_configure</stmt>() {
+    <keyword>python_execute_function</keyword> -s gnome2_src_configure
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Setting of active version of Python in packages not supporting installation for multiple versions of Python</title>
+<body>
+
+<p>
+If given package supports only Python 2 or only Python 3, then <b>python_set_active_version()</b>
+function should be called to set active version of Python. Usually major version
+of Python should be passed to this function.
+</p>
+
+<pre caption="Example of python_set_active_version() with major version of Python">
+<stmt>pkg_setup</stmt>() {
+    <keyword>python_set_active_version</keyword> 2
+}
+</pre>
+
+<p>
+If given package supports only 1 version of Python, then Python ABI (in the form
+of ${major_version}.${minor_version}) can be passed to python_set_active_version().
+It will cause that python-updater will ignore this package.
+</p>
+
+<pre caption="Example of python_set_active_version() with Python ABI">
+<stmt>pkg_setup</stmt>() {
+    <keyword>python_set_active_version</keyword> 3.1
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Getter functions</title>
+<body>
+
+<ul>
+  <li>
+    <b>PYTHON</b> prints filename of Python interpreter (e.g. <path>python3.2</path>).
+  </li>
+  <li>
+    <b>PYTHON</b> with <b>-a</b> / <b>--absolute-path</b> option prints absolute path to Python interpreter (e.g. <path>/usr/bin/python3.2</path>).
+  </li>
+  <li>
+    <b>python_get_implementation</b> prints name of Python implementation (e.g. CPython).
+  </li>
+  <li>
+    <b>python_get_implementational_package</b> prints category, name and slot of package providing Python implementation (e.g. dev-lang/python:3.2).
+  </li>
+  <li>
+    <b>python_get_includedir</b> prints path to Python include directory (e.g. <path>/usr/include/python3.2</path>).
+  </li>
+  <li>
+    <b>python_get_libdir</b> prints path to Python library directory (e.g. <path>/usr/lib64/python3.2</path>).
+  </li>
+  <li>
+    <b>python_get_sitedir</b> prints path to Python site-packages directory (e.g. <path>/usr/lib64/python3.2/site-packages</path>).
+  </li>
+  <li>
+    <b>python_get_library</b> prints path to Python library (e.g. <path>/usr/lib64/libpython3.2.so</path>).
+  </li>
+  <li>
+    <b>python_get_library</b> with <b>-l</b> / <b>--linker-option</b> option prints Python library in the form of -l${library} linker option (e.g. -lpython3.2).
+  </li>
+  <li>
+    <b>python_get_version</b> prints major and minor version of Python (e.g. 3.2).
+  </li>
+  <li>
+    <b>python_get_version</b> with <b>--major</b> option prints major version of Python (e.g. 3).
+  </li>
+  <li>
+    <b>python_get_version</b> with <b>--minor</b> option prints minor version of Python (e.g. 2).
+  </li>
+  <li>
+    <b>python_get_version</b> with <b>--micro</b> option prints micro version of Python (e.g. 0).
+  </li>
+</ul>
+
+<pre caption="Example of python_get_includedir()">
+<stmt>src_install</stmt>() {
+    ...
+
+    <stmt>install_headers</stmt>() {
+        <keyword>insinto</keyword> "$(python_get_includedir)"
+        <keyword>doins</keyword> include/*.h
+    }
+    <keyword>python_execute_function</keyword> -q install_headers
+}
+</pre>
+
+<impo>
+To call Python interpreter in ebuilds, "<b>$(PYTHON)</b>" should be used.
+</impo>
+
+<p>
+In ebuilds supporting installation for multiple versions of Python, sometimes
+given action needs to be executed only once (e.g. generation of documentation).
+In such cases it should be executed with the final Python ABI from the list of
+enabled ABI, which is performed by passing <b>-f</b> / <b>--final-ABI</b> option
+to appropriate getter functions.
+</p>
+
+<pre caption="Example of PYTHON() with -f option">
+<stmt>src_compile</stmt>() {
+    <keyword>distutils_src_compile</keyword>
+
+    if <keyword>use</keyword> doc; then
+        "<keyword>$(PYTHON -f)</keyword>" setup.py pudge
+    fi
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Shebangs in installed scripts</title>
+<body>
+
+<p>
+Shebangs in installed scripts should be correct to avoid problems when a different
+version of Python is set as main active version of Python. If given package does
+not support some versions of Python and build system installs scripts with too
+generic shebangs, then <b>python_convert_shebangs()</b> should be called to convert
+shebangs. This function requires Python version and files / directories. Directories
+can be passed only with <b>-r</b> / <b>--recursive</b> option.
+</p>
+
+<pre caption="Example of python_convert_shebangs()">
+<stmt>src_prepare</stmt>() {
+    <keyword>python_convert_shebangs</keyword> -r 2 .
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>Handling of byte-compiled modules</title>
+<body>
+
+<p>
+Byte-compilation of Python modules is usually disabled. <b>python_enable_pyc()</b> enables
+it, while <b>python_disable_pyc()</b> disables it.
+</p>
+
+<p>
+<b>python_mod_optimize()</b> is used to compile and optimize Python modules in
+pkg_postinst() phase. <b>python_mod_cleanup()</b> is used to remove compiled and
+optimized Python modules in pkg_postrm(). Ebuilds, which use distutils.eclass and
+install Python modules into site-packages directories, usually do not need to
+directly call python_mod_optimize() or python_mod_cleanup(). Paths of modules
+installed into site-packages directories should be relative to site-packages
+directories. Other paths should be relative to ${ROOT}. python_mod_cleanup()
+removes empty directories after cleaning up <path>.py</path> files.
+</p>
+
+<pre caption="Example of python_mod_optimize() and python_mod_cleanup()">
+<stmt>pkg_postinst()</stmt> {
+    <keyword>python_mod_optimize</keyword> PyQt4
+}
+
+<stmt>pkg_postrm()</stmt> {
+    <keyword>python_mod_cleanup</keyword> PyQt4
+}
+</pre>
+
+<impo>
+If the package's build system byte-compiles installed <path>.py</path> files, it's
+a good idea to disable this and use python_mod_optimize() to prevent unexpected
 problems.
 </impo>
 
 </body>
 </section>
 <section>
-<title>distutils.eclass</title>
+<title>Usage of distutils.eclass</title>
 <body>
 
 <ul>
   <li>
-    To depend on a specific version of python, put NEED_PYTHON=MY_VERSION before
-    the inherit (rather than DEPEND/RDEPEND on
-    <c>dev-lang/python-MY_VERSION</c>) or leave it away to implicitly depend on
-    <c>virtual/python</c> through the <b>distutils</b> eclass.
+    <b>distutils_src_compile()</b>, <b>distutils_src_test()</b> and
+    <b>distutils_src_install()</b> internally perform actions appropriate for given
+    type of package. In ebuilds supporting installation for multiple versions of Python,
+    they define some functions and pass their names to python_execute_function().
   </li>
   <li>
-    If the ebuild name (in ${PN}) differs from the folder created by the package
-    in <path>site-packages/</path>, you have to define a variable PYTHON_MODNAME
-    to tell <b>distutils</b> where to look for the module.
+    If the ebuild name (in ${PN}) differs from the directory created by the package
+    in <path>site-packages/</path>, then ebuild should define a variable
+    <c>PYTHON_MODNAME</c> variable to tell <b>distutils_pkg_postinst()</b>
+    and <b>distutils_pkg_postrm()</b> paths of Python modules.
   </li>
   <li>
-    Set the DOCS variable to install additional (pure-text) docs. If you write
-    the src_install-function, you can put the definition of the DOCS var in the
-    function but before calling distutils_src_install.
+    Ebuilds can set <c>DOCS</c> variable to tell <b>distutils_src_install()</b>
+    to install additional (pure-text) documentation files.
   </li>
 </ul>
 
-<pre caption="PYTHON_MODNAME usage (example from ipython-0.7.3.ebuild)">
-<comment># Copyright 1999-2007 Gentoo Foundation</comment>
-<comment># Distributed under the terms of the GNU General Public License v2</comment>
-<comment># $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/developersguide.xml,v 1.11 2009/10/03 17:22:17 sping Exp $</comment>
-
-<ident>NEED_PYTHON</ident>=2.3
-
-<keyword>inherit</keyword> distutils
-
-<ident>DESCRIPTION</ident>="An advanced interactive shell for Python."
-<ident>HOMEPAGE</ident>="http://ipython.scipy.org/"
-<ident>SRC_URI</ident>="http://ipython.scipy.org/dist/${P}.tar.gz"
-
-<ident>LICENSE</ident>="BSD"
-<ident>SLOT</ident>="0"
-<ident>KEYWORDS</ident>="~amd64 ~ia64 ~ppc ~s390 ~x86"
-<ident>IUSE</ident>="doc examples emacs gnuplot test"
-
-<ident>DEPEND</ident>="test? ( dev-python/pexpect )"
-<ident>RDEPEND</ident>="gnuplot? ( dev-python/gnuplot-py )"
-
+<pre caption="Example of PYTHON_MODNAME (from dev-python/ipython)">
 <ident>PYTHON_MODNAME</ident>="IPython"
-
-[...]
-</pre>
-
-<pre caption="DOCS idiom">
-<stmt>src_install()</stmt> {
-    <ident>DOCS</ident>="foo.txt bar.txt"
-    <keyword>distutils_src_install</keyword>
-    <keyword>dohtml</keyword> foo.html bar.png
-}
 </pre>
 
 <note>
-distutils.eclass defines the DDOCS variable with common doc file names and they
-are installed by default as docs. If the name of the doc file you want to
-install is there you don't have to specify a DOCS variable.
+distutils_src_install() installs some documentation files by default.
 </note>
 
-<pre caption="DDOCS variable in distutils.eclass">
-<ident>DDOCS</ident>="CHANGELOG KNOWN_BUGS MAINTAINERS PKG-INFO CONTRIBUTORS TODO NEWS"
-<ident>DDOCS</ident>="<var>${DDOCS}</var> Change* MANIFEST* README*"
+<pre caption="Documentation files installed by default">
+<ident>default_docs</ident>="AUTHORS Change* CHANGELOG CONTRIBUTORS KNOWN_BUGS MAINTAINERS MANIFEST* NEWS PKG-INFO README* TODO"
 </pre>
 
 </body>
 </section>
-<section>
-<title>twisted.eclass</title>
-<body>
-
-<p>
-TBD
-</p>
-
-</body>
-</section>
 </chapter>
 
-<chapter>
-<title>Ebuild writing</title>
-<section>
-<body>
-
-<p>
-Here are some important things to keep in mind when writing ebuilds for python
-packages.
-</p>
-
-</body>
-</section>
-<section>
-<title>Calling python in ebuilds</title>
-<body>
-
-<p>
-To call python in one of your ebuilds, use "${python}" to do it (defined in
-distutils.eclass).
-</p>
-
-</body>
-</section>
-<section>
-<title>Checking for tkinter support</title>
-<body>
-
-<p>
-To check whether python has tkinter support you can use one of
-python_tkinter_exists (from python.eclass) or distutils_python_tkinter (from
-distutils.eclass) in pkg_setup. These two functions are identical.
-</p>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
+<chapter id="Common_Problems_and_Mistakes">
 <title>Common Problems and Mistakes</title>
 <section>
 <body>
@@ -394,15 +773,21 @@ solve the problem by setting the PYTHONPATH environment variable which augments
 the default search path for module files. Here are two examples:
 </p>
 
-<pre caption="src_test of dev-python/mechanize-0.1.7b -- a pure python module">
+<pre caption="Example of src_test() from a pure-Python module">
 <stmt>src_test()</stmt> {
-    <ident>PYTHONPATH</ident>=build/lib/ "<var>${python}</var>" test.py || <keyword>die</keyword> "tests failed"
+    <stmt>testing</stmt>() {
+        <ident>PYTHONPATH</ident>="build-<var>${PYTHON_ABI}</var>/lib" "<keyword>$(PYTHON)</keyword>" test.py
+    }
+    <keyword>python_execute_function</keyword> testing
 }
 </pre>
 
-<pre caption="src_test of dev-python/pyme-0.6.0-r1 -- a python module written in C">
+<pre caption="Example of src_test() from a Python module written in C">
 <stmt>src_test()</stmt> {
-    <ident>PYTHONPATH</ident>="<var>$(ls -d build/lib.*)</var>" "<var>${python}</var>" examples/genkey.py || <keyword>die</keyword> "genkey test failed"
+    <stmt>testing</stmt>() {
+        <ident>PYTHONPATH</ident>="$(ls -d build-<var>${PYTHON_ABI}</var>/lib.*)" "<keyword>$(PYTHON)</keyword>" test.py
+    }
+    <keyword>python_execute_function</keyword> testing
 }
 </pre>
 
