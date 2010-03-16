@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-working-portage.xml,v 1.25 2010/02/24 12:15:04 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-working-portage.xml,v 1.26 2010/03/16 13:46:14 chiguire Exp $ -->
 
 <sections>
 
@@ -14,8 +14,8 @@ definitivamente necesita saber para mantener el software en su
 sistema.
 </abstract>
 
-<version>1.66</version>
-<date>2010-02-13</date>
+<version>1.67</version>
+<date>2010-03-02</date>
 
 <section>
 <title>Bienvenido a Portage</title>
@@ -342,14 +342,14 @@ existentes:
 <p>
 Algunos paquetes del árbol Portage no tienen contenido real pero son
 utilizados para instalar un conjunto de paquetes. Por ejemplo, el paquete
-<c>kde-meta</c> instalrá un entorno KDE completo en su sistema instalando
+<c>kde-meta</c> instalará un entorno KDE completo en su sistema incluyendo
 varios paquetes relacionados con KDE y también sus dependencias.
 </p>
 
 <p>
 Si quiere desinstalar dicho paquete de su sistema, ejecutando <c>emerge
---unmerge</c> sobre el paquete no tendrá efecto total ya que las dependencias
-permanecerán en su sistema.
+--unmerge</c> sobre el paquete no tendrá efecto total ya que las
+dependencias permanecerán en su sistema.
 </p>
 
 <p>
@@ -380,6 +380,100 @@ instalarlo primero:
 <pre caption="Instalar el paquete gentoolkit">
 # <i>emerge gentoolkit</i>
 </pre>
+
+</body>
+</subsection>
+</section>
+<section id="license">
+<title>Licecias</title>
+<subsection>
+<body>
+
+<p>
+A partir de la versión 2.1.7 de Portage, puede aceptar o rechazar la
+instalación de software basada en esta licencia. Todos los paquetes del
+árbol contienen una entrada <c>LICENSE</c> en sus ebuilds. Ejecutando
+<c>emerge --search nombredepaquete</c> le mostrará la licencia del paquete.
+</p>
+
+<p>
+Por defecto Portage permite todas las licencias, excepto Acuerdos Finales
+de la Licencia de Usuario (End User License Agreements o EULAs) que
+requieren la lectura y firma de un acuerdo de aceptación.
+</p>
+
+<p>
+La variable que controla las licencias permitidas es <c>ACCEPT_LICENSE</c>,
+la cual puede ser ajustada en <path>/etc/make.conf</path>:
+</p>
+
+<pre caption="ACCEPT_LICENSE por defecto en /etc/make.conf">
+ACCEPT_LICENSE="* -@EULA"
+</pre>
+
+<p>
+Con esta configuración, los paquetes que requieren interacción durante la
+instalación para aprobar su EULA <e>no serán</e> instalados. Los paquetes
+sin una EULA <e>serán</e> instalados.
+</p>
+
+<p>
+Puede ajustar <c>ACCEPT_LICENSE</c> globalmente en
+<path>/etc/make.conf</path>, o puede especificarlo en de forma que afecte
+a sólo un paquete en <path>/etc/portage/package.license</path>.
+</p>
+
+<p>
+Por ejemplo, si quiere permitir la licencia <c>truecrypt-2.7</c> para
+<c>app-crypt/truecrypt</c>, añada lo siguiente a
+<path>/etc/portage/package.license</path>:
+</p>
+
+<pre caption="Especificando una licencia truecrypt en package.license">
+app-crypt/truecrypt truecrypt-2.7
+</pre>
+
+<p>
+Esto permite la instalación de versiones de truecrypt que tengan la
+licencia <c>truecrypt-2.7</c>, pero no versiones con la licencia
+<c>truecrypt-2.8</c>.
+</p>
+
+<impo>
+Las licencias se almacenan en <path>/usr/portage/licenses</path>, y los
+grupos de licencias se guardan en
+<path>/usr/portage/license_groups</path>. La primera entrada de cada
+línea en letras MAYÚSCULAS, es el nombre del grupo de licencias, y cada
+entrada detrás de ésta es una licencia individual.
+</impo>
+
+<p>
+Los grupos de licencias definidos en <c>ACCEPT_LICENSE</c> se prefijan
+con un signo <b>@</b>. Se muestra un ejemplo de un sistema que globalmente
+permite el grupo de licencias compatibles, así como otros grupos y
+licencias individuales:
+</p>
+
+<pre caption="ACCEPT_LICENSE en /etc/make.conf">
+ACCEPT_LICENSE="@GPL-COMPATIBLE @OSI-APPROVED @EULA atheros-hal BitstreamVera"
+</pre>
+
+<p>
+Si quiere sólo software libre y documentación en su sistema, debería usar
+la siguiente configuración:
+</p>
+
+<pre caption="Usar únicamente licencias libres">
+ACCEPT_LICENSE="-* @FREE"
+</pre>
+
+<p>
+En este caso, "free" está definido por la <uri
+link="http://www.gnu.org/philosophy/free-sw.html">FSF</uri> y la <uri
+link="http://www.opensource.org/docs/osd">OSI</uri>. Cualquier paquete
+cuya licencia no se ajuste a estos requisitos no será instalado en su
+sistema.
+</p>
 
 </body>
 </subsection>
@@ -514,6 +608,7 @@ de Gentoo</uri>.
 - dev-util/cvsd-1.0.2 (masked by: <i>missing keyword</i>)
 - games-fps/unreal-tournament-451 (masked by: <i>package.mask</i>)
 - sys-libs/glibc-2.3.2-r11 (masked by: <i>profile</i>)
+- net-im/skype-2.1.0.81 (masked by: skype-eula <i>license</i>(s))
 </pre>
 
 <p>
@@ -550,6 +645,15 @@ esté enmascarado:
     <b>profile</b> implica que el paquete no está disponible para su perfil.
     La aplicación podría romper su sistema si la instala o no es compatible
     con el perfil que está usando.
+  </li>
+  <li>
+    <b>license</b> significa que la licencia del paquete no es compatible
+    con su ajuste <c>ACCEPT_LICENSE</c>. Debe permitir explícitamente su
+    licencia o grupo de licencias ajustándolo en
+    <path>/etc/make.conf</path> o en
+    <path>/etc/portage/package.license</path>. Consulte <uri
+    link="#license">Licencias</uri> para aprender cómo se gestionan las
+    licencias.
   </li>
 </ul>
 
