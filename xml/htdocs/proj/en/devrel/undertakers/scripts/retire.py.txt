@@ -6,45 +6,37 @@ import os
 import sys
 import difflib
 import StringIO
+import inspect
 
-try:
-    import cElementTree as etree
-except ImportError:
-    try:
-        from elementtree import ElementTree as etree
-    except ImportError:
-        print 'This script needs either celementtree (preferred, faster) or'
-        print 'elementtree installed.'
-        sys.exit(1)
+from xml.etree import cElementTree as etree
+
 
 def getretired(userinfo_path):
-    """ Get a list of retired devs from userinfo.xml
-    """
-    retired = []
+    """Generator yielding names of retired devs from userinfo.xml."""
     userinfo = etree.parse(userinfo_path)
 
     for entry in userinfo.findall('user'):
         status = entry.find('status')
         if status is not None:
-            if status.text == 'Retired' or status.text == 'retired':
+            if status.text in ('Retired', 'retired'):
                 devname = entry.get('username')
-                retired.append(devname.lower())
-    return retired
+                yield devname.lower()
+
 
 def herds(userinfo_path, herds_path):
     """ Show retired developers and which herds they are in
     """
     try:
-        retired = getretired(userinfo_path)
-    except:
-        print >>sys.stderr, "Couldn't parse userinfo.xml"
-        sys.exit(1)
+        retired = set(getretired(userinfo_path))
+    except (SyntaxError, EnvironmentError), e:
+        print >>sys.stderr, "Couldn't parse userinfo.xml (%s)" % (e,)
+        return 1
 
     try:
         herds = etree.parse(herds_path)
-    except:
-        print >>sys.stderr, "Couldn't parse herds.xml"
-        sys.exit(1)
+    except (SyntaxError, EnvironmentError), e:
+        print >>sys.stderr, "Couldn't parse herds.xml (%s)" % (e,)
+        return 1
 
     for herd in herds.findall('herd'):
         herdname = herd.find('name').text
@@ -52,7 +44,7 @@ def herds(userinfo_path, herds_path):
             email = entry.find('email')
             username = email.text.replace('@gentoo.org','').lower()
             if username in retired:
-                print herdname + ':\t' + username
+                print '%s:\t%s' % (herdname, username)
     return 0
 
 def project(userinfo_path, path):
@@ -61,10 +53,10 @@ def project(userinfo_path, path):
     files is a list of project xmls
     """
     try:
-        retired = getretired(userinfo_path)
-    except:
-        print >>sys.stderr, "Couldn't parse userinfo.xml"
-        sys.exit(1)
+        retired = set(getretired(userinfo_path))
+    except (SyntaxError, EnvironmentError), e:
+        print >>sys.stderr, "Couldn't parse userinfo.xml (%s)" % (e,)
+        return 1
 
     for root, dirs, files in os.walk(path):
         for file in files:
@@ -72,31 +64,28 @@ def project(userinfo_path, path):
                 fpath = root + '/' + file
                 try:
                     project = etree.parse(fpath)
-                except:
+                except (SyntaxError, EnvironmentError):
                     #print "Skipping %s, probably not a project xml" % file
                     continue
                 for entry in project.findall('dev'):
                     if entry.text.lower() in retired:
                         print fpath + ':\t' + entry.text
                 for entry in project.findall('task'):
-                    if 'lead' in entry.attrib:
-                        if entry.attrib['lead'].find(',') > -1:
-                            entries = entry.attrib['lead'].split(',')
-                            for x in entries:
-                                x = x.strip().lower()
-                                if x in retired:
-                                    print fpath + ':\t' + x
-                        elif entry.attrib['lead'].lower() in retired:
-                            print fpath + ':\t' + entry.attrib['lead']
+                    if 'lead' in entry.attrib and entry.attrib['lead'].lower() in retired:
+                        print fpath + ':\t' + entry.attrib['lead']
 
-def metadata(devname, path):
-    """ output a diff between current metadata.xml and
+def _metadata(path, modifier):
+    """Mutate metadata.xml and produce a diff.
     metadata.xml with the retired dev removed.
+
+    path is the path to the root of the portage tree.
+
+    modifier is a function called as modifier(metadata, herds).
+    It should return whether it mutated metadata.
     """
-    email = '%s@gentoo.org' % devname
     if not os.path.isdir(path):
         print >>sys.stderr, '%r is not a directory' % path
-        sys.exit(1)
+        return 1
     # Make sure path has a / at the end
     if not path.endswith('/'):
         path+='/'
@@ -106,40 +95,37 @@ def metadata(devname, path):
         metadata_path = os.path.join(root, 'metadata.xml')
         try:
             metadata = etree.parse(metadata_path)
-        except:
-            print >>sys.stderr, "Couldn't parse %s .. skipping" % root[len(path) + 1:]
+        except (SyntaxError, EnvironmentError), e:
+            print >>sys.stderr, "Couldn't parse %s (%s) .. skipping" % (root[len(path) + 1:], e)
             continue
 
-        changed = False
-        noherd = False
+        shortpath = root[len(path):]
 
-        # Check if package has no-herd
-        herd = metadata.find('herd')
-        if herd is None:
-            noherd = True
-        elif herd.text is None:
-            print >>sys.stderr, "Bogus herd entry in %s" % root[len(path):]
-            noherd = True
-        elif herd.text.strip() == 'no-herd':
-            noherd = True
+        # Find all herds this package is in, dealing with the no-herd "herd"
+        herds = {}
+        for herd in metadata.findall('herd'):
+            herdname = herd.text
+            if herdname is None:
+                print >>sys.stderr, "Bogus herd entry in %s" % (shortpath,)
+                continue
+            herdname = herdname.strip()
+            if herdname in herds:
+                print >>sys.stderr, 'Duplicate herd in %s' % (shortpath,)
+                continue
+            herds[herdname] = herd
+        if not herds:
+            # HACK: this is apparently normal for category-level metadata
+            if '/' in shortpath:
+                print >>sys.stderr, 'no herd tags in %s (add no-herd)' % (shortpath,)
+        if 'no-herd' in herds and len(herds) != 1:
+            print >>sys.stderr, 'no-herd and actual herds in %s' % (shortpath,)
+        herds.pop('no-herd', None)
 
-        for entry in metadata.findall('maintainer'):
-            for mailentry in entry.findall('email'):
-                if mailentry.text.strip() == email:
-                    if noherd:
-                        # remove name
-                        for name in entry.findall('name'):
-                            entry.remove(name)
-                        mailentry.text = 'maintainer-needed@gentoo.org'
-                    else:
-                        metadata.getroot().remove(entry)
-                    changed = True
-        if changed:
+        if modifier(metadata, herds):
             # we don't want the full path in the diff
             if not root.startswith(path):
                 print 'wtf (not %r.startswith(%r/))' % (root, path)
                 return 1
-            shortpath = root[len(path):]
             newfile = StringIO.StringIO()
             # etree does not write the <?xml ...> header and DOCTYPE
             newfile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
@@ -160,36 +146,76 @@ def metadata(devname, path):
             print
     return 0
 
+def metadata_dev(devname, path):
+    email = '%s@gentoo.org' % devname
+    def modifier(metadata, herds):
+        changed = False
+        for entry in metadata.findall('maintainer'):
+            for mailentry in entry.findall('email'):
+                if mailentry.text.strip() == email:
+                    if not herds:
+                        # remove name
+                        for name in entry.findall('name'):
+                            entry.remove(name)
+                        mailentry.text = 'maintainer-needed@gentoo.org'
+                    else:
+                        metadata.getroot().remove(entry)
+                    changed = True
+        return changed
+
+    return _metadata(path, modifier)
+
+
+def metadata_herd(herdname, path):
+    def modifier(metadata, herds):
+        if herdname not in herds:
+            return False
+
+        herd = herds[herdname]
+        if len(herds) == 1:
+            # We're removing the only herd, so convert to no-herd.
+            herd.text = 'no-herd'
+        else:
+            # Just remove this herd element.
+            metadata.getroot().remove(herd)
+
+        return True
+
+    return _metadata(path, modifier)
+
+
 def usage():
     print 'Usage: %s subcommand opts' % sys.argv[0]
     print 'Subcommands:'
     print '--herds /path/to/userinfo.xml /path/to/herds.xml : check herds.xml for retired developers'
-    print '--metadata devname /path/to/tree :'
+    print '--metadata-dev devname /path/to/tree :'
+    print '--metadata-herd herdname /path/to/tree :'
     print '\toutputs a diff between the current metadata.xml and'
-    print '\tmetadata.xml with the retired dev removed.'
+    print '\tmetadata.xml with the retired dev or herd removed.'
     print '--project /path/to/userinfo.xml /path/to/proj :'
     print '\tcheck the project pages for retired developers'
-    sys.exit(1)
+
 
 def main(args):
-    subcommands = ( '--herds', '--metadata', '--project' )
+    subcommands = dict(('--' + f.__name__.replace('_', '-'), f)
+                       for f in [herds, metadata_dev, metadata_herd, project])
     if len(args) == 1:
         usage()
-    if args[1] not in subcommands:
-        print args[1]
+    try:
+        subcommand = subcommands[args[1]]
+    except KeyError:
+        print '%s is not a valid subcommand (%s)' % (
+            args[1], ', '.join(subcommands))
         usage()
-    elif args[1] == '--herds':
-        if not len(args) == 4:
-            usage()
-        herds(args[2],args[3])
-    elif args[1] == '--metadata':
-        if not len(args) == 4:
-            usage()
-        metadata(args[2], args[3])
-    elif args[1] == '--project':
-        if not len(args) == 4:
-            usage()
-        project(args[2], args[3])
-    return 0
+        return 1
+
+    argcount = len(inspect.getargspec(subcommand)[0])
+    if len(args) - 2 != argcount:
+        print 'Expected %s arguments, got %s' % (argcount, len(args) - 2)
+        usage()
+        return 1
+
+    return subcommand(*args[2:])
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
