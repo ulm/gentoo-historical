@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/security/shb-logging.xml,v 1.4 2007/03/07 01:51:52 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/security/shb-logging.xml,v 1.5 2010/04/07 14:47:50 chiguire Exp $ -->
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
@@ -7,8 +7,8 @@
 
 <sections>
 
-<version>1.2</version>
-<date>2005-11-25</date>
+<version>1.3</version>
+<date>2010-04-02</date>
 
 <section>
 <title>Introducción</title>
@@ -35,7 +35,12 @@ de registro.
 
 <p>
 Syslogd es el gestor de registro más común para Linux y Unix en
-general. Incorpora algunas utilidades de rotación de logs, pero usar <path>/usr/sbin/logrotate</path> en una tarea programada (logrotate se configura en <path>/etc/logrotate.conf</path>) puede que sea más potente, puesto que <c>logrotate</c> tiene más prestaciones. Cuan a menudo se debe ejecutar la rotación de los registros dependerá de la carga del sistema.
+general. Incorpora algunas utilidades de rotación de logs, pero usar
+<path>/usr/sbin/logrotate</path> en una tarea programada (logrotate se
+configura en <path>/etc/logrotate.conf</path>) puede que sea más
+potente, puesto que <c>logrotate</c> tiene más prestaciones. Cuan a
+menudo se debe ejecutar la rotación de los registros dependerá de la
+carga del sistema.
 </p>
 
 <p>
@@ -217,37 +222,55 @@ Seguidamente un fichero de configuración típico ligeramente modificado:
 </p>
 
 <pre caption="/etc/syslog-ng/syslog-ng.conf">
-options { chain_hostnames(off); sync(0); };
+options {
+        chain_hostnames(no);
 
-#origen donde leer el registro
-source src { unix-stream(&quot;/dev/log&quot;); internal(); };
-source kernsrc { file(&quot;/proc/kmsg&quot;); };
+        <comment># la acción predeterminada de syslog-ng es registrar 
+        # una línea STATS al archivo cada 10 minutos. Eso se pone feo 
+        # luego de un rato. Cámbielo a cada 12 horas para obtener una 
+        # actualización diaria de los mensajes perdidos por syslog-ng 
+        # (0).</comment>
+        stats_freq(43200);
+};
 
-#define los destinos
-destination authlog { file(&quot;/var/log/auth.log&quot;); };
-destination syslog { file(&quot;/var/log/syslog&quot;); };
-destination cron { file(&quot;/var/log/cron.log&quot;); };
-destination daemon { file(&quot;/var/log/daemon.log&quot;); };
-destination kern { file(&quot;/var/log/kern.log&quot;); };
-destination lpr { file(&quot;/var/log/lpr.log&quot;); };
-destination user { file(&quot;/var/log/user.log&quot;); };
-destination mail { file(&quot;/var/log/mail.log&quot;); };
+source src {
+    unix-stream("/dev/log" max-connections(256));
+    internal();
+};
 
-destination mailinfo { file(&quot;/var/log/mail.info&quot;); };
-destination mailwarn { file(&quot;/var/log/mail.warn&quot;); };
-destination mailerr { file(&quot;/var/log/mail.err&quot;); };
+source kernsrc { file("/proc/kmsg"); };
 
-destination newscrit { file(&quot;/var/log/news/news.crit&quot;); };
-destination newserr { file(&quot;/var/log/news/news.err&quot;); };
-destination newsnotice { file(&quot;/var/log/news/news.notice&quot;); };
+<comment># define los destinos</comment>
+destination authlog { file("/var/log/auth.log"); };
+destination syslog { file("/var/log/syslog"); };
+destination cron { file("/var/log/cron.log"); };
+destination daemon { file("/var/log/daemon.log"); };
+destination kern { file("/var/log/kern.log"); };
+destination lpr { file("/var/log/lpr.log"); };
+destination user { file("/var/log/user.log"); };
+destination mail { file("/var/log/mail.log"); };
 
-destination debug { file(&quot;/var/log/debug&quot;); };
-destination messages { file(&quot;/var/log/messages&quot;); };
-destination console { usertty(&quot;root&quot;); };
-destination console_all { file(&quot;/dev/tty12&quot;); };
-destination xconsole { pipe(&quot;/dev/xconsole&quot;); };
+destination mailinfo { file("/var/log/mail.info"); };
+destination mailwarn { file("/var/log/mail.warn"); };
+destination mailerr { file("/var/log/mail.err"); };
 
-#crea los filtros
+destination newscrit { file("/var/log/news/news.crit"); };
+destination newserr { file("/var/log/news/news.err"); };
+destination newsnotice { file("/var/log/news/news.notice"); };
+
+destination debug { file("/var/log/debug"); };
+destination messages { file("/var/log/messages"); };
+destination console { usertty("root"); };
+
+<comment># los mensajes se registran en el tty12 ...</comment>
+destination console_all { file("/dev/tty12"); };
+
+<comment># ... si tiene intención de usar /dev/console para programas 
+# como like xconsole puede comentar el destino definido arriba que hace 
+# referencia a /dev/tty12 y descomentar la siguiente línea.</comment>
+#destination console_all { file("/dev/console"); };
+
+<comment># crea los filtros</comment>
 filter f_authpriv { facility(auth, authpriv); };
 filter f_syslog { not facility(authpriv, mail); };
 filter f_cron { facility(cron); };
@@ -266,10 +289,10 @@ filter f_notice { level(notice); };
 filter f_warn { level(warn); };
 filter f_crit { level(crit); };
 filter f_err { level(err); };
-filter f_failed { match(&quot;failed&quot;); };
-filter f_denied { match(&quot;denied&quot;); };
+filter f_failed { message("failed"); };
+filter f_denied { message("denied"); };
 
-#enlaza filtros con destinos
+<comment># enlaza filtros con destinos</comment>
 log { source(src); filter(f_authpriv); destination(authlog); };
 log { source(src); filter(f_syslog); destination(syslog); };
 log { source(src); filter(f_cron); destination(cron); };
@@ -286,7 +309,7 @@ log { source(src); filter(f_debug); destination(debug); };
 log { source(src); filter(f_messages); destination(messages); };
 log { source(src); filter(f_emergency); destination(console); };
 
-#log por defecto
+<comment># registro predeterminado</comment>
 log { source(src); destination(console_all); };
 </pre>
 
