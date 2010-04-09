@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/desktop/x/x11/xorg-server-1.8-upgrade-guide.xml,v 1.1 2010/04/09 10:06:24 scarabeus Exp $ -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide link="/proj/en/desktop/x/x11/xorg-server-1.8-upgrade-guide.xml">
+<title>Xorg-server 1.8 Upgrade Guide</title>
+
+<author title="Author">
+  <mail link="scarabeus"/>
+</author>
+
+<abstract>
+This guide shows you how to upgrade X.org server to version 1.8.
+</abstract>
+
+<!-- The  content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1</version>
+<date>2010-04-09</date>
+
+<chapter>
+<title>Features changes</title>
+<section>
+<body>
+
+<!-- DELETE ME -->
+<warn>
+THIS GUIDE IS IN-PROGRESS. PLEASE NOTE THAT SOME SECTIONS MIGHT BE COMPLETELY
+DIFFERENT IN FINAL VERSION.
+</warn>
+
+<ul>
+	<li>
+		Xorg can detect input devices using udev, deprecating its HAL support.
+		Users are strongly encouraged to migrate to Udev.
+	</li>
+	<li>
+		Xorg's configuration is now much more flexible thanks to generic match
+		options and multiple-file merging capabilities
+		<path>/etc/X11/xorg.conf.d/</path>.
+	</li>
+</ul>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Migrating to Udev hotplugging</title>
+<section>
+<title>Match rules usage</title>
+<body>
+
+<p>
+With the hal <c>.fdi</c> files gone most of us would not like to write
+the Udev rules. Xorg now supports similar functionality written into the
+<path>xorg.conf</path> or <path>xorg.conf.d</path> files.
+</p>
+
+<warn>
+Config is stored in <path>xorg.conf</path> or <path>xorg.conf.d</path>
+files but the detection is done by udev. So make sure you turn that useflag on.
+</warn>
+
+<p>
+New section called <c>InputClass</c> is introduced. They are quite similar
+to <c>InputDevice</c> sections but can match (configure) multiple devices.
+</p>
+
+<p>
+The InputClass work on match principle, where the following match rules
+are at your disposal (names are quite self-explaining):
+</p>
+
+<ul>
+	<li>MatchProduct</li>
+	<li>MatchVendor</li>
+	<li>MatchDevicePath</li>
+	<li>MatchIsKeyboard</li>
+	<li>MatchIsPointer</li>
+	<li>MatchIsJoystick</li>
+	<li>MatchIsTablet</li>
+	<li>MatchIsTouchpad</li>
+	<li>MatchIsTouchscreen</li>
+</ul>
+
+<note>
+MatchDevicePath uses fnmatch(3) when available, so you can use a wildcard
+pattern: <c>Option "MatchDevicePath" /dev/input/event*</c>
+</note>
+
+</body>
+</section>
+
+<section>
+<title>Examples</title>
+<body>
+
+<pre caption="Configuring all touchpads to use synaptics driver">
+Section "InputClass"
+	Identifier "synaptics-all"
+	Driver "synaptics"
+	Option "RTCornerButton" "2"
+	Option "HorizEdgeScroll" "true"
+
+	MatchIsTouchpad "on"
+EndSection
+</pre>
+
+<pre caption="Configuring all keyboards to use specified config">
+Section "InputClass"
+	Identifier "keyboard-all"
+	Driver "evdev"
+	Option "XkbLayout" "us,cz"
+	Option "XkbVariant" ",qwerty"
+	Option "XkbOptions" "grp:alt_shift_toggle,grp:switch,compose:rwin,terminate:ctrl_alt_bksp"
+
+	MatchIsKeyboard "on"
+EndSection
+</pre>
+
+<pre caption="Configuring all mice to use specified config">
+Section "InputClass"
+	Identifier "mouse-all"
+	Driver "evdev"
+
+	MatchIsPointer "on"
+EndSection
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Disabling hotplugging (no Udev or HAL)</title>
+<body>
+
+<p>
+If you don't want to use Udev or HAL, you can either build <c>xorg-server</c>
+with <c>USE="-udev -hal"</c>. You can alternatively turn AutoAddDevices option
+off in the ServerFlags section of your <path>xorg.conf</path> or in some file
+stored in <path>/etc/X11/xorg.conf.d/</path>.
+</p>
+
+<pre caption="Turning AutoAddDevices off">
+Option "AutoAddDevices" "false"
+</pre>
+
+<p>
+Both options will allow the X server to use the legacy <c>mouse</c> and
+<c>kbd</c> drivers.
+</p>
+
+</body>
+</section>
+
+</chapter>
+
+<chapter>
+<title>Usage of xorg.conf.d</title>
+<section>
+<title>Separating xorg.conf apart</title>
+<body>
+
+<p>
+The <path>xorg.conf.d</path> is additional folder where user can store his
+adjustments for the <path>xorg.conf</path> without need of touching the
+<path>xorg.conf</path> itself.
+</p>
+
+<p>
+The order of inheritance is quite simple. The <path>xorg.conf</path> (if
+exists) is loaded, then the <path>xorg.conf.d/**.conf</path> files are
+parsed as well.
+</p>
+
+<pre caption="example folder listing for xorg.conf.d">
+scarab@ugly-elf: /etc/X11/xorg.conf.d $ ls
+50-ati.conf  96-synaptics.conf  97-evdev.conf
+</pre>
+
+<pre caption="example content of 96-synaptics.conf">
+Section "InputDevice"
+	Identifier "touchpad"
+	Driver "synaptics"
+	Option "AutoServerLayout" "on"
+EndSection
+</pre>
+
+<p>
+As you can see the code is same as for xorg.conf itself. Only one addition
+is the <c>"AutoServerLayout" option</c>. With this option enabled the device
+does not need to be refferenced in <c>ServerLayout section</c>.
+</p>
+
+<note>
+The InputClass section is automaticaly using the AutoServerLayout option so
+you don't have to specify it in there.
+</note>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Known Quirks</title>
+
+<section>
+<title>Lenovo HDAPS sensor</title>
+<body>
+
+<p>
+For more info see <uri
+link="http://bugs.freedesktop.org/show_bug.cgi?id=22442">upstream bug</uri>.
+</p>
+
+<pre caption="Disabling HDAPS accelerometer driver">
+Section "InputClass"
+	Identifier "ThinkPad HDAPS blacklist"
+	MatchProduct "ThinkPad HDAPS accelerometer data"
+	Option "Ignore" "on"
+EndSection
+</pre>
+
+</body>
+</section>
+
+</chapter>
+
+</guide>
