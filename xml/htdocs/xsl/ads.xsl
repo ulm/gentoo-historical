@@ -67,8 +67,8 @@
   <!-- kredit -->
     <tr lang="en">
     <td align="center" class="topsep">
-		<a href="http://www.online-kredit-index.de/" target="_top">
-          <img src="{concat($images,'images/sponsors/kredit-ad.jpg')}" width="125" alt="Online Kredit Index" title="Online Kredit Index" border="0"/>
+		<a href="http://www.edurium.de/" target="_top">
+          <img src="{concat($images,'images/sponsors/edurium-ad.gif')}" width="125" alt="Edurium" title="Edurium" border="0"/>
       </a>
     </td>
     </tr>
