@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/security/shb-logging.xml,v 1.3 2007/03/07 01:51:52 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/security/shb-logging.xml,v 1.4 2010/05/03 20:50:14 scen Exp $ -->
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
@@ -7,8 +7,8 @@
 
 <sections>
 
-<version>1.2</version>
-<date>2005-11-25</date>
+<version>1.3</version>
+<date>2010-04-02</date>
 
 <section>
 <title>Introduzione</title>
@@ -115,7 +115,7 @@ daemon,mail.*;\
 
 # The named pipe /dev/xconsole is for the `xconsole' utility.  To use it,
 # you must invoke `xconsole' with the `-file' option:
-# 
+#
 #    $ xconsole -file /dev/xconsole [...]
 #
 # NOTE: adjust the list below, or you'll go crazy if you have a reasonably
@@ -174,7 +174,7 @@ Per netqmail:
 <pre caption="/usr/local/sbin/mail_pwd_failures.sh per netqmail">
 #!/bin/sh
 echo "To: root
-Subject:Failure (Warning: $2) 
+Subject:Failure (Warning: $2)
 $3
 " | /var/qmail/bin/qmail-inject -f root
 </pre>
@@ -213,13 +213,29 @@ Ecco un file di configurazione classico, leggermente modificato.
 </p>
 
 <pre caption="/etc/syslog-ng/syslog-ng.conf">
-options { chain_hostnames(off); sync(0); };
+options {
+        chain_hostnames(no);
 
-#source where to read log
-source src { unix-stream("/dev/log"); internal(); };
+        <comment># The default action of syslog-ng is to log a STATS line
+        # to the file every 10 minutes.  That's pretty ugly after a while.
+        # Change it to every 12 hours so you get a nice daily update of
+        # how many messages syslog-ng missed (0).</comment>
+        stats_freq(43200);
+};
+
+
+
+source src {
+
+    unix-stream("/dev/log" max-connections(256));
+
+    internal();
+
+};
+
 source kernsrc { file("/proc/kmsg"); };
 
-#define destinations
+<comment>#define destinations</comment>
 destination authlog { file("/var/log/auth.log"); };
 destination syslog { file("/var/log/syslog"); };
 destination cron { file("/var/log/cron.log"); };
@@ -240,10 +256,16 @@ destination newsnotice { file("/var/log/news/news.notice"); };
 destination debug { file("/var/log/debug"); };
 destination messages { file("/var/log/messages"); };
 destination console { usertty("root"); };
-destination console_all { file("/dev/tty12"); };
-destination xconsole { pipe("/dev/xconsole"); };
 
-#create filters
+<comment># By default messages are logged to tty12...</comment>
+destination console_all { file("/dev/tty12"); };
+
+<comment># ...if you intend to use /dev/console for programs like xconsole
+# you can comment out the destination line above that references /dev/tty12
+# and uncomment the line below.</comment>
+#destination console_all { file("/dev/console"); };
+
+<comment>#create filters</comment>
 filter f_authpriv { facility(auth, authpriv); };
 filter f_syslog { not facility(authpriv, mail); };
 filter f_cron { facility(cron); };
@@ -253,7 +275,7 @@ filter f_lpr { facility(lpr); };
 filter f_mail { facility(mail); };
 filter f_user { facility(user); };
 filter f_debug { not facility(auth, authpriv, news, mail); };
-filter f_messages { level(info..warn) 
+filter f_messages { level(info..warn)
         and not facility(auth, authpriv, mail, news); };
 filter f_emergency { level(emerg); };
 
@@ -262,10 +284,10 @@ filter f_notice { level(notice); };
 filter f_warn { level(warn); };
 filter f_crit { level(crit); };
 filter f_err { level(err); };
-filter f_failed { match("failed"); };
-filter f_denied { match("denied"); };
+filter f_failed { message("failed"); };
+filter f_denied { message("denied"); };
 
-#connect filter and destination
+<comment>#connect filter and destination</comment>
 log { source(src); filter(f_authpriv); destination(authlog); };
 log { source(src); filter(f_syslog); destination(syslog); };
 log { source(src); filter(f_cron); destination(cron); };
@@ -282,7 +304,7 @@ log { source(src); filter(f_debug); destination(debug); };
 log { source(src); filter(f_messages); destination(messages); };
 log { source(src); filter(f_emergency); destination(console); };
 
-#default log
+<comment>#default log</comment>
 log { source(src); destination(console_all); };
 </pre>
 
