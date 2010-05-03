@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/xsl/repositories.xsl,v 1.2 2010/05/03 23:05:46 robbat2 Exp $ -->
 <!-- Used by [gentoo]/xml/htdocs/proj/en/overlays/repositories.xml -->
 <!--
 The source copy and history of this file is available from
