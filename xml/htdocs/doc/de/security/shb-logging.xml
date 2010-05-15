@@ -1,16 +1,16 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/security/shb-logging.xml,v 1.6 2007/03/10 21:44:19 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/security/shb-logging.xml,v 1.7 2010/05/15 18:29:07 keytoaster Exp $ -->
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
-<!-- English CVS Version: 1.5 -->
+<!-- English CVS Version: 1.6 -->
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
 <sections>
 
-<version>1.2</version>
-<date>2005-11-25</date>
+<version>1.3</version>
+<date>2010-04-02</date>
 
 <section>
 <title>Einleitung</title>
@@ -219,13 +219,25 @@ Eine klassische, leicht modifizierte Konfigurationsdatei:
 </p>
 
 <pre caption="/etc/syslog-ng/syslog-ng.conf">
-options { chain_hostnames(off); sync(0); };
+options {
+        chain_hostnames(no);
 
-#Quelle von der das Log gelesen werden soll
-source src { unix-stream("/dev/log"); internal(); };
+        <comment># Die standardmäßige Aktion von syslog-ng ist es, alle 10
+        # Minuten eine STATS-Zeile zu loggen. Das wird nach einer Weile recht
+        # ekelig. Ändern Sie dies auf 12 Stunden, so dass Sie ein nettes
+        # tägliches Update darüber erhalten, wie viele Nachrichten
+        # syslog-ng entgangen sind (0).</comment>
+        stats_freq(43200);
+};
+
+source src {
+    unix-stream("/dev/log" max-connections(256));
+    internal();
+};
+
 source kernsrc { file("/proc/kmsg"); };
 
-#Ziele festlegen
+<comment># Ziele festlegen</comment>
 destination authlog { file("/var/log/auth.log"); };
 destination syslog { file("/var/log/syslog"); };
 destination cron { file("/var/log/cron.log"); };
@@ -246,10 +258,16 @@ destination newsnotice { file("/var/log/news/news.notice"); };
 destination debug { file("/var/log/debug"); };
 destination messages { file("/var/log/messages"); };
 destination console { usertty("root"); };
-destination console_all { file("/dev/tty12"); };
-destination xconsole { pipe("/dev/xconsole"); };
 
-#Filter erstellen
+<comment># Standardmäßig werden alle Nachrichten nach tty12 protokolliert...</comment>
+destination console_all { file("/dev/tty12"); };
+
+<comment># ...wenn Sie vorhaben /dev/console für Programme wie xconsole zu
+# verwenden, können Sie die obige destination-Zeile, die sich auf /dev/tty12
+# bezieht, auskommentieren und die unten stehende Zeile entkommentieren.</comment>
+#destination console_all { file("/dev/console"); };
+
+<comment># create filters</comment>
 filter f_authpriv { facility(auth, authpriv); };
 filter f_syslog { not facility(authpriv, mail); };
 filter f_cron { facility(cron); };
@@ -268,10 +286,10 @@ filter f_notice { level(notice); };
 filter f_warn { level(warn); };
 filter f_crit { level(crit); };
 filter f_err { level(err); };
-filter f_failed { match("failed"); };
-filter f_denied { match("denied"); };
+filter f_failed { message("failed"); };
+filter f_denied { message("denied"); };
 
-#Filter und Ziele verbinden
+<comment># Filter und Ziele verbinden</comment>
 log { source(src); filter(f_authpriv); destination(authlog); };
 log { source(src); filter(f_syslog); destination(syslog); };
 log { source(src); filter(f_cron); destination(cron); };
@@ -288,7 +306,7 @@ log { source(src); filter(f_debug); destination(debug); };
 log { source(src); filter(f_messages); destination(messages); };
 log { source(src); filter(f_emergency); destination(console); };
 
-#Standard-Protokoll
+<comment># Standard-Protokoll</comment>
 log { source(src); destination(console_all); };
 </pre>
 
