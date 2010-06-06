@@ -53,7 +53,7 @@
   <note>
   Nominations are allowed from <xsl:value-of
   select="func:format-date(@from,'en')"/> 00:00 UTC to <xsl:value-of
-  select="func:format-date(@to,'en')"/> 23:59 UTC via the gentoo-dev mailling
+  select="func:format-date(@to,'en')"/> 23:59 UTC via the gentoo-dev mailing
   list.
   </note>
 
