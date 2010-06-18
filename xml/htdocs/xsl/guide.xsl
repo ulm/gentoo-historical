@@ -1914,7 +1914,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     </tr>
     <xsl:choose>
 	  <xsl:when test="$ads='ads2'">
-	    <xsl:call-template name="ads">
+	    <xsl:call-template name="ads2">
           <xsl:with-param name="images" select="$images"/>
         </xsl:call-template>
 	  </xsl:when>
