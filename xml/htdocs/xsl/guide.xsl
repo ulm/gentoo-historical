@@ -1923,10 +1923,10 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
           <xsl:with-param name="images" select="$images"/>
         </xsl:call-template>
 	  </xsl:otherwise>
+      <tr>
+        <td align="center" class="topsep"/>
+      </tr>
     </xsl:choose>
-    <tr>
-    <td align="center" class="topsep"/>
-    </tr>
   </table>
 </xsl:template>
 
