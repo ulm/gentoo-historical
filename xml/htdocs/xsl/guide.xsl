@@ -47,6 +47,9 @@
 <!-- Nick to select on dev map -->
 <xsl:param name="dev"/>
 
+<!-- testing ads mode -->
+<xsl:param name="ads">ads</xsl:param>
+
 <!-- Where is this xsl being run? -->
 <xsl:param name="httphost">www</xsl:param>
 
@@ -1909,9 +1912,18 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
         </form>
       </td>
     </tr>
-    <xsl:call-template name="ads">
-     <xsl:with-param name="images" select="$images"/>
-    </xsl:call-template>
+    <xsl:choose>
+	  <xsl:when test="$ads='ads2'">
+	    <xsl:call-template name="ads">
+          <xsl:with-param name="images" select="$images"/>
+        </xsl:call-template>
+	  </xsl:when>
+	  <xsl:otherwise>
+	    <xsl:call-template name="ads">
+          <xsl:with-param name="images" select="$images"/>
+        </xsl:call-template>
+	  </xsl:otherwise>
+    </xsl:choose>
     <tr>
     <td align="center" class="topsep"/>
     </tr>

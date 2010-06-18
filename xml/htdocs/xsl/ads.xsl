@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
+<xsl:template name="ads2">
+ <xsl:param name="images"/>
+<!-- we already have <table> and <tbody> inherited, hence -->
+  <!-- Load sidebar.gentoo.org in iframe -->
+    <tr lang="en">
+    <td align="center">
+          <iframe src="http://sidebar.gentoo.org">
+			<p>Your browser does not support iframes.</p>
+          </iframe>
+    </td>
+    </tr>
+  <!-- end of iframe content -->
+</xsl:template>
+
+
 <xsl:template name="ads">
  <xsl:param name="images"/>
 
