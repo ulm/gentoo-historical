@@ -1,5 +1,5 @@
 #!/sbin/runscript
-# Copyright 1999-2005 Gentoo Foundation
+# Copyright 1999-2010 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 depend() {
@@ -9,44 +9,25 @@ depend() {
 
 start() {
 	ebegin "Starting OpenAFS BOS server"
-	failed=1
-
-	eindent
-
-	if ! /sbin/start-stop-daemon --quiet --start --background --make-pidfile --pidfile /var/run/bosserver.pid --exec /usr/sbin/bosserver -- -nofork ${BOSSERVER_OPTIONS}; then
-		eerror "BosServer was already running, continuing without restart"
-		eend 1
-	else
-		eend 0
-		failed=0
-	fi
-
-	eoutdent
-
-	if [ $failed != 0 ]; then
-		return 1
-	fi
+	start-stop-daemon \
+		--quiet --start --background \
+		--make-pidfile --pidfile /var/run/bosserver.pid \
+		--exec /usr/sbin/bosserver \
+		-- -nofork ${BOSSERVER_OPTIONS}
+	eend $?
 }
 
 stop() {
+	local ret
 	ebegin "Stopping OpenAFS BOS server"
-	failed=1
-
-	eindent
 
 	# This kindly kills all server processes
-	if ! /usr/bin/bos shutdown localhost -localauth -wait; then
-		eend 1
-	else
+	/usr/bin/bos shutdown localhost -localauth -wait
+	ret=$?
+	if [ ${ret} -eq 0 ] ; then
 		start-stop-daemon --quiet --stop --pidfile /var/run/bosserver.pid
-		failed=$?
-		eend $failed
+		ret=$?
 	fi
 
-	eoutdent
-
-	if [ $failed != 0 ]; then
-		return 1
-	fi
+	eend ${ret}
 }
-
