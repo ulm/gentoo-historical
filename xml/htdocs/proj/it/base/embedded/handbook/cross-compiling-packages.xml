@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/base/embedded/handbook/cross-compiling-packages.xml,v 1.2 2008/05/10 23:15:20 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/base/embedded/handbook/cross-compiling-packages.xml,v 1.3 2010/06/22 19:17:18 scen Exp $ -->
 
 <sections>
 
@@ -9,8 +9,8 @@
 Usare Portage come Cross-Compilatore e Gestore di pacchetti.
 </abstract>
 
-<version>0.2</version>
-<date>2008-05-10</date>
+<version>0.3</version>
+<date>2009-09-23</date>
 
 <section>
 <title>Variabili</title>
@@ -35,13 +35,13 @@ Ci sono alcune importanti variabili che verranno usate in questa sezione.
  </tr>
  <tr>
   <ti>ROOT</ti>
-  <ti>La / virtuale sulla quale si sta installando</ti>
+  <ti>La <path>/</path> virtuale sulla quale si sta installando</ti>
  </tr>
  <tr>
   <ti>PORTAGE_CONFIGROOT</ti>
   <ti>
-    La / dove portage può trovare i suoi file di configurazione (come il
-    make.conf)
+    La <path>/</path> dove portage può trovare i suoi file di configurazione
+    (come <path>make.conf</path>)
   </ti>
  </tr>
 </table>
@@ -86,135 +86,84 @@ rimuoveranno dai pacchetti installati, questo ambiente non è adatto per la
 compilazione. Mentre si installa la sysroot si possono generare pacchetti binari
 dei vari applicativi, dai quali, con l'aggiunta della variabile
 <c>INSTALL_MASK</c> sono facilmente rimuovibili i file giudicati superflui.
-Si legga la man page del make.conf(5) per ottenere maggiori informazioni.
+Leggere <c>man make.conf</c> per ottenere maggiori informazioni.
 </p>
 
 </body>
 </section>
 <section>
-<title>Preparazione dell'Ambiente</title>
+<title>Introduzione: wrapper di crossdev</title>
 <body>
 
 <p>
-Una volta scelto il percorso per la vostra sysroot, si dovrà configurare
-l'ambiente di portage come avviene durante la prima installazione. Ciò significa
-che si dovranno creare i file <path>make.conf</path> e <path>make.profile</path>
-per il sistema di destinazione. Si dovrà anche predisporre il file
-<path>make.globals</path>.
+Ci sono dei semplici script wrapper che imposteranno al posto dell'utente le
+variabili d'ambiente in modo da farle puntare alle giuste posizione per
+permettere la cross compilazione usando emerge. PORTAGE_CONFIGROOT e ROOT
+punteranno entrambe a SYSROOT.
 </p>
 
-<pre caption="SYSROOT/etc/make.conf">
-ACCEPT_KEYWORDS="ppc"
-ARCH="ppc"
-CHOST="powerpc-softfloat-linux-uclibc"
-CFLAGS="-Os -pipe"
-CXXFLAGS="${CFLAGS}"
-GENTOO_MIRRORS="http://open-systems.ufl.edu/mirrors/gentoo \
-    http://prometheus.cs.wmich.edu/gentoo \
-    http://mirror.datapipe.net/gentoo \
-    http://ftp.ucsb.edu/pub/mirrors/linux/gentoo/"
-INPUT_DEVICES="keyboard"
-MAKEOPTS="-j2"
-USE="-* minimal"
+<pre caption="wrapper di crossdev">
+# <i>echo 'sys-devel/crossdev ~*' >> /etc/portage/package.keywords</i>
+# <i>emerge crossdev</i>
 </pre>
 
 <p>
-Il file <path>make.globals</path> contiene diverse impostazioni di default ed
-è indipendente dall'architettura. Pertanto si può semplicemente creare un link
-simbolico ad esso.
+È possibile usare questi strumenti sia per installare nella propria root di
+sviluppo (sysroot) sia in quella per l'esecuzione. Per quest'ultima,
+specificarla usando semplicemente l'opzione <c>--root</c>. Per esempio, se si ha
+effettuato l'emerge di una toolchain <c>armv4tl-softfloat-linux-gnueabi</c>
+tramite crossdev successivamente si dovrebbe invocare il comando come un
+normale emerge, usando però il prefisso <c>ctarget</c>:
 </p>
 
-<pre caption="SYSROOT/etc/make.globals">
-# <i>ln -s /etc/make.globals SYSROOT/etc/make.globals</i>
+<pre caption="CTARGET-emerge">
+# <i>armv4tl-softfloat-linux-gnueabi-emerge pkg0 pkg1 pkg2</i>
 </pre>
 
 <p>
-Infine, per il <path>make.profile</path>, creare come al solito un link
-simbolico.
+Come impostazione predefinita questi wrapper usano l'opzione
+<c>--root-deps=rdeps</c> per evitare che le dipendenze dell'host vengano
+incluse nell'albero delle dipendenze. Ciò potrebbe portare ad alberi di
+dipendenze incompleti. Perciò si potrebbe voler usare --root-deps singolarmente
+per vedere il grafico completo delle dipendenze.
 </p>
 
-<pre caption="SYSROOT/etc/make.profile">
-# <i>ln -s /usr/portage/profiles/uclibc/ppc SYSROOT/etc/make.profile</i>
+<p>
+Come impostazione predefinita i wrapper si collegheranno al profilo embedded
+generico. Questo viene fatto per semplificare le cose, ma l'utente potrebbe
+desiderare un profilo di destinazione più avanzato. Per poterlo fare è
+possibile aggiornare il collegamento simbolico al profilo.
+</p>
+
+<pre caption="${SYSROOT}/etc/make.profile">
+# <i>ln -s /usr/portage/profiles/default/linux/arm/10.0
+${SYSROOT}/etc/make.profile</i>
 </pre>
 
 <p>
-Nella sysroot alcuni test degli script di configure potrebbero fallire, con
-conseguente aggiunta di funzioni locali per ovviare ai presunti problemi
-riscontrarti. Per ovviare a questa situazione è sufficiente forzarne il
-risultato.
+E naturalmente per cambiare le impostazioni del sistema di destinazione, tipo
+flag USE, FEATURES e VIDEO_CARDS, si modificheranno i file di configurazione
+standard di portage.
 </p>
 
-<pre caption="Force autoconf tests">
-export ac_cv_func_calloc_0_nonnull=yes
-export ac_cv_func_malloc_0_nonnull=yes
-export gl_cv_func_malloc_0_nonnull=yes
-export ac_cv_func_realloc_0_nonnull=yes
-export ac_cv_func_memcmp_working=yes
-export ac_cv_func_strnlen_working=yes
-</pre>
-
-</body>
-</section>
-<section>
-<title>Un'utile strumento: xmerge</title>
-<body>
-
-<p>
-Xmerge è un semplice wrapper che valorizza le variabili d'ambiente per farle
-puntare ai percorsi corretti e lancia poi <c>emerge</c>. Questo script si
-aspetta che la variabile d'ambiente <c>SYSROOT</c> sia già impostata.
-</p>
-
-<pre caption="sample xmerge">
-#!/bin/sh
-export CBUILD=$(portageq envvar CHOST)
-export PORTAGE_CONFIGROOT=${SYSROOT}
-if [ "$1" = "--root" ] ; then
-        export ROOT=$2
-        shift 2
-else
-        export ROOT=${SYSROOT}
-fi
-exec emerge "$@"
+<pre caption="${SYSROOT}/etc/make.conf">
+# <i>$EDITOR ${SYSROOT}/etc/make.conf</i>
 </pre>
 
 <p>
-È possibile utilizzare xmerge sia per installare programmi nella root di
-sviluppo (sysroot) sia nella root del sistema che poi si vorrà eseguire.
-Per sfruttare la seconda modalità, è sufficiente aggiungere l'opzione --root .
+Qualche volta ci sono alcun test addizionali per gli script di configurazione
+che bisogna necessariamente aggirare. Per far ciò i wrapper esportano alcune
+variabili per forzare i test a ricevere la risposta desiderata. Ciò aiuterà a
+prevenire sprechi di risorse nei pacchetti che aggiungono funzioni locali per
+aggirare eventuali problemi nel proprio sistema che impedirebbero l'esecuzione
+del test. Di volta in volta potrebbe essere necessario aggiungere variabili
+aggiuntive a questi file in <path>/usr/share/crossdev/include/site/</path> in
+modo da permettere la compilazione di un pacchetto. Per capire quale variabile
+bisogna aggiungere, spesso basta eseguire un grep sullo script di configurazione
+per individuare la variabile autoconf e aggiungerla all'appropriato file di
+destinazione. Ciò diviene ovvio dopo le prime volte che si esegue tale
+operazione.
 </p>
-
-</body>
-</section>
-<section>
-<title>Un'utile strumento: pkg-config</title>
-<body>
-
-<p>
-Numerosi pacchetti ormai installano file pkg-config (*.pc) e li usano per
-ricavarne l'elenco delle librerie e degli include necessari. Per facilitare
-il processo di compilazione, è consigliabile installare un wrapper di
-pkg-config per l'architettura di destinazione, così da specificare a pkg-config
-in quali percorsi cercare.
-</p>
-
-<p>
-Questo wrapper andrebbe installato in una directory presente nel proprio PATH,
-così da permettere agli script di configure di rilevarlo. Messo un CTARGET
-come prefisso del nome, lo script farà tutto il resto. Per intenderci, il nome
-canonico è <c>CTARGET-pkg-config</c>. Script di configure datati cercheranno
-solo <c>pkg-config</c>, in tali casi sarà necessario esportare la variabile
-<c>PKG_CONFIG</c> con il nome del wrapper.
-</p>
-
-<pre caption="cross-pkg-config wrapper">
-#!/bin/sh
-CTARGET=${0%-pkg-config}
-SYSROOT="/usr/${CTARGET}"
-export PKG_CONFIG_LIBDIR="${SYSROOT}/usr/lib/pkgconfig"
-unset PKG_CONFIG_ALLOW_SYSTEM_CFLAGS PKG_CONFIG_ALLOW_SYSTEM_LIBS
-exec pkg-config "$@"
-</pre>
 
 </body>
 </section>
