@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
  
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-conv-reboot1.xml,v 1.9 2007/07/23 02:34:30 pebenito Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-conv-reboot1.xml,v 1.10 2010/06/25 16:07:19 pebenito Exp $ -->
 
 <sections>
 <version>2.0</version>
@@ -16,8 +16,11 @@
    suggested kernel is hardened-sources.
 </p>
 
+<note>2.6.28-r9 is the current hardened release version at the time of this writing,
+  and all instructions in this document assume at least this version.</note>
+
 <warn>Kernels 2.6.14 and 2.6.15 should not be used by XFS users as they
-have bugs in the SELinux XFS support.</warn>
+  have bugs in the SELinux XFS support.</warn>
  
 <pre caption="Merge an appropriate kernel">
 <comment>Any 2.6 kernel</comment>
@@ -32,11 +35,26 @@ have bugs in the SELinux XFS support.</warn>
 devpts, and extended attribute security labels.  Refer to the main installation
 guide for futher kernel options.</p>
 
-<pre caption="Location and required options under menuconfig">
-<comment>Under "Code maturity level options"</comment>
-[*] Prompt for development and/or incomplete code/drivers
+<note>
+The available options may vary slightly depending on the kernel version
+being used.  In particular, Btrfs first became available with the 2.6.29
+kernel, and the /dev/pts and tmpfs Extended Attributs and Security Labels
+options were obsoleted in kernel 2.6.13 (they are now enabled by default).
+"Default Linux Capabilies" under "Security options" was obsoleted in the
+2.6.26 kernel (it is now enabled by default).
 
+XFS always enables security labeling, so there is no additional option
+to set for this file system
+
+Ext4 should work, but is NOT well tested at the time of this writing!
+
+Any extended attribute options not specifically enabled below should be turned
+off.
+</note>
+
+<pre caption="Location and required options under menuconfig">
 <comment>Under "General setup"</comment>
+[*] Prompt for development and/or incomplete code/drivers
 [*] Auditing support
 [*]   Enable system-call auditing support
 
@@ -45,25 +63,33 @@ guide for futher kernel options.</p>
 [*]   Ext2 extended attributes
 [ ]     Ext2 POSIX Access Control Lists
 [*]     Ext2 Security Labels
+[ ]   Ext2 Execute in place support
 &lt;*&gt; Ext3 journalling file system support <comment>(If using ext3)</comment>
 [*]   Ext3 extended attributes
 [ ]     Ext3 POSIX Access Control Lists
 [*]     Ext3 Security labels
+&lt;*&gt; The Extended 4 (ext4) filesystem <comment>(If using ext4)</comment>
+[ ]   Enable ext4dev compatibility 
+[*]   Ext4 extended attrributes
+[ ]     Ext4 POSIX Access Control Lists
+[*]     Ext4 Security Labels
 &lt;*&gt; JFS filesystem support <comment>(If using JFS)</comment>
 [ ]   JFS POSIX Access Control Lists
 [*]   JFS Security Labels
 [ ]   JFS debugging
 [ ]   JFS statistics
 &lt;*&gt; XFS filesystem support <comment>(If using XFS)</comment>
-[ ]   Realtime support (EXPERIMENTAL)
-[ ]   Quota support
-[ ]   ACL support
-[*]   Security Labels
-
+[ ]   XFS Quota support
+[ ]   XFS POSIX ACL support
+[ ]   XFS Realtime subvolume support (EXPERIMENTAL)
+[ ]   XFS Debugging Support
+&lt;*&gt; Btrfs filesystem (EXPERIMENTAL) Unstable disk format <comment>(if
+using Btrfs)</comment>
+[ ]   Btrfs POSIX Access Control Lists (NEW)
 <comment>Under "Pseudo filesystems (via "File systems")</comment>
 [ ] /dev file system support (EXPERIMENTAL)
 [*]   /dev/pts Extended Attributes
-[*]     /dev/pts Security Labels    
+[*]     /dev/pts Security Labels
 [*] Virtual memory file system support (former shm fs)
 [*]   tmpfs Extended Attributes
 [*]     tmpfs Security Labels
@@ -82,11 +108,6 @@ guide for futher kernel options.</p>
 [ ]   NSA SELinux maximum supported policy format version
 </pre>
 
-<note>
-  The available options may vary slightly depending on the kernel version
-  being used.  The other extended attribute options should be turned off.
-</note>
-
 <p>
   The extended attribute security labels must be turned on for devpts and
   your filesystem(s).  Devfs is not usable in SELinux, and should be
@@ -95,6 +116,11 @@ guide for futher kernel options.</p>
   the extended attributes support for proc and the virtual memory fs (tmpfs)
   are enabled by default; thus, no options will appear in menuconfig.
 </p>
+
+<note>It is recommended to configure PaX if you are using harded-sources (also
+recommended).  More information about Pax can be found in the <uri link="http://www.gentoo.org/proj/en/hardened/pax-quickstart.xml">Hardened Gentoo
+PaX Quickstart Guide</uri>.
+</note>
 
 <warn>
   Do not enable the SELinux MLS policy option if its available, as it is
@@ -127,7 +153,8 @@ use either static device nodes or udev.  If using udev, the
 device tarball must be disabled.  Edit the /etc/conf.d/rc file.
 Set RC_DEVICES to static or udev, and RC_DEVICE_TARBALL to no.
 If you have several custom device nodes, static is suggested,
-otherwise udev is suggested.
+otherwise udev is suggested (udev is the default at the time of this writing).
+For more information on udev, consult the <uri link="/doc/en/udev-guide.xml">Gentoo UDEV Guide</uri>.
 </p>
 <pre caption="Init script configuration">
 # Use this variable to control the /dev management behavior.

@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
   
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-conv-reboot2.xml,v 1.10 2009/12/16 01:14:42 pebenito Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-selinux-conv-reboot2.xml,v 1.11 2010/06/25 16:07:19 pebenito Exp $ -->
 
 <sections>
 <version>2.2</version>
@@ -98,6 +98,17 @@ applied:</p>
 <note>
   Fcron and Vixie-cron are the only crons with SELinux support.
 </note>
+<note>The above packages are NOT an exhaustive list; they are only the most
+common ones.  In general, any package installed on the system which has the
+selinux USE flag should be remerged.  To see which packages may need to be
+merged, you can:
+emerge -upDN world
+
+Since changing to the selinux profile has changed your USE flags, the above
+will get everything that is listening to the selinux USE flag.  It will
+probably also get some other stuff as well.  To actually remerge everything,
+simply remove the 'p', or manually specify the packages you want to remerge.
+</note>
 </body></subsection>
 </section>
 
@@ -129,6 +140,23 @@ applied:</p>
 <section><title>Label Filesystems</title>
 <subsection><body>
 <p>
+  Before you can relabel the rest of the filesystems, you need to first relabel
+  /dev.  Strictly speaking, this is only necessary if you aren't using a static
+  /dev.  However, as the vast majority of current and new systems are going to
+  be built with udev, this probably means you are using udev as well.  There
+  are a lot of different ways to get at this problem, but the steps below are
+  easy to do and work.
+</p>
+  <pre caption="Relabel /dev">
+<i># mkdir /mnt/gentoo
+# mount -o bind / /mnt/gentoo
+# setfiles -r /mnt/gentoo /etc/selinux/{strict,targeted}/contexts/files/file_contexts /mnt/gentoo/dev
+# umount /mnt/gentoo
+</i>
+  </pre>
+  <note>Remember to select one of {strict,targeted} above based on your
+ enforcement mode.</note>
+<p>
   Now label the filesystems.  This gives each of the files in the filesystems
   a security label.  Keeping these labels consistent is important.
 </p>
@@ -149,6 +177,17 @@ applied:</p>
 grub> root (hd0,0) <comment>(Your boot partition)</comment>
 grub> setup (hd0) <comment>(Where the boot record is installed; here, it is the MBR)</comment>
 </pre>
+<p>
+  If you've installed Gentoo using the hardened sources, then you'll need to
+  tell SELinux that you are using the hardened tool-chain with ssp.  You do
+  this by setting an SELinux global boolean 
+</p>
+<pre caption="SELinux global_ssp">
+<i>setsebool -P global_ssp on</i>
+</pre>
+<note>Make sure you use the -P flag, or the setting won't survive the reboot,
+and you'll likely see a lot of errors relating to /dev/null and /dev/random
+</note>
 </body></subsection>
 </section>
 
