@@ -105,7 +105,8 @@
  <xsl:variable name="double-quote">"</xsl:variable>
  <xsl:variable name="roles" select="translate(roles, $double-quote, $single-quote)"/>
  <xsl:variable name="loc" select="translate(location, $double-quote, $single-quote)"/>
- <xsl:value-of select="concat('    {&#34;nick&#34;: &#34;', @nick,'&#34;, &#34;name&#34;: &#34;', name, '&#34;, &#34;joined&#34;: &#34;', joined, '&#34;, &#34;lat&#34;: ', location/@lat, ', &#34;lon&#34;: ', location/@lon, ', &#34;roles&#34;: &#34;', $roles, '&#34;, &#34;loc&#34;: &#34;', $loc, '&#34;}')"/>
+ <xsl:variable name="joined" select="translate(joined, $double-quote, $single-quote)"/>
+ <xsl:value-of select="concat('    {&#34;nick&#34;: &#34;', @nick,'&#34;, &#34;name&#34;: &#34;', name, '&#34;, &#34;joined&#34;: &#34;', $joined, '&#34;, &#34;lat&#34;: ', location/@lat, ', &#34;lon&#34;: ', location/@lon, ', &#34;roles&#34;: &#34;', $roles, '&#34;, &#34;loc&#34;: &#34;', $loc, '&#34;}')"/>
  <xsl:if test="position()!=last()">,</xsl:if>
  <xsl:text>&#xA;</xsl:text>
 </xsl:template>
