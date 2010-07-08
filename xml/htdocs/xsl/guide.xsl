@@ -48,7 +48,7 @@
 <xsl:param name="dev"/>
 
 <!-- testing ads mode -->
-<xsl:param name="ads">ads</xsl:param>
+<xsl:param name="ads">ads2</xsl:param>
 
 <!-- Where is this xsl being run? -->
 <xsl:param name="httphost">www</xsl:param>
