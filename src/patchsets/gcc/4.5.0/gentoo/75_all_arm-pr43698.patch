@@ -1,0 +1,90 @@
+From a9a24f37eebc6c8088377c02e31427b412ba000e Mon Sep 17 00:00:00 2001
+From: Ramana Radhakrishnan <ramana.radhakrishnan@arm.com>
+Date: Mon, 5 Jul 2010 11:06:34 +0100
+Subject: [PATCH 1/2] Fix for PR43698
+
+---
+ gcc/config/arm/arm.md                  |   18 ++++++++++-----
+ gcc/testsuite/gcc.target/arm/pr43698.c |   38 ++++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+), 6 deletions(-)
+ create mode 100644 gcc/testsuite/gcc.target/arm/pr43698.c
+
+diff --git a/gcc/config/arm/arm.md b/gcc/config/arm/arm.md
+index 725d505..2096ec6 100644
+--- a/gcc/config/arm/arm.md
++++ b/gcc/config/arm/arm.md
+@@ -11242,15 +11242,21 @@
+    (set_attr "length" "4")]
+ )
+ 
+-(define_insn "arm_rev"
++(define_insn "*arm_rev"
+   [(set (match_operand:SI 0 "s_register_operand" "=r")
+ 	(bswap:SI (match_operand:SI 1 "s_register_operand" "r")))]
+-  "TARGET_EITHER && arm_arch6"
++  "TARGET_32BIT && arm_arch6"
+   "rev\t%0, %1"
+-  [(set (attr "length")
+-        (if_then_else (eq_attr "is_thumb" "yes")
+-		      (const_int 2)
+-		      (const_int 4)))]
++  [(set_attr "predicable" "yes")
++   (set_attr "length" "4")]
++)
++
++(define_insn "*thumb1_rev"
++  [(set (match_operand:SI 0 "s_register_operand" "=l")
++	(bswap:SI (match_operand:SI 1 "s_register_operand" "l")))]
++  "TARGET_THUMB1 && arm_arch6"
++   "rev\t%0, %1"
++  [(set_attr "length" "2")]
+ )
+ 
+ (define_expand "arm_legacy_rev"
+diff --git a/gcc/testsuite/gcc.target/arm/pr43698.c b/gcc/testsuite/gcc.target/arm/pr43698.c
+new file mode 100644
+index 0000000..4d2ff85
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/arm/pr43698.c
+@@ -0,0 +1,38 @@
++/* { dg-do run } */
++/* { dg-options "-Os" } */
++
++#include <stdint.h>
++#include <stdlib.h>
++
++char do_reverse_endian = 0;
++
++#  define bswap_32(x) \
++  ((((x) & 0xff000000) >> 24) | \
++   (((x) & 0x00ff0000) >>  8) | \
++   (((x) & 0x0000ff00) <<  8) | \
++   (((x) & 0x000000ff) << 24))
++
++#define EGET(X) \
++  (__extension__ ({ \
++      uint64_t __res; \
++      if (!do_reverse_endian) {    __res = (X); \
++      } else if (sizeof(X) == 4) { __res = bswap_32((X)); \
++      } \
++      __res; \
++    }))
++
++void __attribute__((noinline)) X(char **phdr, char **data, int *phoff)
++{
++  *phdr = *data  EGET(*phoff);
++}
++
++int main()
++{
++  char *phdr;
++  char *data = (char *)0x40164000;
++  int phoff = 0x34;
++  X(&phdr, &data, &phoff);
++  if (phdr != (char *)0x40164034)
++    abort ();
++  exit (0);
++}
+-- 
+1.6.2
+
