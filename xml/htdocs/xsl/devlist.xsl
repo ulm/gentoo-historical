@@ -34,6 +34,12 @@
      </xsl:if>
      <xsl:value-of select="normalize-space(location)"/>
    </location>
+   <xsl:for-each select="joined">
+    <joined><xsl:value-of select="normalize-space(.)"/></joined>
+   </xsl:for-each>
+   <xsl:for-each select="retired">
+    <retired><xsl:value-of select="normalize-space(.)"/></retired>
+   </xsl:for-each>
    <roles><xsl:value-of select="normalize-space(roles)"/></roles>
    <xsl:if test="string-length(status) > 0">
      <status><xsl:value-of select="translate(normalize-space(status),'QWERTYUIOPLKJHGFDSAZXCVBNM','qwertyuioplkjhgfdsazxcvbnm')"/></status>
