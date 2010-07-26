@@ -4,12 +4,19 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-bootloader.xml,v 1.15 2008/07/24 21:43:22 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-ppc-bootloader.xml,v 1.16 2010/07/26 13:19:54 chiguire Exp $ -->
 
 <sections>
 
-<version>9.1</version>
-<date>2008-05-02</date>
+<abstract>
+Existen diversos gestores de arranque. Cada uno tiene su propia forma
+de configuración. En este capítulo describiremos todas las
+posibilidades y lo llevaremos paso a paso a través del proceso de
+configuración de un gestor de arranque según sus necesidades.
+</abstract>
+
+<version>10.1</version>
+<date>2010-07-20</date>
 
 <section>
 <title>Realizando su elección</title>
@@ -18,10 +25,15 @@
 <body>
 
 <p>
-Ahora que su núcleo está configurado y compilado se necesita un
-<e>gestor de arranque</e> para poder iniciar su nueva instalación de
-linux.  El <e>gestor de arranque</e> dependerá del tipo de máquina PPC
-que tenga.
+Ahora que su núcleo está configurado y compilado y los archivos de
+configuración del sistema han sido completados correctamente, es hora
+de instalar un programa que iniciará el núcleo al iniciar el
+sistema. Este programa se llama <e>gestor de arranque</e>.
+</p>
+
+<p>
+El gestor de arranque que utilizará dependerá del tipo de sistema PPC
+del que disponga.
 </p>
 
 <p>
@@ -66,18 +78,20 @@ ya lo hemos hecho no es necesario volver a hacerlo.
 </pre>
 
 <p>
-Para configurar yaboot, puede usar <c>yabootconfig</c> para que se
-cree automáticamente un fichero de configuración. Si estamos
-instalando Gentoo en un G5 (donde <c>yabootconfig</c> no siempre
-funciona), o pensamos arrancar desde firewire o USB, debemos
-configurarlo manualmente.
+Para configurar yaboot, puede usar <c>yabootconfig</c> para crear
+automáticamente el fichero de configuración. Si está instalando
+Gentoo en un G5 (donde <c>yabootconfig</c> no siempre funciona), o
+pensamos arrancar desde FireWire o USB, debemos configurarlo
+manualmente.
 </p>
 
 <note>
-Necesitarás editar el fichero yaboot.conf cuando uses genkernel, incluso
-habiendo utilizado yabootconfig. La sección de la imagen del núcleo de
-yaboot.conf deberá ser modificada así (usando vmlinux e initrd como los
-nombres del núcleo y de la imagen initrd):
+Necesitará editar manualmente el fichero <path>yaboot.conf</path> al
+usar <c>genkernel</c>, incluso habiendo utilizado
+<c>yabootconfig</c>. La sección de la imagen del núcleo de
+<path>yaboot.conf</path> debe modificarse así (usando
+<path>vmlinux</path> e <path>initrd</path> como nombres del núcleo y
+de la imagen initrd):
 </note>
 
 <pre caption="Añadiendo los argumentos de genkernel a yaboot.conf">
@@ -89,11 +103,11 @@ nombres del núcleo y de la imagen initrd):
 ## y de la imagen initrd.
 ###########################################################
 </comment>
-image=/boot/kernel-genkernel-ppc-<keyval id="kernel-gentoo"/>
+image=/boot/<keyval id="genkernel-name"/>
  label=Linux
  root=/dev/ram0
  partition=3
- initrd=/boot/initramfs-genkernel-ppc-<keyval id="kernel-gentoo"/>
+ initrd=/boot/<keyval id="genkernel-initrd"/>
  <comment>
  # Podemos añadir argumentos adicionales al núcleo como por ejemplo
  # rootdelay=10 para un arranque USB/Firewire
@@ -105,10 +119,10 @@ image=/boot/kernel-genkernel-ppc-<keyval id="kernel-gentoo"/>
 
 <ul>
   <li>
-      <uri link="#yabootconfig" >Predeterminado: yabootconfig</uri>
+    <uri link="#yabootconfig" >Predeterminado: yabootconfig</uri>
   </li>
   <li>
-     <uri link="#manual_yaboot">Alternativa: Configuración manual de yaboot</uri>
+    <uri link="#manual_yaboot">Alternativa: Configuración manual de yaboot</uri>
   </li>
 </ul>
 </body>
@@ -138,16 +152,17 @@ satisfecho ya anteriormente, pero deberíamos revisar
 </pre>
 
 <p>
-Ahora saldremos del chroot y ejecutaremos <c>yabootconfig --chroot
+Ahora salgamos del chroot y ejecutemos <c>yabootconfig --chroot
 /mnt/gentoo</c>. Primero, el programa pedirá confirmación de la
 ubicación de la partición de bootstrap. Si usaste el esquema de
-particionamiento sugerido, la partición de arranque podría ser /dev/hda2.
-Pulsaremos <c>Y</c> si lo mostrado es correcto. Si no lo es, comprobaremos
-nuestro <path>/etc/fstab</path>. <c>yabootconfig</c> revisará entonces la
-configuración del sistema, creará <path>/etc/yaboot.conf</path> y
-ejecutará <c>mkofboot</c>. <c>mkofboot</c> se utiliza para formatear la
-partición Apple_Bootstrap, e instalar allí el fichero de configuración de
-yaboot. Después de esto, entraremos en el chroot nuevamente.
+particionamiento sugerido, la partición de arranque debería ser
+<path>/dev/sda2</path>. Pulsaremos <c>Y</c> si es correcto. Si no,
+comprobaremos nuestro <path>/etc/fstab</path>. <c>yabootconfig</c>
+revisará entonces la configuración del sistema, creará
+<path>/etc/yaboot.conf</path> y ejecutará
+<c>mkofboot</c>. <c>mkofboot</c> se usa para formatear la partición
+Apple_Bootstrap e instalar allí el fichero de configuración de
+yaboot. Después de esto, entremos al chroot nuevamente.
 </p>
 
 <pre caption="Entrar de nuevo al chroot">
@@ -156,12 +171,12 @@ yaboot. Después de esto, entraremos en el chroot nuevamente.
 </pre>
 
 <p>
-Debemos verificar el contenido de <path>/etc/yaboot.conf</path>. Si
-lo modificamos (por ejemplo, para indicar el sistema operativo por
-defecto) debemos asegurarnos de volver a ejecutar <c>ybin -v</c> para
-aplicar los cambios en la partición Apple_Bootstrap. Cada vez que
-realicemos un cambio en yaboot.conf, como cuando probamos un nuevo
-núcleo, debemos recordar siempre ejecutar <c>ybin -v</c> para
+Debemos verificar el contenido de <path>/etc/yaboot.conf</path>. Si lo
+modificamos (por ejemplo, para indicar el sistema operativo
+predeterminado) debemos asegurarnos de volver a ejecutar <c>ybin
+-v</c> para aplicar los cambios en la partición Apple_Bootstrap. Cada
+vez que realicemos un cambio en yaboot.conf, como cuando probamos un
+nuevo núcleo, debemos recordar siempre ejecutar <c>ybin -v</c> para
 actualizar la partición de bootstrap.
 </p>
 
@@ -324,12 +339,12 @@ Si se usa genkernel, debe copiar tanto el núcleo como el initrd en la
 partición MacOS.
 </p>
 
-<pre caption="Copiando el núcleo de Genkernel y el initrd a la partición MacOS">
+<pre caption="Copiando el núcleo de genkernel y el initrd a la partición MacOS">
 # <i>exit</i>
 cdimage ~# <i>mkdir /mnt/mac</i>
 cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
-cdimage ~# <i>cp /mnt/gentoo/boot/kernel-genkernel-ppc-<keyval id="kernel-gentoo"/> "/mnt/mac/System Folder/Linux Kernels"</i>
-cdimage ~# <i>cp /mnt/gentoo/boot/initramfs-genkernel-ppc-<keyval id="kernel-gentoo"/> "/mnt/mac/System Folder"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/<keyval id="genkernel-name"/> "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/<keyval id="genkernel-initrd"/> "/mnt/mac/System Folder"</i>
 </pre>
 
 <p>
@@ -388,14 +403,14 @@ Gentoo</uri>.
 <body>
 
 <p>
-quik permite a los Macs OldWorld arrancar sin MacOS. Sin embargo, no
-está bien soportado y tiene algunas peculiaridades. Si tiene opción,
-es recomendable usar BootX en su lugar, porque es mucho más confiable
-y fácil de configurar que quik.
+<c>quik</c> permite a los Macs OldWorld arrancar sin MacOS. Sin
+embargo, no está bien soportado y tiene algunas peculiaridades. Si
+puede, es recomendable usar BootX en su lugar, por ser mucho más
+confiable y fácil de configurar que quik.
 </p>
 
 <p>
-Primero, debemos instalar quik
+Primero, debemos instalar <c>quik</c>:
 </p>
 
 <pre caption="Emerge quik">
@@ -410,7 +425,7 @@ hemos copiado en la partición de arranque.
 
 <pre caption="Configurando quik.conf">
 # Ejemplo de quik.conf
-init-message = "Gentoo 2008.0\n"
+init-message = "Gentoo Linux\n"
 <comment>
 # Esta es la partición de boot
 </comment>
@@ -426,10 +441,10 @@ image = /<keyval id="kernel-name"/>
 </pre>
 
 <p>
-El fichero quik.conf <e>debe</e> estar en el mismo disco que las
-imágenes de arranque quik, sin embargo puede estar en una partición
-diferente del mismo, a pesar de esto es recomendable tenerlo en la
-partición de arranque.
+El fichero <path>quik.conf</path> <e>debe</e> estar en el mismo disco
+que las imágenes de arranque quik, sin embargo puede estar en una
+partición diferente del mismo disco, aunque es recomendable tenerlo en
+la partición de arranque.
 </p>
 
 <pre caption="Moviendo quik.conf a /boot">
@@ -563,7 +578,7 @@ ide:0 <keyval id="kernel-name"/> video=radeonfb:1024x768@70 root=/dev/sda3
 
 [SECTION]
 Local HD -> Genkernel (Normal)
-ide:0 kernel-genkernel-ppc-<keyval id="kernel-gentoo"/> root=/dev/ram0 real_root=/dev/sda3 init=/linuxrc initrd=initramfs-genkernel-ppc<keyval id="kernel-gentoo"/>
+ide:0 <keyval id="genkernel-name"/> root=/dev/ram0 real_root=/dev/sda3 init=/linuxrc <keyval id="genkernel-initrd"/>
 </pre>
 
 <p>
