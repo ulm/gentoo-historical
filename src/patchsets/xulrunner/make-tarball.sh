@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Header: /var/cvsroot/gentoo/src/patchsets/xulrunner/make-tarball.sh,v 1.2 2010/08/01 18:45:31 polynomial-c Exp $
+# $Header: /var/cvsroot/gentoo/src/patchsets/xulrunner/make-tarball.sh,v 1.3 2010/08/01 18:47:51 polynomial-c Exp $
 
 app=xulrunner
 
@@ -27,11 +27,8 @@ cp -r ${ver}/*.patch ./tmp/patch/ || exit 1
 
 find tmp -type d -name CVS -print0 | xargs -0 rm -rf
 
-pushd tmp/patch &>/dev/null || exit 1
-
-tar -jcf ${BASEDIR}/${app}-${ver}-patches-${pver}.tar.bz2 . || exit 1
-
-popd &>/dev/null
+tar -jcf ${BASEDIR}/${app}-${ver}-patches-${pver}.tar.bz2 \
+	-C tmp/patch . || exit 1
 
 rm -r tmp
 
