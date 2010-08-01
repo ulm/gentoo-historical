@@ -1,7 +1,9 @@
 #!/bin/bash
-# $Header: /var/cvsroot/gentoo/src/patchsets/xulrunner/make-tarball.sh,v 1.1 2007/03/07 13:40:44 armin76 Exp $
+# $Header: /var/cvsroot/gentoo/src/patchsets/xulrunner/make-tarball.sh,v 1.2 2010/08/01 18:45:31 polynomial-c Exp $
 
 app=xulrunner
+
+BASEDIR="${PWD}"
 
 if [[ $# -ne 2 ]] ; then
 	echo "Usage: $0 <${app} ver> <patch ver>"
@@ -25,8 +27,11 @@ cp -r ${ver}/*.patch ./tmp/patch/ || exit 1
 
 find tmp -type d -name CVS -print0 | xargs -0 rm -rf
 
-tar -jcf ${app}-${ver}-patches-${pver}.tar.bz2 \
-	-C tmp patch || exit 1
+pushd tmp/patch &>/dev/null || exit 1
+
+tar -jcf ${BASEDIR}/${app}-${ver}-patches-${pver}.tar.bz2 . || exit 1
+
+popd &>/dev/null
 
 rm -r tmp
 
