@@ -3,7 +3,7 @@
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/hardened/selinux/Attic/hb-selinux-conv-reboot2.xml,v 1.4 2010/02/21 17:12:00 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/hardened/selinux/Attic/hb-selinux-conv-reboot2.xml,v 1.5 2010/08/03 22:48:37 scen Exp $ -->
 
 <sections>
 <version>2.2</version>
@@ -128,6 +128,18 @@ Fcron e Vixie-cron sono gli unici schedulatori con supporto ad SELinux
 disponibili.
 </note>
 
+<note>
+I pacchetti elencati NON sono un elenco completo ed esaustivo, ma solamente i
+più comuni. In linea di massima, qualsiasi pacchetto installato sul sistema
+che utilizzi il flag USE "selinux" dovrebbe venire installato nuovamente.
+Per identificare i pacchetti da reinstallare, si utilizzi: emerge -upDN world
+Dal momento che modificando il profilo di SELinux vengono alterati anche i flag
+USE, il comando descritto restituirà tutti i pacchetti collegati ad SELinux (e
+probabilmente qualcosa in più). Per emergere tutti i pacchetti elencati, si
+rimuova semplicemente l'opzione 'p' dal comando precedente, altrimenti
+occorrerà specificare manualmente i pacchetti da installare.
+</note>
+
 </body>
 </subsection>
 </section>
@@ -174,12 +186,35 @@ assicurarsi di includere il pacchetto delle politiche <c>selinux-desktop</c>.
 <body>
 
 <p>
+Prima di poter procedere ad etichettare il resto del filesystem, è necessario
+anzitutto etichettare /dev. A dire il vero, questo passo è necessario solo se
+non si ha optato per la versione statica di /dev. In ogni caso, dal momento
+che attualmente la stragrande maggioranza dei sistemi utilizza udev,
+probabilmente ci si troverà in questa situazione. Esistono molte soluzioni
+differenti per svolgere questo compito: i passi seguenti sono molto semplici e
+svolgono il compito alla perfezione.
+</p>
+
+<pre caption="Etichettare /dev">
+ <i># mkdir /mnt/gentoo
+    # mount -o bind / /mnt/gentoo
+    # setfiles -r /mnt/gentoo /etc/selinux/{strict,targeted}/contexts/files/file_contexts /mnt/gentoo/dev
+    # umount /mnt/gentoo
+ </i>
+</pre>
+
+<note>
+Si ricordi di selezionare una delle due opzioni {strict,targeted} in base al
+modello di enforcement selezionato.
+</note>
+
+<p>
 L'ultimo passo necessario consiste nell'etichettare il filesystem. Questa
 operazione assegna ad ogni file una etichetta di sicurezza: è importante che la
 consistenza di queste etichette venga sempre preservata.
 </p>
 
-<pre caption="Etichettare il filesystem">
+<pre caption="Etichettare i filesystem">
 # <i>rlpkg -a -r</i>
 </pre>
 
@@ -197,6 +232,22 @@ consigliabile tenere un LiveCD a portata di mano.
 grub> root (hd0,0) <comment>(La partizione di avvio)</comment>
 grub> setup (hd0) <comment>(Dove installare il boot record; in questo caso, nell'MBR)</comment>
 </pre>
+
+<p>
+Se Gentoo è stato installato utilizzando la versione "hardened" del kernel,
+occorre fare in modo che SELinux ne sia a conoscenza. Questo è possibile
+impostando una variabile globale booleana di SELinux
+</p>
+<pre caption="SELinux global_ssp">
+ <i>setsebool -P global_ssp on</i>
+</pre>
+
+<note>
+Ci si assicuri di utilizzare il parametro -P, altrimenti l'impostazione avrà
+effetto solamente per la sessione corrente ma verrà persa al primo riavvio:
+una serie di errori relativi a /dev/null e /dev/random saranno un sinonimo
+di questo errore.
+</note>
 
 </body>
 </subsection>
