@@ -72,8 +72,8 @@
   <!-- SD-France -->
     <tr lang="en">
     <td align="center" class="topsep">
-        <a href="http://www.sd-france.com" target="_top">
-          <img src="{concat($images,'images/sdfrance-logo-small.png')}" width="125" alt="SD-France" title="SD-France" border="0"/>
+        <a href="http://www.euro-web.fr" target="_top">
+          <img src="{concat($images,'images/sdfrance-logo-small.png')}" width="125" alt="Euro-Web/SD-France" title="Euro-Web/SD-France" border="0"/>
       </a>
     </td>
     </tr>
