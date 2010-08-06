@@ -68,6 +68,16 @@
     </td>
     </tr>
   <!-- /GNi -->
+  
+  <!-- SD-France -->
+    <tr lang="en">
+    <td align="center" class="topsep">
+        <a href="http://www.sd-france.com" target="_top">
+          <img src="{concat($images,'images/sdfrance-logo-small.png')}" width="125" alt="SD-France" title="SD-France" border="0"/>
+      </a>
+    </td>
+    </tr>
+  <!-- /SD-France -->
 
   <!-- bytemark -->
     <tr lang="en">
