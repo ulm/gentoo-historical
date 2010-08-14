@@ -31,9 +31,9 @@ mkdir -p tmp/patch
 cp ${gver}/*.patch tmp/patch/ || exit 1
 mkdir -p tmp/extra
 cp `find extra -type f '!' -wholename '*/CVS/*'` tmp/extra/ || exit 1
-cp ../README* tmp/
+cp ../README* tmp/patch/
 
-tar cf - -C tmp . | lzma > ${tar} || exit 1
+tar cf - -C tmp patch extra | lzma > ${tar} || exit 1
 rm -r tmp
 
 du -b ${tar}
