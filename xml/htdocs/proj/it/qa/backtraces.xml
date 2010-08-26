@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "http://www.gentoo.org/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/qa/backtraces.xml,v 1.4 2009/07/02 21:19:19 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/qa/backtraces.xml,v 1.5 2010/08/26 15:19:26 scen Exp $ -->
 
 <guide link="/proj/it/qa/backtraces.xml" lang="it">
 <title>Come ottenere backtrace significativi in Gentoo</title>
 
 <author title="Autore">
-  <mail link="flameeyes@gentoo.org">Diego Pettenò</mail>
+  <mail link="flameeyes@gentoo.org">Diego E. Pettenò</mail>
 </author>
 <author title="Informazioni su hardened toolchain">
   <mail link="solar@gentoo.org">Ned Ludd</mail>
@@ -32,8 +32,8 @@ in modo che ciò invece avvenga.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.8</version>
-<date>2009-06-03</date>
+<version>0.10</version>
+<date>2010-06-16</date>
 
 <chapter>
 <title>Backtrace con Gentoo</title>
@@ -101,16 +101,26 @@ CXXFLAGS="${CFLAGS}"
 </pre>
 
 <p>
-Anche le ottimizzazioni andrebbero limitate. Per esempio, l'opzione <c>-O</c>,
-usata per impostare uno dei livelli di ottimizzazione predefiniti, dovrebbe
-essere usata con cautela. Se si vuole avere veramente un backtrace preciso,
-andrebbe usato <c>-O1</c> (l'uso del livello di ottimizzazione 0 non è
-raccomandato in quanto sono noti problemi con gcc che compila codice non
-valido). Ma per un backtrace più generico, anche <c>-O2</c> e <c>-Os</c> vanno
-bene. Non è ragionevole usare <c>-O3</c> quando si cerca di fare debug su
-qualcosa, perchè questa opzione attiva ottimizzazioni aggiuntive che
-probabilmente rovineranno le informazioni necessarie per il debug stesso.
+Elevati livelli di ottimizzazione, come <c>-O3</c> possono rendere il backtrace
+poco fedele, o incorretto. Generalmente parlando, <c>-O2</c> e <c>-Os</c>
+possono essere usate in sicurezza per ottenere un backtrace approsimativo,
+relativamente alla funzione chiamata e all'aria del file sorgente dov'è
+avvenuto il crash. Per backtrace più precisi, si dovrebbe invece usare
+<c>-O1</c>.
 </p>
+
+<note>
+L'uso di <c>-O0</c> viene suggerito spesso quando si sta provando a produrre un
+backtrace completo. Sfortunatamente questo non sempre gioca a favore del
+software stesso, in quando disabilitando tutte le ottimizzazioni cambiano le
+implementazioni delle funzioni nella libreria GNU C (sys-libs/glibc), al punto
+da considerarle quasi due librerie differenti, una per le compilazioni
+ottimizzate e una per quelle non ottimizzate. Inoltre, alcuni software
+falliranno interamente nella compilazione quando viene usato <c>-O0</c> a causa
+dei cambiamenti negli include delle intestazioni, e alla mancanza di
+caratteristiche come la propagazione delle costanti nell'eliminazione del
+codice superfluo.
+</note>
 
 <p>
 Nota per gli utenti di architetture x86: tali utenti hanno frequentemente
@@ -211,7 +221,42 @@ dagli sviluppatori originali, fuori dal controllo di Portage.
 
 </body>
 </section>
-<section>
+<section> <!-- debug USE flag -->
+<title>flag USE debug</title>
+<body>
+
+<p>
+Alcune ebuild forniscono una flag USE <b>debug</b>. Sebbebe alcuni erroneamente
+la usino per fornire informazioni di debug e giocare con le flag di
+compilazione quando essa è abilitata, il suo scopo non è quello.
+</p>
+
+<p>
+Se si sta provando ad effettuare il debug di un crash riproducibile, è
+consigliabile lasciare stare questa flag USE, in quanto essà farà compilare un
+codice sorgente diverso da quello ottenuto in precedenza. È più efficiente
+ottenere prima un backtrace senza modificare il codice, ma semplicemente
+modificando le informazioni sui simboli, e solamente dopo abilitare le
+funzionalità di debug per indagare più a fondo nel problema.
+</p>
+
+<p>
+Le funzionalità di debug che vengono abilitate da questa flag USE includono
+asserzioni, log di debug a video, file di debug, rilevazioni di falle e
+operazioni extra-sicure (per esempio la pulizia della memoria prima dell'uso).
+Alcune di esse potrebbero risultare gravose, specialmente per software
+complesso o software dove le prestazioni sono un aspetto importante.
+</p>
+
+<p>
+Per queste ragioni, è caldamente consigliato di agire con cautela quando si
+abilita la flag USE <b>debug</b>, e considerarla solamente come ultima carta da
+giocare.
+</p>
+
+</body>
+</section>
+<section> <!-- Introducing gdb -->
 <title>Introduzione a gdb</title>
 <body>
 
