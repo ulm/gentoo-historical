@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/xorg-config.xml,v 1.25 2010/05/24 17:42:07 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/xorg-config.xml,v 1.26 2010/09/07 19:52:01 scen Exp $ -->
 <guide lang="it">
 <title>Guida alla configurazione di X server</title>
 
@@ -24,8 +24,8 @@ significato delle varie opzioni di configurazione.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.29</version>
-<date>2010-05-23</date>
+<version>2</version>
+<date>2010-08-28</date>
 
 <chapter>
 <title>Cos'è il server X Window?</title>
@@ -90,9 +90,22 @@ un altro.
 <chapter>
 <title>Installare Xorg</title>
 <section>
-<title>Configurazione del kernel</title>
-
 <body>
+
+<p>
+Prima di poter installare Xorg, bisogna preparare il proprio sistema. Pe prima
+cosa, si deve configurare il kernel per il supporto ai dispositivi di input e
+alle schede video. Quindi va modificato il file <path>/etc/make.conf</path> in
+modo che vengano compilati ed installati i driver e i pacchetti di Xorg
+corretti.
+</p>
+
+</body>
+</section>
+<section>
+<title>Supporto per i driver per i dispositivi di input</title>
+<body>
+
 
 <p>
 Come impostazione predefinita, Xorg usa <c>evdev</c>, un driver generico per i
@@ -111,29 +124,153 @@ Device Drivers ---&gt;
 </body>
 </section>
 <section>
+
+<title>Kernel modesetting</title>
+<body>
+
+<p>
+I driver grafici più recenti dipendono dal kernel modesetting (KMS). KMS
+permette un migliore boot grafico con meno sfarfallii, un più rapido cambio di
+utente, una console con framebuffer incorporata, la possibilitò di passare
+rapidamente fra console e Xorg e altre caratteristiche. KMS è incompatibile con
+i driver per framebuffer più vecchi, che devono rimanere <b>disabilitati</b>
+nella configurazione del proprio kernel.
+</p>
+
+<p>
+Per prima cosa va preparato il kernel per KMS. Questo fa fatto indipendentemente
+dal driver video per Xorg che si usa.
+</p>
+
+<pre caption="Configurare i framebuffer">
+Device Drivers ---&gt;
+  Graphics support ---&gt;
+    Support for frame buffer devices ---&gt;
+    <comment>(Disabilitare tutti i driver, inclusi VGA, Intel, nVidia, e ATI)</comment>
+
+    <comment>(Più in basso, abilitare il supporto base alla console, che è quello usato da KMS)</comment>
+    Console display driver support ---&gt;
+      &lt;*&gt;  Framebuffer Console Support
+</pre>
+
+<p>
+Dopo di ciò, configurare il proprio kernel per usare il driver appropriato per
+la propria scheda video. Intel, nVidia, e ATI sono le schede più comuni, seguire
+quindi i comandi descritti qui di seguito per la propria scheda.
+</p>
+
+<p>
+Per schede Intel:
+</p>
+
+<pre caption="Impostazioni per Intel">
+Device Drivers ---&gt;
+  Graphics support ---&gt;
+    /dev/agpgart (AGP Support) ---&gt;
+    &lt;*&gt;  Intel 440LX/BX/GX, I8xx and E7x05 chipset support
+    Direct Rendering Manager (XFree86 4.1.0 and higher DRI support) ---&gt;
+    &lt;*&gt;  Intel 830M, 845G, 852GM, 855GM, 865G (i915 driver)
+         i915 driver
+    [*]    Enable modesetting on intel by default
+</pre>
+
+<p>
+Per schede nVidia:
+</p>
+
+<pre caption="Impostazioni per nVidia">
+<comment>(Enable DRM)</comment>
+Device Drivers ---&gt;
+  Graphics support ---&gt;
+  &lt;*&gt;  Direct Rendering Manager ---&gt;
+
+<comment>(Nouveau è al momento nella sezione "Staging drivers")</comment>
+Device Drivers ---&gt;
+  Staging drivers ---&gt;
+  [ ]  Exclude Staging drivers from being built
+  &lt;*&gt;    Nouveau (nVidia) cards
+</pre>
+
+<p>
+Per le schede ATI recenti (<uri link="/doc/it/ati-faq.xml">da RadeonHD 2000
+in poi</uri>), bisogna installare <c>radeon-ucode</c>. Una volta installato
+<c>radeon-ucode</c>, configurare così il proprio kernel:
+</p>
+
+<pre caption="ATI settings">
+<comment>(Inpostare il kernel per usare il firmware radeon-ucode)</comment>
+Device Drivers ---&gt;
+  Generic Driver Options ---&gt;
+  [*]  Include in-kernel firmware blobs in kernel binary
+  <comment># Schede delle serie RadeonHD 2000, 3000, and 4000:</comment>
+  (radeon/R600_rlc.bin radeon/R700_rlc.bin) External firmware blobs
+  <comment># Schede RadeonHD 5000 (Evergreen) e più recenti:</comment>
+  (radeon/CEDAR_me.bin radeon/CEDAR_pfp.bin radeon/CEDAR_rlc.bin
+   radeon/CYPRESS_me.bin radeon/CYPRESS_pfp.bin radeon/CYPRESS_rlc.bin
+   radeon/JUNIPER_me.bin radeon/JUNIPER_pfp.bin radeon/JUNIPER_rlc.bin
+   radeon/REDWOOD_me.bin radeon/REDWOOD_pfp.bin
+   radeon/REDWOOD_rlc.bin) External firmware blobs
+   (/lib/firmware/) Firmware blobs root directory
+
+<comment>(Abilitare il supporto KMS per schede Radeon)</comment>
+Device Drivers ---&gt;
+  Graphics support ---&gt;
+  &lt;*&gt;  Direct Rendering Manager ---&gt;
+  &lt;*&gt;    ATI Radeon
+  [*]      Enable modesetting on radeon by default
+</pre>
+
+<note>
+Schede Radeon più vecchie (serie X1900 e precedenti) non necessitano né del
+pacchetto <c>radeon-ucode</c> né di alcuna configurazione per il firmware.
+Basta abilitare il Direct Rendering Manager e il modesetting per ATI Radeon.
+</note>
+
+<p>
+Ora che si è impostato KMS, si può continuare con la prossima sezione e
+praparare il file <path>/etc/make.conf</path>.
+</p>
+
+</body>
+</section>
+
+<section>
 <title>configurazione di make.conf</title>
 <body>
 
 <p>
-Prima di installare Xorg vanno configurate due importanti variabili nel file
-<path>/etc/make.conf</path>.
+Dopo la preparazione del kernel ma prima di installare Xorg vanno configurate
+ due importanti variabili nel file <path>/etc/make.conf</path>.
 </p>
 
 <p>
 La prima variabile è <c>VIDEO_CARDS</c>. Serve a specificare i driver video
 che si vogliono usare e di solito dipende dal tipo e marca della
-propria scheda video.
-I valori più comuni sono <c>nvidia</c> per schede Nvidia e <c>fglrx</c> per
-schede ATI Radeon. Questi sono i driver proprietari per, rispettivamente, Nvidia
-e ATI. Se si preferiscono le versioni open source, usare <c>nv</c> al posto di
-<c>nvidia</c> come valore per la variabile, tenendo ben presente che in questo
-caso non si avrà l'accelerazione 3D. I driver liberi per ATI (<c>radeon</c> e
-<c>radeonhd</c>) sono grosso modo equivalenti al driver proprietario
-<c>fglrx</c>. Il driver <c>intel</c> va usato per sistemi desktop o portatili
-con i diffusi chipset grafici integrati Intel. La variabile <c>VIDEO_CARDS</c>
-può contenere più di un driver, in questo caso i valori nell'elenco devono
-essere separati da spazi.
+propria scheda video. Le impostazioni più comuni sono <c>nouveau</c> for le
+schede nVidia e <c>radeon</c> per quelle ATI. Entrambi hanno driver
+open-source ben supportati e attivamente sviluppati.
+
 </p>
+
+
+<note>
+Si potrebbe inoltre provare ad usare i driver proprietari per nVidia e ATI,
+rispettivamente <c>nvidia</c> e <c>fglrx</c>. Comunque, la configurazione dei
+driver proprietari trascende gli scopi di questa guida. Fare riferimento alla
+<uri link="/doc/it/nvidia-guide.xml">Guida nVidia per Gentoo Linux</uri> e alle
+<uri link="/doc/it/ati-faq.xml">Domande frequenti (FAQ) su ATI in Gentoo
+Linux</uri>. Se si è incerti su quale drivere scegliere, fare riferimento a
+queste guide per maggiori informazioni.
+</note>
+
+<p>
+Il driver <c>intel</c> può essere usato per desktop o laptop con grafica
+integrata Intel.
+</p>
+
+<note>
+<c>VIDEO_CARDS</c> può contenere più driver, separati da uno spazio.
+</note>
 
 <p>
 La seconda variabile è <c>INPUT_DEVICES</c> e serve per determinare i driver da
@@ -152,43 +289,33 @@ il file <path>/etc/make.conf</path>:
 <comment>(Per attivare il supporto a mouse, tastiera e touchpad Synaptic)</comment>
 INPUT_DEVICES="evdev synaptics"
 <comment>(Per schede Nvidia)</comment>
-VIDEO_CARDS="nvidia"
+VIDEO_CARDS="noveau"
 <comment>(O, per schede ATI Radeon)</comment>
 VIDEO_CARDS="radeon"
 </pre>
 
-<note>
-Ulteriori istruzioni su come configurare le schede video nVidia e ATI si trovano
-nelle guide <uri link="/doc/it/nvidia-guide.xml">Guida nVidia per Gentoo
-Linux</uri> e <uri link="/doc/it/ati-faq.xml">Gentoo Linux ATI FAQ</uri>. Se
-non si sa quale driver scegliere, fare riferimento a queste guide per ulteriori
-informazioni.
-</note>
-
 <p>
 Se i valori suggeriti non funzionano, si dovrebbe eseguire <c>emerge -pv
-xorg-server</c>, controllare tutte le opzioni disponibili e scegliere quelle
+xorg-drivers</c>, controllare tutte le opzioni disponibili e scegliere quelle
 attinenti al proprio sistema. L'esempio seguente si riferisce ad un sistema con
 mouse, tastiera, touchpad Synaptic e scheda video Radeon.
 </p>
 
 <pre caption="Visualizzazione dei valori disponibili dei driver">
- <i>emerge -pv xorg-server</i>
+ <i>emerge -pv xorg-drivers</i>
 
 These are the packages that would be merged, in order:
 
 Calculating dependencies... done!
-[ebuild   R   ] x11-base/xorg-server-1.6.3.901-r2  USE="hal nptl xorg -debug
--dmx -ipv6 -kdrive -minimal -sdl -tslib" 0 kB
-[ebuild   R   ]  x11-base/xorg-drivers-1.6  INPUT_DEVICES="evdev synaptics
--acecad -aiptek -citron -elographics -fpit -hyperpen -joystick -keyboard -mouse
--mutouch -penmount -tslib -virtualbox -vmmouse -void -wacom"
+[ebuild   R   ]  x11-base/xorg-drivers-1.8  INPUT_DEVICES="evdev synaptics
+-acecad -aiptek -elographics% -fpit% -joystick -keyboard -mouse -penmount -tslib
+-virtualbox -vmmouse -void -wacom"
 VIDEO_CARDS="radeon -apm -ark -ast -chips -cirrus -dummy -epson -fbdev -fglrx
-(-geode) -glint -i128 (-i740) (-impact) (-imstt) -intel -mach64 -mga -neomagic
-(-newport) -nv -nvidia -r128 -radeonhd -rendition -s3 -s3virge -savage
+(-geode) -glint -i128 (-i740) (-impact) -intel -mach64 -mga -neomagic (-newport)
+-nouveau -nv -nvidia -r128 -radeonhd -rendition -s3 -s3virge -savage
 -siliconmotion -sis -sisusb (-sunbw2) (-suncg14) (-suncg3) (-suncg6) (-sunffb)
-(-sunleo) (-suntcx) -tdfx -tga -trident -tseng -v4l (-vermilion) -vesa -via
--virtualbox -vmware (-voodoo) (-xgi)" 0 kB
+(-sunleo) (-suntcx) -tdfx -tga -trident -tseng -v4l -vesa -via -virtualbox
+-vmware (-voodoo) (-xgi)" 0 kB
 </pre>
 
 <p>
@@ -244,8 +371,8 @@ nella <uri link="#usare_hal">prossima sezione</uri>.
 <body>
 
 <p>
-Le versioni recenti di X server sono progettate per funzionare così come sono,
-senza doverne modificare manualmente i file di configurazione.
+X server è progettato per funzionare già da subito, senza doverne modificare
+ manualmente i file di configurazione.
 </p>
 
 <p>
@@ -289,7 +416,7 @@ si potrebbero copiare i seguenti file in <path>/etc/hal/fdi/policy/</path>:
 </pre>
 
 <p>
-Ci sono moltre altre policy per HAL in <path>/usr/share/hal/fdi/</path> che
+Ci sono molte altre policy per HAL in <path>/usr/share/hal/fdi/</path> che
 potrebbere essere utili, come configurazioni per portatili, gestione delle
 periferiche dati, gestione dell'alimentazione e altro. Basta copiare i file
 delle policy in <path>/etc/hal/fdi/policy/</path>.
@@ -468,7 +595,7 @@ base delle seguenti regole:
     per tutti gli utenti del sistema). Per esempio, come utente root, eseguire
     <c>echo XSESSION="Xfce4" &gt; /etc/env.d/90xsession</c>. In questo modo
     verrà creato il file <path>90xsession</path> ed impostata la sessione X
-    predefinita a Xfce4.
+    predefinita a <uri link="/doc/en/xfce-config.xml">Xfce</uri>.
   </li>
 </ul>
 
@@ -477,8 +604,8 @@ base delle seguenti regole:
 </pre>
 
 <p>
-Si può terminare la sessione X con la combinazione Ctrl-Alt-Backspace. Questa è
-una maniera però piuttosto brutale, da non utilizzarsi abitualmente.
+Si può terminare la sessione X con la combinazione Ctrl-Alt-Backspace. Questa
+ è una maniera però piuttosto brutale, da non utilizzarsi abitualmente.
 </p>
 
 <p>
@@ -534,23 +661,25 @@ permanentemente il monitor.
 
 <p>
 Procedere con il cambio della risoluzione. Nell'esempio che segue da
-<path>/etc/X11/xorg.conf</path> vengono aggiunte una linea <c>Modes</c> e una
-con un valore per <c>DefaultDepth</c> in modo che l'X server parta in modo
-predefinito con la risoluzione di 1440x900 a 24 bit. I valori riportati sono
-solo di esempio e porbabilemente non sono quelli desiratati nel proprio sistema.
+<path>/etc/X11/xorg.conf</path> vengono aggiunte una linea <c>PreferredMode</c>
+in modo che l'X server parta in modo predefinito con la risoluzione di
+1440x900 a 24 bit. I valori riportati sono solo di esempio e probabilmente non
+sono quelli desiratati nel proprio sistema. Comunque, il valore di <c>Option</c>
+nella sezione <c>Device</c> deve corrispondere al nome per proprio monitor
+(<c>DVI-0</c>), che può essere ottenuto eseguendo <c>xrandr</c>. Bisogna
+installarlo (<c>emerge xrandr</c>) per poterlo usare. L'argomento dopo il nome
+del monitor (nella sezione <c>Device</c>) deve corrispondere al valore del
+parametro <c>Identifier</c> nella sezione <c>Monitor</c>.
 </p>
 
-<pre caption="Cambiare la sezione Screen in /etc/X11/xorg.conf">
-Section "Screen"
-  Identifier  "Default Screen"
-  Device    "RadeonHD 4550"
-  Monitor   "Generic Monitor"
-  <i>DefaultDepth  24</i>
-  <comment># Alcune righe sono state rimosse per una maggiore
-leggibilità</comment>
-    Depth   24
-    <i>Modes   "1440x900"</i>
-  EndSubSection
+<pre caption="Modificare la sezione Monitor in /etc/X11/xorg.conf">
+Section "Device"
+  Identifier  "RadeonHD 4550"
+  Option      "Monitor-DVI-0" "DVI screen"
+EndSection
+Section "Monitor"
+  Identifier  "DVI screen"
+  Option      "PreferredMode" "1440x900"
 EndSection
 </pre>
 
@@ -642,9 +771,9 @@ link="/doc/it/?catid=desktop">Documentazione Desktop Gentoo</uri> della nostra
 documentazione.
 </p>
 <p>
-Se si sta effettuando l'aggiornamento a xorg-server-1.6 da una versione
+Se si sta effettuando l'aggiornamento a xorg-server-1.8 da una versione
 precedente, assicurarsi di leggere la corrispondente <uri
-link="/proj/it/desktop/x/x11/xorg-server-1.6-upgrade-guide.xml">Guida
+link="/proj/it/desktop/x/x11/xorg-server-1.8-upgrade-guide.xml">Guida
 all'aggiornamento</uri>.
 </p>
 
