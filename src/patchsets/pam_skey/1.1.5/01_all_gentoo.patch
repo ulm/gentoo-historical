@@ -231,8 +231,9 @@
 --- pam_skey-1.1.5/pam_skey.c
 +++ pam_skey/pam_skey.c
 @@ -1,5 +1,6 @@
- /* 
+-/* 
 - * (c) 2001 Dinko Korunic, kreator@srce.hr
++/*
 + * Rewrite (c) 2005 Dani Church, dani.church@gmail.com
 + * Original (c) 2001 Dinko Korunic, kreator@srce.hr
   *
@@ -264,7 +265,7 @@
 +#define LOGDEBUG(x) if (mod_opt & _MOD_DEBUG) { syslog x ;}
 +#define QUERY_USERNAME NULL /* Use default username prompt */
 +#define QUERY_PASSWORD "Password: "
-+#define QUERY_RESPONSE_OR_PASSWORD "S/Key response or system password: "
++#define QUERY_RESPONSE_OR_PASSWORD "S/Key response or password: "
 +#define QUERY_RESPONSE "S/Key response: "
  
  PAM_EXTERN int pam_sm_setcred (pam_handle_t *pamh, int flags,
@@ -600,14 +601,15 @@
  }
  
  /* Get module optional parameters */
-@@ -328,13 +207,13 @@
+@@ -328,13 +207,15 @@
  }
  
  /* This will talk to user through PAM_CONV */
 -static int mod_talk_touser(pam_handle_t *pamh, unsigned *mod_opt,
 -    char *msg_text, char **response)
 +static int mod_talk_touser(pam_handle_t *pamh, unsigned mod_opt,
-+    const char *info_text, const char *prompt_text, int echo_on, char **response)
++    const char *info_text, const char *prompt_text, int echo_on,
++    char **response)
  {
 -  struct pam_message message;
 -  const struct pam_message *pmessage = &message;
@@ -615,10 +617,11 @@
    struct pam_conv *conv = NULL;
    struct pam_response *presponse = NULL;
 +  int i=0;
++  int status;
  
    /* Better safe than sorry */
    *response = NULL;
-@@ -342,26 +221,30 @@
+@@ -342,40 +223,45 @@
    /* Be paranoid */
    memset(&message, 0, sizeof(message));
  
@@ -632,7 +635,9 @@
 -  message.msg = msg_text;
 +  pmessage[0] = &message[0];
 +  pmessage[1] = &message[1];
-+
+ 
+-  /* Do conversation and see if all is OK */
+-  if (pam_get_item(pamh, PAM_CONV, (_PAM_CONST void **)&conv)
 +  /* Set info text, if any */
 +  if (info_text) {
 +    message[i].msg = info_text;
@@ -644,9 +649,8 @@
 +  message[i].msg = prompt_text;
 +  message[i].msg_style = echo_on ? PAM_PROMPT_ECHO_ON : PAM_PROMPT_ECHO_OFF;
 +  i++;
- 
-   /* Do conversation and see if all is OK */
--  if (pam_get_item(pamh, PAM_CONV, (_PAM_CONST void **)&conv)
++
++  /* Get conversation function */
 +  if (pam_get_item(pamh, PAM_CONV, (const void **)(void *)&conv)
        != PAM_SUCCESS)
    {
@@ -658,12 +662,20 @@
 -
 -  /* Convert into pam_response - only 1 reply expected */
 -  if (conv->conv(1, _PAM_MSG_CAST &pmessage, &presponse,
-+  /* Convert into pam_response */
-+  if (conv->conv(i, (const struct pam_message **)pmessage, &presponse,
-         conv->appdata_ptr)
-     != PAM_SUCCESS)
+-        conv->appdata_ptr)
+-    != PAM_SUCCESS)
++  /* Do conversation and see if all is OK */
++  status = conv->conv(i, (const struct pam_message **)pmessage,
++		      &presponse, conv->appdata_ptr);
++  if (status != PAM_SUCCESS)
    {
-@@ -372,10 +255,10 @@
+-    _pam_delete(presponse->resp);
+-    return PAM_SERVICE_ERR;
++    if (presponse != NULL)
++      _pam_delete(presponse->resp);
++    return status;
+   }
+ 
    if (presponse != NULL)
    {
      /* Save address */
