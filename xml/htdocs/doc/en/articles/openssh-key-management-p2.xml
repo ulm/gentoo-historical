@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/articles/openssh-key-management-p2.xml,v 1.5 2010/04/26 19:32:18 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/articles/openssh-key-management-p2.xml,v 1.6 2010/10/20 00:03:57 nightmorph Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/en/articles/openssh-key-management-p2.xml" disclaimer="articles">
@@ -26,8 +26,8 @@ developerWorks, and is property of Westtech Information Services. This
 document is an updated version of the original article, and contains
 various improvements made by the Gentoo Linux Documentation team -->
 
-<version>1.3</version>
-<date>2010-04-26</date>
+<version>1.4</version>
+<date>2010-10-19</date>
 
 <chapter>
 <title>Introducing ssh-agent and keychain</title>
@@ -180,37 +180,44 @@ private keys that aren't already in the running ssh-agent's cache.
 
 <p>
 Here's a run-through of how keychain works. When started from your
-<path>~/.bash_profile</path>, it will first check to see whether an ssh-agent
-is already running. If not, then it will start ssh-agent and record the
-important SSH_AUTH_SOCK and SSH_AGENT_PID variables in the
-<path>~/.ssh-agent</path> file for safe keeping and later use. Here's the best
-way to start keychain; like using plain old ssh-agent, we perform the necessary
-setup inside <path>~/.bash_profile</path>:
+<path>~/.bash_profile</path>, it will first check to see whether an ssh-agent is
+already running. If not, then it will start ssh-agent and record the important
+SSH_AUTH_SOCK and SSH_AGENT_PID variables in the
+<path>~/.keychain/&lt;hostname&gt;-sh</path> file for safe keeping and later
+use. Here's the best way to start keychain; like using plain old ssh-agent, we
+perform the necessary setup inside <path>~/.bash_profile</path>:
 </p>
 
 <pre caption="Settings for ssh-agent in ~/.bash_profile">
 #!/bin/bash
-#example ~/.bash_profile file
+
+<comment># example ~/.bash_profile file</comment>
 /usr/bin/keychain ~/.ssh/id_rsa
-#redirect ~/.ssh-agent output to /dev/null to zap the annoying
-#"Agent PID" message
-source ~/.ssh-agent > /dev/null
+
+<comment># redirect ~/.keychain/ output to /dev/null to zap the annoying
+# "Agent PID" message</comment>
+source ~/.keychain/&lt;hostname&gt;-sh > /dev/null
+
+<comment># the environment variables are stored using a hostname-shell file,
+# so replace &lt;hostname&gt; with your hostname, and the standard "sh" with
+# "csh" or "fish" if you use either of those shells</comment>
 </pre>
 
 <p>
-As you can see, with keychain we source the <path>~/.ssh-agent</path> file
-rather than evaluating output as we did when using ssh-agent directly. However,
-the result is the same -- our ever-important SSH_AUTH_SOCK is defined, and
-ssh-agent is running and ready for use. And because SSH_AUTH_SOCK is recorded
-in <path>~/.ssh-agent</path>, our own shell scripts and cron jobs can easily
-connect with ssh-agent just by sourcing the <path>~/.ssh-agent</path> file.
-keychain itself also takes advantage of this file; you'll remember that when
-keychain starts up, it checks to see whether an existing ssh-agent is running.
-If so, it uses the <path>~/.ssh-agent</path> file to acquire the proper
+As you can see, with keychain we source the
+<path>~/.keychain/&lt;hostname&gt;-sh</path> file rather than evaluating output
+as we did when using ssh-agent directly. However, the result is the same -- our
+ever-important SSH_AUTH_SOCK is defined, and ssh-agent is running and ready
+for use. And because SSH_AUTH_SOCK is recorded in <path>~/.keychain/</path>, our
+own shell scripts and cron jobs can easily connect with ssh-agent just by
+sourcing the <path>~/.keychain/&lt;hostname&gt;-sh</path> file.  keychain itself
+also takes advantage of this file; you'll remember that when keychain starts up,
+it checks to see whether an existing ssh-agent is running.  If so, it uses the
+appropriate file in <path>~/.keychain/</path> to acquire the proper
 SSH_AUTH_SOCK setting, thus allowing it to use the existing agent rather than
-starting a new one. keychain will start a new ssh-agent process only if the
-<path>~/.ssh-agent</path> file is stale (points to a non-existent ssh-agent) or
-if <path>~/.ssh-agent</path> itself does not exist.
+starting a new one.  keychain will start a new ssh-agent process only if the
+<path>~/.keychain/</path> file is stale (points to a non-existent ssh-agent) or
+if <path>~/.keychain/</path> itself does not exist.
 </p>
 
 </body>
@@ -236,11 +243,17 @@ arguments. Here's a good standard keychain-enabled
 
 <pre caption="Enabling keychain in ~/.bash_profile">
 #!/bin/bash
-#on this next line, we start keychain and point it to the private keys that
-#we'd like it to cache
+
+<comment># on this next line, we start keychain and point it to the private keys that
+# we'd like it to cache</comment>
 /usr/bin/keychain ~/.ssh/id_rsa ~/.ssh/id_dsa
-source ~/.ssh-agent > /dev/null
-#sourcing ~/.bashrc is a good thing
+
+<comment># the environment variables are stored using a hostname-shell file,
+# so replace &lt;hostname&gt; with your hostname, and the standard "sh" with
+# "csh" or "fish" if you use either of those shells</comment>
+source ~/.keychain/&lt;hostname&gt;-sh > /dev/null
+
+<comment># sourcing ~/.bashrc is a good thing</comment>
 source ~/.bashrc
 </pre>
 
@@ -254,7 +267,7 @@ source ~/.bashrc
 Once you've configured your <path>~/.bash_profile</path> to call keychain at
 every login, log out and log back in. When you do, keychain will start
 ssh-agent, record the agent's environment variable settings in
-<path>~/.ssh-agent</path>, and then prompt you for passphrases for any private
+<path>~/.keychain/</path>, and then prompt you for passphrases for any private
 keys specified on the keychain command-line in <path>~/.bash_profile</path>:
 </p>
 
@@ -262,14 +275,14 @@ keys specified on the keychain command-line in <path>~/.bash_profile</path>:
 
 <p>
 Once you enter your passphrases, you private keys will be cached, and keychain
-will exit. Then, ~/.ssh-agent will be sourced, initializing your login session
-for use with ssh-agent. Now, if you log out and log back in again, you'll find
-that keychain will find the existing ssh-agent process; it didn't terminate
-when you logged out. In addition, keychain will verify that the private key(s)
-you specified are already in ssh-agent's cache. If not, then you'll be prompted
-for the appropriate passphrases, but if all goes well, your existing ssh-agent
-will still contain the private key that you previously added; this means that
-you're not prompted for a password:
+will exit. Then, <path>~/.keychain/&lt;hostname&gt;-sh</path> will be sourced,
+initializing your login session for use with ssh-agent. Now, if you log out and
+log back in again, you'll find that keychain will find the existing ssh-agent
+process; it didn't terminate when you logged out. In addition, keychain will
+verify that the private key(s) you specified are already in ssh-agent's cache.
+If not, then you'll be prompted for the appropriate passphrases, but if all goes
+well, your existing ssh-agent will still contain the private key that you
+previously added; this means that you're not prompted for a password:
 </p>
 
 <figure link="/images/docs/l-ssh-2.gif" caption="Keychain finds an existing ssh-agent"/>
@@ -291,12 +304,15 @@ Go ahead and create several new login sessions, and you'll see that keychain
 will "hook in" to the exact same ssh-agent process each time. Don't forget that
 you can also get your cron jobs and scripts to "hook in" to the running
 ssh-agent process. To use ssh or scp commands from your shell scripts and cron
-jobs, just make sure that they source your <path>~/.ssh-agent</path> file
-first:
+jobs, just make sure that they source your
+<path>~/.keychain/&lt;hostname&gt;-shell</path> file first:
 </p>
 
-<pre caption="Sourcing the ~/.ssh-agent file">
-$ <i>source ~/.ssh-agent</i>
+<pre caption="Sourcing the appropriate ~/.keychain/ file">
+<comment>(The environment variables are stored using a hostname-shell file, so replace
+&lt;hostname&gt; with your hostname, and the standard "sh" with "csh" or "fish"
+if you use either of those shells)</comment>
+$ <i>source ~/.keychain/&lt;hostname&gt;-sh</i>
 </pre>
 
 <p>
