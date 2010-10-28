@@ -1,5 +1,5 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/articles/openssh-key-management-p2.xml,v 1.3 2010/05/18 14:19:02 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/articles/openssh-key-management-p2.xml,v 1.4 2010/10/28 16:40:36 nimiux Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/es/articles/openssh-key-management-p2.xml" disclaimer="articles" lang="es">
@@ -13,6 +13,9 @@
 </author>
 <author title="Traductor">
   <mail link="chiguire@gentoo.org"/>
+</author>
+<author title="Traductor">
+  <mail link="nimiux"/>
 </author>
 
 <abstract>
@@ -35,8 +38,8 @@ Services. Este documento es una versión actualizada del artículo
 original y contiene mejoras introducidas por el Equipo de
 Documentación de Gentoo. -->
 
-<version>1.3</version>
-<date>2010-04-26</date>
+<version>1.4</version>
+<date>2010-10-19</date>
 
 <chapter>
 <title>Presentando ssh-agent y keychain</title>
@@ -103,7 +106,7 @@ Este comando le dice a bash que lance ssh-agent y evalúe su
 salida. Invocando de esta forma (con comillas inclinadas hacia atrás,
 no con comillas simples normales), las variables SSH_AGENT_PID y
 SSH_AUTH_SOCK serán ajustadas y exportadas por su consola, estando a
-disposiciñon de todos los procesos nuevos que se puedan iniciar
+disposición de todos los procesos nuevos que se puedan iniciar
 durante la sesión.
 </p>
 
@@ -165,11 +168,11 @@ Por uno lado, con <c>eval `ssh-agent`</c> en
 <path>~/.bash_profile</path>, una nueva copia de ssh-agent es iniciada
 cada inicio de sesión; no solamente es un desperdicio, también
 significa que necesita usar ssh-add para añadir una clave privada para
-cada nueva copia de ssh-agent. Si solo abre una consola en su sistema,
+cada nueva copia de ssh-agent. Si sólo abre una consola en su sistema,
 esto no es mayor problema, pero la mayoría de nosotros abrimos un buen
 número de terminales y es necesario escribir la contraseña cada vez
 que se abre una nueva consola. Técnicamente, no hay razón por la que
-debiera ser necesario esto mientras un solo proceso ssh-agent fuera
+debiera ser necesario esto mientras un único proceso ssh-agent fuera
 suficiente.
 </p>
 
@@ -190,7 +193,7 @@ contacto con él. Este problema también es corregible.
 <p>
 Para resolver estos problemas, he escrito un práctico "front-end"
 basado en bash llamado keychain. Lo que hace especial a keychain es el
-hecho de que permite utilizar un solo proceso ssh-agent por sistema,
+hecho de que permite utilizar un único proceso ssh-agent por sistema,
 no sólo por sesión. Esto significa que usted sólo tiene que hacer un
 ssh-add por clave privada, y punto. Como veremos en breve, incluso
 keychain ayuda a optimizar el proceso ssh-add tratando de añadir
@@ -203,7 +206,8 @@ Aquí hay una muestra de como funciona keychain. Cuando se inicia a
 partir de su <path>~/.bash_profile</path>, se comprueba en primer
 lugar si algún ssh-agent se está ejecutando. Si no es así, se iniciará
 ssh-agent y registrará las importantes variables SSH_AUTH_SOCK y
-SSH_AGENT_PID en el archivo <path>~/.ssh-agent</path> para su custodia
+SSH_AGENT_PID en el archivo
+<path>~/.keychain/&lt;nombredeservidor&gt;-sh</path> para su custodia
 y posterior uso. Esta es la mejor manera de iniciar keychain; como
 hicimos con ssh-agent, es necesario realizar la configuración en
 <path>~/.bash_profile</path>:
@@ -211,30 +215,38 @@ hicimos con ssh-agent, es necesario realizar la configuración en
 
 <pre caption="Configuración de ssh-agent en ~/.bash_profile">
 #!/bin/bash
-#example ~/.bash_profile file
+
+<comment># fichero ejemplo ~/.bash_profile</comment>
 /usr/bin/keychain ~/.ssh/id_rsa
-#redirect ~/.ssh-agent output to /dev/null to zap the annoying
-#"Agent PID"; message
-source ~/.ssh-agent > /dev/null
+
+<comment># redirecciona la salida de ~/.keychain/ a /dev/null para
+# eliminar le molesto mensaje "Agent PID"</comment>
+source ~/.keychain/&lt;hostname&gt;-sh > /dev/null
+
+<comment># las variables de entorno se almacenan usando un fichero
+# nombredeservidor-sh, por lo tanto, reemplace &lt;nombredeservidor&gt;
+# por el nombre de su servidor y el "sh" estándar por "csh" o "fish"
+# si usa alguna de éstas shells</comment>
 </pre>
 
 <p>
 Como puede ver, con keychain suministramos al fichero
-<path>~/.ssh-agent</path> en lugar de evaluar la salida como cuando
-usamos ssh-agent directamente. Sin embargo el resultado es el mismo --
-nuestra cada vez más importánte variable SSH_AUTH_SOCK es definida, y
-ssh-agent se está ejecutando y listo para usarse. Debido a que se
-registra SSH_AUTH_SOCK en <path>~/.ssh-agent</path>, nuestros propios
-guiones y tareas cron pueden conectarse fácilmente con ssh-agent solo
-con la lectura del archivo <path>~/.ssh-agent</path>. keychain también
+<path>~/.keychain/&lt;nombredeservidor&gt;-sh</path> en lugar de evaluar
+la salida como cuando usamos ssh-agent directamente. Sin embargo el
+resultado es el mismo -- nuestra cada vez más importante variable
+SSH_AUTH_SOCK es definida, y ssh-agent se está ejecutando y listo para
+usarse. Debido a que se registra SSH_AUTH_SOCK en
+<path>~/.keychain/</path>, nuestros propios guiones y tareas cron pueden
+conectar fácilmente con ssh-agent sólo con la lectura del archivo
+<path>~/.keychain/&lt;nombredeservidor&gt;-sh</path>. keychain también
 aprovecha este fichero; recuerde cuando keychain se inició, este
 comprueba si ssh-agent está ejecutándose. Si es así, se usa el fichero
-<path>~/.ssh-agent</path> para adquirir la configuración apropiada de
-SSH_AUTH_SOCK, por lo tanto le permite utilizar el actual agente en
-lugar de iniciar uno nuevo. keychain solo iniciará un nuevo proceso
-ssh-agent sólo si el fichero <path>~/.ssh-agent</path> está rancio
-(apunta a un ssh-agent inexistente) o si el mismo
-<path>~/.ssh-agent</path> no existe.
+<path>~/.keychain/</path> apropiado para adquirir la configuración
+correcta de SSH_AUTH_SOCK, por lo tanto le permite utilizar el actual
+agente en lugar de iniciar uno nuevo. keychain iniciará un nuevo
+proceso ssh-agent sólo si el fichero <path>~/.keychain/</path> no está
+en condiciones (esto es, apunta a un ssh-agent inexistente) o si el
+propio <path>~/.keychain/</path> no existe.
 </p>
 </body>
 </section>
@@ -260,11 +272,18 @@ keychain desde <path>~/.bash_profile</path>:
 
 <pre caption="Activando keychain en ~/.bash_profile">
 #!/bin/bash
-# en la línea siguiente, inciaremos keychain y suministramos
-# las claves privadas que deseamos grabar en el caché
+
+<comment># en la línea siguiente, inciaremos keychain y suministramos
+# las claves privadas que deseamos grabar en el caché</comment>
 /usr/bin/keychain ~/.ssh/id_rsa ~/.ssh/id_dsa
-source ~/.ssh-agent > /dev/null
-# la evaluación de ~/.bashrc es algo bueno
+
+<comment># las variables de entorno se almacenan usando un fichero
+# nombredeservidor-shell, por lo tanto, reemplace,
+# &lt;nombredeservidor&gt; por el nombre de su servidor, y el "sh"
+# estándar por "csh" o "fish" si usa alguna de éstas shells</comment>
+source ~/.keychain/&lt;hostname&gt;-sh > /dev/null
+
+<comment># es recomendable hacer source de  ~/.bashrc</comment>
 source ~/.bashrc
 </pre>
 </body>
@@ -278,7 +297,7 @@ source ~/.bashrc
 Una vez configurado su <path>~/.bash_profile</path> para llamar a
 keychain en cada inicio de sesión, reinicie su sesión, Al hacerlo,
 keychain iniciará ssh-agent, registrará la configuración de la
-variable de entorno del agente en <path>~/.ssh-agent</path>, y le
+variable de entorno del agente en <path>~/.keychain</path>, y le
 pedirá las contraseñas de las claves privadas especificadas en la
 linea de comandos keychain en <path>~/.bash_profile</path>:
 </p>
@@ -288,7 +307,8 @@ vez"/>
 
 <p>
 Una vez introducida la contraseña, las claves privadas se almacenarán
-en caché, y keychain finalizará. Entonces, se cargará ~/.ssh-agent,
+en caché, y keychain finalizará. Entonces, se cargará
+<path>~/.keychain/&lt;nombredeservidor&gt;-sh</path>
 inicializando su sesión para ser usada con ssh-agent. Ahora, si
 reinicia su sesión nuevamente, notará que keychain encontrará
 ssh-agent como proceso existente; que no finalizó cuando cerró su
@@ -308,7 +328,7 @@ scp en sistemas remotos; no necesita usar ssh-add después de iniciar
 la sesión, y ssh y scp no le pedirán una contraseña. De hecho, siempre
 y cuando el proceso inicial ssh-agent siga en marcha, podrá acceder y
 establecer conexiones ssh sin suministrar una contraseña. Y es muy
-probable que su proceso ssh-agent continue ejecutandose hasta que la
+probable que su proceso ssh-agent continue ejecutándose hasta que la
 máquina sea reiniciada; probablemente lo configure en un sistema
 Linux, ¡es posible que no sea necesario que introduzca su contraseña
 en varios meses!. Bienvenido al mundo de la seguridad, conexiones
@@ -320,17 +340,22 @@ Adelante, cree varias sesiones nuevas, y verá que keychain
 "enganchará"; al mismo proceso ssh-agent cada vez. No hay que olvidar
 que puede enganchar sus cron jobs y scripts al proceso ssh-agent en
 ejecución. Para utilizar los comandos ssh o scp desde scripts de
-consola y cron jobs, asegúrese de que obtiene su fichero
-<path>~/.ssh-agent</path> en primer lugar:
+consola y trabajos cron, asegúrese de que obtiene su fichero
+<path>~/.keychain/&lt;nombredeservidor&gt;-shell</path> en
+primer lugar:
 </p>
 
-<pre caption="Obteniendo el fichero ~/.ssh-agent">
-$ <i>source ~/.ssh-agent</i>
+<pre caption="Haciendo source del fichero ~/.keychain/ apropiado">
+<comment>(Las variables de entorno se almacenan usando un fichero
+nombredeservidor-shell, por lo tanto reemplace &lt;nombredeservidor&gt;
+por el nombre de su servidor, y el "sh" estándar por "csh" o "fish"
+si usa alguna de éstas shells)</comment>
+$ <i>source ~/.keychain/&lt;nombredeservidor&gt;-sh</i>
 </pre>
 
 <p>
 Luego, cualquier comando ssh o scp serán capaces de encontrar el
-actual proceso ssh-agent en ejecución y establecer una coneción segura
+actual proceso ssh-agent en ejecución y establecer una conexión segura
 libre de contraseñas igual que desde la consola.
 </p>
 </body>
@@ -355,7 +380,7 @@ cualquier sistema sin suministrarle contraseña. Bien, mientras que
 keychain no es vulnerable a este tipo de abuso (que es siempre y
 cuando utilice las claves privadas cifradas), hay una debilidad
 potencialmente explotable directamente relacionada con el hecho que
-keychain se enganche facilmente a un proceso ssh-agent de larga
+keychain se enganche fácilmente a un proceso ssh-agent de larga
 duración.  ¿Que pasaría, pensé, sin algún intruso consiguiera
 averiguar mi contraseña o frase de acceso a mi sistema local? Si de
 alguna manera se pudiera acceder bajo mi usuario, keychain les
@@ -393,22 +418,22 @@ sesión, antes de realizar sus funciones normales. Por lo tanto, si
 usted es un intruso, keychain le pedirá las contraseñas en lugar de
 darle acceso a su actual conjunto de claves en caché.  Sin embargo, a
 pesar de que ello aumenta la seguridad, hace las cosas un poco más
-incómodas y muy similar a ejecutar ssh-agent por sí solo, sin
+incómodas y muy similar a ejecutar ssh-agent por si solo, sin
 keychain. En este caso, como suele ser, uno puede optar por una mayor
 seguridad o mayor comodidad, pero no ambos.
 </p>
 
 <p>
 A pesar de ello, utilizando kechain con <c>--clear</c> todavía tiene
-ventajas sobre el uso de ssh-agent por sí solo; recuerde, cuando se
+ventajas sobre el uso de ssh-agent por si solo; recuerde, cuando se
 usa keychain <c>--clear</c>, sus cron jobs y scripts seguirán siendo
 capaces de establecer conexiones sin contraseñas; esto es debido a que
 sus claves privadas son limpiadas en el acceso, no al salir. Desde un
 cierre de sesión del sistema no constituye una potencial brecha de
 seguridad, no hay razón para que keychain limpie las claves de
 ssh-agent. Por lo tanto, la opción <c>--clear</c> es ideal para los
-servidores que se acceden con poca frecuencia para llevar a cabo
-ocacionales tareas de copia de seguridad, tales como backup de los
+sersidores que se acceden con poca frecuencia para llevar a cabo
+ocasionales tareas de copia de seguridad, tales como backup de los
 servidores, cortafuegos y routers.
 </p>
 </body>
