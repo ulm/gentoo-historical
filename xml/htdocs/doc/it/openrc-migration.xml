@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/openrc-migration.xml,v 1.7 2010/12/09 18:32:34 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/openrc-migration.xml,v 1.8 2011/01/25 20:24:05 scen Exp $ -->
 
 <guide link="/doc/it/openrc-migration.xml" lang="it">
 <title>Guida alla Migrazione di Baselayout e OpenRC</title>
@@ -10,6 +10,9 @@
 </author>
 <author title="Autore">
   <mail link="nightmorph"/>
+</author>
+<author title="Autore">
+  <mail link="robbat2"/>
 </author>
 <author title="Collaboratore">
   <mail link="uberlord"/>
@@ -26,11 +29,13 @@ Questa guida illustra come migrare da baselayout-1 a baselayout-2 e OpenRC.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>3</version>
-<date>2010-12-01</date>
+<version>8</version>
+<date>2011-01-17</date>
 
 <chapter>
 <title>Contesto</title>
+
+<!-- =============================================================== -->
 <section>
 <title>Cos'è baselayout?</title>
 <body>
@@ -45,6 +50,8 @@ Gentoo (ad es. le directory <path>/etc</path>, <path>/var</path>,
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 <section>
 <title>Cos'è OpenRC?</title>
 <body>
@@ -59,6 +66,8 @@ FreeBSD fornito da <c>sys-freebsd/freebsd-sbin</c>.
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 <section>
 <title>Perché migrare?</title>
 <body>
@@ -91,6 +100,8 @@ Embedded, e Gentoo Vserver) e altre piattaforme come FreeBSD e NetBSD.
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 </chapter>
 
 <chapter>
@@ -117,6 +128,7 @@ cose da verificare prima di riavviare.
 
 </body>
 </section>
+<!-- =============================================================== -->
 
 <section id="rc_conf">
 <title>/etc/conf.d/rc</title>
@@ -132,6 +144,8 @@ impostazioni. Una volta finito, cancellare <path>/etc/conf.d/rc</path>.
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 <section id="moduli">
 <title>Moduli del Kernel</title>
 <body>
@@ -171,20 +185,28 @@ ai kernel della serie 2.6.x. La nuova configurazione permette un controllo più
 preciso sui moduli e sui parametri basato sulla versione del kernel.
 </p>
 
+<impo>
+Le variabili <b>module*</b> non sono cumulative. Le variabili con versioni più 
+specifiche sovrascriveranno le variabili con versione più generica.
+</impo>
+ 
+<note>
+Notare la differenza tra <b>module_</b> and <b>modules_</b>.
+</note>
+
 <p>
 Un esempio approfondito sarà:
 </p>
 
 <pre caption="esempio dettagliato di /etc/conf.d/modules">
-<comment># Caricare sempre ochi1394 e ieee1394, per qualsiasi versione di kernel</comment>
-modules="ohci1394 ieee1394"
-<comment># Caricare tun e usbserial solo per i kernel della serie 2.6.x</comment>
-modules_2_6="tun usbserial"
-<comment># Caricare cx88_dvb solo per i kernel 2.6.23</comment>
-modules_2_6_23="cx88_dvb"
 <comment># Caricare ivtv solo per il kernel 2.6.23-gentoo-r5</comment>
 modules_2_6_23_gentoo_r5="ivtv"
-
+<comment># Caricare solamente cx88_dvb per i kernel 2.6.23 (all'infuori di -gentoo-r5)</comment>
+modules_2_6_23="cx88_dvb"
+<comment># Caricare solamente tun e usbserial per i kernel della serie 2.6.x dove x != 23</comment>
+modules_2_6="tun usbserial"
+<comment># Altrimenti caricare ochi1394 e ieee1394</comment>
+modules="ohci1394 ieee1394"
 <comment># Solo per il kernel 2.6.23-gentoo-r5, passare come argomento video_br=2 # a cx88_dvb</comment>
 module_cx88_dvb_args_2_6_23_gentoo_r5="video_br=2"
 <comment># Per i kernel della serie 2.6.x passare sempre vendor e product</comment>
@@ -193,17 +215,10 @@ module_usbserial_args_2_6="vendor=0x1410 product=0x2110"
 module_ieee1394_args="debug"
 </pre>
 
-<impo>
-Le variabili <b>module*</b> non sono cumulative. Le variabili con versione più
-specifica sovrascriveranno quelle più generiche.
-</impo>
-
-<note>
-Notare la differenza tra <b>module_</b> e <b>modules_</b>.
-</note>
-
 </body>
 </section>
+<!-- =============================================================== -->
+
 <section id="boot">
 <title>Runlevel di Boot</title>
 <body>
@@ -259,6 +274,8 @@ runlevel <c>boot</c>:
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 <section>
 <title>Udev</title>
 <body>
@@ -286,6 +303,8 @@ Se <c>udev</c> non è elencato, aggiungerlo al corretto runlevel:
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 <section>
 <title>Rete</title>
 <body>
@@ -308,25 +327,29 @@ proprio dispositivo di rete.
 </p>
 
 <p>
-Inoltre, <path>/etc/conf.d/net</path> non utilizza più gli array stile bash per
-la configurazione. Si prega di consultare
+Inoltre, <path>/etc/conf.d/net</path> (oldnet) non utilizza più gli array stile 
+bash per la configurazione. Si prega di consultare
 <path>/usr/share/doc/openrc-&lt;version&gt;/net.example</path> per le
 istruzioni di configurazione. La conversione dovrebbe essere relativamente
-diretta, per esempio un assegnamento statico di IP cambierà in questo modo:
+diretta, impostando separatamente le voci ognuna su una nuova linea, per esempio
+ un assegnamento statico di IP cambierà in questo modo:
 </p>
 
 <pre caption="Vecchio stile di /etc/conf.d/net">
 config_eth0=( "192.168.1.37 netmask 255.255.255.0 brd 192.168.1.255" )
-routes_eth0=( "default via 192.168.1.100" )
+routes_eth0=( "default via 192.168.1.100" "10.0.0.0/8 via 192.168.1.2")
 </pre>
 
 <pre caption="Nuovo stile di /etc/conf.d/net">
 config_eth0="192.168.1.37 netmask 255.255.255.0 brd 192.168.1.255"
-routes_eth0="default via 192.168.1.100"
+routes_eth0="default via 192.168.1.100
+10.0.0.0/8 via 192.168.1.2"
 </pre>
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 <section>
 <title>Orologio</title>
 <body>
@@ -364,6 +387,8 @@ America/New_York
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 <section>
 <title>XSESSION</title>
 <body>
@@ -392,6 +417,8 @@ può rifare il source del file con <c>source ~/.bashrc</c>.
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 <section>
 <title>EDITOR e PAGER</title>
 <body>
@@ -433,6 +460,109 @@ rc_logger="YES"
 
 </body>
 </section>
+<!-- =============================================================== -->
+ 
+<section id="rc_sys">
+<title>Sotto-tipi di sistemi: casi speciali di virtualizzazione</title>
+<body>
+ 
+<p>
+Nelle prime versioni di OpenRC, venivano esplicitamente rilevate diverse 
+tipologie di virtualizzazione, e si usava quel rilevamento per segnalare quando 
+determinati script di inizializzazione dovevano essere saltati, usando la 
+chiamata <c>keyword</c> nelle funzioni <b>depend</b>.
+</p>
+ 
+<p>
+Tuttavia, con il rilascio 0.7.0., è necessario configurare esplicitamente il 
+sotto-tipo usando la variabile <b>rc_sys</b> in <path>/etc/rc.conf</path>. Il 
+sotto-tip dovrebbe essere impostato per combaciare con l'ambiente di 
+virtualizzazione nella quale risiede root. Generalmente, un <b>rc_sys</b> non 
+vuota dovrebbe esserci dentro ai contenitori virtuali; il nodo host dovrebbe 
+avere <b>rc_sys=""</b>.
+</p>
+ 
+<impo>
+Se non si vuole specificare nessun sotto-tipo, si preca di usare il valore 
+predefinito, ovvero una stringa vuota <b>""</b>. Se la variabile non è 
+specificata, verrà restituito un avviso e il sistema cercherà di usare il 
+vecchio algoritmo di rilevamento.
+</impo>
+ 
+<note>
+Se non si sa che valore sta usando il proprio sistema con il rilevamento 
+automatico, è possibile commentare temporaneamente la variabile <b>rc_sys</b> ed
+eseguire il comando di rilevamento, <c>rc -S</c>.
+</note>
+ 
+<pre caption="Impostare il sotto-tipo di sistema ad un valore nullo in 
+/etc/rc.conf">
+rc_sys=""
+</pre>
+ 
+<p>
+L'algoritmo di rilevamento ha dovuto essere sostituito con la configurazione 
+manuale a causa dell'introduzione di nuovi sotto-tipi e cambiamenti al kernel 
+che rendevano il rilevamento precedente inaffidabile.
+</p>
+ 
+<table>
+<tr>
+  <th>Sottotipo</th>
+  <th>Descrizionw</th>
+  <th>Note</th>
+</tr>
+<tr>
+  <ti></ti>
+  <ti>Predefinito, nessun sotto-tipo</ti>
+  <ti>Non lo stesso se non impostato; FreeBSD, Linux &amp; NetBSD</ti>
+</tr>
+<tr>
+  <ti>jail</ti>
+  <ti>FreeBSD jail</ti>
+  <ti></ti>
+</tr>
+<tr>
+  <ti>lxc</ti>
+  <ti>Contenitori Linux</ti>
+  <ti>Non rilevato automaticamente</ti>
+</tr>
+<tr>
+  <ti>openvz</ti>
+  <ti>Linux OpenVZ</ti>
+  <ti></ti>
+</tr>
+<tr>
+  <ti>prefix</ti>
+  <ti>Prefix</ti>
+  <ti>Non rilevato automaticamente; FreeBSD, Linux &amp; NetBSD</ti>
+</tr>
+<tr>
+  <ti>uml</ti>
+  <ti>Usermode Linux</ti>
+  <ti></ti>
+</tr>
+<tr>
+  <ti>vserver</ti>
+  <ti>Linux vserver</ti>
+  <ti></ti>
+</tr>
+<tr>
+  <ti>xen0</ti>
+  <ti>Xen0 Domain</ti>
+  <ti>Linux &amp; NetBSD</ti>
+</tr>
+<tr>
+  <ti>xenU</ti>
+  <ti>XenU Domain</ti>
+  <ti>Linux &amp; NetBSD</ti>
+</tr>
+</table>
+ 
+</body>
+</section>
+<!-- =============================================================== -->
+
 <section>
 <title>Finalizzare</title>
 <body>
@@ -446,9 +576,13 @@ l'aggiornamento, quindi bisognerà fornirle con un boot pulito.
 
 </body>
 </section>
+<!-- =============================================================== -->
+
 </chapter>
 <chapter>
 <title>Funzionalità modificate</title>
+<!-- =============================================================== -->
+
 <section>
 <title>L'azione pausa</title>
 <body>
@@ -463,5 +597,25 @@ rimossa; questa funzionalità è supportata dal comando <c>/etc/init.d/service
 
 </body>
 </section>
+<!-- =============================================================== -->
+ 
+<section>
+<title>voce rootfs in /etc/mtab</title>
+<body>
+ 
+<p>
+<!-- bugs: 194615, 219038 -->
+In precedenza, la voce iniziale <b>rootfs</b> era stata rimossa da 
+<path>/etc/mtab</path>, ed era presente  solamente la voce <path>/</path> della
+root reale. L'oggetto duplicato rootfs è stato effettivamente riaggiunto durante
+lo spegnimento. In OpenRC, entrambe le voci devono essere presenti per il pieno 
+supporto a initramfs e root su tmpfs. Ciò significa anche meno scritture 
+necessarie durante lo spegnimento.
+</p>
+ 
+</body>
+</section>
+<!-- =============================================================== -->
+
 </chapter>
 </guide>
