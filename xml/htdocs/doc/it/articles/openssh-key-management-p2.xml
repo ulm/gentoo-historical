@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/articles/openssh-key-management-p2.xml,v 1.5 2010/05/04 20:11:04 scen Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/articles/openssh-key-management-p2.xml,v 1.6 2011/01/25 22:20:02 scen Exp $ -->
 
 <guide link="/doc/it/articles/openssh-key-management-p2.xml" lang="it" disclaimer="articles">
 <title>OpenSSH gestione delle chiavi, Parte 2</title>
@@ -30,8 +30,8 @@ developerWorks, and is property of Westtech Information Services. This
 document is an updated version of the original article, and contains
 various improvements made by the Gentoo Linux Documentation team -->
 
-<version>1.3</version>
-<date>2010-04-26</date>
+<version>1.4</version>
+<date>2010-10-19</date>
 
 <chapter>
 <title>Introduzione a ssh-agent e keychain</title>
@@ -191,37 +191,42 @@ ssh-agent.
 Qui c'è un stralcio di come keychain lavora. Quando parte dal vostro
 <path>~/.bash_profile</path>, egli per prima cosa verifica che ssh-agent sia in
 esecuzione. Se così non fosse, allora lo esegue e registra le importanti
-variabili SSH_AUTH_SOCK e SSH_AGENT_PID nel file <path>~/.ssh-agent</path>
-per salvare in modo sicuro ed utilizzarle poi se necessario. Qui il metodo
-migliore per eseguire keychain; come se utilizzassimo il vecchio ssh-agent, noi
-faremmo la configurazione necessaria all'interno di
-<path>~/.bash_profile</path>:
+variabili SSH_AUTH_SOCK e SSH_AGENT_PID nel file 
+<path>~/.keychain/&lt;hostname&gt;-sh</path> per salvare in modo sicuro ed 
+utilizzarle poi se necessario. Qui il metodo migliore per eseguire keychain; 
+come se utilizzassimo il vecchio ssh-agent, noi faremmo la configurazione 
+necessaria all'interno di <path>~/.bash_profile</path>:
 </p>
 
 <pre caption="Impostare ssh-agent in ~/.bash_profile">
 #!/bin/bash
-#example ~/.bash_profile file
+<comment>#example ~/.bash_profile file</comment>
 /usr/bin/keychain ~/.ssh/id_rsa
-#redirect ~/.ssh-agent output to /dev/null to zap the annoying
-#"Agent PID" message
-source ~/.ssh-agent > /dev/null
+<comment># reindirizzare l'output di ~/.keychain/ output su /dev/null per 
+# eliminare il noioso messaggio "Agent PID"</comment>
+source ~/.keychain/&lt;hostname&gt;-sh > /dev/null
+ 
+<comment># le variabili d'ambiente sono memorizzato usando un file 
+# hostname-shell, pertanto sostituire &lt;hostname&gt; con il proprio nome host,
+# e lo standard "sh" con "csh" o "fish" se si usa una di queste shell
+</comment>
 </pre>
 
 <p>
 Come si può vedere, con keychain verifichaiamo preferibilemte il file
-<path>~/.ssh-agent</path> lo valutiamo, non come se facessimo con ssh-agent
-direttamente. Nonsolo il risultato è lo stesso il nostro importantissimo
-SSH_AUTH_SOCK è definito e ssh-agent è in esecuzione e pronto per l'utilizzo.
-Siccome SSH_AUTH_SOCK è memorizzato in <path>~/.ssh-agent</path>, i nostri
-script di shell e cron jobs possono facilmente connettersi a ssh-agent
-utilizzando il file <path>~/.ssh-agent</path>. keychain stesso trae anche
-vantaggio utilizzando questo file; vi ricordate che quando keychain parte
-verifica se esiste un ssh-agent in esecuzione. Se cosi fosse, utilizza il file
-<path>~/.ssh-agent</path> per acquisire i parametri corretti di SSH_AUTH_SOCK,
-imponendo a se stesso di utilizzare l' agent esistente anzichè eseguirne uno
-nuovo. keychain eseguirà un nuovo processo ssh-agent solo se il file
-<path>~/.ssh-agent</path> è in stallo (punta ad un ssh-agent inesistente) o se
-<path>~/.ssh-agent</path> non esiste.
+<path>~/.keychain/&lt;hostname&gt;-sh</path>lo valutiamo, non come se facessimo 
+con ssh-agent direttamente. Nonsolo il risultato è lo stesso il nostro 
+importantissimo SSH_AUTH_SOCK è definito e ssh-agent è in esecuzione e pronto 
+per l'utilizzo. Siccome SSH_AUTH_SOCK è memorizzato in <path>~/.keychain/</path>
+, i nostri script di shell e cron jobs possono facilmente connettersi a 
+ssh-agent utilizzando il file <path>~/.keychain/&lt;hostname&gt;-sh</path>. 
+keychain stesso trae anche vantaggio utilizzando questo file; vi ricordate che 
+quando keychain parte verifica se esiste un ssh-agent in esecuzione. Se cosi 
+fosse, utilizza il file in <path>~/.keychain/</path> per acquisire i parametri 
+corretti di SSH_AUTH_SOCK, imponendo a se stesso di utilizzare l' agent 
+esistente anzichè eseguirne uno nuovo. keychain eseguirà un nuovo processo 
+ssh-agent solo se il file <path>~/.keychain/</path> è in stallo (punta ad un 
+ssh-agent inesistente) o se <path>~/.keychain/</path> non esiste.
 </p>
 
 </body>
@@ -247,11 +252,18 @@ come argomento. Qui c'è un ottimo esempio di avvio di keychain insieme a
 
 <pre caption="Abilitare keychain in ~/.bash_profile">
 #!/bin/bash
-#on this next line, we start keychain and point it to the private keys that
-#we'd like it to cache
+<comment># nella linea seguente, lanciamo keychain e puntiamo alla chiave 
+# privata che vogliamo inserire nella sua cache
+</comment>
 /usr/bin/keychain ~/.ssh/id_rsa ~/.ssh/id_dsa
-source ~/.ssh-agent > /dev/null
-#sourcing ~/.bashrc is a good thing
+
+<comment># le variabili d'ambiente sono memorizzato usando un file 
+# hostname-shell, pertanto sostituire &lt;hostname&gt; con il proprio nome host,
+# e lo standard "sh" con "csh" o "fish" se si usa una di queste shell
+</comment>
+source ~/.keychain/&lt;hostname&gt;-sh > /dev/null
+
+<comment># effettuare la derivazione di ~/.bashrc è un'ottima cosa</comment>
 source ~/.bashrc
 </pre>
 
@@ -265,7 +277,7 @@ source ~/.bashrc
 Una volta che avete configurato il vostro <path>~/.bash_profile</path> per
 chiamare ad ogni login, sconnettetevi e riconnettetevi. Quando lo farete,
 keychain eseguirà ssh-agent e memorizzera l'impotazione della variabile
-d'ambiente in  <path>~/.ssh-agent</path>, e chiederà la parola chiave per
+d'ambiente in  <path>~/.keychain/</path>, e chiederà la parola chiave per
 ogni vostra chiave privata specificata nella linea di comando di keychain
 dal <path>~/.bash_profile</path>:
 </p>
@@ -275,12 +287,13 @@ prima volta"/>
 
 <p>
 Una volta che avete inserito la parola chiave, le vostre chiavi private saranno
-caricate in memoria, e keychain uscirà. Allora, ~/.ssh-agent ##will be sourced,
-inizializzando la vostra sessione di login per lavorare con ssh-agent. Adesso,
-se vi loggate nuovamente, vedrete che keychain trovarà il processo esistente di
-ssh-agent; Esso non è terminato quando avete chiuso la sessione di login.
-Innoltre, keychain verificherà che la (le) chive privata che avete specificato
-sia presenti nella memoria di ssh-agent. Se così non fosse, vi sarà chiesta la
+caricate in memoria, e keychain uscirà. Dopodichè, 
+<path>~/.keychain/&lt;hostname&gt;-sh</path> verrà derivato, inizializzando la 
+vostra sessione di login per lavorare con ssh-agent. Adesso, se vi loggate 
+nuovamente, vedrete che keychain trovarà il processo esistente di ssh-agent; 
+esso non è terminato quando avete chiuso la sessione di login. Inoltre, 
+keychain verificherà che la (le) chive privata che avete specificato sia 
+presente nella memoria di ssh-agent. Se così non fosse, vi sarà chiesta la
 rispettiva parola chiave, me se invece tutto filasse liscio, il processo
 esistente di ssh-agent continuerà a contenere le chiavi private precedentemente
 aggiunte; questo significa che non vi sarà richiesta la password:
@@ -308,11 +321,15 @@ catturerà perfettamente sempre lo stesso processo ssh-agent.Non dimenticate
 che anche i vostri scripts di cron jobs cattureranno il processo in
 esecuzione di ssh-agent. Per utilizzare i comandi ssh o scp dalla vostra
 shell o i vostri cron job, assicuratevi che puntino a
-<path>~/.ssh-agent</path>:
+<path>~/.keychain/&lt;hostname&gt;-shell</path>:
 </p>
 
-<pre caption="Sourcing the ~/.ssh-agent file">
-$ <i>source ~/.ssh-agent</i>
+<pre caption="Derivare l'appropriato file ~/.keychain/">
+<comment>(Le variabili d'ambiente sono memorizzato usando un file 
+hostname-shell, pertanto sostituire &lt;hostname&gt; con il proprio nome host, e
+lo standard "sh" con "csh" o "fish" se si usa una di queste shell)
+</comment>
+$ <i>source ~/.keychain/&lt;hostname&gt;-sh</i>
 </pre>
 
 <p>
