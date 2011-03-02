@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/ipv6.xml,v 1.36 2010/08/12 06:20:16 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/ipv6.xml,v 1.37 2011/03/02 09:53:25 nightmorph Exp $ -->
 
 <guide>
 <title>Gentoo IPv6 Router Guide</title>
@@ -34,8 +34,8 @@ and configuring clients to use the system to connect to IPv6 addresses.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>3</version>
-<date>2010-08-11</date>
+<version>4</version>
+<date>2011-03-02</date>
 
 <chapter>
 <title>Preliminaries</title>
@@ -736,166 +736,6 @@ interface eth0 {
         renew-time 11000;
 };
 </pre>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Using 6to4 Conversion</title>
-<section>
-<title>Basic principles</title>
-<body>
-
-<p>
-6to4 conversion can be used if you want to have hosts that talk to IPv4
-hosts over a purely IPv6 connection. Thus you can have an entirely IPv6
-internal network, with one host dealing with connecting to the outside
-IPv4/IPv6 world.
-</p>
-
-</body>
-</section>
-
-<section>
-<title>DNS configuration</title>
-<body>
-
-<p>
-To get 6to4 conversion working, a DNS proxy, <c>totd</c>, needs to be
-configured that will send you AAAA records for sites that really only have
-A records. These AAAA records will point to IPv6 addresses which don't
-actually exist, but which will get routed through a 6to4 proxy.
-</p>
-
-<p>
-First, install <c>totd</c>:
-</p>
-
-<pre caption="Installing totd">
-# <i>emerge totd</i>
-</pre>
-
-<p>
-Next, we need to setup <path>/etc/totd.conf</path> with some basic
-configuration information.
-</p>
-
-<pre caption="Sample /etc/totd.conf">
-<comment>(Points to a real DNS nameserver)</comment>
-forwarder 192.168.0.2 port 53
-<comment>(What prefix to put before faked AAAA records)</comment>
-prefix 3ffe:abcd:1234:9876::
-<comment>(What port to run totd on)</comment>
-port 5005
-<comment>(What PID file to use)</comment>
-pidfile /var/run/totd.pid
-<comment>(Actually do 6to4 stuff)</comment>
-stf
-</pre>
-
-<note>
-<c>totd</c> must be set to use a port different than port 53 if another
-nameserver is running on the same machine.
-</note>
-
-</body>
-</section>
-
-<section>
-<title>6to4 proxy</title>
-<body>
-
-<p>
-<c>ptrtd</c> will be used as a 6to4 proxy, enabling connections between
-the internal IPv6 host and the outside IPv4 host.
-</p>
-
-<pre caption="Installing ptrtd">
-# <i>emerge ptrtd</i>
-</pre>
-
-<p>
-We now need to configure <c>ptrtd</c>, telling it what fake prefix
-(the one we setup <c>totd</c> to use) to create proxy connections for.
-Edit <path>/etc/conf.d/ptrtd</path> and set <c>IPV6_PREFIX</c>. This
-should be the same prefix as was configured with <c>totd</c>.
-</p>
-
-<pre caption="Sample /etc/ptrtd.conf">
-IPV6_PREFIX="3ffe:abcd:1234:9876::"
-</pre>
-
-<p>
-You can now start totd, and enable it to start at boot.
-</p>
-
-<pre caption="Starting totd">
-# <i>/etc/init.d/totd start</i>
-# <i>rc-update add totd default</i>
-</pre>
-
-</body>
-</section>
-
-<section>
-<title>Client configuration and testing</title>
-<body>
-
-<p>
-Clients may now be configured to connect to both IPv4 and IPv6 hosts
-through an IPv6 only connection. Assuming that the clients are already
-receiving an IP address from radvd, we simply need to add a new DNS
-resolver entry, and add a default route for those "fake addresses".
-First, add an entry at the top of your <path>/etc/resolv.conf</path>
-pointing to the machine running <c>totd</c>.
-</p>
-
-<pre caption="/etc/resolv.conf sample">
-nameserver 2001:470:1f00:296::1 <comment>(The server running totd)</comment>
-</pre>
-
-<p>
-To test name resolution, request an AAAA record for a known IPv4
-only site.
-</p>
-
-<pre caption="Testing name resolution">
-# <i>dig aaaa google.com</i>
-;; ANSWER SECTION:
-google.com.             300     IN      AAAA     3ffe:abcd:1234:9876::d8ef:3364
-google.com.             300     IN      AAAA     3ffe:abcd:1234:9876::d8ef:3564
-</pre>
-
-<p>
-We will now add a default route for all addresses prefixed with our
-chosen fake prefix.
-</p>
-
-<pre caption="Adding the default route">
-<comment>(Assuming your IPv6 interface is eth0)</comment>
-# <i>ip route add 3ffe:abcd:1234:9876::/64 via 2001:470:1f00:296::1 dev eth0</i>
-</pre>
-
-<p>
-Finally, use <c>ping6</c> to ping google.com at it's fake IPv6 location.
-</p>
-
-<pre caption="Testing 6to4">
-# <i>ping6 -c 2 google.com</i>
-PING 3ffe:abcd:1234:9876::d8ef:3364(3ffe:abcd:1234:9876::d8ef:3364) 56 data bytes
-64 bytes from 3ffe:abcd:1234:9876::d8ef:3364: icmp_seq=1 ttl=54 time=0.106 ms
-64 bytes from 3ffe:abcd:1234:9876::d8ef:3364: icmp_seq=2 ttl=54 time=0.090 ms
-
---- 3ffe:abcd:1234:9876::d8ef:3364 ping statistics ---
-2 packets transmitted, 2 received, 0% packet loss, time 1000ms
-rtt min/avg/max/mdev = 0.090/0.098/0.106/0.008 ms
-</pre>
-
-<note>
-The router running <c>ptrtd</c> is actually replying, but this at least
-tells us things are working.
-</note>
 
 </body>
 </section>
