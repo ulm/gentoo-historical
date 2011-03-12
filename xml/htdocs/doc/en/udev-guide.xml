@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/udev-guide.xml,v 1.52 2010/12/26 19:21:44 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/udev-guide.xml,v 1.53 2011/03/12 05:44:14 nightmorph Exp $ -->
 
 <guide>
 <title>Gentoo udev Guide</title>
@@ -23,8 +23,8 @@ This document explains what udev is and how you can use udev to fit your needs.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>7</version>
-<date>2010-12-26</date>
+<version>8</version>
+<date>2011-03-11</date>
 
 <chapter>
 <title>What is udev?</title>
@@ -71,103 +71,14 @@ needed:
 </ul>
 
 <p>
-To provide these features, udev is developed in three separate projects:
-<e>namedev</e>, <e>libsysfs</e> and, of course, <e>udev</e>.
-</p>
-
-</body>
-</section>
-<section>
-<title>namedev</title>
-<body>
-
-<p>
-Namedev allows you to define the device naming separately from the udev program.
-This allows for flexible naming policies and naming schemes developed by
-separate entities. This device naming subsystem provides a standard interface
-that udev can use.
-</p>
-
-<p>
-Currently only a single naming scheme is provided by namedev; the one provided
-by LANANA, used by the majority of Linux systems currently and therefore very
-suitable for the majority of Linux users.
-</p>
-
-<p>
-Namedev uses a 5-step procedure to find out the name of a given device. If the
-device name is found in one of the given steps, that name is used. The steps
-are:
-</p>
-
-<ul>
-  <li>label or serial number</li>
-  <li>bus device number</li>
-  <li>bus topology</li>
-  <li>statically given name</li>
-  <li>kernel provided name</li>
-</ul>
-
-<p>
-The <e>label or serial number</e> step checks if the device has a unique
-identifier. For instance USB devices have a unique USB serial number; SCSI
-devices have a unique UUID. If namedev finds a match between this unique number
-and a given configuration file, the name provided in the configuration file is
-used.
-</p>
-
-<p>
-The <e>bus device number</e> step checks the device bus number. For
-non-hot-swappable environments this procedure is sufficient to
-identify a hardware device. For instance PCI bus numbers rarely change in the
-lifetime of a system. Again, if namedev finds a match between this position and
-a given configuration file, the name provided in that configuration file is
-used.
-</p>
-
-<p>
-Likewise the <e>bus topology</e> is a rather static way of defining devices as
-long as the user doesn't switch devices. When the position of the device matches
-a given setting provided by the user, the accompanying name is used.
-</p>
-
-<p>
-The fourth step, <e>statically given name</e>, is a simple string replacement.
-When the kernel name (the default name) matches a given replacement string, the
-substitute name will be used.
-</p>
-
-<p>
-The final step (<e>kernel provided name</e>) is a catch-all: this one takes
-the default name provided by the kernel. In the majority of cases this is
-sufficient as it matches the device naming used on current Linux systems.
-</p>
-
-</body>
-</section>
-<section>
-<title>libsysfs</title>
-<body>
-
-<p>
-udev interacts with the kernel through the sysfs pseudo filesystem. The libsysfs
-project provides a common API to access the information given by the sysfs
-filesystem in a generic way. This allows for querying all kinds of hardware
-without having to make assumptions on the kind of hardware.
-</p>
-
-</body>
-</section>
-<section>
-<title>udev</title>
-<body>
-
-<p>
-Every time the kernel gets an event in the device structure, it asks udev to
-take a look. udev follows the rules in the <path>/etc/udev/rules.d/</path>
-directory. udev then uses the information given by the kernel to perform the
-necessary actions on the <path>/dev</path> structure (creating or deleting
-device files).
+Every time a change happens within the device structure, the kernel emits a 
+<e>uevent</e> which gets picked up by udev. udev then follows the rules as
+declared in the <path>/etc/udev/rules.d</path> and 
+<path>/lib/udev/rules.d</path> directories. Based on the information contained
+within the uevent, it finds the rule or rules it needs to trigger and performs 
+the required actions. These actions can be creating or deleting device files, 
+but can also trigger the loading of particular firmware files into the
+kernel memory.
 </p>
 
 </body>
@@ -182,9 +93,11 @@ device files).
 
 <p>
 udev is meant to be used in combination with a 2.6 kernel (like
-<c>gentoo-sources</c> with the default 2007.0 profile). If you're using such a
-kernel then you just have to make sure that you have a recent
-<c>sys-apps/baselayout</c> version. That's all you need.
+<c>gentoo-sources</c> with the default 10.0 profile). If you're using such a
+kernel then you just should have no issues whatsoever with using udev as the 
+necessary support is built-in in all stable <c>sys-apps/baselayout</c> 
+versions. Normally, udev should already be installed on your system, but if
+this is not the case, then it is easy to install:
 </p>
 
 <pre caption="Installing udev">
@@ -196,54 +109,19 @@ Kernelwise, be sure to activate the following options:
 </p>
 
 <pre caption="Required kernel options">
-File systems ---&gt;
-    [*] Inotify file change notification support
-    [*]   Inotify support for userspace
+General Setup ---&gt;
+  <comment>(Make sure the following item is *not* enabled)</comment>
+  [ ] enable deprecated sysfs features to support old userspace tools
+
+File Systems ---&gt;
+  [*] Inotify support for userspace
   Pseudo filesystems ---&gt;
-    [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
 </pre>
 
 <p>
 If you use <c>genkernel</c>, you don't need to do anything special. Genkernel
 sets up udev by default.
-</p>
-
-</body>
-</section>
-<section>
-<title>Configuration</title>
-<body>
-
-<p>
-If you want to use the udev settings Gentoo provides to make your life
-comfortable, then read no more. Gentoo will use udev but keep a static
-<path>/dev</path> so that you will never have any missing device nodes.
-The Gentoo init scripts won't run the devfsd daemon and will deactivate devfs
-when you boot up.
-</p>
-
-<p>
-But if you are a die-hard and want to run a udev-only, unmodified system as is
-intended by the udev development (including the difficulties of missing device
-nodes because udev doesn't support them yet), by all means, read on :)
-</p>
-
-<p>
-We'll deactivate the rules that save the device file nodes: edit the
-<c>RC_DEVICE_TARBALL</c> variable in <path>/etc/conf.d/rc</path> and set it to
-<c>no</c>:
-</p>
-
-<pre caption="/etc/conf.d/rc">
-RC_DEVICE_TARBALL="no"
-</pre>
-
-<p>
-If you have included devfs support in your kernel, you can deactivate it in
-the bootloader configuration: add <c>gentoo=nodevfs</c> as a kernel parameter.
-If you want to use devfs and deactivate udev, add <c>gentoo=noudev</c> as kernel
-parameter.
 </p>
 
 </body>
