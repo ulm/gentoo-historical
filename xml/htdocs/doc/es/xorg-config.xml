@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/xorg-config.xml,v 1.30 2011/03/03 17:51:13 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/xorg-config.xml,v 1.31 2011/03/23 11:27:59 nimiux Exp $ -->
 
 <guide lang="es">
 
@@ -36,8 +36,8 @@ distintas opciones de configuración.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>6</version>
-<date>2011-03-02</date>
+<version>7</version>
+<date>2011-03-23</date>
 
 <chapter>
 <title>¿Qué es el Servidor de Ventanas X?</title>
@@ -176,7 +176,7 @@ Device Drivers ---&gt;
 
 <p>
 A continuación, configure su núcleo para usar el controlador KMS
-adecuado a su tarjeta de vídeo. Intel, nVidia y ATI son las
+adecuado a su tarjeta de vídeo. Intel, nVidia y AMD/ATI son las
 tarjetas más comunes, por lo tanto siga el listado de abajo para
 su tarjeta.
 </p>
@@ -214,13 +214,13 @@ Device Drivers ---&gt;
 </pre>
 
 <p>
-Para las nuevas tarjetas ATI
+Para las nuevas tarjetas AMD/ATI
 (<uri link="/doc/es/ati-faq.xml">RadeonHD 2000 y posteriores</uri>),
 necesitará hacer emerge de <c>radeon-ucode</c>. Una vez haya instalado
 <c>radeon-ucode</c>, configure su núcleo tal y como se muestra:
 </p>
 
-<pre caption="Ajustes para ATI">
+<pre caption="Ajustes para AMD/ATI">
 <comment>(Configure el núcleo para usar el firmware radeon-ucode)</comment>
 Device Drivers ---&gt;
   Generic Driver Options ---&gt;
@@ -286,8 +286,8 @@ buen soporte.
 
 <note>
 También querrá probar los controladores propietarios de nVidia
-y ATI, <c>nvidia</c> y <c>fglrx</c> respectivamente. Sin embargo,
-configurar estos controladores propietarios está fuera del
+y AMD/ATI, <c>nvidia</c> y <c>fglrx</c> respectivamente. Sin
+embargo, configurar estos controladores propietarios está fuera del
 alcance de esta guía. Por favor, lea la <uri
 link="/doc/es/nvidia-guide.xml">Guía nVidia de Gentoo Linux</uri>
 y las <uri
@@ -324,7 +324,7 @@ configuración necesaria al fichero <path>/etc/make.conf</path>:
 INPUT_DEVICES="evdev synaptics"
 <comment>(Para tarjetas nVIDIA)</comment>
 VIDEO_CARDS="nouveau"
-<comment>(O para tarjetas ATI Radeon)</comment>
+<comment>(O para tarjetas AMD/ATI)</comment>
 VIDEO_CARDS="radeon"
 </pre>
 
@@ -358,6 +358,9 @@ paquete Xorg.
 </p>
 
 <pre caption="Instalando Xorg">
+<comment>(Asegúrese de que udev está en sus ajustes USE)</comment>
+# <i>echo "x11-base/xorg-server udev" >> /etc/portage/package.use</i>
+<comment>(Instale Xorg)</comment>
 # <i>emerge xorg-server</i>
 </pre>
 
@@ -372,29 +375,12 @@ son necesarias para un entorno de escritorio corriente.
 
 <p>
 Cuando la instalación haya finalizado, tendrá que reinicializar
-algunas variables de entorno antes de continuar. Simplemente ejecute
-<c>env-update</c> seguido de <c>source /etc/profile</c> y ya está
-configurado.
+algunas variables de entorno antes de continuar:
 </p>
 
 <pre caption="Reinicializando las variables de entorno">
 # <i>env-update</i>
 # <i>source /etc/profile</i>
-</pre>
-
-<p>
-Ahora es el momento de arrancar el demonio de la Capa de Abstracción de
-Hardware o Hardware Abstraction Layer (HAL), en inglés, y ajustarlo para
-que arranque automáticamente cada vez que reinicie. Esto es necesario
-para tener un entorno X funcionando correctamente, de lo contrario los
-dispositivos de entrada no serán detectados y probablemente lo único que
-obtenga sea una pantalla negra. Cubriremos HAL en mayor profundidad en la
-<uri link="#using_hal">siguiente sección</uri>.
-</p>
-
-<pre caption="Arrancando HAL">
-# <i>/etc/init.d/hald start</i>
-# <i>rc-update add hald default</i>
 </pre>
 
 </body>
@@ -403,214 +389,57 @@ obtenga sea una pantalla negra. Cubriremos HAL en mayor profundidad en la
 
 <chapter>
 <title>Configurando Xorg</title>
-<section id="using_hal">
-<title>Usando HAL</title>
+<section>
 <body>
 
 <p>
 El servidor X están está diseñado para funcionar desde el momento en
-que es instalado, sin necesidad de editar manualmente los ficheros
-de configuración de Xorg.
+que es instalado, sin necesidad de editar manualmente los ficheros de
+configuración de Xorg. Debería detectar y configurar los dispositivos
+como pantallas, teclados y ratones.
 </p>
 
 <p>
-Debe, en primer lugar, intentar <uri link="#using_startx">arrancar X</uri>
-sin crear <path>/etc/X11/xorg.conf</path>.
-</p>
-
-<p>
-Si su Xorg no arranca (si hay algo extraño en la pantalla o con su
-ratón o teclado), entonces puede intentar reparar los problemas
-usando los ficheros de configuración correctos.
-</p>
-
-<p>
-Por defecto, Xorg usa HAL (Capa de Abstracción del Hardware o Hardware
-Abstraction Layer en inglés) para detectar y configurar los
-dispositivos como los teclados y ratones.
-</p>
-
-<p>
-HAL viene con muchas reglas de dispositivo preparadas, también
-llamadas políticas. Estos ficheros de políticas se encuentran en
-<path>/usr/share/hal/fdi/policy/</path>. Simplemente busque unas pocas
-que se ajusten a sus necesidades de mejor forma y cópielas a
-<path>/etc/hal/fdi/policy/</path>.
-</p>
-
-<impo>
-¡No edite los ficheros en <path>/usr/share/hal/fdi/</path>!
-Simplemente copie los que necesite y edítelos una vez están en la
-localización <path>/etc</path> adecuada.
-</impo>
-
-<p>
-Por ejemplo, para tener un funcionamiento básico de la combinación
-teclado / ratón, podría copiar los siguientes ficheros a
-<path>/etc/hal/fdi/policy/</path>:
-</p>
-
-<pre caption="Usando ficheros de política HAL">
-# <i>cp /usr/share/hal/fdi/policy/10osvendor/10-input-policy.fdi /etc/hal/fdi/policy</i>
-# <i>cp /usr/share/hal/fdi/policy/10osvendor/10-x11-input.fdi /etc/hal/fdi/policy</i>
-</pre>
-
-<p>
-Hay más políticas HAL en <path>/usr/share/hal/fdi/</path> que le
-pueden interesar, como configuraciones de portátiles, manejo de
-dispositivos de almacenamiento, gestión de energía, y más. Simplemente
-copie cualquiera de las políticas a <path>/etc/hal/fdi/policy/</path>.
-</p>
-
-<impo>
-Recuerde que <e>cada</e> vez que haga cambios a los ficheros de política
-de HAL, debe reiniciar el demonio HAL, ejecutando
-<c>/etc/init.d/hald restart</c>.
-</impo>
-
-<p>
-Puede editar el fichero de políticas en
-<path>/etc/hal/fdi/policy</path> a su gusto. Puede querer hacer algún
-retoque u ofrecer funcionalidad añadida. Vayamos con un ejemplo de
-cómo retocar una política HAL.
-</p>
-
-<p>
-Un truco muy conveniente es matar el servidor X completamente
-presionando Ctrl-Alt-Retroceso. Esto es práctico cuando su servidor X
-no está funcionando correctamente, congelado, etc. No es tan radical
-como reiniciar la máquina completamente con Ctrl-Alt-Supr.
-</p>
-
-<p>
-Las versiones recientes del servidor X deshabilitan esta combinación
-por defecto. Sin embargo puede rehabilitarla copiando
-<path>10-x11-input.fdi</path> a <path>/etc/hal/fdi/policy</path> y
-editándolo. Necesitará añadir una única línea a la sección apropiada,
-como se muestra abajo:
-</p>
-
-<pre caption="Editando 10-x11-input.fdi">
-<comment>(Abra el fichero con su editor favorito)</comment>
-# <i>nano -w /etc/hal/fdi/policy/10-x11-input.fdi</i>
-<comment>(Busque la sección "input.keys")</comment>
-&lt;match key="info.capabilities" contains="input.keys"&gt;
-<comment>(Añada la cadena "terminate" a la etiqueta merge, tal y como se muestra)</comment>
-&lt;match key="info.capabilities" contains="input.keys"&gt;
-      &lt;merge key="input.x11_driver" type="string"&gt;keyboard&lt;/merge&gt;
-      <i>&lt;merge key="input.xkb.options" type="string"&gt;terminate:ctrl_alt_bksp&lt;/merge&gt;</i>
-      &lt;match key="/org/freedesktop/Hal/devices/computer:system.kernel.name"
-             string="Linux"&gt;
-        &lt;merge key="input.x11_driver" type="string"&gt;evdev&lt;merge&gt;
-      &lt;/match&gt;
-    &lt;/match&gt;
-</pre>
-
-<p>
-Una vez haya terminado, ejecute <c>/etc/init.d/hald restart</c> para que
-HAL tenga en cuenta sus cambios.
-</p>
-
-<p>
-Ahora ya tiene una forma práctica de matar un servidor X que no
-responde. Esto es útil cuando los programas han congelado su pantalla
-completamente o cuando ha configurado y retocado su entorno
-Xorg. Tenga cuidado cuando mate su escritorio usando esta combinación
-de teclas -- a muchos programas realmente no le gusta que los terminen
-de esta forma, y puede perder algo (o todo) en lo que estuviera
-trabajando.
-</p>
-
-<p>
-Afortunadamente, simplemente trabajar con los ficheros de política de
-HAL resulta en un escritorio X funcionando correctamente. Si Xorg no
-arranca, o hay algún otro problema, necesitará configurar manualmente
-<path>xorg.conf</path> como se muestra en la siguiente sección:
+Debe, en primer lugar, intentar <uri link="#using_startx">arrancar X
+</uri> sin editar ningún fichero de configuración. Si Xorg no arranca
+o hay algún otro problema, necesitará configurar manualmente Xorg tal
+y como se muestra en la siguiente sección.
 </p>
 
 </body>
 </section>
 <section>
-<title>El archivo xorg.conf</title>
+<title>El directorio xorg.conf.d</title>
 <body>
 
 <note>
-La configuración de <path>xorg.conf</path> se debe contemplar como el
-"último recurso". Es realmente deseable trabajar sin este fichero, si
-es posible, y hacer toda su configuración a través de los ficheros de
-política de HAL. Si no consigue hacer funcionar su configuración,
+Se debe ver la configuración de <path>xorg.conf</path> como un "ultimo
+recurso". Es realmente deseable trabajar sin ninguna configuración
+especial si es posible. Si no consigue hacer funcionar su configuración,
 entonces continúe leyendo.
 </note>
 
 <p>
-El archivo de configuración de Xorg se llama <path>xorg.conf</path> y
-se encuentra en <path>/etc/X11</path>. Xorg proporciona un ejemplo de
-configuración en <path>/etc/X11/xorg.conf.example</path> el cual puede
-utilizarse para crear su propia configuración. Está muy comentado,
-pero si necesita más información respecto a la sintaxis, no dude en
-leer la página del manual (man).
+Los ficheros de configuración de Xorg se almacenan en
+<path>/etc/X11/xorg.conf.d/</path>. Se asigna un nombre único a cada
+fichero, y éstos terminan siempre en <path>.conf</path>. Si el nombre
+de los ficheros comienzan con un número, entonces Xorg leera estos
+ficheros en orden numérico. El fichero <path>10-evdev.conf</path> se
+leerán antes que el fichero <path>20-synaptics.conf</path>, y así
+sucesivamente. No <e>necesita</e> darles un número, pero esto ayudará
+a mantener los ficheros organizados.
 </p>
 
-<pre caption="Leyendo la página del manual sobre xorg.conf">
-$ <i>man 5 xorg.conf</i>
-</pre>
-
-</body>
-</section>
-<section>
-<title>Generación automática de xorg.conf</title>
-<body>
-
-<p>
-El propio Xorg es capaz de adivinar la mayoría de parámetros. En la
-mayoría de los casos, sólo necesitara cambiar algunas líneas para
-conseguir la resolución que quiere y marchando. Si está interesado en
-un mayor conocimiento, asegúrese de consultar los recursos que se
-encuentran al final de este capítulo. Pero primero, permítanos generar
-un (esperemos que funcione) archivo de configuración Xorg.
-</p>
-
-<pre caption="Generando un archivo xorg.conf">
-# <i>Xorg -configure</i>
-</pre>
-
-<p>
-Asegúrese de leer las últimas lineas que aparecen en su pantalla
-cuando Xorg ha terminado de probar su hardware. Si le informa de que
-ha fallado en algún punto, forzosamente tendrá que editar manualmente
-el archivo <path>xorg.conf</path>. Asumiremos que no ha fallado, le
-debería informar que ha generado <path>/root/xorg.conf.new</path>
-listo para que lo pruebe. Entonces, vamos a probarlo :)
-</p>
-
-<pre caption="Probando el archivo xorg.conf.new">
-# <i>X -retro -config /root/xorg.conf.new</i>
-</pre>
-
-<p>
-Si todo va bien, debería ver un patrón de trama sencillo blanco y
-negro. Verifique que su ratón funciona correctamente y que la
-resolución es la correcta. No será capaz de deducir la resolución
-exacta, pero debería observar que es muy baja. Puede salir en
-cualquier momento presionando Ctrl-Alt-Retroceso.
-</p>
-
-</body>
-</section>
-<section>
-<title>Copiando xorg.conf</title>
-<body>
-
-<p>
-Ahora, copiemos <path>xorg.conf.new</path> a
-<path>/etc/X11/xorg.conf</path> para que no tengamos que ejecutar
-continuamente <c>X -config</c> -- el escribir solamente <c>startx</c>
-es mucho más fácil :)
-</p>
-
-<pre caption="Copiando xorg.conf">
-# <i>cp /root/xorg.conf.new /etc/X11/xorg.conf</i>
-</pre>
+<note>
+Xorg ofrece configuraciones ejemplo en
+<path>/usr/share/doc/xorg-server-${version}/xorg.conf.example.bz2</path>.
+Puede usar estas configuraciones para creas las suyas en
+<path>/etc/X11/xorg.conf.d/</path>. Los ejemplos ofrecen muchos
+comentarios, sin embargo, si necesita más documentación acerca de la
+sintaxis, lea <c>man xorg.conf</c>. Se pueden encontrar otros ejemplos
+en el capítulo <uri link="#resources">Recursos</uri> al final de esta
+guía.
+</note>
 
 </body>
 </section>
@@ -650,12 +479,6 @@ $ <i>startx</i>
 </pre>
 
 <p>
-Puede matar la sesión X usando la combinación de teclas
-Ctrl-Alt-Retroceso. Esto, sin embargo, obligará a X a una salida algo
-vergonzosa -- tal vez algo que no siempre quiera hacer.
-</p>
-
-<p>
 Si todavía no ha instalado un gestor de ventanas lo que verá es la
 pantalla en negro. Puesto que éste puede ser también un signo de que
 algo ha ido mal, puede que quiera instalar <c>twm</c> y <c>xterm</c>
@@ -664,8 +487,8 @@ algo ha ido mal, puede que quiera instalar <c>twm</c> y <c>xterm</c>
 
 <p>
 Una vez que ambos programas estén instalados, ejecute <c>startx</c>
-de nuevo. Deberían de aparecer algunas ventanas de xterm haciendo que
-sea más fácil comprobar que el servidor X está funcionando
+de nuevo. Deberían de aparecer algunas ventanas de <c>xterm</c>
+haciendo que sea más fácil comprobar que el servidor X está funcionando
 correctamente. Cuando quede satisfecho con los resultados, ejecute
 <c>emerge --unmerge twm xterm</c> como root para deshacerse de los
 paquetes de prueba. No los necesitará cuando haya configurado su propio
@@ -684,8 +507,8 @@ entorno de escritorio.
 
 <p>
 Si nota que la resolución de la pantalla no es correcta, necesitará
-comprobar dos secciones en su configuración <path>xorg.conf</path>. En
-primer lugar, tiene la sección <e>Screen</e> la cual tiene una lista
+comprobar dos secciones en su configuración <path>xorg.conf.d</path>.
+En primer lugar, tiene la sección <e>Screen</e> la cual tiene una lista
 de resoluciones, si existe, que su servidor X puede soportar. De forma
 predeterminada, esta sección no contiene ninguna lista de
 resoluciones. Si es este el caso, Xorg estima las resoluciones
@@ -693,30 +516,10 @@ basándose en la información de la segunda sección, <e>Monitor</e>.
 </p>
 
 <p>
-Lo que sucede es lo siguiente: Xorg comprueba la configuración de
-<c>HorizSync</c> y <c>VertRefresh</c> en la sección <e>Monitor</e>
-para calcular las resoluciones válidas. Por ahora, deje estas
-configuraciones como están. Solamente cuando los cambios en la sección
-<e>Screen</e> (serán descritos en un minuto) no funcionen, entonces
-necesitará revisar las especificaciones de su monitor y rellenar con
-los valores correctos.
-</p>
-
-<warn>
-<b>No</b> cambie los valores de estas dos variable relacionadas con el
-monitor sin haber consultado las especificaciones técnicas de su
-monitor. Una configuración incorrecta conduce a errores de falta de
-sincronización en el mejor de los casos y a quemar pantallas en el
-peor.
-</warn>
-
-<p>
 Ahora vamos a cambiar la resolución. En el siguiente ejemplo de
-<path>/etc/X11/xorg.conf</path> añadimos la línea
-<c>PreferredMode</c>) de forma que nuestro servidor de X comienza
-con 1440x900 por defecto. No importan los textos entrecomillados,
-son ejemplos y la mayoría serán diferentes de las configuraciones
-de su sistema. Sin embargo <c>Option</c> en la sección
+<path>/etc/X11/xorg.conf.d/40-monitor.conf</path> añadimos la línea
+<c>PreferredMode</c> de modo que nuestro servidor X comience con una
+resolución 1440x900 por defecto. La opción <c>Option</c> en la sección
 <c>Device</c> debe coincidir con el nombre de su monitor
 (<c>DVI-0</c>), el cual se puede obtener ejecutando <c>xrandr</c>.
 Necesitará hacer <c>emerge xrandr</c> para obtener esta información.
@@ -725,7 +528,9 @@ El argumento después del nombre del monitor (en la sección
 <c>Monitor</c>.
 </p>
 
-<pre caption="Modificar la sección Screen en /etc/X11/xorg.conf">
+<pre caption="Cambiando la sección Monitor">
+# <i>nano -w /etc/X11/xorg.conf.d/40-monitor.conf</i>
+
 Section "Device"
   Identifier  "RadeonHD 4550"
   Option      "Monitor-DVI-0" "DVI screen"
@@ -748,25 +553,25 @@ resolución deseada.
 <body>
 
 <p>
-Puede configurar más de un monitor en <path>/etc/X11/xorg.conf</path>.
-Todo lo que necesita hacer es darle a cada monitor un identificador,
-entonces liste su posición física, tal como, "RightOf" (a la derecha de)
-o "Above" (encima de) otro monitor. El siguiente ejemplo muestra cómo
-configurar un monitor DVI y uno VGA, con el monitor VGA monitor como
-pantalla a la derecha:
+Puede configurar más de un monitor en
+<path>/etc/X11/xorg.conf.d</path>. Todo lo que necesita hacer es darle
+a cada monitor un identificador, entonces liste su posición física,
+tal como, "RightOf" (a la derecha de) o "Above" (encima de) otro monitor.
+El siguiente ejemplo muestra cómo configurar un monitor DVI y uno VGA,
+con el monitor VGA monitor como pantalla a la derecha:
 </p>
 
-<pre caption="Configurando múltiples monitores en xorg.conf">
+<pre caption="Configurando múltiples monitores">
+# <i>nano -w /etc/X11/xorg.conf.d/40-monitor.conf</i>
+
 Section "Device"
   Identifier "RadeonHD 4550"
   Option     "Monitor-DVI-0" "DVI screen"
   Option     "Monitor-VGA-0" "VGA screen"
 EndSection
-
 Section "Monitor"
   Identifier "DVI screen"
 EndSection
-
 Section "Monitor"
   Identifier "VGA screen"
   Option     "RightOf" "DVI screen"
@@ -780,28 +585,36 @@ EndSection
 <body>
 
 <p>
-Para configurar y usar un teclado internacional, puede copiar el
-contenido de
-<path>/usr/share/doc/hal-*/*/use-estonian-layout.fdi.bz2</path> a
-<path>/etc/hal/fdi/policy/10-xinput-configuration.fdi</path>:
+Para configurar un teclado internacional, tendrá que crear el fichero
+de configuración apropiado en <path>/etc/X11/xorg.conf.d/</path>. Este
+ejemplo usa una disposición de teclado Checo:
 </p>
 
-<pre caption="Usando un fichero de configuración existente">
-# <i>bzcat /usr/share/doc/hal-*/*/use-estonian-layout.fdi.bz2 >
-/etc/hal/fdi/policy/10-xinput-configuration.fdi</i>
+<pre caption="Usando un teclado internacional">
+# <i>nano -w /etc/X11/xorg.conf.d/30-keyboard.conf</i>
+
+Section "InputClass"
+        Identifier "keyboard-all"
+        Driver "evdev"
+        Option "XkbLayout" "us,cz"
+        Option "XkbModel" "logitech_g15"
+        Option "XkbRules" "xorg"
+        Option "XkbOptions" "grp:alt_shift_toggle,grp:switch,grp_led:scroll,compose:rwin,terminate:ctrl_alt_bksp"
+        Option "XkbVariant" ",qwerty"
+        MatchIsKeyboard "on"
+EndSection
 </pre>
 
 <p>
-Ahora puede simplemente editar
-<path>10-xinput-configuration.fdi</path> y cambiar el modelo de
-teclado Estonio (<c>ee</c>) al suyo, como, por ejemplo, Gran
-Bretaña (<b>gb</b>) o Polonia (<b>pl</b>).
-</p>
-
-<p>
-Cuando haya terminado, ejecute <c>/etc/init.d/hald restart</c> como
-root para asegurarse de que HAL toma los cambios de su fichero de
-configuración.
+El comando "terminate" (<c>terminate:ctrl_alt_bksp</c>) le permite
+"matar" la sesión X usando la combinación de teclas Ctrl-Alt-Retroceso.
+Esto, sin embargo, hará que X termine de forma no correcta, algo que
+no siempre deseará. Puede ser de utilidad cuando los programas congelen
+su pantalla completamente, o cuando está configurando o ajustando su
+entorno Xorg. Sea cauto cuando "mate" su escritorio con esta combinación
+de teclas. La mayoría de los programas no verán bien el hecho de terminar
+de esta forma, y podría perder algo (o todo) en lo que estuviera
+trabajando.
 </p>
 
 </body>
@@ -815,44 +628,34 @@ Ejecute <c>startx</c> y sea feliz con el resultado. Felicidades, ahora
 (esperemos) tiene Xorg funcionando en su sistema. El siguiente paso es
 instalar un gestor de ventanas con mayores funcionalidades o un
 entorno de escritorio como pueda ser KDE, GNOME o Xfce, pero esto ya
-no forma parte de esta guía.
+no forma parte de esta guía. Se puede encontrar información sobre cómo
+instalar estos entornos de escritorio en nuestros
+<uri link="/doc/es/?catid=desktop">Recursos de Documentación de Gentoo
+</uri>.
 </p>
 
 </body>
 </section>
 </chapter>
 
-<chapter>
+<chapter id="resources">
 <title>Recursos</title>
 <section>
-<title>Creando y retocando xorg.conf</title>
+<title>Creando y editando los ficheros de configuración</title>
 <body>
 
 <p>
 En primer lugar, <c>man xorg.conf</c> y <c>man evdev</c> proporcionan
 una rápida y completa referencia sobre la sintaxis utilizada por el
 archivo de configuración. ¡Asegúrese de tenerlos abiertos en un
-terminal cerca cuando edite el archivo de configuración!.
+terminal cuando edite el archivo de configuración!.
 </p>
 
 <p>
-Asegúrese también de mirar el fichero
-<path>/etc/X11/xorg.conf.example</path>. Le puede interesar copiarlo y
-utilizarlo como base para escribir su propio fichero
-<path>xorg.conf</path>.
-</p>
-
-<p>
-Puede examinar las <uri link="http://www.x.org/wiki/FAQ">FAQ</uri> de
-X.org que se proporcionan en su sitio web, además del resto de
-documentación.
-</p>
-
-<p>
-Hay también muchos recursos en línea sobre edición de
-<path>xorg.conf</path>. Nosotros solamente listamos aquí unos pocos,
-asegúrese de buscar en <uri link="http://www.google.com">Google</uri>
-para encontrar más.
+Hay también muchos recursos en línea sobre edición de los ficheros
+de configuración de <path>/etc/X11</path>. Nosotros solamente listamos
+aquí unos pocos, asegúrese de buscar en
+<uri link="http://www.google.com">Google</uri> para encontrar más.
 </p>
 
 </body>
@@ -869,10 +672,15 @@ Gentoo</uri> de nuestra documentación.
 </p>
 
 <p>
-Si está actualizando a <c>xorg-server</c> 1.8 desde una versión
+Si está actualizando a <c>xorg-server</c> 1.9 desde una versión
 anterior, no deje de consultar la <uri
-link="/proj/es/desktop/x/x11/xorg-server-1.8-upgrade-guide.xml">
+link="/proj/es/desktop/x/x11/xorg-server-1.9-upgrade-guide.xml">
 guía de migración</uri>.
+</p>
+
+<p>
+X.org ofrece muchos <uri link="http://www.x.org/wiki/FAQ">FAQs</uri>
+en su sitio web además de su documentación.
 </p>
 
 </body>
