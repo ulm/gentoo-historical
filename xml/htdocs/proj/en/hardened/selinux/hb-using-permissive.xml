@@ -1,0 +1,677 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-using-permissive.xml,v 1.1 2011/03/26 23:29:55 zorry Exp $ -->
+
+<sections>
+<version>2</version>
+<date>2011-03-02</date>
+
+<section>
+<title>Keeping Track of Denials</title>
+<subsection>
+<title>Introduction</title>
+<body>
+
+<p>
+The moment you start using SELinux in permissive mode, SELinux will start 
+logging all of its denials through your system logger. Based on this
+information, you can and will:
+</p>
+
+<ul>
+  <li>
+    see if certain domains are missing (for instance, commands are being ran
+    inside a more standard domain whereas you would expect it to run within a
+    more specific one) in which case you'll probably look for a SELinux policy
+    module to introduce the specific domain, 
+  </li>
+  <li>
+    see if some files have wrong security contexts in which case you'll either
+    restore their context or set it yourself,
+  </li>
+  <li>
+    see if some denials are made which you don't expect in which case you'll
+    find out why the denial is made and what the original policy writer intended
+    (a prime example would be a website hosted in the wrong location in the file
+    system)
+  </li>
+</ul>
+
+<p>
+Of course, several other aspects can be performed the moment you analyze the
+denial messages, but the above ones are the most common.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Configuring System Logger</title>
+<body>
+
+<p>
+Before we start investigating denials, let's first configure the system logger
+to log the denials in its own log file. If you are running syslog-ng with a
+Gentoo Hardened profile, it will already be configured to log these denials in
+<path>/var/log/avc.log</path>:
+</p>
+
+<pre caption="syslog-ng configuration">
+destination avc { file("/var/log/avc.log"); };
+[...]
+filter f_avc { message(".*avc: .*"); };
+filter f_audit { message("^(\\[.*\..*] |)audit.*") and not message(".*avc: .*"); };
+[...]
+log { source(kernsrc); filter(f_avc); destination(avc); };
+</pre>
+
+<p>
+If you use a different logger, look for the configuration of the kernel audit
+events. Throughout the rest of this document, we assume that the log where the
+denials are logged in is <path>/var/log/avc.log</path>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>What is AVC?</title>
+<body>
+
+<p>
+When we previously showed a few of SELinux' policy allow rules, what you were
+actually looking at was an <e>access vector</e> rule. For instance:
+</p>
+
+<pre caption="Example access vector rule">
+allow sysadm_t portage_t : process transition ;
+</pre>
+
+<p>
+Up until now we have seen only the <e>allow</e> permission, but SELinux supports
+others as well:
+</p>
+
+<ul>
+  <li>
+    <e>auditallow</e> will allow an activity to occur, but will still log it
+    (but then with a "granted" message instead of "denied")
+  </li>
+  <li>
+    <e>dontaudit</e> will not allow an activity to occur but will also not log
+    this. This is particularly useful where the activity is not needed and would
+    otherwise fill the <path>avc.log</path> file.
+  </li>
+</ul>
+
+<p>
+To improve efficiency of the policy enforcement, SELinux uses a cache for its
+access vectors - the <e>access vector cache</e> or <e>AVC</e>. Whenever some
+access is requested which isn't in the cache yet, it is first loaded in the
+cache from which the allow/deny is triggered. Hence the "avc" messages and the
+<path>avc.log</path> log file.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Looking at the AVC Log</title>
+<body>
+
+<p>
+During regular system operations, you can keep track of the denials through a
+simple <c>tail</c> session:
+</p>
+
+<pre caption="Looking at the avc logs">
+~# <i>tail -f /var/log/avc.log</i>
+Jan  1 09:56:59 hpl kernel: [ 2232.354810] type=1400 audit(1293872219.247:156):
+  avc:  denied  { setattr } for  pid=7419 comm="gorg" name="selinux-handbook.xml" dev=dm-3 ino=159061 
+  scontext=staff_u:staff_r:staff_t tcontext=staff_u:object_r:var_t tclass=file
+Jan  1 10:08:52 hpl kernel: [ 2944.664577] type=1400 audit(1293872932.907:157): 
+  avc:  denied  { use } for  pid=9917 comm="ifconfig" path="/dev/null" dev=tmpfs ino=1546 
+  scontext=system_u:system_r:ifconfig_t tcontext=system_u:system_r:wpa_cli_t tclass=fd
+Jan  1 10:08:53 hpl kernel: [ 2945.504956] type=1400 audit(1293872933.749:158): 
+  avc:  denied  { create } for  pid=10016 comm="logger" 
+  scontext=system_u:system_r:wpa_cli_t tcontext=system_u:system_r:wpa_cli_t tclass=unix_stream_socket
+</pre>
+
+<p>
+But how do you interprete such messages? Well, let's take a closer look at the
+first denial from the example.
+</p>
+
+<pre caption="Sample denial message">
+<comment>[ Standard data within log message, such as date, time, hostname, ...  ]</comment>
+Jan  1 09:56:59 hpl kernel: [ 2232.354810] type=1400 
+<comment>[ The message is an AVC audit message, telling a deny for the setattr system call ]</comment>
+  audit(1293872219.247:156): avc:  denied  { setattr } 
+<comment>[ The offending process has PID 7419 and is named "gorg" ]</comment>  
+  for  pid=7419 comm="gorg" 
+<comment>[ The target for the system call is a file named "selinux-handbook.xml"
+  on the dm-3 device; the file has inode 159061 ]</comment>
+  name="selinux-handbook.xml" dev=dm-3 ino=159061 
+<comment>[ The source and target security contexts and the class of the target (in this case, a file) ]</comment>
+  scontext=staff_u:staff_r:staff_t tcontext=staff_u:object_r:var_t tclass=file
+</pre>
+
+<p>
+A similar one can be found of the last line in the example.
+</p>
+
+<pre caption="Another sample denial message">
+Jan  1 10:08:53 hpl kernel: [ 2945.504956] type=1400 audit(1293872933.749:158): 
+  avc:  denied  { create } for  pid=10016 comm="logger" 
+  scontext=system_u:system_r:wpa_cli_t tcontext=system_u:system_r:wpa_cli_t tclass=unix_stream_socket
+</pre>
+
+<p>
+In this particular case, the offending process is <c>logger</c> (with PID 10016)
+which is trying to create a Unix stream socket (see the <e>tclass</e>
+information).
+</p>
+
+<p>
+Note though that not all AVC messages imply denials. Some accesses recorded by
+the access vector cache are grants but which have an explicit <e>auditallow</e>
+statement so that this can be tracked in the logs.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Analyzing Denials</title>
+<subsection>
+<title>A Standard Setup Will Not Work</title>
+<body>
+
+<p>
+If you have taken a look at your denials, you'll probably think "If I'm going to
+go to enforcing mode, my system will not function properly" and you're right. At
+this point, Gentoo Hardened is constantly updating the SELinux policies to get
+you a working system - but we're not there yet. For this reason, being able to
+analyze the denials (and take corrective actions) is very important.
+</p>
+
+<p>
+It is not easy to describe what the best option is when you see a denial which
+shouldn't be. But a few ground-rules do apply.
+</p>
+
+<ul>
+  <li>
+    Verify if the denial is cosmetic or not. Try focusing on denials of which
+    you are <e>sure</e> that they are not cosmetic and will result in a
+    malfunction of your system (or that particular command) if no corrective
+    action is taken.
+  </li>
+  <li>
+    If you see a denial where the source context is a generic one (such as
+    <e>sysadm_t</e> or <e>staff_t</e> or <e>user_t</e>), try to find out if
+    there are specific SELinux policy modules for the offending resource. In the
+    previous example of the <c>gorg</c> process, we definitely need to check if
+    there is no selinux-gorg SELinux policy. Note that, even if there is none,
+    it doesn't mean there shouldn't be ;-)
+  </li>
+  <li>
+    If the target for the denial is a file, verify if its security context is
+    correct or if no different context should be given. It is also possible that
+    the process is trying to work on the wrong path. Sometimes a simple
+    configuration change of that process is sufficient to make it work properly
+    under its SELinux policy.
+  </li>
+</ul>
+
+<p>
+During development of the policies, Gentoo Hardened developers will try to 
+hide denials they believe are cosmetic. This hiding can be toggled using the
+SELinux <c>gentoo_try_dontaudit</c> boolean:
+</p>
+
+<pre caption="Getting and setting Gentoo's gentoo_try_dontaudit boolean">
+~# <i>getsebool gentoo_try_dontaudit</i>
+gentoo_try_dontaudit --&gt; off
+~# <i>setsebool -P gentoo_try_dontaudit on</i>
+</pre>
+
+<p>
+When set, the denials that are believed to be cosmetic are hidden from your
+audit logs. But if your system is not functioning properly and you do not see
+any denials, it is wise to toggle this boolean again to verify if the denial
+is now shown or not.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Installing Additional SELinux Policy Modules</title>
+<body>
+
+<p>
+When a denial is found for which you think a SELinux policy module should 
+exist, find out which package provides the offending resource and verify if
+Gentoo offers a SELinux policy for that package. If it does, install it and
+relabel the files of the package.
+</p>
+
+<pre caption="Finding Gentoo SELinux packages">
+~# <i>tail -f /var/log/avc.log</i>
+Jan  1 09:42:37 hpl kernel: [ 1372.708172] type=1400 audit(1293871357.972:76):
+  avc:  denied  { search } for  pid=6937 comm="screen" name="selinux" dev=dm-0
+  ino=1053303 scontext=staff_u:staff_r:staff_t
+  tcontext=staff_u:object_r:user_home_t tclass=dir
+
+~# <i>whereis screen</i>
+screen: /usr/bin/screen
+
+~# <i>qfile /usr/bin/screen</i>
+app-misc/screen (/usr/bin/screen)
+
+~# <i>eix selinux-screen</i>
+* sec-policy/selinux-screen
+     Available versions: ~2.20090730 ~2.20091215 ~2.20101213
+     Homepage:           http://www.gentoo.org/proj/en/hardened/selinux/
+     Description:        SELinux policy for general applications
+
+~# <i>emerge selinux-screen</i>
+[...]
+
+~# <i>rlpkg screen</i>
+Relabeling: app-misc/screen-4.0.3
+</pre>
+
+<p>
+If you believe a SELinux policy module should exist but you cannot find one,
+then you can either download the reference policy tarball (which you might find
+in your <path>distfiles</path> directory - it is called
+<path>refpolicy-2.YYYYMMDD.tar.bz2</path>) and see if there are already modules
+available (look inside the <path>refpolicy/policy/modules</path> location) or
+ask around on #gentoo-hardened on irc.freenode.net.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Updating the Security Contexts of Files</title>
+<body>
+
+<p>
+The most common case of denials when the necessary policies are in place are
+wrongly labeled files or directories (in other words, the security context of
+the target file or directory is not what the policy would expect). This can be
+either because the file has not been (re)labeled after the policy has been
+loaded or because the label has for some reason changed (case 1) or because 
+the path of the file is not in accordance to the file context specifications
+in the SELinux module (case 2).
+</p>
+
+<p>
+The first possibility (security context correct in policy, but not applied) can
+be easily fixed using the <c>restorecon</c> command. You can apply it against a
+single file, or run it recursively using the <c>-R</c> option.
+</p>
+
+<pre caption="Running restorecon to restore a security context">
+~# <i>restorecon /etc/make.conf</i>
+</pre>
+
+<p>
+If the file context definition in the policy however doesn't apply to the file
+(or directory), you can still tell your system to label the file or directory
+accordingly. For instance, say you have your <path>lvm.conf</path> file inside
+<path>/etc</path> rather than <path>/etc/lvm</path> as the policy would expect,
+then you can still label the file correctly using <c>semanage</c>. With 
+<c>semanage</c>, you assign a correct security context unrelated to any
+module. It is a local setting - but which is persistent across reboots.
+</p>
+
+<pre caption="Setting a new file context using semanage">
+~# <i>semanage fcontext -a -t lvm_etc_t /etc/lvm.conf</i>
+~# <i>restorecon /etc/lvm.conf</i>
+</pre>
+
+<p>
+If you want to make such a definition part of a module you're writing, you will
+need to create a file context file which contains the definition(s) for the
+files whose context you want to set. Its syntax can be obtained through the
+<path>/etc/selinux/strict/contexts/files/file_contexts</path> (or
+<path>.../targeted/...</path>).
+</p>
+
+<pre caption="Getting the example file context syntax">
+<comment>[ Capture the syntax for a file ]</comment>
+~# <i>tail /etc/selinux/strict/contexts/files/file_contexts</i>
+/opt/vmware/workstation/lib/lib/wrapper-gtk24\.sh    -- system_u:object_r:bin_t
+[...]
+</pre>
+
+<p>
+By just blindly copying the syntax for our example, this would yield:
+</p>
+
+<pre caption="Sample file context syntax for /etc/lvm.conf">
+/etc/lvm\.conf    --   system_u:object_r:lvm_etc_t
+</pre>
+
+<p>
+Assuming this is stored in <path>fixlvm.fc</path> you can create the module
+as follows.
+</p>
+
+<pre caption="Creating the fixlvm module">
+~# <i>semodule_package -o fixlvm.pp -m fixlvm.mod -f fixlvm.fc</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Creating Specific Allow Rules</title>
+<body>
+
+<p>
+If a denial isn't resolved through an available SELinux policy module or a
+corrective action taken against the target file or directory, or there
+is no such module available, then you might opt to create your own policy. If
+your goal is to allow a specific set of rules (rather than to write a
+full-fledged SELinux policy module) then you can use the <c>audit2allow</c> tool
+to generate a policy based on the denial logs.
+</p>
+
+<p>
+With <c>audit2allow</c>, you can transform an AVC denial message into a SELinux
+policy module definition. This can then be compiled into a binary policy module
+and finally packaged into an easily (re)loadable SELinux policy module. It is
+recommended to keep the (raw) AVC logs that you use to build the SELinux policy
+module as this will allow you to continuously update the module when new denials
+occur.
+</p>
+
+<p>
+For instance, to allow some <c>sudo</c>-related denials, you can do the
+following steps...
+</p>
+
+<pre caption="Generating, building and inserting a SELinux policy">
+<comment>[ We append the AVC messages to the sudo.raw file so that, in the future, we can
+  add additional denial messages inside the same raw file which will be used to
+  build a new SELinux policy module ]</comment>
+~# <i>grep 'comm="sudo"' /var/log/avc.log &gt;&gt; sudo.raw</i>
+
+<comment>[ We generate a module definition called 'fixsudo' based on the captured AVC denials ]</comment>
+~# <i>cat sudo.raw | audit2allow -m fixsudo > fixsudo.te</i>
+
+<comment>[ Next we build the SELinux module ]</comment>
+~# <i>checkmodule -m -o fixsudo.mod fixsudo.te</i>
+~# <i>semodule_package -o fixsudo.pp -m fixsudo.mod</i>
+</pre>
+
+<p>
+The generated policy module (with the <path>.pp</path> suffix) can then be
+dynamically loaded into the SELinux policy store:
+</p>
+
+<pre caption="Loading the generated module">
+~# <i>semodule -i fixsudo.pp</i>
+</pre>
+
+<p>
+The module definition (in our example called <path>fixsudo.te</path>) can be
+modified as you please - it's content is standard ASCII, human readable.
+</p>
+
+<p>
+Not all denials that you might get are bugs in the default security policy. 
+It is very probable that you use your system in a slightly different way than
+intended within the Gentoo Hardened SELinux default policy. However, if you
+believe that you had to change your runtime policy due to a bug in the
+current policy, please report it on <uri 
+link="https://bugs.gentoo.org">Bugzilla</uri> so that the Gentoo Hardened 
+SELinux developers can take a look at it. Also, don't hesitate to contact
+the Gentoo Hardened SELinux developers if you are uncertain about things.
+</p>
+
+<p>
+They don't bite. They get fed regularly so they don't have to.
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Working with SELinux</title>
+<subsection>
+<title>Loading and Unloading of Modules</title>
+<body>
+
+<p>
+We have already crossed SELinux modules quite a few times. You even saw that, in
+order to load a module, you can use <c>semodule -i modulename.pp</c>. The
+<c>semodule</c> command offers the following functions:
+</p>
+
+<ul>
+  <li>
+    With <c>semodule -u modulename.pp</c> you upgrade an existing installed
+    module with a new version of this module
+  </li>
+  <li>
+    With <c>semodule -r modulename.pp</c> you remove a module from the SELinux
+    policy store. It will not be reloaded, not even after a reboot.
+  </li>
+  <li>
+    With <c>semodule -R</c> you reload the policies. An interesting feature here
+    is that you can add <c>-D</c> which will <e>disable</e> the <e>dontaudit</e>
+    rules from the policy. This can be useful, especially later in enforcing
+    mode, to find out why something is failing even though you get no denials.
+  </li>
+  <li>
+    With <c>semodule -B</c> you force a rebuild of the policy (which includes by
+    default a reload of the policy as well). Amongst some other things, such a
+    rebuild will read up on the existing users' and their home directories and
+    create the associated domains.
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection>
+<title>Listing Modules</title>
+<body>
+
+<p>
+With the <c>semodule -l</c> command you can get an overview of the installed
+modules, together with their current version. When you have issues with SELinux
+policies and are trying to get online help on the matter, knowing the version of
+the particular module is important to help you troubleshoot problems.
+</p>
+
+<pre caption="Listing the installed modules">
+~# <i>semodule -l</i>
+dbus    1.14.0
+dnsmasq 1.9.0
+hal     1.13.0
+[...]
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Switching Roles</title>
+<body>
+
+<p>
+When you are working with a SELinux system, your default users will be using the
+user_u SELinux login (and as such the user_r SELinux role) so they will not need
+to perform any role switching: there are no other roles they can switch to.
+</p>
+
+<p>
+Accounts that you use to perform more administrative tasks however are most
+likely mapped to the staff_u SELinux login or have their own login but with the
+same roles supported: staff_r and sysadm_r. These accounts should by default
+start within the staff_r role. Although still restricted, it has more
+possibilities (with respect to supported target domains to transition to)
+than the user_r role.
+</p>
+
+<p>
+The major difference however is that these users will also have to switch roles
+from time to time. For instance, if you want to use Portage - even just for
+querying the tree - you will need to be in the sysadm_r role. To switch roles,
+use the <c>newrole</c> command:
+</p>
+
+<pre caption="Switching roles">
+~$ <i>newrole -r sysadm_r</i>
+Password: <comment>(Enter your personal password)</comment>
+~$
+</pre>
+
+<p>
+With <c>id -Z</c> you can verify that you have indeed successfully switched
+roles.
+</p>
+
+<p>
+Now how do you know that you need to switch roles? Generally, you will get a
+<e>Permission denied</e> statement on one or more files:
+</p>
+
+<pre caption="Getting to know when to switch roles">
+~$ <i>emerge --info</i>
+Permission denied: '/etc/make.conf'
+</pre>
+
+<p>
+You might not be able, from within your current role, to find out if switching
+roles is sufficient to gain read access. Within your current role, you might not
+be able to get to view the current security context or query the SELinux AV
+rules. But if you switch to the sysadm_r role and run the necessary queries, you
+might get the information you need:
+</p>
+
+<pre caption="Verifying read access against the /etc/make.conf file">
+~$ <i>id -Z</i>
+staff_u:staff_r:staff_t
+~$ <i>newrole -r sysadm_r</i>
+Password: <comment>(Enter your personal password)</comment>
+~$ <i>id -Z</i>
+staff_u:sysadm_r:sysadm_t
+~$ <i>ls -Z /etc/make.conf</i>
+system_u:object_r:portage_conf_t /etc/make.conf
+~$ <i>sesearch -t portage_conf_t -c file -p read -A -d</i>
+Found 8 semantic av rules:
+   allow portage_t portage_conf_t : file { ioctl read getattr lock execute execute_no_trans open } ; 
+   <comment># This is the one we are looking for</comment>
+   allow sysadm_t portage_conf_t : file { ioctl read write ... } ; 
+   allow portage_fetch_t portage_conf_t : file { ioctl read getattr lock open } ; 
+   allow restorecond_t portage_conf_t : file { ioctl read getattr lock relabelfrom relabelto open } ; 
+   allow gcc_config_t portage_conf_t : file { ioctl read getattr lock open } ; 
+   allow portage_sandbox_t portage_conf_t : file { ioctl read getattr lock open } ; 
+   allow rsync_t portage_conf_t : file { ioctl read getattr lock open } ; 
+   allow mount_t portage_conf_t : file { ioctl read getattr lock open } ; 
+</pre>
+
+<p>
+As you can see, the sysadm_t domain (which is affiliated with the sysadm_r role)
+has the necessary read access, whereas there is no sign of any read access for
+the staff_t domain.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Using File Labels</title>
+<body>
+
+<p>
+During regular system usage, you will get into situations where you need to set
+file labels (security contexts). We have already covered the use of
+<c>semanage</c> and <c>restorecon</c> to do so, but a few other methods exist as
+well, each of them for specific purposes...
+</p>
+
+<p>
+With <c>chcon</c> users (and not only administrators) can relabel files (if they
+have the necessary privileges to do so) to the type they want. As an example,
+consider the domains and rules for the Mozilla applications (such as firefox).
+By default, this domain has no ability to create new files in the user home
+directory. However, a specific domain has been created (mozilla_home_t) in which
+the application can create files. By creating a folder (say
+<path>Downloads</path>) and relabeling it correctly, the application is able to
+create new files inside this location.
+</p>
+
+<pre caption="Relabelling a directory">
+~$ <i>ls -Zd ~/Downloads</i>
+staff_u:object_r:user_home_t  Downloads/
+~$ <i>chcon -t mozilla_home_t ~/Downloads</i>
+~$ <i>ls -Zd ~/Downloads</i>
+staff_u:object_r:mozilla_home_t
+</pre>
+
+<p>
+It is important to understand that relabeling is a specific privilege which is
+also governed by SELinux policies (the staff_t domain has this privilege on the
+user_home_t domain). Also, the target domain (mozilla_home_t) is still
+manageable by the staff_t domain (including relabeling) so that the relabeling
+activity doesn't lower the privileges that staff_t has on this folder. This
+isn't always the case, so be careful when you relabel.
+</p>
+
+<p>
+Relabelling files is governed by the relabelfrom and relabelto privileges.
+Consider the following two hypothetical rules:
+</p>
+
+<pre caption="Relabelling rules">
+allow staff_t foo_t : dir { relabelfrom relabelto };
+allow staff_t bar_t : dir { relabelto };
+</pre>
+
+<p>
+In the first rule, the staff_t domain has the ability to relabel directories
+that are currently in the foo_t domain (relabelfrom) and to relabel directories
+to the foo_t domain (if their source domain has a correct relabelfrom
+privilege). In the second rule, the staff_t domain is only able to relabel
+directories to the bar_t domain. However, once a directory has the bar_t domain,
+the staff_t domain has no ability to relabel it to something else (no
+relabelfrom privilege).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Relabelling Gentoo Package Content</title>
+<body>
+
+<p>
+As a last section let's talk about Gentoo support for relabeling files. By
+default, Portage will relabel all files of a package once it is installed. This
+is governed by the FEATURES="selinux" setting which is enabled when you select
+the selinux profiles. An administrator can also relabel the contents of a
+package using the (Gentoo-specific) <c>rlpkg</c> command (installed through 
+the policycoreutils package):
+</p>
+
+<pre caption="Relabelling the files and directories of a package">
+~# <i>rlpkg net-tools</i>
+Relabeling: sys-apps/net-tools-1.60_p20090728014017-r1
+</pre>
+
+<p>
+The same tool can be used to relabel the entire system:
+</p>
+
+<pre caption="Relabelling the entire (file) system">
+~# <i>rlpkg -a -r</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+</sections>

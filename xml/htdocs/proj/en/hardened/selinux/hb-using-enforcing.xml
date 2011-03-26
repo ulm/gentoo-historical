@@ -1,0 +1,224 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/Attic/hb-using-enforcing.xml,v 1.1 2011/03/26 23:29:55 zorry Exp $ -->
+
+<sections>
+<version>1</version>
+<date>2011-03-02</date>
+
+<section>
+<title>Switching to Enforcing Mode</title>
+<subsection>
+<title>Introduction</title>
+<body>
+
+<p>
+Switching to enforcing mode doesn't require all policies to be fully
+operational, nor does it require that the system boots in enforcing mode. You
+can first start small by enabling enforcing mode the moment your system is
+booted, then enable enforcing during boot (but with the possibility to disable
+it again when some things fail) and finally reconfigure your kernel so that
+disabling SELinux isn't possible anymore.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Booting, Switch</title>
+<body>
+
+<p>
+To boot your system before enabling enforcing mode, just boot as you do
+currently. Then, when you believe that you can run your system in enforcing
+mode, run <c>setenforce 1</c>.
+</p>
+
+<pre caption="Enabling enforcing mode">
+~# <i>setenforce 1</i>
+</pre>
+
+<p>
+It is wise to ensure that you have booted the system but not logged in anywhere
+except as the root user. Also verify that the session you're currently in (as
+root) uses the <c>root:sysadm_r:sysadm_t</c> or 
+<c>unconfined_u:unconfined_r:unconfined_t</c> context (otherwise trying to
+disable enforcing mode might not work).
+</p>
+
+<p>
+When you realize that things are going very, very wrong, disable SELinux using
+<c>setenforce 0</c> and try to resolve the failures.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Booting in Enforcing Mode (Once)</title>
+<body>
+
+<p>
+When you want to boot in enforcing mode, but you don't want to configure SELinux
+(yet) to run always in enforcing mode (say you want to try it once), add
+<c>enforcing=1</c> as a boot option inside the boot loader configuration.
+</p>
+
+<pre caption="Sample GRUB configuration to boot in enforcing mode">
+kernel /vmlinuz root=/dev/md3 rootflags=data=journal <i>enforcing=1</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Booting in Enforcing Mode</title>
+<body>
+
+<p>
+Once you believe that you can always (re)boot in enforcing mode, edit
+<path>/etc/selinux/config</path> and change <c>SELINUX=permissive</c> to
+<c>SELINUX=enforcing</c>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Reconfiguring the Kernel</title>
+<body>
+
+<p>
+Once you are fully confident that you can always and ever remain in enforcing
+mode, reconfigure your kernel so that SELinux cannot be disabled anymore.
+</p>
+
+<pre caption="Reconfiguring the Linux kernel">
+[*] NSA SELinux Support
+[ ]   NSA SELinux boot parameter
+[ ]   NSA SELinux runtime disable
+<comment># Make sure the following is deselected</comment>
+<i>[ ]   NSA SELinux Development Support</i>
+[ ]   NSA SELinux AVC Statistics
+(1)   NSA SELinux checkreqprot default value
+[ ]   NSA SELinux maximum supported policy format version
+</pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Analyzing AVC</title>
+<subsection>
+<title>Intrusion or Not</title>
+<body>
+
+<p>
+Once you are running in enforcing mode, the role of the
+<path>/var/log/avc.log</path> logfile starts changing. Whereas it was previously
+used to inform you about denials which might cause functional failures on your
+system, it is now more and more becoming a source of information for the
+behavior of applications - and sometimes, the unexpected behavior of it.
+</p>
+
+<p>
+Being able to read the AVC logs is important, because in the (near) future you
+should use the AVC logs to identify potential intrusion attempts. Say that you
+are running an Internet-facing web server which is contained within its own
+SELinux domain. Suddenly you start getting weird AVC denials of that SELinux
+domain trying to read files it really shouldn't read, or write stuff in some
+temporary location it shouldn't write anything into. This can be a totally
+expected behavior, but can also be a malicious user that is attempting to run
+some exploit code against your web server.
+</p>
+
+<p>
+Interpreting the AVC logs can be considered a time-consuming job if you are
+still getting lots of cosmetic (and safe) AVC denials. So let's first see if we
+can ignore those...
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Ignoring Cosmetic AVC Events</title>
+<body>
+
+<p>
+When you get AVC denials which you believe are harmless for your system, you can
+create a policy module yourself which contains the exact AVC rule, but using the
+<e>dontaudit</e> statement rather than <e>allow</e>.
+</p>
+
+<p>
+Consider the following AVC denial:
+</p>
+
+<pre caption="Sample harmless AVC denial">
+Jan  6 19:49:25 hpl kernel: [10482.016339] type=1400 audit(1294339765.865:1527):
+avc:  denied  { use } for  pid=19421 comm="ifconfig" path="/dev/null" dev=tmpfs
+ino=1552 scontext=system_u:system_r:ifconfig_t
+tcontext=system_u:system_r:wpa_cli_t tclass=fd
+</pre>
+
+<p>
+The denial states that the <c>ifconfig</c> process is trying to use a file
+descriptor within the wpa_cli_t domain. The target file descriptor points to
+<path>/dev/null</path>. This usually means that the <c>ifconfig</c> process is
+started from within the wpa_cli_t domain with <c>&gt; /dev/null</c> to redirect
+its output to the <path>/dev/null</path> device. Although it is denied (so no output
+will be redirected to <path>/dev/null</path>) it has no functional impact on the
+system as the intention was to ignore the output anyhow.
+</p>
+
+<p>
+So how can we ensure that this rule doesn't fill up our AVC logs? Well, we need
+to create a module (like we have seen before and which we discuss in a later
+chapter again :-):
+</p>
+
+<pre caption="Creating a module to ignore these AVC denials">
+~$ <i>cat ignoreavc.te</i>
+module ignoreavc 1.0.0;
+
+require {
+  type ifconfig_t;
+  type wpa_cli_t;
+
+  class fd use;
+}
+
+dontaudit ifconfig_t wpa_cli_t:fd { use };
+
+~$ <i>checkmodule -m -o ignoreavc.mod ignoreavc.te</i>
+~$ <i>semodule_package -o ignoreavc.pp -m ignoreavc.mod</i>
+~$ <i>semodule -i ignoreavc.pp</i>
+</pre>
+
+<p>
+Once this module is loaded, you should no longer see these denials in your log.
+However, if you ever feel that you might have <e>dontaudit</e>'ed too many
+things, you can always reload the SELinux policies without the dontaudit
+statements:
+</p>
+
+<pre caption="Reloading the SELinux policies without dontaudit">
+~# <i>semodule -R -D</i>
+</pre>
+
+<p>
+If you are confident to continue with the dontaudit statements again, run the
+same command without the <c>-D</c>.
+</p>
+
+<p>
+Gentoo Hardened uses a specific boolean called <c>gentoo_try_dontaudit</c> to 
+show or hide the denials that the developers believe are cosmetic. Thanks to 
+this approach, you can first disable the Gentoo-selected dontaudit statements 
+before showing all of them - which can be quite a lot more.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
