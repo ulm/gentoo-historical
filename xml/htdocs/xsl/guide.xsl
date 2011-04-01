@@ -1937,7 +1937,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 
   <div class="news">
     <p class="newshead" lang="en">
-      <b><xsl:value-of select="$thenews/title"/></b>
+      <a href="{$link}"><b><xsl:value-of select="$thenews/title"/></b></a>
       <br/>
       <font size="0.90em">
        <xsl:choose>
