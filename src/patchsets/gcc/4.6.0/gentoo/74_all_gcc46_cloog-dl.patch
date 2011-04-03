@@ -7,24 +7,28 @@ with the newer version.  (http://bugs.gentoo.org/315377#c3)
 Instead, dlopen libcloog as necessary.  This patch originated in Fedora and
 was modified to work on FreeBSD (http://bugs.gentoo.org/317211).
 
-2010-07-01  Jakub Jelinek  <jakub@redhat.com>
+2011-01-04  Jakub Jelinek  <jakub@redhat.com>
 
-        * Makefile.in (BACKENDLIBS): Link against -ldl instead of -lcloog -lppl.
-        (graphite.o, graphite%.o): Force -O, remove -fkeep-inline-functions.
-        (graphite-ppl.o): Depend on graphite.h.
-        * graphite.h: Include <dlfcn.h>.  Reference libcloog and libppl symbols
-        through pointers in cloog_pointers__ variable.
-        * graphite.c (init_cloog_pointers): New function.
-        (graphite_transform_loops): Call init_cloog_pointers.
-        * graphite-clast-to-gimple.c (gcc_type_for_iv_of_clast_loop): Rename stmt_for
-        argument to stmt_fora.
-        * graphite-ppl.c: Include graphite.h.
+         * Makefile.in (BACKENDLIBS): Link against -ldl instead of
+         -lcloog -lppl.
+         (graphite.o, graphite%.o): Force -O, remove -fkeep-inline-functions.
+         (GRAPHITE_CLOOG_UTIL_H, GRAPHITE_POLY_H): New.
+         (graphite*.o): Adjust dependencies.
+         * graphite-cloog-compat.h: Include <dlfcn.h>.  Reference libcloog and
+         libppl symbols through pointers in cloog_pointers__ variable.
+         * graphite.c (init_cloog_pointers): New function.
+         (graphite_transform_loops): Call init_cloog_pointers.
+         * graphite-clast-to-gimple.c (gcc_type_for_iv_of_clast_loop): Rename
+         stmt_for argument to stmt_fora.
+         * graphite-poly.h: Include graphite-cloog-util.h.
 
-2010-07-22  Ryan Hill  <dirtyepic@gentoo.org>
+2011-04-02  Ryan Hill  <dirtyepic@gentoo.org>
 
         * configure.ac (DL_LIB): Check how to dlopen.
         * configure: Regenerate.
         * Makefile.in (BACKENDLIBS): Use DL_LIB.
+        * graphite-cloog-compat.h: Add missing symbols.
+
 
 
 --- a/gcc/Makefile.in
@@ -194,7 +198,7 @@ was modified to work on FreeBSD (http://bugs.gentoo.org/317211).
    poly_bb_p pbb = (poly_bb_p) cloog_statement_usr (cs);
 --- a/gcc/graphite-cloog-compat.h
 +++ b/gcc/graphite-cloog-compat.h
-@@ -272,4 +272,263 @@ static inline int cloog_matrix_nrows (CloogMatrix * m)
+@@ -272,4 +272,269 @@ static inline int cloog_matrix_nrows (CloogMatrix * m)
     return m->NbRows;
  }
  #endif /* CLOOG_ORG  */
@@ -309,7 +313,10 @@ was modified to work on FreeBSD (http://bugs.gentoo.org/317211).
 +  DYNSYM (ppl_new_Constraint_System_from_Constraint); \
 +  DYNSYM (ppl_new_C_Polyhedron_from_Constraint_System); \
 +  DYNSYM (ppl_Polyhedron_affine_image); \
-+  DYNSYM (ppl_io_fprint_Pointset_Powerset_C_Polyhedron);
++  DYNSYM (ppl_io_fprint_Pointset_Powerset_C_Polyhedron); \
++  DYNSYM (ppl_new_PIP_Problem_from_constraints); \
++  DYNSYM (ppl_PIP_Problem_is_satisfiable); \
++  DYNSYM (ppl_delete_PIP_Problem);
 +extern struct
 +{
 +  bool inited;
@@ -452,7 +459,10 @@ was modified to work on FreeBSD (http://bugs.gentoo.org/317211).
 +#define ppl_new_Constraint_System_from_Constraint (*cloog_pointers__.p_ppl_new_Constraint_System_from_Constraint)
 +#define ppl_new_C_Polyhedron_from_Constraint_System (*cloog_pointers__.p_ppl_new_C_Polyhedron_from_Constraint_System)
 +#define ppl_Polyhedron_affine_image (*cloog_pointers__.p_ppl_Polyhedron_affine_image)
-+#define ppl_io_fprint_Pointset_Powerset_C_Polyhedron (cloog_pointers__.p_ppl_io_fprint_Pointset_Powerset_C_Polyhedron)
++#define ppl_io_fprint_Pointset_Powerset_C_Polyhedron (*cloog_pointers__.p_ppl_io_fprint_Pointset_Powerset_C_Polyhedron)
++#define ppl_new_PIP_Problem_from_constraints (*cloog_pointers__.p_ppl_new_PIP_Problem_from_constraints)
++#define ppl_PIP_Problem_is_satisfiable (*cloog_pointers__.p_ppl_PIP_Problem_is_satisfiable)
++#define ppl_delete_PIP_Problem (*cloog_pointers__.p_ppl_delete_PIP_Problem)
 +
 +#define cloog_finalize (*cloog_pointers__.p_ppl_finalize)
 +
