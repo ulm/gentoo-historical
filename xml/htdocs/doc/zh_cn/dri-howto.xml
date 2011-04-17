@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/dri-howto.xml,v 1.7 2010/01/01 19:38:24 r0bertz Exp $ -->
-<!-- English CVS version: 1.45 -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/dri-howto.xml,v 1.8 2011/04/17 05:59:16 r0bertz Exp $ -->
+<!-- English CVS version: 1.48 -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide lang="zh_cn">
@@ -29,8 +29,8 @@
  See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.13</version>
-<date>2010-01-02</date>
+<version>4</version>
+<date>2011-04-16</date>
 
 <chapter>
 <title>解释</title>
@@ -49,7 +49,7 @@
 <body>
 
 <p>
-在很多情况下，二进制驱动和开源驱动都存在。推荐使用开源驱动，因为我们使用的是Linux并且开源是它的本质特征之一。有些时候，二进制驱动是唯一的选择，比如nVidia的显卡。二进制驱动有针对nVidia显卡的<c>x11-drivers/nvidia-drivers</c>以及针对ATI显卡的<c>x11-drivers/ati-drivers</c>。
+在很多情况下，二进制驱动和开源驱动都存在。推荐使用开源驱动，因为我们使用的是Linux并且开源是它的本质特征之一。有些时候，二进制驱动是唯一的选择，特别是当你的显卡很新的时候，这种情况下开源驱动的支持往往会稍有滞后。二进制驱动有针对nVidia显卡的<c>x11-drivers/nvidia-drivers</c>以及针对AMD/ATI显卡的<c>x11-drivers/ati-drivers</c>。
 </p>
 
 </body>
@@ -86,6 +86,7 @@ DRM（Direct Rendering Manager——直接渲染管理器）是Xorg的一个<e>�
   <li>3dfx</li>
   <li>intel</li>
   <li>matrox</li>
+  <li>nouveau</li>
   <li>rage128</li>
   <li>radeon</li>
   <li>mach64</li>
@@ -95,16 +96,6 @@ DRM（Direct Rendering Manager——直接渲染管理器）是Xorg的一个<e>�
 
 <p>
 请看<uri link="http://dri.freedesktop.org/">DRI主页</uri>以获取更多信息和文档。
-</p>
-
-</body>
-</section>
-<section>
-<title>回馈</title>
-<body>
-
-<p>
-如果有任何问题和建议，请发email给<mail link="dberkholz@gentoo.org">Donnie Berkholz</mail>。
 </p>
 
 </body>
@@ -182,32 +173,37 @@ Device drivers --->
 
 </body>
 </section>
+<section>
+<title>把你的用户加入到video用户组里</title>
+<body>
+ 
+<p>
+下面，把你的用户加入到video用户组，就像<uri link="/doc/zh_cn/handbook">手册</uri>里提到的：
+</p>
+ 
+<pre caption="把一个用户加入到video用户组">
+# <i>gpasswd -a username video</i>
+</pre>
+ 
+</body>
+</section>
 </chapter>
 
 <chapter>
 <title>配置直接渲染</title>
 <section id="configure_xorg">
-<title>配置Xorg.conf</title>
+<title>配置Xorg</title>
 <body>
 
 <p>
-用你喜欢的文本编辑器打开<path>/etc/X11/xorg.conf</path>，编辑它以启用DRI和GLX。
+一般把你的用户加入<c>video</c>用户组就可以启用直接渲染了。不过你可能还需要在 <path>/etc/X11/xorg.conf.d/</path>路径下创建一个文件。你可以随便取个名字，只要是以<path>.conf</path>为后缀即可。 打开你心爱的文本编辑器然后创建像下面这样的一个文件：
 </p>
 
-<pre caption="xorg.conf">
-...
-Section "Module"
-  Load "dri"
-  Load "glx"
-  ...
-EndSection
-...
+<pre caption="/etc/X11/xorg.conf.d/10-dri.conf">
 Section "Device"
   Driver "radeon"
-  <comment>（用你的驱动的名字替换radeon。）</comment>
-  ...
+  <comment>（用你的驱动的名字替换radeon）</comment>
 EndSection
-...
 Section "dri"
   Mode 0666
 EndSection
@@ -315,7 +311,7 @@ FPS可能会受你的屏幕的刷新率所限，所以如果<c>glxgears</c>显�
 <body>
 
 <p>
-请试试二进制驱动。对于<c>ati-drivers</c>来说，这里有个连接<uri>http://support.amd.com/us/gpudownload/Pages/index.aspx</uri>。如果这些也不支持，就用fbdev。虽然它比较慢，但是它可以运行的起来。
+请试试二进制驱动。AMD显卡，请使用<c>ati-drivers</c>，这里有个连接<uri>http://support.amd.com/us/gpudownload/Pages/index.aspx</uri>。如果这些也不支持，就用fbdev。虽然它比较慢，但是它可以运行的起来。
 </p>
 
 </body>
@@ -325,11 +321,13 @@ FPS可能会受你的屏幕的刷新率所限，所以如果<c>glxgears</c>显�
 <body>
 
 <p>
-编辑<path>/etc/X11/xorg.conf</path>。在"Device" section中启用ForcePCIMode。 
+在<path>/etc/X11/xorg.conf.d/</path>路径下创建一个文件，随便起个以<path>.conf</path>结尾的名字。然后把下面的内容放进去：
 </p>
 
-<pre caption="Enabling ForcePCIMode">
+<pre caption="/etc/X11/xorg.conf.d/10-pcimode.conf">
+Section "Device"
 Option "ForcePCIMode" "True"
+EndSection
 </pre>
 
 </body>
@@ -347,6 +345,16 @@ Option "ForcePCIMode" "True"
   <li><uri>http://dri.freedesktop.org/</uri></li>
   <li><uri>http://www.retinalburn.net/linux/dri_status.html</uri></li>
 </ol>
+
+</body>
+</section>
+<section>
+<title>回馈</title>
+<body>
+
+<p>
+如果有任何问题和建议，请发email给<mail link="dberkholz"/>。
+</p>
 
 </body>
 </section>
