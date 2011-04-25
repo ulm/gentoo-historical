@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-faq.xml,v 1.1 2011/03/27 00:18:24 zorry Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-faq.xml,v 1.2 2011/04/25 20:21:47 zorry Exp $ -->
 
 <guide link="/proj/en/hardened/selinux-faq.xml" lang="en">
 <title>Gentoo Hardened SELinux Frequently Asked Questions</title>
@@ -17,8 +17,8 @@ The FAQ is a collection of solutions found on IRC, mailinglist, forums or
 elsewhere
 </abstract>
 
-<version>1</version>
-<date>2011-03-19</date>
+<version>3</version>
+<date>2011-04-22</date>
 
 <faqindex>
 <title>Questions</title>
@@ -195,7 +195,7 @@ reboot your system.
 When you have been running your system with SELinux disabled, you must boot 
 in permissive mode first and relabel your entire file system. Activities ran
 while SELinux was disabled might have created new files or removed the labels
-from existing files, causing these files to be available with no security
+from existing files, causing these files to be available without security
 context.
 </impo>
 
@@ -289,6 +289,99 @@ error.
 <p>
 Once the newer policy modules are stabilized, the SELinux profile will be updated
 to remove this setting.
+</p>
+
+</body>
+</section>
+<section id="conflicting_types">
+<title>During rlpkg I get 'conflicting specifications for ... and ..., using ...'</title>
+<body>
+
+<p>
+When trying to relabel a package (<c>rlpkg packagename</c>) or system (<c>rlpkg
+-a -r</c>) you get a message similar to the following:
+</p>
+
+<pre caption="rlpkg complaining about conflicting specifications">
+filespec_add: conflicting specifications for /usr/bin/getconf and 
+/usr/lib64/misc/glibc/getconf/XBS5_LP64_OFF64, using
+system_u:object_r:lib_t
+</pre>
+
+<p>
+This is most likely caused by hard linked files. Remember, SELinux uses the
+extended attributes in the file system to store the security context of a file.
+If two separate paths point to the same file using hard links (i.e. the files
+share the same inode) then both files will have the same security context.
+</p>
+
+<p>
+The solution depends on the particular case; in order of most likely to happen
+and resolve:
+</p>
+
+<ol>
+  <li>
+    Although both files are the same, they are not used in the same context. 
+    In such cases, it is recommended to remove one of the files and then copy
+    the other file back to the first (<c>rm B; cp A B</c>). This way, both
+    files have different inodes and can be labelled accordingly.
+  </li>
+  <li>
+    Both files are used for the same purpose; in this case, it might be better
+    to label the file which would not be labelled correctly (say a binary
+    somewhere in a <path>/usr/lib64</path> location) using <c>semanage</c>
+    (<c>semanage fcontext -a -t correct_domain_t /usr/lib64/path/to/file</c>)
+  </li>
+</ol>
+
+<p>
+It is also not a bad idea to report (after verifying if it hasn't been reported
+first) this on <uri link="https://bugs.gentoo.org">Gentoo's bugzilla</uri> so 
+that the default policies are updated accordingly.
+</p>
+
+</body>
+</section>
+<section id="portage_libsandbox">
+<title>
+  During package installation, ld.so complains 'object 'libsandbox.so' from 
+  LD_PRELOAD cannot be preloaded: ignored'
+</title>
+<body>
+
+<p>
+During installation of a package, you might see the following error message:
+</p>
+
+<pre caption="Error message during package installation">
+&gt;&gt; Installing (1 of 1) net-dns/host-991529
+&gt;&gt;&gt; Setting SELinux security labels
+ERROR: ld.so: object 'libsandbox.so' from LD_PRELOAD cannot be preloaded: ignored.
+</pre>
+
+<p>
+This message should <e>only</e> occur after the <e>Setting SELinux security
+labels</e> message. It happens because SELinux tells glibc to disable 
+<c>LD_PRELOAD</c> (and other environment variables that are considered 
+potentially harmful) during domain transitions. Here, portage calls the
+<c>setfiles</c> command (part of a SELinux installation) and as such 
+transitions from portage_t to setfiles_t, which clears the environment
+variable.
+</p>
+
+<p>
+We believe that it is safer to trust the SELinux policy here (as setfiles runs
+in its own confined domain anyhow) rather than updating the policy to allow
+transitioning between portage_t to setfiles_t without clearing these 
+environment variables. Note that <e>libsandbox.so is not disabled during builds
+and merges</e>, only during the activity where Portage labels the files it 
+just merged.
+</p>
+
+<p>
+So the error is in our opinion cosmetic and can be ignored (but sadly not
+hidden).
 </p>
 
 </body>
