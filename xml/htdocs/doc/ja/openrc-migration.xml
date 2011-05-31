@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/openrc-migration.xml,v 1.2 2010/08/01 14:15:32 shindo Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/openrc-migration.xml,v 1.3 2011/05/31 19:09:34 nightmorph Exp $ -->
 
 <guide link="/doc/ja/openrc-migration.xml">
 <title>BaselayoutとOpenRCの移行ガイド </title>
@@ -11,13 +11,18 @@
 <author title="Author">
   <mail link="nightmorph"/>
 </author>
+<author title="Author">
+  <mail link="robbat2"/>
+</author>
 <author title="Contributor">
   <mail link="uberlord"/>
 </author>
 <author title="翻訳">
   <mail link="idani@gentoo.gr.jp">飴谷　シゲヒロ</mail>
 </author>
-
+<author title="翻訳">
+  <mail link="naota@gentoo.org">青田直大</mail>
+</author>
 
 <abstract>
 このガイドは、baselayout-1からbaselayout-2とOpenRCへの移行方法を説明します。
@@ -27,10 +32,10 @@
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2</version>
-<date>2010-07-20</date>
+<version>9</version>
+<date>2011-04-13</date>
 
-<!--Original revision: 1.18 -->
+<!--Original revision: 1.29 -->
 
 <chapter>
 <title>背景</title>
@@ -152,23 +157,27 @@ module_cx88_dvb_args_2_6="video_br=2"
 新しい設定では、モジュールとパラメータをカーネルのバージョンまで指定することが可能となります。
 </p>
 
-<p>
-より詳細な例を紹介します。
-</p>
+<impo>
+<b>module*</b>変数は、重複設定はできません。バージョン毎に指定された変数は、一般的な変数を上書きします。
+</impo>
+
+<note>
+<b>module_</b>と<b>modules_</b>は意味が違うので、注意してください。
+</note>
 
 <pre caption="/etc/conf.d/modulesの詳細な設定例">
-<comment># Always load ochi1394 and ieee1394, no matter the kernel version</comment>
-<comment># カーネルのバージョンに関係なく、ochi1394とieee1394は常時ロード</comment>
-modules="ohci1394 ieee1394"
-<comment># Only load tun and usbserial for 2.6.x series kernels</comment>
-<comment># 2.6.xシリーズのカーネルでのみ、tunとusbserailをロード</comment>
-modules_2_6="tun usbserial"
-<comment># Only load cx88_dvb for 2.6.23 kernels</comment>
-<comment># cx88_dvbは2.6.23カーネルでのみロード</comment>
-modules_2_6_23="cx88_dvb"
 <comment># Only load ivtv for 2.6.23-gentoo-r5</comment>
 <comment># ivtvは2.6.23-gentoo-r5でのみロード</comment>
 modules_2_6_23_gentoo_r5="ivtv"
+<comment># Only load cx88_dvb for 2.6.23 kernels (other than -gentoo-r5)</comment>
+<comment># cx88_dvbは2.6.23のみでロード(ただし-gentoo-r5は除く)</comment>
+modules_2_6_23="cx88_dvb"
+<comment># Only load tun and usbserial for 2.6.x series kernels where x != 23</comment>
+<comment># 2.6.xシリーズ(x != 23)のカーネルでのみtunとusbserialをロード</comment>
+modules_2_6="tun usbserial"
+<comment># Otherwise load ochi1394 and ieee1394</comment>
+<comment># それ以外ならochi1394とieee1394をロード</comment>
+modules="ohci1394 ieee1394"
 
 <comment># For 2.6.23-gentoo-r5, pass video_br=2 to cx88_dvb</comment>
 <comment># 2.6.23-gentoo-r5でのみcx88_dvbにパラメータとしてvideo_br=2を渡す</comment>
@@ -180,14 +189,6 @@ module_usbserial_args_2_6="vendor=0x1410 product=0x2110"
 <comment># ieee1394には常にdebugを渡す</comment>
 module_ieee1394_args="debug" 
 </pre>
-
-<impo>
-<b>module*</b>変数は、重複設定はできません。バージョン毎に指定された変数は、一般的な変数を上書きします。
-</impo>
-
-<note>
-<b>module_</b>と<b>modules_</b>は意味が違うので、注意してください。
-</note>
 
 </body>
 </section>
@@ -283,20 +284,23 @@ baselayoutとOpenRCという2つの異なるパッケージに分割されたた
 </p>
 
 <p>
-また、<path>/etc/conf.d/net</path>の設定に、bashスタイルの配列は使用できなくなります。
+また、<path>/etc/conf.d/net</path>(oldnet)の設定に、bashスタイルの配列は使用できなくなります。
 設定手順が記載されている<path>/usr/share/doc/openrc-&lt;version&gt;/net.example</path>を見直してください。
 
-設定の書き直しは、比較的簡単です。例えば、スタティックIPアドレスの設定は、以下のように変更となります。
+設定の書き直しは、比較的簡単です。(以下のroutes_eth0のように)
+分離したエントリを書くには改行が必要になります。
+例えば、スタティックIPアドレスの設定は、以下のように変更となります。
 </p>
 
 <pre caption="以前のスタイル/etc/conf.d/net">
 config_eth0=( "192.168.1.37 netmask 255.255.255.0 brd 192.168.1.255" )
-routes_eth0=( "default via 192.168.1.100" )
+routes_eth0=( "default via 192.168.1.100" "10.0.0.0/8 via 192.168.1.2" )
 </pre> 
 
 <pre caption="新しいスタイルの/etc/conf.d/net">
 config_eth0="192.168.1.37 netmask 255.255.255.0 brd 192.168.1.255"
-routes_eth0="default via 192.168.1.100"
+routes_eth0="default via 192.168.1.100
+10.0.0.0/8 via 192.168.1.2"
 </pre>
 
 </body>
@@ -397,6 +401,91 @@ rc_logger="YES"
 
 </body>
 </section>
+<section id="rc_sys">
+<title>システムのsub-type: 仮想化の場合</title>
+<body>
+
+<p>
+OpenRCの初期のバージョンでは、数種類の仮想化を検出し、
+<b>depend</b>関数の中で<b>keyword</b>を使って一部のinitスクリプトをスキップできるようにしていました。
+</p>
+
+<p>
+しかし、0.7.0からは<path>/etc/rc.conf</path>の<b>rc_sys</b>変数を自分でsub-typeにあわせて設定しなくてはいけません。
+sub-typeはそのルートのある仮想化環境によって変わります。
+一般的には空文字ではない<b>rc_sys</b>は仮想化の中で使われます。
+つまり、仮想化のホスト環境では<b>rc_sys=""</b>となります。
+</p>
+
+<impo>
+特別なsub-typeがなければデフォルトの空文字<b>""</b>を設定するようにしてください。
+この変数が設定されていなければ、警告が出て旧来の自動検出のアルゴリズムが使われます。
+</impo>
+
+<note>
+自動検出でどの値が使われるかわからなければ、一時的に<b>rc_sys</b>をコメントアウトして
+<c>rc -S</c>で検出コマンドを実行してください。
+</note>
+
+<pre caption="/etc/rc.confでシステムのsub-typeを「なし」に設定する">
+rc_sys=""
+</pre>
+
+<p>
+新しいsub-typeの導入のため、また旧来の検出方法を信頼できなくなるカーネルの変更があったため、
+自動検出アルゴリズムを使うのではなく、手動の設定に置き換えなければなりませんでした。
+</p>
+
+<table>
+<tr>
+  <th>sub-type</th>
+  <th>説明</th>
+  <th>補足</th>
+</tr>
+<tr>
+  <ti></ti>
+  <ti>デフォルト sub-typeなし</ti>
+  <ti>設定なしと同じではない。 FreeBSD, Linux &amp; NetBSD</ti>
+</tr>
+<tr>
+  <ti>jail</ti>
+  <ti>FreeBSDのjail</ti>
+  <ti></ti>
+</tr>
+<tr>
+  <ti>lxc</ti>
+  <ti>Linux Containers</ti>
+  <ti>自動検出されない</ti>
+</tr>
+<tr>
+  <ti>openvz</ti>
+  <ti>Linux OpenVZ</ti>
+  <ti></ti>
+</tr>
+<tr>
+  <ti>prefix</ti>
+  <ti>Prefix</ti>
+  <ti>自動検出されない。 FreeBSD, Linux &amp; NetBSD</ti>
+</tr>
+<tr>
+  <ti>vserver</ti>
+  <ti>Linux vserver</ti>
+  <ti></ti>
+</tr>
+<tr>
+  <ti>xen0</ti>
+  <ti>Xen0 Domain</ti>
+  <ti>Linux &amp; NetBSD</ti>
+</tr>
+<tr>
+  <ti>xenU</ti>
+  <ti>XenU Domain</ti>
+  <ti>Linux &amp; NetBSD</ti>
+</tr>
+</table>
+
+</body>
+</section>
 <section>
 <title>仕上げ</title>
 <body>
@@ -405,6 +494,38 @@ rc_logger="YES"
 設定ファイルとinitscriptの更新作業が完了すると、最後の作業は、<b>再起動</b>することです。
 
 システムの状態情報は、この更新作業で保存されないので、再起動を行うことでシステムの状況を更新する必要があるのです。
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>変更された機能</title>
+<section>
+<title>pause アクション</title>
+<body>
+
+<p>
+以前は<c>/etc/init.d/service pause</c>で依存しているサービスの全てを止めることなく、
+一時的にサービスを停止することができました。
+OpenRCでは<c>pause</c>アクションは削除されました。
+<c>/etc/init.d/service --nodeps stop</c>で同じ機能が動きます。
+これは旧来のbaselayoutでも有効です。
+</p>
+
+</body>
+</section>
+<section>
+<title>/etc/mtabのrootfs項目</title>
+<body>
+
+<p>
+以前は初期化時の<b>rootfs</b>項目は<path>/etc/mtab</path>から削除され、
+実際のルートの<path>/</path>の項目だけが残っていました。
+実際のルートと重複するrootfsの項目はシャットダウン時に再び戻されていました。
+OpenRCではinitramfsを完全にサポートするため、またtmpfs-on-rootをサポートするために、
+両方の項目が出てくるようになります。これによって、シャットダウン時の書きこみも少なくなります。
 </p>
 
 </body>
