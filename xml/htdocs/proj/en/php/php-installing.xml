@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/php/php-installing.xml,v 1.1 2011/02/13 15:43:41 olemarkus Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/php/php-installing.xml,v 1.2 2011/06/05 12:36:03 olemarkus Exp $ -->
 
 <guide link="php-install.xml" lang="en">
 <title>Installing PHP</title>
@@ -19,134 +19,6 @@ This document will guide you through installing PHP on Gentoo
 
 <version>1.1</version>
 <date>2011-02-13</date>
-
-<chapter>
-<title>Installing PHP FastCGI </title>
-
-<section>
-<body>
-<warn>Discouraged for PHP 5.3.3 and newer</warn>
-</body>
-</section>
-
-<section>
-<title>Emerging PHP</title>
-
-<body>
-<p>
-PHP has a huge number of USE flags available. Luckily, the USE flags that the
-PHP ebuilds set by default are fairly sane so the only one we need to add is 
-the cgi USE flag, which gives us the FastCGI server API. I find that enabling
-cgi as a global USE flag in <path>/etc/make.conf</path> is a bad idea as I do not
-care about enabling cgi support for every single package in the tree that
-support such a thing. If you are like me, adding it to
-<path>/etc/portage/package.use</path> is what you want. Just drop the following line
-in there:
-</p>
-
-<pre caption="/etc/portage/package.use">
-dev-lang/php cgi
-</pre>
-
-<p>
-That is about all the configuration you need for PHP. Now, emerge!</p>
-
-<pre caption="Installing PHP">
-<i>emerge -av php</i>
-</pre>
-
-</body>
-</section>
-<section>
-<title>configuring Apache2</title>
-
-<body>
-<p>
-Apache is a trusted member of the LAMP stack and probably the webserver that
-the most people are familiar with. In addition to www-servers/apache, we need
-to install another package to get fastcgi working: <c>www-apache/mod_fastcgi</c>.
-</p>
-
-<pre caption="Install what we need">
-<i>emerge -av apache mod_fastcgi</i>
-</pre>
-
-
-<p>After all has been installed, simply enable it in:</p>
-<pre caption="/etc/conf.d/apache">
-<var>APACHE2_OPTS="-D DEFAULT_VHOST -D INFO -D LANGUAGE -D USERDIR -D FASTCGI"</var>
-</pre>
-
-<p>Once that is done, drop the following into <path>/etc/apache2/vhosts.d/00_default_vhost.conf</path></p>
-
-<pre caption="/etc/apache2/vhosts.d/00_default_vhost.conf">
-
-Listen 80
-
-NameVirtualHost *:80
-
-
-&lt;VirtualHost *:80>
-        ServerName localhost
- 
-        DocumentRoot /var/www/localhost/htdocs/
- 
-        &lt;IfModule mpm_peruser_module>
-                ServerEnvironment apache apache
-        &lt;/IfModule>
-         AddHandler php5-fastcgi .php
-         FastCgiServer /usr/lib/php5.2/bin/php-cgi
- 
-        &lt;Directory /var/www/localhost/htdocs/>
-        Order deny,allow
-        Allow from all
- 
-        &lt;/Directory>
- 
-&lt;/VirtualHost>
-
-</pre>
-
-<p>That is it. Now start apache</p>
-
-<pre caption="Start apache">
-<i>/etc/init.d/apache2 start</i>
-</pre>
-
-<p>Put something like the following into <path>/var/www/localhost/htdocs/index.php</path></p>
-
-<pre caption="PHP test code">
-&lt;?php
-phpinfo();
-</pre>
-
-
-<p>That is it. Now you should be able to enter <uri link="http://localhost/index.php">http://localhost/index.php</uri> to test your setup.</p>
-
-</body>
-</section>
-<section>
-<title>Configuring lighttpd</title>
-
-<body>
-
-<p>First, make sure that you have the php USE flag enabled in your system. Revisit your /etc/portage/package.use is what and append the following:</p>
-<pre caption="/etc/portage/package.use">
-www-server/lighttpd php
-</pre>
-
-<p>Then emerge lighttpd</p>
-
-<pre caption="Install lighttpd">
-<i>emerge -av lighttpd</i>
-</pre>
-
-
-<p>That is basically it. The configuration files that comes with lighttpd should work out of the box, and you should be able to see your site at
-<uri link="http://localhost/index.php">http://localhost/index.php</uri></p>
-</body>
-</section>
-</chapter>
 
 <chapter>
 <title>Installing PHP FPM </title>
@@ -281,6 +153,33 @@ like this:
 </chapter>
 
 <chapter>
+<title>Apache and mod_php</title>
+<section>
+<body>
+
+<p>Apache is the trusted server part of the LAMP stack. Using mod_php, setting up PHP with Apache is rather trivial. The PHP Herd recommends that if you want to use PHP with Apache, you should use mod_php over any FastCGI/FPM setup. If you want FPM, we recommend that you use nginx as server.</p>
+
+<p>Installing mod_php is as easy as enabling the apache2 USE flag for dev-lang/php</p>
+
+
+<pre caption="/etc/package.use">
+dev-lang/php apache2
+</pre>
+
+<p>This will also pull in www-servers/apache. After the install finish, make sure you add "-D PHP5" to <path>/etc/conf.d/apache2</path></p>
+
+<pre caption="/etc/conf.d/apache2">
+<var>APACHE2_OPTS="-D DEFAULT_VHOST -D INFO -D LANGUAGE -D SSL -D SSL_DEFAULT_VHOST -D USERDIR -D PHP5"</var>
+</pre>
+
+<warn>If you do not complete this step, your php source code will be outputted instead of interpreted</warn>
+
+</body>
+</section>
+</chapter>
+
+
+<chapter>
 <title>Nice to know</title>
 <section>
 <title>Development vs Production php.ini files</title>
@@ -320,6 +219,28 @@ creating a new user for your web application. </p>
 </body>
 </section>
 </chapter>
+
+<chapter>
+<title>Troubleshooting</title>
+<section>
+<title>My source code is showing</title>
+<body>
+<p>We do not really get that many support issues except for this one.</p>
+
+<p>The most common reason is that short_open_tags is disabled by default. If you code make use of short tags, i.e &lt;? instead of &lt;?php, you have to either fix your code or make change your php.ini to enable short open tags.</p>
+
+<pre caption="php.ini">
+<var>short_open_tag = On</var>
+</pre>
+
+<p>Make sure you restart the relvant servers/fpm after changing php.ini</p>
+
+<p>The other common reason for source code to be displayed is that you forgot to add "-D PHP5" to <path>/etc/conf.d/apache2</path> as described above.</p>
+
+</body>
+</section>
+</chapter>
+
 <chapter>
 <title>Further reading</title>
 <section>
