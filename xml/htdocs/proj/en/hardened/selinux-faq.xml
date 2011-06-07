@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-faq.xml,v 1.2 2011/04/25 20:21:47 zorry Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-faq.xml,v 1.3 2011/06/07 19:57:25 klondike Exp $ -->
 
 <guide link="/proj/en/hardened/selinux-faq.xml" lang="en">
 <title>Gentoo Hardened SELinux Frequently Asked Questions</title>
@@ -17,8 +17,8 @@ The FAQ is a collection of solutions found on IRC, mailinglist, forums or
 elsewhere
 </abstract>
 
-<version>3</version>
-<date>2011-04-22</date>
+<version>9</version>
+<date>2011-06-01</date>
 
 <faqindex>
 <title>Questions</title>
@@ -133,10 +133,44 @@ like we will eventually support these file systems on SELinux fully as well.
 <body>
 
 <p>
-No. The SELinux profiles inherit from the base amd64 profiles, requiring
-multilib support. Early tests trying to enable SELinux on a no-multilib
-profile show that it will not be supported without additional development
-effort being required.
+Yes. However, for the time being, it is only supported through developer
+profiles, meaning that the profiles should not be seen as very stable (their
+content can still change swiftly). Try out
+<c>hardened/linux/amd64/no-multilib/selinux</c> and tell us what you get.
+</p>
+
+</body>
+</section>
+<section id="ubac">
+<title>What is UBAC exactly?</title>
+<body>
+
+<p>
+UBAC, or <e>User Based Access Control</e>, introduces additional constraints
+when using SELinux policy. Participating domains / types that are <e>both</e>
+marked as a <c>ubac_constrained_type</c> (which is an attribute) will only
+have the allowed privileges in effect if they both run with the same SELinux
+user context.
+</p>
+
+<pre caption="Domains and their SELinux user context">
+<comment># The SELinux allow rule</comment>
+allow foo_t bar_t:file { read };
+
+<comment># This will succeed:</comment>
+staff_u:staff_r:foo_t reads file with type staff_u:object_r:bar_t
+
+<comment># This will be prohibited:</comment>
+user_u:user_r:foo_t reads file with type staff_u:object_r:bar_t
+</pre>
+
+<p>
+Of course, this is not always the case. Besides the earlier mentioned
+requirement that both types are <c>ubac_constrained_type</c>, if the source
+domain is <c>sysadm_t</c>, then the constraint will not be in effect (the 
+<c>sysadm_t</c> domain is exempt from UBAC constraints). Also, if the source
+or destination SELinux user is <c>system_u</c> then the constraint will also
+not be in effect. 
 </p>
 
 </body>
@@ -198,6 +232,57 @@ while SELinux was disabled might have created new files or removed the labels
 from existing files, causing these files to be available without security
 context.
 </impo>
+
+</body>
+</section>
+<section id="matchcontext">
+<title>
+  How do I know which file context rule is used for a particular file?
+</title>
+<body>
+
+<p>
+If you use the <c>matchpathcon</c> command, it will tell you what the security
+context for the given path (file or directory) should be, but it doesn't tell
+you which rule it used to deduce this. To do that, you can use <c>findcon</c>:
+</p>
+
+<pre caption="Using findcon">
+~# <i>findcon /etc/selinux/strict/contexts/files/file_contexts -p /lib64/rc/init.d</i>
+/.*                          system_u:object_r:default_t
+/lib64/rc/init\.d(/.*)?   system_u:object_r:initrc_state_t
+/lib64/.*                    system_u:object_r:lib_t
+</pre>
+
+<p>
+When the SELinux utilities try to apply a context, they try to match the rule
+that is the most specific, so in the above case, it is the one that leads to the
+initrc_state_t context.
+</p>
+
+<p>
+The most specific means, in order of tests:
+</p>
+
+<ol>
+  <li>
+    If line A has a regular expression, and line B doesn't, then line B is more
+    specific.
+  </li>
+  <li>
+    If the number of characters before the first regular expression in line A is
+    less than the number of characters before the first regular expression in
+    line B, then line B is more specific
+  </li>
+  <li>
+    If the number of characters in line A is less than in line B, then line B is
+    more specific
+  </li>
+  <li>
+    If line A does not map to a specific SELinux type, and line B does, then
+    line B is more specific
+  </li>
+</ol>
 
 </body>
 </section>
@@ -382,6 +467,88 @@ just merged.
 <p>
 So the error is in our opinion cosmetic and can be ignored (but sadly not
 hidden).
+</p>
+
+</body>
+</section>
+<section id="emergefails">
+<title>Emerge does not work, giving 'Permission denied: /etc/make.conf'</title>
+<body>
+
+<p>
+This is to be expected if you are not using the <c>sysadm_r</c> role. Any
+Portage related activity requires that you are in the <c>sysadm_r</c> role. To
+transition to the role, first validate if you are currently known as
+<c>staff_u</c> (or, if you added your own SELinux identities, a user that has
+the permission to transition to the <c>sysadm_r</c> role). Then run <c>newrole
+-r sysadm_r</c> to transition.
+</p>
+
+<pre caption="Transitioning to sysadm_r">
+~$ <i>emerge --info</i>
+Permission denied: '/etc/make.conf'
+~$ <i>id -Z</i>
+staff_u:staff_r:staff_t
+~$ <i>newrole -r sysadm_r</i>
+Password: <comment># Enter your users' password</comment>
+</pre>
+
+<p>
+This is also necessary if you logged on to your system as root but through SSH.
+The default behavior is that SSH sets the lowest role for the particular user
+when logged on. And you shouldn't allow remote root logins anyhow.
+</p>
+
+</body>
+</section>
+<section id="cronfails">
+<title>
+  Cron fails to load in root's crontab with message '(root) ENTRYPOINT
+  FAILED (crontabs/root)'
+</title>
+<body>
+
+<p>
+When you hit the mentioned error with a root crontab or an administrative
+users' crontab, but not with a regular users' crontab, then check the context of
+the crontab file:
+</p>
+
+<pre caption="Check context of the crontab file">
+~# <i>ls -Z /var/spool/cron/crontabs/root</i>
+staff_u:object_r:user_cron_spool_t /var/spool/cron/crontabs/root
+</pre>
+
+<p>
+Next, check what the default context is for the given user (in this case, root)
+when originating from the <c>crond_t</c> domain:
+</p>
+
+<pre caption="Check default context for user root">
+~# <i>getseuser root system_u:system_r:crond_t</i>
+seuser:  root, level (null)
+Context 0       root:sysadm_r:cronjob_t
+Context 1       root:staff_r:cronjob_t
+</pre>
+
+<p>
+As you can see, the default context is always for the <c>root</c> SELinux user.
+However, the <path>/var/spool/cron/crontabs/root</path> file context in the
+above example is for the SELinux user staff_u. Hence, cron will not be able to
+read this file (the <c>user_cron_spool_t</c> type is a UBAC constrained one).
+</p>
+
+<p>
+To fix this, change the user of the file to root:
+</p>
+
+<pre caption="Change the SELinux user of the root crontab file">
+~# <i>chcon -u root /var/spool/cron/crontabs/root</i>
+</pre>
+
+<p>
+Another fix would be to disable UBAC completely. This is accomplished with
+<c>USE="-ubac"</c>.
 </p>
 
 </body>
