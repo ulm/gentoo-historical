@@ -1,0 +1,698 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/Attic/hb-using-permissive.xml,v 1.1 2011/06/07 18:05:53 nimiux Exp $ -->
+
+<sections>
+<version>4</version>
+<date>2011-04-22</date>
+
+<section>
+<title>Llevar un registro de las denegaciones</title>
+<subsection>
+<title>Introducción</title>
+<body>
+
+<p>
+Desde el momento en que comience a utilizar SELinux en modo permisivo,
+SELinux empezará a llevar un registro de todas las denegaciones usando
+el registro del sistema. Basándose en esta información, el administrador
+puede y debe:
+</p>
+
+<ul>
+  <li>
+    ver si faltan algunos dominios (por ejemplo, las órdenes se están
+    ejecutando dentro de un dominio más estándar aunque se esperaba que
+    se ejecutara dentro de uno más específico) en este caso, se podrá
+    echar un vistazo al módulo de directriz de SELinux para introducir el
+    dominio específico.
+  </li>
+  <li>
+    ver si algunos ficheros tienen un contexto de seguridad erróneo en
+    cuyo caso se puede restaurar su contexto o definirlo de nuevo.
+  </li>
+  <li>
+    ver si algunas denegaciones que no se esperan, se realizan, en cuyo
+    caso se deberá averiguar porqué se realizan esas denegaciones y cual
+    era la intención de la directriz original (un primer ejemplo podría ser
+    un sitio web alojado en un lugar inapropiado en el sistema de ficheros).
+  </li>
+</ul>
+
+<p>
+Desde luego, se pueden estudiar otros aspectos cuando se analizan los
+mensajes de denegación, sin embargo, los mencionados arriba son los más
+comunes.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Configurar el registro del sistema</title>
+<body>
+
+<p>
+Antes de empezar la investigación de las denegaciones, comenzaremos
+configurando el registro del sistema para registrar estas denegaciones
+en su propio fichero de registro. Si está corriendo syslog-ng con un
+perfil Gentoo Hardened, esto ya está configurado para registrar las
+denegaciones en <path>/var/log/avc.log</path>:
+</p>
+
+<pre caption="Configuración de syslog-ng">
+destination avc { file("/var/log/avc.log"); };
+[...]
+filter f_avc { message(".*avc: .*"); };
+filter f_audit { message("^(\\[.*\..*] |)audit.*") and not message(".*avc: .*"); };
+[...]
+log { source(kernsrc); filter(f_avc); destination(avc); };
+</pre>
+
+<p>
+Si usa un paquete de registro diferente, tendrá que configurarlo para
+que filtre los eventos de auditoría del núcleo. A lo largo del resto del
+documento, asumiremos que las denegaciones se registran en
+<path>/var/log/avc.log</path>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>¿Qué es AVC?</title>
+<body>
+
+<p>
+Previamente mostramos algunas reglas de permisión de directriz de SELinux,
+lo que realmente estábamos mirando era una regla de
+<e>vector de acceso</e>. Por ejemplo:
+</p>
+
+<pre caption="Ejemplo de regla de vector de acceso">
+allow sysadm_t portage_t : process transition ;
+</pre>
+
+<p>
+Hasta ahora únicamente hemos buscado por permisos de <e>concesión</e>, sin
+embargo SELinux soporta otros:
+</p>
+
+<ul>
+  <li>
+    <e>auditallow</e> permitirá que pueda ocurrir una actividad, pero
+    la registrará igualmente (con un mensaje "concedido" (granted) en lugar
+    de "denegado" (denied)).
+  </li>
+  <li>
+    <e>dontaudit</e> permitirá que pueda ocurrir una actividad, sin embargo
+    no registrará esta situación. Esto es particularmente útil cuando
+    el registro de la actividad no se necesite, evitando llenar el fichero
+    <path>avc.log</path>.
+  </li>
+</ul>
+
+<p>
+Para mejorar la eficiencia del forzado de la directriz, SELinux utiliza
+una caché para estos vectores de acceso: la <e>Caché de Vectores de
+Acceso</e> o <e>AVC</e>. Cada vez que se solicita un acceso que no está
+en caché, se carga en primer lugar en la caché desde la cual se realiza
+su concesión o denegación. De ahí que los mensajes que se registran en
+el fichero <path>avc.log</path> contengan la cadena "avc".
+</p>
+
+</body>
+</subsection>
+<subsection id="avclog">
+<title>Mirar el registro AVC</title>
+<body>
+
+<p>
+Durante las operaciones regulares del sistema, puede hacer un seguimiento
+de las denegaciones usando una simple sesión de <c>tail</c>:
+</p>
+
+<pre caption="Echar un vistazo a los registros avc">
+~# <i>tail -f /var/log/avc.log</i>
+Jan  1 09:56:59 hpl kernel: [ 2232.354810] type=1400 audit(1293872219.247:156):
+  avc:  denied  { setattr } for  pid=7419 comm="gorg" name="selinux-handbook.xml" dev=dm-3 ino=159061
+  scontext=staff_u:staff_r:staff_t tcontext=staff_u:object_r:var_t tclass=file
+Jan  1 10:08:52 hpl kernel: [ 2944.664577] type=1400 audit(1293872932.907:157):
+  avc:  denied  { use } for  pid=9917 comm="ifconfig" path="/dev/null" dev=tmpfs ino=1546
+  scontext=system_u:system_r:ifconfig_t tcontext=system_u:system_r:wpa_cli_t tclass=fd
+Jan  1 10:08:53 hpl kernel: [ 2945.504956] type=1400 audit(1293872933.749:158):
+  avc:  denied  { create } for  pid=10016 comm="logger"
+  scontext=system_u:system_r:wpa_cli_t tcontext=system_u:system_r:wpa_cli_t tclass=unix_stream_socket
+</pre>
+
+<p>
+Pero, ¿Cómo interpretamos estos mensajes?. Bien, echemos un vistazo más
+detallado a la primera denegación en este ejemplo.
+</p>
+
+<pre caption="Mensaje de denegación ejemplo">
+<comment>[ Datos estándares del mensaje de registro como fecha, hora, nombre del equipo,... ]</comment>
+Jan  1 09:56:59 hpl kernel: [ 2232.354810] type=1400
+<comment>[ Se trata de un mensaje de auditoría que indica una denegación de la llamada de sistema setattr ]</comment>
+  audit(1293872219.247:156): avc:  denied  { setattr }
+<comment>[ El proceso que lo ha causado tiene el identificador (PID) 7419 y se llama "gorg" ]</comment>
+  for  pid=7419 comm="gorg"
+<comment>[ El destino de la llamada al sistema es un fichero denominado "selinux-handbook.xml" en el dispositivo dm-3 device; el fichero está en el i-nodo 159061 ]</comment>
+  name="selinux-handbook.xml" dev=dm-3 ino=159061
+<comment>[ Los contextos de seguridad origen y destino y la clase del destino (en este caso es un fichero) ]</comment>
+  scontext=staff_u:staff_r:staff_t tcontext=staff_u:object_r:var_t tclass=file
+</pre>
+
+<p>
+Una entrada similar se halla el la última línea del ejemplo.
+</p>
+
+<pre caption="Otro ejemplo de mensaje de denegación">
+Jan  1 10:08:53 hpl kernel: [ 2945.504956] type=1400 audit(1293872933.749:158):
+  avc:  denied  { create } for  pid=10016 comm="logger"
+  scontext=system_u:system_r:wpa_cli_t tcontext=system_u:system_r:wpa_cli_t tclass=unix_stream_socket
+</pre>
+
+<p>
+En este caso en particular, el proceso que lo ha provocado es <c>logger</c>
+(con PID 10016) que está tratando de crear un zócalo de flujo (stream socket)
+de Unix (mira la información <e>tclass</e>).
+</p>
+
+<p>
+Observe sin embargo que no todos los mensajes AVC implican una denegación.
+Algunos accesos registrados por la caché de vectores de acceso son
+concesiones pero que tienen una sentencia <e>auditallow</e> explícita de
+forma que se puedan seguir en los registros.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Analizando las denegaciones</title>
+<subsection>
+<title>Una configuración estándar puede que no funcione</title>
+<body>
+
+<p>
+Si le ha echado un vistazo a sus denegaciones, probablemente pensará:
+"Si voy a cambiar al modo forzado (enforcing), mi sistema no funcionará
+adecuadamente" y puede que esté en lo cierto. En este punto Gentoo
+Hardened está constantemente actualizando las directrices de SELinux
+para tener un sistema en funcionamiento aunque todavía no hemos llegado
+a eso. Por esta razón es muy importante saber analizar las denegaciones
+(y tomar las acciones correctivas adecuadas).
+</p>
+
+<p>
+Ahora es sencillo describir cuál es la mejor opción cuando encuentre una
+denegación que no debería aparecer. Sin embargo, se han de aplicar algunas
+reglas base.
+</p>
+
+<ul>
+  <li>
+    Verificar si la denegación es cosmética o no. Intente centrarse en las
+    denegaciones de las que está <e>seguro</e> no son cosméticas y
+    resultarán en un mal funcionamiento de su sistema (o de esa orden en
+    particular) si no se toma ninguna acción correctiva.
+  </li>
+  <li>
+    Si encuentra una denegación en la que el contexto de seguridad es
+    genérico (como <e>sysadm_t</e> o <e>staff_t</e> o <e>user_t</e>),
+    intente averiguar si existen módulos de directriz de SELinux específicos
+    para el recurso en cuestión. En el ejemplo anterior del proceso
+    <c>gorg</c>, definitivamente necesitamos comprobar is no hay ninguna
+    directriz de SELinux del tipo selinux-gorg. Observe que incluso si
+    no hay ninguna, no significa que no debiera haberla ;-)
+  </li>
+  <li>
+    Si el destino de la denegación es un fichero, verifique si su contexto
+    de seguridad es correcto o si tiene que dar un contexto diferente.
+    También es posible que el proceso esté intentando trabajar en la ruta
+    incorrecta. A veces, un simple cambio en la configuración del proceso
+    es suficiente para hacerlo funcionar de forma correcta bajo su
+    directriz SELinux.
+  </li>
+</ul>
+
+<p>
+Mientras se creaban las directrices, los desarrolladores de Gentoo Hardened
+intentaron ocultar las denegaciones que pensaban eran cosméticas. Esto se
+puede cambiar usando el boolean de SELinux <c>gentoo_try_dontaudit</c>:
+</p>
+
+<pre caption="Obtener el valor actual y definir el valor del booleano de Gentoo gentoo_try_dontaudit">
+~# <i>getsebool gentoo_try_dontaudit</i>
+gentoo_try_dontaudit --&gt; off
+~# <i>setsebool -P gentoo_try_dontaudit on</i>
+</pre>
+
+<p>
+Cuando está activado, las denegaciones que se pensaban eran cosméticas se
+ocultan en los registros de auditoría. Si su sistema no está funcionando
+correctamente y no ve estas denegaciones, es prudente conmutar este
+booleano para verificar si la denegación se muestra o no.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Instalar módulos adicionales de directriz de SELinux</title>
+<body>
+
+<p>
+Cuando se encuentra una denegación para la cual se cree que debería
+existir un módulo de directriz de SELinux, averigüe qué paquete ofrece
+el recurso que ha causado la denegación y verifique si Gentoo ofrece una
+directriz para ese paquete. Si es así, instálela y vuelva a etiquetar los
+ficheros del paquete.
+</p>
+
+<pre caption="Buscar paquetes de Gentoo SELinux">
+~# <i>tail -f /var/log/avc.log</i>
+Jan  1 09:42:37 hpl kernel: [ 1372.708172] type=1400 audit(1293871357.972:76):
+  avc:  denied  { search } for  pid=6937 comm="screen" name="selinux" dev=dm-0
+  ino=1053303 scontext=staff_u:staff_r:staff_t
+  tcontext=staff_u:object_r:user_home_t tclass=dir
+
+~# <i>whereis screen</i>
+screen: /usr/bin/screen
+
+~# <i>qfile /usr/bin/screen</i>
+app-misc/screen (/usr/bin/screen)
+
+~# <i>eix selinux-screen</i>
+* sec-policy/selinux-screen
+     Available versions: ~2.20090730 ~2.20091215 ~2.20101213
+     Homepage:           http://www.gentoo.org/proj/en/hardened/selinux/
+     Description:        SELinux policy for general applications
+
+~# <i>emerge selinux-screen</i>
+[...]
+
+~# <i>rlpkg screen</i>
+Relabeling: app-misc/screen-4.0.3
+</pre>
+
+<p>
+Si cree que debería existir un módulo de directriz de SELinux pero no
+encuentra ninguno, entonces puede bien descargar el fichero tarball de
+directriz de referencia (que puede encontrar en el directorio
+<path>distfiles</path> y se llama <path>refpolicy-2.YYYYMMDD.tar.bz2</path>)
+y averiguar si hay módulos disponibles (mire en
+<path>refpolicy/policy/modules</path> location), bien puede preguntar en
+el canal #gentoo-hardened en irc.freenode.net.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Actualizando los contextos de seguridad de los ficheros</title>
+<body>
+
+<p>
+El caso más común de denegación cuando las directrices necesarias
+están en su sitio, es el etiquetado incorrecto de los ficheros o
+directorios (en otras palabras, el contexto de seguridad del fichero
+o directorio destino no es lo que espera en la directriz). Esto se
+puede deber a que el fichero no ha sido etiquetado de nuevo desde
+que la directriz fue cargada o porque la etiqueta ha cambiado por algún
+motivo (razón 1), también puede deberse a que la ruta del fichero no está
+en concordancia con las especificaciones del contexto en el módulo de
+SELinux (razón 2).
+</p>
+
+<p>
+La primera posibilidad (el contexto de seguridad es correcto per no se ha
+aplicado) se puede corregir de forma fácil mediante el uso de la orden
+<c>restorecon</c>. Puede aplicarla a un solo fichero o hacerlo
+recursivamente usando la opción <c>-R</c>.
+</p>
+
+<pre caption="Ejecutar restorecon para recuperar un contexto de seguridad">
+~# <i>restorecon /etc/make.conf</i>
+</pre>
+
+<p>
+Si, por contra, la definición del contexto del fichero en la directriz
+no se puede aplicar al fichero (o directorio), puede todavía indicarle al
+sistema que etiquete ese fichero o directorio de forma adecuada. Por
+ejemplo, pongamos que tiene su fichero <path>lvm.conf</path> en el
+directorio <path>/etc</path> en lugar del directorio <path>/etc/lvm</path>
+como se espera en la directriz, entonces puede etiquetar el fichero de
+forma correcta usando <c>semanage</c>. Con <c>semanage</c>, se asigna
+un contexto de seguridad correcto que no está relacionado con ningún
+módulo. Aunque es un ajuste local, se conserva después de cada reinicio.
+</p>
+
+<pre caption="Ajustar el nuevo contexto de un fichero usando semanage">
+~# <i>semanage fcontext -a -t lvm_etc_t /etc/lvm.conf</i>
+~# <i>restorecon /etc/lvm.conf</i>
+</pre>
+
+<p>
+Si quiere que esta definición forme parte de un módulo que está escribiendo,
+necesitará crear un archivo con la información del contexto de ese fichero
+que contendrá la(s) definición(es) de los ficheros cuyo contexto desea
+definir. Más adelante en este libro se describe cómo escribir módulos de
+directriz en <uri link="?part=2&amp;chap=5">Añadiendo módulos de directriz
+de SELinux</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="create_module">
+<title>Crear reglas específicas de concesión</title>
+<body>
+
+<p>
+Si no se puede resolver una denegación mediante un módulo de directriz de
+SELinux disponible o se realiza una acción correctiva para el fichero o
+directorio destino o no se dispone de dicho módulo, entonces, deberá optar
+por la creación de su propia directriz. Si su objetivo es permitir un
+conjunto específico de reglas (en lugar de escribir un módulo de directriz
+de SELinux completamente desarrollado), entonces puede usar la herramienta
+<c>audit2allow</c> para generar una directriz basada en los registros
+de denegaciones.
+</p>
+
+<p>
+Con <c>audit2allow</c>, puede transformar un mensaje AVC de denegación en
+una definición de módulo de directriz SELinux. Esto puede entonces
+compilarse en un módulo de directriz binario y empaquetado finalmente
+en un módulo de directriz SELinux que se puede (re)cargar fácilmente.
+Se recomienda mantener los registros (originales) AVC que se podrán usar
+para construir el módulo de directriz SELinux ya que le permitirán
+actualizar continuamente el módulo cuando se produzcan nuevas denegaciones.
+</p>
+
+<p>
+Por ejemplo, para permitir algunas denegaciones relacionadas con <c>sudo</c>,
+puede seguir los siguiente pasos...
+</p>
+
+<pre caption="Generar, construir e insertar una directriz SELinux">
+<comment>[ Añadimos los mensajes AVC al fichero sudo.raw, de modo que, en el futuro, podamos añadir mensajes de denegación adicionales dentro del mismo fichero que será usado para construir un nuevo módulo de directriz SELinux ]</comment>
+~# <i>grep 'comm="sudo"' /var/log/avc.log &gt;&gt; sudo.raw</i>
+
+<comment>[ Generamos una definición de módulo llamada 'fixsudo' basada en las denegaciones AVC que hemos capturado ]</comment>
+~# <i>cat sudo.raw | audit2allow -m fixsudo > fixsudo.te</i>
+
+<comment>[ A continuación construimos el módulo SELinux ]</comment>
+~# <i>checkmodule -m -o fixsudo.mod fixsudo.te</i>
+~# <i>semodule_package -o fixsudo.pp -m fixsudo.mod</i>
+</pre>
+
+<p>
+El módulo de directriz generado (con la extensión <path>.pp</path>) se puede
+ahora cargar dinámicamente en el almacén de directrices de SELinux:
+</p>
+
+<pre caption="Cargar el módulo generado">
+~# <i>semodule -i fixsudo.pp</i>
+</pre>
+
+<p>
+La definición del módulo (en nuestro ejemplo se llama
+<path>fixsudo.te</path>) se puede modificar a nuestro antojo. Su contenido
+está expresado en lenguaje humano en formato ASCII.
+</p>
+
+<p>
+No todas las denegaciones que se obtienen son fallos en la directriz de
+seguridad por defecto. Es muy probable que utilice su sistema de una forma
+ligeramente diferente a como fue pensada cuando se diseñó la directriz
+por defecto de SELinux para Gentoo Hardened. Sin embargo, si cree
+que debe cambiar una directriz en tiempo de ejecución debido a un fallo
+en la directriz actual, por favor, informe de este hecho en <uri
+link="https://bugs.gentoo.org">Bugzilla</uri> de modo que los
+desarrolladores de SELinux le puedan echar un vistazo. Igualmente, no
+dude en contactar con los desarrolladores de SELinux para Gentoo Hardened
+si tiene dudas.
+</p>
+
+<p>
+Los desarrolladores no muerden. Se alimentan regularmente por lo que no
+lo necesitan.
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Trabajando con SELinux</title>
+<subsection>
+<title>Carga y descarga de módulos</title>
+<body>
+
+<p>
+Hemos tratado los módulos SELinux en algunas ocasiones a lo largo de este
+libro. Hemos aprendido que, para cargar un módulo, podemos usar
+<c>semodule -i modulename.pp</c>. La orden <c>semodule</c> ofrece las
+siguientes funciones:
+</p>
+
+<ul>
+  <li>
+    Usando <c>semodule -i modulename.pp</c> puede (re)instalar un módulo
+    (o instalar una versión mayor de un módulo dado).
+  </li>
+  <li>
+    Usando <c>semodule -u modulename.pp</c> puede actualizar un módulo
+    ya instalado a una nueva versión de este módulo.
+  </li>
+  <li>
+    Usando <c>semodule -r modulename.pp</c> puede eliminar un módulo del
+    almacén de directriz de SELinux. El módulo no sera cargado de nuevo
+    incluso después de un reinicio.
+  </li>
+  <li>
+    Usando <c>semodule -R</c> puede recargar directrices. Una
+    característica interesante es que puede añadir la opción <c>-D</c>
+    la cual <e>deshabilitaŕa</e> las reglas <e>dontaudit</e> de la
+    directriz. Esto puede ser útil, especialmente más adelante cuando
+    usemos el modo forzado (enforcing) para averiguar porqué algo falla
+    incluso cuando no hay denegaciones que lo impidan.
+  </li>
+  <li>
+    Usando <c>semodule -B</c> puede forzar la reconstrucción de la directriz
+    (lo que conlleva por defecto la recarga de toda la directriz). Entre
+    otras cosas, esta recarga por defecto leerá los usuarios existentes
+    y sus directorios home y creará los dominios asociados.
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection>
+<title>Listar módulos</title>
+<body>
+
+<p>
+Mediante la orden <c>semodule -l</c> puede obtener una rápida visión de los
+módulos instalados junto con su versión actual. Cuando tenga problemas
+con las directrices de SELinux y esté intentado obtener ayuda sobre el
+problema, conocer la versión de un módulo en particular será muy importante
+para encontrar una solución al problema.
+</p>
+
+<pre caption="Listar los módulos instalados">
+~# <i>semodule -l</i>
+dbus    1.14.0
+dnsmasq 1.9.0
+hal     1.13.0
+[...]
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Conmutando roles</title>
+<body>
+
+<p>
+Cuando se está trabajando con un sistema SELinux system, los usuarios
+usarán por defecto la cuenta de SELinux user_u (y así, también usarán el
+rol de SELonux user_r), de esta forma, no necesitarán realizar ninguna
+conmutación de roles: no hay otros roles a los que puedan cambiar.
+</p>
+
+<p>
+Las cuentas usadas para realizar tareas de administración normalmente
+se usan la cuenta de SELinux staff_u SELinux o tienen su propia cuenta
+pero que soporta los roles staff_r y sysadm_r. Estas cuentas deben
+comenzar con el rol por defecto staff_r. Aunque todavía restringido,
+este rol tiene más posibilidades (con respecto a los dominios destino
+soportados a los que se puede cambiar) que el rol user_r role.
+</p>
+
+<p>
+La principal diferencia, sin embargo, es que estos usuarios también tendrán
+que cambiar de rol de vez en cuando. Por ejemplo, si quiere usar Portage
+(incluso si solo va a consultar el árbol) necesitará estar en el rol
+sysadm_r role. Para cambiar de rol utilice la orden <c>newrole</c>:
+</p>
+
+<pre caption="Conmutando roles">
+~$ <i>newrole -r sysadm_r</i>
+Password: <comment>(Introduzca su contraseña personal)</comment>
+~$
+</pre>
+
+<p>
+Usando <c>id -Z</c> podrá verificar que ha cambiado de rol correctamente.
+</p>
+
+<p>
+Ahora bien, ¿Cómo sabe si necesita cambiar de rol?. Generalmente, obtendrá
+un mensaje <e>Permiso denegado</e> en uno o más ficheros:
+</p>
+
+<pre caption="Averiguando cuando cambiar de rol">
+~$ <i>emerge --info</i>
+Permission denied: '/etc/make.conf'
+</pre>
+
+<p>
+Puede que no sea capaz, dentro de su rol actual, de averiguar si el
+cambio de rol es suficiente para obtener acceso de lectura. En su rol
+actual, puede que tenga la posibilidad de consultar el contexto de
+seguridad actual o comprobar las las reglas AV de SELinux. Sin embargo,
+si cambia al rol sysadm_r role y ejecuta las consultas adecuadas, podrá
+obtener la información que necesita.
+</p>
+
+<pre caption="Verificar el acceso de lectura para el fichero /etc/make.conf">
+~$ <i>id -Z</i>
+staff_u:staff_r:staff_t
+~$ <i>newrole -r sysadm_r</i>
+Password: <comment>(Introduzca su contraseña personal)</comment>
+~$ <i>id -Z</i>
+staff_u:sysadm_r:sysadm_t
+~$ <i>ls -Z /etc/make.conf</i>
+system_u:object_r:portage_conf_t /etc/make.conf
+~$ <i>sesearch -t portage_conf_t -c file -p read -A -d</i>
+Found 8 semantic av rules:
+   allow portage_t portage_conf_t : file { ioctl read getattr lock execute execute_no_trans open } ;
+   <comment># Este es el que estamos buscando</comment>
+   allow sysadm_t portage_conf_t : file { ioctl read write ... } ;
+   allow portage_fetch_t portage_conf_t : file { ioctl read getattr lock open } ;
+   allow restorecond_t portage_conf_t : file { ioctl read getattr lock relabelfrom relabelto open } ;
+   allow gcc_config_t portage_conf_t : file { ioctl read getattr lock open } ;
+   allow portage_sandbox_t portage_conf_t : file { ioctl read getattr lock open } ;
+   allow rsync_t portage_conf_t : file { ioctl read getattr lock open } ;
+   allow mount_t portage_conf_t : file { ioctl read getattr lock open } ;
+</pre>
+
+<p>
+Como puede ver, el dominio sysadm_t (que está asociado al rol sysadm_r)
+tiene el acceso de lectura necesario. Por el contrario, no hay ningún
+signo de acceso de lectura para el dominio staff_t.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Usar etiquetas de fichero</title>
+<body>
+
+<p>
+Mientras esté usando regularmente el sistema, puede que se encuentre en
+situaciones en las que necesite ajustar las etiquetas de un fichero
+(contextos de seguridad). Hemos hablado ya del uso de <c>semanage</c> y
+<c>restorecon</c> para hacerlo, pero existen otros métodos, cada uno
+para unos propósitos específicos...
+</p>
+
+<p>
+Con <c>chcon</c>, los usuarios (no solo los administradores) pueden
+etiquetar de nuevo los ficheros (si tienen los privilegios necesarios
+para hacerlo) al tipo que se desee. Como ejemplo, considere los dominios
+y reglas para las aplicaciones de Mozilla (como firefox). Por defecto,
+este dominio no tiene la capacidad para crear nuevos ficheros en el
+directorio home. Sin embargo, se ha creado un dominio específico
+(mozilla_home_t) en el cual la aplicación puede crear ficheros. Creando
+un directorio (por ejemplo <path>Descargas</path>) y etiquetándolo de
+nuevo correctamente, la aplicación podrá crear nuevos ficheros en este
+directorio.
+</p>
+
+<pre caption="Etiquetar de nuevo un directorio">
+~$ <i>ls -Zd ~/Descargas</i>
+staff_u:object_r:user_home_t  Descargas/
+~$ <i>chcon -t mozilla_home_t ~/Descargas</i>
+~$ <i>ls -Zd ~/Descargas</i>
+staff_u:object_r:mozilla_home_t
+</pre>
+
+<p>
+Es importante comprender que el reetiquetado es un privilegio específico
+que se gestiona mediante las directrices de SELinux (el dominio staff_t
+tiene este privilegio en el dominio user_home_t). También, el dominio
+destino (mozilla_home_t) todavía es gestionable por el dominio staff_t
+(incluyendo el reetiquetado) de forma que la actividad de reetiquetado
+no inhabilita los privilegios que staff_t tiene en este directorio. Este
+no es siempre el caso, por lo que debe de tener cuidado cuando haga
+un reetiquetado.
+</p>
+
+<p>
+El reetiquetado de ficheros se gestiona mediante los privilegios
+relabelfrom y relabelto. Considere las dos reglas hipotéticas siguientes:
+</p>
+
+<pre caption="Reglas de reetiquetado">
+allow staff_t foo_t : dir { relabelfrom relabelto };
+allow staff_t bar_t : dir { relabelto };
+</pre>
+
+<p>
+En la primera regla, el dominio staff_t domain tiene la capacidad de
+reetiquetar los directorios que están actualmente en el dominio foo_t
+(relabelfrom) y para reetiquetar directorios hacia el dominio foo_t (si el
+dominio fuente tiene definido un privilegio relabelfrom de forma correcta).
+En la segunda regla, el dominio staff_t solo puede reetiquetar
+directorios hacia el dominio bar_t. Sin embargo, una vez que un directorio
+tiene el dominio bar_t, el dominio staff_t no tiene la capacidad
+de reetiquetarlo a otro valor (ya que no tiene el privilegio relabelfrom).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Etiquetando de nuevo los contenidos de los paquetes de Gentoo</title>
+<body>
+
+<p>
+En esta última sección, hablaremos del soporte de Gentoo para el
+reetiquetado de ficheros. Por defecto, Portage etiqueta de nuevo todos
+los ficheros de un paquete cuando lo instala. Esto se gestiona mediante
+el uso del ajuste FEATURES="selinux" que se define cuando selecciona
+algún perfil de selinux. Un administrador también puede etiquetar de
+nuevo el contenido de un paquete usando la orden (específica de Gentoo)
+<c>rlpkg</c> (que se instala gracias al paquete policycoreutils):
+</p>
+
+<pre caption="Volver a etiquetar los ficheros y directorios de un paquete">
+~# <i>rlpkg net-tools</i>
+Relabeling: sys-apps/net-tools-1.60_p20090728014017-r1
+</pre>
+
+<p>
+Esta misma herramienta se puede usar para volver a etiquetar todo el
+sistema.
+</p>
+
+<pre caption="Volver a etiquetar todo el sistema (de ficheros)">
+~# <i>rlpkg -a -r</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+</sections>

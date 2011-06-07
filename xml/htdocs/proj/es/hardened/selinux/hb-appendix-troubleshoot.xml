@@ -1,0 +1,246 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/Attic/hb-appendix-troubleshoot.xml,v 1.1 2011/06/07 18:05:53 nimiux Exp $ -->
+
+<sections>
+<version>0</version>
+<date>2011-02-24</date>
+
+<section>
+<title>No se puede cargar la directriz de SELinux</title>
+<subsection>
+<title>Descripción del problema</title>
+<body>
+
+<p>
+Si observa que SELinux no está funcionando, puede ejecutar
+<c>sestatus</c> para ser informado rápidamente si SELinux está
+habilitado y cargado o no. Si obtiene la siguiente salida, entonces
+ninguna directriz de SELinux se ha cargado:
+</p>
+
+<pre caption="Salida de sestatus">
+SELinux status:                disabled
+</pre>
+
+<p>
+Si éste es el caso, continúe leyendo esta sección para averiguar cómo
+corregir esta situación.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>No hay ninguna directriz instalada</title>
+<body>
+
+<p>
+Una raíz potencial de este problema es que no hay ninguna directriz con
+la que comenzar. Eche un vistazo a <path>/usr/share/selinux/strict</path>
+o a <path>/usr/share/selinux/targeted</path> (dependiendo de su
+configuración) y busque un fichero llamado <path>base.pp</path>. Si no
+existe este fichero, necesitará instalar la directriz base. Esta
+directriz se ofrece con el paquete
+<path>sec-policy/selinux-base-policy</path>, pero es mejor leer el
+capítulo relacionado con la <uri link="?part=2&amp;chap=1">Instalación de
+Gentoo SELinux / Conversión</uri> ya que podría pasar por alto detalles
+importantes.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>La directriz no se ha cargado</title>
+<body>
+
+<p>
+Si existe el fichero <path>base.pp</path> en
+<path>/usr/share/selinux/strict</path> (o en <path>targeted/</path>),
+eche un vistazo a <path>/etc/selinux/strict/policy</path>. Esta
+localización también debería contener un módulo de directriz
+<path>base.pp</path> (cuando se carga una directriz de SELinux, se
+copia desde la primera localización a la segunda).
+</p>
+
+<p>
+Si no existe el fichero <path>base.pp</path>, instale la directriz y
+cárguela:
+</p>
+
+<pre caption="Instalar la directriz base">
+~# <i>semodule -n -B</i>
+</pre>
+
+<p>
+Esto es una operación que se realiza solo en una ocasión. Una vez
+instalada y cargada, ésta será recargada en cada reinicio.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Init no puede cargar la directriz SELinux</title>
+<body>
+
+<p>
+Durante el inicio del sistema, el proceso <c>init</c> es el responsable
+de cargar e interactuar con la directriz SELinux en memoria. Si
+<c>init</c> no soporta SELinux, su entorno no dispondrá de soporte
+para SELinux.
+</p>
+
+<p>
+Para verificar si <c>init</c> soporta SELinux, necesitamos comprobar si
+utiliza el objeto compartido <path>libselinux.so</path>:
+</p>
+
+<pre caption="Comprobar si init soporta SELinux">
+~# <i>ldd /sbin/init</i>
+        linux-vdso.so.1 =>  (0x00006ace30e84000)
+        <comment>( Debería ver algo similar a la siguiente línea: )</comment>
+        libselinux.so.1 => /lib/libselinux.so.1 (0x00006ace30a46000)
+        libc.so.6 => /lib/libc.so.6 (0x00006ace306e9000)
+        libdl.so.2 => /lib/libdl.so.2 (0x00006ace304e5000)
+        /lib64/ld-linux-x86-64.so.2 (0x00006ace30c68000)
+</pre>
+
+<p>
+Si éste no es el caso, asegúrese de que <c>emerge --info</c> muestra que
+el ajuste USE selinux está en su sitio y reinstale
+<path>sys-apps/sysvinit</path>. Si este ajuste no está definido,
+compruebe su perfil Gentoo y asegúrese de que apunta a un perfil
+<path>selinux/v2refpolicy/...</path>.
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>No se puede ingresar en el sistema</title>
+<subsection>
+<title>Descripción del problema</title>
+<body>
+
+<p>
+Si no puede ingresar en el sistema en una situación en particular
+(en remoto, en local, como root, como usuario regular,...) puede que
+se esté encontrando con algún problema sin mucha importancia. Sin
+embargo, para resolverlo tendrá que ingresar en el sistema como
+<e>sysadm_r</e> de un modo u otro.
+</p>
+
+<p>
+Si no puede ingresar como un usuario <e>sysadm_r</e>, deshabilite
+SELinux (arranque con <c>enforcing=0</c>) de este modo no se realiza
+ningún forzado SELinux. Los cambios que haga en modo permisivo son
+igual de efectivos que en el modo forzado (enforcing).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Contexto incorrecto</title>
+<body>
+
+<p>
+En la mayoría de los casos encontrará que el problema es un contexto de
+seguridad incorrecto. Ejecute <c>sestatus -v</c> y compare los
+<e>contextos de proceso</e> o los <e>contextos de fichero</e> que
+observe con los dados en la siguiente tabla.
+</p>
+
+<table>
+<tr>
+  <th>Proceso</th>
+  <th>Contexto</th>
+  <th>Si el contexto no es el adecuado...</th>
+</tr>
+<tr>
+  <ti>Contexto init</ti>
+  <ti>system_u:system_r:init_t</ti>
+  <ti>
+    En primer lugar, verifique que el propio init está correctamente
+    etiquetado. Compruebe la salida de la ejecución anterior de
+    la orden <c>sestatus -v</c> para el fichero
+    <path>/sbin/init</path> y asegúrese de que está ajustado a
+    system_u:object_r:init_exec_t. Si este no es el caso, etiquete de
+    nuevo <path>sys-apps/sysvinit</path> usando <c>rlpkg sysvinit</c>.
+    Haga las mismas comprobaciones que se realizan en la sección
+    <uri link="#doc_chap1">No se puede cargar la directriz de SELinux
+    </uri>. Reinicie su sistema e inténtelo de nuevo.
+  </ti>
+</tr>
+<tr>
+  <ti>Contexto agetty</ti>
+  <ti>system_u:system_r:getty_t</ti>
+  <ti>
+    Asegúrese de que el binario <path>/sbin/agetty</path> esta etiquetado
+    como system_u:object_r:getty_exec_t. Si no es así, etiquete de nuevo
+    el paquete <path>sys-apps/util-linux</path> usando
+    <c>rlpkg util-linux</c>. A continuación reinicie todos los procesos
+    agetty usando <c>pkill agetty</c> (estos procesos se pondrán en
+    marcha de nuevo automáticamente).
+  </ti>
+</tr>
+<tr>
+  <th>Fichero</th>
+  <th>Contexto</th>
+  <th>Si el contexto no es el adecuado...</th>
+</tr>
+<tr>
+  <ti>/bin/login</ti>
+  <ti>system_u:object_r:login_exec_t</ti>
+  <ti>
+    El binario login forma parte de <path>sys-apps/shadow</path>.
+    Ejecute <c>rlpkg shadow</c> para etiquetar de nuevo los ficheros de
+    este paquete y reintente el ingreso en el sistema.
+  </ti>
+</tr>
+<tr>
+  <ti>/sbin/unix_chkpwd</ti>
+  <ti>system_u:object_r:chkpwd_exec_t</ti>
+  <ti>
+    Este binario es parte del paquete <path>sys-libs/pam</path> y SSH lo
+    utiliza cuando se configura para que use PAM a la hora de realizar
+    la autenticación de usuarios. Etiquete de nuevo el paquete usando
+    <c>rlpkg pam</c> e intente de nuevo el ingreso en el sistema.
+  </ti>
+</tr>
+<tr>
+  <ti>/etc/passwd</ti>
+  <ti>system_u:object_r:etc_t</ti>
+  <ti rowspan="2">
+    Tanto <path>/etc/passwd</path> como <path>/etc/shadow</path> deben
+    estar etiquetados correctamente, de lo contrario PAM no podrá
+    autenticar a ningún usuario. Etiquete de nuevo los ficheros con
+    <c>restorecon /etc/passwd /etc/shadow</c> e intente de nuevo el
+    ingreso en el sistema.
+  </ti>
+</tr>
+<tr>
+  <ti>/etc/shadow</ti>
+  <ti>system_u:object_r:shadow_t</ti>
+</tr>
+<tr>
+  <ti>/bin/bash</ti>
+  <ti>system_u:object_r:shell_exec_t</ti>
+  <ti>
+    El intérprete de comandos del usuario (en este caso, <c>bash</c>)
+    se debe etiquetar correctamente de modo que el usuario pueda cambiar
+    al dominio de usuario cuando ingrese en el sistema. Para hacer esto,
+    etiquete de nuevo el paquete <path>app-shells/bash</path> usando
+    <c>rlpkg bash</c>. Entonces puede intentar de nuevo el ingreso en el
+    sistema.
+  </ti>
+</tr>
+</table>
+
+</body>
+</subsection>
+</section>
+</sections>
