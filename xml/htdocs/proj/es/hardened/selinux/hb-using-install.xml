@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-install.xml,v 1.1 2011/06/07 18:05:53 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-install.xml,v 1.2 2011/06/09 18:45:25 nimiux Exp $ -->
 
 <sections>
-<version>5</version>
-<date>2011-04-16</date>
+<version>10</version>
+<date>2011-06-07</date>
 
 <section>
 <title>Instalar Gentoo Hardened</title>
@@ -43,9 +43,10 @@ contenida en este capítulo, durante el proceso de instalación.
 Instale Gentoo Linux usando las instrucciones del
 <uri link="/doc/es/handbook">manual de Gentoo</uri>. Recomendamos usar
 los ficheros tarball hardened de stage3 en lugar de los ficheros
-estándar. Haga una instalación completa hasta el punto en el que debe
-reiniciar su sistema para obtener una instalación base (primitiva) de
-Gentoo.
+estándar, sin embargo, las instalaciones con stages estándar se permiten
+también en SELinux.  Haga una instalación completa hasta el punto en el
+que debe reiniciar su sistema para obtener una instalación base
+(primitiva) de Gentoo.
 </p>
 
 <note>
@@ -57,6 +58,7 @@ de ficheros XFS es de 512 bytes. Debido a que el valor por defecto es
 
 </body>
 </subsection>
+<!--
 <subsection>
 <title>Instalando la extensión (overlay) de desarrollo de Hardened</title>
 <body>
@@ -90,6 +92,7 @@ fichero <path>make.conf</path>.
 
 </body>
 </subsection>
+-->
 <subsection>
 <title>Cambiando a Python 2</title>
 <body>
@@ -113,7 +116,7 @@ Available Python interpreters:
 </body>
 </subsection>
 <subsection>
-<title>Opcional: Ajustando del contexto /tmp</title>
+<title>Opcional: Ajustando los contextos del sistema de ficheros</title>
 <body>
 
 <p>
@@ -149,14 +152,6 @@ al fichero adecuado (por ejemplo
 </p>
 
 <pre caption="Paquetes SELinux ~arch">
-sys-libs/libselinux
-sys-apps/policycoreutils
-sys-libs/libsemanage
-sys-libs/libsepol
-app-admin/setools
-dev-python/sepolgen
-sys-apps/checkpolicy
-sec-policy/*
 =sys-process/vixie-cron-4.1-r11
 </pre>
 
@@ -168,8 +163,10 @@ sec-policy/*
 
 <p>
 Ahora que tiene una instalación de Gentoo Linux funcionando, cambie el
-perfil de Gento al perfil SELinux hardened adecuado (por ejemplo,
-<path>selinux/v2refpolicy/amd64/hardened</path>).
+perfil de Gentoo al perfil SELinux hardened adecuado (por ejemplo,
+<path>hardened/linux/amd64/no-multilib/selinux</path>). Observe que los
+perfiles antiguos (como <path>selinux/v2refpolicy/amd64/hardened</path>)
+todavía están soportados.
 </p>
 
 <pre caption="Cambiar el perfil de Gentoo">
@@ -181,16 +178,19 @@ Available profile symlink targets:
   [4]   default/linux/amd64/10.0/desktop/kde
   [5]   default/linux/amd64/10.0/developer
   [6]   default/linux/amd64/10.0/no-multilib
-  [7]   default/linux/amd64/10.0/server *
+  [7]   default/linux/amd64/10.0/server
   [8]   hardened/linux/amd64
-  [9]   hardened/linux/amd64/no-multilib
-  [10]  selinux/2007.0/amd64
-  [11]  selinux/2007.0/amd64/hardened
-  [12]  selinux/v2refpolicy/amd64
-  [13]  selinux/v2refpolicy/amd64/desktop
-  [14]  selinux/v2refpolicy/amd64/developer
-  [15]  selinux/v2refpolicy/amd64/hardened
-  [16]  selinux/v2refpolicy/amd64/server
+  [9]   hardened/linux/amd64/selinux
+  [10]  hardened/linux/amd64/no-multilib *
+  [11]  hardened/linux/amd64/no-multilib/selinux
+  [12]  selinux/2007.0/amd64
+  [13]  selinux/2007.0/amd64/hardened
+  [14]  selinux/v2refpolicy/amd64
+  [15]  selinux/v2refpolicy/amd64/desktop
+  [16]  selinux/v2refpolicy/amd64/developer
+  [17]  selinux/v2refpolicy/amd64/hardened
+  [18]  selinux/v2refpolicy/amd64/server
+
 
 ~# <i>eselect profile set 15</i>
 </pre>
@@ -205,16 +205,74 @@ la instalación de SELinux.
 </note>
 
 <p>
-Edite su fichero <path>/etc/make.conf</path> y ajuste
-<c>FEATURES="-loadpolicy"</c>. El perfil actual de SELinux habilita la
-característica loadpolicy, sin embargo esta característica ya no está
-soportada por lo que puede ser ignorada de forma segura.
+No actualice su sistema aún. Necesitaremos instalar un par de paquetes
+en las próximas dos siguientes secciones en un orden en particular para el
+que Portage no está preparado.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Actualice make.conf</title>
+<body>
+
+<p>
+Edite su fichero <path>/etc/make.conf</path>. Si utiliza los perfiles
+antiguos (como <path>selinux/v2refpolicy/amd64/hardened</path>), ajuste
+<c>FEATURES="-loadpolicy"</c>. Estos perfiles habilitan la característica
+loadpolicy, sin embargo, esto ya no está soportado por lo que se puede
+ignorar de forma segura. Los perfiles más recientes ya no ajustan esta
+opción.
 </p>
 
 <p>
-No actualice su sistema aún. Necesitaremos instalar un par de paquetes
-en las próximas dos secciones en un orden en particular para el que
-Portage no está preparado.
+A continuación, eche un vistazo a los siguientes ajustes USE y decida si
+quiere habilitarlos o deshabilitarlos.
+</p>
+
+<table>
+<tr>
+  <th>Ajuste USE</th>
+  <th>Valor por defecto</th>
+  <th>Descripción</th>
+</tr>
+<tr>
+  <ti>peer_perms</ti>
+  <ti>Habilitado</ti>
+  <ti>
+    La capacidad peer_perms gestiona los controles de la directriz de
+    SELinux para los principales (peers) de red. Si está habilitada, los
+    mecanismos de control de acceso que utiliza SELinux para el etiquetado
+    basado en red, se consolidad. Este ajuste se recomienda ya que la
+    directriz también se actualiza para reflejar este hecho. Si no se
+    habilita, los mecanismos antiguos (NetLabel y Labeled IPsec) se usan
+    en cada lado.
+  </ti>
+</tr>
+<tr>
+  <ti>open_perms</ti>
+  <ti>Habilitado</ti>
+  <ti>
+    La capacidad open_perms habilita el permiso "open" para las clases
+    de fichero y relacionadas con los ficheros. El soporte para la llamada
+    "open" se añadió un poco después que otros por lo que el soporte al
+    principio fue opcional. Sin embargo, las directrices han madurado lo
+    suficiente para tener los permisos abiertos habilitados.
+  </ti>
+</tr>
+<tr>
+  <ti>ubac</ti>
+  <ti>Habilitado</ti>
+  <ti>
+    Cuando está deshabilitado, la directriz SELinux se construye sin el
+    control de acceso basado en usuario.
+  </ti>
+</tr>
+</table>
+
+<p>
+Elija sus opciones y actualice la variable <c>USE</c> en
+<path>/etc/make.conf</path>.
 </p>
 
 </body>
@@ -253,7 +311,7 @@ de las configuraciones o herramientas implicadas.
     Si es así, puede eliminarlos o hacer una copia de los mismos de forma
     que tengan su propio contexto de seguridad. Los ficheros
     <path>.old</path> son enlaces duros que pueden interferir con el
-    etiquetado de ficheros. Por ejemplo, puuede hacer
+    etiquetado de ficheros. Por ejemplo, puede hacer
     <c>cp /bin/hostname /bin/hostname.old</c>.
   </li>
 </ul>
@@ -579,8 +637,9 @@ sistema.
 </impo>
 
 <p>
-En primer lugar, reetiquete sus dispositivos. Esto aplicará los contextos
-de seguridad (etiquetas) en los ficheros de dispositivo.
+En primer lugar, reetiquete sus dispositivos y sus fichero relacionados
+con openrc. Esto aplicará los contextos de seguridad adecuados
+(etiquetas) en los ficheros necesarios.
 </p>
 
 <pre caption="Reetiquetar la estrucura /dev">
@@ -588,7 +647,7 @@ de seguridad (etiquetas) en los ficheros de dispositivo.
 ~# <i>mount -o bind / /mnt/gentoo</i>
 
 <comment>(Sustituya "strict" en la orden de abajo por "targeted" si ésta es su elección para SELINUXTYPE)</comment>
-~# <i>setfiles -r /mnt/gentoo /etc/selinux/strict/contexts/files/file_contexts /mnt/gentoo/dev</i>
+~# <i>setfiles -r /mnt/gentoo /etc/selinux/strict/contexts/files/file_contexts /mnt/gentoo/lib64</i>
 ~# <i>umount /mnt/gentoo</i>
 </pre>
 
@@ -630,7 +689,7 @@ darse cuenta de que tiene instalado <c>screen</c> en su sistema:
 </body>
 </subsection>
 <subsection>
-<title>Reinicie</title>
+<title>Reinicie y ajuste los booleanos de SELinux</title>
 <body>
 
 <p>
@@ -641,6 +700,47 @@ SELinux:
 
 <pre caption="Habilitar el booleano global_ssp">
 ~# <i>setsebool -P global_ssp on</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Defina las cuentas de administrador</title>
+<body>
+
+<p>
+Para terminar, necesitamos mapear la(s) cuenta(s) que utiliza para
+gestionar su sistema (aquéllas que necesitan acceso a Portage) al usuario
+de SELinux <c>staff_u</c>. Por defecto, los usuarios se mapean al usuario
+SELinux <c>user_u</c>, el cual no tiene los privilegios adecuados
+(tampoco los roles apropiados de acceso) para gestionar un sistema.
+Las cuentas que son mapeadas a <c>staff_u</c> pueden hacerlo, pero
+podrían necesitar cambiar del rol <c>staff_r</c> al rol <c>sysadm_r</c>
+antes de que se les concedan los privilegios apropiados.
+</p>
+
+<p>
+Asumiendo que su nombre de cuenta es <e>juan</e>:
+</p>
+
+<pre caption="Mapeando la cuenta Linux juan al usuario SELinux staff_u">
+~# <i>semanage login -a -s staff_u juan</i>
+~# <i>restorecon -R -F /home/juan</i>
+</pre>
+
+<p>
+Si más tarde ingresa en el sistema como <e>juan</e> y quiere gestionar
+su sistema, probablemente necesitará cambiar su rol. Puede usar
+<c>newrole</c> para hacer esto:
+</p>
+
+<pre caption="Cambiando de rol">
+~$ <i>id -Z</i>
+staff_u:staff_r:staff_t
+~$ <i>newrole -r sysadm_r</i>
+Password: <comment>(Introduzca su contraseña)</comment>
+~$ <i>id -Z</i>
+staff_u:sysadm_r:sysadm_t
 </pre>
 
 <p>
