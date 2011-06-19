@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/mailfilter-guide.xml,v 1.10 2011/03/05 19:24:52 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/mailfilter-guide.xml,v 1.11 2011/06/19 16:46:22 nimiux Exp $ -->
 
 <guide lang="es">
 <title>Guía Gentoo para el filtrado de correo</title>
@@ -41,8 +41,8 @@ ClamAV, listas grises y SPF.
 
 <license/>
 
-<version>3</version>
-<date>2011-03-04</date>
+<version>5</version>
+<date>2011-06-19</date>
 
 <chapter>
 <title>Introducción</title>
@@ -153,7 +153,7 @@ necesarias con <c>emerge courier-imap</c>.
 <p>
 Una quinta parte planeada a futuro contendrá varios consejos sobre
 desempeño y otras cosas que quizás le gustaría saber (correr en un
-ambiente chroot, restricciónes del postfix,etc.).
+ambiente chroot, restricciones del postfix, etc.).
 </p>
 
 <note>
@@ -594,7 +594,7 @@ activando el modo detallado. También, no se olvide de ejecutar
 LogSyslog
 LogVerbose
 LogFacility LOG_MAIL
-<comment>(Cambie la ubiación del archivo pid)</comment>
+<comment>(Cambie la ubicación del archivo pid)</comment>
 PidFile /var/run/amavis/clamd.pid
 <comment>(Defina el socket para clamav)</comment>
 LocalSocket /var/amavis/clamd
@@ -738,7 +738,7 @@ bayes_path              /var/amavis/.spamassassin/bayes
 </pre>
 
 <note>
-Con Spamassassin version 3.1 tiene que activar DCC, Razor2 eliminado
+Con Spamassassin versión 3.1 tiene que activar DCC, Razor2 eliminado
 los comentarios de las líneas correspondientes en
 <path>v310.pre</path>
 </note>
@@ -981,12 +981,13 @@ informativo. Esto es porque <c>POSIX::setuid()</c> regresa la cadena
 Si activaste la posibilidad de iniciar sesión para amavis, no te
 olvides de redefinir el intérprete de comandos en
 <path>/etc/passwd</path> a <c>/bin/false</c>.  </impo>
+
 </body>
 </section>
 </chapter>
 
 <chapter>
-<title>Autoaprendizaje y diferimiento de emails</title>
+<title>Autoaprendizaje y apartar emails</title>
 <section>
 <title>Creando el usuario spamtrap</title>
 <body>
@@ -995,7 +996,7 @@ olvides de redefinir el intérprete de comandos en
 Cree la cuenta spamtrap y los directorios.
 </p>
 
-<pre caption="Creando la cuenta spamtrap">
+<pre caption="Crear la cuenta spamtrap">
 # <i>useradd -m spamtrap</i>
 # <i>maildirmake /home/spamtrap/.maildir</i>
 # <i>chown -R spamtrap:spamtrap /home/spamtrap/.maildir</i>
@@ -1173,98 +1174,6 @@ $spam_quarantine_to = "spamtrap\@$myhostname";
 </body>
 </section>
 <section>
-<title>Redistribuyendo falsos positivos</title>
-<body>
-
-<p>
-Si configura la calificación de spam muy baja, como lo hacemos aquí,
-es probable que se encuentre con algunos falsos positivos. Esto serán
-filtrados en el directorio <path>likely-spam</path>. Éstos son
-revisados manualmente y cualquier falso positivo es movido al
-buzón <path>redeliver</path>. Desde ahí es primero redirigido a través
-de <c>sa-learn --ham</c> y redistribuido con todas las cabeceras
-intactas usandoe <uri
-link="http://www.engelschall.com/sw/smtpclient/">smtpclient</uri>.
-</p>
-
-<pre caption="Instalando smtpclient">
-# <i>echo "mail-client/smtpclient" &gt;&gt; /etc/portage/package.accept_keywords</i>
-# <i>emerge smtpclient</i>
-</pre>
-
-<p>
-Revise cada minuto la carpeta <path>redeliver</path> para comprobar
-nuevos correos, utilizando cron.
-</p>
-
-<pre caption="amavis crontab">
-<comment>#Redistribuir falsos positivos</comment>
-* * * * *          find /var/amavis/.maildir/Bayes/.redeliver/cur/ -type f -name \
-                   "[0-9]*" -exec cp {} /var/amavis/.maildir/Bayes/.ham/cur/ \; \
-                   &amp;&amp; find /var/amavis/.maildir/Bayes/.redeliver/cur/ -type f \
-                   -name "[0-9]*" -exec /usr/local/bin/redeliver.pl {} \;
-</pre>
-
-<p>
-Ahora, sólo necesitamos compiar el archivo <c>redeliver.pl</c>
-a <path>/usr/local/bon</path>.<uri
-link="http://home.coming.dk/files/redeliver.pl">Descárguelo</uri> o
-use la siguiente versión.
-</p>
-
-<pre caption="redeliver.pl">
-<comment>#!/usr/bin/perl -w
-# Redelivers mail using a modified version of smtpclient
-# By: Jens Hilligsoe &lt;gentoo@hilli.dk&gt;</comment>
-use strict;
-if(!($#ARGV == 0)) {
-        die "Usage:\n$0 maildir_mail\n";
-}
-my $mail = $ARGV[0];
-my $to = "";
-my $from = "";
-sub prunefile ( $ );
-<comment># Retrieve To and From envelope adresses</comment>
-open (MAIL, $mail) or die "Could not open $mail: $?\n";
-while(&lt;MAIL&gt;) {
-    if(($to eq "") || ($from eq "")) {
-        chop;
-        (my $key, my $value) = split (/:/);
-        if($key eq "X-Envelope-To") {
-            $to = $value;
-            $to =~ s/[\&lt;\&gt;,]//g; # Remove "&lt;", "&gt;" and ","
-            $to =~ s/^\s+|\s+$//g; #Remove whitespace before and after
-        }
-        if($key eq "X-Envelope-From") {
-            $from = $value;
-            $from =~ s/[\&lt;\&gt;,]//g;
-            $from =~ s/^\s+|\s+$//g;
-            if($from eq "") {
-                $from = "postmaster";
-            }
-        }
-    }
-}
-if($to eq "") {
-    prunefile($ARGV[0]); # Just nuke it if to is empty
-} else {
-    my $redelivercmd = "cat $ARGV[0] | smtpclient -w -S 127.0.0.1 -P 10025 -f $from $to";
-    unless (system($redelivercmd) == 0 ) {
-        die "Unable to redeliver: $?";
-    }
-    prunefile($ARGV[0]); # Clean up
-}
-sub prunefile ( $ ) {
-    my ($file) = @_;
-    unless (unlink $file) {
-        die "Unable to remove mail: $?";
-    }
-}
-</pre>
-
-</body>
-</section>
-<section>
 <title>Limpiando</title>
 <body>
 
@@ -1276,7 +1185,7 @@ ejecutar <c>tmpwatch</c> así que necesitamos editar el crontab de él.
 </p>
 
 <pre caption="Modificando el crontab del root">
-<comment># Limpia
+<comment># Limpieza
 # Guarda los virusmails por una semana (24*7 horas)</comment>
 15 0 * * *      /usr/sbin/tmpwatch -c -f -d --quiet 168 /var/amavis/virusmails/
 <comment># Borra el spam y ham utilizado para aprender luego de una semana</comment>
@@ -1826,7 +1735,7 @@ detiene la búsqueda.
 
 <p>
 Si desea usar listas blancas y listas negras, entonces debe añadir
-el remitente y el destinatario a <c>mailadr</c>, depués defina
+el remitente y el destinatario a <c>mailadr</c>, después defina
 la relación entre ambas direcciones de correo en <c>wblist</c>
 e indique si es lista blanca o lista negra.
 </p>
