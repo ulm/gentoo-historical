@@ -1,0 +1,40 @@
+http://bugs.gentoo.org/366025
+http://sourceware.org/bugzilla/show_bug.cgi?id=12608
+
+taken from upstream cvs
+
+===================================================================
+RCS file: /cvs/src/src/bfd/elf64-alpha.c,v
+retrieving revision 1.179
+retrieving revision 1.180
+diff -u -r1.179 -r1.180
+--- src/bfd/elf64-alpha.c	2011/06/22 16:18:24	1.179
++++ src/bfd/elf64-alpha.c	2011/06/24 17:38:17	1.180
+@@ -3508,6 +3508,13 @@
+   pos[3] = info->contents + gpdisp->r_offset;
+   pos[4] = pos[3] + gpdisp->r_addend;
+ 
++  /* Beware of the compiler hoisting part of the sequence out a loop
++     and adjusting the destination register for the TLSGD insn.  If this
++     happens, there will be a move into $16 before the JSR insn, so only
++     transformations of the first insn pair should use this register.  */
++  tlsgd_reg = bfd_get_32 (info->abfd, pos[0]);
++  tlsgd_reg = (tlsgd_reg >> 21) & 31;
++
+   /* Generally, the positions are not allowed to be out of order, lest the
+      modified insn sequence have different register lifetimes.  We can make
+      an exception when pos 1 is adjacent to pos 0.  */
+@@ -3575,13 +3582,6 @@
+   use_gottprel = FALSE;
+   new_symndx = is_gd ? ELF64_R_SYM (irel->r_info) : STN_UNDEF;
+ 
+-  /* Beware of the compiler hoisting part of the sequence out a loop
+-     and adjusting the destination register for the TLSGD insn.  If this
+-     happens, there will be a move into $16 before the JSR insn, so only
+-     transformations of the first insn pair should use this register.  */
+-  tlsgd_reg = bfd_get_32 (info->abfd, pos[0]);
+-  tlsgd_reg = (tlsgd_reg >> 21) & 31;
+-
+   switch (!dynamic && !info->link_info->shared)
+     {
+     case 1:
