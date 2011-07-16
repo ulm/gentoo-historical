@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/modules/Attic/portage.xml,v 1.1 2011/07/16 20:36:41 zorry Exp $ -->
+
+<guide link="/proj/en/hardened/selinux/modules/portage.xml" lang="en">
+<title>SELinux Portage Module</title>
+<author title="Author">
+  <mail link="sven.vermeulen@siphos.be">Sven Vermeulen</mail>
+</author>
+
+<abstract>
+Within SELinux, the portage module is responsible for defining the
+Gentoo-related domains and privileges, including those for the Portage package
+manager, Gentoo-specific file system locations and the command-line wrappers.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>2</version>
+<date>2011-07-07</date>
+
+<chapter>
+<title>Structure</title>
+<section>
+<title>Domains</title>
+<body>
+
+<figure link="./images/portagedomain.png" short="General Portage domain overview"
+caption="General Portage domain overview" />
+
+<p>
+The <c>portage</c> module provides the following domains:
+</p>
+
+<table>
+<tr>
+  <th>Domain</th>
+  <th>Process(es)</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti>portage_t</ti>
+  <ti>emerge, ebuild, quickpkg, ebuild.sh, regenworld, sandbox</ti>
+  <ti>Gentoo's package manager domain</ti>
+</tr>
+<tr>
+  <ti>portage_sandbox_t</ti>
+  <ti>sandbox</ti>
+  <ti>Portage compile sandbox domain</ti>
+</tr>
+<tr>
+  <ti>portage_fetch_t</ti>
+  <ti>rsync</ti>
+  <ti>
+    Domain responsible for fetching ebuilds and sources and storing them on
+    the system
+  </ti>
+</tr>
+<tr>
+  <ti>gcc_config_t</ti>
+  <ti>gcc-config</ti>
+  <ti>Domain for the gcc-config wrapper</ti>
+</tr>
+</table>
+
+</body>
+</section>
+<section>
+<title>File Types/Labels</title>
+<body>
+
+<p>
+The following table lists the file type/labels defined in the <c>portage</c>
+module.
+</p>
+
+<table>
+<tr>
+  <th>Type</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti>portage_exec_t</ti>
+  <ti>
+    Entrypoints for the portage and protage-related domains. Used for binaries
+    or scripts such as sandbox, emerge, ...
+  </ti>
+</tr>
+<tr>
+  <ti>gcc_config_exec_t</ti>
+  <ti>
+    Entrypoints for the gcc-config wrapper domain
+  </ti>
+</tr>
+<tr>
+  <ti>portage_ebuild_t</ti>
+  <ti>
+    Type assigned to the ebuild files and directories
+  </ti>
+</tr>
+<tr>
+  <ti>portage_srcrepo_t</ti>
+  <ti>
+    Type assigned to the live repository pulls (git, svn, cvs, ...) used by live
+    ebuilds
+  </ti>
+</tr>
+<tr>
+  <ti>portage_fetch_tmp_t</ti>
+  <ti>
+    Type used by the portage_fetch_t domain when storing files in a temporary
+    location
+  </ti>
+</tr>
+<tr>
+  <ti>portage_db_t</ti>
+  <ti>
+    Type used by Portage' data files
+  </ti>
+</tr>
+<tr>
+  <ti>portage_conf_t</ti>
+  <ti>
+    Type used by Portage' configuration files
+  </ti>
+</tr>
+<tr>
+  <ti>portage_cache_t</ti>
+  <ti>
+    Type used for the Portage cache
+  </ti>
+</tr>
+<tr>
+  <ti>portage_log_t</ti>
+  <ti>
+    Type used by Portage for its log files
+  </ti>
+</tr>
+<tr>
+  <ti>portage_tmp_t<br />portage_tmpfs_t</ti>
+  <ti>
+    Type used by Portage for temporary files
+  </ti>
+</tr>
+</table>
+
+</body>
+</section>
+<section>
+<title>Other Types</title>
+<body>
+
+<p>
+Besides the file and file location types, the following types are also defined:
+</p>
+
+<table>
+<tr>
+  <th>Type</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti>portage_devpts_t</ti>
+  <ti>
+    Type used for the terminal output device/location
+  </ti>
+</tr>
+</table>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Using Portage</title>
+<section>
+<title>File Locations</title>
+<body>
+
+<p>
+The policy offered only contains the right file context rules for the default
+locations. If you deviate from these locations, you'll need to update the
+contexts accordingly.
+</p>
+
+<p>
+The following table provides an overview of the Portage settings (variables in
+<path>make.conf</path>) that are commonly changed by end users, and the file 
+context that it should have.
+</p>
+
+<table>
+<tr>
+  <th>Variable in make.conf</th>
+  <th>Default Location</th>
+  <th>File Context(s)</th>
+</tr>
+<tr>
+  <ti>
+    ${PORTDIR}
+  </ti>
+  <ti>
+    <path>/usr/portage</path>
+  </ti>
+  <ti>
+    system_u:object_r:portage_ebuild_t
+  </ti>
+</tr>
+<tr>
+  <ti>
+    ${DISTDIR}/svn-src<br />
+    ${DISTDIR}/git-src<br />
+    ${DISTDIR}/cvs-src
+  </ti>
+  <ti>
+    <path>/usr/portage/distfiles/svn-src</path><br />
+    <path>/usr/portage/distfiles/git-src</path><br />
+    <path>/usr/portage/distfiles/cvs-src</path>
+  </ti>
+  <ti>
+    system_u:object_r:portage_srcrepo_t
+  </ti>
+</tr>
+<tr>
+  <ti>${PKGDIR}</ti>
+  <ti>
+    <path>/usr/portage/packages</path>
+  </ti>
+  <ti>
+    system_u:object_r:portage_ebuild_t
+  </ti>
+</tr>
+<tr>
+  <ti>${PORT_LOGDIR}</ti>
+  <ti>
+    <path>/var/log/portage</path>
+  </ti>
+  <ti>
+    system_u:object_r:portage_log_t
+  </ti>
+</tr>
+<tr>
+  <ti>${PORTAGE_TMPDIR}</ti>
+  <ti>
+    <path>/var/tmp/portage</path>
+  </ti>
+  <ti>
+    system_u:object_r:portage_tmp_t
+  </ti>
+</tr>
+</table>
+
+<p>
+If you use different locations, use the following commands to update the file
+contexts accordingly:
+</p>
+
+<pre caption="Updating file contexts">
+<comment>( Example for a different PORTDIR location, say /var/repo/portage )</comment>
+~# <i>semanage -a -t portage_ebuild_t /var/repo/portage</i>
+~# <i>restorecon -R /var/repo/portage</i>
+</pre>
+
+<p>
+Don't forget that Portage uses subdirectories with different labels (think
+distfiles or the repositories for the live ebuilds) so take care when
+relabelling locations!
+</p>
+
+<p>
+If you are using different mounts, you might need to use the 
+<c>rootcontext=</c> mount option to set the initial context. If the file system
+does not suppor SELinux contexts (like NFS), you can use the <c>context=</c>
+mount option to force the context of all files on the mounted location.
+</p>
+
+</body>
+</section>
+<section>
+<title>Booleans</title>
+<body>
+
+<p>
+The Portage module within Gentoo defines two booleans, called
+<c>gentoo_try_dontaudit</c> and <c>gentoo_portage_allow_nfs</c>. 
+</p>
+
+<p>
+When <c>gentoo_try_dontaudit</c> is enabled, the policy will hide the AVC
+denials of which the Gentoo developers believe they are harmless (cosmetic).
+If this boolean is enabled and you are experiencing permission problems, it
+is wise to first disable the boolean and see if you now get any denials that
+could explain the problem.
+</p>
+
+<p>
+When <c>gentoo_portage_allow_nfs</c> is enabled, then the Portage-related
+domains will be able to manage the <c>nfs_t</c> and as such, allow for the 
+Portage tree and other locations to be NFS-mounted without correcting their
+label (which is still supported when using the <c>context=</c> mount option).
+</p>
+
+<p>
+To switch booleans, use <c>setsebool</c> or <c>togglesebool</c>.
+</p>
+
+<pre caption="Enabling the gentoo_try_dontaudit boolean">
+<comment>( With the -P flag, the boolean state is persisted across reboots)</comment>
+~# <i>setsebool -P gentoo_try_dontaudit on</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+</guide>
