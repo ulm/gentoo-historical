@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-intro-concepts.xml,v 1.4 2011/06/07 19:46:52 klondike Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-intro-concepts.xml,v 1.5 2011/08/11 21:38:44 blueness Exp $ -->
 
 <sections>
-<version>4</version>
-<date>2011-05-03</date>
+<version>5</version>
+<date>2011-07-21</date>
 
 <section>
 <title>Introduction</title>
@@ -36,11 +36,58 @@ important) and will be discussed further in this document.
 
 </body>
 </subsection>
+<subsection>
+<title>SELinux Policies</title>
+<body>
+
+<p>
+Within Gentoo (and other distributions as well), SELinux is supported through
+several policy levels. These are, in climbing order of complexity (meaning they
+can offer more security, but are harder to manage):
+</p>
+
+<ol>
+  <li>
+    <b>targeted</b> is a policy where network-facing services (daemons) are
+    confined (the processes can only execute those actions that are defined
+    in the policy), but other applications are running what is called
+    <e>unconfined</e>, meaning that there are little to no restrictions for
+    those processes.
+  </li>
+  <li>
+    <b>strict</b> is a policy where all processes are confined. There are no
+    unconfined domains. In other distributions, this is still considered the
+    <e>targeted</e> policy but without the unconfined domain definition.
+  </li>
+  <li>
+    <b>multi-category security</b> is a policy where the (confined) domains can
+    be categorized (split up), allowing for multiple processes running in
+    different instances of a confined domain
+  </li>
+  <li>
+    <b>multi-level security</b> is a policy where rules exist regarding the
+    sensitivity of domains and resources. This allows for a "proper"
+    information flow policy (make sure that sensitive data isn't leaked
+    to less privileged domains). Conceptually, one can understand this best
+    if one considers sensitivity levels of Public, Internal, Confidential, 
+    Strictly Confidential, etc.
+  </li>
+</ol>
+
+<p>
+When using Gentoo Hardened, all these policies are available. However,
+development focuses mainly on <e>strict</e> and <e>mcs</e>. The 
+<e>targeted</e> policy is assumed to work if strict works whereas we know
+that the <e>mls</e> policy is currently not fit yet for production use.
+</p>
+
+</body>
+</subsection>
 </section>
 <section>
 <title>Security Contexts</title>
 <subsection>
-<title>Users, Roles and Domains</title>
+<title>Users, Roles, Domains, Sensitivities and Categories</title>
 <body>
 
 <p>
@@ -54,7 +101,8 @@ in the spirit of lowest privilege - has little permissions to perform any action
 </p>
 
 <p>
-Within SELinux, such a security context is displayed using three definitions:
+Within SELinux, such a security context is displayed using three to five 
+definitions, depending on the type of policy you are running:
 </p>
 
 <dl>
@@ -71,6 +119,19 @@ Within SELinux, such a security context is displayed using three definitions:
   <dd>
     This is the type assigned to the resource and is the key to SELinux'
     enforcement rules
+  </dd>
+  <dt>sensitivity</dt>
+  <dd>
+    This is a level given to a resource informing the system about the
+    sensitivity of this resource. A sensitivity is something akin to 
+    Public, Internal, Restricted, Confidential, Strictly Confidential, ...
+    Sensitivity levels are only supported in MLS policies.
+  </dd>
+  <dt>category</dt>
+  <dd>
+    This is a specific instantiation of a resource. It allows segregation of
+    resources even if they are of the same type. More about categories later - 
+    categories are supported in MLS and MCS policies.
   </dd>
 </dl>
 
@@ -93,7 +154,22 @@ staff_u:staff_r:staff_t
 In this case, the user is identified as the SELinux user <e>staff_u</e>,
 currently in the <e>staff_r</e> role and assigned to the <e>staff_t</e>
 type. The actions the user is allowed to do are based upon this security
-context. 
+context. Also, you notice that only three identifiers are shown. This is
+because the example is taken on a <e>strict</e> (or <e>targeted</e>) policy
+system. The next example gives the same result, but on an <e>MCS</e> policy
+system.
+</p>
+
+<pre caption="Getting the security context of a logged on user on an MCS policy system">
+~$ <i>id -Z</i>
+staff_u:staff_r:staff_t:s0-s0:c0.c1023
+</pre>
+
+<p>
+Here, the user is running with sensitivity level of s0 (which, in an MCS policy
+system, is the only available sensitivity) and with a category set of c0 up to
+and including c1023. However, note that in an MCS policy system categories are
+optional, so you might just see an output of <e>staff_u:staff_r:staff_t:s0</e>.
 </p>
 
 </body>
@@ -542,9 +618,57 @@ have previously explained, it would lead to an unmanageable collection of types
 and permissions. The MLS implementation simplifies this.
 </p>
 
+</body>
+</subsection>
+<subsection>
+<title>Multi-Level Security</title>
+<body>
+
 <p>
-At this moment, the Gentoo Hardened SELinux handbook does not cover MLS/MCS, but
-this might (and probably will) change in the future.
+The most flexible - but also most challenging to manage - method offered by
+SELinux is MLS, or <e>Multi-Level Security</e>. When using this policy type, 
+security administrators can assign sensitivity labels to resources and define
+which domains (and which sensitivity levels) are able to read/write to which
+level. A level is always given as a range, showing the lowest and highest level
+that a particular domain is running in.
+</p>
+
+<p>
+Next to the sensitivity level, MLS supports categories on a per-level basis.
+These categories allow the security administrator to make different, possibly
+independent "containers" for sensitive resources. To give an example, the
+administrator can support the levels Public up to Strictly Confidential, and
+categories of "Finance", "Risk Analysis", "Acquisitions", "IT Systems", ...
+</p>
+
+<p>
+With such categories, one can then allow one role to have access to all
+sensitivity levels for a particular category (say "IT Systems") but still only
+have access to the Public and Internal documents of all other categories.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Multi-Category Security</title>
+<body>
+
+<p>
+The MCS or <e>Multi-Category Security</e> policy is a subset of the MLS policy.
+It supports the various categories, but without using the multiple security
+levels for the resources. 
+</p>
+
+<p>
+The use of MCS has become popular because it is far less difficult to manage
+while still retaining some of the flexibilities offered by the MLS policy.
+Where MLS is more chosen for business purposes (and as such has some influence
+on the organization of the business), MCS is often used for <e>multitenancy</e>
+architectures. In a multi-tenant architecture, systems are running processes for
+various clients simultaneously. Categorisation allows for separation of
+privileges across these processes without introducing multiple domains (which
+would require the development of new policies for each new client that a system
+wants to serve).
 </p>
 
 </body>

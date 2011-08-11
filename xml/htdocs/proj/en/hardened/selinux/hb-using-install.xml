@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-install.xml,v 1.6 2011/07/16 20:36:41 zorry Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-install.xml,v 1.7 2011/08/11 21:38:44 blueness Exp $ -->
 
 <sections>
-<version>10</version>
-<date>2011-06-07</date>
+<version>12</version>
+<date>2011-07-22</date>
 
 <section>
 <title>Installing Gentoo Hardened</title>
@@ -128,7 +128,11 @@ To configure the <path>/tmp</path> mount, edit your <path>/etc/fstab</path>:
 </p>
 
 <pre caption="Update /etc/fstab for /tmp">
+<comment># For a "targeted" or "strict" policy type:</comment>
 tmpfs  /tmp  tmpfs  defaults,noexec,nosuid<i>,rootcontext=system_u:object_r:tmp_t</i>  0 0
+
+<comment># For an "mls" or "mcs" policy type:</comment>
+tmpfs  /tmp  tmpfs  defaults,noexec,nosuid<i>,rootcontext=system_u:object_r:tmp_t:s0</i>  0 0
 </pre>
 
 </body>
@@ -205,14 +209,6 @@ particular order which Portage isn't aware of in the next couple of sections.
 <subsection>
 <title>Update make.conf</title>
 <body>
-
-<p>
-Edit your <path>/etc/make.conf</path> file. If you use the older SELinux
-profiles (like <path>selinux/v2refpolicy/amd64/hardened</path>), set
-<c>FEATURES="-loadpolicy"</c>. These SELinux profiles enable the
-loadpolicy feature, but this isn't supported anymore so can be safely ignored. 
-More recent profiles do not set this anymore.
-</p>
 
 <p>
 Next, take a look at the following USE flags and decide if you want to enable
@@ -397,12 +393,19 @@ Build and install the new Linux kernel and its modules.
 <body>
 
 <p>
-Next, edit <path>/etc/fstab</path> and add the following line:
+Next, edit <path>/etc/fstab</path> and add the following two lines:
 </p>
 
-<pre caption="Enabling selinux file system">
+<pre caption="Enabling selinux-specific file system options">
+<comment># The udev mount is due to bug #373381</comment>
+udev   /dev        tmpfs        rw,rootcontext=system_u:object_r:device_t,seclabel,nosuid,relatime,size=10m,mode=755  0 0
 none   /selinux    selinuxfs    defaults    0 0
 </pre>
+
+<note>
+In case of an MLS/MCS policy, you need to have the context with sensitivity
+level, so <c>...:device_t:s0</c>.
+</note>
 
 <p>
 Make the <path>/selinux</path> mountpoint as well:
@@ -525,9 +528,12 @@ configured at boot time.
 #       disabled - No SELinux policy is loaded.
 SELINUX=<i>permissive</i>
 
-# SELINUXTYPE can take one of these two values:
+# SELINUXTYPE can take one of these four values:
 #       targeted - Only targeted network daemons are protected.
-#       strict - Full SELinux protection.
+#       strict   - Full SELinux protection.
+#       mls      - Full SELinux protection with Multi-Level Security
+#       mcs      - Full SELinux protection with Multi-Category Security
+#                  (mls, but only one sensitivity level)
 SELINUXTYPE=<i>strict</i>
 </pre>
 
@@ -557,9 +563,10 @@ Within this configuration file, two variables can be set:
     </ul>
   </li>
   <li>
-    <c>SELINUXTYPE</c> selects if an "unconfined" domain will be loaded or not.
+    <c>SELINUXTYPE</c> selects the SELinux policy type to load.
     Gentoo Hardened recommends the use of <c>strict</c> for servers, and
-    <c>targeted</c> for desktops.
+    <c>targeted</c> for desktops. The <c>mcs</c> type is supported, <c>mls</c>
+    is currently still considered experimental.
   </li>
 </ul>
 
@@ -577,7 +584,20 @@ every application "out there".
 </p>
 
 <p>
-When you have made your choice between <c>strict</c> and <c>targeted</c>, save
+Next to <c>targeted</c> and <c>strict</c>, you can opt for <c>mcs</c> to allow
+categorization of the process domains. This is useful on multi-tenant systems
+such as web servers, virtualization hosts, ... where multiple processes will be
+running, most of them in the same security domain, but in different categories.
+</p>
+
+<p>
+Finally, you can also select <c>mls</c> to differentiate security domains on
+a sensitivity level. However, MLS is currently still considered experimental
+in Gentoo Hardened and as such not recommended.
+</p>
+
+<p>
+When you have made your choice between the SELinux policy types, save
 this in your <path>/etc/make.conf</path> file as well. That way, Portage will 
 only install the policy modules for that SELinux type rather than both.
 </p>
