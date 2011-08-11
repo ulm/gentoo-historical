@@ -62,6 +62,9 @@
     <xsl:when test="$mode='yaml'">
       <xsl:apply-templates mode="yaml"/>
     </xsl:when>
+    <xsl:when test="$mode='yaml-latlon'">
+      <xsl:apply-templates mode="yaml-latlon"/>
+    </xsl:when>
     <xsl:when test="$mode='kml'">
       <xsl:apply-templates mode="kml"/>
     </xsl:when>
@@ -97,6 +100,16 @@
 
 <!-- yaml mode -->
 <xsl:template match="/devlist" mode="yaml">
+<xsl:text>{
+  "developers": [
+</xsl:text>
+<xsl:apply-templates select="exslt:node-set($rollcall)/user[not(status)]" mode="yaml"/>
+<xsl:text>  ]
+}
+</xsl:text>
+</xsl:template>
+
+<xsl:template match="/devlist" mode="yaml-latlon">
 <xsl:text>{
   "developers": [
 </xsl:text>

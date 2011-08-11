@@ -16,7 +16,7 @@ function load() {
         map.setCenter(new GLatLng(40.0, -38.0), 2);
 
         req = GXmlHttp.create();
-        req.open("GET", "/proj/en/devrel/roll-call/devlist.xml?mode=yaml", true); 
+        req.open("GET", "/proj/en/devrel/roll-call/devlist.xml?mode=yaml-latlon", true); 
         req.onreadystatechange = onGet;
         req.send(null); 
         window.setTimeout(function() {
