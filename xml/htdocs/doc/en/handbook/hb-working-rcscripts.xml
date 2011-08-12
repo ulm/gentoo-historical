@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.32 2011/03/02 08:09:48 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.33 2011/08/12 19:34:56 swift Exp $ -->
 
 <sections>
 
@@ -14,8 +14,8 @@ dependency-driven decisions and virtual initscripts. This chapter explains all
 these aspects and explains how to deal with these scripts.
 </abstract>
 
-<version>2</version>
-<date>2011-03-02</date>
+<version>3</version>
+<date>2011-08-12</date>
 
 <section>
 <title>Runlevels</title>
@@ -440,10 +440,6 @@ start() {
 stop() {
   <comment>(Commands necessary to stop the service)</comment>
 }
-
-restart() {
-  <comment>(Commands necessary to restart the service)</comment>
-}
 </pre>
 
 <p>
@@ -574,6 +570,11 @@ initialize your service. It is advisable to use the <c>ebegin</c> and
 
 <pre caption="Example start() function">
 start() {
+  if [ "${RC_CMD}" = "restart" ];
+  then
+    <comment># Do something in case a restart requires more than stop, start</comment>
+  fi
+
   ebegin "Starting my_service"
   start-stop-daemon --start --exec /path/to/my_service \
     --pidfile /path/to/my_pidfile
@@ -591,6 +592,15 @@ service is extremely verbose.  Using <c>--quiet</c> may hinder debugging if the
 service fails to start.
 </p>
 
+<p>
+Another notable setting used in the above example is to check the contents of
+the <c>RC_CMD</c> variable. Unlike the previous init script system, the newer
+<c>openrc</c> system does not support script-specific restart functionality.
+Instead, the script needs to check the contents of the <c>RC_CMD</c> variable
+to see if a function (be it <c>start()</c> or <c>stop()</c>) is called as part
+of a restart or not.
+</p>
+
 <note>
 Make sure that <c>--exec</c> actually calls a service and not just a shell
 script that launches services and exits -- that's what the init script is
@@ -604,14 +614,13 @@ directory.
 </p>
 
 <p>
-Other functions you can define are: <c>stop()</c> and <c>restart()</c>. You are
-not obliged to define these functions! Our init system is intelligent enough to
-fill these functions by itself if you use <c>start-stop-daemon</c>.
+Another function you can define is <c>stop()</c>. You are not obliged to define
+this function though! Our init system is intelligent enough to fill in this
+function by itself if you use <c>start-stop-daemon</c>.
 </p>
 
 <p>
-Although you do not <e>have</e> to create a <c>stop()</c> function, here is an
-example:
+Here is an example of a <c>stop()</c> function:
 </p>
 
 <pre caption="Example stop() function">
@@ -680,6 +689,10 @@ restartdelay() {
   start
 }
 </pre>
+
+<impo>
+The function <c>restart()</c> cannot be overridden in openrc!
+</impo>
 
 </body>
 </subsection>
