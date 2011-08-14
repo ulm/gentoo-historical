@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoolkit.xml,v 1.33 2010/10/03 18:47:51 nightmorph Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/gentoolkit.xml,v 1.34 2011/08/14 17:02:52 swift Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide>
@@ -29,6 +29,9 @@
 <author title="Editor">
   <mail link="nightmorph@gentoo.org">Joshua Saddler</mail>
 </author>
+<author title="Editor">
+  <mail link="douglasjanderson@gmail.com">Douglas Anderson</mail>
+</author>
 
 <abstract>
 Gentoolkit is a suite of tools to ease the administration of a Gentoo system.
@@ -37,8 +40,8 @@ This document covers the basics of some of the tools present in Gentoolkit.
 
 <!-- Licensed under GFDL -->
 
-<version>2</version>
-<date>2010-10-03</date>
+<version>3</version>
+<date>2011-06-24</date>
 
 <chapter>
 <title>Introduction</title>
@@ -88,7 +91,7 @@ Just as with any Gentoo package, installation is just a simple emerge.
 <note>
 Many of the tools in gentoolkit reveal important information about your system
 or require root privilege. For that reason, some of the programs may only be
-executed (or only function properly) if run by a user with root permission.
+executed (or only function properly) if run by a user with root privileges.
 </note>
 
 </body>
@@ -113,305 +116,465 @@ Any documentation that a program might have (other than man pages) is stored in
 <body>
 
 <p>
-<c>equery</c> is a tool that displays a great deal of useful information about
-the packages on your system and much more. <c>equery --help</c> gives you the
-full set of options.
+<c>equery</c> is a tool that displays useful information about the packages on
+your system. <c>equery</c> is based on a system of modules. 
+Every module has a shorthand name. For example, <c>equery l gcc</c> is the same
+as <c>equery list gcc</c>.  <c>equery --help</c> explains global options
+and lists all available modules and their shorthand names. 
+<c>equery --help module</c> will display the help screen for a specific
+module. Lastly, <c>man equery</c> provides a detailed explanation of all
+available modules and options, and provides useful examples.
 </p>
 
-<note>
-Not all features listed by <c>equery --help</c> have been implemented yet.
-Those that have not been, are mentioned clearly. You will also see that
-every command has a short option, e.g. <c>b</c> instead of <c>belongs</c>.
-</note>
+<p>
+Below is a list of features that work over the majority of modules.
+</p>
+
+<pre caption="Examples of Acceptable Input">
+<comment>(Many modules require a package argument. equery accepts all emerge-like input):</comment>
+$ <i>equery --quiet list gcc</i>                  # <comment>package</comment>
+sys-devel/gcc-4.3.2-r3
+$ <i>equery --quiet list sys-devel/gcc</i>        # <comment>category/package</comment>
+sys-devel/gcc-4.3.2-r3
+$ <i>equery --quiet list '>=sys-devel/gcc-4'</i>  # <comment>atom syntax</comment>
+sys-devel/gcc-4.3.2-r3
+
+<comment>(Like emerge, equery doesn't understand partial package names):</comment>
+$ <i>equery check zilla</i>
+!!! No package found matching zilla
+
+<comment>(Unlike emerge, equery can accept shell-like globbing in the category and/or package name):</comment>
+$ <i>equery check '*zilla*'</i>
+ * Checking www-client/mozilla-firefox-3.0.14 ...
+    90 out of 90 files passed
+$ <i>equery check www-c*/*</i>
+ * Checking www-client/links-2.2 ...
+   30 out of 30 files passed
+ * Checking www-client/mozilla-firefox-3.0.14 ...
+   90 out of 90 files passed
+
+<comment>(Most equery modules take multiple input):</comment>
+$ <i>equery hasuse sse sse2</i>
+ * Searching for USE flag sse ... 
+[IP-] [  ] media-libs/flac-1.2.1-r3 (0)
+[IP-] [  ] media-libs/speex-1.2_beta3_p2 (0)
+
+ * Searching for USE flag sse2 ... 
+[IP-] [  ] dev-libs/openssl-0.9.8k (0)
+[IP-] [  ] x11-libs/pixman-0.16.0 (0)
+
+<comment>(A few modules also allow full regular expressions):</comment>
+$ <i>equery -q list --portage-tree --full-regex '[kr]?flickr.*'</i>
+dev-dotnet/flickrnet-bin-2.2
+dev-ruby/flickr-1.0.2-r1
+dev-ruby/flickr-1.0.2-r2
+dev-ruby/rflickr-20060201
+media-gfx/kflickr-0.6
+[...]
+</pre>
 
 <note>
-Be aware that equery currently changes the format of the output if it is sent
-through a pipe. The piped format is intended to be easier to parse by tools, but
-you can also turn it off by adding the <c>--no-pipe</c> option. If you write
-scripts that employ equery, you should be aware of this.
+Globbing support replaced a number of older options in <c>equery</c>.
+For example, to act on all packages in a certain set, use <c>'*'</c>. 
+To act on all packages in a category, use <c>'category-name/*'</c>.
 </note>
+
+<warn>
+Don't forget to quote input when using special shell characters 
+like asterisks or greater than/less than signs.
+</warn>
+
+<p>
+The next few sections in this document give a quick introduction to the
+different <c>equery</c> modules.
+</p>
 
 </body>
 </section>
 <section>
-<title>Finding the Package That a File Came From</title>
+<title>Finding the Package That a File Came From with belongs (b)</title>
 <body>
 
-<p>
-<c>equery</c> also provides the functionality of finding the package that a
-file came from, using <c>belongs</c> command (or just <c>b</c>).
-</p>
-
-<pre caption="Finding the ebuild that installed a given file">
-# <i>equery belongs /usr/bin/audacious</i>
-[ Searching for file(s) /usr/bin/audacious in *... ]
-media-sound/audacious-1.1.2 (/usr/bin/audacious)
+<pre caption="Finding the Package that Installed a Given File">
+$ <i>equery belongs -e /usr/bin/glxgears</i>
+ * Searching for /usr/bin/glxgears ... 
+ x11-apps/mesa-progs-7.5.1 (/usr/bin/glxgears)
 </pre>
 
 <p>
-By using the <c>-f</c> option, you may search for packages with files
-matching any regular expression. The <c>-e</c> option is useful for
-terminating your search immediately when a match is found.
+<c>belongs</c> can search for files matching a regular expression with the
+<c>-f</c> option. The <c>-e</c> option stops searching after it finds a match.
+Since no file on your system should be owned by two packages, this is a safe
+optimization.
 </p>
 
 </body>
 </section>
 <section>
-<title>Verifying Package Integrity</title>
+<title>Viewing ChangeLog Entries with changes (c)</title>
+<body>
+
+<p>
+<c>changes</c> lets you view ChangeLog entries for a package version or range
+of versions. Imagine after an <c>emerge --sync</c>, you 
+notice Portage is going to be upgraded and want to check what has changed:
+</p>
+
+<pre caption="Viewing Gentoo ChangeLog Entries">
+<comment>(Show the latest installable version's entry):</comment>
+$ <i>equery changes portage</i>
+*portage-2.1.6.13 (03 May 2009)
+
+  03 May 2009; Zac Medico &lt;zmedico@gentoo.org&gt; +portage-2.1.6.13.ebuild:
+  2.1.6.13 bump. This fixes bug #268398 (document econf automatic die)
+  and bug #267104 (handle insufficient space interaction with userfetch).
+  Bug #268228 tracks all bugs fixed since 2.1.6.11.
+</pre>
+
+</body>
+</section>
+<section>
+<title>Verifying Package Integrity with check (k)</title>
 <body>
 
 <p>
 Sometimes it is useful to check a package's integrity. <c>equery</c> can
-verify md5 sums as well as timestamps to indicate when a package might
+verify MD5 sums as well as timestamps to indicate when a package might
 have been corrupted, replaced, or removed.
 </p>
 
-<pre caption="OK package integrity">
-# <i>equery check gentoolkit</i>
-[ Checking app-portage/gentoolkit-0.2.0 ]
- * 54 out of 54 files good
-</pre>
-
-<p>
-Please note that if you change configuration files after installation,
-these may be reported as "not good".
-</p>
-
-</body>
-</section>
-<section>
-<title>List of all packages depending on ...</title>
-<body>
-
-<p>
-<c>equery</c> is able to list all direct dependencies matching a package.
-The function we should use to do this is <c>depends</c> and it's as easy as:
-</p>
-
-<pre caption="Looking for packages depending on pygtk">
-# <i>equery depends pygtk</i>
-[ Searching for packages depending on pygtk... ]
-app-office/dia-0.93
-dev-python/gnome-python-2.0.0-r1
-gnome-extra/gdesklets-core-0.26.2
-media-gfx/gimp-2.0.4
-x11-libs/vte-0.11.11-r1
+<pre caption="Checking Package Integrity">
+$ <i>equery check gentoolkit</i>
+ * Checking app-portage/gentoolkit-0.3.0_rc7 ...
+   71 out of 71 files passed
 </pre>
 
 </body>
 </section>
 <section>
-<title>Dependency Graphs</title>
+<title>Listing All Packages Depending on Package X with depends (d)</title>
 <body>
 
 <p>
-<c>equery</c> is capable of giving us a dependency graph for a specified
-package. The dependency graph gives a listing of all the packages that have
-direct and indirect dependencies on the package in question.
+Ever wonder why a certain package has been installed on your system?
+<c>equery</c> can tell which packages list it as a dependency with
+<c>depends</c>. Include indirect dependencies with the <c>-D</c>
+option.
 </p>
 
-<pre caption="Dependency Graph for cdrtools">
-# <i>equery depgraph cdrtools</i>
-Displaying dependencies for app-cdr/cdrtools-2.01_alpha37
-`-- app-cdr/cdrtools-2.01_alpha37
- `-- sys-libs/glibc-2.3.4.20040808 (virtual/libc)
-  `-- sys-kernel/linux-headers-2.4.22 (virtual/os-headers)
-   `-- sys-apps/baselayout-1.10.4
-    `-- sys-apps/sysvinit-2.85-r1
-     `-- sys-apps/gawk-3.1.3-r1
-      `-- sys-apps/util-linux-2.12-r4
-          `-- sys-apps/sed-4.0.9
-        `-- sys-libs/ncurses-5.4-r4
-            `-- sys-apps/pam-login-3.14
-            `-- sys-libs/pam-0.77-r1
-                 `-- sys-libs/cracklib-2.7-r10
-               `-- sys-apps/miscfiles-1.3-r1
-              `-- app-arch/gzip-1.3.5-r1
-              `-- sys-apps/portage-2.0.50-r10
+<pre caption="Looking for Packages Depending on pygtk">
+$ <i>equery depends pygtk</i>
+ * Searching for pygtk ...
+app-admin/pessulus-2.24.0 (>=dev-python/pygtk-2.6.0)
+app-editors/gedit-2.24.3 (python ? >=dev-python/pygtk-2.12)
+dev-libs/libgweather-2.24.3 (python ? >=dev-python/pygtk-2)
+dev-python/gnome-python-base-2.22.3 (>=dev-python/pygtk-2.10.3)
+dev-python/gnome-python-desktop-base-2.24.1 (>=dev-python/pygtk-2.10.3)
+[...]
 </pre>
-
-<p>
-For example, while glibc is a direct dependency for cdrtools,linux-headers
-are an indirect dependency. Note that the output also includes information
-about virtual packages. In the example above, <c>cdrtools</c> is actually
-written to require virtual/libc, not sys-libs/glibc, but on the given
-system in the example sys-libs/glibc provides virtual/libc.
-</p>
 
 </body>
 </section>
 <section>
-<title>Listing Files Belonging to an Ebuild</title>
+<title>Getting Dependency Graphs with depgraph (g)</title>
 <body>
 
 <p>
-<c>equery</c> can list the files that belong to an installed ebuild. If I
-don't know the files that Gentoolkit has installed on the system, I will
-use <c>equery</c> to show them.
+<c>depgraph</c> is the opposite of <c>depends</c>. You pass it a package, and
+it will find the packages <e>it</e> depends on (not that depend on it).
+When it finds a dependency, it will recursively search for all of
+<e>that</e> package's dependencies. Control how deep the tree gets with
+the <c>--depth</c> option. 
 </p>
 
-<pre caption="Listing files">
-# <i>equery files gentoolkit</i>
-[ Searching for packages matching gentoolkit... ]
-app-portage/gentoolkit-0.2.0
-* Contents of app-portage/gentoolkit-0.2.0:
-/usr
-/usr/bin
-/usr/bin/equery
-/usr/bin/etcat
-/usr/bin/euse
-/usr/bin/glsa-check
-/usr/bin/qpkg
-/usr/bin/revdep-rebuild
-/usr/lib
-/usr/lib/gentoolkit
-/usr/lib/gentoolkit/pym
-/usr/lib/gentoolkit/pym/gentoolkit
-/usr/lib/gentoolkit/pym/gentoolkit/__init__.py
-/usr/lib/gentoolkit/pym/gentoolkit/gentoolkit.py
-/usr/lib/gentoolkit/pym/gentoolkit/pprinter.py
-/usr/lib/gentoolkit/pym/glsa.py
-/usr/sbin
-/usr/share
-/usr/share/doc
-/usr/share/doc/gentoolkit-0.2.0_pre10
-
+<pre caption="Viewing Dependency Graph for cdrtools">
+$ <i>equery depgraph mozilla-firefox</i>
+ * Searching for mozilla-firefox ...
+ * dependency graph for www-client/mozilla-firefox-2.0.0.19:
+`-- www-client/mozilla-firefox-2.0.0.19
+ `-- virtual/jre-1.6.0 (virtual/jre) [java]
+  `-- virtual/jdk-1.6.0 (virtual/jdk-1.6.0*)
+  `-- dev-java/icedtea6-bin (unable to resolve: package masked or removed)
+   `-- dev-java/sun-jdk-1.6.0.15
+    `-- dev-java/java-sdk-docs-1.6.0.10 [doc]
+     `-- app-arch/unzip-6.0-r1
+      `-- app-arch/bzip2-1.0.5-r1 [bzip2]
+    `-- sys-libs/glibc-2.9_p20081201-r2
+     `-- sys-devel/gettext-0.17 [nls]
+      `-- virtual/libiconv-0 (virtual/libiconv)
 [...]
 </pre>
 
 <p>
-The command <c>files</c> of <c>equery</c> provide some options to modify
-the output. You can look them all up in the <c>equery</c> man page.
+Notice how <c>jre</c> is a direct dependency and <c>jdk</c> is an indirect
+dependency if the <c>java</c> USE flag is set.
 </p>
 
 </body>
 </section>
 <section>
-<title>Looking for packages that use a specific USE flag</title>
+<title>Listing Files Installed by a Package with files (f)</title>
 <body>
 
 <p>
-If you want to find which packages on your system that make use of a specific
-USE flag, <c>equery</c> has the function <c>hasuse</c>:
+<c>equery</c> can list all the files installed by an ebuild with the
+<c>files</c> command. Try <c>--tree</c> to get an easy to read directory
+layout. Use <c>--filter</c> to only find a certain type of file. For example,
+to find where executables were installed, use <c>--filter=cmd</c>, and to
+quickly find the configuration file location, try <c>--filter=conf</c>.
 </p>
 
-<pre caption="Searching packages which use the firefox USE flag">
-# <i>equery hasuse firefox</i>
-[ Searching for USE flag firefox in all categories among: ]
- * installed packages
-[I--] [  ] dev-python/gnome-python-extras-2.14.0-r1 (0)
-[I--] [  ] media-video/totem-2.16.4 (0)
+<pre caption="Listing Installed Files in Tree Format">
+$ <i>equery files --tree gentoolkit</i>
+ * Searching for gentoolkit ...
+ * Contents of app-portage/gentoolkit-0.3.0_rc7:
+ /etc
+   > /eclean
+      + distfiles.exclude
+      + packages.exclude
+   > /env.d
+      + 99gentoolkit-env
+   > /revdep-rebuild
+      + 99revdep-rebuild
+ /usr
+   > /bin
+      + eclean
+      + eclean-dist -> eclean
+      + eclean-pkg -> eclean
+      + epkginfo
+      + equery
+      + eread
+      + euse
+      + glsa-check
+      + revdep-rebuild
+   > /lib
+      > /python2.6
+         > /site-packages
+            > /gentoolkit
+            + gentoolkit-0.3.0_rc7-py2.6.egg-info
+               + __init__.py
+               > /equery
+                  + __init__.py
+                  + belongs.py
+                  + changes.py
+                  + check.py
+                  + depends.py
+                  + depgraph.py
+                  + files.py
+[...]
 </pre>
 
 </body>
 </section>
 <section>
-<title>Listing Packages</title>
+<title>Looking for Packages that Have a Specific USE Flag with hasuse (h)</title>
 <body>
 
 <p>
-<c>equery</c> has a power feature to list packages belonging to our system,
-portage or even an overlay. Let's try this:
+You can use <c>hasuse</c> to find out which packages have a given USE flag.
+<c>hasuse</c> won't tell you if the flag is enabled, only if the ebuild lists
+it as an option. See the EXAMPLES section of <c>hasuse</c> in the 
+<c>equery</c> man page for more tip on getting that information.
 </p>
 
-<pre caption="Listing packages with equery">
-# <i>equery list gentoolkit</i>
-[ Searching for package 'gentoolkit' in all categories among: ]
- * installed packages
-[I--] [  ] app-portage/gentoolkit-0.2.0 (0)
-</pre>
+<pre caption="Searching For Installed Packages that Use the qt3 or qt4 USE Flags">
+$ <i>equery hasuse qt3 qt4</i>
+ * Searching for USE flag qt3 ... 
+[IP-] [  ] app-crypt/pinentry-0.7.5 (0)
+[IP-] [  ] net-dns/avahi-0.6.24-r2 (0)
+[IP-] [  ] net-wireless/wpa_supplicant-0.6.9 (0)
 
-<p>
-The standard query will search our installed packages for the name given.
-If found, the following info will be displayed: the package location between
-the first square brackets (I for Installed packages, P for Portage, O for
-Overlay), the possible masks between the second (~ by keyword, -  by arch or
-M hard masked), then the category and complete name and last of all, the slot
-in which the package is stored.
-</p>
-
-<p>
-Another example, this time we are going to use the local options in order
-to look for packages in our portage tree and overlay.
-</p>
-
-<pre caption="Using local options with equery">
-# <i>equery list -p -o vim</i>
-[ Searching for package 'vim' in all categories among: ]
- * installed packages
-[I--] [  ] app-editors/vim-6.3-r4 (0)
- * Portage tree (/usr/portage)
-[-P-] [M~] app-editors/vim-7.0_alpha20050126 (0)
-[-P-] [M~] app-editors/vim-7.0_alpha20050201 (0)
-[-P-] [  ] app-editors/vim-6.3-r2 (0)
-[-P-] [M~] app-editors/vim-7.0_alpha20050122 (0)
-[-P-] [M~] app-editors/vim-core-7.0_alpha20050126 (0)
-[-P-] [  ] app-editors/vim-core-6.3-r3 (0)
-[-P-] [M~] app-editors/vim-core-7.0_alpha20050122 (0)
-[-P-] [M~] app-editors/vim-core-7.0_alpha20050201 (0)
-[-P-] [  ] app-editors/vim-core-6.3-r4 (0)
- * overlay tree (/opt/ebuilds)
+ * Searching for USE flag qt4 ... 
+[IP-] [  ] net-dns/avahi-0.6.24-r2 (0)
+[IP-] [  ] net-wireless/wpa_supplicant-0.6.9 (0)
 </pre>
 
 </body>
 </section>
 <section>
-<title>Finding Package Sizes</title>
+<title>Listing Packages with list (l)</title>
 <body>
 
 <p>
-Ever been curious to find out how much space a specific package is occupying?
-Since a package could have its files over a number of directories, the usual
-<c>du -hc</c> might not give you the correct figure. Not to worry, here comes
-<c>equery</c> to the rescue!
+<c>list</c> is a simple, yet powerful module to list packages that are installed,
+in the Portage tree or in an overlay.
 </p>
 
-<pre caption="Package Size">
-# <i>equery size openoffice-bin</i>
-* app-office/openoffice-bin-1.1.2
-     Total Files : 2908
-     Total Size  : 223353.31 KiB
+<pre caption="Listing Installed Packages with list">
+$ <i>equery list '*'</i>
+ * Searching for * ...
+[IP-] [  ] app-admin/eselect-1.2.3 (0)
+[IP-] [  ] app-admin/eselect-ctags-1.10 (0)
+[IP-] [  ] app-admin/eselect-esd-20060719 (0)
+[IP-] [  ] app-admin/eselect-fontconfig-1.0 (0)
+[IP-] [  ] app-admin/eselect-opengl-1.0.8-r1 (0)
+[IP-] [  ] app-admin/eselect-python-20090824 (0)
+[IP-] [  ] app-admin/eselect-ruby-20081227 (0)
+[IP-] [  ] app-admin/eselect-vi-1.1.5 (0)
+[IP-] [  ] app-admin/perl-cleaner-1.05 (0)
+[IP-] [  ] app-admin/pessulus-2.24.0 (0)
+[IP-] [  ] app-admin/python-updater-0.7 (0)
+[IP-] [  ] app-admin/sudo-1.7.2_p1 (0)
+[...]
 </pre>
 
 <p>
-As you can see, <c>equery</c> prints the total space used in kilobytes and
-also lists the total number of files the package has.
+The standard query will search installed packages for the given package name.
+Passing in '*' displays all packages in the set. In the leftmost field, we 
+see that all the above packages are <c>I</c>nstalled and from the <c>P</c>ortage
+tree. They're not masked (the second field is blank), and they're all installed
+in the default slot (0).
+</p>
+
+<p>
+This time we are going to use local options to look for packages in the
+Portage tree and overlays.
+</p>
+
+<pre caption="Using Local Options with list">
+$ <i>equery list -po vim</i>
+ * Searching for vim ...
+[-P-] [  ] app-editors/vim-7.0.235 (0)
+[-P-] [ ~] app-editors/vim-7.0.243 (0)
+[-P-] [  ] app-editors/vim-7.1.123 (0)
+[-P-] [ ~] app-editors/vim-7.1.330 (0)
+[-P-] [  ] app-editors/vim-7.2 (0)
+[-P-] [ ~] app-editors/vim-7.2.108 (0)
+[IP-] [  ] app-editors/vim-7.2.182 (0)
+[-P-] [ ~] app-editors/vim-7.2.238 (0)
+[-P-] [ ~] app-editors/vim-7.2.264 (0)
+</pre>
+
+<p>
+In this example you can see version 7.2.182 is installed and there are no
+versions available from an overlay. You can see which versions are keyword 
+masked by the <c>~</c> in the second field.
 </p>
 
 </body>
 </section>
 <section>
-<title>Package-wise list of USE Flags</title>
+<title>Viewing Package Metadata with meta (m)</title>
 <body>
 
 <p>
-<c>equery</c> can be used to give us information about what USE flags
-are being used by a specific package. It also tells us what our current USE
-flags are for a package and also what USE flags are available for the package.
+Each package in the Portage tree provides at least some metadata about
+its maintainer, herd, etc. Read about <uri 
+link="http://www.gentoo.org/proj/en/devrel/handbook/handbook.xml?part=2&amp;chap=4">Gentoo
+Metadata</uri>. The amount of useful information depends on how much package
+maintainers decide to provide. With no options, <c>meta</c> returns some basic
+useful information.
 </p>
 
-<pre caption="Set and Unset USE Flags">
-# <i>equery uses wireshark</i>
-[ Colour Code : set unset ]
-[ Legend    : (U) Col 1 - Current USE flags        ]
-[           : (I) Col 2 - Installed With USE flags ]
-
- U I [ Found these USE variables in : net-analyzer/wireshark-0.99.4 ]
- - - adns      : Adds support for the adns DNS client library
- + + gtk       : Adds support for x11-libs/gtk+ (The GIMP Toolkit)
- - - ipv6      : Adds support for IP version 6
- - - kerberos  : Adds kerberos support
- - - portaudio : Adds support for the crossplatform portaudio audio API
- - - selinux   : !!internal use only!! Security Enhanced Linux support, this must be set by the selinux profile or breakage will occur
- - - snmp      : Adds support for the Simple Network Management Protocol if available
- + + ssl       : Adds support for Secure Socket Layer connections
- - - threads   : Adds threads support for various packages. Usually pthreads
+<pre caption="Getting Package Metadata with meta">
+$ <i>equery meta gnucash</i>
+ * app-office/gnucash [gentoo]
+ Herd:        gnome-office (gnome-office@gentoo.org)
+ Maintainer:  tove@gentoo.org (Torsten Veller)
+ Upstream:    None specified
+ Location:    /usr/portage/app-office/gnucash
+ Keywords:    2.2.9-r1:0: alpha amd64 ppc sparc x86
+ Keywords:    2.2.9-r2:0: 
+ Keywords:    2.3.8:0: 
+ Keywords:    2.3.10:0: ~alpha ~amd64 ~ppc ~sparc ~x86
 </pre>
 
 <p>
-I have installed wireshark with only the gtk and ssl flags set, but there are
-several other USE flags for wireshark still available. For more information on
-USE flags, please refer to the <uri
+When the maintainer provides extra information, it can be very useful:
+</p>
+
+<pre caption="Getting Long Package Descriptions with meta">
+$ <i>equery meta --description emacs</i>
+ * app-editors/emacs
+  GNU Emacs is an extensible, customizable text editor - and more. At its core
+  is an interpreter for Emacs Lisp, a dialect of the Lisp programming language
+  with extensions to support text editing. The features of GNU Emacs include:
+   * Content-sensitive editing modes, including syntax coloring, for a wide
+     variety of file types including plain text, source code, and HTML.
+   * Complete built-in documentation, including a tutorial for new users.
+   * Support for many languages and their scripts, including all the European
+     "Latin" scripts, Russian, Greek, Japanese, Chinese, Korean, Thai,
+     Vietnamese, Lao, Ethiopian, and some Indian scripts.
+   * Highly customizable, using Emacs Lisp code or a graphical customization
+     interface.
+   * A large number of extensions that add other functionality, including a
+     project planner, mail and news reader, debugger interface, calendar, and
+     more. Many of these extensions are distributed with GNU Emacs; others are
+     available separately.
+</pre>
+
+</body>
+</section>
+<section>
+<title>Finding Package Sizes with size (s)</title>
+<body>
+
+<p>
+Have you ever been curious to find out how much space a specific package is
+occupying? Since a package could have its files over a number of directories,
+the usual <c>du -hc</c> might not give you the correct figure. Not to worry,
+here comes <c>equery</c> to the rescue!
+</p>
+
+<pre caption="Displaying Package Size">
+$ <i>equery size openoffice-bin</i>
+ * app-office/openoffice-bin-3.1.1
+         Total files : 4624
+         Total size  : 361.38 MiB
+</pre>
+
+<p>
+As you can see, <c>size</c> prints the total space used in human-readable
+units and lists the total number of files the package has. To get the
+total size in bytes, use <c>--bytes</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Listing Per-Package USE Flags with uses (u)</title>
+<body>
+
+<p>
+<c>equery</c>'s <c>uses</c> module can provide information about what USE
+flags are available for a specific package, and which of those flags is
+currently enabled.
+</p>
+
+<pre caption="Showing Set and Unset USE Flags">
+$ <i>equery uses gst-plugins-meta</i>
+ * Searching for gst-plugins-meta ...
+[ Legend : U - flag is set in make.conf       ]
+[        : I - package is installed with flag ]
+[ Colors : set, unset                         ]
+ * Found these USE flags for media-plugins/gst-plugins-meta-0.10-r2:
+ U I
+ + + X      : Adds support for X11
+ - - a52    : Enables support for decoding ATSC A/52 streams used in DVD
+ + + alsa   : Adds support for media-libs/alsa-lib (Advanced Linux Sound
+              Architecture)
+ - - dvb    : Adds support for DVB (Digital Video Broadcasting)
+ + + dvd    : Adds support for DVDs
+ + + esd    : Adds support for media-sound/esound (Enlightened Sound Daemon)
+ + + ffmpeg : Enable ffmpeg-based audio/video codec support
+ + + flac   : Adds support for FLAC: Free Lossless Audio Codec
+ - - mad    : Adds support for mad (high-quality mp3 decoder library and cli
+              frontend)
+ + + mpeg   : Adds libmpeg3 support to various packages
+ - - mythtv : Support for retrieval from media-tv/mythtv backend
+ + + ogg    : Adds support for the Ogg container format (commonly used by
+              Vorbis, Theora and flac)
+ - - oss    : Adds support for OSS (Open Sound System)
+ + + theora : Adds support for the Theora Video Compression Codec
+ + + vorbis : Adds support for the OggVorbis audio codec
+ - - xv     : Adds in optional support for the Xvideo extension (an X API for
+              video playback)
+</pre>
+
+<p>
+Here, a number of USE flags are enabled in <c>gstreamer</c>'s plugin
+meta-package, but you can see that there are other USE flags available.
+For more information on USE flags, please refer to the <uri
 link="/doc/en/handbook/handbook-x86.xml?part=2&amp;chap=2">USE Flags</uri>
 chapter of the <uri link="/doc/en/handbook/">Gentoo Handbook</uri>.
 </p>
@@ -419,19 +582,39 @@ chapter of the <uri link="/doc/en/handbook/">Gentoo Handbook</uri>.
 </body>
 </section>
 <section>
-<title>Where's the ebuild?</title>
+<title>Finding the Ebuild Path with which (w)</title>
 <body>
 
 <p>
-We can also find out which ebuild is being used for a specific package using
-<c>equery</c>. This is done by using the <c>equery which</c> command which
-displays the full path to the ebuild.
+<c>which</c> is a simple script to help you quickly find the file path to an
+ebuild. If you pass an unversioned package name, <c>which</c> will return the
+path to the newest installable ebuild version, in other words, the ebuild
+Portage would use if you typed <c>emerge package</c>. Pass in a versioned
+package to get the path to that ebuild.
 </p>
 
-<pre caption="Displaying the ebuild path">
-# <i>equery which cdrtools</i>
-/usr/portage/app-cdr/cdrtools/cdrtools-2.01_alpha37.ebuild
+<pre caption="Displaying the Latest Installable Ebuild Path">
+$ <i>equery which gnome</i>
+/usr/portage/gnome-base/gnome/gnome-2.26.3.ebuild
 </pre>
+
+<p>
+Lastly, if none of the above features of <c>equery</c> have answered your 
+question, try using <c>which</c> to manually search an ebuild with programs
+like <c>cat</c>, <c>less</c> or <c>grep</c>:
+</p>
+
+<pre caption="Other Useful Ways to Use which">
+$ <i>grep HOMEPAGE $(equery which gentoolkit)</i>
+HOMEPAGE="http://www.gentoo.org/proj/en/portage/tools/index.xml"
+</pre>
+
+<warn>
+Be aware that equery currently changes the format of the output if it is sent
+through a pipe. The piped format is intended to be easier to parse by tools, but
+you can also turn it off by adding the <c>--no-pipe</c> option. If you write
+scripts that employ equery, you should be aware of this.
+</warn>
 
 </body>
 </section>
@@ -643,7 +826,7 @@ make.conf to avoid unwanted variables.
 This tool is Gentoo's Reverse Dependency rebuilder.  It will scan your installed
 ebuilds to find packages that have become broken as a result of an upgrade of a
 package they depend on. It can emerge those packages for you but it can also
-happen that a given package does not work anymore with the currently installed
+happen that a given package does not work any more with the currently installed
 dependencies, in which case you should upgrade the broken package to a more
 recent version. revdep-rebuild will pass flags to emerge which lets you use the
 <c>--pretend</c> flag to see what is going to be emerged again before you go any
@@ -653,61 +836,53 @@ further.
 <pre caption="Running revdep-rebuild in pretend mode">
 # <i>revdep-rebuild -p</i>
 
-Checking reverse dependencies...
-Packages containing binaries and libraries broken by any package update,
-will be recompiled.
+ * Configuring search environment for revdep-rebuild
 
-Collecting system binaries and libraries... done.
-  (/root/.revdep-rebuild.1_files)
+ * Checking reverse dependencies
+ * Packages containing binaries and libraries broken by a package update
+ * will be emerged.
 
-Collecting complete LD_LIBRARY_PATH... done.
-  (/root/.revdep-rebuild.2_ldpath)
+ * Collecting system binaries and libraries
+ * Generated new 1_files.rr
+ * Collecting complete LD_LIBRARY_PATH
+ * Generated new 2_ldpath.rr
+ * Checking dynamic linking consistency
+[ 48% ]  *   broken /usr/lib/gstreamer-0.10/libgsttaglib.la (requires /usr/lib/libtag.la)
+[ 64% ]  *   broken /usr/lib/libgdkglext-x11-1.0.la (requires /usr/lib/libGLU.la)
+[ 67% ]  *   broken /usr/lib/libgtkglext-x11-1.0.la (requires /usr/lib/libGLU.la)
+[ 85% ]  *   broken /usr/lib/python2.6/site-packages/gtk-2.0/gtk/gdkgl/_gdkgl.la (requires /usr/lib/libGLU.la)
+ *   broken /usr/lib/python2.6/site-packages/gtk-2.0/gtk/gtkgl/_gtkgl.la (requires /usr/lib/libGLU.la)
+[ 97% ]  *   broken /usr/qt/3/lib/libqt-mt.la (requires -lpng)
+[ 100% ]
+ * Generated new 3_broken.rr
+ * Assigning files to packages
+ *   /usr/lib/gstreamer-0.10/libgsttaglib.la -> media-plugins/gst-plugins-taglib
+ *   /usr/lib/libgdkglext-x11-1.0.la -> x11-libs/gtkglext
+ *   /usr/lib/libgtkglext-x11-1.0.la -> x11-libs/gtkglext
+ *   /usr/lib/python2.6/site-packages/gtk-2.0/gtk/gdkgl/_gdkgl.la -> dev-python/pygtkglext
+ *   /usr/lib/python2.6/site-packages/gtk-2.0/gtk/gtkgl/_gtkgl.la -> dev-python/pygtkglext
+ *   /usr/qt/3/lib/libqt-mt.la -> x11-libs/qt
+ * Generated new 4_raw.rr and 4_owners.rr
+ * Cleaning list of packages to rebuild
+ * Generated new 4_pkgs.rr
+ * Assigning packages to ebuilds
+ * Generated new 4_ebuilds.rr
+ * Evaluating package order
+ * Generated new 5_order.rr
+ * All prepared. Starting rebuild
+emerge --oneshot --pretend  dev-python/pygtkglext:0
+media-plugins/gst-plugins-taglib:0.10
+x11-libs/gtkglext:0
+x11-libs/qt:3
 
-Checking dynamic linking consistency...
-  broken /usr/lib/ao/plugins-2/libarts.so (requires libartsc.so.0)
-  broken /usr/lib/kde3/libkpresenterpart.so (requires libartskde.so.1 libqtmcop.so.1
-         libsoundserver_idl.so.1 libkmedia2_idl.so.1 libartsflow.so.1 libartsflow_idl.so.1 libmcop.so.1)
-  broken /usr/lib/ruby/site_ruby/1.8/i686-linux/fox.so (requires libFOX-1.0.so.0)
-  broken /usr/lib/xine/plugins/1.0.0/xineplug_ao_out_arts.so (requires libartsc.so.0)
-  broken /usr/lib/perl5/vendor_perl/5.8.0/i686-linux/auto/SDL_perl/SDL_perl.so (requires libSDL_gfx.so.0)
-  broken /usr/lib/libloudmouth-1.so.0.0.0 (requires libgnutls.so.10)
-  broken /usr/bin/k3b (requires libartskde.so.1 libqtmcop.so.1 libsoundserver_idl.so.1 libkmedia2_idl.so.1
-         libartsflow.so.1 libartsflow_idl.so.1 libmcop.so.1)
-  broken /usr/bin/lua (requires libhistory.so.4)
-  broken /usr/bin/lyx (requires libAiksaurus-1.0.so.0)
-  broken /usr/bin/luac (requires libhistory.so.4)
-  broken /usr/bin/avidemux2 (requires libartsc.so.0)
-  broken /usr/bin/pptout (requires libxml++-0.1.so.11)
-  broken /usr/bin/xml2ps (requires libxml++-0.1.so.11)
- done.
-  (/root/.revdep-rebuild.3_rebuild)
+These are the packages that would be merged, in order:
 
-Assigning files to ebuilds... done.
-  (/root/.revdep-rebuild.4_ebuilds)
-
-Evaluating package order... done.
-  (/root/.revdep-rebuild.5_order)
-
-All prepared. Starting rebuild...
-emerge --oneshot --nodeps -p =app-cdr/k3b-0.11.14 =app-office/koffice-1.3.2 =app-office/lyx-1.3.4 \
-       =app-office/passepartout-0.2 =dev-lang/lua-5.0.2 =dev-ruby/fxruby-1.0.29 =media-libs/libao-0.8.5 \
-       =media-libs/xine-lib-1_rc5-r3 =media-video/avidemux-2.0.26 =net-libs/loudmouth-0.16
-
-These are the packages that I would merge, in order:
-
-Calculating dependencies ...done!
-[ebuild   R   ] app-cdr/k3b-0.11.14
-[ebuild   R   ] app-office/koffice-1.3.2
-[ebuild   R   ] app-office/lyx-1.3.4
-[ebuild   R   ] app-office/passepartout-0.2
-[ebuild   R   ] dev-lang/lua-5.0.2
-[ebuild   R   ] dev-ruby/fxruby-1.0.29
-[ebuild   R   ] media-libs/libao-0.8.5
-[ebuild   R   ] media-libs/xine-lib-1_rc5-r3
-[ebuild   R   ] media-video/avidemux-2.0.26
-[ebuild   R   ] net-libs/loudmouth-0.16
-
-Now you can remove -p (or --pretend) from arguments and re-run revdep-rebuild.
+Calculating dependencies... done!
+[ebuild   R   ] media-plugins/gst-plugins-taglib-0.10.17
+[ebuild   R   ] x11-libs/gtkglext-1.2.0
+[ebuild   R   ] x11-libs/qt-3.3.8b-r2
+[ebuild   R   ] dev-python/pygtkglext-1.1.0
+ * Now you can remove -p (or --pretend) from arguments and re-run revdep-rebuild.
 </pre>
 
 <p>
@@ -722,7 +897,7 @@ the <c>-p</c> flag and the listed packages will be emerged again.
 <body>
 
 <p>
-<c>glsa-check</c> is mainly a test tool that keeps track of the various GLSAs
+<c>glsa-check</c> is mainly a test tool that keeps track of the various GLSA's
 (Gentoo Linux Security Advisory) and will eventually be integrated into
 <c>emerge</c> and <c>equery</c>.
 </p>
