@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-working-rcscripts.xml,v 1.12 2011/03/03 18:00:42 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-working-rcscripts.xml,v 1.13 2011/08/16 20:01:35 nimiux Exp $ -->
 
 <sections>
 
@@ -15,8 +15,8 @@ virtuales. Este capítulo explica todos estos aspectos y explica cómo
 trabajar con estos guiones.
 </abstract>
 
-<version>2</version>
-<date>2011-03-02</date>
+<version>3</version>
+<date>2011-08-12</date>
 
 <section>
 <title>Niveles de ejecución</title>
@@ -354,7 +354,7 @@ inicio y el nivel de ejecución, por ejemplo:
 </pre>
 
 <p>
-El comando <c>rc-update -v show</c> mostrará todos los scripts de inicio
+El comando <c>rc-update -v show</c> mostrará todos los guiones de inicio
 con los niveles de ejecución donde ejecutarán:
 </p>
 
@@ -364,7 +364,7 @@ con los niveles de ejecución donde ejecutarán:
 
 <p>
 Es posible ejecutar también <c>rc-update show</c> (sin <c>-v</c>) simplemente
-para ver los scripts de inicio activos y sus respectivos niveles de ejecución.
+para ver los guiones de inicio activos y sus respectivos niveles de ejecución.
 </p>
 
 </body>
@@ -464,10 +464,6 @@ start() {
 stop() {
   <comment>(Comandos requeridos para parar el servicio)</comment>
 }
-
-restart() {
-  <comment>(Comandos requeridos para reiniciar el servicio)</comment>
-}
 </pre>
 
 <p>
@@ -562,7 +558,7 @@ depend() {
 </pre>
 
 <p>
-También puede usar el carácter cque engloba "*" para todos los servicios,
+También puede usar el carácter que engloba "*" para todos los servicios,
 aunque no es aconsejable.
 </p>
 
@@ -602,6 +598,11 @@ ocurriendo:
 
 <pre caption="Ejemplo de función start()">
 start() {
+  if [ "${RC_CMD}" = "restart" ];
+  then
+    <comment># Hacer algo en caso de que restart requiera algo más que para y arrancar</comment>
+  fi
+
   ebegin "Starting my_service"
 start-stop-daemon --start --exec /path/to/my_service \
                   --pidfile /path/to/my_pidfile
@@ -620,6 +621,16 @@ extremadamente verboso. Usando <c>--quiet</c> puede interferir con la
 depuración si el servicio no logra arrancar.
 </p>
 
+<p>
+Otro ajuste notable usado en el ejemplo de arriba es la comprobación de
+los contenidos de la variable <c>RC_CMD</c>. Al contrario que el sistema
+de guiones de inicio anterior, el nuevo sistema <c>openrc</c> no soporta
+funcionalidad de reinicio específica de los guiones. En lugar de esto,
+el guión necesita comprobar el contenido de la variable <c>RC_CMD</c>
+para var si una función (sea <c>start()</c> o <c>stop()</c>) se llama
+como parte del reinicio o no.
+</p>
+
 <note>
 Asegúrese que <c>--exec</c> de hecho llame un servicio y no solamente
 un guión que lanza un servicio y termina -- después de todo, eso es lo
@@ -633,15 +644,14 @@ directamente las fuentes de los guiones de inicio en su directorio
 </p>
 
 <p>
-Otras funciones que puede definir son: <c>stop()</c> y
-<c>restart()</c>. ¡No es obligatorio definirlas! Nuestro sistema de
-inicio es suficientemente inteligente para llevar a cabo esta
-funciones solo, si usa el <c>start-stop-daemon</c>.
+Otra función que puede definir es <c>stop()</c>. Sin embargo, ¡No está
+obligado a definir esta función! Nuestro sistema de inicio es lo
+suficientemente inteligente para rellenar esta función por sí mismo si
+utiliza <c>start-stop-daemon</c>.
 </p>
 
 <p>
-Aunque no <e>tiene</e> que crear una función <c>stop()</c>, aquí está
-un ejemplo:
+A continuación se muestra un ejemplo de la función <c>stop()</c>:
 </p>
 
 <pre caption="Función stop() de ejemplo">
@@ -717,6 +727,10 @@ restartdelay() {
 }
 </pre>
 
+<impo>
+¡La función <c>restart()</c> no puede ser sobreescrita en openrc!.
+</impo>
+
 </body>
 </subsection>
 <subsection>
@@ -731,7 +745,7 @@ variables estarán disponibles para usar.
 </p>
 
 <ul>
-  <li><path>/etc/conf.d/&lt;your init script&gt;</path></li>
+  <li><path>/etc/conf.d/&lt;su guión de inicio&gt;</path></li>
   <li><path>/etc/conf.d/basic</path></li>
   <li><path>/etc/rc.conf</path></li>
 </ul>
@@ -801,23 +815,28 @@ Por ejemplo, si quiere una copia exacta de su actual "default" pero sin
 </pre>
 
 <p>
-Incluso aunque se haya eliminado <c>net.eth0</c> del nivel offline,
-<c>udev</c> intentará arrancar cualquier dispositivo que detecte
-y lanzar los servicios adecuados. Necesitará añadir cualquier servicio
-de red que no quiera que arranque (al igual que cualquier otro servicio
-que pueda ser arrancado por udev) a <path>/etc/conf.d/rc</path> como
-se muestra:
+Incluso aunque se haya eliminado <c>net.eth0</c> del nivel de ejecución
+offline, puede que <c>udev</c> quiera intentar iniciar cualquier
+dispositivo que detecte y lanzar los servicios apropiados, una funcionalidad
+llamada <e>hotplugging</e> (enchufado en caliente). Por defecto Gentoo
+no habilita esta funcionalidad.
 </p>
 
-<pre caption="Desactivar los servicios iniciados en /etc/conf.d/rc">
-RC_COLDPLUG="yes"
-<comment>(A continuación, especifique los servicios que no quiere que arranque automáticamente)</comment>
-RC_PLUG_SERVICES="!net.eth0"
+<p>
+Si quiere habilitar el hotplugging pero solo para un conjunto seleccionado
+de guiones, utilice la variable <c>rc_hotplug</c> en
+<path>/etc/rc.conf</path>:
+</p>
+
+<pre caption="Deshabilitando los servicions iniciados por dispositivos en /etc/rc.conf">
+<comment># Permite enchufar en caliente net.wlan así como cualquier otro
+# servicio excepto los que concuerden con net.*</comment>
+rc_hotplug="net.wlan !net.*"
 </pre>
 
 <note>
 Para más información sobre los servicios iniciados en función de dispositivos,
-consulte los comentarios del archivo <path>/etc/conf.d/rc</path>.
+consulte los comentarios del archivo <path>/etc/rc.conf</path>.
 </note>
 
 <p>
