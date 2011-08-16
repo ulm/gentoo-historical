@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-install.xml,v 1.2 2011/06/09 18:45:25 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-install.xml,v 1.3 2011/08/16 16:56:33 nimiux Exp $ -->
 
 <sections>
-<version>10</version>
-<date>2011-06-07</date>
+<version>12</version>
+<date>2011-07-22</date>
 
 <section>
 <title>Instalar Gentoo Hardened</title>
@@ -134,7 +134,11 @@ Para configurar el montaje de <path>/tmp</path>, edite su fichero
 </p>
 
 <pre caption="Actualizar /etc/fstab para /tmp">
+<comment># Para un tipo de directriz "targeted" o "strict":</comment>
 tmpfs  /tmp  tmpfs  defaults,noexec,nosuid<i>,rootcontext=system_u:object_r:tmp_t</i>  0 0
+
+<comment># Para un tipo de directriz "mls" o "mcs":</comment>
+tmpfs  /tmp  tmpfs  defaults,noexec,nosuid<i>,rootcontext=system_u:object_r:tmp_t:s0</i>  0 0
 </pre>
 
 </body>
@@ -215,15 +219,6 @@ que Portage no está preparado.
 <subsection>
 <title>Actualice make.conf</title>
 <body>
-
-<p>
-Edite su fichero <path>/etc/make.conf</path>. Si utiliza los perfiles
-antiguos (como <path>selinux/v2refpolicy/amd64/hardened</path>), ajuste
-<c>FEATURES="-loadpolicy"</c>. Estos perfiles habilitan la característica
-loadpolicy, sin embargo, esto ya no está soportado por lo que se puede
-ignorar de forma segura. Los perfiles más recientes ya no ajustan esta
-opción.
-</p>
 
 <p>
 A continuación, eche un vistazo a los siguientes ajustes USE y decida si
@@ -421,12 +416,20 @@ Construya e instale el nuevo núcleo Linux y sus módulos.
 <body>
 
 <p>
-A continuación, edite <path>/etc/fstab</path> y añada la siguiente línea:
+A continuación, edite <path>/etc/fstab</path> y añada las dos líneas
+siguientes:
 </p>
 
-<pre caption="Habilitar el sistema de ficheros selinux">
+<pre caption="Habilitar las opciones del sistema de ficheros específicas de selinux">
+<comment># El montaje de udev se debe al bug #373381</comment>
+udev   /dev        tmpfs        rw,rootcontext=system_u:object_r:device_t,seclabel,nosuid,relatime,size=10m,mode=755  0 0
 none   /selinux    selinuxfs    defaults    0 0
 </pre>
+
+<note>
+Para el caso de una directriz MLS/MCS, necesitará tener el contexto con el
+nivel de sensibilidad, por lo que: <c>...:device_t:s0</c>.
+</note>
 
 <p>
 Cree igualmente el punto de montaje <path>/selinux</path>:
@@ -553,9 +556,12 @@ configurar SELinux en el momento en que se inicie el sistema.
 #       disabled - No SELinux policy is loaded.
 SELINUX=<i>permissive</i>
 
-# SELINUXTYPE can take one of these two values:
+# SELINUXTYPE can take one of these four values:
 #       targeted - Only targeted network daemons are protected.
-#       strict - Full SELinux protection.
+#       strict   - Full SELinux protection.
+#       mls      - Full SELinux protection with Multi-Level Security
+#       mcs      - Full SELinux protection with Multi-Category Security
+#                  (mls, but only one sensitivity level)
 SELINUXTYPE=<i>strict</i>
 </pre>
 
@@ -590,9 +596,11 @@ En este fichero de configuración se pueden definir dos variables:
     </ul>
   </li>
   <li>
-    <c>SELINUXTYPE</c> indica si un dominio "no confinado" se cargará o
-    no. En Gentoo Hardened se recomienda el uso de <c>strict</c> para
-    los servidores y <c>targeted</c> para los equipos de sobremesa.
+    <c>SELINUXTYPE</c> define el tipo de directriz SELinux que se debe
+    cargar. En Gentoo Hardened se recomienda el uso de <c>strict</c> para
+    los servidores y <c>targeted</c> para los equipos de sobremesa. El
+    tipo <c>mcs</c> no está soportado, <c>mls</c> está considerado
+    actualmente como experimental.
   </li>
 </ul>
 
@@ -611,10 +619,24 @@ de las aplicaciones que están "por ahí fuera".
 </p>
 
 <p>
-Cuando decida si va a usar <c>strict</c> o <c>targeted</c>, guárdelo en su
-fichero <path>/etc/make.conf</path>. De esta forma, Portage instalará
-únicamente los módulos de directrices para ese tipo de SELinux en lugar
-de instalar los dos.
+Además de <c>targeted</c> y <c>strict</c>, puede optar por <c>mcs</c> para
+permitir la categorización de dominios de procesos. Esto es útil en
+sistemas multipropiedad como servidores web, servicios de virtualización, ...
+en los que múltiples procesos están corriendo, la mayoría de ellos en el
+mismo dominio de seguridad, pero en categorías dirferente.
+</p>
+
+<p>
+Finalmente, puede también seleccionar la directriz <c>mls</c> para
+diferenciar dominios de seguridad en un nivel de sensibilidad. Sin embargo,
+MLS está considerado actualmente como experimental en Gentoo Hardened y por
+lo tanto no se recomienda su utilización.
+</p>
+
+<p>
+Cuando haya decidido que tipo de directriz de SELinux va a utilizar,
+guárdelo en su fichero <path>/etc/make.conf</path>. De esta forma, Portage
+instalará únicamente los módulos de directrices para ese tipo de SELinux.
 </p>
 
 <pre caption="Ajustar el tipo de directriz en make.conf">
