@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-intro-concepts.xml,v 1.2 2011/06/09 17:10:47 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-intro-concepts.xml,v 1.3 2011/08/16 16:35:44 nimiux Exp $ -->
 
 <sections>
-<version>4</version>
-<date>2011-05-03</date>
+<version>5</version>
+<date>2011-07-21</date>
 
 <section>
 <title>Introducción</title>
@@ -39,6 +39,60 @@ más abajo en este documento.
 
 </body>
 </subsection>
+<subsection>
+<title>Directrices de SELinux</title>
+<body>
+
+<p>
+Dentro de Gentoo (y también dentro de otras distribuciones), SELinux es
+soportado por varios niveles de directriz. Estos son, en orden ascendente
+en complejidad (significando que pueden ofrecer mayor seguridad pero
+que son más difíciles de gestionar):
+</p>
+
+<ol>
+  <li>
+    <b>targeted</b> es una directriz en la que los servicios que utilizan
+    la red (demonios) están confinados (los procesos solo pueden ejecutar
+    aquellas acciones que estén definidas en la directriz). Sin embargo,
+    otras aplicaciones corren en el llamado <e>unconfined</e> (no
+    confinado), lo que indica que hay muy pocas restricciones para estos
+    procesos.
+  </li>
+  <li>
+    <b>strict</b> es una directriz en la que todos los procesos están
+    confinados. No existen dominios no confinados. En otras distribuciones,
+    esta es considerada la directriz <e>targeted</e> per sin la
+    definición de dominio no confinado.
+  </li>
+  <li>
+    <b>multi-category security</b> es una directriz en la que los
+    dominios (confinados) pueden ser categorizados (clasificados),
+    permitiendo que múltiples procesos corran en diferentes instancias
+    de un dominio confinado.
+  </li>
+  <li>
+    <b>multi-level security</b> es una directriz en la que existen
+    reglas relativas a la sensibilidad de dominios y recursos. Esto
+    permite una directriz de flujo de información "adecuada" (asegurándose
+    de que la información sensible no se filtra a través de dominios
+    con menores privilegios). Conceptualmente, esto se puede comprender
+    mejor si se consideran los niveles de sensibilidad Público, Interno,
+    Confidencial, Estrictamente confidencial, etc.
+  </li>
+</ol>
+
+<p>
+Cuando se utiliza Gentoo Hardened, todas estas directrices están
+disponibles. Sin embargo el desarrollo se centra principalmente en
+<e>strict</e> y <e>mcs</e> (multi-category security). Se asume que la
+directriz <e>targeted</e> funciona si funciona la directriz strict
+aunque sabemos que la directriz <e>mls</e> (multi-level security) no
+está preparada para el uso en producción.
+</p>
+
+</body>
+</subsection>
 </section>
 <section>
 <title>Contextos de seguridad</title>
@@ -59,8 +113,9 @@ realizar cualquier acción.
 </p>
 
 <p>
-En el marco de SELinux, este contexto de seguridad se muestra usando tres
-definiciones:
+En el marco de SELinux, este contexto de seguridad se muestra usando de
+tres a cinco definiciones, dependiendo del tipo de directriz que se
+esté utilizando:
 </p>
 
 <dl>
@@ -77,6 +132,21 @@ definiciones:
   <dd>
     El tipo asignado al recurso, la clave para las reglas de reforzamiento
     de SELinux.
+  </dd>
+  <dt>sensitivity</dt>
+  <dd>
+    Este es un nivel dado a un recurso informado al sistema sobre la
+    sensibilidad de este recurso. La sensibilidad es algo relacionado
+    con Publico, Interno, Restringido, Confidencial, Estrictamente
+    confidencial, ... Los niveles de sensibilidad están soportados únicamente
+    por las directrices MLS.
+  </dd>
+  <dt>category</dt>
+  <dd>
+    Se trata de una instanciación específica de un recurso. Permite la
+    segregación de recursos incluso si son del mismo tipo. Se hablará
+    más acerca de las categorías más adelante. Las categorías están
+    soportadas únicamente por las directrices MLS y MCS.
   </dd>
 </dl>
 
@@ -99,7 +169,24 @@ staff_u:staff_r:staff_t
 En este caso, el usuario está identificado como el usuario SELinux
 <e>staff_u</e>, que actualmente tiene el rol <e>staff_r</e> y está
 asignado al tipo <e>staff_t</e>. Las acciones que se permiten a este
-usuario están basadas en este contexto de seguridad.
+usuario están basadas en este contexto de seguridad. También, observará
+que únicamente se muestran tres identificadores. Esto es debido a que
+se ha tomado el ejemplo de un sistema con directriz <e>strict</e> (o
+<e>targeted</e>). El siguiente ejemplo da el mismo resultado pero para
+una sistema con directriz <e>MCS</e>.
+</p>
+
+<pre caption="Obteniendo el contexto de seguridad de un usuario que ha ingresado en un sistema con directriz MCS">
+~$ <i>id -Z</i>
+staff_u:staff_r:staff_t:s0-s0:c0.c1023
+</pre>
+
+<p>
+Aquí, el usuario está corriendo con el nivel de sensibilidad s0 (el cual,
+en un sistema con directriz MCS, el el único disponible) y con una categoría
+c0 hasta c1023 (inclusive). Sin embargo, observe que en un sistema con
+directriz MCS, las categorías son opcionales, por lo que deberá ver una salida
+del tipo: <e>staff_u:staff_r:staff_t:s0</e>.
 </p>
 
 </body>
@@ -266,7 +353,7 @@ de efectividad.
 </p>
 
 <p>
-Para soportar reglas de concesión de forma más secilla, SELinux permite
+Para soportar reglas de concesión de forma más sencilla, SELinux permite
 el agrupamiento de tipos usando los atributos de tipos. Por ejemplo, el
 atributo <e>exec_type</e> agrupa todos los tipos que se asignan a los
 ficheros ejecutables (como <e>bin_t</e>, <e>ssh_exec_t</e>, ...), mientras
@@ -572,13 +659,67 @@ pública/interna/confidencial/estrictamente confidencial para los ficheros.
 <p>
 Aunque la implementación de MLS podría realizarse usando las reglas de
 forzado de tipos que hemos explicado previamente, hacerlo así podría
-desembocar en una colección inmanejable de tipos y permisos.
-La implementación MLS lo facilita.
+desembocar en una colección inmanejable de tipos y permisos. La
+implementación MLS facilita esto.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Seguridad Multinivel</title>
+<body>
+
+<p>
+Es la más flexible, pero la más complicada de gestionar. El método que
+ofrece SELinux es MLS, o Seguridad Multinivel (<e>Multi-Level Security</e>).
+Cuando se utiliza este tipo de directriz, los administradores de seguridad
+pueden asignar etiquetas de sensibilidad a los recursos y definir qué
+dominios (y qué niveles de seguridad) pueden leer o escribir en qué nivel.
+Un nivel se da siempre como un rango, mostrando el menor y mayor nivel en el
+que un dominio en particular está corriendo.
 </p>
 
 <p>
-Actualmente, el manual de SELinux para Gentoo Hardened no cubre
-MLS/MCS, pero esto puede cambiar en el futuro (y probablemente lo hará).
+Además del nivel de sensibilidad, la directriz MLS soporta categorías por
+cada nivel. Estas categorías permiten que el administrador de seguridad
+pueda hacer distintos "contenedores" probablemente independientes para
+los recursos que sean sensibles. Para dar un ejemplo, el administrador
+puede soportar los niveles desde Público hasta Estrictamente confidencial
+y categorías como "Finanzas", "Análisis de Riesgo", "Adquisiciones",
+"Sistemas TIC", ...
+</p>
+
+<p>
+Con estas categorías, uno puede permitir que un rol tenga acceso a todos
+los niveles de sensibilidad para una categoría en particular (digamos
+"Sistemas TIC") pero que tenga acceso únicamente a los documentos
+Públicos e Internos del resto de categorías.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Seguridad Multicategoría</title>
+<body>
+
+<p>
+La directriz MCS o Seguridad Multicategoría (<e>Multi-Category Security</e>)
+es un subconjunto de la directriz MLS. Soporta las distintas categorías, pero
+sin usar los múltiples niveles de seguridad para los recursos.
+</p>
+
+<p>
+El uso de la directriz MCS se ha hecho popular debido aq que es bastante
+más fácil de gestionar mientras que conserva algo de la flexibilidad
+presente en la directriz MLS policy. La directriz MLS se utiliza más para
+propósitos de negocio (y así, tiene alguna influencia en la propia
+organización de ese negocio). La directriz MCS es más utilizada en
+arquitecturas <e>multipropiedad</e>. En una arquitectura multipropiedad,
+los sistemas son procesos en ejecución para varios clientes a la vez. La
+categorización permite la separación de estos privilegios a través de estos
+procesos sin introducir dominios múltiples (los cuáles requerirían el
+desarrollo de nuevas directrices para cada nuevo cliente al que se quisiera
+servir).
 </p>
 
 </body>
