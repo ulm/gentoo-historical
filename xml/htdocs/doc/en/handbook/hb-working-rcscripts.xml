@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.34 2011/08/14 16:12:13 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-working-rcscripts.xml,v 1.35 2011/08/17 07:57:23 swift Exp $ -->
 
 <sections>
 
@@ -14,8 +14,8 @@ dependency-driven decisions and virtual initscripts. This chapter explains all
 these aspects and explains how to deal with these scripts.
 </abstract>
 
-<version>3</version>
-<date>2011-08-12</date>
+<version>4</version>
+<date>2011-08-17</date>
 
 <section>
 <title>Runlevels</title>
@@ -454,10 +454,58 @@ other sections are optional.
 <body>
 
 <p>
-There are two dependencies you can define: <c>use</c> and <c>need</c>. As we
-have mentioned before, the <c>need</c> dependency is more strict than the
-<c>use</c> dependency. Following this dependency type you enter the service
-you depend on, or the <e>virtual</e> dependency.
+There are two dependency-alike settings you can define that influence the
+start-up or sequencing of init scripts: <c>use</c> and <c>need</c>. Next to
+these two, there are also two order-influencing methods called <c>before</c> and
+<c>after</c>. These last two are no dependencies per se - they do not make the
+original init script fail if the selected one isn't scheduled to start (or fails
+to start).
+</p>
+
+<ul>
+  <li>
+    The <c>use</c> settings informs the init system that this script <e>uses</e>
+    functionality offered by the selected script, but does not directly depend
+    on it. A good example would be <c>use logger</c> or <c>use dns</c>. If those
+    services are available, they will be put in good use, but if you do not have
+    a logger or DNS server the services will still work. If the services exist,
+    then they are started before the script that <c>use</c>'s them.
+  </li>
+  <li>
+    The <c>need</c> setting is a hard dependency. It means that the script that
+    is <c>need</c>'ing another script will not start before the other script is
+    launched successfully. Also, if that other script is restarted, then this
+    one will be restarted as well.
+  </li>
+  <li>
+    When using <c>before</c>, then the given script is launched before the
+    selected one <e>if</e> the selected one is part of the init level. So an
+    init script <path>xdm</path> that defines <c>before alsasound</c> will start
+    before the <path>alsasound</path> script, but only if <path>alsasound</path>
+    is scheduled to start as well in the same init level. If
+    <path>alsasound</path> is not scheduled to start too, then this particular
+    setting has no effect and <path>xdm</path> will be started when the init
+    system deems it most appropriate.
+  </li>
+  <li>
+    Similarly, <c>after</c> informs the init system that the given script should
+    be launched after the selected one <e>if</e> the selected one is part of the
+    init level. If not, then the setting has no effect and the script will be
+    launched by the init system when it deems it most appropriate.
+  </li>
+</ul>
+
+<p>
+It should be clear from the above that <c>need</c> is the only "true" dependency
+setting as it affects if the script will be started or not. All the others are
+merely pointers towards the init system to clarify in which order scripts can be
+(or should be) launched.
+</p>
+
+<p>
+Now, if you look at many of Gentoo's available init scripts, you will notice
+that some have dependencies on things that are no init scripts. These "things"
+we call <e>virtuals</e>.
 </p>
 
 <p>
@@ -511,16 +559,12 @@ As you can see, the postfix service:
 <body>
 
 <p>
-In some cases you might not require a service, but want your service to be
-started <c>before</c> (or <c>after</c>) another service <e>if</e> it is
-available on the system (note the conditional - this is no dependency anymore)
-<e>and</e> run in the same runlevel (note the conditional - only services in the
-same runlevel are involved). You can provide this information using the 
-<c>before</c> or <c>after</c> settings.
-</p>
-
-<p>
-As an example we view the settings of the Portmap service:
+As we described in the previous section, you can tell the init system what order
+it should use for starting (or stopping) scripts. This ordering is handled both
+through the dependency settings <c>use</c> and <c>need</c>, but also through the
+order settings <c>before</c> and <c>after</c>. As we have described these
+earlier already, let's take a look at the Portmap service as an example of such
+init script.
 </p>
 
 <pre caption="The depend() function in the Portmap service">
