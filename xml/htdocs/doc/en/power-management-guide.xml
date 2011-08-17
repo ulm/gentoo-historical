@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/power-management-guide.xml,v 1.47 2011/08/17 07:10:12 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/power-management-guide.xml,v 1.48 2011/08/17 07:19:29 swift Exp $ -->
 
 <guide>
 <title>Power Management Guide</title>
@@ -24,13 +24,25 @@ laptops. This guide assists you setting it up on your laptop.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>3</version>
+<version>4</version>
 <date>2011-08-17</date>
 
 <chapter>
 <title>Introduction</title>
 <section>
 <body>
+
+<!-- 
+     Remove this note after 6 months - ETA 01/02/2012
+     By then, we can assume that OpenRC migrations are not that frequent
+     anymore and this note can be dropped.
+     ~ Sven Vermeulen
+-->
+<impo>
+Since the introduction of OpenRC, the <c>pmg_switch_runlevel.sh</c> script
+needs to be updated. If you have issues after the OpenRC upgrade, please update
+this script according to this guide.
+</impo>
 
 <p>
 Capacity and lifetime of laptop batteries have improved much in the last years.
@@ -291,34 +303,42 @@ script below is responsible for changing runlevels. Save it as
 <pre caption="/etc/acpi/actions/pmg_switch_runlevel.sh">
 #!/bin/bash
 
-<comment># BEGIN configuration</comment>
+# BEGIN configuration
 RUNLEVEL_AC="default"
 RUNLEVEL_BATTERY="battery"
-<comment># END configuration</comment>
+
+if [ -x /usr/bin/logger ]; then
+    LOGGER="/usr/bin/logger -s -p daemon.info -t /etc/acpi/actions/pmg_switch_runlevel.sh"
+else
+    LOGGER="/bin/echo"
+fi
+
+ON_AC_POWER=/usr/bin/on_ac_power
+# END configuration
 
 
 if [ ! -d "/etc/runlevels/${RUNLEVEL_AC}" ]
 then
-    logger "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
+    ${LOGGER} "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
     exit 1
 fi
 
 if [ ! -d "/etc/runlevels/${RUNLEVEL_BATTERY}" ]
 then
-    logger "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
+    ${LOGGER} "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
     exit 1
 fi
 
-if on_ac_power
+if ${on_ac_power}
 then
-    if [[ "$(&lt;/var/lib/init.d/softlevel)" != "${RUNLEVEL_AC}" ]]
+    if [[ "$(rc-status --runlevel)" != "${RUNLEVEL_AC}" ]]
     then
-        logger "Switching to ${RUNLEVEL_AC} runlevel"
-         /sbin/rc ${RUNLEVEL_AC}
+        ${LOGGER} "Switching to ${RUNLEVEL_AC} runlevel"
+        /sbin/rc ${RUNLEVEL_AC}
     fi
-elif [[ "$(&lt;/var/lib/init.d/softlevel)" != "${RUNLEVEL_BATTERY}" ]]
+elif [[ "$(rc-status --runlevel)" != "${RUNLEVEL_BATTERY}" ]]
 then
-    logger "Switching to ${RUNLEVEL_BATTERY} runlevel"
+    ${LOGGER} "Switching to ${RUNLEVEL_BATTERY} runlevel"
     /sbin/rc ${RUNLEVEL_BATTERY}
 fi
 </pre>
