@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-working-rcscripts.xml,v 1.13 2011/08/16 20:01:35 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-working-rcscripts.xml,v 1.14 2011/08/17 11:53:42 nimiux Exp $ -->
 
 <sections>
 
@@ -15,8 +15,8 @@ virtuales. Este capítulo explica todos estos aspectos y explica cómo
 trabajar con estos guiones.
 </abstract>
 
-<version>3</version>
-<date>2011-08-12</date>
+<version>4</version>
+<date>2011-08-17</date>
 
 <section>
 <title>Niveles de ejecución</title>
@@ -81,12 +81,11 @@ anteriormente.
 </p>
 
 <p>
-Cuando todos los guiones referenciados en
-<path>/etc/runlevels/boot</path> sean ejecutados, <c>init</c> continua
-su trabajo con los guiones en <path>/etc/runlevels/default</path>. Una
-vez más, usará el orden alfabético, salvo cuando hay dependencias, en
-cuyo caso es alterado el orden de inicio para realizar una secuencia
-válida de arranque.
+Cuando se ejecuten todos los guiones referenciados en
+<path>/etc/runlevels/boot</path>, <c>init</c> continua su trabajo con los
+guiones en <path>/etc/runlevels/default</path>. Una vez más, usará el
+orden alfabético, salvo cuando hay dependencias, en cuyo caso es alterado
+el orden de inicio para realizar una secuencia válida de arranque.
 </p>
 
 </body>
@@ -250,7 +249,7 @@ continuarán sin ser tocados.
 
 <p>
 Si desea parar un servicio, pero no los que dependan de el, puede usar
-el parámetro para pausarlo <c>pause</c>:
+el parámetro <c>pause</c> para pausarlo:
 </p>
 
 <pre caption="Detener postfix, manteniendo la ejecución de los demás servicios">
@@ -482,6 +481,66 @@ Hay dos dependencias que puede definir: <c>use</c> y <c>need</c>. Tal
 como hemos mencionado anteriormente, la dependencia <c>need</c> es más
 estricta que la dependencia <c>use</c>. Siguiendo este esquema, se
 declaran los servicios que dependen de éste o la dependencia <e>virtual</e>.
+
+Existen dos ajustes relacionados con las dependencias que puede definir
+y que influyen en el arranque o secuenciación de los guiones de inicio:
+<c>use</c> y <c>need</c>. Aparte de estas dos, existen también dos
+métodos que influyen en el orden llamados: <c>before</c> y <c>after</c>.
+Estos últimos no son dependencias en sí mismos, no provocan el fallo del
+guión de inicio si el guión seleccionado no está programado para ser iniciado
+(o falla al iniciar).
+</p>
+
+<ul>
+  <li>
+    Los ajustes <c>use</c> informan al sistema de inicio que este guión
+    <e>utiliza</e> funcionalidad ofrecida por el guión seleccionado, sin
+    embargo no depende directamente de él. Un buen ejemplo sería
+    <c>use logger</c> o <c>use dns</c>. Si estos servicios están disponibles,
+    se usarán de forma correcta, pero aunque no tenga instalado un programa
+    de registro (logger) o servidor DNS, los servicios funcionarán de todos
+    modos. Si estos servicios están presentes en su sistema, entonces se
+    arrancarán antes del guión que los <c>utiliza</c>.
+  </li>
+  <li>
+    El ajuste <c>need</c> es una dependencia inevitable. Esto significa
+    que el guión que <c>necesita</c> otro guión, no podrá arrancar antes
+    de que el otro guión se arranque de forma correcta. Si el otro guión
+    es reiniciado, entonces el guión que depende de él será reiniciado
+    igualmente.
+  </li>
+  <li>
+    Cuando se utiliza <c>before</c>, el guión dado es arrancado antes del
+    guión seleccionado <e>si</e> el seleccionado forma parte del nivel
+    de inicio. Por lo tanto, si el guión de inicio <path>xdm</path> define
+    <c>before alsasound</c>, será arrancado antes que el guión
+    <path>alsasound</path>, pero solo si <path>alsasound</path> está
+    también programado para ser arrancado en el mismo nivel de inicio.
+    Si <path>alsasound</path> no está programado para arrancar, entonces
+    este ajuste en particular no tiene efecto y el guión <path>xdm</path>
+    será arrancado cuando el sistema de inicio lo juzgue apropiado.
+  </li>
+  <li>
+    De modo similar, <c>after</c> informa al sistema de inicio que el
+    guión dado debería ser arrancado antes que el seleccionado <e>si</e> el
+    guión seleccionado forma parte de nivel de inicio. En caso contrario,
+    el ajuste no tiene efecto y el guión será arrancado por el sistema
+    de inicio cuando éste lo juzgue apropiado.
+  </li>
+</ul>
+
+<p>
+Debería quedar claro una vez leida la parte de arriba, que <c>need</c> es
+el único ajuste que define un "auténtica" dependencia ya que afecta al hecho
+de que el guión sea arrancado o no. Las demás son simplemente apuntes al
+sistema de inicio para clarificar el orden en el que los guiones deben
+(o deberían ser arrancados).
+</p>
+
+<p>
+Si echa un vistazo al muchos de los guiones de inicio disponibles en Gentoo,
+observará que algunos tienen dependencias de objetos que no son guiones de
+inicio. Estos "objetos" son los llamados <e>virtuals</e> (virtuales).
 </p>
 
 <p>
@@ -536,17 +595,12 @@ Como podemos ver, el servicio postfix:
 <body>
 
 <p>
-En algunos casos, tal vez no requiera un servicio determinado, pero
-desea que inicie <c>antes</c> (o <c>después</c>) de otro servicio
-<e>si</e> está disponible en el sistema (note la condicionalidad,
-esto ya no es una dependencia) <e>y</e> en el mismo nivel de ejecución
-(note la condicionalidad, solo involucra servicios del mismo nivel de
-ejecución). Puede suministrar esta información usando los parámetros
-<c>before</c> o <c>after</c>.
-</p>
-
-<p>
-Como ejemplo, podemos ver la disposición del servicio portmap:
+Tal y como se ha descrito en la sección anterior, puede indicarle al sistema
+de inicio qué orden debe seguir para arrancar (o parar) los guiones. Este
+orden es manejado tanto por los ajustes de dependencia <c>use</c> y
+<c>need</c>, como por los ajustes de orden <c>before</c> y <c>after</c>. Como
+ya hemos descrito estos ajustes, echemos un vistazo al servicio Portmap como
+ejemplo de guión de inicio.
 </p>
 
 <pre caption="La función depend() en el servicio portmap">
