@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-net-advanced.xml,v 1.9 2011/08/16 16:06:13 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-net-advanced.xml,v 1.10 2011/08/19 16:20:32 nimiux Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Aquí aprenderemos como funciona la configuración - debe estar enterado
 de esto antes de aprender sobre redes modulares.
 </abstract>
 
-<version>9</version>
-<date>2011-08-13</date>
+<version>11</version>
+<date>2011-08-19</date>
 
 <section>
 <title>Configuración Avanzada</title>
@@ -67,8 +67,8 @@ Aquí tiene una lista de instrucciones integradas:
 </table>
 
 <p>
-Si un comando falla, puede especificar un comando de retorno (fallback). 
-El retorno tiene que coincidir exactamente con la estructura de la 
+Si un comando falla, puede especificar un comando de retorno (fallback).
+El retorno tiene que coincidir exactamente con la estructura de la
 configuración.
 </p>
 
@@ -78,31 +78,23 @@ Puede encadenar estos comandos. Aquí se muestran algunos ejemplo reales:
 
 <pre caption="Ejemplos de configuración">
 <comment># Añadir tres direcciones IPv4</comment>
-config_eth0=(
-	"192.168.0.2/24"
-	"192.168.0.3/24"
-	"192.168.0.4/24"
-)
+config_eth0="192.168.0.2/24
+192.168.0.3/24
+192.168.0.4/24"
 
 <comment># Añadir una dirección IPv4 y dos IPv6</comment>
-config_eth0=(
-	"192.168.0.2/24"
-	"4321:0:1:2:3:4:567:89ab"
-	"4321:0:1:2:3:4:567:89ac"
-)
+config_eth0="192.168.0.2/24
+4321:0:1:2:3:4:567:89ab
+4321:0:1:2:3:4:567:89ac"
 
-<comment># Mantener la dirección asignada por el kernel, a menos que la 
+<comment># Mantener la dirección asignada por el kernel, a menos que la
 interfaz se caiga, entonces asignar otra vía DHCP. Si DHCP falla entonces
 añadir una dirección estática determinada mediante APIPA</comment>
 
-config_eth0=(
-	"noop"
-	"dhcp"
-)
-fallback_eth0=(
-	"null"
-	"apipa"
-)
+config_eth0="noop
+dhcp"
+fallback_eth0="null
+apipa"
 </pre>
 
 <note>
@@ -172,22 +164,36 @@ rc_need_br0="net.eth0 net.eth1"
 </pre>
 
 <p>
-Para una lectura más detallada sobre dependencias, consulte la sección
-<uri link="?part=2&amp;chap=4#doc_chap4">
- "Guiones de Inicio"</uri> en el manual de Gentoo. Más información
- acerca de <path>/etc/rc.conf</path> está disponible en los
- comentarios dentro del mismo archivo.
+Lo anterior no es suficiente. Los guiones de inicio de Gentoo utilizan una
+dependencia virtual llamada <e>net</e> para informar al sistema cuando está
+disponible la conexión a red. Claramente, en el caso de arriba la conexión
+a red debería marcarse como disponible cuando <path>net.br0</path> está
+funcionando, no cuando lo están las otras. Por lo que tenemos que indicar
+también esto en <path>/etc/conf.d/net</path>:
 </p>
+
+<pre caption="Actualizar las dependencias y provisiones para los servicios de red">
+rc_net_lo_provide="!net"
+rc_net_eth0_provide="!net"
+rc_net_eth1_provide="!net"
+</pre>
+
+<p>
+Para una lectura más detallada sobre dependencias, consulte la sección
+<uri link="?part=2&amp;chap=4#doc_chap4">Guiones de Inicio</uri> en el
+manual de Gentoo. Se puede encontrar más información acerca de
+<path>/etc/rc.conf</path> en los comentarios dentro del propio archivo.
+</p>
+
 </body>
 </section>
-
 <section id="variable_name">
 <title>Nombre de variables y valores</title>
 <body>
 
 <p>
-Los nombre de variables son dinámicos. Normalmente sigue la estructura 
-<c>variable_${interface|mac|essid|apmac}</c>. Por ejemplo, la variable 
+Los nombre de variables son dinámicos. Normalmente sigue la estructura
+<c>variable_${interface|mac|essid|apmac}</c>. Por ejemplo, la variable
 <c>dhcpcd_eth0</c> guarda los valores para las opciones de dhcpcd para eth0
 y <c>dhcpcd_essid</c> los valores para dhcpcd cuando cualquier interfaz se
 conecta al ESSID "essid".
@@ -195,7 +201,7 @@ conecta al ESSID "essid".
 
 <p>
 Sin embargo, no hay ninguna regla que indique que los nombre de las interfaces
-sean ethx. De hecho, muchas interfaces wireless tienen nombres como wlanx, rax 
+sean ethx. De hecho, muchas interfaces wireless tienen nombres como wlanx, rax
 o ethx. También, algunas interfaces definidas por el usuario como pueden ser
 puentes puede tener cualquier nombre, como foo. Para hacer la vida un poco más
 interesante, los puntos de acceso wireless pueden tener nombres con caracteres
@@ -215,7 +221,7 @@ Otra desventaja de bash es el contenido de las variables - algunos caracteres
 necesitan especificarse de manera especial. Esto se hace utilizando <c>\</c>
 delante del carácter. A continuación tenemos una lista de caracteres
 especiales que necesitamos indicar de esta manera. <c>"</c>,<c>'</c> y
-<c>\</c>.  
+<c>\</c>.
 </p>
 
 <p>
@@ -227,7 +233,7 @@ abanico de caracteres. Deberemos utilizar ESSID <c>My "\ NET</c>:
 <comment>(Esto funciona, pero el dominio no es válido)</comment>
 dns_domain_My____NET="My \"\\ NET"
 
-<comment>(Lo que hay arriba configura el dominio dns a My "\ NET cuando una 
+<comment>(Lo que hay arriba configura el dominio dns a My "\ NET cuando una
 tarjeta wireless se conecta a un AP cuyo ESSID es My "\ NET)</comment>
 </pre>
 
