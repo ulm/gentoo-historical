@@ -4,11 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-system.xml,v 1.27 2010/01/23 09:54:09 shindo Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-system.xml,v 1.28 2011/08/21 10:58:27 naota Exp $ -->
 
-<!-- Original revision: 1.112 -->
+<!-- Original revision: 1.119 -->
 <!-- Translator: igarashi -->
 <!-- Translator: Taku Murakami -->
+<!-- Translator: naota -->
 
 <sections>
 
@@ -17,8 +18,8 @@ stage3のインストール及び設定が済めば、Gentoo base systemを自�
 本章では、そこまでの進め方を説明します。
 </abstract>
 
-<version>10.0</version>
-<date>2009-10-04</date>
+<version>11</version>
+<date>2011-08-03</date>
 
 <section>
 <title>chrootする</title>
@@ -32,15 +33,12 @@ Portageは、GENTOO_MIRRORS変数を<path>make.conf</path>ファイルから参�
 Gentooサイトの<uri link="/main/en/mirrors.xml">mirror list</uri>
 <uri link="/main/ja/mirrors.xml">(日本語訳)</uri>を参照し、(高確率で一番速いサイトとしての)一番近い一つのミラーサイト(もしくは複数のミラーサイト)を探すことができます。
 しかし、お望みのミラーサイトを選択するのに使いやすいインターフェースを備える<c>mirrorselect</c>というすばらしいツールを提供しています。
+選択したいミラーまでカーソルを動かしスペースキーを押して一つまたはそれ以上のミラーを選択してください。
 </p>
 
 <pre caption="GENTOO_MIRRORS変数用にmirrorselectを使用する">
 # <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
 </pre>
-
-<warn>
-どのIPv6ミラーサイトも選択してはいけません。現在stageファイルは、IPv6をサポートしていません。
-</warn>
 
 <p>
 <path>make.conf</path>での2番目に重要な設定は、SYNC変数の設定です。
@@ -56,6 +54,12 @@ Gentooサイトの<uri link="/main/en/mirrors.xml">mirror list</uri>
 <p>
 <c>mirrorselect</c>を実行した後、<path>/mnt/gentoo/etc/make.conf</path>内の設定が重複していないかを確認したほうがよいでしょう。
 </p>
+
+<note>
+<path>make.conf</path>にSYNCのサーバを自分で設定したいのであれば、<uri link="/main/en/mirrors-rsync.xml">community mirrors list</uri>を参考にして自分に近いミラーを選択するのがよいでしょう。
+単一のホストからなるミラーではなく、<c>rsync.us.gentoo.org</c>のような<e>輪番</e>のものを選ぶことを推奨します。
+そうすると負荷を分散し、あるサーバがオフラインになった場合でもフェイルセーフになります。
+</note>
 
 </body>
 </subsection>
@@ -83,6 +87,11 @@ Gentooサイトの<uri link="/main/en/mirrors.xml">mirror list</uri>
 <body>
 
 <p>
+これからすぐ、Linuxのルートを新しい場所へと変更します。
+新しい環境がうまく動作することを確かめるために、いくつかのファイルシステムを新しい場所から見えるようにしておく必要があります。
+</p>
+
+<p>
 chroot後の環境でもカーネルが提供する情報を参照できるようにするために、
 <path>/mnt/gentoo/proc</path>に<path>/proc</path>ファイルシステムをマウントしてください。
 それから、<path>/dev</path>ファイルシステムをbindマウントします。
@@ -90,7 +99,7 @@ chroot後の環境でもカーネルが提供する情報を参照できるよ�
 
 <pre caption="/procと/devのマウント">
 # <i>mount -t proc none /mnt/gentoo/proc</i>
-# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
 </pre>
 
 </body>
@@ -107,8 +116,8 @@ chroot後の環境でもカーネルが提供する情報を参照できるよ�
 
 <pre caption="/proc、/sys、/devのマウント">
 # <i>mount -t proc none /mnt/gentoo/proc</i>
-# <i>mount -o bind /dev /mnt/gentoo/dev</i>
-# <i>mount -o bind /sys /mnt/gentoo/sys</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
 </pre>
 
 </body>
@@ -277,7 +286,7 @@ Gentooならば、パッケージをコンパイルするときにつけるべ�
 <p>
 <c>USE</c>変数には、コンパイルオプションに対応するキーワードを定義します。
 たとえば、<e>ssl</e>はプログラムに備わるSSLサポートをコンパイルします。
-<e>-X</e>はXサーバのサポートを削除します。(キーワードの前にマイナス記号をつけます。)<e>gnome gtk -kde -qt3 -qt4</e>は、
+<e>-X</e>はXサーバのサポートを削除します。(キーワードの前にマイナス記号をつけます。)<e>gnome gtk -kde -qt4</e>は、
 GNOME(とGTK)サポートを有効にし、KDE(とQt)サポートを無効にしてプログラムをコンパイルします。システムを完全にGNOME向けに調整します。
 </p>
 
@@ -310,7 +319,7 @@ DVD、ALSA、CD-Rサポートを含むKDEベースのシステムのための<c>
 </pre>
 
 <pre caption="USEフラグの設定">
-USE="-gtk -gnome qt3 qt4 kde dvd alsa cdr"
+USE="-gtk -gnome qt4 kde dvd alsa cdr"
 </pre>
 
 </body>
