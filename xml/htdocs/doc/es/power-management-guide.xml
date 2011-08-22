@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/power-management-guide.xml,v 1.24 2011/03/09 19:59:45 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/power-management-guide.xml,v 1.25 2011/08/22 18:52:34 nimiux Exp $ -->
 
 <guide lang="es">
 <title>Guía de Administración de Energía</title>
@@ -37,13 +37,27 @@ de duración de la batería en sistemas móviles como los portátiles.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2</version>
-<date>2011-03-02</date>
+<version>4</version>
+<date>2011-08-17</date>
 
 <chapter>
 <title>Introducción</title>
 <section>
 <body>
+
+<!--
+     Eliminar esta nota después de seis meses - Estimado: 01/02/2012
+     Para entonces, asumimos que las migraciones no son tan frecutentes
+     y por lo tanto la nota se puede eliminar.
+     ~ Sven Vermeulen
+-->
+<impo>
+Desde la introducción de OpenRC, el guión <c>pmg_switch_runlevel.sh</c>
+necesita ser actualizado. Si tiene problemas después de la migración
+de OpenRC upgrade, por favor, actualice este guión de acuerdo a lo
+comentado en esta guía.
+</impo>
+
 
 <p>
 La capacidad y el tiempo de vida de las baterías de un portátil han mejorado
@@ -55,9 +69,9 @@ tiempo de duración de una batería no significa necesariamente comprar otra.
 Mucho se puede lograr con tan sólo aplicar políticas inteligentes de
 Administración de Energía.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Una rápida vista general</title>
 <body>
@@ -98,9 +112,9 @@ de sueño</uri>. Última pero no menos importante está la sección de
 <uri link="#doc_chap8">Solución de problemas</uri> que lista los
 errores comunes.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Presupuesto de Energía para cada componente</title>
 <body>
@@ -117,6 +131,7 @@ Administración de Energía independiente del SO en la BIOS, pero una
 configuración inteligente en los sistemas operativos que se adapta a
 situaciones diferentes puede lograr mucho más.
 </p>
+
 </body>
 </section>
 </chapter>
@@ -138,9 +153,9 @@ rendimiento o latencia incrementada, debería ser sólo activada cuando
 se están usando las baterías. Aquí es cuando viene a mano un nuevo
 nivel de ejecución llamado <e>battery</e>.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>La parte de la BIOS</title>
 <body>
@@ -153,9 +168,9 @@ BIOS. Esto le asegura que no va a interferir con sus políticas. No olvide
 revisar nuevamente su configuración de la BIOS luego de que haya configurado
 el resto de las cosas.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Ajustando los parámetros USE</title>
 <body>
@@ -170,9 +185,9 @@ olvidó ajustar alguno estos parámetros, puede recompilar los paquetes
 afectados usando el parámetro <c>--newuse</c> al usar <c>emerge</c>,
 vea <c>man emerge</c>.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Configurando el núcleo</title>
 <body>
@@ -263,9 +278,9 @@ verá cómo usarlo.
 # <i>/etc/init.d/acpid start</i>
 # <i>rc-update add acpid default</i>
 </pre>
+
 </body>
 </section>
-
 <section>
 <title>Creando un nivel de ejecución "battery"</title>
 <body>
@@ -295,9 +310,9 @@ Listo. Su nuevo nivel de ejecución <c>battery</c> contiene todo tal como el
 <c>default</c>, pero todavía no existe un cambio automático entre ellos. Es
 hora de cambiar eso.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Reaccionando a los eventos de ACPI</title>
 <body>
@@ -333,32 +348,41 @@ ejecución. Guárdelo como
 <pre caption="/etc/acpi/actions/pmg_switch_runlevel.sh">
 #!/bin/bash
 
-<comment># INICIO configuración</comment>
+# INICIO de la configuración
 RUNLEVEL_AC="default"
 RUNLEVEL_BATTERY="battery"
-<comment># FIN configuración</comment>
+
+if [ -x /usr/bin/logger ]; then
+    LOGGER="/usr/bin/logger -s -p daemon.info -t /etc/acpi/actions/pmg_switch_runlevel.sh"
+else
+    LOGGER="/bin/echo"
+fi
+
+ON_AC_POWER=/usr/bin/on_ac_power
+# FIN de la configuración
+
 if [ ! -d "/etc/runlevels/${RUNLEVEL_AC}" ]
 then
-        logger "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
+        ${LOGGER} "${0}: Runlevel ${RUNLEVEL_AC} does not exist. Aborting."
         exit 1
 fi
 
 if [ ! -d "/etc/runlevels/${RUNLEVEL_BATTERY}" ]
 then
-        logger "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
+        ${LOGGER} "${0}: Runlevel ${RUNLEVEL_BATTERY} does not exist. Aborting."
         exit 1
 fi
 
-if on_ac_power
+if ${on_ac_power}
 then
-    if [[ "$(&lt;/var/lib/init.d/softlevel)" != "${RUNLEVEL_AC}" ]]
+  if [[ "$(rc-status --runlevel)" != "${RUNLEVEL_AC}" ]]
   then
-            logger "Switching to ${RUNLEVEL_AC} runlevel"
-            /sbin/rc ${RUNLEVEL_AC}
-        fi
-elif [[ "$(&lt;/var/lib/init.d/softlevel)" != "${RUNLEVEL_BATTERY}" ]]
+        ${LOGGER} "Switching to ${RUNLEVEL_AC} runlevel"
+        /sbin/rc ${RUNLEVEL_AC}
+  fi
+elif [[ "$(rc-status --runlevel)" != "${RUNLEVEL_BATTERY}" ]]
 then
-        logger "Switching to ${RUNLEVEL_BATTERY} runlevel"
+        ${LOGGER} "Switching to ${RUNLEVEL_BATTERY} runlevel"
         /sbin/rc ${RUNLEVEL_BATTERY}
 fi
 </pre>
@@ -433,15 +457,15 @@ Corriente Alterna o la batería. Esto es adecuado cuando usa Corriente
 Alterna pero nos gustaría arrancar en el nivel de ejecución battery en
 otros casos. Una solución sería agregar un parámetro adicional al
 gestor de arranque con <c>softlevel=battery</c>, pero es fácil que
-dicha elección se olvide. Una mejor manera es falsear un evento ACPI
+dicha elección se olvide. Una forma mejor es falsear un evento ACPI
 al término del proceso de arranque y dejar que el guión
-<path>/etc/acpi/default.sh</path> decida si es necesario un cambio del
-nivel de ejecución. Abra <path>/etc/conf.d/local.start</path> en su
-editor favorito y agregue estas líneas:
+<path>pmg_switch_runlevel.sh</path> decida si es necesario un cambio
+del nivel de ejecución. Cree el fichero
+<path>/etc/local.d/battery.start</path> con el siguiente contenido:
 </p>
 
-<pre caption="Ajuste del nivel de ejecución al momento del arranque mediante la
-edición de local.start">
+<pre caption="Ajuste del nivel de ejecución al momento del arranque mediante local.d/battery.start">
+#!/bin/sh
 <comment># Falsear un evento acpi para cambiarse el nivel de ejecución si se
 están usando baterías
 </comment>
@@ -449,10 +473,12 @@ están usando baterías
 </pre>
 
 <p>
-Al estar preparado tal como se ha hecho antes, ya puede activar las
-políticas de Administración de Energía para los dispositivos
+No olvide hacer este fichero ejecutable
+(<c>chmod +x /etc/local.d/battery.start</c>). Una vez preparado, puede
+activar las directrices de Administración de Energía para dispositivos
 individuales.
 </p>
+
 </body>
 </section>
 </chapter>
@@ -469,9 +495,9 @@ del tiempo su CPU no necesita funcionar al máximo de rapidez y
 ajustarla para que disminuya hará que ahorre mucha energía -
 frecuentemente sin disminución de rendimiento.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Algunos términos técnicos</title>
 <body>
@@ -511,9 +537,9 @@ usuario como <c>cpudyn</c>, <c>cpufreq</c>, <c>powernowd</c> y muchas
 más. Los eventos de ACPI pueden ser usados para activar o desactivar
 los cambios dinámicos dependiendo de la fuente de energía.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Ajustando manualmente la frecuencia</title>
 <body>
@@ -847,16 +873,14 @@ Puede causar confusión como intercambios sucesivos entre dos frecuencias.
 
 </body>
 </section>
-
 <section>
 <title>Verificando el resultado</title>
-
 <body>
 
 <p>
-La última cosa por chequear es que sus nuevas políticas hagan bien el trabajo.
-Una forma fácil de comprobarlo es monitorizando la velocidad de la CPU mientras
-esté trabajando con su portátil:
+Lo último por chequear es que sus nuevas políticas hagan bien el trabajo.
+Una forma fácil de comprobarlo es monitorizando la velocidad de la CPU
+mientras esté trabajando con su portátil:
 </p>
 
 <pre caption="Monitoreando la velocidad de la CPU">
@@ -881,6 +905,7 @@ actividad o permanecer en el mismo nivel. Cuando se usa
 <path>cpufreqd.conf</path>, obtendrá información adicional de lo que
 está pasando y será reportada a <c>syslog</c>.
 </p>
+
 </body>
 </section>
 </chapter>
@@ -889,6 +914,7 @@ está pasando y será reportada a <c>syslog</c>.
 <title>Administración de Energía de la pantalla LCD</title>
 <section>
 <body>
+
 <p>
 Como puede ver en la <uri link="#doc_chap1_fig1">figura 1.1</uri>, la
 pantalla LCD consume la mayor parte de la energía (puede que no sea el
@@ -897,9 +923,9 @@ apagar la pantalla cuando ésta no se necesite, sino también reducir su
 contraluz si es posible. La mayoría de los portátiles ofrece la
 posibilidad para controlar la disminución de aquello.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Ajustes de Standby</title>
 <body>
@@ -930,9 +956,9 @@ Section "Monitor"
   [...]
 EndSection
 </pre>
+
 </body>
 </section>
-
 <section>
 <title>Disminución de contraluz</title>
 <body>
@@ -964,9 +990,15 @@ Para poder ajustar el nivel de brillo debe ser cargado el módulo
 
 <pre caption="Cargar automáticamente el módulo thinkpad_acpi">
 <comment>(¡Por favor, lea las advertencias indicadas arriba antes de seguir!)</comment>
+
 # <i>echo "options thinkpad_acpi experimental=1" >> /etc/modprobe.d/thinkpad_acpi</i>
 # <i>update-modules</i>
-# <i>echo thinkpad_acpi >> /etc/modules.autoload.d/kernel-2.6</i>
+# <i>nano /etc/conf.d/modules</i>
+<comment># Cargar automáticamente el módulo thinkpad_acpi</comment>
+modules_2_6="thinkpad_acpi"
+<comment># Parámetros para el módulo thinkpad_acpi</comment>
+modules_thinkpad_acpi_args_2_6="experimental=1"
+
 # <i>modprobe thinkpad_acpi</i>
 </pre>
 
@@ -1035,6 +1067,7 @@ automática mediante la adición de este al nivel de ejecución battery.
 # <i>rc-update add lcd-brightness battery</i>
 # <i>rc</i>
 </pre>
+
 </body>
 </section>
 </chapter>
@@ -1057,9 +1090,9 @@ agrada esto, tiene que asegurarse que no hay procesos que escriban con
 frecuencia al disco. Luego puede activar las características de ahorro de
 energía del disco duro con <c>hdparm</c> como segunda alternativa.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Aumentando el tiempo de inactividad - laptop-mode</title>
 <body>
@@ -1127,9 +1160,9 @@ servicios que son necesarios para que su sistema funcione adecuadamente
 - lm-profiler es probable que genere algunos falsos positivos. No desactive
 un servicio si está inseguro que este es necesario.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Limitar los accesos de escritura</title>
 <body>
@@ -1153,9 +1186,9 @@ También puede usar <c>lm-profiler</c> de laptop-mode-tools (ver más arriba)
 para encontrar los servicios a desactivar. Una vez que los haya eliminado todos,
 siga con la configuración de hdparm.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>hdparm</title>
 <body>
@@ -1197,9 +1230,9 @@ Sea cuidadoso con los ajustes de disminución de velocidad/rotación de su disco
 duro. Ajustándolos a valores pequeños puede que dañe su disco y pierda la
 garantía.
 </impo>
+
 </body>
 </section>
-
 <section>
 <title>Otros trucos</title>
 <body>
@@ -1238,6 +1271,7 @@ archivos de bitácora a disco antes de desmontar el directorio. Son
 archivos esenciales.  No intente montar el directorio
 <path>/var/tmp</path> de esta forma. Portage lo usa para compilar ...
 </warn>
+
 </body>
 </section>
 </chapter>
@@ -1264,9 +1298,9 @@ Section "Device"
 Option      "DynamicClocks" "on"
 EndSection
 </pre>
+
 </body>
 </section>
-
 <section>
 <title>Administración de energía para tarjetas inalámbricas</title>
 <body>
@@ -1296,9 +1330,9 @@ entre activaciones o de expiración. Si el controlador y el punto de
 acceso soportan la modificación de tiempos de faro (beacon), este
 sería un buen punto de inicio para ahorrar aún más energía.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Administración de Energía USB</title>
 <body>
@@ -1321,6 +1355,7 @@ Device Drivers
     [*]   Support for Host-side USB
       [*]   USB suspend/resume (EXPERIMENTAL)
 </pre>
+
 </body>
 </section>
 </chapter>
@@ -1345,9 +1380,9 @@ Dichos estados pueden ser invocados siempre y cuando el sistema no
 esté en uso de forma de evitar apagar el sistema debido al largo tiempo
 de arranque.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Suspensión (S3)</title>
 <body>
@@ -1417,9 +1452,9 @@ standby (S1) en forma similar modificando el archivo
 "UseSysfsPowerState. S3 y S4 son los estados de sueño más interesantes
 debido a los mayores ahorros de energía.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Hibernar (S4)</title>
 <body>
@@ -1609,6 +1644,7 @@ correctamente.
 Después abra <path>/etc/hibernate/hibernate/common.conf</path> y
 active las opciones fbsplash. Ejecute <c>hibernate</c> y disfrute.
 </p>
+
 </body>
 </section>
 </chapter>
@@ -1808,6 +1844,7 @@ link="http://forums.gentoo.org">Foros de Gentoo</uri> son un buen
 lugar para obtener ayuda. Si prefiere IRC, únase al <uri
 link="irc://irc.gentoo.org">canal</uri> <c>#gentoo-laptop</c>.
 </p>
+
 </body>
 </section>
 </chapter>
