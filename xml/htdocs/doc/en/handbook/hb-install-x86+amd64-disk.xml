@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-x86+amd64-disk.xml,v 1.14 2011/08/22 17:18:23 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/en/handbook/hb-install-x86+amd64-disk.xml,v 1.15 2011/08/23 17:31:34 swift Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ To be able to install Gentoo, you must create the necessary partitions.
 This chapter describes how to partition a disk for future usage.
 </abstract>
 
-<version>7</version>
-<date>2011-08-22</date>
+<version>8</version>
+<date>2011-08-23</date>
 
 <section>
 <title>Introduction to Block Devices</title>
@@ -118,7 +118,10 @@ you can use the partitioning scheme we use throughout this book:
 If you are interested in knowing how big a partition should be, or even how 
 many partitions you need, read on. Otherwise continue now with partitioning 
 your disk by reading <uri link="#fdisk">Using fdisk to Partition your
-Disk</uri>.
+Disk</uri> or <uri link="#parted">Using parted to Partition your Disk</uri>
+(both are partitioning tools, <c>fdisk</c> is well known and stable,
+<c>parted</c> is a bit more recent but supports partitions larger than
+2TB).
 </p>
 
 </body>
@@ -209,9 +212,16 @@ for compiling extremely large packages such as OpenOffice.
 <subsection>
 <body>
 
+<impo>
+If your environment will deal with partitions larger than 2 TB, please
+use the <uri link="#parted">Using parted to Partition your Disk</uri>
+instructions instead. <c>fdisk</c> is not able to deal with larger
+partitions.
+</impo>
+
 <p>
 The following parts explain how to create the example partition layout 
-described previously, namely:
+using <c>fdisk</c>. The example partition layout was mentioned earlier:
 </p>
 
 <table>
@@ -461,6 +471,204 @@ Command (m for help): <i>w</i>
 <p>
 Now that your partitions are created, you can continue with <uri
 link="#filesystems">Creating Filesystems</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="parted">
+<title>Using parted to Partition your Disk</title>
+<subsection>
+<body>
+
+<p>
+In this chapter, we guide you through the creation of the example partition
+layout mentioned earlier in the instructions. Unlike the previous chapter, we
+describe the method using the <c>parted</c> application instead. Both
+<c>parted</c> and <c>fdisk</c> offer the same functions, so if you partitioned
+your system using <c>fdisk</c> already, you can skip this section and continue
+with <uri link="#filesystems">Creating Filesystems</uri>.
+</p>
+
+<p>
+The example partition layout we use is shown in the next table:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Boot partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Swap partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Root partition</ti>
+</tr>
+</table>
+
+<p>
+Change your partition layout according to your own preference.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Viewing the Current Partition Layout</title>
+<body>
+
+<p>
+The <c>parted</c> application is a somewhat more modern variant of
+<c>fdisk</c>. It offers a simpler interface for partitioning your disks and
+supports very large partitions (more than 2 TB). Fire up <c>parted</c> on your
+disk (in our example, we use <path>/dev/sda</path>):
+</p>
+
+<pre caption="Starting parted">
+# <i>parted /dev/sda</i>
+GNU Parted 2.3
+Using /dev/vda
+Welcome to GNU Parted! Type 'help' to view a list of commands.
+</pre>
+
+<p>
+To find out about all options supported by <c>parted</c>, type <c>help</c> and
+press return. For now, we just continue by asking <c>parted</c> to show the
+partitions currently in use on the selected disk. The <c>print</c> command can
+be used for that.
+</p>
+
+<pre caption="An example partition configuration shown by parted">
+(parted) <i>print</i>
+Model: SCSI Block Device
+Disk /dev/sda: 21.5GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+
+Number  Start   End     Size    Type     File system     Flags
+ 1      512B    2148MB  2148MB  primary  ext4
+ 2      2148MB  3222MB  1074MB  primary  linux-swap(v1)
+ 3      3222MB  21.5GB  18.3GB  primary                  lvm
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Optional: Setting the GPT Label</title>
+<body>
+
+<p>
+Most disks on x86/amd64 are prepared using an <e>msdos</e> label. However, if
+you plan on creating huge partitions (2 TB and more), you must use a <e>gpt</e>
+label (the <e>GUID Partition Type</e>) for your disk. Using <c>parted</c>, this
+can be accomplished with <c>mklabel gpt</c>:
+</p>
+
+<warn>
+Changing the partition type will remove all partitions from your disk. All data
+on the disk will be lost.
+</warn>
+
+<pre caption="Setting the GPT label">
+(parted) <i>mklabel gpt</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Removing all Partitions</title>
+<body>
+
+<p>
+If this isn't done yet (for instance through the <c>mklabel</c> operation
+earlier, or because the disk is a freshly formatted one), we will first
+remove all existing partitions from the disk. Type <c>rm &lt;number&gt;</c>
+where &lt;number&gt; is the partition you want to remove.
+</p>
+
+<pre caption="Removing a partition from the disk">
+(parted) <i>rm 2</i>
+</pre>
+
+<p>
+Do the same for all other partitions that you don't need. However, make sure you
+do not make any mistakes here - <c>parted</c> executes the changes immediate
+(unlike <c>fdisk</c> which stages them, allowing a user to "undo" his changes
+before saving or exiting <c>fdisk</c>).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Creating the Partitions</title>
+<body>
+
+<p>
+Now let's create the partitions we mentioned earlier. Creating partitions with
+<c>parted</c> isn't very difficult - all we need to do is inform <c>parted</c>
+about the following settings:
+</p>
+
+<ul>
+  <li>
+    The <e>partition type</e> to use. This usually is <e>primary</e> in case you
+    are not going to have more than 4 partitions (with the <e>msdos</e>
+    partition label). Otherwise, you will need to make your fourth partition an
+    <e>extended</e> one which hosts the rest of the disk, and create
+    <e>logical</e> partitions inside it. If you use a <e>gpt</e>-labeled
+    partition, then there is no limit on the number of primary partitions.
+  </li>
+  <li>
+    The <e>file system type</e> to use. The <c>parted</c> application supports
+    most common file systems and knows which kind of partition ID it needs to
+    use for these partitions. This does <e>not</e> mean that <c>parted</c> will
+    create a file system on the partition (you can with the <c>mkpartfs</c>
+    command, but we'll use the regular <c>mkfs.*</c> commands later for this
+    purpose). The partition ID is often used by auto-detection tools to know
+    what to do with a particular partition.
+  </li>
+  <li>
+    The start location of a partition (which can be expressed in MB or GB)
+  </li>
+  <li>
+    The end location of the partition (which can be expressed in MB or GB)
+  </li>
+</ul>
+
+<p>
+One advantage of <c>parted</c> is that you can easily just use the partition
+sizes to automatically find the correct start and end location as you will see
+in the next example.
+</p>
+
+<pre caption="Creating the partitions">
+<comment># Create a 32 mbyte /boot partition</comment>
+(parted) <i>mkpart primary ext2 0 32mb</i>
+Warning: The resulting partition is not properly aligned for best performance.
+Ignore/Cancel? <i>i</i>
+
+<comment># Create a 512 mbyte swap partition</comment>
+(parted) <i>mkpart primary linux-swap 32mb 542mb</i>
+
+<comment># Create a partition that spans the remaining disk.
+# -1s (minus one s) means the end of the disk</comment>
+(parted) <i>mkpart primary ext4 542mb -1s</i>
+Warning: You requested a partition from 542MB to 21.5GB.
+The closest location we can manage is 542MB to 21.5GB.
+Is this still acceptable to you?
+Yes/No? <i>y</i>
+</pre>
+
+<p>
+You can now <c>print</c> the partition layout again to validate if everything is
+as expected. When you are satisfied, use the <c>quit</c> command to exit
+<c>parted</c>.
 </p>
 
 </body>
