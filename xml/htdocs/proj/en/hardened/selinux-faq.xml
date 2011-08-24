@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-faq.xml,v 1.4 2011/07/16 20:36:41 zorry Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-faq.xml,v 1.5 2011/08/24 21:15:59 swift Exp $ -->
 
 <guide link="/proj/en/hardened/selinux-faq.xml" lang="en">
 <title>Gentoo Hardened SELinux Frequently Asked Questions</title>
@@ -17,8 +17,8 @@ The FAQ is a collection of solutions found on IRC, mailinglist, forums or
 elsewhere
 </abstract>
 
-<version>10</version>
-<date>2011-07-13</date>
+<version>12</version>
+<date>2011-08-22</date>
 
 <faqindex>
 <title>Questions</title>
@@ -333,6 +333,38 @@ registers with SELinux as a secondary module.
 
 </body>
 </section>
+<section id="permission_not_defined">
+<title>I get a 'Permission ... in class ... not defined' message during booting</title>
+<body>
+
+<p>
+During boot-up, the following message is shown:
+</p>
+
+<pre caption="Kernel message on undefined permission(s)">
+SELinux: 2048 avtab hash slots, 16926 rules.
+SELinux: 2048 avtab hash slots, 16926 rules.
+SELinux:  6 users, 6 roles, 1083 types, 34 bools
+SELinux:  77 classes, 16926 rules
+SELinux:  Permission read_policy in class security not defined in policy.
+SELinux:  Permission audit_access in class file not defined in policy.
+SELinux:  Permission audit_access in class dir not defined in policy.
+SELinux:  Permission execmod in class dir not defined in policy.
+...
+SELinux: the above unknown classes and permissions will be denied
+SELinux:  Completing initialization.
+</pre>
+
+<p>
+This means that the Linux kernel that you are booting supports permissions that
+are not defined in the policy (as offered through the
+<c>sec-policy/selinux-base-policy</c> package). If you do not notice any errors
+during regular operations, then this can be ignored (the permissions will be
+made part of upcoming policy definitions).
+</p>
+
+</body>
+</section>
 </chapter>
 <chapter>
 <title>SELinux and Gentoo</title>
@@ -566,6 +598,59 @@ To fix this, change the user of the file to root:
 Another fix would be to disable UBAC completely. This is accomplished with
 <c>USE="-ubac"</c>.
 </p>
+
+</body>
+</section>
+<section id="missingdatum">
+<title>When querying the policy, I get 'ERROR: could not find datum for type ...'</title>
+<body>
+
+<p>
+When using <c>seinfo</c> or <c>sesearch</c> to query the policy on the system,
+you get errors similar to:
+</p>
+
+<pre caption="Triggering the 'could not find datum' error">
+~# <i>seinfo -tasterisk_t</i>
+ERROR: could not find datum for type asterisk_t
+</pre>
+
+<p>
+This is most likely because your tools are using a newer binary policy to
+enforce policy, but an older binary for querying. You can verify if this is the
+case by listing the last modification time on the files:
+</p>
+
+<pre caption="Checking last modification time of the policy files">
+~# <i>ls -ltr /etc/selinux/strict/policy/policy.*</i>
+</pre>
+
+<p>
+The file modified last should be the same one as returned by checking
+<path>/selinux/policyvers</path>:
+</p>
+
+<pre caption="Checking the runtime policy version">
+~# <i>cat /selinux/policyvers; echo</i>
+24
+</pre>
+
+<p>
+If this is not the case (which is very likely since you are reading this FAQ
+entry) then try forcing the utilities policy version to the correct version:
+</p>
+
+<pre caption="Editing semanage.conf">
+~# <i>vim /etc/selinux/semanage.conf</i>
+<comment># Look for and uncomment the policy-version line and set it to the right version</comment>
+policy-version = <i>24</i>
+</pre>
+
+<impo>
+If your system is upgrading its kernel, higher version(s) can be supported. In
+this case, either unset the value again to automatically "jump" to a higher
+version, or force set it to the higher version.
+</impo>
 
 </body>
 </section>
