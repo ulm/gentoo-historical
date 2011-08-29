@@ -1,16 +1,16 @@
 <?xml version = '1.0' encoding = 'UTF-8' ?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/ldap-howto.xml,v 1.18 2011/04/19 17:35:34 chiguire Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/ldap-howto.xml,v 1.19 2011/08/29 17:16:07 nimiux Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide disclaimer="draft" lang="es">
+<guide lang="es">
 <title>Guía Gentoo para la autenticación con OpenLDAP</title>
 
 <author title="Autor">
   <mail link="sj7trunks@pendulus.net">Benjamin Coles</mail>
 </author>
-<author title="Editor">
-  <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+<author title="Autor">
+  <mail link="swift"/>
 </author>
 <author title="Editor">
   <mail link="tseng@gentoo.org">Brandon Hale</mail>
@@ -33,6 +33,9 @@
 <author title="Traductor" >
   <mail link="carles@carles.no-ip.info">Carles Ferrer Peris</mail>
 </author>
+<author title="Traductor">
+  <mail link="nimiux"/>
+</author>
 
 <abstract>
 Esta guía explica los aspectos básicos de LDAP y muestra cómo instalar
@@ -44,8 +47,8 @@ máquinas Gentoo.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>5</version>
-<date>2011-04-17</date>
+<version>6</version>
+<date>2011-08-15</date>
 
 <chapter>
 <title>Empezando con OpenLDAP</title>
@@ -71,9 +74,9 @@ el protocolo. No obstante, LDAP está diseñado para ejecutarse
 directamente sobre la pila TCP/IP. Vea a LDAP como una versión ligera
 de X.500.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>No lo entiendo. ¿Qué es un directorio?</title>
 <body>
@@ -88,9 +91,9 @@ para incrementar disponibilidad y fiabilidad. Cuando los directorios
 son replicados, se permiten inconsistencias temporales con tal de que
 acaben siendo finalmente sincronizadas.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>¿Cómo está estructurada la información?</title>
 <body>
@@ -128,9 +131,9 @@ Animamos a las personas interesadas a leer la <uri
 link="http://www.openldap.org/doc/admin24/">Guía de Administración
 OpenLDAP</uri>.
 </p>
+
 </body>
 </section>
-
 <section>
 <title>Pero ... ¿para qué se utiliza?</title>
 <body>
@@ -155,6 +158,7 @@ utilizarse igualmente para otros fines:
   </li>
   <li>...</li>
 </ul>
+
 </body>
 </section>
 </chapter>
@@ -186,53 +190,68 @@ Ahora cree una contraseña que usará después:
 
 <pre caption="Generar una contraseña">
 # <i>slappasswd</i>
-New password: mi-contraseña
-Re-enter new password: mi-contraseña
+New password: <i>mi-contraseña</i>
+Re-enter new password: <i>mi-contraseña</i>
 {SSHA}EzP6I82DZRnW+ou6lyiXHGxSpSOw2XO4
 </pre>
 
 <p>
 Ahora edite la configuración del Servidor LDAP en
-<path>/etc/openldap/slapd.conf</path>:
+<path>/etc/openldap/slapd.conf</path>. Abajo mostramos un ejemplo de
+fichero de configuración con el que se puede comenzar. Para un
+análisis más detallado del fichero de configuración, le sugerimos que
+trabaje con la guía del administrador de OpenLDAP.
 </p>
 
 <pre caption="/etc/openldap/slapd.conf" >
-<comment># Incluya los esquemas de datos necesarios debajo de core.schema</comment>
-include         /etc/openldap/schema/cosine.schema
-include         /etc/openldap/schema/inetorgperson.schema
-include         /etc/openldap/schema/nis.schema
+include        /etc/openldap/schema/core.schema
+include /etc/openldap/schema/cosine.schema
+include /etc/openldap/schema/inetorgperson.schema
+include /etc/openldap/schema/nis.schema
+include        /etc/openldap/schema/misc.schema
 
-<comment># Descomente el modulepath y el módulo hdb</comment>
-modulepath    /usr/lib/openldap/openldap
-# moduleload    back_shell.so
-# moduleload    back_relay.so
-# moduleload    back_perl.so
-# moduleload    back_passwd.so
-# moduleload    back_null.so
-# moduleload    back_monitor.so
-# moduleload    back_meta.so
-moduleload    back_hdb.so
-# moduleload    back_dnssrv.so
+pidfile /var/run/openldap/slapd.pid
+argsfile /var/run/openldap/slapd.args
 
-<comment># Descomente las restricciones de acceso de ejemplo (Nota:
-¡mantenga la indentación!)
-</comment>
+<comment># Elimine el comentario de las restricciones simples de acceso (Nota: ¡respete la indentación!)</comment>
+serverID 0 <comment>Utilizado en el caso de replicación</comment>
+loglevel 0
+
+<comment>## Controles de acceso</comment>
 access to dn.base="" by * read
 access to dn.base="cn=Subschema" by * read
 access to *
-   by self write
-   by users read
-   by anonymous auth
+  by self write
+  by users read
+  by anonymous read
 
-<comment># Definición de la base de datos BDB</comment>
+<comment>## Definición de la base de datos</comment>
+database hdb
+suffix "dc=genfic,dc=com"
+checkpoint 32 30
+rootdn "cn=Manager,dc=genfic,dc=com"
+rootpw "{SSHA}EzP6I82DZRnW+ou6lyiXHGxSpSOw2XO4" <comment># Mire el comando slappasswd previo</comment>
+directory "/var/lib/openldap-ldbm"
+index objectClass eq
 
-database        hdb
-suffix          "dc=genfic,dc=com"
-checkpoint      32      30 # &lt;kbyte&gt; &lt;min&gt;
-rootdn          "cn=Manager,dc=genfic,dc=com"
-rootpw          <i>{SSHA}EzP6I82DZRnW+ou6lyiXHGxSpSOw2XO4</i>
-directory       /var/lib/openldap-ldbm
-index           objectClass     eq
+<comment>## Sincronización (tomar de otro servidor LDAP)</comment>
+syncrepl rid=000
+  provider=ldap://ldap2.genfic.com
+  type=refreshAndPersist
+  retry="5 5 300 +"
+  searchbase="dc=genfic,dc=com"
+  attrs="*,+"
+  bindmethod="simple"
+  binddn="cn=ldapreader,dc=genfic,dc=com"
+  credentials="ldapsyncpass"
+
+index entryCSN eq
+index entryUUID eq
+
+mirrormode TRUE
+
+overlay syncprov
+syncprov-checkpoint 100 10
 </pre>
 
 <p>
@@ -244,19 +263,27 @@ Luego edite el fichero de configuración del cliente LDAP:
   <comment>(Añada lo siguiente ...)</comment>
 
 BASE         dc=genfic, dc=com
-URI          ldap://auth.genfic.com:389/
+URI          ldap://ldap.genfic.com:389/ ldap://ldap1.genfic.com:389/ ldap://ldap2.genfic.com:389/
 TLS_REQCERT  allow
+TIMELIMIT    2
 </pre>
 
 <p>
-Ahora edite <path>/etc/conf.d/slapd</path> y elimine el
-comentario de la siguiente línea OPTS:
+Ahora edite <path>/etc/conf.d/slapd</path> y ajuste la siguiente línea
+OPTS:
 </p>
 
 <pre caption="/etc/conf.d/slapd" >
-<comment># Nota: no usamos cn=config aquí, por tanto quédese con
-esta línea:</comment>
-OPTS="-F /etc/openldap/slapd.d -h 'ldaps:// ldap:// ldapi://%2fvar%2frun%2fopenldap%2fslapd.sock'"
+OPTS="-h 'ldaps:// ldap:// ldapi://%2fvar%2frun%2fopenldap%2fslapd.sock'"
+</pre>
+
+<p>
+Finalmente, cree la estructura <path>/var/lib/openldap-ldbm</path>:
+</p>
+<pre caption="Preparar la localización openldap-ldbm">
+~# <i>mkdir -p /var/lib/openldap-ldbm</i>
+~# <i>chown ldap:ldap /var/lib/openldap-ldbm</i>
+~# <i>chmod 700 /var/lib/openldap-ldbm</i>
 </pre>
 
 <p>
@@ -280,6 +307,77 @@ Si recibe un error, pruebe a añadir <c>-d 255</c> para incrementar el
 nivel de detalle de los avisos y poder resolver el problema que pueda
 tener.
 </p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Replicación</title>
+<section>
+<title>Si necesita alta disponibilidad</title>
+<body>
+
+<p>
+Si su entorno requiere alta disponibilidad, entonces necesitará configurar
+la replicación de los cambios a través de múltiples sistemas LDAP. La
+replicación dentro de OpenLDAP, en esta guía, se configura utilizando una
+cuenta especial de replicación (<c>ldapreader</c>) la cual posee
+privilegios de lectura en el servidor LDAP primario y que toma los
+cambios relizados en este servidor LDAP primario al secundario.
+</p>
+
+<p>
+Esta configuración es entonces copiada, permitiendo al servidor LDAP
+secundario actuar igual que el primario. Gracias a la estructura interna
+de OpenLDAP, los cambios no se aplican de nuevo si ya están en la
+estructura LDAP.
+</p>
+
+</body>
+</section>
+<section>
+<title>Configurando la replicación</title>
+<body>
+
+<p>
+Para configurar la replicación, en primer lugar realice la configuración
+de un segundo servidor OpenLDAP, del mismo modo que se ha descrito
+arriba. Sin embargo, tenga cuidado de que, en el fichero de configuración:
+</p>
+
+<ul>
+  <li>
+    el <e>proveedor de la replicación sincronizada</e> apunta al
+    <e>otro</e> sistema, y
+  </li>
+  <li>
+    el <e>serverID</e> de cada sistema OpenLDAP es diferente.
+  </li>
+</ul>
+
+<p>
+A continuación, cree la cuenta de sincronización. Crearemos un fichero
+LDIF (el formato utilizado como entrada de datos para los servidores
+LDAP) y añádalo a cada servidor LDAP:
+</p>
+
+<pre caption="Crear la cuenta ldapreader">
+~# <i>slappasswd -s contraseñademilector</i>
+ {SSHA}XvbdAv6rdskp9HgFaFL9YhGkJH3HSkiM
+
+~# <i>cat ldapreader.ldif</i>
+dn: cn=ldapreader,dc=genfic,dc=com
+userPassword: {SSHA}XvbdAv6rdskp9HgFaFL9YhGkJH3HSkiM
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: ldapreader
+description: Lector LDAP utilizado para sincronización
+
+~# <i>ldapadd -x -W -D "cn=Manager,dc=genfic,dc=com" -f ldapreader.ldif</i>
+Password: <comment>introduzca la contraseña de administración</comment>
+</pre>
+
 </body>
 </section>
 </chapter>
@@ -291,15 +389,87 @@ tener.
 <body>
 
 <p>
+Configurar OpenLDAP para su administración centralizada y la gestión de
+elementos Linux/Unix comunes, no es fácil. Gracias a algunas herramientas
+y guiones disponibles en Internet, la migración desde un punto de vista
+de un sistema de administración simple a un sistema centralizado y
+gestionado basado en OpenLDAP no es muy complicado.
+</p>
+
+<p>
 Vaya a <uri
 link="http://www.padl.com/OSS/MigrationTools.html">
 http://www.padl.com/OSS/MigrationTools.html</uri>
-y busque los guiones allí. La configuración está establecida en la
-página.  Nosotros ya no los proporcionamos porque los guiones son un
-potencial agujero de seguridad si los deja en el sistema después de
-haberlos trasladado. Cuando haya acabado de migrar los datos, continue
-en la sección siguiente.
+y descargue los guiones que allí se encuentren. Necesitará las
+herramientas de migración y el guión <c>make_master.sh</c>.
 </p>
+
+<p>
+A continuación, extraiga las herramientas y copie el guión
+<c>make_master.sh</c> dentro de la localización extraída:
+</p>
+
+<pre caption="Extrar MigrationTools (Herramientas de migración)">
+~# <i>mktemp -d</i>
+/tmp/tmp.zchomocO3Q
+~# <i>cd /tmp/tmp.zchomocO3Q</i>
+~# <i>tar xvzf /path/to/MigrationTools.tgz</i>
+~# <i>mv /camino/a/make_master.sh MigrationTools-47</i>
+~# <i>cd MigrationTools-47</i>
+</pre>
+
+<p>
+El siguiente paso ahora es migrar la información de su sistema a OpenLDAP.
+Esto se realiza con el guión <c>make_master.sh</c> después de
+proporcionarle la información relacionada con su estructura y entorno LDAP.
+</p>
+
+<p>
+En el momento de escribir esta guía, las herramientas necesarias, requieren
+las siguientes entradas:
+</p>
+
+<table>
+<tr>
+  <th>Entrada</th>
+  <th>Descripción</th>
+  <th>Ejemplo</th>
+</tr>
+<tr>
+  <ti>LDAP BaseDN</ti>
+  <ti>La localización base (raíz) de su árbol</ti>
+  <ti>dc=genfic,dc=com</ti>
+</tr>
+<tr>
+  <ti>Mail domain</ti>
+  <ti>Dominio utilizado en las direcciones de correo electrónico</ti>
+  <ti>genfic.com</ti>
+</tr>
+<tr>
+  <ti>Mail host</ti>
+  <ti>Nombre de dominio completamente cualificado (FQDN) de la
+  infraestructura de su servidor de correo</ti>
+  <ti>smtp.genfic.com</ti>
+</tr>
+<tr>
+  <ti>LDAP Root DN</ti>
+  <ti>Información de la cuenta administrativa de su estructura LDAP</ti>
+  <ti>cn=Manager,dc=genfic,dc=com</ti>
+</tr>
+<tr>
+  <ti>LDAP Root Password</ti>
+  <ti>
+    Contraseña de la cuenta administrativa, comparar con el comando
+    <c>slappasswd</c> anterior
+  </ti>
+  <ti></ti>
+</tr>
+</table>
+
+<p>
+La herramienta también le preguntará qué cuentas y ajustes necesita migrar.
+</p>
+
 </body>
 </section>
 
@@ -325,7 +495,7 @@ Ahora añada las siguientes líneas en los lugares adecuados de
 </p>
 
 <pre caption="/etc/pam.d/system-auth" >
-<comment># Nota: Sólo añádalas. ¡No suprima cosas o su sistema podría no
+<comment># Nota: Solo añádalas. ¡No suprima cosas o su sistema podría no
 volver a arrancar de nuevo!
 </comment>
 auth    sufficient  pam_ldap.so use_first_pass
@@ -337,7 +507,7 @@ session    optional     pam_ldap.so
 #%PAM-1.0
 
 auth       required     pam_env.so
-auth       sufficient   pam_unix.so try_first_pass likeauth nullok
+auth       <i>sufficient</i>   pam_unix.so try_first_pass likeauth nullok
 <i>auth       sufficient   pam_ldap.so use_first_pass</i>
 auth    required    pam_deny.so
 
@@ -345,7 +515,7 @@ auth    required    pam_deny.so
 account    required     pam_unix.so
 
 password   required     pam_cracklib.so difok=2 minlen=8 dcredit=2 ocredit=2 try_first_pass retry=3
-password   sufficient   pam_unix.so try_first_pass use_authtok nullok md5 shadow
+password   <i>sufficient</i>   pam_unix.so try_first_pass use_authtok nullok md5 shadow
 <i>password   sufficient   pam_ldap.so use_authtok use_first_pass</i>
 password    required pam_deny.so
 
@@ -364,20 +534,20 @@ Ahora cambie <path>/etc/ldap.conf</path> para que tenga:
 
 suffix          &quot;dc=genfic,dc=com&quot;
 <comment>#rootbinddn uid=root,ou=People,dc=genfic,dc=com</comment>
-
-uri ldap://auth.genfic.com/
-pam_password exop
-
+bind_policy soft
+bind_timelimit 2
 ldap_version 3
+nss_base_group ou=Group,dc=genfic,dc=com
+nss_base_hosts ou=Hosts,dc=genfic,dc=com
+nss_base_passwd ou=People,dc=genfic,dc=com
+nss_base_shadow ou=People,dc=genfic,dc=com
 pam_filter objectclass=posixAccount
 pam_login_attribute uid
 pam_member_attribute memberuid
-nss_base_passwd ou=People,dc=genfic,dc=com
-nss_base_shadow ou=People,dc=genfic,dc=com
-nss_base_group  ou=Group,dc=genfic,dc=com
-nss_base_hosts  ou=Hosts,dc=genfic,dc=com
-
+pam_password exop
 scope one
+timelimit 2
+uri ldap://ldap.genfic.com/ ldap://ldap1.genfic.com ldap://ldap2.genfic.com
 </pre>
 
 <p>
@@ -402,29 +572,18 @@ shadow:         files ldap
 </pre>
 
 <p>
-Para probar los cambios, escriba:
+Si observa, una de las lineas copiadas en su <path>/etc/ldap.conf</path>
+está comentada (la línea <c>rootbinddn</c>): no la necesita salvo que
+quiera cambiar la contraseña de un usuario como superusuario. En este
+caso, necesita escribir la contraseña de root en
+<path>/etc/ldap.secret</path> con texto en claro. Esto es
+<brite>PELIGROSO</brite> por lo que debería tener permisos &quot;600&quot;.
+Lo que debe hacer es mantener el fichero vacío y cuando necesite cambiar
+cualquier contraseña que está tanto en ldap como en
+<path>/etc/passwd</path> escriba la contraseña en él durante 10 segundos
+mientras hace los cambios y bórrela cuando haya acabado.
 </p>
 
-<pre caption="Prueba de la autorización con LDAP" >
-# <i>getent passwd|grep 0:0</i>
-<comment>(Debería devolver dos entradas:)</comment>
-root:x:0:0:root:/root:/bin/bash
-root:x:0:0:root:/root:/bin/bash
-</pre>
-
-<p>
-Si observa, una de las lineas copiadas en su
-<path>/etc/ldap.conf</path> está comentada (la línea
-<c>rootbinddn</c>): no la necesita salvo que quiera cambiar la
-contraseña de un usuario como superusuario. En este caso, necesita
-escribir la contraseña de root en <path>/etc/ldap.secret</path> con
-texto en claro. Esto es <brite>PELIGROSO</brite> por lo que debería
-tener permisos &quot;600&quot;. Lo que yo hago es mantener el fichero
-vacío y cuando necesito cambiar cualquier contraseña que está tanto
-en ldap como en <path>/etc/passwd</path> escribo la contraseña en él
-durante 10 segundos mientras hago los cambios y la borro cuando he
-acabado.
-</p>
 </body>
 </section>
 </chapter>
@@ -488,6 +647,7 @@ puede leer los resultados de la búsqueda. Puede tener múltiples ACLs
 pero la regla de procesamiento es de abajo arriba, por lo que su nivel
 superior debe ser el más restrictivo.
 </p>
+
 </body>
 </section>
 </chapter>
@@ -501,9 +661,10 @@ superior debe ser el más restrictivo.
 <p>
 Puede empezar utilizando el directorio para autentificar usuarios en
 apache/proftpd/qmail/samba. Puede administrarlo con phpldapadmin,
-diradm, jxplorer o lat, que porporcionan interfaces de administración
+diradm, jxplorer o lat, que proporcionan interfaces de administración
 sencillos.
 </p>
+
 </body>
 </section>
 </chapter>
@@ -518,6 +679,7 @@ Quisiera agradecer a Matt Heler el préstamo de su equipo para poder
 realizar esta guía. Gracias también a toda la gente simpática de #ldap
 @ irc.freenode.net.
 </p>
+
 </body>
 </section>
 </chapter>
