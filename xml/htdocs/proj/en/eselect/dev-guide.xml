@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/eselect/dev-guide.xml,v 1.13 2009/11/07 17:20:29 ulm Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/eselect/dev-guide.xml,v 1.14 2011/09/01 21:04:25 ulm Exp $ -->
 
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
@@ -27,8 +27,8 @@ This document is a reference for people who want to develop the eselect tool.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.2.6</version>
-<date>2009-11-07</date>
+<version>1.2.17</version>
+<date>2011-09-01</date>
 
 <chapter>
 <title>Introduction</title>
@@ -76,88 +76,115 @@ This document is a reference for people who want to develop the eselect tool.
 <body>
 
 <p>
-  It's easiest to illustrate by example. Here's a simple module, named
-  <c>cow.eselect</c>. It has two actions, <c>moo</c> and <c>think</c>, plus
-  the standard <c>help</c>, <c>usage</c> and <c>version</c> actions, and is
-  installed to <path>$(datadir)/eselect/modules/</path>.
+  It's easiest to illustrate by example. Here's a simplified version of
+  the <c>kernel.eselect</c> module. It has three actions, <c>show</c>,
+  <c>list</c>, and <c>set</c>, plus the standard <c>help</c>, <c>usage</c>
+  and <c>version</c> actions, and is installed to
+  <path>$(datadir)/eselect/modules/</path>.
 </p>
 
-<pre caption="cow.eselect code">
+<pre caption="kernel.eselect code">
 # -*-eselect-*-  vim: ft=eselect
-# Copyright 1999-2005 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# Copyright 2005-2011 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2 or later
 # &#36;Id: &#36;
 
-DESCRIPTION="Do things to a cow"
-MAINTAINER="foo@gentoo.org"
+DESCRIPTION="Manage the /usr/src/linux symlink"
+MAINTAINER="eselect@gentoo.org"
 SVN_DATE='&#36;Date: &#36;'
 VERSION=$(svn_date_to_version "${SVN_DATE}")
 
-### moo action
-
-describe_moo() {
-    echo "Say moo"
-}
-
-describe_moo_parameters() {
-    echo "&lt;text&gt;"
-}
-
-describe_moo_options() {
-    echo "text : Text to display (optional)"
-    echo "--dead : Use a dead cow"
-    echo "--borg : Use a borged cow"
-}
-
-
-do_moo() {
-    local params=
-    while [[ ${1#--} != ${1} ]] ; do
-        if [[ "--dead" == ${1} ]] ; then
-            shift
-            params="${params} -d"
-        elif [[ "--borg" == "${1}" ]] ; then
-            shift
-            params="${params} -b"
-        elif [[ "--" == "${1}" ]] ; then
-            break
-        else
-            die -q "Unknown parameter ${1}"
-        fi
+# find a list of kernel symlink targets
+find_targets() {
+    local f
+    for f in "${EROOT}"/usr/src/linux-[[:digit:]]*; do
+        [[ -d ${f} ]] &amp;&amp; basename "${f}"
     done
-
-    echo "${@:-I am a cow}" | cowsay ${params}
 }
 
-### think action
-
-describe_think() {
-    echo "Show a pensive cow"
+# remove the kernel symlink
+remove_symlink() {
+    rm "${EROOT}/usr/src/linux"
 }
 
-describe_think_parameters() {
-    echo "&lt;text&gt;"
+# set the kernel symlink
+set_symlink() {
+    local target=$1
+
+    if is_number "${target}"; then
+        local targets=( $(find_targets) )
+        target=${targets[target-1]}
+    fi
+
+    [[ -z ${target} || ! -d ${EROOT}/usr/src/${target} ]] \
+        &amp;&amp; die -q "Target \"$1\" doesn't appear to be valid!"
+
+    ln -s "${target}" "${EROOT}/usr/src/linux"
 }
 
-describe_think_options() {
-    echo "text : Text to display"
-    echo "--sheep : Use a sheep rather than a cow"
+### show action ###
+
+describe_show() {
+    echo "Show the current kernel symlink"
 }
 
-do_think() {
-    local params=
-    while [[ ${1#--} != ${1} ]] ; do
-        if [[ "--sheep" == ${1} ]] ; then
-            shift
-            params="${params} -f sheep"
-        elif [[ "--" == "${1}" ]] ; then
-            break
-        else
-            die -q "Unknown parameter ${1}"
-        fi
+do_show() {
+    write_list_start "Current kernel symlink:"
+    if [[ -L ${EROOT}/usr/src/linux ]]; then
+        local kernel=$(canonicalise "${EROOT}/usr/src/linux")
+        write_kv_list_entry "${kernel%/}" ""
+    else
+        write_kv_list_entry "(unset)" ""
+    fi
+}
+
+### list action ###
+
+describe_list() {
+    echo "List available kernel symlink targets"
+}
+
+do_list() {
+    local i targets=( $(find_targets) )
+
+    write_list_start "Available kernel symlink targets:"
+    for (( i = 0; i &lt; ${#targets[@]}; i++ )); do
+        # highlight the target where the symlink is pointing to
+        [[ ${targets[i]} = \
+            $(basename "$(canonicalise "${EROOT}/usr/src/linux")") ]] \
+            &amp;&amp; targets[i]=$(highlight_marker "${targets[i]}")
     done
+    write_numbered_list -m "(none found)" "${targets[@]}"
+}
 
-    echo "${@:-Am I a cow?}" | cowthink ${params}
+### set action ###
+
+describe_set() {
+    echo "Set a new kernel symlink target"
+}
+
+describe_set_parameters() {
+    echo "&lt;target&gt;"
+}
+
+describe_set_options() {
+    echo "target : Target name or number (from 'list' action)"
+}
+
+do_set() {
+    [[ -z $1 ]] &amp;&amp; die -q "You didn't tell me what to set the symlink to"
+    [[ $# -gt 1 ]] &amp;&amp; die -q "Too many parameters"
+
+    if [[ -L ${EROOT}/usr/src/linux ]]; then
+        # existing symlink
+        remove_symlink || die -q "Couldn't remove existing symlink"
+        set_symlink "$1" || die -q "Couldn't set a new symlink"
+    elif [[ -e ${EROOT}/usr/src/linux ]]; then
+        # we have something strange
+        die -q "${EROOT}/usr/src/linux exists but is not a symlink"
+    else
+        set_symlink "$1" || die -q "Couldn't set a new symlink"
+    fi
 }
 </pre>
 
@@ -187,9 +214,16 @@ do_think() {
   functions are optional.
 </p>
 
+<p>
+  All eselect modules are required to support the ROOT variable. For prefix
+  support, variables EPREFIX and EROOT are also defined and have the same
+  meaning as in ebuilds.
+  (These two variables appeared in eselect-1.2.)
+</p>
+
 <note>
-  If eselect is invoked as <c>cow-config</c> or <c>cow-update</c> (for
-  example, via a symlink), it will automatically select the cow module.
+  If eselect is invoked as <c>foo-config</c> or <c>foo-update</c> (for
+  example, via a symlink), it will automatically execute the foo module.
 </note>
 
 </body>
@@ -203,8 +237,7 @@ do_think() {
   The following list contains suggested allowed names for actions. If there is
   no suitable name on the list for your task, it is best to ask for the list
   to be updated – for consistency, it would be nice to have a standardised
-  list of action names. (The cow module, being a silly demonstration module,
-  is exempt.)
+  list of action names.
 </p>
 
 <dl>
