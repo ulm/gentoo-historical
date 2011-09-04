@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-development.xml,v 1.1 2011/07/16 20:36:41 zorry Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-development.xml,v 1.2 2011/09/04 19:55:28 swift Exp $ -->
 
 <guide link="/proj/en/hardened/selinux-development.xml" lang="en">
 <title>Gentoo Hardened SELinux Development</title>
@@ -18,8 +18,8 @@ acquainted with the necessary resources, trips and tricks to get along.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1</version>
-<date>2011-04-22</date>
+<version>2</version>
+<date>2011-09-04</date>
 
 <chapter>
 <title>Introduction</title>
@@ -156,34 +156,25 @@ Let's create the first workspace:
 <pre caption="Creating the SELinux policy workspace">
 ~$ <i>mkdir dev/hardened</i>
 ~$ <i>cd dev/hardened</i>
-~$ <i>ebuild /usr/portage/sec-policy/selinux-base-policy/selinux-base-policy-2.20101213-r12.ebuild compile</i>
-~$ <i>cp -r /var/tmp/portage/sec-policy/selinux-base-policy-2.20101213-r12/work/* .</i>
-~$ <i>rm -rf /var/tmp/portage/sec-policy/selinux-base-policy-2.20101213-r12</i>
+~$ <i>ebuild /usr/portage/sec-policy/selinux-base-policy/selinux-base-policy-2.20110726-r3.ebuild prepare</i>
+~$ <i>cp -r /var/tmp/portage/sec-policy/selinux-base-policy-2.20110726-r3/work/refpolicy .</i>
+~$ <i>rm -rf /var/tmp/portage/sec-policy/selinux-base-policy-2.20110726-r3</i>
 </pre>
 
 <p>
-As result, you should have two or three directories in 
-<path>dev/hardened</path> called <path>refpolicy</path> and <path>strict</path>
-and/or <path>targeted</path>. The only one of interest is the
-<path>strict</path> and/or <path>targeted</path> one, depending on the policy
-type you are working with. In the remainder of the document, I'm assuming you
-work with <path>strict</path>.
-</p>
-
-<p>
-Now the <path>dev/hardened</path> workspace is patched with the Gentoo Hardened
-SELinux patches applicable to the base policy. Gentoo Hardened has two "flavors"
-of patches:
+As result, you now have a subdirectory called <path>refpolicy</path> inside
+<path>dev/hardened</path>. This directory contains all the SELinux policy rules
+available. Now the <path>dev/hardened</path> workspace is patched with the
+Gentoo Hardened SELinux patches applicable to the policy. Gentoo Hardened has
+two "flavors" of patches:
 </p>
 
 <ol>
   <li>
-    <e>Base policy patches</e> contain the patches for the SELinux modules that
-    take part of the base policy as well as all interface patches for the
-    modules
+    patches in the <e>patchbundle</e> contain the majority of patches
   </li>
   <li>
-    <e>Module-specific patches</e> that contain the permissions affecting the
+    <e>module patches</e> that contain the permissions affecting the
     domains and types that are defined in a single module (for instance, all
     interaction between <path>portage_t</path> and <path>portage_exec_t</path>
     or even <path>portage_t</path> and <path>portage_fetch_t</path>)
@@ -191,14 +182,24 @@ of patches:
 </ol>
 
 <p>
-The base policy patches are important to have available at all times. The
-module-specific ones can be added when you work with that particular module.
+When we develop changes on the SELinux policy, we currently try to put those
+changes in the patchbundle as soon as possible. Currently, the
+<c>selinux-base-policy</c> package is updated fast enough to hold off module
+patches and wait for a new release of <c>selinux-base-policy</c> (after which
+the SELinux modules themselves can just refer to the new base policy to get
+their patches).
 </p>
 
 <p>
+However, when the <c>selinux-base-policy</c> is more stable, then patches might
+be made part of the modules themselves. In that case, a <e>module patch</e> is
+made.
+</p>
+
+<note>
 Every time a new revision comes out, you'll need to clean the
 <path>dev/hardened</path> workspace and rebuild it.
-</p>
+</note>
 
 </body>
 </section>
@@ -213,30 +214,20 @@ earlier, but now for the specific SELinux policy module package (like
 </p>
 
 <pre caption="Updating the dev/hardened workspace">
-~$ <i>ls dev/hardened/strict/policy/modules/*/postfix.te</i>
-dev/hardened/strict/policy/modules/services/postfix.te
-<comment>                                   ^^^^^^^^</comment>
-~$ <i>ebuild /usr/portage/sec-policy/selinux-postfix/selinux-postfix-2.20101213-r3.ebuild compile</i>
+~$ <i>ls dev/hardened/refpolicy/policy/modules/*/postfix.te</i>
+dev/hardened/refpolicy/policy/modules/services/postfix.te
+<comment>                                      ^^^^^^^^</comment>
+~$ <i>ebuild /usr/portage/sec-policy/selinux-postfix/selinux-postfix-2.20110726-r1.ebuild prepare</i>
 
 <comment># Next, we copy the postfix.te and postfix.fc files.
 # Do NOT copy the postfix.if file (as the one available there is a stub)</comment>
-~$ <i>cp /var/tmp/portage/sec-policy/selinux-postfix-2.20101213-r12/work/strict/postfix.te \
-  dev/hardened/strict/policy/modules/services/</i>
-<comment>                                     ^^^^^^^^</comment>
-~$ <i>cp /var/tmp/portage/sec-policy/selinux-postfix-2.20101213-r12/work/strict/postfix.fc \
-  dev/hardened/strict/policy/modules/services/</i>
-<comment>                                     ^^^^^^^^</comment>
-~$ <i>rm -rf /var/tmp/portage/sec-policy/selinux-postfix-2.20101213-r12</i>
-</pre>
-
-<p>
-Finally, clean up the workspace (as it contains built policies and other
-material we do not want to see in our patches)
-</p>
-
-<pre caption="Cleaning up the workspace">
-~$ <i>cd dev/hardened/strict</i>
-~$ <i>make clean</i>
+~$ <i>cp /var/tmp/portage/sec-policy/selinux-postfix-2.20110726-r1/work/strict/postfix.te \
+  dev/hardened/refpolicy/policy/modules/services/</i>
+<comment>                                        ^^^^^^^^</comment>
+~$ <i>cp /var/tmp/portage/sec-policy/selinux-postfix-2.20110726-r1/work/strict/postfix.fc \
+  dev/hardened/refpolicy/policy/modules/services/</i>
+<comment>                                        ^^^^^^^^</comment>
+~$ <i>rm -rf /var/tmp/portage/sec-policy/selinux-postfix-2.20110726-r1</i>
 </pre>
 
 </body>
@@ -246,13 +237,13 @@ material we do not want to see in our patches)
 <body>
 
 <p>
-Setting up a local workspace is easy: just copy the <path>dev/hardened</path>
-one:
+Setting up a local workspace (where we will create changes and generate patches
+out of later) is easy: just copy the <path>dev/hardened</path> one:
 </p>
 
 <pre caption="Setting up a local workspace">
 ~$ <i>cd dev/hardened</i>
-~$ <i>cp -r strict strict.local/</i>
+~$ <i>cp -r refpolicy refpolicy.local/</i>
 </pre>
 
 </body>
@@ -263,7 +254,7 @@ one:
 
 <p>
 The main location you will work with is
-<path>dev/hardened/strict.local/policy/modules</path>. This location is subdivided in
+<path>dev/hardened/refpolicy.local/policy/modules</path>. This location is subdivided in
 categories:
 </p>
 
@@ -293,7 +284,7 @@ Inside the categories, the modules are available using their three files
 </p>
 
 <pre caption="Listing the available sudo files">
-~$ <i>cd dev/hardened/strict.local/policy/modules/admin</i>
+~$ <i>cd dev/hardened/refpolicy.local/policy/modules/admin</i>
 ~$ <i>ls sudo.*</i>
 sudo.fc    sudo.if     sudo.te
 </pre>
@@ -309,9 +300,15 @@ To build a module, go to the location where the module code is. Then, run
 <c>make</c> with the development Makefile as provided by the reference policy.
 </p>
 
+<note>
+You can ignore warnings about duplicate interface definitions and such. That is
+because the Makefile will include both the existing interfaces as well as the
+current working directory - which of course contains the same interfaces.
+</note>
+
 <pre caption="Building the portage module">
-~$ <i>cd dev/hardened/strict.local/policy/modules/admin</i>
-~$ <i>make -f ../../../support/Makefile.devel portage.pp</i>
+~$ <i>cd dev/hardened/refpolicy.local/policy/modules/admin</i>
+~$ <i>make -f /usr/share/selinux/strict/include/Makefile portage.pp</i>
 </pre>
 
 <p>
@@ -330,7 +327,7 @@ If you want to build the base policy, run <c>make base</c>.
 </p>
 
 <pre caption="Building the base policy">
-~$ <i>cd dev/hardened/strict.local</i>
+~$ <i>cd dev/hardened/refpolicy.local</i>
 ~$ <i>make base</i>
 </pre>
 
@@ -1209,9 +1206,9 @@ are best generated from the <path>policy/modules</path> location:
 </p>
 
 <pre caption="Example generating patch for modular changes">
-~$ <i>cd dev/hardened/strict.local/policy/modules</i>
-~$ <i>diff -ut ../../../strict/policy/modules/services/openct.te services/openct.te</i>
---- ../../../../strict/policy/modules/services/openct.te   2011-04-22 23:28:17.932918002 +0200
+~$ <i>cd dev/hardened/refpolicy.local/policy/modules</i>
+~$ <i>diff -ut ../../../refpolicy/policy/modules/services/openct.te services/openct.te</i>
+--- ../../../../refpolicy/policy/modules/services/openct.te   2011-04-22 23:28:17.932918002 +0200
 +++ services/openct.te  2011-04-23 09:55:08.156918002 +0200
 @@ -47,6 +47,10 @@
  
@@ -1250,8 +1247,8 @@ patch is best made from the upper location.
 </p>
 
 <pre caption="Generating a base policy patch">
-~$ <i>cd dev/hardened/strict.local</i>
-~$ <i>diff -ut ../strict/policy/modules/services/openct.if policy/modules/services/openct.if</i>
+~$ <i>cd dev/hardened/refpolicy.local</i>
+~$ <i>diff -ut ../refpolicy/policy/modules/services/openct.if policy/modules/services/openct.if</i>
 --- ../strict/policy/modules/services/openct.if    2011-04-22 23:28:17.918918002 +0200
 +++ policy/modules/services/openct.if       2011-04-23 10:01:38.753918001 +0200
 @@ -15,7 +15,7 @@
@@ -1344,19 +1341,21 @@ ebuilds:
 <pre caption="Skeleton for ebuilds, example for postfix">
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
+EAPI="4"
 
+IUSE=""
 <comment># Set the MODS variable to the refpolicy name used, so services/postfix.te gives "postfix"</comment>
 MODS="postfix"
-IUSE=""
+<comment># BASEPOL is optional, set it to the selinux-base-policy version which
+# includes the latest patch (or interface you use in the policy)</comment>
+BASEPOL="2.20110726-r3"
 
 inherit selinux-policy-2
 
 DESCRIPTION="SELinux policy for postfix"
-
 KEYWORDS="~amd64 ~x86"
 
-<comment># POLICY_PATCH is optional (only when you have a patch), without it just uses the 
-# refpolicy version.</comment>
+<comment># POLICY_PATCH is optional (only when you have a module patch)</comment>
 POLICY_PATCH="${FILESDIR}/fix-services-postfix-r3.patch"
 </pre>
 
@@ -1386,15 +1385,21 @@ create a patchbundle from your patch directory, put the bundle in the
 </p>
 
 <pre caption="Building a base policy package">
+<comment># Go to the location where all patches are currently extracted</comment>
 ~$ <i>cd dev/hardened/base-patches</i>
-~$ <i>tar cjvf ../overlay/sec-policy/selinux-base-policy/files/patchbundle-selinux-base-policy-2.20101213-r13.tar.bz2 *</i>
+
+<comment># Add the patches you want to include, cfr Submitting Patches</comment>
+<comment># Then, create a new patch bundle</comment>
+~$ <i>tar cjvf ../overlay/sec-policy/selinux-base-policy/files/patchbundle-selinux-base-policy-2.20110726-r3.tar.bz2 *</i>
+
+<comment># Finally, bump the revision of the ebuild in the overlay</comment>
 ~$ <i>cd ../overlay/sec-policy/selinux-base-policy</i>
-~$ <i>cp selinux-base-policy-2.20101213-r12.ebuild selinux-base-policy-2.20101213-r13.ebuild</i>
+~$ <i>cp selinux-base-policy-2.20110726-r3.ebuild selinux-base-policy-2.20110726-r4.ebuild</i>
 </pre>
 
 <p>
 Don't forget to run <c>repoman manifest</c> and <c>repoman scan</c>. You can
-then install <path>sec-policy/selinux-base-policy-2.20101213-r13</path> and test
+then install <path>sec-policy/selinux-base-policy-2.20110726-r4</path> and test
 it out.
 </p>
 
