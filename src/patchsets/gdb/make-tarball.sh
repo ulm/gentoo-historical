@@ -22,7 +22,7 @@ if grep -qs Header:.*gentoo ${gver}/*.patch ; then
 	exit 1
 fi
 
-tar=gdb-${gver}-patches-${pver}.tar.lzma
+tar=gdb-${gver}-patches-${pver}.tar.xz
 
 rm -rf tmp
 rm -f ${tar}
@@ -33,7 +33,7 @@ mkdir -p tmp/extra
 cp `find extra -type f '!' -wholename '*/CVS/*'` tmp/extra/ || exit 1
 cp ../README* tmp/patch/
 
-tar cf - -C tmp patch extra | lzma > ${tar} || exit 1
+tar cf - -C tmp patch extra | xz > ${tar} || exit 1
 rm -r tmp
 
 du -b ${tar}
