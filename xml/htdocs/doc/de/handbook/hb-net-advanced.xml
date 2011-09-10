@@ -4,9 +4,9 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- English CVS Version: 1.15 -->
+<!-- English CVS Version: 1.18 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-net-advanced.xml,v 1.8 2009/02/13 05:31:36 micm Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-net-advanced.xml,v 1.9 2011/09/10 22:04:56 keytoaster Exp $ -->
 
 <sections>
 
@@ -15,8 +15,8 @@ Hier lernt man wie die Konfiguration funktioniert. Sie werden dies brauchen,
 bevor Sie sich mit der modularen Netzwerkkonfiguration vertraut machen.
 </abstract>
 
-<version>8.1</version>
-<date>2009-02-12</date>
+<version>11</version>
+<date>2011-08-19</date>
 
 <section>
 <title>Erweiterte Konfiguration</title>
@@ -80,30 +80,23 @@ Beispiele aus der Praxis.
 
 <pre caption="Konfigurationsbeispiel">
 <comment># Drei IPv4 Adressen hinzufügen</comment>
-config_eth0=(
-  "192.168.0.2/24"
-  "192.168.0.3/24"
-  "192.168.0.4/24"
-)
+config_eth0="192.168.0.2/24
+192.168.0.3/24
+192.168.0.4/24"
 
 <comment># Eine IPv4 und zwei IPv6 Adressen hinzufügen</comment>
-config_eth0=(
-  "192.168.0.2/24"
-  "4321:0:1:2:3:4:567:89ab"
-  "4321:0:1:2:3:4:567:89ac"
-)
+config_eth0="192.168.0.2/24
+4321:0:1:2:3:4:567:89ab
+4321:0:1:2:3:4:567:89ac"
 
 <comment># Die vom Kernel zugewiesene Adresse so lange behalten wie die Schnittstelle
 # aktiviert ist. Danach wird eine neue per DHCP zugewiesen.
 # Schlägt DHCP fehl, füge eine statische IP Adresse per APIPA hinzu.</comment>
-config_eth0=(
-  "noop"
-  "dhcp"
-)
-fallback_eth0=(
-  "null"
-  "apipa"
-)
+config_eth0="noop
+dhcp"
+
+fallback_eth0="null
+apipa"
 </pre>
 
 <note>
@@ -129,53 +122,29 @@ link="?part=4&amp;chap=3#dhcp">DHCP</uri> werden später im Detail behandelt.
 </body>
 </section>
 <section>
-<title>Netzwerk Abhängigkeiten</title>
+<title>Netzwerk-Abhängigkeiten</title>
 <body>
 
 <p>
 Initskripte in <path>/etc/init.d</path> können von einer speziellen
-Netzwerkschnittstelle abhängen oder einfach von net. <c>net</c> kann in
-<path>/etc/conf.d/rc</path> konfiguriert werden und abhängig von der
-<c>RC_NET_STRICT_CHECKING</c> Variable verschiedene Bedeutungen haben.
+Netzwerkschnittstelle abhängen oder einfach von net. Alle
+Netzwerkschnittstellen in Gentoos Init-System stellen <e>net</e> bereit.
 </p>
 
-<table>
-  <tr>
-    <th>Wert</th>
-    <th>Beschreibung</th>
-  </tr>
-  <tr>
-    <ti><c>none</c></ti>
-    <ti>
-      Es wird davon ausgegangen, dass der <path>net</path> Dienst immer
-      aktiviert ist.
-    </ti>
-  </tr>
-  <tr>
-    <ti><c>no</c></ti>
-    <ti>
-      Bedeutet, dass mindestens ein <path>net.*</path> Dienst außer
-      <path>net.lo</path> aktiv sein muss. Das kann von Notebook Benutzern
-      eingesetzt werden, die eine drahtlose Verbindung sowie eine statische
-      besitzen und jeweils nur eine von beiden aktiv haben möchten.
-    </ti>
-  </tr>
-  <tr>
-    <ti><c>lo</c></ti>
-    <ti>
-      Besitzt die gleiche Bedeutung wie die <c>no</c> Option, nur zählt
-      <path>net.lo</path> ebenfalls mit. Nützlich für diejenigen, die keine
-      aktive Netzwerkschnittstelle beim Booten benötigen.
-    </ti>
-  </tr>
-  <tr>
-    <ti><c>yes</c></ti>
-    <ti>
-      ALLE Netzwerkschnittstellen MÜSSEN aktiv sein, damit der <path>net</path>
-      Dienst als aktiviert angesehen wird.
-    </ti>
-  </tr>
-</table>
+<p>
+Falls in <path>/etc/rc.conf</path> <c>rc_depend_strict="YES"</c> gesetzt ist,
+müssen alle Netzwerkschnittstellen, die net bereitstellen, aktiv sein, bevor
+eine Abhängigkeit auf "net" als gegeben angenommen wird. In anderen Worten,
+falls Sie ein <path>net.eth0</path> und <path>net.eth1</path> sowie ein
+Init-Skript haben, das von "net" abhängt, müssen beide Schnittstellen
+aktiviert sein.
+</p>
+
+<p>
+Andernfalls, wenn Sie <c>rc_depend_strict="NO"</c> gesetzt haben, dann wird die
+"net"-Abhängigkeit als gegeben angenommen, sobald mindestens eine
+Netzwerkschnittstelle aktiv ist.
+</p>
 
 <p>
 Was aber, wenn <path>net.br0</path> von <path>net.eth0</path> und
@@ -186,22 +155,34 @@ um einen symbolischen Link auf <path>net.lo</path> handelt.
 </p>
 
 <p>
-Die Antwort darauf lautet, dass Sie eine eigene <c>depend()</c> Funktion in
-<path>/etc/conf.d/net</path> hinzufügen müssen.
+Die Antwort darauf lautet, dass Sie eine <c>rc_need_</c> Einstellung in
+<path>/etc/conf.d/net</path> definieren.
 </p>
 
 <pre caption="net.br0 Abhängigkeit in /etc/conf.d/net">
-<comment># Sie können irgendeine Abhängigkeit des Typs (use, after, before) benutzen,
-# wie sie in laufenden Skripten verwendet werden.</comment>
-depend_br0() {
-  need net.eth0 net.eth1
-}
+rc_need_br0="net.eth0 net.eth1"
+</pre>
+
+<p>
+Das allein reicht aber nicht aus. Gentoos Init-Skripte verwenden eine
+virtuelle Abhängigkeit namens <e>net</e>, die dem System mitteilt, wann
+Netzwerkfunktionalität vorhanden ist. In obigem Beispiel sollte die
+Netzwerkfunktionalität aber offensichtlich erst als vorhanden gesehen werden,
+wenn <path>net.br0</path> gestartet wurde, nicht wenn die anderen gestartet
+wurden. Wir müssen dies ebenfalls in <path>/etc/conf.d/net</path> angeben:
+</p>
+
+<pre caption="Aktualisieren der virtuellen Abhängigkeiten und Voraussetzungen für Netzwerkfunktionalität">
+rc_net_lo_provide="!net"
+rc_net_eth0_provide="!net"
+rc_net_eth1_provide="!net"
 </pre>
 
 <p>
 Weitere Details zu Abhängigkeiten gibt es im Kapitel <uri
 link="?part=2&amp;chap=4#doc_chap4">Schreiben von Initskripten</uri> des Gentoo
-Handbuchs.
+Handbuchs. Weitere Informationen zur <path>/etc/rc.conf</path> finden Sie als
+Kommentare innerhalb der Datei.
 </p>
 
 </body>
