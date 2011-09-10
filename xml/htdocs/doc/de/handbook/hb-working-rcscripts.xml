@@ -4,9 +4,9 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- English CVS Version: 1.31 -->
+<!-- English CVS Version: 1.35 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-working-rcscripts.xml,v 1.19 2007/10/31 18:40:51 grahl Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-working-rcscripts.xml,v 1.20 2011/09/10 20:29:08 keytoaster Exp $ -->
 
 <sections>
 
@@ -17,8 +17,8 @@ ermöglicht. Dieses Kapitel erklärt diese Aspekte und erklärt, wie Sie mit die
 Skripten umgehen.
 </abstract>
 
-<version>1.25</version>
-<date>2007-10-11</date>
+<version>4</version>
+<date>2011-08-17</date>
 
 <section>
 <title>Runlevel</title>
@@ -464,10 +464,6 @@ start() {
 stop() {
   <comment>(Befehle, notwendig zum Stoppen eines Dienstes)</comment>
 }
-
-restart() {
-  <comment>(Befehle, notwendig zum Neustarten eines Dienstes)</comment>
-}
 </pre>
 
 <p>
@@ -482,11 +478,62 @@ anderen Abschnitte sind optional.
 <body>
 
 <p>
-Es gibt zwei Abhängigkeiten, die Sie definieren können: <c>use</c> and
-<c>need</c>. Wie wir vorhin schon einmal erwähnt hatten, ist die <c>need</c>
-Abhängigkeit strenger als die <c>use</c> Abhängigkeit. Nach dem Typ der
-Abhängigkeit schreiben Sie den davon abhängigen Dienst oder die
-<c>virtual</c> Abhängigkeit.
+Es gibt zwei Abhängigkeits-artige Einstellungen, die Sie definieren können, die
+das Starten und die Reihenfolge der Init-Skripte beeinflussen: <c>use</c> und
+<c>need</c>. Von diesen abgesehen gibt es noch zwei Methoden, die die
+Reihenfolge beeinflussen: <c>before</c> und <c>after</c>. Diese letzten beiden
+sind keine eigentlichen Abhängigkeiten - durch sie schlägt das Init-Skript nicht
+fehl, falls das angegebene Init-Skript nicht zum Starten vorgesehen ist (oder es
+Probleme mit dem Starten gibt).
+</p>
+
+<ul>
+  <li>
+    Die Angabe <c>use</c> informiert das Init-System, dass das Init-Skript
+    Funktionalität des angegebenen Skripts <e>nutzt</e>, aber nicht direkt davon
+    abhängt. Gute Beispiele sind <c>use logger</c> und <c>use dns</c>. Wenn
+    diese Dienste verfügbar sind, können sie für einen guten Zweck verwendet
+    werden, aber auch wenn Sie keinen Logger oder DNS-Server haben, wird der
+    Dienst trotzdem funktionieren. Falls die angegebenen Dienste existieren,
+    werden sie vor dem Skript, das sie be<c>nutzt</c>, gestartet.
+  </li>
+  <li>
+    Die Angabe <c>need</c> ist eine harte Abhängigkeit. Sie bedeutet, dass das
+    Skript, das ein anderes Skript <c>benötigt</c>, nicht startet, bevor das
+    andere Skript erfolgreich gestartet hat. Ferner wird dieses Skript
+    neu gestartet, wenn das andere Skript neu gestartet wird.
+  </li>
+  <li>
+    Wenn <c>before</c> genutzt wird, wird das Skript vor dem angegebenen Skript
+    gestartet, <e>falls</e> das angegebene Teil des Init-Levels ist.
+    Beispielsweise wird ein Init-Skript namens <path>xdm</path>, das <c>before
+    alsasound</c> definiert, vor dem Skript <path>alsasound</path> starten,
+    aber nur, wenn <path>alsasound</path> auch im gleichen Init-Level zum
+    Starten vorgemerkt ist. Falls <path>alsasound</path> nicht zum Starten
+    vorgemerkt ist, dann hat diese Einstellung keine Auswirkungen und
+    <path>xdm</path> wird gestartet, wann auch immer das Init-System es für am
+    sinnvollsten hält.
+  </li>
+  <li>
+    Genauso informiert <c>after</c> das Init-System darüber, dass das gegebene
+    Skript nach dem angegebenen Skript gestartet werden soll, <e>falls</e> das
+    angegebene Skript Teil des Init-Levels ist. Falls nicht, hat die Einstellung
+    keine Auswirkungen und das Skript wird gestartet, wann auch immer das
+    Init-System es für am sinnvollsten hält.
+  </li>
+</ul>
+
+<p>
+Aus diesen Erklärungen sollte hervorgehen, dass <c>need</c> die einzige "wahre"
+Abhängigkeitseinstellung ist, da sie bestimmt, ob das Skript gestartet wird oder
+nicht. Alle anderen sind lediglich Hinweise für das Init-System, in welcher
+Reihenfolge die Skripte gestartet werden können bzw. sollen.
+</p>
+
+<p>
+Wenn Sie sich nun einige von Gentoos vielen Init-Skripten anschauen, werden Sie
+merken, dass einige Abhängigkeiten auf Dinge haben, die keine Init-Skripte sind.
+Diese "Dinge" nennen wir <e>Virtuals</e>.
 </p>
 
 <p>
@@ -542,17 +589,12 @@ Wie Sie sehen können, der Postfix-Dienst:
 <body>
 
 <p>
-In einigen Fällen benötigen Sie einen Dienst vielleicht nicht, wollen aber,
-dass er <c>vor</c> (oder <c>nach</c>) einem anderen Dienst startet,
-<c>falls</c> dieser auf dem System verfügbar ist (beachten Sie bitte die
-Bedingung: es ist keine Abhängigkeit mehr) <c>und</c> dazu im selben
-Runlevel läuft (beachten Sie bitte die Bedingung: nur Dienste im selben
-Runlevel sind betroffen). Sie können diese Information bereitstellen, indem
-Sie <c>before</c> oder <c>after</c> benutzen.
-</p>
-
-<p>
-Als ein Beispiel schauen wir uns die Einstellungen des Portmap-Dienstes an:
+Wie im vorherigen Abschnitt beschrieben, können Sie dem Init-System sagen, in
+welcher Reihenfolge die Skripte gestartet (oder gestoppt) werden sollen. Diese
+Reihenfolge wird durch die Abhängigkeitsangaben <c>use</c> und <c>need</c>
+beeinflusst, aber auch durch die Reihenfolgenangaben <c>before</c> und
+<c>after</c>. Da wir diese Angaben bereits erklärt haben, schauen wir uns
+beispielhaft das Init-Skript des Dienstes Portmap an.
 </p>
 
 <pre caption="Die depend() Funktion im Portmap-Dienst">
@@ -602,6 +644,11 @@ Funktionen zu nutzen, um dem User mitzuteilen, was passiert:
 
 <pre caption="Beispiel der start() Funktion">
 start() {
+  if [ "${RC_CMD}" = "restart" ];
+  then
+    <comment># Befehle, falls ein Restart mehr erfordert als stop, start</comment>
+  fi
+
   ebegin "Starten meines Dienstes"
   start-stop-daemon --start --exec /pfad/zu/meinem_dienst \
    --pidfile /pfad/zu/meinem_pidfile
@@ -620,6 +667,15 @@ berichtet. Die Verwendung von <c>--quiet</c> kann die Fehlersuche behindern,
 wenn der Dienst nicht erfolgreich gestartet werden kann.
 </p>
 
+<p>
+Eine weitere zu bemerkende Einstellung in obigem Beispiel ist das Prüfen des
+Inhalts der Variable <c>RC_CMD</c>. Im Gegensatz zum alten Init-System
+unterstützt das neuere System <c>openrc</c> keine Skript-spezifische
+Restart-Funktionalität. Stattdessen muss das Skript den Inhalt der Variable
+<c>RC_CMD</c> prüfen, um zu sehen, ob eine Funktion (sei es <c>start()</c> oder
+<c>stop()</c>) als Teil eines Restarts aufgerufen wird oder nicht.
+</p>
+
 <note>
 Stellen Sie sicher, dass <c>--exec</c> wirklich einen Dienst aufruft und nicht
 nur ein Shell-Skript, welches den Dienst startet und dann beendet. Das ist die
@@ -633,15 +689,14 @@ bitte den Quellcode der verfügbaren Initskripte in Ihrem
 </p>
 
 <p>
-Anderen Funktionen, die Sie definieren können: <c>stop()</c> und
-<c>restart()</c>. Sie sind nicht verpflichtet, diese Funktionen zu erstellen!
-Unser Init-System ist intelligent genug, diese selbst auszufüllen, falls
-Sie den <c>start-stop-daemon</c> nutzen.
+Eine weitere Funktion, die Sie definieren können, ist <c>stop()</c>. Sie sind
+nicht verpflichtet, diese Funktion zu erstellen! Unser Init-System ist
+intelligent genug, diese selbst auszufüllen, sofern Sie den
+<c>start-stop-daemon</c> nutzen.
 </p>
 
 <p>
-Auch wenn Sie die <c>stop()</c> Funktion nicht erstellen <e>müssen</e> ist hier
-ein Beispiel:
+Hier ist ein Beispiel einer <c>stop()</c> Funktion:
 </p>
 
 <pre caption="Beispiel der stop() Funktion">
@@ -682,8 +737,12 @@ $ <i>man start-stop-daemon</i>
 
 <p>
 Die Syntax von Gentoo für Initskripte basiert auf der Bourne Again Shell
-(bash). Es steht Ihnen also frei bash-kompatible Konstrukte innerhalb Ihrer
-Initskripte zu verwenden.
+(bash). Es steht Ihnen also frei, bash-kompatible Konstrukte innerhalb Ihrer
+Initskripte zu verwenden. Jedoch ist es ratsam, Ihre Init-Skripte so zu
+schreiben, dass sie POSIX-konform sind. Zukünftige Init-Systeme erlauben es
+möglicherweise, <path>/bin/sh</path> auf andere Shells als bash zu symlinken.
+Init-Skripte, die dann auf Features zurückgreifen, die nur bash unterstützt,
+werden dann nicht funktionieren.
 </p>
 
 </body>
@@ -708,6 +767,10 @@ restartdelay() {
   start
 }
 </pre>
+
+<impo>
+Die Funktion <c>restart()</c> kann in openrc nicht überschrieben werden!
+</impo>
 
 </body>
 </subsection>
@@ -744,7 +807,7 @@ wird dazu die Datei, die mit dieser Abhängigkeit in Verbindung gebracht wird
 <body>
 
 <p>
-Viele Laptop Benutzer kennen die Situation: Daheim müssen Sie <c>net.eth0</c>
+Viele Laptop-Benutzer kennen die Situation: Daheim müssen Sie <c>net.eth0</c>
 starten, wenn Sie unterwegs sind möchten sie <c>net.eth0</c> nicht starten (weil
 grade kein Netzwerk verfügbar ist). Mit Gentoo können Sie das Runlevel Verhalten
 nach Ihren eigenen Vorstellungen anpassen.
@@ -793,27 +856,32 @@ möchten, lediglich ohne <c>net.eth0</c>:
 </pre>
 
 <p>
-Obwohl <c>net.eth0</c> aus dem Runlevel offline entfernt wurde, wird <c>udev</c>
-trotzdem versuchen jegliche Geräte, die es findet, und die passenden Dienste, zu
-starten. Daher werden Sie jeden Netzwerkdienst, den Sie nicht starten wollen
-(sowie auch Dienste für alle anderen Geräte, die von udev gestartet werden
-könnten) wie folgt zu <path>/etc/conf.d/rc</path> hinzufügen müssen.
+Obwohl <c>net.eth0</c> aus dem Runlevel offline entfernt wurde, könnte
+<c>udev</c> trotzdem versuchen jegliche Geräte, die es findet, zu starten und
+die passenden Dienste aufzurufen. Diese Funktionalität nennt sich
+<e>Hotplugging</e>. Standardmäßig verwendet Gentoo kein Hotplugging.
 </p>
 
-<pre caption="Deaktivierung der von Geräten gestarteten Dienste in /etc/conf.d/rc">
-RC_COLDPLUG="yes"
-<comment>(Geben Sie als nächstes die Dienste an, die sie nicht automatisch starten wollen.)</comment>
-RC_PLUG_SERVICES="!net.eth0"
+<p>
+Falls Sie Hotplugging verwenden wollen, aber nur für eine ausgewählte Menge an
+Skripten, verwenden Sie die <c>rc_hotplug</c> Variable in
+<path>/etc/rc.conf</path>:
+</p>
+
+<pre caption="Deaktivierung der von Geräten gestarteten Dienste in /etc/rc.conf">
+<comment># Hotplugging erlauben für net.wlan sowie alle anderen Dienste, die nicht auf net.* matchen</comment>
+
+rc_hotplug="net.wlan !net.*"
 </pre>
 
 <note>
 Für weitere Informationen zu Diensten, die von Geräten gestartet werden, schauen
-Sie sich bitte die Kommentare in <path>/etc/conf.d/rc</path> an.
+Sie sich bitte die Kommentare in <path>/etc/rc.conf</path> an.
 </note>
 
 
 <p>
-Editieren Sie nun die Bootloader Konfiguration und fügen einen neuen Eintrag für
+Editieren Sie nun die Bootloader-Konfiguration und fügen einen neuen Eintrag für
 das Runlevel <c>offline</c> hinzu. Zum Beispiel in
 <path>/boot/grub/grub.conf</path>:
 </p>
