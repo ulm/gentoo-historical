@@ -4,9 +4,9 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-net-modules.xml,v 1.16 2009/02/13 05:32:30 micm Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-net-modules.xml,v 1.17 2011/09/10 22:19:17 keytoaster Exp $ -->
 
-<!-- English CVS Version: 1.25 -->
+<!-- English CVS Version: 1.26 -->
 
 <sections>
 
@@ -15,8 +15,8 @@ Gentoo ermöglicht flexible Netzwerkkonfiguration. Hier wird erläutert wie Sie
 einen DHCP-Client auswählen, Bonding, VLANS und mehr einrichten.
 </abstract>
 
-<version>8.4</version>
-<date>2009-02-12</date>
+<version>9</version>
+<date>2011-08-13</date>
 
 <section>
 <title>Netzwerkmodule</title>
@@ -45,17 +45,17 @@ gespeichert, sofern nicht anders angegeben.
 
 <pre caption="Modul-Präferenz">
 <comment># Ziehe iproute2 dem Modul ifconfig vor</comment>
-modules=( "iproute2" )
+modules="iproute2"
 
 <comment># Sie können auch andere Module als Schnittstelle angeben
 # Im folgenden Fall bevorzugen wir pump vor dhcpcd</comment>
-modules_eth0=( "pump" )
+modules_eth0="pump"
 
 <comment># Sie können auch angeben, welche Module nicht verwendet werden sollen
 #- beispielsweise könnten Sie supplicant oder linux-wlan-ng verwenden um
 #die Drahtlos-Konfiguration zu steuern, möchten aber die Netzwerk-Einstellungen
 #trotzdem per verbundener ESSID konfigurieren.</comment>
-modules=( "!iwconfig" )
+modules="!iwconfig"
 </pre>
 
 </body>
@@ -80,7 +80,7 @@ standardmäßig enthalten.
 # <i>emerge sys-apps/iproute2</i>
 
 <comment># Um iproute2 vor ifconfig den Vorzug zu geben, falls beide installiert sind</comment>
-modules=( "iproute2" )
+modules="iproute2"
 </pre>
 
 <p>
@@ -91,12 +91,12 @@ Modul.
 </p>
 
 <pre caption="Beispiele für ifconfig und iproute2">
-config_eth0=( "192.168.0.2/24" )
-config_eth0=( "192.168.0.2 netmask 255.255.255.0" )
+config_eth0="192.168.0.2/24"
+config_eth0="192.168.0.2 netmask 255.255.255.0"
 
 <comment># Wir können auch Broadcast angeben</comment>
-config_eth0=( "192.168.0.2/24 brd 192.168.0.255" )
-config_eth0=( "192.168.0.2 netmask 255.255.255.0 broadcast 192.168.0.255" )
+config_eth0="192.168.0.2/24 brd 192.168.0.255"
+config_eth0="192.168.0.2 netmask 255.255.255.0 broadcast 192.168.0.255"
 </pre>
 
 </body>
@@ -192,9 +192,9 @@ keine davon zu setzen:
 
 <pre caption="Beispiel-DHCP-Konfiguration in /etc/conf.d/net">
 <comment># Wird nur benötigt, wenn mehr als ein DHCP-Module installiert ist.</comment>
-modules=( "dhcpcd" )
+modules="dhcpcd"
 
-config_eth0=( "dhcp" )
+config_eth0="dhcp"
 dhcpcd_eth0="-t 10" <comment># Timeout nach 10 Sekunden</comment>
 dhcp_eth0="release nodns nontp nonis" <comment># Nur eine Adresse anfordern</comment>
 </pre>
@@ -218,11 +218,6 @@ Zunächst müssen wir die ADSL-Software installieren.
 # <i>emerge net-dialup/ppp</i>
 </pre>
 
-<note>
-Wenn Sie PPPoA benötigen, stellen Sie sicher, dass Sie
->=<c>baselayout-1.12.x</c> verwenden.
-</note>
-
 <p>
 Zweitens, erzeugen Sie das PPP-Netzwerkskript und das Netzwerkskript für die
 Ethernet-Schnittstelle, die von PPP verwendet werden soll:
@@ -234,8 +229,8 @@ Ethernet-Schnittstelle, die von PPP verwendet werden soll:
 </pre>
 
 <p>
-Überprüfen Sie ob RC_NET_STRICT_CHECKING="yes" in <path>/etc/conf.d/rc</path>
-gesetzt ist.
+Stellen Sie sicher, dass <c>rc_depend_strict</c> in <path>/etc/rc.conf</path>
+auf "YES" gesetzt ist.
 </p>
 
 <p>
@@ -243,26 +238,23 @@ Nun müssen wir <path>/etc/conf.d/net</path> konfigurieren.
 </p>
 
 <pre caption="Eine grundlegende PPPoE-Konfiguration">
-config_eth0=( null ) <comment>(Geben Sie Ihre Ethernet-Schnittstelle an)</comment>
-config_ppp0=( "ppp" )
+config_eth0=null <comment>(Geben Sie Ihre Ethernet-Schnittstelle an)</comment>
+config_ppp0="ppp"
 link_ppp0="eth0" <comment>(Geben Sie Ihre Ethernet-Schnittstelle an)</comment>
-plugins_ppp0=( "pppoe" )
+plugins_ppp0="pppoe"
 username_ppp0='user'
 password_ppp0='password'
-pppd_ppp0=(
-       "noauth"
-       "defaultroute"
-       "usepeerdns"
-       "holdoff 3"
-       "child-timeout 60"
-       "lcp-echo-interval 15"
-       "lcp-echo-failure 3"
-       noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp
-)
+pppd_ppp0="
+noauth
+defaultroute
+usepeerdns
+holdoff 3
+child-timeout 60
+lcp-echo-interval 15
+lcp-echo-failure 3
+noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp"
 
-depend_ppp0() {
-    need net.eth0
-}
+rc_need_ppp0="net.eth0"
 </pre>
 
 <p>
@@ -283,9 +275,10 @@ Informationen zur korrekten Konfiguration.
 
 <impo>
 Bitte lesen Sie den Abschnitt zu ADSL und PPP in
-<path>/etc/conf.d/net.example</path> sorgfältig durch. Dort sind viel
-detailliertere Erklärungen zu allen Einstellungen enthalten, die Sie für
-Ihre spezielle PPP-Einrichtung wahrscheinlich nutzen können.
+<path>/usr/share/doc/openrc-0.8.3-r1/net.example.bz2</path> sorgfältig durch.
+Dort sind viel detailliertere Erklärungen zu allen Einstellungen enthalten, die
+Sie für Ihre spezielle PPP-Einrichtung wahrscheinlich nutzen können.
+Natürlich müssen Sie <c>0.8.3-r1</c> durch Ihre OpenRC-Version ersetzen.
 </impo>
 
 </body>
@@ -314,11 +307,11 @@ Für APIPA-Unterstützung muss <c>net-misc/iputils</c> oder
 
 <pre caption="APIPA-Konfiguration in /etc/conf.d/net">
 <comment># Versuchen Sie zuerst DHCP - schlägt das fehl, greifen Sie auf APIPA zurück</comment>
-config_eth0=( "dhcp" )
-fallback_eth0=( "apipa" )
+config_eth0="dhcp"
+fallback_eth0="apipa"
 
 <comment># Nur APIPA verwenden</comment>
-config_eth0=( "apipa" )
+config_eth0="apipa"
 </pre>
 
 </body>
@@ -343,12 +336,10 @@ tatsächlich beide Karten nutzen.
 slaves_bond0="eth0 eth1 eth2"
 
 <comment># Weisen Sie einer verbundenen Schnittstelle keine IP-Adresse zu</comment>
-config_bond0=( "null" )
+config_bond0="null"
 
 <comment># Von eth0, eth1 and eth2 abhängen, da sie möglicherweise weitere Konfiguration benötigen</comment>
-depend_bond0() {
-  need net.eth0 net.eth1 net.eth2
-}
+rc_need_bond0="net.eth0 net.eth1 net.eth2"
 </pre>
 
 </body>
@@ -371,22 +362,20 @@ Bridge beide Schnittstellen zusammenfügen.
 
 <pre caption="Bridge-Konfiguration in /etc/conf.d/net">
 <comment># Konfigurieren Sie die Bridge - weitere Details liefert "man brctl"</comment>
-brctl_br0=( "setfd 0" "sethello 0" "stp off" )
+brctl_br0="setfd 0" "sethello 0" "stp off"
 
 <comment># Um Ports zur Bridge br0 hinzuzufügen</comment>
 bridge_br0="eth0 eth1"
 
 <comment># Die Ports müssen mit Null-Werten konfiguriert werden, damit DHCP nicht gestartet wird.</comment>
-config_eth0=( "null" )
-config_eth1=( "null" )
+config_eth0="null"
+config_eth1="null"
 
 <comment># Letztendlich weisen Sie der Bridge eine Adresse zu - Sie könnten dazu auch DHCP verwenden</comment>
-config_br0=( "192.168.0.1/24" )
+config_br0="192.168.0.1/24"
 
 <comment># Von eth0, eth1 and eth2 abhängen, da sie möglicherweise weitere Konfiguration benötigen</comment>
-depend_br0() {
-  need net.eth0 net.eth1
-}
+rc_need_br0="net.eth0 net.eth1"
 </pre>
 
 <impo>
@@ -401,12 +390,8 @@ link="?part=4&amp;chap=2#variable_name">Variablennamen</uri> lesen.
 <body>
 
 <p>
-Um die MAC-Adresse Ihrer Schnittstelle zu ändern, muss nichts emerged werden,
-wenn Sie <c>sys-apps/baselayout-1.11.14</c> oder neuer verwenden und zu einer
-bestimmten MAC-Adresse wechseln möchten. Wenn Sie jedoch zu einer zufälligen
-MAC-Adresse  wechseln wollen oder ein Baselayout älter als die obengenannte
-Version verwenden, müssen Sie <c>net-analyzer/macchanger</c> emergen um in der
-Lage zu sein, diese Funktion zu nutzen.
+Falls Bedarf besteht, können Sie die MAC-Adresse Ihres Interfaces mit Hilfe
+der Netzwerk-Konfigurationsdatei ebenfalls ändern.
 </p>
 
 <pre caption="Beispiel zum Wechseln der MAC-Adresse">
@@ -447,7 +432,7 @@ iptunnel_vpn0="mode gre remote 207.170.82.1 key 0xffffffff ttl 255"
 iptunnel_vpn0="mode ipip remote 207.170.82.2 ttl 255"
 
 <comment># Um die Schnittstelle zu konfigurieren</comment>
-config_vpn0=( "192.168.0.2 peer 192.168.1.1" )
+config_vpn0="192.168.0.2 peer 192.168.1.1"
 </pre>
 
 </body>
@@ -475,12 +460,12 @@ vlans_eth0="1 2"
 
 <comment># Sie können auch das VLAN konfigurieren</comment>
 <comment># Weitere Details liefert "man vconfig"</comment>
-vconfig_eth0=( "set_name_type VLAN_PLUS_VID_NO_PAD" )
-vconfig_vlan1=( "set_flag 1" "set_egress_map 2 6" )
+vconfig_eth0="set_name_type VLAN_PLUS_VID_NO_PAD"
+vconfig_vlan1="set_flag 1" "set_egress_map 2 6"
 
 <comment># Die Schnittstellen wie gewohnt onfigurieren</comment>
-config_vlan1=( "172.16.3.1 netmask 255.255.254.0" )
-config_vlan2=( "172.16.2.1 netmask 255.255.254.0" )
+config_vlan1="172.16.3.1 netmask 255.255.254.0"
+config_vlan2="172.16.2.1 netmask 255.255.254.0"
 </pre>
 
 <impo>
