@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-disk.xml,v 1.12 2009/02/15 08:23:10 micm Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-disk.xml,v 1.13 2011/09/10 14:55:54 keytoaster Exp $ -->
 
 <sections>
 
@@ -14,8 +14,8 @@ Partitionen erstellen. Dieses Kapitel beschreibt wie man eine Festplatte für
 den Gebrauch partitioniert.
 </abstract>
 
-<version>6.2</version>
-<date>2009-01-09</date>
+<version>9</version>
+<date>2011-08-23</date>
 
 <section>
 <title>Einführung in Block-Devices</title>
@@ -29,8 +29,8 @@ den Gebrauch partitioniert.
 <body>
 
 <p>
-Obwohl es theoretisch möglich ist eine ganze Festplatte zu nutzen, um Ihr Linux
-System zu beherbergen, wird dies in der Praxis so gut wie nie gemacht.
+Obwohl es theoretisch möglich ist, eine ganze Festplatte zu nutzen, um Ihr
+Linux-System zu beherbergen, wird dies in der Praxis so gut wie nie gemacht.
 Stattdessen werden komplette Festplatten-Block-Devices in kleinere, besser
 verwaltbare Block-Devices unterteilt. Auf <keyval id="arch"/>-Systemen werden
 diese <e>Partitionen</e> genannt.
@@ -125,7 +125,10 @@ in diesem Handbuch benutzen:
 Wenn Sie daran interessiert sind zu erfahren, wie groß eine Partition sein
 sollte, oder auch wie viele Partitionen (oder Volumes) Sie benötigen, lesen
 Sie weiter. Anderenfalls fahren Sie nun mit dem <uri
-link="#fdisk">Partitionieren Ihrer Festplatte</uri> fort.
+link="#fdisk">Partitionieren Ihrer Festplatte mit fdisk</uri> oder mit dem <uri
+link="#parted">Partitionieren Ihrer Festplatte mit parted</uri> fort. Beides
+sind Partitionierungs-Tools; <c>fdisk</c> ist weit verbreitet und stabil,
+<c>parted</c> ist etwas neuer, aber unterstützt Partitionen größer als 2 TB.
 </p>
 
 </body>
@@ -218,13 +221,20 @@ große Pakete wie OpenOffice vorhanden ist.
 </subsection>
 </section>
 <section id="fdisk">
-<title>Partitionierung Ihrer Festplatte</title>
+<title>Partitionierung Ihrer Festplatte mit fdisk</title>
 <subsection>
 <body>
 
+<impo>
+Falls Sie Partitionen verwenden, die größer als 2 TB sind, lesen Sie anstatt
+dieses Abschnitts bitte den Abschnitt <uri link="#parted">Partitionierung Ihrer
+Festplatte mit parted</uri>. <c>fdisk</c> kann nicht mit größeren Partitionen
+umgehen.
+</impo>
+
 <p>
-Die folgenden Teile erklären, wie das bereits beschriebene Beispiel
-Partitionslayout erstellt wird:
+Die folgenden Teile erklären, wie das bereits beschriebene
+Beispiel-Partitionslayout mit <c>fdisk</c> erstellt wird. Zur Erinnerung:
 </p>
 
 <table>
@@ -493,6 +503,211 @@ Nachdem Ihre Partitionen nun erstellt sind, können Sie mit dem
 </body>
 </subsection>
 </section>
+<section id="parted">
+<title>Partitionierung Ihrer Festplatte mit parted</title>
+<subsection>
+<body>
+
+<p>
+In diesem Kapitel zeigen wir Ihnen, wie das vorhin gezeigte
+Beispiel-Partitionslayout erstellt wird. Im Gegensatz zum vorherigen Kapitel,
+wird hier die Methode mit Hilfe der Anwendung <c>parted</c> erklärt. Sowohl
+<c>parted</c> als auch <c>fdisk</c> bieten die gleichen Funktionen an. Wenn Sie
+also Ihre Festplatte gerade mit <c>fdisk</c> partitioniert haben, können Sie
+diesen Abschnitt überspringen und mit dem <uri link="#filesystems">Erstellen
+der Dateisysteme</uri> fortfahren.
+</p>
+
+<p>
+Das Beispiel-Partitionslayout, das wir benutzen werden, sei folgendes:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Beschreibung</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Boot-Partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Swap-Partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Root-Partition</ti>
+</tr>
+</table>
+
+<p>
+Ändern Sie Ihr Partitionslayout nach Ihren eigenen Vorstellungen.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Die derzeitige Partitionstabelle ansehen</title>
+<body>
+
+<p>
+Die Anwendung <c>parted</c> ist quasi eine etwas modernere Variante von
+<c>fdisk</c>. Sie bietet eine einfachere Benutzerschnittstelle zum
+Partitionieren Ihrer Festplatten an und unterstützt sehr große Partitionen
+(größer als 2 TB). Rufen Sie <c>parted</c> für Ihre Festplatte auf (in unserem
+Beispiel verwenden wir <path>/dev/sda</path>):
+</p>
+
+<pre caption="parted starten">
+# <i>parted /dev/sda</i>
+GNU Parted 2.3
+Using /dev/sda
+Welcome to GNU Parted! Type 'help' to view a list of commands.
+</pre>
+
+<p>
+Um alles über die unterstützten Optionen von <c>parted</c> herauszufinden,
+geben Sie einfach <c>help</c> ein und drücken Enter. Wir lassen uns von
+<c>parted</c> jetzt aber einfach einmal die momentan auf der ausgewählten
+Festplatte vorhandenen Partitionen anzeigen. Das Kommando <c>print</c> kann
+hierfür verwenden werden.
+</p>
+
+<pre caption="Eine beispielhafte Partitionierung angezeigt mit parted">
+(parted) <i>print</i>
+Model: SCSI Block Devices
+Disk /dev/sda: 21.5GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+
+Number  Start   End     Size    Type     File system     Flags
+ 1      512B    2148MB  2148MB  primary  ext4
+ 2      2148MB  3222MB  1074MB  primary  linux-swap(v1)
+ 3      3222MB  21.5GB  18.3GB  primary                  lvm
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Optional: Verwenden von GPT</title>
+<body>
+
+<p>
+Die meisten Platten unter x86/amd64 kommen von Haus aus mit einer
+Partitionstabelle vom Typ <e>msdos</e>. Falls Sie jedoch vorhaben, größere
+Partitionen (2 TB und mehr) zu erzeugen, müssen Sie eine Partitionstabelle vom
+Typ <e>gpt</e> (<e>GUID Partition Type</e>) für Ihre Festplatte verwenden.
+<c>parted</c> kann diese mit <c>mklabel gpt</c> erzeugen:
+</p>
+
+<warn>
+Das Ändern des Partitionstabellentyps entfernt alle Partitionen von Ihrer
+Festplatte. Alle Daten auf der Platte gehen dabei verloren.
+</warn>
+
+<pre caption="Verwenden von GPT">
+(parted) <i>mklabel gpt</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Löschen aller Partitionen</title>
+<body>
+
+<p>
+Falls das noch nicht getan wurde (z.B. gerade durch <c>mklabel</c> oder weil
+die Platte frisch formatiert ist), löschen wir zuerst alle existierenden
+Partitionen von der Platte. Geben Sie <c>rm &lt;nummer&gt;</c> ein, wobei
+&lt;nummer&gt; die Partition ist, die Sie löschen möchten.
+</p>
+
+<pre caption="Löschen einer Partition von der Festplatte">
+(parted) <i>rm 2</i>
+</pre>
+
+<p>
+Tun Sie dasselbe für alle anderen Partitionen, die Sie nicht mehr benötigen.
+Passen Sie aber auf, dass Sie dabei keine Fehler machen - <c>parted</c> führt
+die Änderungen direkt aus (im Gegensatz zu <c>fdisk</c>, das die Änderungen
+erst einmal sammelt, so dass der Benutzer am Ende die Änderungen rückgängig
+machen kann, bevor er speichert oder <c>fdisk</c> verlässt).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Erstellen der Partitionen</title>
+<body>
+
+<p>
+Erstellen wir also nun die Partitionen, die wir vorhin erwähnt haben. Das
+Erstellen der Partitionen mit <c>parted</c> ist nicht schwierig; wir müssen
+<c>parted</c> nur über die folgenden Einstellungen informieren:
+</p>
+
+<ul>
+  <li>
+    Der zu verwendende <e>Partitionstyp</e>. Normalerweise sollte das
+    <e>primary</e> sein, wenn Sie nicht mehr als 4 Partitionen haben werden
+    (sofern Sie eine <e>msdos</e> Partitionstabelle verwenden). Andernfalls
+    müssen Sie aus Ihrer vierten Partition eine <e>extended</e> machen, die
+    den Rest der Festplatte beinhaltet. In ihr finden sich dann <e>logical</e>
+    Partitionen. Falls Sie hingegen <e>GPT</e> verwenden, haben Sie keine
+    Beschränkung hinsichtlich der Anzahl der primary-Partitionen.
+  </li>
+  <li>
+    Der zu verwendende <e>Dateisystemtyp</e>. <c>parted</c> unterstützt die
+    meisten bekannten Dateisysteme und weiß, welche Art von Partitions-ID es
+    für diese verwenden muss. Das bedeutet <e>nicht</e>, dass <c>parted</c> ein
+    Dateisystem auf der Partition erzeugen wird (das können Sie zwar mit dem
+    <c>mkpartfs</c> Kommando machen, aber wir werden später die regulären
+    <c>mkfs.*</c> Befehle für diesen Zweck verwenden). Die Partitions-ID wird
+    meistens von Auto-Erkennungs-Tools verwendet, um herauszufinden, was diese
+    mit einer bestimmten Partition machen sollen.
+  </li>
+  <li>
+    Der Startpunkt der Partition (kann ausgedrückt werden in MB oder GB)
+  </li>
+  <li>
+    Der Endpunkt der Partition (kann ausgedrückt werden in MB oder GB)
+  </li>
+</ul>
+
+<p>
+Ein Vorteil von <c>parted</c> ist, dass Sie einfach die Partitionsgrößen
+verwenden können, um automatisch den Startpunkt und Endpunkt zu finden, wie im
+nächsten Beispiel gezeigt.
+</p>
+
+<pre caption="Erstellen der Partitionen">
+<comment># Erstellen einer 32 MB /boot-Partition</comment>
+(parted) <i>mkpart primary ext2 0 32mb</i>
+Warning: The resulting partition is not properly aligned for best performance.
+Ignore/Cancel? <i>i</i>
+
+<comment># Erstellen einer 512 MB swap-Partition</comment>
+(parted) <i>mkpart primary linux-swap 32mb 542mb</i>
+
+<comment># Erstellen einer Partition, die den Rest der Platte verwendet
+# -1s (minus eins s) steht für das Ende der Platte</comment>
+(parted) <i>mkpart primary ext4 542mb -1s</i>
+Warning: You requested a partition from 542MB to 21.5GB.
+The closest location we can manage is 542MB to 21.5GB.
+Is this still acceptable to you?
+Yes/No? <i>y</i>
+</pre>
+
+<p>
+Sie können sich nun das Partitionslayout erneut anzeigen lassen (<c>print</c>),
+um zu überprüfen, ob alles wie erwartet ist. Wenn Sie zufrieden sind, verwenden
+Sie den Befehl <c>quit</c>, um <c>parted</c> zu verlassen.
+</p>
+
+</body>
+</subsection>
+</section>
 <section id="filesystems">
 <title>Erstellen der Dateisysteme</title>
 <subsection>
@@ -500,11 +715,11 @@ Nachdem Ihre Partitionen nun erstellt sind, können Sie mit dem
 <body>
 
 <p>
-Nun da Ihre Partitionen erstellt sind ist es Zeit auf diesen ein Dateisystem
+Nun da Ihre Partitionen erstellt sind, ist es Zeit auf diesen ein Dateisystem
 einzurichten. Wenn Sie sich keine Gedanken über das einzusetzende Dateisystem
 machen (möchten), gehen Sie zum <uri link="#filesystems-apply">Eine Partition
 mit einem Dateisystem formatieren</uri> Abschnitt vor, andernfalls lesen Sie
-weiter um etwas über verfügbare Dateisysteme zu lernen ...
+weiter, um etwas über die verfügbaren Dateisysteme zu lernen...
 </p>
 
 </body>
@@ -530,11 +745,15 @@ für jedes Dateisystem Tools:
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
@@ -557,8 +776,8 @@ unserem Beispiel) zu formatieren, führen Sie folgende Kommandos aus:
 </p>
 
 <pre caption="Eine Partition mit einem Dateisystem formatieren">
-# <i>mke2fs /dev/sda1</i>
-# <i>mke2fs -j /dev/sda3</i>
+# <i>mkfs.ext2 /dev/sda1</i>
+# <i>mkfs.ext3 /dev/sda3</i>
 </pre>
 
 <p>
