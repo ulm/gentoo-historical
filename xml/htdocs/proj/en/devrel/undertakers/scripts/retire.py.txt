@@ -2,12 +2,13 @@
 # vim: set ai et sw=4 ts=4 sts=4:
 """Script to remove retired devs from metadata.xml."""
 
+__author__ """marien zwart marienz@gentoo.org"""
+
+import difflib
+import inspect
 import os
 import sys
-import difflib
 import StringIO
-import inspect
-
 from xml.etree import cElementTree as etree
 
 
@@ -89,7 +90,7 @@ def _metadata(path, modifier):
         return 1
     # Make sure path has a / at the end
     if not path.endswith('/'):
-        path+='/'
+        path += '/'
     for root, dirs, files in os.walk(path):
         if 'metadata.xml' not in files:
             continue
@@ -102,7 +103,8 @@ def _metadata(path, modifier):
 
         shortpath = root[len(path):]
 
-        # Find all herds this package is in, dealing with the no-herd "herd"
+        # NOTE(antarus): herd is an optional field. <herd>no-herd</herd> is
+        # not allowed.
         herds = {}
         for herd in metadata.findall('herd'):
             herdname = herd.text
@@ -114,13 +116,10 @@ def _metadata(path, modifier):
                 print >>sys.stderr, 'Duplicate herd in %s' % (shortpath,)
                 continue
             herds[herdname] = herd
-        if not herds:
-            # HACK: this is apparently normal for category-level metadata
-            if '/' in shortpath:
-                print >>sys.stderr, 'no herd tags in %s (add no-herd)' % (shortpath,)
+        # NOTE(antarus): no-herd is deprecated, but we still want to complain
+        # if it is listed along with other herds because that is a bug.
         if 'no-herd' in herds and len(herds) != 1:
             print >>sys.stderr, 'no-herd and actual herds in %s' % (shortpath,)
-        herds.pop('no-herd', None)
 
         if modifier(metadata, herds):
             # we don't want the full path in the diff
@@ -171,15 +170,9 @@ def metadata_herd(herdname, path):
     def modifier(metadata, herds):
         if herdname not in herds:
             return False
-
         herd = herds[herdname]
-        if len(herds) == 1:
-            # We're removing the only herd, so convert to no-herd.
-            herd.text = 'no-herd'
-        else:
-            # Just remove this herd element.
-            metadata.getroot().remove(herd)
-
+        # Just remove this herd element.
+        metadata.getroot().remove(herd)
         return True
 
     return _metadata(path, modifier)
