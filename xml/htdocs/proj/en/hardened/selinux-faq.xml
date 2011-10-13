@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-faq.xml,v 1.6 2011/09/04 19:25:25 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-faq.xml,v 1.7 2011/10/13 16:08:37 swift Exp $ -->
 
 <guide link="/proj/en/hardened/selinux-faq.xml" lang="en">
 <title>Gentoo Hardened SELinux Frequently Asked Questions</title>
@@ -17,8 +17,8 @@ The FAQ is a collection of solutions found on IRC, mailinglist, forums or
 elsewhere
 </abstract>
 
-<version>14</version>
-<date>2011-09-04</date>
+<version>16</version>
+<date>2011-10-13</date>
 
 <faqindex>
 <title>Questions</title>
@@ -764,6 +764,57 @@ If your system is upgrading its kernel, higher version(s) can be supported. In
 this case, either unset the value again to automatically "jump" to a higher
 version, or force set it to the higher version.
 </impo>
+
+</body>
+</section>
+<section id="recoverportage">
+<title>Portage fails to label files because "setfiles" does not work anymore</title>
+<body>
+
+<p>
+Portage uses the <c>setfiles</c> command to set the labels of the files it
+installs. However, that command is a dynamically linked executable, so any
+update in its depending libraries (<path>libselinux.so</path>,
+<path>libsepol.so</path>, <path>libaudit.so</path> and of course
+<path>libc.so</path>) might cause for the application to fail. Gentoo's standard
+solution (<c>revdep-rebuild</c>) will not work, since the tool will try to
+rebuild policycoreutils, which will fail to install because Portage cannot set
+the file labels.
+</p>
+
+<p>
+The solution is to rebuild policycoreutils while disabling Portage' selinux
+support, then label the installed files manually using <c>chcon</c>, based on
+the feedback received from <c>matchpathcon</c>.
+</p>
+
+<pre caption="Recovering from Portage installation failures">
+# <i>FEATURES="-selinux" emerge --oneshot policycoreutils</i>
+# <i>for FILE in $(qlist policycoreutils); do \
+CONTEXT=$(matchpathcon -n ${FILE}) chcon ${CONTEXT} ${FILE}; done</i>
+</pre>
+
+<p>
+Now Portage will function properly again, labeling files as they should.
+</p>
+
+</body>
+</section>
+<section id="nosuid">
+<title>Applications do not transition on a nosuid-mounted partition</title>
+<body>
+
+<p>
+If you have file systems mounted with the <c>nosuid</c> option, then
+applications started from these file systems will not transition into their
+appropriate domain. This is intentional.
+</p>
+
+<p>
+So, a <c>passwd</c> binary, although correctly labeled <e>passwd_exec_t</e>,
+will not transition into the <e>passwd_t</e> domain if the binary is stored on a
+file system mounted with <c>nosuid</c>.
+</p>
 
 </body>
 </section>
