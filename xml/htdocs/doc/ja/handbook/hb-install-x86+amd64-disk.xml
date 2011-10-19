@@ -4,9 +4,9 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-x86+amd64-disk.xml,v 1.4 2009/03/09 15:00:17 shindo Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/handbook/hb-install-x86+amd64-disk.xml,v 1.5 2011/10/19 13:27:14 naota Exp $ -->
 
-<!-- Original revision: 1.13 -->
+<!-- Original revision: 1.16 -->
 <!-- Translator: Infonomad -->
 <sections>
 
@@ -15,8 +15,8 @@ Gentooをインストールするためには、必要なパーティション�
 この章では、これから使用できるようにディスクをパーティションで区切る方法を説明します。
 </abstract>
 
-<version>6.2</version>
-<date>2009-01-09</date>
+<version>9</version>
+<date>2011-08-23</date>
 
 <section>
 <title>ブロックデバイス入門</title>
@@ -99,7 +99,7 @@ Linuxシステムを格納するのにディスクの全体を使用すること
 </table>
 
 <p>
-もしパーティション(もしくは論理ボリューム)がどれぐらいのサイズにすればいいのか、どれだけの数のパーティション(もしくはボリューム)かにすべきかを知りたいのならば読み進んでください。そうでなければ、今から<uri link="#fdisk">パーティション作成にfdiskを使う</uri>を読みながら、ディスクのパーティション作成作業を進めてください。
+もしパーティション(もしくは論理ボリューム)がどれぐらいのサイズにすればいいのか、どれだけの数のパーティション(もしくはボリューム)かにすべきかを知りたいのならば読み進んでください。そうでなければ、今から<uri link="#fdisk">パーティション作成にfdiskを使う</uri>または<uri link="#parted">パーティション作成にpartedを使う</uri>を読みながら、ディスクのパーティション作成作業を進めてください。(どちらもパーティション編集ソフトです。<c>fdisk</c>は有名で安定しています。<c>parted</c>は少し最近のソフトですが2TB以上のサイズのパーティションもサポートしています。)
 </p>
 
 </body>
@@ -165,8 +165,14 @@ Filesystem    Type    Size  Used Avail Use% Mounted on
 <subsection>
 <body>
 
+<impo>
+2TB以上のパーティションを扱うようなシステムであれば、fdiskではなく<uri link="#parted">パーティション作成にpartedを使う</uri>の方法を使ってください。
+<c>fdisk</c>は大きなパーティションを扱うことができません。
+</impo>
+
 <p>
-以下の部分では先に紹介した例のパーティション設定の作成方法を説明します。
+以下の部分では<c>fdisk</c>を利用したパーティション設定の作成方法を説明します。
+先に説明した通りのパーティションレイアウトを用います。
 </p>
 
 <table>
@@ -388,6 +394,195 @@ Command (m for help): <i>w</i>
 </body>
 </subsection>
 </section>
+<section id="parted">
+<title>パーティション作成にpartedを使う</title>
+<subsection>
+<body>
+
+<p>
+ここでは先に例にあげたようなレイアウトでパーティションを作成する方法について説明します。
+前の章とは違い、この章では<c>parted</c>を使います。<c>parted</c>も<c>fdisk</c>もどちらもパーティションを作成するためのものですから、
+すでに<c>fdisk</c>でパーティションを作成できているのであればこの部分を飛ばして<uri link="#filesystems">ファイルシステムの作成</uri>に進むことができます。
+</p>
+
+<p>
+例として用いられるパーティションレイアウトは以下のようになっています。
+</p>
+
+<table>
+<tr>
+  <th>パーティション</th>
+  <th>種別</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>ブートパーティション</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>スワップパーティション</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ルートパーティション</ti>
+</tr>
+</table>
+
+<p>
+パーティションの割当てを自分の望むように変更してください。
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>現在のパーティションの割当てを見る</title>
+<body>
+
+<p>
+<c>parted</c>は<c>fdisk</c>をいくらか新しくモダンにしたようなものです。
+ディスクのパーティション設定を行なう簡潔なメニューを持ち、
+非常に大きなパーティション(2TB以上)をサポートしています。
+では、<c>parted</c>を起動してディスクのパーティションを設定しましょう。
+(この例では<path>/dev/sda</path>を使います。)
+</p>
+
+<pre caption="partedの起動">
+# <i>parted /dev/sda</i>
+GNU Parted 2.3
+Using /dev/vda
+Welcome to GNU Parted! Type 'help' to view a list of commands.
+</pre>
+
+<p>
+<c>parted</c>の全てのオプションを見るには<c>help</c>と入力してリターンキーを押してください。
+とりあえずいまは<c>print</c>コマンドを使って、
+選択したディスクの使用中のパーティションを表示します。
+</p>
+
+<pre caption="サンプルのパーティション設定のpartedによる表示">
+(parted) <i>print</i>
+Model: SCSI Block Device
+Disk /dev/sda: 21.5GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+
+Number  Start   End     Size    Type     File system     Flags
+1      512B    2148MB  2148MB  primary  ext4
+2      2148MB  3222MB  1074MB  primary  linux-swap(v1)
+3      3222MB  21.5GB  18.3GB  primary                  lvm
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>自由選択: GPTラベルの設定</title>
+<body>
+
+<p>
+x86/amd64のマシン上のほとんどのディスクはあらかじめ<e>msdos</e>ラベルを使ってパーティションされています。
+しかし、大きなパーティション(2TB以上)を作ろうとしているのであれば、
+<e>gpt</e>ラベル(<e>GUIDパーティションタイプ</e>)を使わなければいけません。
+<c>parted</c>では<c>mklabel gpt</c>とすることでgptラベルを使うことができます。
+</p>
+
+<warn>
+パーティションタイプを変更すると全てのパーティションがディスクから削除されます。
+ディスク上の全てのデータが失われます。
+</warn>
+
+<pre caption="GPTラベルの設定">
+(parted) <i>mklabel gpt</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>全てのパーティションを削除する</title>
+<body>
+
+<p>
+まだパーティションが(たとえば<c>mklabel</c>を事前にやっていたり、
+ディスクが新しく一からフォーマットされたものであるなどによって)全て削除されていなければ、
+最初に現在の全てのパーティションをディスクから削除します。
+<c>rm &lt;number&gt;</c>とします。&lt;number&gt;は削除したいパーティションの番号です。
+</p>
+
+<pre caption="パーティションを削除する">
+(parted) <i>rm 2</i>
+</pre>
+
+<p>
+同様にして必要ない全てのパーティションを削除してください。しかし、ミスをしないように気をつけてください!
+<c>parted</c>は変更をただちにディスクに反映します。(変更内容だけを記憶し、実際に保存したり終了したりする前に変更内容を「戻す」ことができる<c>fdisk</c>とは違う、というわけです)
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>パーティションを作成する</title>
+<body>
+
+<p>
+それでは先ほど述べたパーティションを作成していきましょう。
+<c>parted</c>でのパーティション作成はそんなに難しくはありません。
+以下の項目を<c>parted</c>に教えるだけです。
+</p>
+
+<ul>
+  <li>
+    使用する<e>パーティションの種類</e>。5つ以上のパーティションを作らない
+    (そして<e>msdos</e>パーティションラベルを使う)場合は通常<e>プライマリ</e>になります。
+    そうでない場合、4つ目のパーティションを残りのディスク領域を占める<e>拡張</e>パーティションとして作り、
+    その中に<e>論理</e>パーティションを作ります。<e>gpt</e>ラベルのパーティションを使う場合、
+    プライマリパーティションの数に制限はありません。
+  </li>
+  <li>
+    使用する<e>ファイルシステムの種類</e>。<c>parted</c>はほとんどの有名なファイルシステムをサポートしており、
+    パーティションにどんなパーティションIDを設定すればよいかも知っています。
+    とはいえ、<c>parted</c>がファイルシステムを作成してくれるわけでは<e>ありません</e>。
+    (<c>mkpartfs</c>を使ってファイルシステムを作成することもできますが、
+    ここでは通常の<c>mkfs.*f</c>コマンドを使用します。) 
+    このパーティションIDは自動検出するツールがどんなことをパーティションに行なえばよいのかを判断するのに使われます。
+  </li>
+  <li>
+    パーティションの開始位置(MBまたはGBで指定できます)
+  </li>
+  <li>
+    パーティションの終了位置(MBまたはGBで指定できます)
+  </li>
+</ul>
+
+<p>
+<c>parted</c>には、次の例でしめすように、パーティションのサイズを指定するだけで自動的に、
+パーティションの開始位置と終了位置を計算してくれるという利点があります。
+</p>
+
+<pre caption="パーティションを作成する">
+<comment># 32 mbyteの/bootパーティションを作成します</comment>
+(parted) <i>mkpart primary ext2 0 32mb</i>
+Warning: The resulting partition is not properly aligned for best performance.
+Ignore/Cancel? <i>i</i>
+
+<comment># 512 mbyteのswapパーティションを作成します</comment>
+(parted) <i>mkpart primary linux-swap 32mb 542mb</i>
+
+<comment># ディスクの残り全てを使うパーティションを作成します
+# -1s (マイナス1 s)がディスクの終わりを意味しています</comment>
+(parted) <i>mkpart primary ext4 542mb -1s</i>
+Warning: You requested a partition from 542MB to 21.5GB.
+The closest location we can manage is 542MB to 21.5GB.
+Is this still acceptable to you?
+Yes/No? <i>y</i>
+</pre>
+
+<p>
+さて、これで<c>print</c>コマンドを再度実行してパーティションが全て思った通りに設定されているかどうかを確認できます。
+うまくパーティションが設定されていれば、<c>quit</c>コマンドで<c>parted</c>を終了しましょう。
+</p>
+
+</body>
+</subsection>
+</section>
 <section id="filesystems">
 <title>ファイルシステムを作成する</title>
 <subsection>
@@ -419,11 +614,15 @@ Command (m for help): <i>w</i>
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
@@ -444,8 +643,8 @@ Command (m for help): <i>w</i>
 </p>
 
 <pre caption="パーティションにファイルシステムを適用する">
-# <i>mke2fs /dev/sda1</i>
-# <i>mke2fs -j /dev/sda3</i>
+# <i>mkfs.ext2 /dev/sda1</i>
+# <i>mkfs.ext3 /dev/sda3</i>
 </pre>
 
 <p>
