@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-intro-concepts.xml,v 1.5 2011/08/11 21:38:44 blueness Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-intro-concepts.xml,v 1.6 2011/10/23 12:59:32 swift Exp $ -->
 
 <sections>
 <version>5</version>
@@ -213,6 +213,20 @@ getattr        ptrace      setkeycreate  sigchld        transition
 </pre>
 
 <p>
+The most common SELinux access control rule (<e>allow</e>) is described as
+follows:
+</p>
+
+<pre caption="SELinux allow statement">
+allow ACTOR  TARGET:CLASS PRIVILEGE;
+      +-+-+  +-+--+ +-+-+ +---+---+
+        |      |      |       `- Permission to be granted (like "write")
+	|      |      `- Class on which permission is given (like "file")
+	|      `- Resource (label) on which permission is valid (like "portage_conf_t")
+	`- Actor (domain) which gets the privilege (like "sysadm_t")
+</pre>
+
+<p>
 Let's take a look at a small example to explain the permission rules and how 
 SELinux uses them. The example user is in the <e>staff_u:staff_r:staff_t</e>
 context and wants to write to its own home directory. As we can expect, this
@@ -298,8 +312,7 @@ security contexts, let's start from the last definition in the context (the
 </ul>
 
 <p>
-The rules that identify the allowed actions for a domain have the following
-syntax:
+The rules that identify the allowed actions for a domain have been described earlier. Again:
 </p>
 
 <pre caption="Standard SELinux policy rules">
@@ -674,6 +687,196 @@ wants to serve).
 </body>
 </subsection>
 </section>
+
+<section>
+<title>Reference Policy</title>
+<subsection>
+<title>About refpolicy</title>
+<body>
+
+<p>
+As described previously, SELinux uses type enforcement to describe the state of
+your system. This is done by giving each resource on your system (be it a
+process, a network port, a file or directory) a specific type and describe the
+rules how types can work with each other. 
+</p>
+
+<p>
+Managing such a policy is not easy. Unlike some other MAC systems, which rely
+on a learning mode and do not use domain definitions (they rather keep track of
+which commands a process is allowed to execute), a proper SELinux definition
+requires lots (thousands and thousands) of permission lines.
+</p>
+
+<p>
+To ensure that no duplicate effort is made, and to help distributions like
+Gentoo, Fedora, RedHat, Debian, ... with their SELinux integration efforts, a
+project is launched called <e>The Reference Policy</e>.
+</p>
+
+<p>
+This project, managed by <uri
+link="http://oss.tresys.com/projects/refpolicy">Tresys</uri>, is used by almost
+all SELinux supporting distributions, including Gentoo Hardened, Fedora, RedHat
+Enterprise Linux, Debian, Ubuntu and more. This implementation not only offers
+the modular policies that users are looking for, but also enhances the SELinux
+experience with additional development tools that make it easier to work with
+the SELinux policies on your system. Updates in the reference policy eventually
+make it in all supported distributions. The same goes for Gentoo Hardened, which
+aims to use a policy as close as possible to the reference policy, and submits
+its own patches to the reference policy as well, which benefits the entire
+community.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Reference Policy API</title>
+<body>
+
+<p>
+One major advantage of the reference policy is its API. To help policy writers,
+the reference policy uses a macro language which generates the necessary allow
+(and other) rules. This macro language makes it a lot easier to add rights to
+particular domains. You can find the API documented <uri
+link="http://oss.tresys.com/docs/refpolicy/api/">online</uri>, but if you have
+USE="doc" set, it will be stored on your system as well the moment you install
+and configure SELinux.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Modular Approach</title>
+<body>
+
+<p>
+Another feature of the reference policy is its use of <e>modules</e>. If you
+would build all rules in a single policy (a binary file readable by the Linux
+kernel, allowing it to interpret and enforce SELinux rules), the file would
+quickly become too huge and inefficient.
+</p>
+
+<p>
+Instead, the reference policy defines the rules in what it calls modules, which
+define one domain (like <c>portage_t</c>) or more (if they are all tightly
+related) and the rights and privileges that that domain would need in order to
+function properly. Any right that the domain needs with respect to another
+domain needs to be defined through that domains' interfaces (see earlier),
+forcing the modules to be specific and manageable.
+</p>
+
+<pre caption="Example overview of installed SELinux modules">
+# <i>semodule -l</i>
+alsa    1.11.0
+apache  2.3.0
+audioentropy    1.6.0
+dbus    1.15.0
+dmidecode       1.4.0
+<comment>(...)</comment>
+</pre>
+
+<p>
+By using a modular approach, one only needs to load the base policy (kernel
+layer as well as other, core definitions) and the modules related to his system.
+You can then safely ignore the other modules. This improves performance (smaller
+policy, which also causes rebuilds to be a lot less painful) and manageability
+(properly defined boundaries for policy rules).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Tunables and Conditionals</title>
+<body>
+
+<p>
+But wait, there's more. The reference policy also supports <e>booleans</e>.
+Those are flags that a security administrator can enable or disable to change
+the active policy. Properly defined booleans allow security administrators to
+fine-tune the policy for their system.
+</p>
+
+<pre caption="Overview of available booleans">
+# <i>getsebool -a</i>
+allow_execheap --> off
+allow_execmem --> off
+allow_execmod --> off
+allow_execstack --> off
+allow_gssd_read_tmp --> on
+allow_httpd_anon_write --> off
+</pre>
+
+<p>
+Booleans are an important part to make a generic reference policy which is still
+usable for the majority of SELinux users. Although they have specific
+requirements (such as allowing ptrace, or disallowing execmem) they can still
+use the same reference policy and only need to toggle the booleans they need.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Policy Files and Versions</title>
+<body>
+
+<p>
+The SELinux policy infrastructure that is used (i.e. the capabilities and
+functionalities that it offers) isn't in its first version. Currently, SELinux
+deployments use a binary version of 24 or 26 (depending on the kernel version
+used).
+</p>
+
+<pre caption="Getting the binary policy version">
+# <i>sestatus</i>
+SELinux status:                 enabled
+SELinuxfs mount:                /selinux
+Current mode:                   enforcing
+Mode from config file:          enforcing
+Policy version:                 24
+Policy from config file:        strict
+</pre>
+
+<p>
+Every time functionalities or capabilities are added which require
+changes to the internal structure of the compiled policy, this version is
+incremented. The following is an overview of the policy versions' history. 
+</p>
+
+<dl>
+  <dt>Version 12</dt>
+  <dd>"Old API" for SELinux, which is now deprecated</dd>
+  <dt>Version 15</dt>
+  <dd>"New API" for SELinux, merged in Linux kernel 2.6.0 (until 2.6.5)</dd>
+  <dt>Version 16</dt>
+  <dd>Conditional policy extensions added (2.6.5)</dd>
+  <dt>Version 17</dt>
+  <dd>IPV6 support added (2.6.6 - 2.6.7)</dd>
+  <dt>Version 18</dt>
+  <dd>Fine-grained netlink socket support added (2.6.8 - 2.6.11)</dd>
+  <dt>Version 19</dt>
+  <dd>Enhanced multi-level security (2.6.12 - 2.6.13)</dd>
+  <dt>Version 20</dt>
+  <dd>Access vector table size optimizations (2.6.14 - 2.6.18)</dd>
+  <dt>Version 21</dt>
+  <dd>Object classes in range transitions (2.6.19 - 2.6.24)</dd>
+  <dt>Version 22</dt>
+  <dd>Policy capabilities (features) (2.6.25)</dd>
+  <dt>Version 23</dt>
+  <dd>Per-domain permissive mode (2.6.26 - 2.6.27)</dd>
+  <dt>Version 24</dt>
+  <dd>Explicit hierarchy (type bounds) (2.6.28 - 2.6.38)</dd>
+  <dt>Version 25</dt>
+  <dd>Filename based transition support (2.6.39)</dd>
+  <dt>Version 26</dt>
+  <dd>Role transition support for non-process classes (3.0)</dd>
+</dl>
+
+
+</body>
+</subsection>
+</section>
+
 <section>
 <title>Next Steps</title>
 <subsection>
@@ -688,9 +891,10 @@ rules, types and domain transitions to find out why.
 </p>
 
 <p>
-The next chapter in line will discuss how distributions such as Gentoo Hardened
-manage the various permission rules and how they use a macro language to
-generate the permissions instead of creating the allow-rules one by one.
+The next chapter in line will give you some background resource information
+(online resources, books, FAQs, etc.) After that, we'll dive into the
+installation and configuration of SELinux on your Gentoo Hardened system. Then,
+we'll configure and tune the SELinux policy to our needs.
 </p>
 
 </body>
