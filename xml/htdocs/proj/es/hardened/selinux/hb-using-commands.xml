@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-commands.xml,v 1.3 2011/07/17 12:40:04 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-commands.xml,v 1.4 2011/10/27 17:29:54 nimiux Exp $ -->
 
 <sections>
-<version>5</version>
-<date>2011-07-13</date>
+<version>6</version>
+<date>2011-10-15</date>
 
 <section>
 <title>Información sobre las órdenes en SELinux</title>
@@ -42,7 +42,7 @@ La primera orden de la que hablaremos es <c>sestatus</c>.
 </p>
 
 <pre caption="Ejecutar sestatus">
-~# <i>sestatus</i>
+# <i>sestatus</i>
 SELinux status:                 enabled
 SELinuxfs mount:                /selinux
 Current mode:                   permissive
@@ -57,6 +57,61 @@ trabajando actualmente en modo permisivo (<e>permissive</e>). También
 nos indica que el sistema está configurado para correr en modo
 estricto (<e>strict</e>) por lo que no existe el dominio unconfined_t.
 </p>
+
+<p>
+La orden <c>sestatus</c> también ofrece una salida extendida si la
+ejecuta con la opción <c>-v</c> option. Cuando se indica esta opción,
+la orden devuelve los contextos de ficheros y procesos importantes:
+</p>
+
+<pre caption="Correr sestatus -v">
+# <i>sestatus -v</i>
+SELinux status:                 enabled
+SELinuxfs mount:                /selinux
+Current mode:                   enforcing
+Mode from config file:          enforcing
+Policy version:                 24
+Policy from config file:        strict
+
+Process contexts:
+Current context:                staff_u:sysadm_r:sysadm_t
+Init context:                   system_u:system_r:init_t
+/sbin/agetty                    system_u:system_r:getty_t
+/usr/sbin/sshd                  system_u:system_r:sshd_t
+
+File contexts:
+Controlling term:               staff_u:object_r:user_devpts_t
+/sbin/init                      system_u:object_r:init_exec_t
+/sbin/agetty                    system_u:object_r:getty_exec_t
+/bin/login                      system_u:object_r:login_exec_t
+/sbin/rc                        system_u:object_r:rc_exec_t
+/usr/sbin/sshd                  system_u:object_r:sshd_exec_t
+/sbin/unix_chkpwd               system_u:object_r:chkpwd_exec_t
+/etc/passwd                     system_u:object_r:etc_t
+/etc/shadow                     system_u:object_r:shadow_t
+/bin/sh                         system_u:object_r:bin_t -> system_u:object_r:sh
+ll_exec_t
+/bin/bash                       system_u:object_r:shell_exec_t
+/usr/bin/newrole                system_u:object_r:newrole_exec_t
+/lib/libc.so.6                  system_u:object_r:lib_t -> system_u:object_r:li
+b_t
+/lib/ld-linux.so.2              system_u:object_r:lib_t -> system_u:object_r:ld
+_so_t
+</pre>
+
+<p>
+Otra orden de estado general de SELinux es <c>getenforce</c>, el cual
+le permite ver rápidamente si su SELinux está corriendo en modo
+forzaod (las directrices de SELinux se fuerzan), permisivo
+(las directrices de SELinux policies se comprueban y registran pero no
+se fuerzan) o deshabilitado (la directriz de SELinux no se carga y por
+lo tanto no se comprueba).
+</p>
+
+<pre caption="Usar la orden getenforce">
+# <i>getenforce</i>
+Enforcing
+</pre>
 
 </body>
 </subsection>
@@ -100,9 +155,9 @@ el atributo cron_spool_type activado.
 </p>
 
 <pre caption="Usar seinfo">
-~# <i>seinfo -tcrontab_t</i>
+# <i>seinfo -tcrontab_t</i>
   crontab_t
-~# <i>seinfo -ruser_r -x</i>
+# <i>seinfo -ruser_r -x</i>
   user_r
     Dominated Roles:
       user_r
@@ -110,7 +165,7 @@ el atributo cron_spool_type activado.
       [...]
       crontab_t
       [...]
-~# <i>seinfo -acron_spool_type -x</i>
+# <i>seinfo -acron_spool_type -x</i>
   cron_spool_type
     user_cron_spool_t
     system_cron_spool_t
@@ -142,8 +197,8 @@ Por ejemplo, para averiguar qué dominios pueden escribir en los ficheros
 que tienen el dominio shadow_t:
 </p>
 
-<pre caption="Consultando las reglas de concesión con sesearch">
-~# <i>sesearch -t shadow_t -c file -p write -A</i>
+<pre caption="Consultar las reglas de concesión con sesearch">
+# <i>sesearch -t shadow_t -c file -p write -A</i>
 Found 8 semantic av rules:
   [...]
   allow portage_t shadow_t : file { ioctl read write ... };
@@ -170,8 +225,8 @@ vistazo a los dominios que tienen privilegios para escribir en los
 dominios file_type domains, se dará cuenta de que el único es portage:
 </p>
 
-<pre caption="Consultando los dominios que tienen privilegios de escritura en fichero en dominios file_type">
-~# <i>sesearch -t file_type -c file -p write -A -d</i>
+<pre caption="Consultar los dominios que tienen privilegios de escritura en fichero en dominios file_type">
+# <i>sesearch -t file_type -c file -p write -A -d</i>
 Found 1 semantic av rules:
   allow portage_t file_type : file { ioctl read write ... };
 </pre>
@@ -200,8 +255,8 @@ A modo de ejemplo, comprobaremos qué permitimos (o denegamos) cuando
 el booleano <c>global_ssp</c> está habilitado.
 </p>
 
-<pre caption="Comprobando la directriz respecto al booleano global_ssp">
-~# <i>sesearch -b global_ssp -A -C -d</i>
+<pre caption="Comprobar la directriz respecto al booleano global_ssp">
+# <i>sesearch -b global_ssp -A -C -d</i>
 Found 2 semantic av rules:
 ET allow domain device_t : dir { getattr search open } ; [ global_ssp ]
 ET allow domain urandom_device_t : chr_file { ioctl read getattr lock open } ; [ global_ssp ]
@@ -252,7 +307,7 @@ Para obtener el contexto de seguridad de un proceso, utilice <c>ps -Z</c>:
 </p>
 
 <pre caption="Obtener el contexto de seguridad de un proceso">
-~# <i>ps -Z $(pidof init)</i>
+# <i>ps -Z $(pidof init)</i>
 LABEL                             PID TTY      STAT   TIME COMMAND
 system_u:system_r:init_t            1 ?        Ss     0:00 init [3]
 </pre>
@@ -300,7 +355,7 @@ añadido, al listar los booleanos también se mostrará su descripción
 </p>
 
 <pre caption="Listar los booleanos de SELinux disponibles">
-~# <i>semanage boolean -l</i>
+# <i>semanage boolean -l</i>
 SELinux boolean                 Description
 
 allow_ptrace            -> off  allow_ptrace
@@ -320,7 +375,7 @@ Puede definir el valor de un booleano con <c>setsebool</c> y
 </p>
 
 <pre caption="Definir el valor de un booleano de SELinux">
-~# <i>semanage boolean -m --on -F user_dmesg</i>
+# <i>semanage boolean -m --on -F user_dmesg</i>
 </pre>
 
 </body>
@@ -336,7 +391,7 @@ SELinux:
 </p>
 
 <pre caption="Listar las cuentas de SELinux">
-~# <i>semanage login -l</i>
+# <i>semanage login -l</i>
 Login Name          SELinux User
 
 __default__         user_u
@@ -360,8 +415,8 @@ apropiados). Esto se puede conseguir de la siguiente forma (ejemplo
 con la cuenta Unix <e>ana</e>):
 </p>
 
-<pre caption="Permitiendo que 'ana' ingrese en el sistema como 'staff_u'">
-~# <i>semanage login -a -s staff_u ana</i>
+<pre caption="Permitir que 'ana' ingrese en el sistema como 'staff_u'">
+# <i>semanage login -a -s staff_u ana</i>
 </pre>
 
 <impo>
@@ -373,13 +428,13 @@ rol <c>sysadm_r</c>.
 
 <p>
 Como se ha mencionado, los usuarios SELinux están configurados para que
-puedean unirse a uno o más roles. Para listar los roles disponibles, puede
+puedan unirse a uno o más roles. Para listar los roles disponibles, puede
 usar <c>semanage user -l</c>:
 
 </p>
 
 <pre caption="Listar las asociaciones de cuentas a roles">
-~# <i>semanage user -l</i>
+# <i>semanage user -l</i>
 SELinux User        SELinux Roles
 
 root                staff_r sysadm_r
@@ -400,7 +455,7 @@ a qué puertos (o rangos de puertos) utilice <c>semanage port -l</c>.
 </p>
 
 <pre caption="Listar los puestos gestionados por SELinux">
-~# <i>semanage port -l | grep '22$'</i>
+# <i>semanage port -l | grep '22$'</i>
 ssh_port_t             tcp     22
 </pre>
 

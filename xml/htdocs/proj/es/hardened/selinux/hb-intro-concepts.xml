@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-intro-concepts.xml,v 1.3 2011/08/16 16:35:44 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-intro-concepts.xml,v 1.4 2011/10/27 17:29:54 nimiux Exp $ -->
 
 <sections>
 <version>5</version>
@@ -234,6 +234,20 @@ getattr        ptrace      setkeycreate  sigchld        transition
 </pre>
 
 <p>
+La regla más común de SELinux para el control de acceso (<e>allow</e>)
+se describe de la siguiente forma:
+</p>
+
+<pre caption="La sentencia SELinux allow">
+allow ACTOR  TARGET:CLASS PRIVILEGE;
+      +-+-+  +-+--+ +-+-+ +---+---+
+        |      |      |       `- Permiso a conceder (como "write")
+       |      |      `- Clase a la que se da el permiso (como "file")
+       |      `- Recurso (etiqueta) en la que el permiso es válido (como "portage_conf_t")
+       `- Actor (dominio) que obtiene el privilegio (como "sysadm_t")
+</pre>
+
+<p>
 Echemos un vistazo a un pequeño ejemplo que explica las reglas de permisos
 y cómo las utiliza SELinux. El usuario ejemplo está en el contexto
 <e>staff_u:staff_r:staff_t</e> y desea escribir en su propio directorio.
@@ -324,8 +338,8 @@ en el contexto (el <e>tipo</e>) y trabajemos hacia los roles y usuarios.
 </ul>
 
 <p>
-Las reglas que identifican las acciones permitidas para un dominio tienen
-la siguiente sintaxis:
+Las reglas que identifican las acciones permitidas para un dominio ya se
+han descrito anteriormente, las citamos de nuevo:
 </p>
 
 <pre caption="Reglas estándar de las directrices SELinux">
@@ -711,7 +725,7 @@ sin usar los múltiples niveles de seguridad para los recursos.
 <p>
 El uso de la directriz MCS se ha hecho popular debido aq que es bastante
 más fácil de gestionar mientras que conserva algo de la flexibilidad
-presente en la directriz MLS policy. La directriz MLS se utiliza más para
+presente en la directriz MLS. La directriz MLS se utiliza más para
 propósitos de negocio (y así, tiene alguna influencia en la propia
 organización de ese negocio). La directriz MCS es más utilizada en
 arquitecturas <e>multipropiedad</e>. En una arquitectura multipropiedad,
@@ -725,6 +739,214 @@ servir).
 </body>
 </subsection>
 </section>
+
+<section>
+<title>Directriz de referencia</title>
+<subsection>
+<title>Acerca de refpolicy</title>
+<body>
+
+<p>
+Como se ha descrito previamente, SELinux utiliza forzado de tipos para
+describir el estado de su sistema. Esto se realiza dando a cada recurso
+del sistema (sea un proceso, un puerto de red, un fichero o directorio)
+un tipo específico y describiendo las reglas de cómo cada tipo puede
+trabajar con otros tipos.
+</p>
+
+<p>
+La gestión de esta directriz no es fácil. Al contrario que otros
+sistemas MAC, los cuales confían en un modo de aprendizaje y no utilizan
+definiciones de dominio (éstos en su lugar registran qué órdenes tiene
+permitidas ejecutar un proceso), una definición correcta SELinux
+requiere muchas (miles y miles) líneas de permisos.
+</p>
+
+<p>
+Para asegurarse de que no se realizan esfuerzos duplicados, y para
+ayudar a las distribuciones como Gentoo, Fedora, RedHat, Debian, ... en
+sus esfuerzo de integración de SELinux, se ha lanzado un proyecto
+denominado <e>The Reference Policy</e> (La directriz de referencia).
+</p>
+
+<p>
+Este proyecto, gestionado por <uri
+link="http://oss.tresys.com/projects/refpolicy">Tresys</uri>, se usa
+en la mayoría de las distribuciones que soportan SELinux, incluyendo
+Gentoo Hardened, Fedora, RedHat Enterprise Linux, Debian, Ubuntu y más.
+Esta implementación no solo ofrece las directrices modulares que los
+usuarios están buscando, sino que mejora la experiencia con SELinux
+añadiendo herramientas de desarrollo adicionales que hacen más fácil
+trabajar con las directrices de SELinux en su sistema. Las actualizaciones
+en la directriz de referencia se realizan eventualmente en todas las
+distribuciones soportadas. Lo mismo sucede con Gentoo Hardened, que
+trata de utilizar una directriz los más cercana a la de referencia, y
+envía sus propios parches a la directriz de referencia, lo cual
+beneficia a toda la comunidad.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>El API de la directriz de referencia</title>
+<body>
+
+<p>
+Una de las mayores ventajas de la directriz de referencia es su API.
+Para ayudar a los autores de las directrices, la directriz de referencia
+utiliza un lenguaje de macros que genera las reglas necesarias de
+permisión así como otras reglas. Este lenguaje de macros, hace muy fácil
+añadir derechos a dominios en particular. El API documentado se
+encuentra <uri link="http://oss.tresys.com/docs/refpolicy/api/">
+en línea</uri>, sin embargo, si tiene ajustado USE="doc", se almacenará
+en su sistema en el momento en que instale y configure SELinux.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Enfoque modular</title>
+<body>
+
+<p>
+Otra característica de la directriz de referencia es el uso de
+<e>modulos</e>. Si quisiera construir todas las reglas en una única
+directriz (un fichero binario legible por el núcleo Linux, permitieńdole
+interpretar y forzar las reglas SELinux rules), el fichero enseguida
+crecería demasiado y se mostraría ineficiente.
+</p>
+
+<p>
+En lugar de esto, la directriz de referencia define las reglas en los
+llamados módulos, los cuales a su vez definen un dominio (por ejemplo
+<c>portage_t</c>) o más (si están fuertemente relacionados) y los
+derechos y privilegios que ese dominio necesitaría para funcionar de
+forma correcta. Cualquier derecho que necesita el dominio respecto a
+otro dominio debe definirse en las interfaces de ese dominio (mire
+más arriba), forzando que los módulos sean específicos y manejables.
+</p>
+
+<pre caption="Vista rápida de ejemplo de módulos SELinux instalados">
+# <i>semodule -l</i>
+alsa    1.11.0
+apache  2.3.0
+audioentropy    1.6.0
+dbus    1.15.0
+dmidecode       1.4.0
+<comment>(...)</comment>
+</pre>
+
+<p>
+Al utilizar un enfoque modular, únicamente se necesita cargar la directriz
+base (la capa del núcleo, así como otras definiciones fundamentales) y los
+módulos relacionados con ese sistema. Podrá entonces ignorar de forma
+segura los demás módulos. Esto mejora el rendimiento (directrices más
+cortas, lo cual conlleva que las reconstrucciones sean un poco menos
+penosas) y la manejabilidad (definiendo de forma adecuada los límites
+de las reglas de la directriz).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Configuraciones y condicionales</title>
+<body>
+
+<p>
+Pero, ¡un momento!, aún hay más. La directriz de referencia también soporta
+el uso de <e>booleanos</e>. Éstos son ajustes que un administrador de la
+seguridad puede habilitar o deshabilitar para cambiar la directriz activa.
+Los booleanos definidos de forma correcta permiten a los administradores
+de seguridad ajustar finamente la directriz para sus sistemas.
+</p>
+
+<pre caption="Vista rápida de los booleanos disponibles">
+# <i>getsebool -a</i>
+allow_execheap --> off
+allow_execmem --> off
+allow_execmod --> off
+allow_execstack --> off
+allow_gssd_read_tmp --> on
+allow_httpd_anon_write --> off
+</pre>
+
+<p>
+Los booleanos son una parte importante para construir una directriz de
+referencia genérica que sea utilizable por la mayoría de los usuarios
+de SELinux. Aunque tiene requisitos específicos (como el hecho de
+permitir ptrace o deshabilitar execmem) aún pueden utilizar la misma
+directriz de referencia y definir únicamente aquellos booleanos que
+se necesiten.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Ficheros de directriz y versiones</title>
+<body>
+
+<p>
+La infraestructura de directriz SELinux utilizada (por ejemplo, las
+capacidades y funcionalidades que ésta ofrece) no se incluyen en su
+primera versión. Actualmente, las entregas de SELinux utilizan un
+versión del binario 24 o 26 (dependiendo de la versión del núcleo
+utilizada).
+</p>
+
+<pre caption="Obtener la versión del binario de la directriz">
+# <i>sestatus</i>
+SELinux status:                 enabled
+SELinuxfs mount:                /selinux
+Current mode:                   enforcing
+Mode from config file:          enforcing
+Policy version:                 24
+Policy from config file:        strict
+</pre>
+
+<p>
+Cada vez que se añaden funcionalidades o capacidades que requieren
+cambios a la estructura interna de la directriz compilada, se incrementa
+este número de versión. Abajo se muestra una vista rápida de la historia
+de las versiones de la directriz.
+</p>
+
+
+<dl>
+  <dt>Versión 12</dt>
+  <dd>"Antigua API" para SELinux, la cual es ahora obsoleta</dd>
+  <dt>Versión 15</dt>
+  <dd>"Nueva API" para SELinux, integrada en el núcleo Linux 2.6.0 (hasta
+  la versión 2.6.5)</dd>
+  <dt>Versión 16</dt>
+  <dd>Añadidas extensiones condicionales a la directriz (2.6.5)</dd>
+  <dt>Versión 17</dt>
+  <dd>Añadido soporte para IPV6 (2.6.6 - 2.6.7)</dd>
+  <dt>Versión 18</dt>
+  <dd>Añadido soporte para zócalos (sockets) de enlace de red con ajuste fino
+  (2.6.8 - 2.6.11)</dd>
+  <dt>Versión 19</dt>
+  <dd>Mejorada la seguridad multinivel (2.6.12 - 2.6.13)</dd>
+  <dt>Versión 20</dt>
+  <dd>Optimizaciones en el acceso al tamaño de la tabla de vectores (2.6.14 -
+  2.6.18)</dd>
+  <dt>Versión 21</dt>
+  <dd>Transiciones en rango de clases de objetos (2.6.19 - 2.6.24)</dd>
+  <dt>Versión 22</dt>
+  <dd>Capacidades de la directriz (características) (2.6.25)</dd>
+  <dt>Versión 23</dt>
+  <dd>Modo permisivo para cada dominio (2.6.26 - 2.6.27)</dd>
+  <dt>Versión 24</dt>
+  <dd>Jerarquía explícita (limites de tipos) (2.6.28 - 2.6.38)</dd>
+  <dt>Versión 25</dt>
+  <dd>Soporte de transiciones basadas en nombres de fichero (2.6.39)</dd>
+  <dt>Versión 26</dt>
+  <dd>Soporte de transición de roles para clases no-proceso (3.0)</dd>
+</dl>
+
+</body>
+</subsection>
+</section>
+
 <section>
 <title>Siguientes pasos</title>
 <subsection>
@@ -740,10 +962,11 @@ y transiciones de dominio para averiguar el motivo del fallo.
 </p>
 
 <p>
-En el siguiente capítulo discutiremos como las distribuciones del tipo
-Gentoo Hardened gestionan las distintas reglas de permisos y cómo
-usan un lenguaje de macros para generar los permisos en lugar de
-crear las reglas una a una.
+En el siguiente capítulo, le ofrecemos información sobre recursos
+(recursos en línea, libros, preguntas frecuentes, etc.). A continuación,
+nos sumergerémos en la instalación y configuración de SELinux en su
+sistema Gentoo Hardened system. Entonces, configuraremos y ajustaremos
+la directriz SELinux a nuestro antojo.
 </p>
 
 </body>
