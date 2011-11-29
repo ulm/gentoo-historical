@@ -1562,12 +1562,29 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
   <xsl:if test="$RTL='Y'">
     <xsl:attribute name="dir">RTL</xsl:attribute>
   </xsl:if>
-  <xsl:apply-templates select="func:gettext('License')"/>
+  <xsl:choose>
+    <xsl:when test="@version='2.5'">
+      <xsl:apply-templates select="func:gettext('License-2.5')"/>
+    </xsl:when>
+    <xsl:when test="@version='3.0'">
+      <xsl:apply-templates select="func:gettext('License-3.0')"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="func:gettext('License')"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </p>
 <xsl:comment>
   &lt;rdf:RDF xmlns="http://web.resource.org/cc/"
       xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"&gt;
-  &lt;License rdf:about="http://creativecommons.org/licenses/by-sa/2.5/"&gt;
+  <xsl:choose>
+    <xsl:when test="@version">
+  &lt;License rdf:about="http://creativecommons.org/licenses/by-sa/<xsl:value-of select="@version" />/"&gt;
+    </xsl:when>
+    <xsl:otherwise>
+  &lt;license rdf:about="http://creativecommons.org/licenses/by-sa/2.5/"&gt;
+    </xsl:otherwise>
+  </xsl:choose>
      &lt;permits rdf:resource="http://web.resource.org/cc/Reproduction" /&gt;
      &lt;permits rdf:resource="http://web.resource.org/cc/Distribution" /&gt;
      &lt;requires rdf:resource="http://web.resource.org/cc/Notice" /&gt;
