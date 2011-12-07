@@ -37,8 +37,10 @@ eread() {
 		shift
 	done
 }
-eread PATCH_VER UCLIBC_VER PIE_VER PP_VER HTB_VER HTB_GCC_VER MAN_VER SPECS_VER SPECS_GCC_VER
+eread UCLIBC_VER PP_VER HTB_VER HTB_GCC_VER MAN_VER SPECS_VER SPECS_GCC_VER
 [[ -n ${HTB_VER} && -z ${HTB_GCC_VER} ]] && HTB_GCC_VER=${gver}
+PATCH_VER=$(awk '{print $1; exit}' ./${gver}/gentoo/README.history)
+PIE_VER=$(awk '{print $1; exit}' ./${gver}/pie/README.history)
 
 if [[ ! -d ./${gver} ]] ; then
 	echo "Error: ${gver} is not a valid gcc ver"
@@ -46,9 +48,9 @@ if [[ ! -d ./${gver} ]] ; then
 fi
 
 echo "Building patches for gcc version ${gver}"
-echo " - PATCH:    ${PATCH_VER}"
+echo " - PATCH:    ${PATCH_VER} (taken from ${gver}/gentoo/README.history)"
 echo " - UCLIBC:   ${UCLIBC_VER}"
-echo " - PIE:      ${PIE_VER}"
+echo " - PIE:      ${PIE_VER} (taken from ${gver}/pie/README.history)"
 echo " - SPECS:    ${SPECS_VER} (${SPECS_GCC_VER:-${gver}})"
 echo " - SSP:      ${PP_VER}"
 echo " - BOUNDS:   ${HTB_GCC_VER}-${HTB_VER}"
