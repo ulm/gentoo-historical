@@ -1,11 +1,13 @@
-2011-01-01	Magnus Granberg		<zorry@gentoo.org> Anthony G. Basile	<basile@opensource.dyc.edu>
+2011-12-07	Magnus Granberg		<zorry@gentoo.org> Anthony G. Basile	<basile@opensource.dyc.edu>
 
-		* Makefile.in	We add -fno-stack-protector to BOOT_CFLAGS, LIBCFLAGS and LIBCXXFLAGS if enable_esp yes.
-		* gcc/Makefile.in	Add -fno-PIE. to CRTSTUFF_CFLAGS and ALL_CFLAGS if enable_esp yes
-		Add crtbeginTS.o to EXTRA_PARTS if enable_crtbeginTS yes
-		We add new file crtbeginTS.o if enable_crtbeginTS yes
-		* libgcc/Makefile.in	Add crtbeginTS.o to EXTRA_PARTS if enable_crtbeginTS yes
-		We add new file crtbeginTS.o if enable_crtbeginTS yes
+		* Makefile.in	We add -fno-stack-protector to BOOT_CFLAGS, LIBCFLAGS and
+			LIBCXXFLAGS if enable_esp yes.
+		* gcc/Makefile.in	Add -fno-PIE. to CRTSTUFF_CFLAGS, ALL_CFLAGS and
+			ALL_CXXFLAGS if enable_esp yes
+			Add crtbeginP.o to EXTRA_PARTS if enable_crtbeginP yes
+			We add new file crtbeginP.o if enable_crtbeginP yes
+		* libgcc/Makefile.in	Add crtbeginP.o to EXTRA_PARTS if enable_crtbeginP yes
+			We add new file crtbeginP.o if enable_crtbeginP yes
 
 --- Makefile.in	2010-01-22 08:35:38.000000000 -0500
 +++ Makefile.in	2010-02-07 15:10:59.000000000 -0500
@@ -70,16 +72,16 @@
  # The rules for compiling them should be in the t-* file for the machine.
  EXTRA_PARTS = @extra_parts@
  
-+# We add crtbeginTS.o to the EXTRA_PARTS list if enable_crtbeginTS = yes
-+enable_crtbeginTS = @enable_crtbeginTS@
-+ifeq ($(enable_crtbeginTS),yes)
-+EXTRA_PARTS += crtbeginTS.o
++# We add crtbeginP.o to the EXTRA_PARTS list if enable_crtbeginP = yes
++enable_crtbeginP = @enable_crtbeginP@
++ifeq ($(enable_crtbeginP),yes)
++EXTRA_PARTS += crtbeginP.o
 +endif
 +
  # List of extra object files that should be compiled and linked with
  # compiler proper (cc1, cc1obj, cc1plus).
  EXTRA_OBJS = @extra_objs@
-@@ -998,7 +1006,7 @@
+@@ -1002,12 +1010,12 @@
  
  # This is the variable actually used when we compile. If you change this,
  # you probably want to update BUILD_CFLAGS in configure.ac
@@ -88,6 +90,13 @@
    $(CFLAGS) $(INTERNAL_CFLAGS) $(COVERAGE_FLAGS) $(WARN_CFLAGS) @DEFS@
  
  # The C++ version.
+-ALL_CXXFLAGS = $(T_CFLAGS) $(CXXFLAGS) $(INTERNAL_CFLAGS) \
+-  $(COVERAGE_FLAGS) $(WARN_CXXFLAGS) @DEFS@
++ALL_CXXFLAGS = $(ESP_NOPIE_CFLAGS) $(T_CFLAGS) $(CXXFLAGS) \
++  $(INTERNAL_CFLAGS) $(COVERAGE_FLAGS) $(WARN_CXXFLAGS) @DEFS@
+ 
+ # Likewise.  Put INCLUDES at the beginning: this way, if some autoconf macro
+ # puts -I options in CPPFLAGS, our include files in the srcdir will always
 @@ -1856,9 +1873,10 @@
  	echo LIBGCC_SYNC = '$(LIBGCC_SYNC)' >> tmp-libgcc.mvars
  	echo LIBGCC_SYNC_CFLAGS = '$(LIBGCC_SYNC_CFLAGS)' >> tmp-libgcc.mvars
@@ -96,7 +105,7 @@
 +	echo CRTSTUFF_T_CFLAGS = '$(CRTSTUFF_T_CFLAGS) $(ESP_NOPIE_CFLAGS)' >> tmp-libgcc.mvars
  	echo CRTSTUFF_T_CFLAGS_S = '$(CRTSTUFF_T_CFLAGS_S)' >> tmp-libgcc.mvars
  	echo TARGET_SYSTEM_ROOT = '$(TARGET_SYSTEM_ROOT)' >> tmp-libgcc.mvars
-+	echo enable_crtbeginTS = '$(enable_crtbeginTS)' >> tmp-libgcc.mvars
++	echo enable_crtbeginP = '$(enable_crtbeginP)' >> tmp-libgcc.mvars
  
  	mv tmp-libgcc.mvars libgcc.mvars
  
@@ -109,12 +118,12 @@
  	  -o $(T)crtbeginT$(objext)
  
 +# This is a version of crtbegin for -static -fPIE links if esp is enable.
-+ifeq ($(enable_crtbeginTS),yes)
-+$(T)crtbeginTS.o: crtstuff.c $(GCC_PASSES) $(TCONFIG_H) auto-host.h \
++ifeq ($(enable_crtbeginP),yes)
++$(T)crtbeginP.o: crtstuff.c $(GCC_PASSES) $(TCONFIG_H) auto-host.h \
 +  gbl-ctors.h stmp-int-hdrs tsystem.h coretypes.h $(TM_H)
 +	$(GCC_FOR_TARGET) $(CRTSTUFF_CFLAGS) $(CRTSTUFF_T_CFLAGS_S) \
 +	  -c $(srcdir)/crtstuff.c -DCRT_BEGIN -DCRTSTUFFT_O -DCRTSTUFFS_O \
-+	  -o $(T)crtbeginTS$(objext)
++	  -o $(T)crtbeginP$(objext)
 +endif
 +
  # Compile the start modules crt0.o and mcrt0.o that are linked with
@@ -126,10 +135,10 @@
  gen-hide-list = echo > \$@
  endif
  
-+# We add crtbeginTS.o to the EXTRA_PARTS list if enable_crtbeginTS = yes
-+enable_libgcc_crtbeginTS = $(enable_crtbeginTS)
-+ifeq ($(enable_libgcc_crtbeginTS),yes)
-+EXTRA_PARTS += crtbeginTS.o
++# We add crtbeginP.o to the EXTRA_PARTS list if enable_crtbeginP = yes
++enable_libgcc_crtbeginP = $(enable_crtbeginP)
++ifeq ($(enable_libgcc_crtbeginP),yes)
++EXTRA_PARTS += crtbeginP.o
 +endif
 +
  ifneq ($(EXTRA_PARTS),)
@@ -141,8 +150,8 @@
  	  -c $(gcc_srcdir)/crtstuff.c -DCRT_BEGIN -DCRTSTUFFT_O
 +
 +# This is a version of crtbegin for -static -fPIE links.
-+ifeq ($(enable_libgcc_crtbeginTS),yes)
-+crtbeginTS.o: $(gcc_srcdir)/crtstuff.c
++ifeq ($(enable_libgcc_crtbeginP),yes)
++crtbeginP.o: $(gcc_srcdir)/crtstuff.c
 +	$(crt_compile) $(CRTSTUFF_T_CFLAGS_S) \
 +	  -c $(gcc_srcdir)/crtstuff.c -DCRT_BEGIN -DCRTSTUFFT_O -DCRTSTUFFS_O
 +endif
