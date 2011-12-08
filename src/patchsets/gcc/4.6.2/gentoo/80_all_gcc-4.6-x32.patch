@@ -1,7 +1,57 @@
 taken from:
 	git://gcc.gnu.org/git/gcc.git
-	branch: hjl/x32/gcc-4_6-branch
+	branch: hjl/x32/gcc-4_6-branch+mx32
 
+git diff origin/gcc-4_6-branch...origin/hjl/x32/gcc-4_6-branch+mx32
+
+diff --git a/gcc/ChangeLog.mx32 b/gcc/ChangeLog.mx32
+new file mode 100644
+index 0000000..1b6ad28
+--- /dev/null
++++ b/gcc/ChangeLog.mx32
+@@ -0,0 +1,42 @@
++2011-12-07  H.J. Lu  <hongjiu.lu@intel.com>
++
++	* config/i386/biarch64.h (TARGET_64BIT_DEFAULT): Re-order.
++
++	* config/i386/biarchx32.h (TARGET_64BIT_DEFAULT): Replace
++	OPTION_MASK_ISA_X86_64 with OPTION_MASK_ISA_64BIT.
++
++	* config/i386/i386.c (ix86_option_override_internal): Properly
++	handle -m32, -m64 and -mx32.
++
++	* config/i386/i386.h (TARGET_LP64): Changed to TARGET_X86_64.
++
++	* config/i386/i386.opt (m32): Changed back to ISA_64BIT.
++	(m64): Replace ISA_64BIT with ISA_X86_64.
++	(mx86-64): Replace ISA_X86_64 with ISA_64BIT.
++
++2011-12-07  H.J. Lu  <hongjiu.lu@intel.com>
++
++	* config.gcc: Also support --with-abi={mx32|m64}.
++
++2011-12-07  H.J. Lu  <hongjiu.lu@intel.com>
++
++	* config.gcc: For --with-abi=x32 or --with-multilib-list=mx32,
++	use i386/biarchx32.h instead of i386/biarch64.h.
++	(supported_defaults): Add abi for i[34567]86-*-* and x86_64-*-*.
++
++	* config/i386/biarch64.h (TARGET_64BIT_DEFAULT): Add
++	OPTION_MASK_ISA_X86_64.
++
++	* config/i386/biarchx32.h: New.
++
++	* config/i386/i386.c (ix86_option_override_internal): Properly
++	set OPTION_MASK_ISA_64BIT and OPTION_MASK_ISA_X32.
++
++	* config/i386/i386.h (TARGET_X86_64): New.
++
++	* config/i386/i386.opt (m32): Replace ISA_64BIT with ISA_X86_64.
++	(mx86-64): New.
++
++	* config/i386/linux64.h (SPEC_64): Support TARGET_BI_ARCH == 2.
++	(SPEC_X32): Likewise.
++	(MULTILIB_DEFAULTS): Likewise.
 diff --git a/gcc/ChangeLog.x32 b/gcc/ChangeLog.x32
 new file mode 100644
 index 0000000..4e12dde
@@ -460,10 +510,47 @@ index 1c161bf..080cbec 100644
  	   parts into pseudos.  The part extraction process can involve
  	   non-trivial computation.  */
 diff --git a/gcc/config.gcc b/gcc/config.gcc
-index 39d9a19..b60eed4 100644
+index 39d9a19..128ca12 100644
 --- a/gcc/config.gcc
 +++ b/gcc/config.gcc
-@@ -1262,6 +1262,22 @@ i[34567]86-*-linux* | i[34567]86-*-kfreebsd*-gnu | i[34567]86-*-knetbsd*-gnu | i
+@@ -450,6 +450,10 @@ fi
+ 
+ case ${target} in
+ i[34567]86-*-*)
++	if test "x$with_abi" != x; then
++		echo "This target does not support --with-abi."
++		exit 1
++	fi
+ 	if test "x$enable_cld" = xyes; then
+ 		tm_defines="${tm_defines} USE_IX86_CLD=1"
+ 	fi
+@@ -459,7 +463,24 @@ i[34567]86-*-*)
+ 	tm_file="vxworks-dummy.h ${tm_file}"
+ 	;;
+ x86_64-*-*)
+-	tm_file="i386/biarch64.h ${tm_file}"
++	case ${with_abi} in
++	"")
++		if test "x$with_multilib_list" = xmx32; then
++			tm_file="i386/biarchx32.h ${tm_file}"
++		else
++			tm_file="i386/biarch64.h ${tm_file}"
++		fi
++		;;
++	64 | m64)
++		tm_file="i386/biarch64.h ${tm_file}"
++		;;
++	x32 | mx32)
++		tm_file="i386/biarchx32.h ${tm_file}"
++		;;
++	*)
++		echo "Unknown ABI used in --with-abi=$with_abi"
++		exit 1
++	esac
+ 	if test "x$enable_cld" = xyes; then
+ 		tm_defines="${tm_defines} USE_IX86_CLD=1"
+ 	fi
+@@ -1262,6 +1283,22 @@ i[34567]86-*-linux* | i[34567]86-*-kfreebsd*-gnu | i[34567]86-*-knetbsd*-gnu | i
  			tm_file="${tm_file} i386/x86-64.h i386/linux64.h"
  			tm_defines="${tm_defines} TARGET_BI_ARCH=1"
  			tmake_file="${tmake_file} i386/t-linux64"
@@ -486,7 +573,7 @@ index 39d9a19..b60eed4 100644
  			need_64bit_hwint=yes
  			need_64bit_isa=yes
  			case X"${with_cpu}" in
-@@ -1311,6 +1327,22 @@ x86_64-*-linux* | x86_64-*-kfreebsd*-gnu | x86_64-*-knetbsd*-gnu)
+@@ -1311,6 +1348,22 @@ x86_64-*-linux* | x86_64-*-kfreebsd*-gnu | x86_64-*-knetbsd*-gnu)
  		;;
  	esac
  	tmake_file="${tmake_file} i386/t-linux64 i386/t-crtstuff i386/t-crtpc i386/t-crtfm t-dfprules"
@@ -509,7 +596,7 @@ index 39d9a19..b60eed4 100644
  	;;
  i[34567]86-pc-msdosdjgpp*)
  	xm_file=i386/xm-djgpp.h
-@@ -2791,6 +2823,7 @@ esac
+@@ -2791,6 +2844,7 @@ esac
  case ${target} in
  i[34567]86-*-linux* | x86_64-*-linux*)
  	tmake_file="${tmake_file} i386/t-pmm_malloc i386/t-i386"
@@ -517,6 +604,60 @@ index 39d9a19..b60eed4 100644
  	;;
  i[34567]86-*-* | x86_64-*-*)
  	tmake_file="${tmake_file} i386/t-gmm_malloc i386/t-i386"
+@@ -3356,7 +3410,7 @@ case "${target}" in
+ 		;;
+ 
+ 	i[34567]86-*-* | x86_64-*-*)
+-		supported_defaults="arch arch_32 arch_64 cpu cpu_32 cpu_64 tune tune_32 tune_64"
++		supported_defaults="abi arch arch_32 arch_64 cpu cpu_32 cpu_64 tune tune_32 tune_64"
+ 		for which in arch arch_32 arch_64 cpu cpu_32 cpu_64 tune tune_32 tune_64; do
+ 			eval "val=\$with_$which"
+ 			case ${val} in
+diff --git a/gcc/config/i386/biarch64.h b/gcc/config/i386/biarch64.h
+index 629ec98..3dc9889 100644
+--- a/gcc/config/i386/biarch64.h
++++ b/gcc/config/i386/biarch64.h
+@@ -25,5 +25,5 @@ a copy of the GCC Runtime Library Exception along with this program;
+ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+ <http://www.gnu.org/licenses/>.  */
+ 
+-#define TARGET_64BIT_DEFAULT OPTION_MASK_ISA_64BIT
++#define TARGET_64BIT_DEFAULT (OPTION_MASK_ISA_64BIT | OPTION_MASK_ISA_X86_64)
+ #define TARGET_BI_ARCH 1
+diff --git a/gcc/config/i386/biarchx32.h b/gcc/config/i386/biarchx32.h
+new file mode 100644
+index 0000000..963e390
+--- /dev/null
++++ b/gcc/config/i386/biarchx32.h
+@@ -0,0 +1,28 @@
++/* Make configure files to produce biarch compiler defaulting to x32 mode.
++   This file must be included very first, while the OS specific file later
++   to overwrite otherwise wrong defaults.
++   Copyright (C) 2012 Free Software Foundation, Inc.
++
++This file is part of GCC.
++
++GCC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 3, or (at your option)
++any later version.
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++Under Section 7 of GPL version 3, you are granted additional
++permissions described in the GCC Runtime Library Exception, version
++3.1, as published by the Free Software Foundation.
++
++You should have received a copy of the GNU General Public License and
++a copy of the GCC Runtime Library Exception along with this program;
++see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
++<http://www.gnu.org/licenses/>.  */
++
++#define TARGET_64BIT_DEFAULT (OPTION_MASK_ISA_64BIT | OPTION_MASK_ISA_X32)
++#define TARGET_BI_ARCH 2
 diff --git a/gcc/config/i386/constraints.md b/gcc/config/i386/constraints.md
 index 6233b79..2dced94 100644
 --- a/gcc/config/i386/constraints.md
@@ -556,20 +697,57 @@ index 4f90b50..085f74f 100644
  extern void ix86_fp_comparison_codes (enum rtx_code code, enum rtx_code *,
  				      enum rtx_code *, enum rtx_code *);
 diff --git a/gcc/config/i386/i386.c b/gcc/config/i386/i386.c
-index 382fabf..bc4f3be 100644
+index 382fabf..3a2f0b7 100644
 --- a/gcc/config/i386/i386.c
 +++ b/gcc/config/i386/i386.c
-@@ -3503,6 +3503,9 @@ ix86_option_override_internal (bool main_args_p)
+@@ -3503,6 +3503,46 @@ ix86_option_override_internal (bool main_args_p)
    SUBSUBTARGET_OVERRIDE_OPTIONS;
  #endif
  
++  /* Turn off both OPTION_MASK_ISA_X86_64 and OPTION_MASK_ISA_X32 if
++     TARGET_64BIT is false.  */
++  if (!TARGET_64BIT)
++    ix86_isa_flags &= ~(OPTION_MASK_ISA_X86_64 | OPTION_MASK_ISA_X32);
++#ifdef TARGET_BI_ARCH
++  else
++    {
++#if TARGET_BI_ARCH == 1
++      /* When TARGET_BI_ARCH == 1, by default, OPTION_MASK_ISA_X86_64
++	 is on and OPTION_MASK_ISA_X32 is off.  We turn off
++	 OPTION_MASK_ISA_X86_64 if OPTION_MASK_ISA_X32 is turned on by
++	 -mx32.  */
++      if (TARGET_X32)
++	ix86_isa_flags &= ~OPTION_MASK_ISA_X86_64;
++#else
++      /* When TARGET_BI_ARCH == 2, by default, OPTION_MASK_ISA_X32 is
++	 on and OPTION_MASK_ISA_X86_64 is off.  We turn off
++	 OPTION_MASK_ISA_X32 if OPTION_MASK_ISA_X86_64 is turned on by
++	 -m64.  */
++      if (TARGET_X86_64)
++	ix86_isa_flags &= ~OPTION_MASK_ISA_X32;
++#endif
++    }
++#endif
++
 +  if (TARGET_X32)
-+    ix86_isa_flags |= OPTION_MASK_ISA_64BIT;
++    {
++      /* Always turn on OPTION_MASK_ISA_64BIT and turn off
++	 OPTION_MASK_ISA_X86_64 for TARGET_X32.  */
++      ix86_isa_flags |= OPTION_MASK_ISA_64BIT;
++      ix86_isa_flags &= ~OPTION_MASK_ISA_X86_64;
++    }
++  else if (TARGET_X86_64)
++    {
++      /* Always turn on OPTION_MASK_ISA_64BIT and turn off
++	 OPTION_MASK_ISA_X32 for TARGET_X86_64.  */
++      ix86_isa_flags |= OPTION_MASK_ISA_64BIT;
++      ix86_isa_flags &= ~OPTION_MASK_ISA_X32;
++    }
 +
    /* -fPIC is the default for x86_64.  */
    if (TARGET_MACHO && TARGET_64BIT)
      flag_pic = 2;
-@@ -3601,6 +3604,9 @@ ix86_option_override_internal (bool main_args_p)
+@@ -3601,6 +3641,9 @@ ix86_option_override_internal (bool main_args_p)
    else
      ix86_abi = DEFAULT_ABI;
  
@@ -579,7 +757,7 @@ index 382fabf..bc4f3be 100644
    if (ix86_cmodel_string != 0)
      {
        if (!strcmp (ix86_cmodel_string, "small"))
-@@ -3618,6 +3624,20 @@ ix86_option_override_internal (bool main_args_p)
+@@ -3618,6 +3661,20 @@ ix86_option_override_internal (bool main_args_p)
        else
  	error ("bad value (%s) for %scmodel=%s %s",
  	       ix86_cmodel_string, prefix, suffix, sw);
@@ -600,7 +778,7 @@ index 382fabf..bc4f3be 100644
      }
    else
      {
-@@ -4230,11 +4250,23 @@ ix86_option_override_internal (bool main_args_p)
+@@ -4230,11 +4287,23 @@ ix86_option_override_internal (bool main_args_p)
    if (TARGET_64BIT)
      {
        ix86_gen_leave = gen_leave_rex64;
@@ -625,7 +803,7 @@ index 382fabf..bc4f3be 100644
        ix86_gen_andsp = gen_anddi3;
        ix86_gen_allocate_stack_worker = gen_allocate_stack_worker_probe_di;
        ix86_gen_adjust_stack_and_probe = gen_adjust_stack_and_probedi;
-@@ -4242,12 +4274,10 @@ ix86_option_override_internal (bool main_args_p)
+@@ -4242,12 +4311,10 @@ ix86_option_override_internal (bool main_args_p)
      }
    else
      {
@@ -638,7 +816,7 @@ index 382fabf..bc4f3be 100644
        ix86_gen_andsp = gen_andsi3;
        ix86_gen_allocate_stack_worker = gen_allocate_stack_worker_probe_si;
        ix86_gen_adjust_stack_and_probe = gen_adjust_stack_and_probesi;
-@@ -7565,6 +7595,11 @@ function_value_64 (enum machine_mode orig_mode, enum machine_mode mode,
+@@ -7565,6 +7632,11 @@ function_value_64 (enum machine_mode orig_mode, enum machine_mode mode,
  	  return gen_rtx_REG (mode, AX_REG);
  	}
      }
@@ -650,7 +828,7 @@ index 382fabf..bc4f3be 100644
  
    ret = construct_container (mode, orig_mode, valtype, 1,
  			     X86_64_REGPARM_MAX, X86_64_SSE_REGPARM_MAX,
-@@ -7634,6 +7669,23 @@ ix86_function_value (const_tree valtype, const_tree fntype_or_decl,
+@@ -7634,6 +7706,23 @@ ix86_function_value (const_tree valtype, const_tree fntype_or_decl,
    return ix86_function_value_1 (valtype, fntype_or_decl, orig_mode, mode);
  }
  
@@ -674,7 +852,7 @@ index 382fabf..bc4f3be 100644
  rtx
  ix86_libcall_value (enum machine_mode mode)
  {
-@@ -7906,12 +7958,13 @@ setup_incoming_varargs_64 (CUMULATIVE_ARGS *cum)
+@@ -7906,12 +7995,13 @@ setup_incoming_varargs_64 (CUMULATIVE_ARGS *cum)
  
    for (i = cum->regno; i < max; i++)
      {
@@ -691,7 +869,7 @@ index 382fabf..bc4f3be 100644
      }
  
    if (ix86_varargs_fpr_size)
-@@ -9014,8 +9067,11 @@ gen_push (rtx arg)
+@@ -9014,8 +9104,11 @@ gen_push (rtx arg)
      m->fs.cfa_offset += UNITS_PER_WORD;
    m->fs.sp_offset += UNITS_PER_WORD;
  
@@ -704,7 +882,7 @@ index 382fabf..bc4f3be 100644
  				   gen_rtx_PRE_DEC (Pmode,
  						    stack_pointer_rtx)),
  		      arg);
-@@ -9026,9 +9082,12 @@ gen_push (rtx arg)
+@@ -9026,9 +9119,12 @@ gen_push (rtx arg)
  static rtx
  gen_pop (rtx arg)
  {
@@ -718,7 +896,7 @@ index 382fabf..bc4f3be 100644
  				   gen_rtx_POST_INC (Pmode,
  						     stack_pointer_rtx)));
  }
-@@ -9528,7 +9587,7 @@ ix86_emit_save_regs (void)
+@@ -9528,7 +9624,7 @@ ix86_emit_save_regs (void)
    for (regno = FIRST_PSEUDO_REGISTER - 1; regno-- > 0; )
      if (!SSE_REGNO_P (regno) && ix86_save_reg (regno, true))
        {
@@ -727,7 +905,7 @@ index 382fabf..bc4f3be 100644
  	RTX_FRAME_RELATED_P (insn) = 1;
        }
  }
-@@ -9608,7 +9667,7 @@ ix86_emit_save_regs_using_mov (HOST_WIDE_INT cfa_offset)
+@@ -9608,7 +9704,7 @@ ix86_emit_save_regs_using_mov (HOST_WIDE_INT cfa_offset)
    for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
      if (!SSE_REGNO_P (regno) && ix86_save_reg (regno, true))
        {
@@ -736,7 +914,7 @@ index 382fabf..bc4f3be 100644
  	cfa_offset -= UNITS_PER_WORD;
        }
  }
-@@ -9682,7 +9741,7 @@ pro_epilogue_adjust_stack (rtx dest, rtx src, rtx offset,
+@@ -9682,7 +9778,7 @@ pro_epilogue_adjust_stack (rtx dest, rtx src, rtx offset,
    rtx insn;
    bool add_frame_related_expr = false;
  
@@ -745,7 +923,7 @@ index 382fabf..bc4f3be 100644
      insn = gen_pro_epilogue_adjust_stack_si_add (dest, src, offset);
    else if (x86_64_immediate_operand (offset, DImode))
      insn = gen_pro_epilogue_adjust_stack_di_add (dest, src, offset);
-@@ -10489,7 +10548,7 @@ ix86_expand_prologue (void)
+@@ -10489,7 +10585,7 @@ ix86_expand_prologue (void)
  	 to implement macro RETURN_ADDR_RTX and intrinsic function
  	 expand_builtin_return_addr etc.  */
        t = plus_constant (crtl->drap_reg, -UNITS_PER_WORD);
@@ -754,7 +932,7 @@ index 382fabf..bc4f3be 100644
        insn = emit_insn (gen_push (t));
        RTX_FRAME_RELATED_P (insn) = 1;
  
-@@ -10661,7 +10720,7 @@ ix86_expand_prologue (void)
+@@ -10661,7 +10757,7 @@ ix86_expand_prologue (void)
        emit_insn (ix86_gen_allocate_stack_worker (eax, eax));
  
        /* Use the fact that AX still contains ALLOCATE.  */
@@ -763,7 +941,7 @@ index 382fabf..bc4f3be 100644
  			   ? gen_pro_epilogue_adjust_stack_di_sub
  			   : gen_pro_epilogue_adjust_stack_si_sub);
  
-@@ -10686,14 +10745,18 @@ ix86_expand_prologue (void)
+@@ -10686,14 +10782,18 @@ ix86_expand_prologue (void)
        if (r10_live && eax_live)
          {
  	  t = choose_baseaddr (m->fs.sp_offset - allocate);
@@ -785,7 +963,7 @@ index 382fabf..bc4f3be 100644
  	}
      }
    gcc_assert (m->fs.sp_offset == frame.stack_pointer_offset);
-@@ -10857,7 +10920,7 @@ ix86_emit_restore_regs_using_pop (void)
+@@ -10857,7 +10957,7 @@ ix86_emit_restore_regs_using_pop (void)
  
    for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
      if (!SSE_REGNO_P (regno) && ix86_save_reg (regno, false))
@@ -794,7 +972,7 @@ index 382fabf..bc4f3be 100644
  }
  
  /* Emit code and notes for the LEAVE instruction.  */
-@@ -10900,11 +10963,11 @@ ix86_emit_restore_regs_using_mov (HOST_WIDE_INT cfa_offset,
+@@ -10900,11 +11000,11 @@ ix86_emit_restore_regs_using_mov (HOST_WIDE_INT cfa_offset,
    for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
      if (!SSE_REGNO_P (regno) && ix86_save_reg (regno, maybe_eh_return))
        {
@@ -808,7 +986,7 @@ index 382fabf..bc4f3be 100644
  	insn = emit_move_insn (reg, mem);
  
          if (m->fs.cfa_reg == crtl->drap_reg && regno == REGNO (crtl->drap_reg))
-@@ -11486,8 +11549,8 @@ ix86_expand_split_stack_prologue (void)
+@@ -11486,8 +11586,8 @@ ix86_expand_split_stack_prologue (void)
  	{
  	  rtx rax;
  
@@ -819,7 +997,7 @@ index 382fabf..bc4f3be 100644
  	  use_reg (&call_fusage, rax);
  	}
  
-@@ -11566,8 +11629,8 @@ ix86_expand_split_stack_prologue (void)
+@@ -11566,8 +11666,8 @@ ix86_expand_split_stack_prologue (void)
    /* If we are in 64-bit mode and this function uses a static chain,
       we saved %r10 in %rax before calling _morestack.  */
    if (TARGET_64BIT && DECL_STATIC_CHAIN (cfun->decl))
@@ -830,7 +1008,7 @@ index 382fabf..bc4f3be 100644
  
    /* If this function calls va_start, we need to store a pointer to
       the arguments on the old stack, because they may not have been
-@@ -11760,6 +11823,11 @@ ix86_decompose_address (rtx addr, struct ix86_address *out)
+@@ -11760,6 +11860,11 @@ ix86_decompose_address (rtx addr, struct ix86_address *out)
    else
      disp = addr;			/* displacement */
  
@@ -842,7 +1020,7 @@ index 382fabf..bc4f3be 100644
    /* Extract the integral value of scale.  */
    if (scale_rtx)
      {
-@@ -12214,8 +12282,7 @@ ix86_legitimate_address_p (enum machine_mode mode ATTRIBUTE_UNUSED,
+@@ -12214,8 +12319,7 @@ ix86_legitimate_address_p (enum machine_mode mode ATTRIBUTE_UNUSED,
  	/* Base is not a register.  */
  	return false;
  
@@ -852,7 +1030,7 @@ index 382fabf..bc4f3be 100644
  	return false;
  
        if ((strict && ! REG_OK_FOR_BASE_STRICT_P (reg))
-@@ -12243,8 +12310,7 @@ ix86_legitimate_address_p (enum machine_mode mode ATTRIBUTE_UNUSED,
+@@ -12243,8 +12347,7 @@ ix86_legitimate_address_p (enum machine_mode mode ATTRIBUTE_UNUSED,
  	/* Index is not a register.  */
  	return false;
  
@@ -862,7 +1040,7 @@ index 382fabf..bc4f3be 100644
  	return false;
  
        if ((strict && ! REG_OK_FOR_INDEX_STRICT_P (reg))
-@@ -12686,7 +12752,10 @@ legitimize_tls_address (rtx x, enum tls_model model, int for_mov)
+@@ -12686,7 +12789,10 @@ legitimize_tls_address (rtx x, enum tls_model model, int for_mov)
  	  rtx rax = gen_rtx_REG (Pmode, AX_REG), insns;
  
  	  start_sequence ();
@@ -874,7 +1052,7 @@ index 382fabf..bc4f3be 100644
  	  insns = get_insns ();
  	  end_sequence ();
  
-@@ -12715,7 +12784,10 @@ legitimize_tls_address (rtx x, enum tls_model model, int for_mov)
+@@ -12715,7 +12821,10 @@ legitimize_tls_address (rtx x, enum tls_model model, int for_mov)
  	  rtx rax = gen_rtx_REG (Pmode, AX_REG), insns, note;
  
  	  start_sequence ();
@@ -886,7 +1064,7 @@ index 382fabf..bc4f3be 100644
  	  insns = get_insns ();
  	  end_sequence ();
  
-@@ -12797,8 +12869,19 @@ legitimize_tls_address (rtx x, enum tls_model model, int for_mov)
+@@ -12797,8 +12906,19 @@ legitimize_tls_address (rtx x, enum tls_model model, int for_mov)
        if (TARGET_64BIT || TARGET_ANY_GNU_TLS)
  	{
            base = get_thread_pointer (for_mov || !TARGET_TLS_DIRECT_SEG_REFS);
@@ -908,7 +1086,7 @@ index 382fabf..bc4f3be 100644
  	}
        else
  	{
-@@ -12817,7 +12900,16 @@ legitimize_tls_address (rtx x, enum tls_model model, int for_mov)
+@@ -12817,7 +12937,16 @@ legitimize_tls_address (rtx x, enum tls_model model, int for_mov)
        if (TARGET_64BIT || TARGET_ANY_GNU_TLS)
  	{
  	  base = get_thread_pointer (for_mov || !TARGET_TLS_DIRECT_SEG_REFS);
@@ -926,7 +1104,7 @@ index 382fabf..bc4f3be 100644
  	}
        else
  	{
-@@ -13922,7 +14014,8 @@ ix86_print_operand (FILE *file, rtx x, int code)
+@@ -13922,7 +14051,8 @@ ix86_print_operand (FILE *file, rtx x, int code)
  	      gcc_unreachable ();
  	    }
  
@@ -936,7 +1114,7 @@ index 382fabf..bc4f3be 100644
  	  return;
  
  
-@@ -14515,6 +14608,20 @@ ix86_print_operand_address (FILE *file, rtx addr)
+@@ -14515,6 +14645,20 @@ ix86_print_operand_address (FILE *file, rtx addr)
  
    gcc_assert (ok);
  
@@ -957,7 +1135,7 @@ index 382fabf..bc4f3be 100644
    base = parts.base;
    index = parts.index;
    disp = parts.disp;
-@@ -14719,6 +14826,29 @@ i386_asm_output_addr_const_extra (FILE *file, rtx x)
+@@ -14719,6 +14863,29 @@ i386_asm_output_addr_const_extra (FILE *file, rtx x)
  
    return true;
  }
@@ -987,7 +1165,7 @@ index 382fabf..bc4f3be 100644
  
  /* Split one or more double-mode RTL references into pairs of half-mode
     references.  The RTL can be REG, offsettable MEM, integer constant, or
-@@ -15343,7 +15473,7 @@ ix86_output_addr_vec_elt (FILE *file, int value)
+@@ -15343,7 +15510,7 @@ ix86_output_addr_vec_elt (FILE *file, int value)
    const char *directive = ASM_LONG;
  
  #ifdef ASM_QUAD
@@ -996,7 +1174,7 @@ index 382fabf..bc4f3be 100644
      directive = ASM_QUAD;
  #else
    gcc_assert (!TARGET_64BIT);
-@@ -19329,7 +19459,7 @@ ix86_split_to_parts (rtx operand, rtx *parts, enum machine_mode mode)
+@@ -19329,7 +19496,7 @@ ix86_split_to_parts (rtx operand, rtx *parts, enum machine_mode mode)
        gcc_assert (ok);
  
        operand = copy_rtx (operand);
@@ -1005,7 +1183,7 @@ index 382fabf..bc4f3be 100644
        parts[0] = parts[1] = parts[2] = parts[3] = operand;
        return size;
      }
-@@ -19482,7 +19612,7 @@ ix86_split_long_move (rtx operands[])
+@@ -19482,7 +19649,7 @@ ix86_split_long_move (rtx operands[])
        if (push_operand (operands[0], VOIDmode))
  	{
  	  operands[0] = copy_rtx (operands[0]);
@@ -1014,7 +1192,7 @@ index 382fabf..bc4f3be 100644
  	}
        else
          operands[0] = gen_lowpart (DImode, operands[0]);
-@@ -20043,7 +20173,11 @@ ix86_zero_extend_to_Pmode (rtx exp)
+@@ -20043,7 +20210,11 @@ ix86_zero_extend_to_Pmode (rtx exp)
    if (GET_MODE (exp) == Pmode)
      return copy_to_mode_reg (Pmode, exp);
    r = gen_reg_rtx (Pmode);
@@ -1027,7 +1205,7 @@ index 382fabf..bc4f3be 100644
    return r;
  }
  
-@@ -21070,11 +21204,11 @@ ix86_expand_movmem (rtx dst, rtx src, rtx count_exp, rtx align_exp,
+@@ -21070,11 +21241,11 @@ ix86_expand_movmem (rtx dst, rtx src, rtx count_exp, rtx align_exp,
        gcc_unreachable ();
      case loop:
        need_zero_guard = true;
@@ -1041,7 +1219,7 @@ index 382fabf..bc4f3be 100644
        break;
      case rep_prefix_8_byte:
        size_needed = 8;
-@@ -21240,13 +21374,13 @@ ix86_expand_movmem (rtx dst, rtx src, rtx count_exp, rtx align_exp,
+@@ -21240,13 +21411,13 @@ ix86_expand_movmem (rtx dst, rtx src, rtx count_exp, rtx align_exp,
        break;
      case loop:
        expand_set_or_movmem_via_loop (dst, src, destreg, srcreg, NULL,
@@ -1057,7 +1235,7 @@ index 382fabf..bc4f3be 100644
  				     expected_size);
        break;
      case rep_prefix_8_byte:
-@@ -21458,11 +21592,11 @@ ix86_expand_setmem (rtx dst, rtx count_exp, rtx val_exp, rtx align_exp,
+@@ -21458,11 +21629,11 @@ ix86_expand_setmem (rtx dst, rtx count_exp, rtx val_exp, rtx align_exp,
        gcc_unreachable ();
      case loop:
        need_zero_guard = true;
@@ -1071,7 +1249,7 @@ index 382fabf..bc4f3be 100644
        break;
      case rep_prefix_8_byte:
        size_needed = 8;
-@@ -21633,11 +21767,11 @@ ix86_expand_setmem (rtx dst, rtx count_exp, rtx val_exp, rtx align_exp,
+@@ -21633,11 +21804,11 @@ ix86_expand_setmem (rtx dst, rtx count_exp, rtx val_exp, rtx align_exp,
        break;
      case loop:
        expand_set_or_movmem_via_loop (dst, NULL, destreg, NULL, promoted_val,
@@ -1085,7 +1263,7 @@ index 382fabf..bc4f3be 100644
        break;
      case rep_prefix_8_byte:
        expand_setmem_via_rep_stos (dst, destreg, promoted_val, count_exp,
-@@ -23381,14 +23515,18 @@ ix86_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
+@@ -23381,14 +23552,18 @@ ix86_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
    else
      {
        int offset = 0;
@@ -1107,7 +1285,7 @@ index 382fabf..bc4f3be 100644
  
  	  mem = adjust_address (m_tramp, HImode, offset);
  	  emit_move_insn (mem, gen_int_mode (0xbb41, HImode));
-@@ -23407,13 +23545,25 @@ ix86_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
+@@ -23407,13 +23582,25 @@ ix86_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
  	  offset += 10;
  	}
  
@@ -1137,7 +1315,7 @@ index 382fabf..bc4f3be 100644
  
        /* Jump to r11; the last (unused) byte is a nop, only there to
  	 pad the write out to a single 32-bit store.  */
-@@ -25953,7 +26103,7 @@ ix86_init_builtins (void)
+@@ -25953,7 +26140,7 @@ ix86_init_builtins (void)
  
    ix86_init_mmx_sse_builtins ();
  
@@ -1146,7 +1324,7 @@ index 382fabf..bc4f3be 100644
      ix86_init_builtins_va_builtins_abi ();
  
  #ifdef SUBTARGET_INIT_BUILTINS
-@@ -29607,7 +29757,7 @@ ix86_handle_abi_attribute (tree *node, tree name,
+@@ -29607,7 +29794,7 @@ ix86_handle_abi_attribute (tree *node, tree name,
        *no_add_attrs = true;
        return NULL_TREE;
      }
@@ -1155,7 +1333,7 @@ index 382fabf..bc4f3be 100644
      {
        warning (OPT_Wattributes, "%qE attribute only available for 64-bit",
  	       name);
-@@ -29715,7 +29865,7 @@ x86_this_parameter (tree function)
+@@ -29715,7 +29902,7 @@ x86_this_parameter (tree function)
          parm_regs = x86_64_ms_abi_int_parameter_registers;
        else
          parm_regs = x86_64_int_parameter_registers;
@@ -1164,7 +1342,7 @@ index 382fabf..bc4f3be 100644
      }
  
    nregs = ix86_function_regparm (type, function);
-@@ -29816,18 +29966,18 @@ x86_output_mi_thunk (FILE *file,
+@@ -29816,18 +30003,18 @@ x86_output_mi_thunk (FILE *file,
        xops[1] = this_reg ? this_reg : this_param;
        if (TARGET_64BIT)
  	{
@@ -1189,7 +1367,7 @@ index 382fabf..bc4f3be 100644
  	}
        else if (x86_maybe_negate_const_int (&xops[0], SImode))
  	output_asm_insn ("sub{l}\t{%0, %1|%1, %0}", xops);
-@@ -29839,7 +29989,7 @@ x86_output_mi_thunk (FILE *file,
+@@ -29839,7 +30026,7 @@ x86_output_mi_thunk (FILE *file,
    if (vcall_offset)
      {
        if (TARGET_64BIT)
@@ -1198,7 +1376,7 @@ index 382fabf..bc4f3be 100644
        else
  	{
  	  int tmp_regno = CX_REG;
-@@ -29859,10 +30009,10 @@ x86_output_mi_thunk (FILE *file,
+@@ -29859,10 +30046,10 @@ x86_output_mi_thunk (FILE *file,
        xops[0] = gen_rtx_MEM (Pmode, plus_constant (tmp, vcall_offset));
        if (TARGET_64BIT && !memory_operand (xops[0], Pmode))
  	{
@@ -1211,7 +1389,7 @@ index 382fabf..bc4f3be 100644
  	  xops[0] = gen_rtx_MEM (Pmode, gen_rtx_PLUS (Pmode, tmp, tmp2));
  	}
        xops[1] = this_reg;
-@@ -35219,6 +35369,9 @@ ix86_autovectorize_vector_sizes (void)
+@@ -35219,6 +35406,9 @@ ix86_autovectorize_vector_sizes (void)
  #undef TARGET_FUNCTION_VALUE_REGNO_P
  #define TARGET_FUNCTION_VALUE_REGNO_P ix86_function_value_regno_p
  
@@ -1222,26 +1400,28 @@ index 382fabf..bc4f3be 100644
  #define TARGET_SECONDARY_RELOAD ix86_secondary_reload
  
 diff --git a/gcc/config/i386/i386.h b/gcc/config/i386/i386.h
-index dcb3f29..8444de0 100644
+index dcb3f29..1edec62 100644
 --- a/gcc/config/i386/i386.h
 +++ b/gcc/config/i386/i386.h
-@@ -42,6 +42,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+@@ -41,7 +41,9 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+ 
  /* Redefines for option macros.  */
  
++#define TARGET_X86_64	OPTION_ISA_X86_64
  #define TARGET_64BIT	OPTION_ISA_64BIT
 +#define TARGET_X32	OPTION_ISA_X32
  #define TARGET_MMX	OPTION_ISA_MMX
  #define TARGET_3DNOW	OPTION_ISA_3DNOW
  #define TARGET_3DNOW_A	OPTION_ISA_3DNOW_A
-@@ -72,6 +73,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+@@ -72,6 +74,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #define TARGET_RDRND	OPTION_ISA_RDRND
  #define TARGET_F16C	OPTION_ISA_F16C
  
-+#define TARGET_LP64	(TARGET_64BIT && !TARGET_X32)
++#define TARGET_LP64	TARGET_X86_64
  
  /* SSE4.1 defines round instructions */
  #define	OPTION_MASK_ISA_ROUND	OPTION_MASK_ISA_SSE4_1
-@@ -535,8 +537,8 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
+@@ -535,8 +538,8 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
  #define OPT_ARCH64 "!m32"
  #define OPT_ARCH32 "m32"
  #else
@@ -1252,7 +1432,7 @@ index dcb3f29..8444de0 100644
  #endif
  
  /* Support for configure-time defaults of some command line options.
-@@ -656,6 +658,8 @@ enum target_cpu_default
+@@ -656,6 +659,8 @@ enum target_cpu_default
  
  #define SHORT_TYPE_SIZE 16
  #define INT_TYPE_SIZE 32
@@ -1261,7 +1441,7 @@ index dcb3f29..8444de0 100644
  #define LONG_LONG_TYPE_SIZE 64
  #define FLOAT_TYPE_SIZE 32
  #define DOUBLE_TYPE_SIZE 64
-@@ -1725,7 +1729,7 @@ typedef struct ix86_args {
+@@ -1725,7 +1730,7 @@ typedef struct ix86_args {
  /* Specify the machine mode that this machine uses
     for the index in the tablejump instruction.  */
  #define CASE_VECTOR_MODE \
@@ -1270,7 +1450,7 @@ index dcb3f29..8444de0 100644
  
  /* Define this as 1 if `char' should by default be signed; else as 0.  */
  #define DEFAULT_SIGNED_CHAR 1
-@@ -1783,7 +1787,14 @@ do {							\
+@@ -1783,7 +1788,14 @@ do {							\
  /* Specify the machine mode that pointers have.
     After generation of rtl, the compiler makes no further distinction
     between pointers and any other objects of this machine mode.  */
@@ -2599,29 +2779,33 @@ index f25a97b..2b188c9 100644
    else
      emit_insn (gen_lwp_slwpcbsi (operands[0]));
 diff --git a/gcc/config/i386/i386.opt b/gcc/config/i386/i386.opt
-index fe5949f..2ba9f2b 100644
+index fe5949f..c9d60e1 100644
 --- a/gcc/config/i386/i386.opt
 +++ b/gcc/config/i386/i386.opt
-@@ -277,9 +277,13 @@ Target RejectNegative Negative(m64) Report InverseMask(ISA_64BIT) Var(ix86_isa_f
+@@ -277,9 +277,17 @@ Target RejectNegative Negative(m64) Report InverseMask(ISA_64BIT) Var(ix86_isa_f
  Generate 32bit i386 code
  
  m64
 -Target RejectNegative Negative(m32) Report Mask(ISA_64BIT) Var(ix86_isa_flags) Save
-+Target RejectNegative Negative(mx32) Report Mask(ISA_64BIT) Var(ix86_isa_flags) Save
++Target RejectNegative Negative(mx32) Report Mask(ISA_X86_64) Var(ix86_isa_flags) Save
  Generate 64bit x86-64 code
  
 +mx32
 +Target RejectNegative Negative(m32) Report Mask(ISA_X32) Var(ix86_isa_flags) Save
 +Generate 32bit x86-64 code
 +
++mx86-64
++Target Undocumented Mask(ISA_64BIT) Var(ix86_isa_flags) Save
++Generate 32bit or 64bit x86-64 code
++
  mmmx
  Target Report Mask(ISA_MMX) Var(ix86_isa_flags) Save
  Support MMX built-in functions
 diff --git a/gcc/config/i386/linux64.h b/gcc/config/i386/linux64.h
-index 103ab0c..de8654c 100644
+index 103ab0c..f777d1b 100644
 --- a/gcc/config/i386/linux64.h
 +++ b/gcc/config/i386/linux64.h
-@@ -64,27 +64,35 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+@@ -64,27 +64,40 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  
  #define GLIBC_DYNAMIC_LINKER32 "/lib/ld-linux.so.2"
  #define GLIBC_DYNAMIC_LINKER64 "/lib64/ld-linux-x86-64.so.2"
@@ -2630,8 +2814,13 @@ index 103ab0c..de8654c 100644
  #if TARGET_64BIT_DEFAULT
  #define SPEC_32 "m32"
 -#define SPEC_64 "!m32"
++#if TARGET_BI_ARCH == 2
++#define SPEC_64 "m64"
++#define SPEC_X32 "m32|m64:;"
++#else
 +#define SPEC_64 "m32|mx32:;"
 +#define SPEC_X32 "mx32"
++#endif
  #else
 -#define SPEC_32 "!m64"
 +#define SPEC_32 "m64|mx32:;"
@@ -2663,7 +2852,19 @@ index 103ab0c..de8654c 100644
      %{static:-static}}"
  
  /* Similar to standard Linux, but adding -ffast-math support.  */
-@@ -123,10 +131,13 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+@@ -97,7 +110,11 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+    %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+ 
+ #if TARGET_64BIT_DEFAULT
++#if TARGET_BI_ARCH == 2
++#define MULTILIB_DEFAULTS { "mx32" }
++#else
+ #define MULTILIB_DEFAULTS { "m64" }
++#endif
+ #else
+ #define MULTILIB_DEFAULTS { "m32" }
+ #endif
+@@ -123,10 +140,13 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  
  #ifdef TARGET_LIBC_PROVIDES_SSP
  /* i386 glibc provides __stack_chk_guard in %gs:0x14,
