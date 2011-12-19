@@ -8,14 +8,17 @@
   <author title="Author">
     <mail link="dberkholz@gentoo.org">Donnie Berkholz</mail>
   </author>
+  <author title="Editor">
+    <mail link="chithanh"/>
+  </author>
 
   <abstract>
     This document outlines what needs to be done to successfully maintain X
     implementations.
   </abstract>
 
-  <version>1.3</version>
-  <date>2 May 2007</date>
+  <version>1.4</version>
+  <date>12 December 2011</date>
 
   <chapter>
     <title>Introduction</title>
@@ -50,30 +53,30 @@
             <th>Where/How to Subscribe</th>
           </tr>
           <tr>
-            <ti>xorg@lists.freedesktop.org</ti>
+            <ti>xorg@lists.x.org</ti>
             <ti>Primary X.Org list -- users and devs</ti>
-            <ti><uri>http://freedesktop.org/mailman/listinfo/xorg/</uri></ti>
+            <ti><uri>http://lists.x.org/mailman/listinfo/xorg/</uri></ti>
           </tr>
           <tr>
-            <ti>xorg-commit@lists.freedesktop.org</ti>
+            <ti>xorg-commit@lists.x.org</ti>
             <ti>CRITICAL to be on this list</ti>
-            <ti><uri>http://freedesktop.org/mailman/listinfo/xorg-commit/</uri></ti>
+            <ti><uri>http://lists.x.org/mailman/listinfo/xorg-commit/</uri></ti>
           </tr>
           <tr>
-            <ti>x-packagers@freedesktop.org</ti>
-            <ti>People like us. Very low traffic.</ti>
-            <ti><uri>http://freedesktop.org/mailman/listinfo/x-packagers/</uri></ti>
+            <ti>xorg-announce@lists.x.org</ti>
+            <ti>(Optional) X.org related announcements, mostly of new releases</ti>
+            <ti><uri>http://lists.x.org/mailman/listinfo/xorg-announce/</uri></ti>
           </tr>
           <tr>
-            <ti>dri-devel@lists.sourceforge.net</ti>
+            <ti>dri-devel@lists.freedesktop.org</ti>
             <ti>(Optional) DRI (Direct Rendering Infrastructure) -- i.e., 3D
             acceleration</ti>
-            <ti><uri>http://lists.sourceforge.net/lists/listinfo/dri-devel/</uri></ti>
+            <ti><uri>http://lists.freedesktop.org/mailman/listinfo/dri-devel</uri></ti>
           </tr>
           <tr>
-            <ti>mesa3d-dev@lists.sourceforge.net</ti>
+            <ti>mesa-dev@lists.freedesktop.org</ti>
             <ti>(Optional) X uses this graphics library for OpenGL</ti>
-            <ti><uri>http://lists.sourceforge.net/lists/listinfo/mesa3d-dev/</uri></ti>
+            <ti><uri>http://lists.freedesktop.org/mailman/listinfo/mesa-dev</uri></ti>
           </tr>
           <tr>
             <ti>mesa-commit@lists.freedesktop.org</ti>
@@ -126,6 +129,18 @@
           <tr>
             <ti>#nvidia</ti>
             <ti>(Optional) Talk about the binary drivers</ti>
+          </tr>
+          <tr>
+            <ti>#intel-gfx</ti>
+            <ti>(Optional) Talk about the Intel open source drivers</ti>
+          </tr>
+          <tr>
+            <ti>#radeon</ti>
+            <ti>(Optional) Talk about the Radeon open source drivers</ti>
+          </tr>
+          <tr>
+            <ti>#nouveau</ti>
+            <ti>(Optional) Talk about the Nouveau open source drivers</ti>
           </tr>
         </table>
 
@@ -612,6 +627,37 @@
     </section>
 
     <section>
+      <title>Upgrades</title>
+      <body>
+
+        <p>
+          Thanks to <path>xorg-2.eclass</path>, many upgrades are just a
+          rename of the ebuild. If a live ebuild in the x11 overlay exists,
+          make any necessary dependency or other changes there first, then
+          copy the ebuild into your local portage checkout.
+        </p>
+
+        <p>
+          To find the packages which need upgrades, use the python script
+          <path>x-modular-bumpchecker.py</path>, which you can find in the
+          gentoo-bumpchecker git repository at <uri link="http://git.overlays.gentoo.org/gitweb/?p=proj/gentoo-bumpchecker.git">
+          git.overlays.gentoo.org/proj/gentoo-bumpchecker.git</uri>.
+        </p>
+
+        <pre caption="Checking for packages that need upgrade">
+<comment>(Output will be nicely formatted if gbc.css is in the same directory)</comment>
+# <i>python x-modular-bumpchecker.py -k -o vystup.html</i></pre>
+
+        <p>
+          This will generate a list of packages that can be viewed in your
+          browser, and also a <path>package.keywords</path> file that you can
+          use for testing <c>~arch</c> packages on stable systems.
+        </p>
+
+      </body>
+    </section>
+
+    <section>
       <title>More stuff relevant to modular maintenance</title>
       <body>
 
@@ -620,12 +666,15 @@
           actions across all of modular X. Without this, it can take forever
           to get anything major done.  Even with it, major cross-tree commits
           take a ton of time. Install <c>pkgcore</c> and use this command to
-          get the list: <c>pquery --herd x11 --repo /usr/portage --no-version | tee file</c>.
+          get the list:
         </p>
+
+        <pre caption="Get a list of x11 maintained packages">
+# <i>pquery --herd x11 --repo /usr/portage --no-version | tee file</i></pre>
 
         <p>
           Dedicate the time to fully understanding how
-          <path>x-modular.eclass</path> works because it will pay off when you
+          <path>xorg-2.eclass</path> works because it will pay off when you
           get tricky bugs, or when you want to make a change to how something
           builds.
         </p>
@@ -641,6 +690,40 @@
 
       </body>
     </section>
+
+    <section>
+      <title>Stabilization</title>
+      <body>
+
+        <p>
+          In order to keep arch teams happy, stabilization is recommended to
+          happen in batches. Create a stabilization bug and attach a list of
+          packages which are long enough in the tree with no serious
+          regressions. For major/minor version upgrades it is suggested to
+          wait the usual 30 days. For patch level version upgrades, this
+          period can be shorter.
+        </p>
+
+        <p>
+          To generate a list of packages for stabilization, use the
+          <path>gen_archlist.py</path> script from the Gnome overlay at
+          <uri link="http://git.overlays.gentoo.org/gitweb/?p=proj/gnome.git">
+          git.overlays.gentoo.org/proj/gnome.git</uri>. It can be fed the list
+          of x11 maintained packages generated with the <path>pquery</path>
+          command from above.
+        </p>
+
+        <p>
+          In the stabilization bug, mention the command which allows arch
+          teams to generate a package.keywords file for their particular arch:
+        </p>
+
+        <pre caption="Generate package.keywords from stabilitation list">
+# <i>awk '/YOURARCHHERE/ {print "="$1}' x11_stable.list > x11_stable.keywords</i></pre>
+
+      </body>
+    </section>
+
   </chapter>
 
 </guide>
