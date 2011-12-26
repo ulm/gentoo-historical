@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-troubleshoot.xml,v 1.1 2011/10/23 13:00:13 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-troubleshoot.xml,v 1.2 2011/12/26 12:24:04 swift Exp $ -->
 
 <sections>
-<version>0</version>
-<date>2011-02-24</date>
+<version>1</version>
+<date>2011-12-11</date>
 
 <section>
 <title>Unable To Load SELinux Policy</title>
@@ -225,4 +225,95 @@ contexts</e> that you see in the output with the next table.
 </body>
 </subsection>
 </section>
+
+<section>
+<title>Unable to Emerge Anything (OSError: [Errno 22] Invalid argument)</title>
+<subsection>
+<title>Problem Description</title>
+<body>
+
+<p>
+When trying to install software with Portage, you get a huge python stacktrace
+and finally the error message <e>OSError: [Errno 22] Invalid argument</e>:
+</p>
+
+<pre caption="Stacktrace dump when portage fails to install software">
+Traceback (most recent call last):
+  File "/usr/bin/emerge", line 43, in &lt;module&gt;
+    retval = emerge_main()
+  File "/usr/lib64/portage/pym/_emerge/main.py", line 1906, in emerge_main
+    myopts, myaction, myfiles, spinner)
+  File "/usr/lib64/portage/pym/_emerge/actions.py", line 437, in action_build
+    retval = mergetask.merge()
+...
+  File "/usr/lib64/portage/pym/portage/package/ebuild/doebuild.py", line 104, in _doebuild_spawn
+    return spawn(cmd, settings, **kwargs)
+  File "/usr/lib64/portage/pym/portage/package/ebuild/doebuild.py", line 1255, in spawn
+    return spawn_func(mystring, env=mysettings.environ(), **keywords)
+  File "/usr/lib64/portage/pym/portage/_selinux.py", line 105, in wrapper_func
+    setexec(con)
+  File "/usr/lib64/portage/pym/portage/_selinux.py", line 79, in setexec
+    if selinux.setexeccon(ctx) &lt; 0: 
+OSError: [Errno 22] Invalid argument
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Wrong Context</title>
+<body>
+
+<p>
+The above error comes when you launch portage (through <c>emerge</c>) while you
+are not in <c>sysadm_t</c> context. You can verify this with <c>id -Z</c>:
+</p>
+
+<pre caption="Checking current context">
+~# <i>id -Z</i>
+system_u:system_r:local_login_t
+</pre>
+
+<p>
+As long as the context isn't <c>sysadm_t</c>, then Portage will break. This is
+because Portage wants to switch its execution context from <c>portage_t</c> to
+<c>portage_sandbox_t</c> but fails (it isn't in <c>portage_t</c> to begin with
+because the user who launched Portage isn't in <c>sysadm_t</c>).
+</p>
+
+<p>
+Please check <uri link="#doc_chap2">Unable to Log On</uri> above first. Also
+make sure that you can <c>dispatch-conf</c> or <c>etc-update</c> after
+installing SELinux so that <path>/etc/pam.d/system-login</path> is updated with
+the right <path>pam_selinux.so</path> calls.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Forcing Installation</title>
+<body>
+
+<p>
+If you need to force Portage to continue regardless (for instance, you were in
+the middle of a SELinux installation so cannot properly resolve such issues
+now), run the <c>emerge</c> command but with <c>FEATURES="-selinux"</c>. This
+will effectively disable Portage' SELinux integration, but allows you to
+continue installing software.
+</p>
+
+<pre caption="Running emerge without selinux support">
+~# <i>FEATURES="-selinux" emerge -u world</i>
+</pre>
+
+<p>
+Make sure that you relabel the entire file system after using this approach!
+Portage will not label the files installed on the system correctly if you
+disable its SELinux support. To relabel the entire file system, use <c>rlpkg -a
+-r</c>.
+</p>
+
+</body>
+</subsection>
+</section>
+
 </sections>
