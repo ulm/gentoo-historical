@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/kernel-config.xml,v 1.1 2011/11/18 14:19:10 naota Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ja/kernel-config.xml,v 1.2 2012/01/21 07:56:23 naota Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide link="/doc/ja/kernel-config.xml" lang="ja">
@@ -15,7 +15,7 @@
   <mail link="jdr@xemoka.net">Justin Robinson</mail>
 </author>
 <author title="Contributor">
-  <mail link="rane@gentoo.org">ﾅ「kasz Damentko</mail>
+  <mail link="rane@gentoo.org">Łukasz Damentko</mail>
 </author>
 <author title="Editor">
   <mail link="smithj@gentoo.org">Jonathan Smith</mail>
@@ -24,7 +24,7 @@
   <mail link="nightmorph"/>
 </author>
 <author title="翻訳">
-	<mail link="blueberrycandle@gmail.com">横田修作</mail>
+  <mail link="blueberrycandle@gmail.com">横田修作</mail>
 </author>
 
 <abstract>
@@ -36,9 +36,9 @@
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.4</version>
-<date>2010-03-21</date>
-<!-- Original revision: 1.8 -->
+<version>2</version>
+<date>2011-12-26</date>
+<!-- Original revision: 1.9 -->
 
 <chapter>
 <title>はじめに</title>
@@ -457,6 +457,112 @@ Processor type and features  ---&gt;
   ( ) 64GB
   <comment>システムに4ギガバイト以上のRAMがないのであれば、4GBを選択して下さい</comment>
 </pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="shorthand">
+<title>カーネル設定の略記法</title>
+<section>
+<title>はじめに</title>
+<body>
+
+<p>
+カーネル設定について読むと、<c>CONFIG_&lt;something&gt;</c>という記述をよく見かけます。
+これは実際に内部で使われているカーネル設定の略記法で、<path>/usr/src/linux/.config</path>や自動生成される<path>/proc/config.gz</path>ファイルなどのカーネル設定ファイルで見ることができます。
+もちろんカーネル設定の実際の場所に変換できないときは、略記法を使うのはあまりよくないでしょう。
+しかし、幸運にも<c>make menuconfig</c>ツールはそれをしてくれます。
+</p>
+
+</body>
+</section>
+<section>
+<title>CONFIG_FOOの実際の設定箇所への変換</title>
+<body>
+
+<p>
+<c>CONFIG_TMPFS_XATTR</c>を有効にしたいと考えた場合、カーネル設定メニュー(<c>make menuconfig</c>)を起動し、<c>/</c>を入力します。
+これで検索窓が開きます。
+この検索窓に<c>CONFIG_TMPFS_XATTR</c>(<c>CONFIG_</c>を省略することもできます)と入力します。
+次のコード表示はこの検索の結果を示しています。
+</p>
+
+<pre caption="CONFIG_TMPFS_XATTRの検索結果">
+Symbol: TMPFS_XATTR [=n]
+Type  : boolean
+Prompt: Tmpfs extended attributes
+  Defined at fs/Kconfig:138
+  Depends on: TMPFS [=y]
+  Location:
+    -> File systems
+      -> Pseudo filesystems
+        -> Virtual memory file system support (former shm fs) (TMPFS [=y])
+  Selected by: TMPFS_POSIX_ACL [=n] &amp;&amp; TMPFS [=y]
+</pre>
+
+<p>
+これには多くの興味深い情報が出力されています。
+</p>
+
+<table>
+<tr>
+  <th>項目</th>
+  <th>説明</th>
+</tr>
+<tr>
+  <ti>Symbol: TMPFS_XATTR [=n]</ti>
+  <ti>
+    これで探しているカーネル設定のエントリかを見分けることができます。
+    また、設定が現在<e>無効</e>([=n])で有ることを示しています。
+  </ti>
+</tr>
+<tr>
+  <ti>Type: boolean</ti>
+  <ti>
+    この設定は有効か無効かを設定できる真偽値(boolean)です。
+    いくつかの設定は数字(numbers)や文字列(strings)になっています。
+  </ti>
+</tr>
+<tr>
+  <ti>Prompt: Tmpfs extended attributes</ti>
+  <ti>
+    <c>make menuconfig</c>などで見られる本文で、人が読むのにより適したものです。
+  </ti>
+</tr>
+<tr>
+  <ti>Depends on: TMPFS [=y]</ti>
+  <ti>
+    このエントリを参照する前に、<c>CONFIG_TMPFS</c>を有効にする必要があります。
+    このケースでは、[=y]となっているため既に有効になっています。
+    しかし、このようなケースではない場合、まず<c>CONFIG_TMPFS</c>を探し、有効にする必要があります。
+  </ti>
+</tr>
+<tr>
+  <ti>Location: ...</ti>
+  <ti>
+    <c>make menuconfig</c>の構造内でこの設定を見つけることができる場所です。
+    探している設定は<e>Tmpfs extended attributes</e>であることを思い出してください。
+  </ti>
+</tr>
+<tr>
+  <ti>Selected by: TMPFS_POSIX_ACL [=n] &amp;&amp; TMPFS [=y]</ti>
+  <ti>
+    今回のケースでは一つ目の設定はそうなっていませんが、もしここに記載されている設定が両方有効な場合、<c>CONFIG_TMPFS_XATTR</c>は自動的に有効になっていて、おまけに設定は無効にすることはできないでしょう。
+  </ti>
+</tr>
+</table>
+
+<p>
+この情報により、必要な<c>CONFIG_*</c>を提示し、略記法から実際の場所への変換を楽にできるでしょう。
+つまり、次のとおりです。
+</p>
+
+<ol>
+  <li><e>Depends on</e>に記述されている設定を有効にします</li>
+  <li><e>Location:</e>に示されているポイントに移動します</li>
+  <li><e>Prompt:</e>を参考にして、値を変更します</li>
+</ol>
 
 </body>
 </section>
