@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding="utf-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/guide-localization.xml,v 1.46 2010/03/01 22:04:44 keytoaster Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/guide-localization.xml,v 1.47 2012/02/20 22:26:29 keytoaster Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- English CVS Version: 1.61 -->
+<!-- English CVS Version: 1.63 -->
 
-<guide link="/doc/de/guide-localization.xml" lang="de">
+<guide lang="de">
 <title>Gentoo Linux: Anleitung zur deutschen Lokalisierung</title>
 <author title="Autor">
   Alexander Holler
@@ -26,6 +26,9 @@
 </author>
 <author title="Bearbeiter">
   <mail link="nightmorph"/>
+</author>
+<author title="Bearbeiter">
+  <mail link="klondike"/>
 </author>
 <author title="Übersetzer">
   <mail link="frank-schmitt@gmx.de">Frank Schmitt</mail>
@@ -49,8 +52,8 @@ eine europäische Sprache am Fallbeispiel Deutsch behilflich sein. Es enthält
 die Konfiguration für die Verwendung des Euro-Währungssymbols.
 </abstract>
 
-<version>1.46</version>
-<date>2010-02-14</date>
+<version>2</version>
+<date>2011-09-12</date>
 
 <chapter>
 <title>Zeitzone</title>
@@ -61,7 +64,7 @@ die Konfiguration für die Verwendung des Euro-Währungssymbols.
 Um die richtige Uhrzeit zu haben, müssen Sie Ihre Zeitzone auswählen, so dass
 Ihr System weiß, wo sie gefunden wird. Schauen Sie sich nach Ihrer Zeitzone in
 <path>/usr/share/zoneinfo</path> um und setzen Sie diese dann in
-<path>/etc/conf.d/clock</path>. Bitte vermeiden Sie die
+<path>/etc/timezone</path>. Bitte vermeiden Sie die
 <path>/usr/share/zoneinfo/Etc/GMT*</path> Zeitzonen, denn deren Namen verweisen
 nicht auf die erwarteten Zonen. Zum Beispiel ist <path>GMT-8</path> in
 Wirklichkeit GMT+8.
@@ -74,8 +77,9 @@ Wirklichkeit GMT+8.
 localtime)</comment>
 # <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
 <comment>(Geben Sie jetzt Ihre Zeitzone an)</comment>
-# <i>nano -w /etc/conf.d/clock</i>
-TIMEZONE="Europe/Brussels"
+# <i>nano -w /etc/timezone</i>
+Europe/Brussels
+
 # <i>date</i>
 Wed Mar  8 00:46:05 CET 2006
 </pre>
@@ -106,15 +110,16 @@ In den meisten Installationen von Gentoo Linux ist Ihre Hardware-Uhr auf
 UTC (oder GMT, Greenwich Mean Time) eingestellt und Ihre Zeitzone wird
 dazu benutzt, die tatsächliche, lokale Zeit zu bestimmen. Wenn Sie aus
 irgend einem Grund die Hardware-Uhr nicht auf UTC haben wollen, müssen Sie
-in <path>/etc/conf.d/clock</path> den Wert von <c>CLOCK</c> von <c>UTC</c>
+in <path>/etc/conf.d/hwclock</path> (oder falls Sie Gentoo BSD benutzen:
+<path>/etc/conf.d/adjkerntz</path>) den Wert von <c>clock</c> von <c>UTC</c>
 auf <c>local</c> ändern.
 </p>
 
 <pre caption="Lokale oder GMT-Zeit">
 <comment>(empfohlen:)</comment>
-CLOCK="UTC"
+clock="UTC"
 <comment>(oder:)</comment>
-CLOCK="local"
+clock="local"
 </pre>
 
 </body>
@@ -251,7 +256,7 @@ LC_COLLATE="C"
 
 <note>
 Verwenden Sie <c>de_DE@euro</c> als Ihre LANG, wenn Sie das Euro-Währungssymbol
-(€) nutzen wollen.
+(€) mit nicht-UTF-8-basierten Locales nutzen wollen.
 </note>
 
 <p>
@@ -382,7 +387,7 @@ Sie können überprüfen, dass Ihre gewählten Locales verfügbar sind, indem Si
 
 <p>
 Das von der Konsole verwendete Tastaturlayout wird in
-<path>/etc/conf.d/keymaps</path> durch die Variable <c>KEYMAP</c> gesetzt.
+<path>/etc/conf.d/keymaps</path> durch die Variable <c>keymap</c> gesetzt.
 Gültige Werte können <path>/usr/share/keymaps/<c>{arch}</c>/</path>
 entnommen werden.
 <path>i386</path> hat weitere Unterteilungen nach dem Layout
@@ -392,9 +397,9 @@ entscheiden zu können, welche davon Ihren Bedürfnissen am ehesten entspricht.
 </p>
 
 <pre caption="Setzen der Keymap für die Konsole">
-KEYMAP="de"
-KEYMAP="de-latin1"
-KEYMAP="de-latin1-nodeadkeys"
+keymap="de"
+keymap="de-latin1"
+keymap="de-latin1-nodeadkeys"
 </pre>
 
 </body>
@@ -413,13 +418,13 @@ angegeben.
 </p>
 
 <pre caption="Setzen der X-Keymap">
- Section "InputDevice"
-     Identifier  "Keyboard1"
-     ...
-     Option "XkbLayout"    "de"
-     #Option "XkbModel"     "pc105"    <comment>## dies ist für internationale Tastaturen</comment>
-     # Option "XkbVariant"  "nodeadkeys" <comment>## dies wird für die xterm Eingabe gebraucht</comment>
-     ...
+Section "InputClass"
+    Identifier "keyboard-all"
+    Driver "evdev"
+    Option "XkbLayout" "de"
+    #Option "XkbModel" "pc105"
+    MatchIsKeyboard "on"
+EndSection
 </pre>
 
 <p>
@@ -442,11 +447,13 @@ hinzufügen, die die gewünschten Layouts und den Abkürzungsbefehl festlegen.
 </p>
 
 <pre caption="Zwischen zwei Tastaturlayouts wechseln">
- Section "InputDevice"
-     Identifier  "Keyboard1"
-     ...
-     Option "XkbLayout"    "us,ru"
-     Option "XkbOptions"   "grp:alt_shift_toggle,grp_led:scroll"
+Section "InputClass"
+    Identifier  "keyboard-all"
+    Driver "evdev"
+    Option "XkbLayout"    "us,ru"
+    Option "XkbOptions"   "grp:alt_shift_toggle,grp_led:scroll"
+    MatchIsKeyboard "on"
+EndSection
 </pre>
 
 <p>
@@ -483,17 +490,17 @@ beschriebene <uri link="#variables">LINGUAS Variable</uri>.
 
 <p>
 Um Ihre Konsole dazu zu bringen, das Euro-Symbol anzuzeigen, müssen Sie
-<c>CONSOLEFONT</c> in <path>/etc/conf.d/consolefont</path> auf eine Datei in
+<c>consolefont</c> in <path>/etc/conf.d/consolefont</path> auf eine Datei in
 <path>/usr/share/consolefonts/</path> setzen (ohne die Endung
 <c>.psfu.gz</c>). <c>lat9w-16</c> hat das Euro-Symbol.
 </p>
 
 <pre caption="Setzen der Konsolenschriftart">
-CONSOLEFONT="lat9w-16"
+consolefont="lat9w-16"
 </pre>
 
 <p>
-Sie sollten sicherstellen, dass <c>CONSOLEFONT</c> im boot-Runlevel vorhanden
+Sie sollten sicherstellen, dass <c>consolefont</c> im boot-Runlevel vorhanden
 ist:
 </p>
 
@@ -502,7 +509,7 @@ ist:
 </pre>
 
 <p>
-Wenn kein Runlevel für <c>CONSOLEFONT</c> angezeigt wird, dann fügen Sie es dem
+Wenn kein Runlevel für <c>consolefont</c> angezeigt wird, dann fügen Sie es dem
 richtigen Level hinzu:
 </p>
 
