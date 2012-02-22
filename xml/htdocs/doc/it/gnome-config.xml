@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/gnome-config.xml,v 1.18 2010/06/20 20:53:14 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/gnome-config.xml,v 1.19 2012/02/22 20:57:51 swift Exp $ -->
 
 <guide lang="it">
 <title>Guida alla configurazione di GNOME</title>
@@ -31,8 +31,8 @@ configurazione, l'uso, ...
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.24</version>
-<date>2010-06-07</date>
+<version>4</version>
+<date>2011-10-23</date>
 
 <chapter>
 <title>Cos'è GNOME?</title>
@@ -97,15 +97,13 @@ preparare il proprio ambiente X.
 Prima di installare GNOME, è consigliabile modificare la propria variabile USE.
 Assicurarsi che le flag <c>X</c>, <c>gtk</c> e <c>gnome</c> siano elencate nella
 variabile USE del file <path>/etc/make.conf</path>. Se si necessita del supporto
-per <c>hald</c>, il demone per il "livello di astrazione hardware" (Hardware
-Abstraction Layer, ndt), aggiungere la flag <c>hal</c> alla variabile USE. Lo
-stesso discorso vale per <c>dbus</c>, un sistema di comunicazione tra processi
-che Gnome utilizza in modo estensivo. Se non si vuole il supporto per KDE
-(l'altro grande desktop environment), rimuovere le flag <c>qt4</c> e <c>kde</c>.
+per <c>dbus</c>, un sistema di comunicazione tra processi che Gnome utilizza in 
+modo estensivo, aggiungerlo alle proprie USE flags. Se non si vuole il supporto per KDE
+(l'altro grande ambiente desktop), rimuovere le flag <c>qt4</c> e <c>kde</c>.
 </p>
 
 <pre caption="Esempio di USE flag nel file /etc/make.conf">
-USE="-qt4 -kde X dbus gtk gnome hal"
+USE="-qt4 -kde X dbus gtk gnome"
 </pre>
 
 <p>
@@ -118,6 +116,12 @@ predefinita di GNOME:
 # <i>echo "gnome-base/gnome-session branding" &gt;&gt; /etc/portage/package.use</i>
 </pre>
 
+<note>
+Se si utilzza il profilo <c>desktop</c>, queste USE flags saranno già impostate.
+Per controllare il profilo eseguire <c>eselect profile list</c> e
+<c>eselect profile set &lt;nome-profilo&gt;</c> come root.
+</note>
+
 <p>
 Una volta fatto, si può installare GNOME effettuando l'emerge del pacchetto
 <c>gnome</c>:
@@ -129,7 +133,10 @@ Una volta fatto, si può installare GNOME effettuando l'emerge del pacchetto
 
 <p>
 Si può anche optare per una installazione minimale di GNOME effettuando l'emerge
-del pacchetto <c>gnome-light</c>:
+del pacchetto <c>gnome-light</c>.
+Se si sceglie questo, si avrà un'installazione di Gnome leggera senza gli
+strumenti addizionali che fornisce un'installazione completa di Gnome,
+quindi potrebbe essere necessario installare pacchetti aggiuntivi successivamente.
 </p>
 
 <pre caption="Installare un ambiente GNOME minimale">
@@ -147,15 +154,26 @@ il momento di aggiornare le variabili d'ambiente:
 </pre>
 
 <p>
-Successivamente si dovranno ripulire i servizi rimanenti.
+Successivamente si dovranno ripulire i servizi e i gruppi utenti rimanenti.
 </p>
 
-<pre caption="Aggiungere hald e dbus al runlevel di default">
-# <i>/etc/init.d/hald start</i>
-# <i>rc-update add hald default</i>
-
+<pre caption="Installazione del servizio DBUS">
 # <i>/etc/init.d/dbus start</i>
 # <i>rc-update add dbus default</i>
+</pre>
+
+<p>
+Controllare che il gruppo <e>plugdev</e> esista. Se esiste è consigliabile
+aggiungere il proprio utente a quel gruppo, ma questo è opzionale
+(il gruppo non è più molto comune).
+</p>
+
+<pre caption="Controllo e aggiunta dell'utente a plugdev">
+~# <i>getent group plugdev</i>
+plugdev:x:104:
+
+<comment># Sostituire yourUserName con il proprio nome utente ;-)</comment>
+~# <i>gpasswd -a yourUserName plugdev</i>
 </pre>
 
 </body>
@@ -173,7 +191,7 @@ link="/doc/it/xorg-config.xml#using_startx">Usare startx</uri> nel documento
 X</uri>):
 </p>
 
-<pre caption="Usare GNOME come ambiente desktop predefinito">
+<pre caption="Impostare GNOME come l'ambiente desktop predefinito">
 $ <i>echo "exec gnome-session" &gt; ~/.xinitrc</i>
 </pre>
 
@@ -234,20 +252,21 @@ DISPLAYMANAGER="gdm"
 </pre>
 
 <p>
+Se si è installato Gnome utilizzando il pacchetto <c>gnome-light</c>, sarà
+necessario installare anche <c>gdm</c> (poichè non è definito come parte
+del pacchetto <c>gnome-light</c>).
+</p>
+
+<pre caption="Installazione di gdm">
+# <i>emerge gdm</i>
+</pre>
+
+<p>
 Dopo il riavvio, il Display Manager di GNOME chiederà nome utente e password ed
 userà GNOME come Ambiente Desktop predefinito (naturalmente lasciando sempre
 all'utente la possibilità di sceglierne un altro tra quelli disponibili in
 <path>/usr/share/xsessions/</path>). Pertanto, se si usa GDM, non è necessario
 modificare <path>~/.xinitrc</path>.
-</p>
-
-<p>
-Per usare la funzionalità di <c>hald</c> bisogna aggiungere il proprio utente al
-gruppo <c>plugdev</c>. Se si desidera il supporto alle periferiche non gestite
-dal file manager <c>nautilus</c>, o se non si sta proprio utilizzando tale
-programma, allora bisogna assicurarsi che <c>gnome-volume-manager</c> sia
-compilato con la USE flag <c>automount</c> attiva, e che venga avviato ogni
-volta che si effettua il login.
 </p>
 
 </body>

@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/lvm2.xml,v 1.19 2009/02/17 21:54:00 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/lvm2.xml,v 1.20 2012/02/22 20:57:51 swift Exp $ -->
 
-<guide link="/doc/it/lvm2.xml" lang="it">
+<guide lang="it">
 <title>Installazione di Gentoo con LVM2</title>
 
 <author title="Autore">
@@ -30,8 +30,8 @@ del Logical Volume Manager versione 2 (LVM2).
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>2.7</version>
-<date>2009-02-10</date>
+<version>4</version>
+<date>2011-12-26</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -39,7 +39,7 @@ del Logical Volume Manager versione 2 (LVM2).
 <body>
 
 <p>
-Questa guida si basa su un esempio fatto con due hard disk IDE. Ciò vuol dire
+Questa guida si basa su un esempio fatto con due hard disk SATA. Ciò vuol dire
 che molto probabilmente è necessario modificare le unità, i nomi delle
 partizioni e le loro dimensioni per essere adattata alla propria configurazione
 e alle proprie esigenze.
@@ -75,9 +75,10 @@ essere ugualmente supportate.
 
 <p>
 Se si sta installando LVM2 su un sistema già esistente con dello spazio
-disponibile su hard disk, occorre attivare il modulo LVM2 (<path>dm-mod</path>).
-Questo modulo è disponibile in <path>gentoo-sources</path>. La compilazione del
-kernel e la configurazione di LVM2 viene affrontata più avanti in questa guida.
+disponibile su hard disk, occorre attivare il modulo LVM2 (<path>dm-mod</path>) 
+nel kernel. Questo modulo è disponibile in <path>gentoo-sources</path>. 
+La compilazione del kernel e la configurazione di LVM2 viene affrontata 
+più avanti in questa guida.
 </p>
 
 <p>
@@ -92,15 +93,15 @@ Non tutti i kernel della serie 2.4 forniti da Gentoo supportano LVM2!
 <body>
 
 <p>
-Il sistema preso in esempio ha due hard disk IDE così partizionati:
+Il sistema preso in esempio ha due hard disk SATA così partizionati:
 </p>
 
 <ul>
-  <li>/dev/hda1  --  /boot</li>
-  <li>/dev/hda2  --  (swap)</li>
-  <li>/dev/hda3  --  /</li>
-  <li>/dev/hda4  --  Utilizzato da LVM2</li>
-  <li>/dev/hdb1  --  Utilizzato da LVM2</li>
+  <li>/dev/sda1  --  /boot</li>
+  <li>/dev/sda2  --  (swap)</li>
+  <li>/dev/sda3  --  /</li>
+  <li>/dev/sda4  --  Utilizzato da LVM2</li>
+  <li>/dev/sdb1  --  Utilizzato da LVM2</li>
 </ul>
 
 <impo>
@@ -134,18 +135,18 @@ adattato alle proprie esigenze.
 </p>
 
 <p>
-Creare una piccola partizione fisica per <path>/boot</path> (hda1). In questo
+Creare una piccola partizione fisica per <path>/boot</path> (sda1). In questo
 esempio <path>/boot</path> non viene gestita da LVM2. In questa partizione
 vengono memorizzati il bootloader e i vari kernel. Una partizione di 64MB
 dovrebbe essere sufficientemente grande.
 </p>
 
 <p>
-Creare una partizione di swap (hda2).
+Creare una partizione di swap (sda2).
 </p>
 
 <p>
-Creare una partizione per / (root) (hda3). Se si fosse interessati a gestire la
+Creare una partizione per / (root) (sda3). Se si fosse interessati a gestire la
 partizione di root con LVM (cosa che non raccomandiamo), si può visitare, nella
 sezione 'Risorse' alla fine di questa guida, un link ad un mini-guida su come
 fare ciò. Non occorre assegnare troppo spazio alla partizione di root se si
@@ -188,11 +189,20 @@ descritto nel manuale Gentoo.
 </p>
 
 <p>
-Caricare il modulo di LVM2 <path>dm-mod</path>.
+Avviare il servizio lvm.
 </p>
 
-<pre caption="Caricamento del modulo di LVM2">
-# <i>modprobe dm-mod</i>
+<pre caption="Avvio del servizio lvm">
+# <i>rc-config start lvm</i>
+</pre>
+
+<p>
+È consigliato aggiungere il servizio lvm al runlevel boot. In questo modo
+LVM2 sarà attivato ogni volta che si avvia il sistema.
+</p>
+
+<pre caption="Aggiungere lvm al runlevel boot">
+# <i>rc-config add lvm boot</i>
 </pre>
 
 <p>
@@ -201,7 +211,7 @@ Prima di effettuare lo scan e di attivare LVM, si potrebbe voler modificare
 predefinito, LVM2 effettua la scansione di tutti i dispositivi, persino del
 CDROM, il che potrebbe generare messaggi d'errore. Nell'esempio seguente, la
 linea che consente la scansione di tutti i dispositivi è sostituita da una linea
-che evita la scansione di tutti i dispositivi tranne i propri due dischi IDE.
+che evita la scansione di tutti i dispositivi tranne i propri due dischi SATA.
 </p>
 
 <pre caption="Attivazione di LVM">
@@ -209,8 +219,8 @@ che evita la scansione di tutti i dispositivi tranne i propri due dischi IDE.
 # <i>nano -w /etc/lvm/lvm.conf</i>
 <comment>(Cercare la linea seguente)</comment>
   filter = [ "a/.*/" ]
-<comment>(Sostituire tale linea con la seguente, in modo da effettuare la scansione di /dev/hda e /dev/hdb e di nessun altro dispositivo)</comment>
-  filter = [ "a|/dev/hd[ab]|", "r/.*/" ]
+<comment>(Sostituire tale linea con la seguente, in modo da effettuare la scansione di /dev/sda e /dev/sdb e di nessun altro dispositivo)</comment>
+  filter = [ "a|/dev/sd[ab]|", "r/.*/" ]
 <comment>(Salvare il file ed uscire da nano)</comment>
 # <i>vgscan</i>
   Reading all physical volumes.  This may take a while...
@@ -224,11 +234,11 @@ Preparare le partizioni.
 </p>
 
 <pre caption="Preparazione delle partizioni">
-# <i>pvcreate /dev/hda4 /dev/hdb1</i>
-  No physical volume label read from /dev/hda4
-  Physical volume "/dev/hda4" successfully created
-  No physical volume label read from /dev/hdb1
-  Physical volume "/dev/hdb1" successfully created
+# <i>pvcreate /dev/sda4 /dev/sdb1</i>
+  No physical volume label read from /dev/sda4
+  Physical volume "/dev/sda4" successfully created
+  No physical volume label read from /dev/sdb1
+  Physical volume "/dev/sdb1" successfully created
 </pre>
 
 <p>
@@ -237,21 +247,21 @@ fisiche in un'unica unità logica.
 </p>
 
 <p>
-In questo esempio, <path>/dev/hda1</path>, <path>/dev/hda2</path> e
-<path>/dev/hda3</path> sono le partizioni di <path>/boot</path>, swap e root,
-perciò quelle da combinare sono <path>/dev/hda4</path> e
-<path>/dev/hdb1</path>. Questo può essere ottenuto con un singolo comando, ma,
+In questo esempio, <path>/dev/sda1</path>, <path>/dev/sda2</path> e
+<path>/dev/sda3</path> sono le partizioni di <path>/boot</path>, swap e root,
+perciò quelle da combinare sono <path>/dev/sda4</path> e
+<path>/dev/sdb1</path>. Questo può essere ottenuto con un singolo comando, ma,
 come nell'esempio, prima si creerà il volume group e poi verrà esteso.
 </p>
 
 
 <pre caption="Creazione ed estenzione del volume group">
 <comment>(Creare un volume group di nome vg)</comment>
-# <i>vgcreate vg /dev/hda4</i>
+# <i>vgcreate vg /dev/sda4</i>
   /etc/lvm/backup: fsync failed: Invalid argument <comment>(Ignorare questo avviso)</comment>
   Volume group "vg" successfully created
 <comment>(Estendere il volume group esistente)</comment>
-# <i>vgextend vg /dev/hdb1</i>
+# <i>vgextend vg /dev/sdb1</i>
   /etc/lvm/backup: fsync failed: Invalid argument <comment>(Ignorare ancora questo avviso e quelli più avanti)</comment>
   Volume group "vg" successfully extended
 </pre>
@@ -359,7 +369,7 @@ modo seguente:
 </p>
 
 <pre caption="Selezione del modulo LVM2 in un kernel 2.4.x">
-Multi-device support (RAID and LVM)  ---&gt;
+Multiple devices driver support (RAID and LVM)  ---&gt;
   [*] Multiple devices driver support (RAID and LVM)
   &lt; &gt;  RAID support
 <comment>(Notare che LVM non è selezionato di proposito perchè è relativo a LVM1)</comment>
@@ -379,20 +389,6 @@ Device Drivers  ---&gt;
 <p>
 Il modulo compilato si chiama <path>dm-mod.ko</path>
 </p>
-
-<p>
-Dopo aver compilato il kernel e installato i suoi moduli aggiungere la riga
-seguente al file <path>/etc/modules.autoload.d/kernel-{KV}</path>, dove {KV}
-rappresenta la versione del kernel (2.4 o 2.6), in modo da fare caricare il
-modulo di LVM2 all'avvio della macchina:
-</p>
-
-<pre caption="Aggiunta del modulo di LVM2 in
-/etc/modules.autoload.d/kernel-2.6">
-# <i>nano -w /etc/modules.autoload.d/kernel-2.6</i>
-<comment>(Aggiungere la riga seguente)</comment>
-dm-mod
-</pre>
 
 <p>
 A questo punto installare il pacchetto lvm2.
@@ -424,9 +420,9 @@ il nostro esempio:
 </p>
 
 <pre caption="Frammento di /etc/fstab">
-/dev/hda1     /boot   ext3    noauto,noatime 1 2
-/dev/hda2     none    swap    sw             0 0
-/dev/hda3     /       ext3    noatime        0 1
+/dev/sda1     /boot   ext3    noauto,noatime 1 2
+/dev/sda2     none    swap    sw             0 0
+/dev/sda3     /       ext3    noatime        0 1
 # Volumi Logici
 /dev/vg/usr   /usr    ext3    noatime        0 2
 /dev/vg/home  /home   ext3    noatime        0 2
