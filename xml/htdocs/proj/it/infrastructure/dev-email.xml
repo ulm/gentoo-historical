@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/infrastructure/dev-email.xml,v 1.7 2010/06/20 22:39:17 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/it/infrastructure/dev-email.xml,v 1.8 2012/02/26 15:07:07 swift Exp $ -->
 
 <guide link="/proj/it/infrastructure/dev-email.xml" lang="it">
 <title>Sistema E-mail di Gentoo per Sviluppatori</title>
@@ -36,8 +36,8 @@ Questo documento descrive cosa può fare uno sviluppatore Gentoo col sistema
 e-mail di Gentoo, e fornisce i dettagli di configurazione necessari.
 </abstract>
 
-<version>1.6</version>
-<date>2010-05-25</date>
+<version>1.12</version>
+<date>2011-12-03</date>
 
 <!-- This doesn't look good, can be handy though. Commenting out
      untill someone wants it. How's that for anticipation :)
@@ -179,22 +179,31 @@ propria casella di posta su dev.gentoo.org:
 A partire dal 29/06/2009, viene usato CACert come Certificate Authority per
 tutti i seguenti certificati SSL.
 </note>
+<note>
+Prima del dicembre 2011 l'infrastruttura Gentoo supportava solo le varianti SSL
+puro del protocollo, che forniscono incapsulamento completo intorno ai
+protocolli POP3 e IMAP. Anche se POP3S e IMAPS sono tuttora supportati, gli
+utilizzatori sono invitati ad usare piuttosto STARTTLS, in quanto è più facile
+eseguire i debug per via del formato testo inziale in tcpdump. Gli utilizzatori
+alle spalle di firewall aggressivi che eseguono un'ispezione approfondita dei
+pacchetti per bloccare intestazioni in testo semplice possono ancora usare la
+variante pura di SSL.
+</note>
 
 </body>
 </section>
 <section>
-<title>Accedere a dev.gentoo.org usando POP3S</title>
+<title>Accedere a dev.gentoo.org usando POP3 e STARTTLS o POP3S</title>
 <body>
 
 <p>
-pop3s è la variante sicura di POP3, la versione 3 del Post Office Protocol. POP3
-è un protocollo di tipo "pull", nel senso che le e-mail vengono scaricate dal
-server sul proprio disco locale.
+POP3 è un protocollo di tipo "pull", nel senso che le e-mail vengono scaricate
+dal server sul proprio disco locale.
 </p>
 
 <p>
-Per configurare il proprio client preferito per pop3s, usare le seguenti
-impostazioni:
+Per configurare il proprio client preferito per POP3 e STARTTLS o POP3S, usare
+le seguenti impostazioni:
 </p>
 
 <ul>
@@ -205,8 +214,8 @@ impostazioni:
 </ul>
 
 <warn>
-POP3 senza SSL <e>non</e> è supportata! È insicuro perché trasmette la password
-in chiaro, è ciò è MALE.
+POP3 senza SSL/TLS <e>non</e> è supportata! È insicuro perché trasmette la
+password in chiaro, è ciò è MALE.
 </warn>
 
 <p>
@@ -217,9 +226,17 @@ simile a questo:
 
 <pre caption="fetchmailrc">
 poll dev.gentoo.org proto pop3
-    user <i>username</i> pass <i>password</i> nokeep ssl
-sslfingerprint "4E:D2:D8:69:59:FD:7D:61:01:90:F6:79:B2:E1:57:96"
+    user <i>username</i>
+    pass <i>password</i>
+    nokeep sslcertck
+    sslfingerprint "34:D0:1D:0D:08:0A:39:D1:A7:46:E4:E9:4F:33:FF:58"
+    sslcertfile /usr/share/ca-certificates/cacert.org/cacert.org.crt
+    sslproto TLS1
 </pre>
+<note>
+La configurazione qui sopra usa POP3 con STARTTLS. Se si ha bisogno invece di
+usare POP3S, si aggiunga la parola chiave <c>ssl</c> prima di <c>sslcertck</c>.
+</note>
 
 <p>
 Se si sta utilizzando <c>sylpheed</c> per le proprie e-mail, creare un nuovo
@@ -233,8 +250,9 @@ autonomamente il proprio account.
 </p>
 
 <pre caption="fingerprint POP3 SSL di dev.gentoo.org">
-MD5  = 4E:D2:D8:69:59:FD:7D:61:01:90:F6:79:B2:E1:57:96
-SHA1 = 98:2D:D6:9F:4F:BD:9D:03:70:B3:96:4A:84:A6:F6:5A:89:69:F1:02
+MD5    = 34:D0:1D:0D:08:0A:39:D1:A7:46:E4:E9:4F:33:FF:58
+SHA1   = C7:79:6B:C9:D5:C8:02:D6:D4:72:EA:7C:DB:F3:BD:29:A3:F5:FF:72
+SHA256 = F2:7E:E0:B7:D4:CE:43:6A:BF:42:12:51:5B:95:84:7E:0E:10:70:AD:F6:11:90:B6:72:9C:3E:59:BB:1B:FA:A4
 </pre>
 
 </body>
@@ -244,15 +262,13 @@ SHA1 = 98:2D:D6:9F:4F:BD:9D:03:70:B3:96:4A:84:A6:F6:5A:89:69:F1:02
 <body>
 
 <p>
-IMAPS è la variante sicura di IMAP, acronimo di Internet Message Access Protocol
-(Protocollo di Accesso ai Messaggi via Internet, ndt) versione 4. IMAP è un
-protocollo di tipo "push", nel senso che le e-mail rimangono sul server remoto
-nel quale si possono anche gestire caselle di posta separate.
+IMAP è un protocollo di tipo "push", che significa che le e-mail stanno nel
+server remoto e che si possono gestire mailbox separate in quel server.
 </p>
 
 <p>
-Per configurare il proprio client e-mail preferito per IMAPS, usare le seguenti
-impostazioni:
+Per configurare il proprio client e-mail preferito per IMAP e STARTTLS or IMAPS,
+usare le seguenti impostazioni:
 </p>
 
 <ul>
@@ -263,7 +279,7 @@ impostazioni:
 </ul>
 
 <warn>
-IMAP senza SSL <e>non</e> è supportato! È insicuro perché usa un'autenticazione
+IMAP senza SSL/TLS <e>non</e> è supportato! È insicuro perché usa un'autenticazione
 statica, è ciò è MALE.
 </warn>
 
@@ -281,18 +297,26 @@ essere simile a questo:
 
 <pre caption = "fetchmailrc">
 poll dev.gentoo.org proto imap
-    user <i>username</i> pass <i>password</i> nokeep ssl
-sslfingerprint "BA:B9:34:21:EB:B1:63:69:BB:B0:7F:4A:50:60:12:4F"
+    user <i>username</i>
+    pass <i>password</i>
+    nokeep sslcertck
+    sslfingerprint "34:D0:1D:0D:08:0A:39:D1:A7:46:E4:E9:4F:33:FF:58"
+    sslcertfile /usr/share/ca-certificates/cacert.org/cacert.org.crt
+    sslproto TLS1
 </pre>
-
+<note>
+La configurazione qui sopra usa IMAP con STARTTLS. Se si ha bisogno invece di
+usare IMAPS, si aggiunga la parola chiave <c>ssl</c> prima di <c>sslcertck</c>.
+</note>
 <p>
 Se si sta utilizzando <c>mutt</c>, si sarà abbastanza scaltri per configurare
 autonomamente il proprio account.
 </p>
 
 <pre caption="fingerprint IMAP SSL di dev.gentoo.org">
-MD5  = BA:B9:34:21:EB:B1:63:69:BB:B0:7F:4A:50:60:12:4F
-SHA1 = 91:57:06:37:61:1D:12:DD:8B:EE:31:C2:0B:EB:38:FE:10:1D:F1:B0
+MD5    = 34:D0:1D:0D:08:0A:39:D1:A7:46:E4:E9:4F:33:FF:58
+SHA1   = C7:79:6B:C9:D5:C8:02:D6:D4:72:EA:7C:DB:F3:BD:29:A3:F5:FF:72
+SHA256 = F2:7E:E0:B7:D4:CE:43:6A:BF:42:12:51:5B:95:84:7E:0E:10:70:AD:F6:11:90:B6:72:9C:3E:59:BB:1B:FA:A4
 </pre>
 
 </body>
@@ -322,8 +346,9 @@ certificato è inoltre contrassegnato da CACert a partire da 2010/05/25.
 </p>
 
 <pre caption="dev.gentoo.org SMTP SSL fingerprints">
-MD5  = 77:F5:26:D5:E9:DD:E0:38:67:D3:E0:F7:97:17:51:D8
-SHA1 = 07:82:26:A7:F7:AE:C1:CC:BD:CD:F4:2D:91:D5:FC:73:D5:16:88:14
+MD5    = B5:E9:21:AF:8C:97:03:A3:2D:B4:73:80:19:8C:9B:82
+SHA1   = E1:B3:FC:AD:DF:D3:A4:72:8B:2D:BB:3E:2F:90:91:15:49:39:61:F9
+SHA256 = 2B:98:39:5D:21:D5:79:F1:87:ED:F8:9D:72:48:FB:F3:8C:BC:32:BC:B3:3A:DE:94:35:5E:74:13:13:AB:6C:98
 </pre>
 
 </body>
@@ -396,6 +421,20 @@ seguente contenuto:
 | /usr/bin/procmail
 </pre>
 
+</body>
+</section>
+<section>
+<title>Posso usare sieve/managesieve su dev.gentoo.org?</title>
+<body>
+<p>
+Occorre creare un file <path>~/.forward</path> con il seguente contenuto:
+</p>
+<pre caption="~/.forward per sieve/managesieve usage">
+| "/usr/libexec/dovecot/deliver"
+</pre>
+<note>
+Anche usando il dovecot LDA si migliorano le performance di IMAP e POP3.
+</note>
 </body>
 </section>
 <section>
