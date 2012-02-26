@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/mailfilter-guide.xml,v 1.3 2007/12/13 22:24:40 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/mailfilter-guide.xml,v 1.4 2012/02/26 08:36:40 swift Exp $ -->
 
-<guide link="/doc/it/mailfilter-guide.xml" lang="it">
+<guide lang="it">
 <title>Guida al filtraggio della posta elettronica con Gentoo</title>
 
 <author title="Autore">
@@ -28,8 +28,8 @@ per Spamassassin e ClamAV, greylisting e l'SPF (Sender Policy Framework).
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>0.14</version>
-<date>2007-08-02</date>
+<version>5</version>
+<date>2011-06-19</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -973,7 +973,7 @@ Creare l'utente spamtrap e relative directory.
 <pre caption="Creare l'account spamtrap">
 # <i>useradd -m spamtrap</i>
 # <i>maildirmake /home/spamtrap/.maildir</i>
-# <i>chown -R spamtrap:mailusers /home/spamtrap/.maildir</i>
+# <i>chown -R spamtrap:spamtrap /home/spamtrap/.maildir</i>
 <comment>(Impostare una password non banale)</comment>
 # <i>passwd spamtrap</i>
 </pre>
@@ -1141,116 +1141,6 @@ Modificare amavis per redirigere tutte le email di spam verso l'account
 <pre caption="Modificare /etc/amavisd.conf">
 <comment>(Definire l'account al quale inviare le email di spam e con virus)</comment>
 $spam_quarantine_to = "spamtrap\@$myhostname";
-</pre>
-
-</body>
-</section>
-<section>
-<title>Inviare nuovamente i falsi positivi</title>
-<body>
-
-<p>
-Se è stata impostata una soglia molto bassa per lo spam (come suggerito),
-probabilmente verranno generati alcuni falsi positivi. Questi messaggi sono
-filtrati nella cartella <path>likely-spam</path>: essi sono verificati
-manualmente ed i falsi positivi sono spostati nella cartella
-<path>redeliver</path>. Da lì, essi sono prima forniti a <c>sa-learn --ham</c>
-e poi inviati nuovamente con tutti gli header intatti usando una versione
-modificata di <uri
-link="http://www.engelschall.com/sw/smtpclient/">smtpclient</uri> di Ralf S.
-Engelschall.
-</p>
-
-<p>
-La versione 1.0.0 originale di <c>smtpclient</c> è in Portage; per mantenere gli
-header intatti, però, è necessario usare la versione modificata. Ecco come
-installare la versione modificata:
-</p>
-
-<pre caption="Installare la versione modificata di smtpclient">
-<comment>(Spostarsi all'interno dell'overlay di Portage)</comment>
-# <i>wget http://home.coming.dk/files/smtpclient.tar.gz</i>
-# <i>tar xzf smtpclient.tar.gz</i>
-# <i>echo "mail-client/smtpclient    ~x86" &gt;&gt; /etc/portage/package.keywords</i>
-# <i>echo "mail-client/smtpclient    fullheaders" &gt;&gt; /etc/portage/package.use</i>
-# <i>emerge smtpclient</i>
-</pre>
-
-<p>
-Controllare la posta nella cartella <path>redeliver</path> ogni minuto circa
-usando cron.
-</p>
-
-<pre caption="amavis crontab">
-<comment>#Inviare nuovamente i falsi positivi</comment>
-* * * * *          find /var/amavis/.maildir/Bayes/.redeliver/cur/ -type f -name \
-                   "[0-9]*" -exec cp {} /var/amavis/.maildir/Bayes/.ham/cur/ \; \
-                   &amp;&amp; find /var/amavis/.maildir/Bayes/.redeliver/cur/ -type f \
-                   -name "[0-9]*" -exec /usr/local/bin/redeliver.pl {} \;
-</pre>
-
-<p>
-Ora basta copiare il file <c>redeliver.pl</c> in <path>/usr/local/bin/</path>.
-<uri link="http://home.coming.dk/files/redeliver.pl">Scaricarlo qui</uri> o
-usare la versione sottostante.
-</p>
-
-<pre caption="redeliver.pl">
-<comment>#!/usr/bin/perl -w
-
-# Invia nuovamente la posta usando una versione modificata di smtpclient
-# By: Jens Hilligsoe &lt;gentoo@hilli.dk&gt;</comment>
-
-use strict;
-
-if(!($#ARGV == 0)) {
-        die "Usage:\n$0 maildir_mail\n";
-}
-
-my $mail = $ARGV[0];
-my $to = "";
-my $from = "";
-
-sub prunefile ( $ );
-
-<comment># Recuperare gli indirizzi del mittente e del destinatario</comment>
-open (MAIL, $mail) or die "Could not open $mail: $?\n";
-while(&lt;MAIL&gt;) {
-    if(($to eq "") || ($from eq "")) {
-        chop;
-        (my $key, my $value) = split (/:/);
-        if($key eq "X-Envelope-To") {
-            $to = $value;
-            $to =~ s/[\&lt;\&gt;,]//g; # Remove "&lt;", "&gt;" and ","
-            $to =~ s/^\s+|\s+$//g; #Remove whitespace before and after
-        }
-        if($key eq "X-Envelope-From") {
-            $from = $value;
-            $from =~ s/[\&lt;\&gt;,]//g;
-            $from =~ s/^\s+|\s+$//g;
-            if($from eq "") {
-                $from = "postmaster";
-            }
-        }
-    }
-}
-
-if($to eq "") {
-    prunefile($ARGV[0]); # Just nuke it if to is empty
-} else {
-    my $redelivercmd = "cat $ARGV[0] | smtpclient -F -S 127.0.0.1 -P 10025 -f $from $to";
-    unless (system($redelivercmd) == 0 ) {
-        die "Unable to redeliver: $?";
-    }
-    prunefile($ARGV[0]); # Clean up
-}
-
-sub prunefile ( $ ) {
-    my ($file) = @_;
-    unless (unlink $file) {
-        die "Unable to remove mail: $?";
-    }
-}
 </pre>
 
 </body>

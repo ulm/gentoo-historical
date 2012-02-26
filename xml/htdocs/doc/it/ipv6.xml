@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/ipv6.xml,v 1.22 2010/08/25 21:02:16 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/ipv6.xml,v 1.23 2012/02/26 08:36:40 swift Exp $ -->
 
 <guide lang="it">
 <title>Guida al routing IPv6 con Gentoo</title>
@@ -23,6 +23,9 @@
 <author title="Redazione">
   <mail link="nightmorph"/>
 </author>
+<author title="Redazione">
+  <mail link="hwoarang"/>
+</author>
 <author title="Traduzione">
   <mail link="gentoo@virgilio.it">Shev</mail>
 </author>
@@ -44,8 +47,8 @@ il sistema per connettersi a indirizzi IPv6.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>3</version>
-<date>2010-08-11</date>
+<version>7</version>
+<date>2011-09-02</date>
 
 <chapter>
 <title>Preliminari</title>
@@ -79,16 +82,15 @@ sorgenti che si ha intenzione di utilizzare.
 </note>
 
 <pre caption="opzioni di 'make menuconfig'">
-Device Drivers ---&gt;
 Networking support ---&gt;
-Networking options ---&gt;
-   &lt;*&gt; The IPv6 protocol (EXPERIMENTAL)
-
+  Networking options ---&gt;
+    &lt;*&gt; The IPv6 protocol ---&gt;
 <comment>(Le opzioni IPv6 sotto questa voce potrebbero essere utili per diverse applicazioni,)</comment>
 <comment>(ma non dovrebbero essere necessarie per una configurazione di base)</comment>
 <comment>(Questa opzione è necessaria solo se viene utilizzato ptrtd per la conversione 6to4)</comment>
-[*] Network device support
-   &lt;*&gt; Universal TUN/TAP device driver support
+Device Drivers ---&gt;
+  Network device support ---&gt;
+    &lt;*&gt; Universal TUN/TAP device driver support
 </pre>
 
 </body>
@@ -659,48 +661,35 @@ Altre informazioni sono disponibili su <c>man radvd.conf</c>. Ora si può avviar
 <body>
 
 <p>
-Nel caso si voglia servirsi della configurazione stateful, bisogna installare e
-configurare dhcpv6.
+Nel caso si voglia avere una configurazione stateful, bisogna installare e
+configurare <c>net-misc/dibbler</c>.
 </p>
 
-<pre caption="Installare dhcpv6">
-# <i>emerge dhcpv6</i>
+<pre caption="Installare dibbler">
+# <i>emerge dibbler</i>
 </pre>
 
 <p>
-Configurare qundi il server DHCPv6 modificando <path>/etc/dhcp6s.conf</path>.
+Ora occorre configurare il client dibbler modificando
+<path>/etc/dibbler/client.conf</path>.
 </p>
 
-<pre caption="dhcp6s.conf d'esempio">
-prefer-life-time 10000;
-valid-life-time 20000;
-renew-time 5000;
-rebind-time 8000;
-interface eth1 {
-        link AAA {
-                allow unicast;
-                send unicast;
-                allow rapid-commit;
-                send server-preference 5;
-                renew-time 1000;
-                rebind-time 2400;
-                prefer-life-time 2000;
-                valid-life-time 3000;
-                pool{
-                range 2001:470:1f00:296::10 to 2001:470:1f00:296::110/64;
-                prefix 2001:470:1f00:296::/64;
-                };
-        };
-};
+<pre caption="Esempio di configurazione del client dibbler">
+iface ppp0 {
+        rapid-commit yes
+        pd
+        option dns-server
+}
 </pre>
 
 <p>
-È ora possibile avviare dhcp6s e configurarlo perchè venga avviato al boot.
+Ora si può avviare il client dibbler e configurarlo perché venga avviato al
+boot.
 </p>
 
-<pre caption="Attivare dhcp6s">
-# <i>/etc/init.d/dhcp6s start</i>
-# <i>rc-update add dhcp6s default</i>
+<pre caption="Avviare il client dibbler">
+# <i>/etc/init.d/dibbler-client start</i>
+# <i>rc-update add dibbler-client default</i>
 </pre>
 
 </body>
@@ -732,189 +721,6 @@ propri script init net.ethX).
     inet6 ff02::1/128 scope global
        valid_lft forever preferred_lft forever
 </pre>
-
-</body>
-</section>
-<section>
-<title>Usare DHCPv6</title>
-<body>
-
-<p>
-Se il proprio router è impostato per utilizzare DHCPv6, anche i propri client
-dovranno avere installato il pachetto <c>net-misc/dhcpv6</c>. Dopo aver
-provveduto all'installazione, si dovranno configurare i client modificando
-<path>/etc/dhcp6c.conf</path>.
-</p>
-
-<pre caption="dhcp6c.conf d'esempio">
-interface eth0 {
-        send rapid-commit;
-        request domain-name-servers;
-        iaid 11111;
-        renew-time 11000;
-};
-</pre>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Usare la conversione 6to4</title>
-<section>
-<title>Principi di base</title>
-<body>
-
-<p>
-La conversione 6to4 può essere utilizzata qualora si vogliano avere host
-comunicanti con altri host IPv4 puramente attraverso connessioni IPv6. In questo
-modo sarà possibile avere una rete interna esclusivamente IPv6, con un solo host
-che si occupi della connessione con il mondo esterno IPv4/IPv6.
-</p>
-
-</body>
-</section>
-<section>
-<title>Configurazione del DNS</title>
-<body>
-
-<p>
-Per ottenere una conversione 6to4 funzionante, deve essere configurato un proxy
-DNS, <c>totd</c>, affinchè trasmetta alla rete interna record AAAA per quei siti
-che in realtà possiedono solo records A. Questi records AAAA punteranno a
-indirizzi IPv6 che sono attualmente inesistenti, ma che saranno convertiti in
-destinazioni valide attraverso l'instradamento del proxy 6to4.
-</p>
-
-<p>
-Per prima cosa, installare <c>totd</c>:
- </p>
-
-<pre caption="Installare totd">
-# <i>emerge totd</i>
-</pre>
-
-<p>
-Adesso bisogna impostare <path>/etc/totd.conf</path> con alcune informazioni di
-configurazione di base.
-</p>
-
-<pre caption="/etc/totd.conf d'esempio">
-<comment>(Punta al vero nameserver DNS)</comment>
-forwarder 192.168.0.2 port 53
-<comment>(Quale prefisso mettere prima del record falso AAAA)</comment>
-prefix 3ffe:abcd:1234:9876::
-<comment>(Su quale porta far girare totd)</comment>
-port 5005
-<comment>(Quale file PID usare)</comment>
-pidfile /var/run/totd.pid
-<comment>(Fa la funzione 6to4)</comment>
-stf
-</pre>
-
-<note>
-<c>totd</c> deve essere regolato affinchè si serva di una porta differente dalla
-53 qualora sulla stessa macchina giri un altro nameserver.
-</note>
-
-</body>
-</section>
-<section>
-<title>Proxy 6to4</title>
-<body>
-
-<p>
-<c>ptrtd</c> sarà utilizzato come proxy 6to4, abilitando le connessioni tra gli
-host IPv6 interni e quelli IPv4 esterni.
-</p>
-
-<pre caption="Installare ptrtd">
-# <i>emerge ptrtd</i>
-</pre>
-
-<p>
-Ora bisogna configurare <c>ptrtd</c>, dicendogli quale prefisso simulato (quello
-utilizzato per impostare <c>totd</c>) creare per le connessioni proxy.
-Modificare <path>/etc/conf.d/ptrtd</path> ed impostare <c>IPV6_PREFIX</c>.
-Questo dovrebbe essere lo stesso prefisso che è stato configurato con
-<c>totd</c>.
-</p>
-
-<pre caption="/etc/ptrtd.conf d'esempio">
-IPV6_PREFIX="3ffe:abcd:1234:9876::"
-</pre>
-
-<p>
-Ora è possibile avviare totd ed impostare che venga avviato al boot.
-</p>
-
-<pre caption="Avviare totd">
-# <i>/etc/init.d/totd start</i>
-# <i>rc-update add totd default</i>
-</pre>
-
-</body>
-</section>
-<section>
-<title>Configurazione e prova del client</title>
-<body>
-
-<p>
-I client possono ora essere configurati per collegarsi a host sia IPv4 che
-IPv6 attraverso una sola connessione IPv6. Supponendo che i client abbiamo già
-ricevuto un indirizzo IP da radvd, bisogna semplicemente aggiungere una nuova
-voce di risoluzione DNS e aggiungere una default route per gli indirizzi
-"simulati" (falsi, fake). Prima di tutto aggiungere una voce in cima al proprio
-<path>/etc/resolv.conf</path> che punti alla macchina sulla quale gira
-<c>totd</c>.
-</p>
-
-<pre caption="/etc/resolv.conf d'esempio">
-nameserver 2001:470:1f00:296::1 <comment>(Il server su cui gira totd)</comment>
-</pre>
-
-<p>
-Per provare la risoluzione dei nomi, richiedere un record AAAA per un sito
-conosciuto (che sia solo IPv4).
-</p>
-
-<pre caption="Provare la risoluzione dei nomi">
-# <i>dig aaaa google.com</i>
-;; ANSWER SECTION:
-google.com.             300     IN      AAAA     3ffe:abcd:1234:9876::d8ef:3364
-google.com.             300     IN      AAAA     3ffe:abcd:1234:9876::d8ef:3564
-</pre>
-
-<p>
-si dovrà ora aggiungere una route predefinita per tutti gli indirizzi preceduti
-dal prefisso simulato che è stato scelto.
-</p>
-
-<pre caption="Aggiungere la route di default">
-<comment>(Si assume che l'interfaccia IPv6 sia eth0)</comment>
-# <i>ip route add 3ffe:abcd:1234:9876::/64 via 2001:470:1f00:296::1 dev eth0</i>
-</pre>
-
-<p>
-Infine, usare <c>ping6</c> per pingare google.com nella sua versione IPv6
-simulata.
-</p>
-
-<pre caption="Provare 6to4">
-# <i>ping6 -c 2 google.com</i>
-PING 3ffe:abcd:1234:9876::d8ef:3364(3ffe:abcd:1234:9876::d8ef:3364) 56 data bytes
-64 bytes from 3ffe:abcd:1234:9876::d8ef:3364: icmp_seq=1 ttl=54 time=0.106 ms
-64 bytes from 3ffe:abcd:1234:9876::d8ef:3364: icmp_seq=2 ttl=54 time=0.090 ms
-
---- 3ffe:abcd:1234:9876::d8ef:3364 ping statistics ---
-2 packets transmitted, 2 received, 0% packet loss, time 1000ms
-rtt min/avg/max/mdev = 0.090/0.098/0.106/0.008 ms
-</pre>
-
-<note>
-Il router su cui gira <c>ptrtd</c> sta realmente rispondendo, ma questo basta
-per capire se le cose stanno funzionando o meno.
-</note>
 
 </body>
 </section>
