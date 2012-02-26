@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-net-advanced.xml,v 1.8 2009/02/15 21:05:40 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-net-advanced.xml,v 1.9 2012/02/26 08:35:15 swift Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ La guida di riferimento per capire come funziona la configurazione, è un
 prerequisito per capire le impostazioni modulari.
 </abstract>
 
-<version>8.1</version>
-<date>2009-02-12</date>
+<version>11</version>
+<date>2011-08-19</date>
 
 <section>
 <title>Configurazione avanzata</title>
@@ -76,30 +76,22 @@ Si possono unire insieme questi comandi. Ecco alcuni esempi reali:
 
 <pre caption="Esempi di configurazione">
 <comment># Aggiungere tre indirizzi IPv4</comment>
-config_eth0=(
-  "192.168.0.2/24"
-  "192.168.0.3/24"
-  "192.168.0.4/24"
-)
+config_eth0="192.168.0.2/24"
+192.168.0.3/24
+192.168.0.4/24"
 
 <comment># Aggiungere un indirizzo IPv4 e due indirizzi IPv6</comment>
-config_eth0=(
-  "192.168.0.2/24"
-  "4321:0:1:2:3:4:567:89ab"
-  "4321:0:1:2:3:4:567:89ac"
-)
+config_eth0="192.168.0.2/24
+4321:0:1:2:3:4:567:89ab
+4321:0:1:2:3:4:567:89ac"
 
 <comment># Mantenere l'indirizzo assegnato dal kernel, a meno che l'interfaccia
 # non venga disattivata e allora assegnarne un altro tramite DHCP. Se DHCP
 # fallisce aggiungere un indirizzo statico determinato tramite APIPA</comment>
-config_eth0=(
-  "noop"
-  "dhcp"
-)
-fallback_eth0=(
-  "null"
-  "apipa"
-)
+config_eth0="noop
+dhcp"
+fallback_eth0="null
+apipa"
 </pre>
 
 <note>
@@ -130,46 +122,23 @@ L'ordine dei comandi di riserva è importante! Se non si specifica l'opzione
 
 <p>
 Gli script di inizializzazione in <path>/etc/init.d</path> possono dipendere da
-una specifica interfaccia di rete o da net. <c>net</c> può essere definita in
-<path>/etc/conf.d/rc</path> e può voler significare diverse cose grazie alla
-variabile <c>RC_NET_STRICT_CHECKING</c>.
+una specifica interfaccia di rete o da net. Tutte le interfacce nel sistema init
+di Gentoo forniscono quella che viene chiamata <e>net</e>.
 </p>
 
-<table>
-<tr>
-  <th>Valore</th>
-  <th>Descrizione</th>
-</tr>
-<tr>
-  <ti><c>none</c></ti>
-  <ti>Il servizio <path>net</path> è sempre considerato attivo</ti>
-</tr>
-<tr>
-  <ti><c>no</c></ti>
-  <ti>
-    Significa che almeno un servizio <path>net.*</path> oltre a
-    <path>net.lo</path> deve essere attivo. Può essere usato dagli utenti con
-    notebook che usano la rete WIFI e una schede di rete statica e ne vogliono
-    solamente una attiva in qualsiasi momento per considerare come attivo il
-    servizio net.
-  </ti>
-</tr>
-<tr>
-  <ti><c>lo</c></ti>
-  <ti>
-    È lo stesso di <c>no</c>, ma viene preso in considerazione anche
-    <path>net.lo</path>. Dovrebbe essere utile alle persone che non danno peso
-    a quale specifica interfaccia venga attivata durante l'avvio.
-  </ti>
-</tr>
-<tr>
-  <ti><c>yes</c></ti>
-  <ti>
-    TUTTE le interfacce di rete DEVONO essere attive affinchè il servizio
-    <path>net</path> sia considerato attivo.
-  </ti>
-</tr>
-</table>
+<p>
+Se in <path>/etc/rc.conf</path> si imposta <c>rc_depend_strict="YES"</c>, allora
+tutte le interfacce di rete che forniscono <e>net</e> devono essere attive prima
+che la dipendenza "net" sia considerarta soddisfatta. In altre parole, se si ha
+<path>net.eth0</path> e <path>net.eth1</path> e un init script dipende da "net",
+allora entrambe devono essere attivate.
+</p>
+
+<p>
+D'altro canto, se si imposta <c>rc_depend_strict="NO"</c>, allora la dipendenza
+"net" è considerata soddisfatta nel momento cin cui almeno una interfaccia di
+rete viene attivata.
+</p>
 
 <p>
 Ma che succede se <path>net.br0</path> dipende da <path>net.eth0</path> e
@@ -180,21 +149,33 @@ collegamento simbolico a <path>net.lo</path>
 </p>
 
 <p>
-La risposta corretta è quella di usare la funzione <c>depend()</c> in
+La risposta corretta è definire un'impostazione <c>rc_need_</c> in
 <path>/etc/conf.d/net</path>
 </p>
 
 <pre caption="Dipendenza net.br0 in /etc/conf.d/net">
-<comment># Si può usare qualsiasi dipendenza (use, after, before) come si # trova negli script attuali</comment>
-depend_br0() {
-  need net.eth0 net.eth1
-}
+rc_need_br0="net.eth0 net.eth1"
+</pre>
+
+<p>
+Ma questo da solo non basta. Gli init script Gentoo usano una dipendenza
+virtuale chiamata <e>net</e> per informare il sistema di quando la rete è
+disponibile. Ovviamente, nel caso precedente, la rete va considerata disponibile
+quando <path>net.br0</path> è stata avviata, non quando lo sono le altre. Quindi
+dobbiamo dichiarare quanto vogliamo anche in <path>/etc/conf.d/net</path>:
+</p>
+
+<pre caption="Aggiornare le dipendenze virtuali per al rete">
+rc_net_lo_provide="!net"
+rc_net_eth0_provide="!net"
+rc_net_eth1_provide="!net"
 </pre>
 
 <p>
 Per una discussione più dettagliata sulla dipendenza, consultare la sezione
 <uri link="?part=2&amp;chap=4#doc_chap4">Scrivere Init Script</uri> nel
-Manuale Gentoo.
+Manuale Gentoo. All'interno di quel file sono disponibili ulteriori informazioni
+su <path>/etc/rc.conf</path>.
 </p>
 
 </body>

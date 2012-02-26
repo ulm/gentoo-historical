@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-working-rcscripts.xml,v 1.14 2008/03/02 18:10:38 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-working-rcscripts.xml,v 1.15 2012/02/26 08:35:15 swift Exp $ -->
 
 <sections>
 
@@ -14,8 +14,8 @@ permette risoluzioni guidate delle dipendenze e initscript virtuali. Questo
 capitolo spiega tutti questi aspetti e spiega come utilizzare questi script.
 </abstract>
 
-<version>1.25</version>
-<date>2007-10-11</date>
+<version>5</version>
+<date>2011-09-17</date>
 
 <section>
 <title>Runlevel</title>
@@ -441,10 +441,6 @@ start() {
 stop() {
   <comment>(Comando necessario per fermare un servizio)</comment>
 }
-
-restart() {
-  <comment>(Comando necessario per riavviare un servizio)</comment>
-}
 </pre>
 
 <p>
@@ -459,10 +455,59 @@ Tutte le altre sezioni sono opzionali.
 <body>
 
 <p>
-Ci sono due tipi di dipendenze che possono essere definite: <c>use</c> e
-<c>need</c>. Come menzionato sopra, la dipendenza <c>need</c> è più restrittiva
-della dipendenza <c>use</c>. Secondo questo tipo di dipendenza si definisce il
-concetto di dipendenza <e>virtuale</e>.
+Ci sono due tipi di impostazioni simili alle dipendenze che possono influenzare
+l'avvio o la sequenza degli script: <c>use</c> e <c>need</c>. Oltre a queste
+due, ci sono altri due metodi che influenzano l'ordine di esecuzione, chiamati
+<c>before</c> e <c>after</c>. Gli ultimi due non sono delle vere dipendenze -
+non provocano il fallimento dell'init script originale se quello indicato
+non è programmato per avviarsi (o fallisce l'avvio).
+</p>
+
+<ul>
+  <li>
+    L'impostazione <c>use</c> informa il sistema init che lo script <e>usa</e>
+    le funzionalità offerte dallo script indicato, ma non dipende direttamente
+    da quello. Un buon esempio potrebbe essere <c>use logger</c> o <c>use
+    dns</c>. Se questi servizi sono disponibili, verranno adeguatamente
+    utilizzati, ma se non si ha un logger o un server DNS i servizi
+    funzioneranno ugualmente. Se i servizi esistono, allora verranno avviati
+    prima dello script che ne fa uso.
+  </li>
+  <li>
+    L'impostazione <c>need</c> è una vera dipendenza. Significa che lo script
+    che ha bisogno di un altro script non partirà prima che l'altro si sia
+    avviato correttamente. Inoltre, se l'altro script verrà riavviato, allora
+    anche lo script che ne ha bisogno verrà riavviato.
+  </li>
+  <li>
+    Quando si usa <c>before</c>, lo script verrà avviato prima di quello
+    indicato <e>se</e> quello indicato fa parte del livello di init. Quindi, im
+    init script <path>xdm</path> che dichiara <c>before alsasound</c> partirà
+    prima dello script <path>alsasound</path>, ma solo se <path>alsasound</path>
+    è programmato per avviarsi nello stesso livello di init. Se
+    <path>alsasound</path> non è programmato per avviarsi, allora questa
+    impostazione non ha effetto e <path>xdm</path> verrà avviato quando il
+    sistema init lo riterrà appropriato.
+  </li>
+  <li>
+    In modo analogo, <c>after</c> informa il sistema init che lo script dovrà
+    essere avviato dopo quello indicato, <e>se</e> quello indicato fa parte del
+    livello di init. Altrimenti l'impostazione non ha effetto e lo script verrà
+    avviato quando il sistema init lo riterrà appropriato.
+  </li>
+</ul>
+
+<p>
+Dovrebbe essere chiaro da quanto scritto sopra che <c>need</c> è l'unica "vera"
+dipendenza, in quanto determina se lo script verrà avviato o meno. Tutte le
+altre sono semplici indicazioni al sistema init per chiarire in quale ordine gli
+script devono (o dovrebbero) essere eseguiti.
+</p>
+
+<p>
+Ora, se si osservano i molti init script disponibili in Gentoo, si noterà che
+alcuni hanno dipendenze rispetto a cose che non sono init script. Chiamiamo
+queste "cose" dipendenze <e>virtuali</e>.
 </p>
 
 <p>
@@ -517,15 +562,12 @@ Com'è possibile vedere, il servizio postfix:
 <body>
 
 <p>
-In alcuni casi si potrebbe non aver bisogno di un servizio, ma si può voler
-avviare un servizio <c>prima</c> (o <c>dopo</c>) un'altro <e>se</e> disponibile
-sul sistema (notare il condizionale:questa non è un'altra dipendenza) <e>e</e>
-eseguirle nello stesso runlevel. Si possono fornire queste informazioni usando
-<c>before</c> o <c>after</c>.
-</p>
-
-<p>
-Come esempio vengono esaminate le impostazioni del servizio Portmap:
+Come descritto nella sezione precedente, si può istruire il sistema init
+sull'ordine da seguire per avviare (o fermare) gli init script. L'ordine è
+governato da entrambe le <c>use</c> e <c>need</c>, ma anche dalle impostazioni
+di ordinamento <c>before</c> e <c>after</c>. Poich* queste impostazioni sono
+state già descritte in precedenza, prendiamo il servizio Portmap come esempio
+di init script.
 </p>
 
 <pre caption="La funzione depend() nel servizio Portmap">
@@ -575,6 +617,10 @@ informare l'utente su cosa sta accadendo:
 
 <pre caption="Esempio di funzione start()">
 start() {
+  if [ "${RC_CMD}" = "restart" ];
+  then
+    <comment># Aggiungere qualcosa nel caso che un restart richieda più che stop, start</comment>
+  fi
   ebegin "Starting my_service"
   start-stop-daemon --start --exec /path/to/my_service \
     --pidfile /path/to/my_pidfile
@@ -591,6 +637,15 @@ L'uso di <c>--quiet</c> potrebbe ostacolare il debugging se il servizio non si
 avvia correttamente.
 </p>
 
+<p>
+Un'altra impostazione di rilievo utilizzata nell'esempio precedente è il
+controllo dela varaibile <c>RC_CMD</c>. A differenza del sistema init
+precedente, il nuovo sistema <c>openrc</c> non supporta una funzione specifica
+per il restart. Di conseguenza, lo script ha bisogno di controllare il contenuto
+di <c>RC_CMD</c> per vedere se una funzione (che sia <c>start()</c> o
+<c>stop()</c>) deve essere invocata come parti di un restart o meno.
+</p>
+
 <note>
 Assicurarsi che <c>--exec</c> chiami un servizio e non uno script shell che
 lancia servizi e esce: è a questo che serve l'init script.
@@ -603,15 +658,13 @@ sorgente degli init script disponibili nella propria directory
 </p>
 
 <p>
-Altre funzioni che si possono definire sono: <c>stop()</c> e <c>restart()</c>.
-Non si è obbligati a definire queste funzioni! Il sistema di init è abbastanza
-intelligente da inserire da solo queste funzioni se si usa
-<c>start-stop-daemon</c>.
+Un'altra funzione che può essere definita è <c>stop()</c>. Non si è obbligati a
+definire questa funzione! Il sistema di init è abbastanza intelligente da
+inserire da solo questa funzione se si usa <c>start-stop-daemon</c>.
 </p>
 
 <p>
-Sebbene non <e>occorra</e> creare una funzione <c>stop()</c>, viene fornito un
-esempio:
+Ecco une esempio di una funzione <c>stop()</c>:
 </p>
 
 <pre caption="Esempio funzione stop()">
@@ -651,7 +704,12 @@ $ <i>man start-stop-daemon</i>
 
 <p>
 La sintassi di init script di Gentoo è basata su Bourne Again Shell (bash) così
-si possono usare costrutti compatibili bash nei propri init script.
+si possono usare costrutti compatibili bash nei propri init script. Tuttavia,
+si potrebbe deisderare di scrivere i propri init script per essere compatibili
+con gli standard POSIX. I futuri init script consentiranno di usare un link
+simbolico <path>/bin/sh</path> ad altre shell oltre a bash. Gli init script che
+utilizzeranno funzionalità solo bash non funzioneranno più in queste
+configurazioni.
 </p>
 
 </body>
@@ -662,13 +720,13 @@ si possono usare costrutti compatibili bash nei propri init script.
 
 <p>
 Se si ha bisogno di maggiori opzioni negli init script, si può aggiungere
-l'opzione alla variabile <c>opts</c>, e creare una funzione con lo stesso nome
-dell'opzione. Per esempio, per il supporto di un'opzione chiamata
+l'opzione alla variabile <c>extra_commands</c>, e creare una funzione con lo
+stesso nome dell'opzione. Per esempio, per il supporto di un'opzione chiamata
 <c>restartdelay</c>:
 </p>
 
 <pre caption="Aggiungere l'opzione restartdelay">
-opts="${opts} restartdelay"
+extra_commands="restartdelay"
 
 restartdelay() {
   stop
@@ -676,6 +734,10 @@ restartdelay() {
   start
 }
 </pre>
+
+<impo>
+La funzione <c>restart()</c> non può essere sovrascritta in openrc!
+</impo>
 
 </body>
 </subsection>
@@ -761,24 +823,26 @@ avere una copia del corrente runlevel <c>default</c> ma senza <c>net.eth0</c>:
 </pre>
 
 <p>
-Anche se <c>net.eth0</c> verrà poi rimosso dal runlevel offline, <c>udev</c>
-proverà ancora ad avviare ogni elemento che riesce a rilevare e invocherà i
-servizi appropriati. Pertanto, sarà necessario aggiungere ogni servizio di rete
-che non si vuole venga avviato (così come tutti gli altri servizi per ogni altro
-componente che potrebbero essere avviati da udev) a <path>/etc/conf.d/rc</path>
-come mostrato di seguito.
+Anche se <c>net.eth0</c> è stato rimosso dal runlevel offline, <c>udev</c>
+potrebbe tentare ancora di avviare ogni dispositivo che rileva e avviare i
+servizi relativi, una funzionalità chiamata <e>hotplugging</e>. Come
+impostazione predefinita, Gentoo non abilita l'hotplugging.
 </p>
 
-<pre caption="Disabilitare i servizi inizializzati per i diversi componenti in
-/etc/conf.d/rc">
-RC_COLDPLUG="yes"
-<comment>(Di seguito, specificare i servizi che non si vuole vengano inizializzati automaticamente")</comment>
-RC_PLUG_SERVICES="!net.eth0"
+<p>
+Se si vuole abilitare l'hotplugging, ma solo per un certo insime di script, si
+può usare la variabile <c>rc_hotplug</c> in <path>/etc/rc.conf</path>:
+</p>
+
+<pre caption="Disabilitare i servizi iniziati dai dispositivi in /etc/rc.conf">
+<comment># Abilitare net.wlan così come ogni altro servizio, eccetto quelli net.*
+# per essere avviati al rilevamento</comment>
+rc_hotplug="net.wlan !net.*"
 </pre>
 
 <note>
 Per maggiori informazioni sui servizi inizializzati per i diversi componenti, si
-invita a porre attenzione nei commenti del file <path>/etc/conf.d/rc</path>.
+invita a porre attenzione nei commenti del file <path>/etc/rc.conf</path>.
 </note>
 
 <p>

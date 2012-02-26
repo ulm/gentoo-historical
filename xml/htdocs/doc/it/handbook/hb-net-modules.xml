@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-net-modules.xml,v 1.11 2009/02/15 21:09:12 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-net-modules.xml,v 1.12 2012/02/26 08:35:15 swift Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Gentoo fornisce delle impostazioni di rete flessibili, dando la possibilità di
 scegliere diversi client DHCP, impostare bonding, bridging, VLAN ed altro.
 </abstract>
 
-<version>8.4</version>
-<date>2009-02-12</date>
+<version>10</version>
+<date>2011-10-23</date>
 
 <section>
 <title>Moduli di rete</title>
@@ -42,18 +42,18 @@ diversamente specificato.
 </note>
 
 <pre caption="Preferenza dei moduli">
-<comment># Si preferisce iproute2 su ifconfig</comment>
-modules=( "iproute2" )
+<comment># Si preferisce ifconfig piuttosto che iproute2</comment>
+modules="ifconfig"
 
 <comment># Si possono anche specificare altri moduli per una interfaccia
 # In questo caso si preferisce pump su dhcpcd</comment>
-modules_eth0=( "pump" )
+modules_eth0="pump"
 
 <comment># Si possono anche specificare quali moduli non usare - per esempio
 # si potrebbe usare un supplicant o un linux-wlan-ng per controllare
 # la configurazione wireless ma volere ancora configurare le impostazioni di
 # rete per ESSID che sono associate.</comment>
-modules=( "!iwconfig" )
+modules="!iwconfig"
 </pre>
 
 </body>
@@ -69,16 +69,17 @@ configurazione di rete.
 </p>
 
 <p>
-<c>ifconfig</c> è la scelta predefinita di Gentoo ed è incluso nel profilo di
-sistema. <c>iproute2</c> è un pacchetto più potente e flessibile, ma non è
+<c>ifconfig</c> è installato per default (il pacchetto <c>net-tools</c> è parte
+del set di sistema). <c>iproute2</c> è un pacchetto più potente e flessibile, ma non è
 incluso in modo predefinito.
 </p>
 
 <pre caption="Installare iproute2">
 # <i>emerge sys-apps/iproute2</i>
 
-<comment># Preferire iproute2 su ifconfig se entrambi sono installati</comment>
-modules=( "iproute2" )
+<comment># Preferire ifconfig invece di iproute2 se entrambi sono installati
+# visto che openrc preferisce iproute2</comment>
+modules="ifconfig"
 </pre>
 
 <p>
@@ -88,12 +89,12 @@ esempio entrambi i codici funzionano a prescindere dal modulo che si sta usando.
 </p>
 
 <pre caption="Esempi di ifconfig e iproute2">
-config_eth0=( "192.168.0.2/24" )
-config_eth0=( "192.168.0.2 netmask 255.255.255.0" )
+config_eth0="192.168.0.2/24"
+config_eth0="192.168.0.2 netmask 255.255.255.0"
 
 <comment># Si può anche specificare il broadcast</comment>
-config_eth0=( "192.168.0.2/24 brd 192.168.0.255" )
-config_eth0=( "192.168.0.2 netmask 255.255.255.0 broadcast 192.168.0.255" )
+config_eth0="192.168.0.2/24 brd 192.168.0.255"
+config_eth0="192.168.0.2 netmask 255.255.255.0 broadcast 192.168.0.255"
 </pre>
 
 </body>
@@ -185,9 +186,9 @@ predefinita è non impostare nessuna di queste.
 
 <pre caption="Esempio di configurazione DHCP in /etc/conf.d/net">
 <comment># Necessario solamente se sono stati installati più moduli DHCP</comment>
-modules=( "dhcpcd" )
+modules="dhcpcd"
 
-config_eth0=( "dhcp" )
+config_eth0="dhcp"
 dhcpcd_eth0="-t 10" <comment># Timeout dopo 10 secondi</comment>
 dhcp_eth0="release nodns nontp nonis" <comment># Ottiene solo un indirizzo</comment>
 </pre>
@@ -227,8 +228,8 @@ PPP.
 </pre>
 
 <p>
-Assicurarsi di impostare RC_NET_STRICT_CHECKING="yes" in
-<path>/etc/conf.d/rc</path>.
+Assicurarsi di impostare <c>rc_depend_strict</c> a "YES" in
+<path>/etc/rc.conf</path>.
 </p>
 
 <p>
@@ -242,20 +243,17 @@ link_ppp0="eth0" <comment>(Specificare la propria interfaccia ethernet)</comment
 plugins_ppp0=( "pppoe" )
 username_ppp0='user'
 password_ppp0='password'
-pppd_ppp0=(
-   "noauth"
-   "defaultroute"
-   "usepeerdns"
-   "holdoff 3"
-   "child-timeout 60"
-   "lcp-echo-interval 15"
-   "lcp-echo-failure 3"
-   noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp
-)
+pppd_ppp0=
+noauth
+defaultroute
+usepeerdns
+holdoff 3
+child-timeout 60
+lcp-echo-interval 15
+lcp-echo-failure 3
+noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp"
 
-depend_ppp0() {
-  need net.eth0
-}
+rc_need_ppp0="net.eth0"
 </pre>
 
 <p>
@@ -276,9 +274,11 @@ informazioni su come configurarlo adeguatamente.
 
 <impo>
 Leggere attentamente le sezioni su ADSL e PPP in
-<path>/etc/conf.d/net.example</path>. Questo file contiene un gran numero di
-spiegazioni dettagliate riguardo a tutte le impostazioni per la propria
-configurazione particolare di PPP.
+<path>/usr/share/doc/openrc-0.8.3-r1/net.example.bz2</path>. Questo file
+contiene un gran numero di spiegazioni dettagliate riguardo a tutte le
+impostazioni per la propria configurazione particolare di PPP. Ovviamente,
+cambiare <c>0.8.3-r1</c> con la versione di OpenRC installata nel proprio
+sistema.
 </impo>
 
 </body>
@@ -306,11 +306,11 @@ Per il supporto ad APIPA installare <c>net-misc/iputils</c> o
 
 <pre caption="Configurazione di APIPA in /etc/conf.d/net">
 <comment># Cercare DHCP - se fallisce passare ad APIPA</comment>
-config_eth0=( "dhcp" )
-fallback_eth0=( "apipa" )
+config_eth0="dhcp"
+fallback_eth0="apipa"
 
 <comment># Usare APIPA</comment>
-config_eth0=( "apipa" )
+config_eth0="apipa"
 </pre>
 
 </body>
@@ -336,12 +336,10 @@ le due schede di rete.
 slaves_bond0="eth0 eth1 eth2"
 
 <comment># Si può non assegnare un IP all'interfaccia collegata</comment>
-config_bond0=( "null" )
+config_bond0="null"
 
 <comment># Dipende da eth0, eth1 e eth2 poichè essi possono richiedere una configurazione extra</comment>
-depend_bond0() {
-  need net.eth0 net.eth1 net.eth2
-}
+rc_need_bond0="net.eth0 net.eth1 net.eth2"
 </pre>
 
 </body>
@@ -363,22 +361,20 @@ può creare un "bridge" (ponte) per unire le due interfacce.
 
 <pre caption="Configurazione per il bridge in /etc/conf.d/net">
 <comment># Configurare il bridge - "man brctl" per ulteriori dettagli</comment>
-brctl_br0=( "setfd 0" "sethello 0" "stp off" )
+brctl_br0="setfd 0" "sethello 0" "stp off"
 
 <comment># Per aggiungere delle porte al bridge br0</comment>
 bridge_br0="eth0 eth1"
 
 <comment># Si devono configurare le porte con valori null in modo da non avviare dhcp</comment>
-config_eth0=( "null" )
-config_eth1=( "null" )
+config_eth0="null"
+config_eth1="null"
 
 <comment># Dare un indirizzo al bridge - si può usare DHCP</comment>
-config_br0=( "192.168.0.1/24" )
+config_br0="192.168.0.1/24"
 
 <comment># Dipende da eth0 e eth1 poichè essi possono richiedere una configurazione aggiuntiva</comment>
-depend_br0() {
-  need net.eth0 net.eth1
-}
+rc_need_br0="net.eth0 net.eth1"
 </pre>
 
 <impo>
@@ -394,12 +390,8 @@ link="?part=4&amp;chap=2#variable_name">nomi di variabili</uri>
 <body>
 
 <p>
-Non occorre installare niente per cambiare l'indirizzo MAC di una interfaccia
-se si utilizza <c>sys-apps/baselayout-1.11.14</c> o superiore e si desidera
-cambiarlo in un indirizzo MAC specifico. Tuttavia, se lo si vuole cambiare con
-un indirizzo MAC a caso o si ha una versione di baselayout più vecchia rispetto
-a quella appena nominata, allora per potere fare uso di questa caratteristica
-bisogna installare <c>net-analyzer/macchanger</c>.
+Se se ne ha la necessità, è possibile cambiare anche l'indirizzo MAC di una
+interfaccia attraverso il file di configurazione della rete.
 </p>
 
 <pre caption="Esempio di cambio di un Indirizzo MAC">
@@ -441,7 +433,7 @@ iptunnel_vpn0="mode gre remote 207.170.82.1 key 0xffffffff ttl 255"
 iptunnel_vpn0="mode ipip remote 207.170.82.2 ttl 255"
 
 <comment># Per configurare l'interfaccia</comment>
-config_vpn0=( "192.168.0.2 peer 192.168.1.1" )
+config_vpn0="192.168.0.2 peer 192.168.1.1"
 </pre>
 
 </body>
@@ -468,12 +460,12 @@ vlans_eth0="1 2"
 
 <comment># Si può anche configurare la VLAN</comment>
 <comment># vedere la pagina man di vconfig per ulteriori dettagli</comment>
-vconfig_eth0=( "set_name_type VLAN_PLUS_VID_NO_PAD" )
-vconfig_vlan1=( "set_flag 1" "set_egress_map 2 6" )
+vconfig_eth0="set_name_type VLAN_PLUS_VID_NO_PAD"
+vconfig_vlan1="set_flag 1" "set_egress_map 2 6"
 
 <comment># Configurare l'interfaccia come al solito</comment>
-config_vlan1=( "172.16.3.1 netmask 255.255.254.0" )
-config_vlan2=( "172.16.2.1 netmask 255.255.254.0" )
+config_vlan1=( "172.16.3.1 netmask 255.255.254.0"
+config_vlan2=( "172.16.2.1 netmask 255.255.254.0"
 </pre>
 
 <impo>

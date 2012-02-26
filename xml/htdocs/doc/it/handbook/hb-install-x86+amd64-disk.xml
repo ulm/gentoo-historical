@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-x86+amd64-disk.xml,v 1.13 2009/02/23 21:00:51 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-x86+amd64-disk.xml,v 1.14 2012/02/26 08:35:15 swift Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Per poter installare Gentoo è necessario creare delle partizioni. Questo
 capitolo descrive come partizionare un disco.
 </abstract>
 
-<version>6.2</version>
-<date>2009-01-09</date>
+<version>11</version>
+<date>2011-10-17</date>
 
 <section>
 <title>Introduzione ai dispositivi a blocchi</title>
@@ -65,11 +65,10 @@ nel MBR, ma sono dichiarate nella partizione estesa.
 <body>
 
 <p>
-I CD di Installazione <keyval id="arch"/> forniscono anche il supporto per EVMS
-e LVM2. EVMS e LVM2 aumentano la flessibilità della propria configurazione di
-partizioni. Durante le istruzioni di installazione ci si concentra sulle
-partizioni tradizionali ma è opportuno sapere che anche EVMS e LVM2 sono
-supportati.
+I CD di Installazione <keyval id="arch"/> forniscono anche supporto per LVM2.
+LVM2 aumenta la flessibilità della propria configurazione di partizioni. Durante
+le istruzioni di installazione ci si concentra sulle partizioni tradizionali ma
+è opportuno sapere che anche LVM2 è supportato.
 </p>
 
 </body>
@@ -118,7 +117,10 @@ sistema, si può usare quello di questo Manuale:
 Se si è interessati ad avere informazioni su quanto dovrebbe essere grande una
 partizione primaria (o volume logico), o anche su quante partizioni si ha
 bisogno, seguono alcuni suggerimenti. Altrimenti continuare con il <uri
-link="#fdisk">partizionamento del disco</uri>.
+link="#fdisk">Usare fdisk per partizionare il disco</uri> o
+<uri link="#parted">Usare parted per partizionare il disco</uri> (sono entrambi
+strumenti di partizionamento, <c>fdisk</c> è molto conosciuto e stabile,
+<c>parted</c> è un po' più recente ma supporta partizioni più grandi di 2T).
 </p>
 
 </body>
@@ -169,10 +171,18 @@ volumi separati hanno i seguenti vantaggi:
 </ul>
 
 <p>
-Le partizioni multiple hanno però un grosso svantaggio: se non sono configurate
-correttamente, si potrebbe avere un sistema con molto spazio libero su una
-partizione e poco su un'altra. Inoltre per i dispositivi SCSI e SATA c'è il
-limite di 15 partizioni.
+Anche le partizioni multiple hanno però degli svantaggi: se non sono configurate
+correttamente, si potrebbe avere un sistema con moltissimo spazio libero in una
+partizione e niente più spazio in un'altra. Un altro inconveniente è che
+partizioni separate - specialmente per punti di montaggio importanti come
+<path>/usr</path> o <path>/var</path> - spesso richiedo all'amministratore di
+avviare il sistema con un initramfs per montare le partizioni stesse prima che
+altri script di avvio siano eseguiti. Tuttavia questo non accade sempre, perciò
+occore valutare i singoli casi.
+</p>
+
+<p>
+C'è inoltre un un limite di 15 partizioni per SCSI e SATA.
 </p>
 
 <p>
@@ -213,9 +223,16 @@ grossi software, quali OpenOffice.
 <subsection>
 <body>
 
+<impo>
+Se si intende avere partizioni più grandi di 2T, si vada alle istruzioni
+<uri link="#parted">Usare parted per partizionare il disco</uri> invece di
+queste. <c>fdisk</c> non è in grando di manipolare grandi partizioni.
+</impo>
+
 <p>
 La parte seguente spiega come creare lo schema di partizione di esempio
-descritto precedentemente:
+descritto precedentemente usando <c>fdisk</c>. L'organizzazione delle partizioni
+dell'esempio è stata descritta in precedenza:
 </p>
 
 <table>
@@ -475,7 +492,204 @@ come <uri link="#filesystems">Creare i filesystem</uri>.
 </body>
 </subsection>
 </section>
+<section id="parted">
+<title>Usare parted per partizionare il disco</title>
+<subsection>
+<body>
 
+<p>
+In questo capitolo si verrà guidati alla creazione dello schema di partizioni
+dell'esempio descritto precedentemente nelle istruzioni. A differenza del
+capitolo precedente, questa volta verrà descritto il metodo da usare usando
+<c>parted</c>. Sia <c>parted</c> che <c>fdisk</c> offrono le stesse funzioni,
+quindi se si sono fatte partizioni con <c>fdisk</c> in precedenza, si può
+saltare questa sezione e continuare con <uri link="#filesystems">Creare i
+filesystem</uri>.
+</p>
+
+<p>
+Lo schema di partizioni usato nell'esempio è mostrato nella seguente tabella:
+</p>
+
+<table>
+<tr>
+  <th>Partizione</th>
+  <th>Descrizione</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Partizione di boot</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Partizione di swap</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Partizione root</ti>
+</tr>
+</table>
+
+<p>
+Modificare lo schema di partizioni in base alle proprie preferenze.
+</p>
+
+<p>
+Il programma <c>parted</c> è una variante più moderna di <c>fdisk</c>. Offre
+un'interfaccia più semplice per il partizionamento del disco e supporta
+partizioni molto grandi (più di 2T). Eseguire <c>parted</c> sul proprio disco
+(nel nostro esempio, usaimo <path>/dev/sda</path>:
+</p>
+
+<pre caption="Eseguire parted">
+# <i>parted /dev/sda</i>
+GNU Parted 2.3
+Using /dev/vda
+Welcome to GNU Parted! Type 'help' to view a list of commands.
+</pre>
+
+<p>
+Per valutare tutte le opzioni offerte da <c>parted</c>, scrivere <c>help</c> e
+premere INVIO. Per ora, continueremo chiedendo a <c>parted</c> di mostrarci le
+partizioni attualmente in uso nel disco selezionato. Per questo scopo si può
+usare il comando <c>print</c>.
+</p>
+
+<pre caption="Un esempio di configurazione di partizioni mostrata da parted">
+(parted) <i>print</i>
+Model: SCSI Block Device
+Disk /dev/sda: 21.5GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+
+Number Start End Size Type File system Flags
+1 512B 2148MB 2148MB primary ext4
+2 2148MB 3222MB 1074MB primary linux-swap(v1)
+3 3222MB 21.5GB 18.3GB primary lvm
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Facoltativo: impostare l'etichetta GPT</title>
+<body>
+
+<p>
+Molti dischi nei sistemi x86/amd64 sono preparati con l'etichetta <e>msdos</e>.
+Tuttavia, se si intende creare partizioni molto grandi (2T o più), bisogna
+usare l'etichetta <e>gpt</e> (la <e>GUID Partition Table</e>) per il proprio
+disco. Usando <c>parted</c>, questo può essere fatto con <c>mklabel gpt</c>:
+</p>
+
+<warn>
+Cambiare il tipo di partizione rimuoverà tutte le partizioni dal proprio disco.
+Tutti i dati nel disco andranno perduti.
+</warn>
+
+<pre caption="Impostare l'etichetta GPT">
+(parted) <i>mklabel gpt</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Rimuovere tutte le partizioni</title>
+<body>
+
+<p>
+Se non è stato fatto prima (ad esempio atraverso l'perazione precedente
+<c>mklabel</c> o perché il disco è stato appena formattato), inizieremo con la
+rimozione dal disco delle partizioni esistenti. Digitare <c>rm
+&lt;number&gt;</c> dove &lt;number&gt; è la partizione che si desidera
+rimuovere.
+</p>
+
+<pre caption="Rimuovere una partizione dal disco">
+<i>rm 2</i>
+</pre>
+
+<p>
+Ripetere l'operazione per tutte le partizioni di cui non si ha bisogno.
+Attenzione, però, a non fare errori in questa fase - <c>parted</c> esegue
+modifiche immediate (a differenza di <c>fdisk</c>, che le esegue
+successivamente, consentendo di eseguire un "undo" prima di salvare o uscire
+da <c>fdisk</c>).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Creare le partizioni</title>
+<body>
+
+<p>
+Ora si possono creare le partizioni definite in precedenza. Creare le
+partizioni con <c>parted</c> non è molto difficile - tutto quello che occorre
+è informare <c>parted</c> riguardo alle seguetni impostazioni:
+</p>
+
+<ul>
+  <li>
+    Il <e>tipo di partizione</e> da usare. Il tipo è generalmente
+    <e>primary</e> nel caso in cui non si intenda avere più di 4 partizioni (con
+    l'etichetta <e>msdos</e>). altrimenti, bisognerà fare della quarta
+    partizione una partizione <e>extended</e> che gestisce tutto il disco
+    rimanente, e creare delle partizioni <e>logical</e> al suo interno. Se si un
+    partizionamento con etichetta <e>gpt</e> allora non c'è limite al numero di
+    partizioni primarie.
+  </li>
+  <li>
+    Il <e>tipo di file system</e> da usare. Il programma <c>parted</c> supporta
+    i file system più diffusi e sa di quale tipo di ID di partizione ha bisogno
+    per quelle partizioni. Questo <e>non</e> significa che <c>paretd</c> creerà
+    il file system sulla partizione (si può farlo con il comando
+    <c>mkpartfs</c>, ma più avanti noi useremo i comandi regolari <c>mkfs.*</c>
+    a questo scopo). L'ID di partizione è spesso usato da alcuni strumenti di
+    autorilevamento per sapere come comportarsi con una particolare partizione.
+  </li>
+  <li>
+    La posizione di inizio di una partizione (che può essere indicata in MB o in
+    GB)
+  </li>
+  <li>
+    La posizione di fine di una partizione (che può essere indicata in MB o in
+    GB)
+  </li>
+</ul>
+
+<p>
+Un vantaggio di <c>parted</c> è che si può usare semplicemente la dimensione
+della partizione per trovare automaticamente le posizioni corrette di inizio e
+di fine, come si vede nel prossimo esempio.
+</p>
+
+<pre caption="Creating the partitions">
+<comment># Creare una partizione da 32 mbyte per /boot</comment>
+(parted) <i>mkpart primary ext2 0 32mb</i>
+Warning: The resulting partition is not properly aligned for best performance.
+Ignore/Cancel? <i>i</i>
+
+<comment># Creare una partizione da 512 mbyte per swap</comment>
+(parted) <i>mkpart primary linux-swap 32mb 542mb</i>
+
+<comment># Creare una partizione che occupa tutto il disco rimanente.
+# -1s (men uno s) significa fino alla fine del disco</comment>
+(parted) <i>mkpart primary ext4 542mb -1s</i>
+Warning: You requested a partition from 542MB to 21.5GB.
+The closest location we can manage is 542MB to 21.5GB.
+Is this still acceptable to you?
+Yes/No? <i>y</i>
+</pre>
+
+<p>
+Si può ora digitare <c>print</c> e vedere di nuovo lo schema di partizioni per
+confermare che tutto sia come desiderato. Quando si è soddisfatti, si esce
+usando il comando <c>quit</c> di <c>parted</c>.
+</p>
+
+</body>
+</subsection>
+</section>
 <section id="filesystems">
 <title>Creare i filesystem</title>
 <subsection>
@@ -513,11 +727,15 @@ strumenti per ogni filesystem possibile:
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
@@ -538,8 +756,8 @@ Per esempio, per avere la partizione di boot (<path>/dev/sda1</path>) ext2 e la
 partizione root (<path>/dev/sda3</path>) ext3, si usa:</p>
 
 <pre caption="Applicare un filesystem su una partizione">
-# <i>mke2fs /dev/sda1</i>
-# <i>mke2fs -j /dev/sda3</i>
+# <i>mkfs.ext2 /dev/sda1</i>
+# <i>mkfs.ext3 /dev/sda3</i>
 </pre>
 
 <p>
