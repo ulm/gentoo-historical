@@ -1,0 +1,60 @@
+https://bugs.gentoo.org/406349
+
+From ad4d50cb827aa965902553badfe9fdef40a7c29a Mon Sep 17 00:00:00 2001
+From: Dave Anglin <dave.anglin@nrc.ca>
+Date: Sun, 6 Nov 2011 20:25:16 +0000
+Subject: [PATCH] 	PR ld/13387 	* elf32-hppa.c
+ (elf32_hppa_hide_symbol): Make STT_GNU_IFUNC symbol 	go
+ through PLT.  Reset plt field with init_plt_offset. 
+ (elf32_hppa_adjust_dynamic_symbol): Ensure that a PLT slot
+ is 	allocated for symbols referenced by a plabel.
+
+---
+ bfd/ChangeLog    |    8 ++++++++
+ bfd/elf32-hppa.c |   13 +++++++++++--
+ 2 files changed, 19 insertions(+), 2 deletions(-)
+
+2011-11-06  John David Anglin  <dave.anglin@nrc-cnrc.gc.ca>
+
+	PR ld/13387
+	* elf32-hppa.c (elf32_hppa_hide_symbol): Make STT_GNU_IFUNC symbol
+	go through PLT.  Reset plt field with init_plt_offset.
+	(elf32_hppa_adjust_dynamic_symbol): Ensure that a PLT slot is
+	allocated for symbols referenced by a plabel.
+
+diff --git a/bfd/elf32-hppa.c b/bfd/elf32-hppa.c
+index 7f0f2cb..fcf51cf 100644
+--- a/bfd/elf32-hppa.c
++++ b/bfd/elf32-hppa.c
+@@ -1789,10 +1789,12 @@ elf32_hppa_hide_symbol (struct bfd_link_info *info,
+ 	}
+     }
+ 
+-  if (! hppa_elf_hash_entry (eh)->plabel)
++  /* STT_GNU_IFUNC symbol must go through PLT.  */
++  if (! hppa_elf_hash_entry (eh)->plabel
++      && eh->type != STT_GNU_IFUNC)
+     {
+       eh->needs_plt = 0;
+-      eh->plt = elf_hash_table (info)->init_plt_refcount;
++      eh->plt = elf_hash_table (info)->init_plt_offset;
+     }
+ }
+ 
+@@ -1814,6 +1816,13 @@ elf32_hppa_adjust_dynamic_symbol (struct bfd_link_info *info,
+   if (eh->type == STT_FUNC
+       || eh->needs_plt)
+     {
++      /* If the symbol is used by a plabel, we must allocate a PLT slot.
++	 The refcounts are not reliable when it has been hidden since
++	 hide_symbol can be called before the plabel flag is set.  */
++      if (hppa_elf_hash_entry (eh)->plabel
++	  && eh->plt.refcount <= 0)
++	eh->plt.refcount = 1;
++
+       if (eh->plt.refcount <= 0
+ 	  || (eh->def_regular
+ 	      && eh->root.type != bfd_link_hash_defweak
+-- 
+1.7.8.4
+
