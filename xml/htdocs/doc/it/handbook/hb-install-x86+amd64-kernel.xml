@@ -4,8 +4,6 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-x86+amd64-kernel.xml,v 1.24 2010/07/29 20:01:39 scen Exp $ -->
-
 <sections>
 
 <abstract>
@@ -13,8 +11,8 @@ Il kernel di Linux è il cuore di ogni distribuzione. Il capitolo tratta della
 configurazione del Kernel.
 </abstract>
 
-<version>7.5</version>
-<date>2010-07-17</date>
+<version>15</version>
+<date>2012-02-22</date>
 
 <section>
 <title>Fuso Orario (Timezone)</title>
@@ -31,8 +29,10 @@ zone che ci si aspetterebbe. Per esempio <path>GMT-8</path> indica GMT+8.
 
 <pre caption="Abilitare le informazioni sul fuso orario (timezone)">
 # <i>ls /usr/share/zoneinfo</i>
-<comment>(Per esempio GMT:)</comment>
-# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+<comment>(Per esempio Europe/Rome:)</comment>
+# <i>cp /usr/share/zoneinfo/Europe/Rome /etc/localtime</i>
+<comment>(Poi impostare il fuso orario)</comment>
+# <i>echo "Europe/Rome" &gt; /etc/timezone</i>
 </pre>
 
 </body>
@@ -213,29 +213,35 @@ non può montare le partizioni. Selezionare anche <c>Virtual memory</c>, <c>/pro
 file system</c>.
 </p>
 
-<pre caption="Selezionare il filesystem">
+<pre caption="Selezionare i filesystem necessari">
 File systems ---&gt;
-  Pseudo Filesystems ---&gt;
-    [*] /proc file system support
-    [ ] /dev file system support (OBSOLETE)
-    [*] Virtual memory file system support (former shm fs)
-
-<comment>(Selezionare una o più delle seguenti, secondo necessità)</comment>
-  &lt;*&gt; Reiserfs support
-  &lt;*&gt; Ext3 journalling file system support
-  &lt;*&gt; JFS filesystem support
+<comment>(Selezionare una o più delle seguenti opzioni secondo le necessità del sistema)</comment>
   &lt;*&gt; Second extended fs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; The Extended 4 (ext4) filesystem
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; JFS filesystem support
   &lt;*&gt; XFS filesystem support
+  ...
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support   220 [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)  221 [*] Virtual memory file system support (former shm fs)
+
+<comment>(Abilitare il supporto alle etichette GPT se si sono usate in precedenza)</comment>
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+      ...
+      [*] EFI GUID Partition support
 </pre>
 
 <p>
-Se si sta usando PPPoE per connettersi a Internet, si ha bisogno delle seguenti
-opzioni nel kernel:
+Se si sta usando PPPoE per connettersi a Internet o se si sta usando un modem
+analogico, si ha bisogno delle seguenti opzioni nel kernel:
 </p>
 
 <pre caption="Selezionare i driver necessari per PPPoE">
 Device Drivers ---&gt;
-  Networking Support ---&gt;
+  Network device support ---&gt;
     &lt;*&gt; PPP (point-to-point protocol) support
     &lt;*&gt;   PPP support for async serial ports
     &lt;*&gt;   PPP support for sync tty ports
@@ -297,19 +303,17 @@ supporto per il bridge PCMCIA di sistema:
 </p>
 
 <pre caption="Abilitare il supporto PCMCIA">
-Bus options (PCI, PCMCIA, EISA, MCA, ISA)  ---&gt;
+Bus options (PCI etc.) ---&gt;
   PCCARD (PCMCIA/CardBus) support  ---&gt;
     &lt;*&gt; PCCard (PCMCIA/CardBus) support
 <comment>(selezionare 16 bit se si utilizzano schede vecchie, spesso è utile.)</comment>
     &lt;*&gt;   16-bit PCMCIA support
     [*]   32-bit CardBus support
 <comment>(selezionare i bridge di interesse)</comment>
-    --- PC-card bridges
+    *** PC-card bridges ***
     &lt;*&gt; CardBus yenta-compatible bridge support (NEW)
     &lt;*&gt; Cirrus PD6729 compatible bridge support (NEW)
     &lt;*&gt; i82092 compatible bridge support (NEW)
-    &lt;*&gt; i82365 compatible bridge support (NEW)
-    &lt;*&gt; Databook TCIC host bridge support (NEW)
 </pre>
 
 <p>
@@ -382,24 +386,6 @@ genkernel:
 </pre>
 
 <p>
-Ora copiare la configurazione del kernel del CD di Installazione nella directory
-dove genkernel si aspetta la configurazione predefinita per il kernel:
-</p>
-
-<pre test="func:keyval('arch')='x86'" caption="Copia della configurazione del
-kernel del CD di Installazione">
-# <i>zcat /proc/config.gz &gt; /usr/share/genkernel/arch/x86/kernel-config</i>
-</pre>
-
-<pre test="func:keyval('arch')='AMD64'" caption="Copia della configurazione del
-kernel del CD di Installazione">
-# <i>zcat /proc/config.gz &gt; /usr/share/genkernel/arch/x86_64/kernel-config</i>
-</pre>
-
-</body>
-<body>
-
-<p>
 Compilare poi il kernel eseguendo <c>genkernel all</c>. Visto che
 <c>genkernel</c> compila un kernel che supporta quasi tutto l'hardware
 disponibile questa compilazione può essere un processo piuttosto lungo.
@@ -409,8 +395,8 @@ disponibile questa compilazione può essere un processo piuttosto lungo.
 E' importante sapere anche che se non si usano ext2 o ext3 come filesystem
 potrebbe essere necessario configurare manualmente il kernel usando <c>genkernel
 --menuconfig all</c> e aggiungere il supporto per il filesystem scelto
-<e>nel</e> kernel (cioè <e>non</e> come modulo). Gli utenti di EVMS2 o LVM2
-devono anche aggiungere i parametri <c>--evms2</c> or <c>--lvm2</c>.
+<e>nel</e> kernel (cioè <e>non</e> come modulo). Gli utenti di LVM2 devono anche
+aggiungere il parametro <c>--lvm2</c>.
 </p>
 
 <pre caption="Esecuzione di genkernel">
@@ -419,7 +405,7 @@ devono anche aggiungere i parametri <c>--evms2</c> or <c>--lvm2</c>.
 
 <p>
 Una volta completato <c>genkernel</c>, viene creato un kernel completo di moduli
-e <e>root disk iniziale</e> (initrd). Il kernel e initrd intervengono quando si
+e <e>ram disk iniziale</e> (initramfs). Il kernel e initrd intervengono quando si
 configura un boot loader. E' consigliabile dunque annotare il nome del kernel e
 del initrd, poichè servono quando si scrive il file di configurazione del
 bootloader. Initrd si avvia subito dopo il boot per effettuare un rilevamento
