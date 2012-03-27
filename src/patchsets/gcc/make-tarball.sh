@@ -7,7 +7,7 @@ fi
 
 for ebuild in \
 	$1 \
-	/usr/local/gentoo-x86/sys-devel/gcc/gcc-$1.ebuild \
+	/usr/local/src/gentoo-x86/sys-devel/gcc/gcc-$1.ebuild \
 	/usr/portage/sys-devel/gcc/gcc-$1.ebuild \
 	""
 do
