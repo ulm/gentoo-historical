@@ -27,8 +27,20 @@ if [[ -z ${pver} ]] ; then
 	[[ -z ${pver} ]] && usage
 fi
 
+tbase="binutils-${bver}"
+case ${bver} in
+2.2[2-9].*)
+	comp="xz"
+	tsfx="tar.xz"
+	;;
+*)
+	comp="bzip2"
+	tsfx="tar.bz2"
+	;;
+esac
+
 rm -rf tmp
-rm -f binutils-${bver}-*.tar.bz2
+rm -f ${tbase}-*.${tsfx}
 
 mkdir -p tmp/patch
 cp -r ../README* ${bver}/*.patch ${bver}/README.history tmp/patch/ || exit 1
@@ -37,14 +49,10 @@ if [[ -n ${uver} ]] ; then
 	cp -r ../README* ${bver}/uclibc/*.patch tmp/uclibc-patches/ || exit 1
 fi
 
-#find tmp -type f -a ! -name 'README*' | xargs bzip2
-
-tar -jcf binutils-${bver}-patches-${pver}.tar.bz2 \
-	-C tmp patch || exit 1
+tar -cf - -C tmp patch | ${comp} > ${tbase}-patches-${pver}.${tsfx} || exit 1
 if [[ -n ${uver} ]] ; then
-	tar -jcf binutils-${bver}-uclibc-patches-${uver}.tar.bz2 \
-		-C tmp uclibc-patches || exit 1
+	tar -cf - -C tmp uclibc-patches | ${comp} > ${tbase}-uclibc-patches-${uver}.${tsfx} || exit 1
 fi
 rm -r tmp
 
-du -b binutils-${bver}-*.tar.bz2
+du -b ${tbase}-*.${tsfx}
