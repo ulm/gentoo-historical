@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-development.xml,v 1.3 2011/12/10 15:18:56 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-development.xml,v 1.4 2012/05/26 18:03:15 swift Exp $ -->
 
 <guide link="/proj/en/hardened/selinux-development.xml" lang="en">
 <title>Gentoo Hardened SELinux Development</title>
@@ -18,8 +18,8 @@ acquainted with the necessary resources, trips and tricks to get along.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>3</version>
-<date>2011-11-22</date>
+<version>4</version>
+<date>2012-05-26</date>
 
 <chapter>
 <title>Introduction</title>
@@ -132,126 +132,58 @@ highlights...
 Gentoo Hardened builds its policy upon the <uri 
 link="http://oss.tresys.com/projects/refpolicy">reference policy</uri> as
 provided by <uri link="http://www.tresys.com">Tresys</uri> and managed through
-an active <uri
+a reasonably active <uri
 link="http://oss.tresys.com/projects/refpolicy/wiki/HowToContribute">community</uri>.
-I suggest to use two workspaces when dealing with SELinux policies for Gentoo
-Hardened: the <path>hardened</path> one for the Gentoo patched policy, and a 
-<path>local</path> one in which you work and make your patches in.
+For Gentoo, the policy is based on a <uri
+link="http://git.overlays.gentoo.org/gitweb/?p=proj/hardened-refpolicy.git">git
+repository</uri> which you can clone and work on. This repository is started
+with a fresh reference policy snapshot and then updated accordingly. When the
+reference policy makes a new release, we will rebuild the changes on top of the
+new release. Although this might be resource intensive, it gives us reasonable
+assurance that our repository doesn't deviate too much from the reference
+policy, and it also urges developers to send patches upstream as soon as
+possible.
 </p>
 
 <p>
-Of course, using a source control system like git can be helpful too. For now,
-Gentoo Hardened doesn't have a git repository where its policies are based from
-(yet). That might sound a bit dull, but it forces the developers to remain as
-close to upstream as possible (and contribute the changes upstream too so that
-newer releases include them automatically). You can definitely use a source
-control system yourself - the only reason we do not use it in this document is
-that it is easier to document without ;-)
-</p>
-
-<p>
-Let's create the first workspace:
+Let's create the workplace in which you can develop policies:
 </p>
 
 <pre caption="Creating the SELinux policy workspace">
-~$ <i>mkdir dev/hardened</i>
-~$ <i>cd dev/hardened</i>
-~$ <i>ebuild /usr/portage/sec-policy/selinux-base-policy/selinux-base-policy-2.20110726-r3.ebuild prepare</i>
-~$ <i>cp -r /var/tmp/portage/sec-policy/selinux-base-policy-2.20110726-r3/work/refpolicy .</i>
-~$ <i>rm -rf /var/tmp/portage/sec-policy/selinux-base-policy-2.20110726-r3</i>
+~$ <i>git clone http://git.overlays.gentoo.org/gitroot/proj/hardened-refpolicy.git</i>
 </pre>
 
 <p>
-As result, you now have a subdirectory called <path>refpolicy</path> inside
-<path>dev/hardened</path>. This directory contains all the SELinux policy rules
-available. Now the <path>dev/hardened</path> workspace is patched with the
-Gentoo Hardened SELinux patches applicable to the policy. Gentoo Hardened has
-two "flavors" of patches:
+As result, you now have a directory called <path>hardened-refpolicy</path> in
+which you'll find the policies (<path>policy/modules</path>) currently in use by
+Gentoo Hardened. Changes in this repository are reflected in patches loaded into
+a <path>patchbundle-selinux-base-policy-&lt;version&gt;</path>. We currently
+generate (support) two types of patches:
 </p>
 
 <ol>
   <li>
-    patches in the <e>patchbundle</e> contain the majority of patches
+    The majority of patches are directly loaded into an archive (called
+    <path>patchbundle-selinux-base-policy-&lt;version&gt;</path>). This archive
+    of patches is applied to the reference policy download (used by our ebuilds)
+    to get it to the state of Gentoo's policy repository.
   </li>
   <li>
-    <e>module patches</e> that contain the permissions affecting the
-    domains and types that are defined in a single module (for instance, all
-    interaction between <path>portage_t</path> and <path>portage_exec_t</path>
-    or even <path>portage_t</path> and <path>portage_fetch_t</path>)
+    When a patch is needed on the permissions inside a <path>.te</path> file, or
+    on the context inside a <path>.fc</path> file, but no immediate release of a
+    new patchbundle is scheduled, the patch might be applied to a single ebuild.
+    Unlike the patches for the patchbundle, which are relative to the root of
+    the repository, patches on a single module are taken inside the
+    <path>policy/modules</path> location.
   </li>
 </ol>
 
 <p>
-When we develop changes on the SELinux policy, we currently try to put those
-changes in the patchbundle as soon as possible. Currently, the
-<c>selinux-base-policy</c> package is updated fast enough to hold off module
-patches and wait for a new release of <c>selinux-base-policy</c> (after which
-the SELinux modules themselves can just refer to the new base policy to get
-their patches).
+You don't need to do anything specific for these - the Gentoo developers will
+update any diffs or patches they receive to be compliant to the above. But at
+least you now know why some developmers might have edited your patch before
+committing ;-)
 </p>
-
-<p>
-However, when the <c>selinux-base-policy</c> is more stable, then patches might
-be made part of the modules themselves. In that case, a <e>module patch</e> is
-made.
-</p>
-
-<note>
-Every time a new revision comes out, you'll need to clean the
-<path>dev/hardened</path> workspace and rebuild it.
-</note>
-
-</body>
-</section>
-<section>
-<title>Add specific module files</title>
-<body>
-
-<p>
-If you want to or need to work on the policy of a SELinux module (rather than
-the base policy), check its ebuild to see if it holds any additional patches
-(mentioned through the <c>POLICY_PATCH</c> variable). If not, then you can work
-off the snapshot taken earlier in this guide.
-</p>
-
-<p>
-However, if a patch (or set of patches) is applied as well, you either need to
-apply those manually on the snapshot, or use the following tactics to create a
-snapshot just for this module:
-</p>
-
-<pre caption="Updating the dev/hardened workspace">
-~$ <i>ls dev/hardened/refpolicy/policy/modules/*/postfix.te</i>
-dev/hardened/refpolicy/policy/modules/services/postfix.te
-<comment>                                      ^^^^^^^^</comment>
-~$ <i>ebuild /usr/portage/sec-policy/selinux-postfix/selinux-postfix-2.20110726-r1.ebuild prepare</i>
-
-<comment># Next, we copy the postfix.te and postfix.fc files.
-# Do NOT copy the postfix.if file (as the one available there is a stub)</comment>
-~$ <i>cp /var/tmp/portage/sec-policy/selinux-postfix-2.20110726-r1/work/strict/postfix.te \
-  dev/hardened/refpolicy/policy/modules/services/</i>
-<comment>                                        ^^^^^^^^</comment>
-~$ <i>cp /var/tmp/portage/sec-policy/selinux-postfix-2.20110726-r1/work/strict/postfix.fc \
-  dev/hardened/refpolicy/policy/modules/services/</i>
-<comment>                                        ^^^^^^^^</comment>
-~$ <i>rm -rf /var/tmp/portage/sec-policy/selinux-postfix-2.20110726-r1</i>
-</pre>
-
-</body>
-</section>
-<section>
-<title>Setting up a local workspace</title>
-<body>
-
-<p>
-Setting up a local workspace (where we will create changes and generate patches
-out of later) is easy: just copy the <path>dev/hardened</path> one:
-</p>
-
-<pre caption="Setting up a local workspace">
-~$ <i>cd dev/hardened</i>
-~$ <i>cp -r refpolicy refpolicy.local/</i>
-</pre>
 
 </body>
 </section>
@@ -261,29 +193,31 @@ out of later) is easy: just copy the <path>dev/hardened</path> one:
 
 <p>
 The main location you will work with is
-<path>dev/hardened/refpolicy.local/policy/modules</path>. This location is subdivided in
+<path>hardened-refpolicy/policy/modules</path>. This location is subdivided in
 categories:
 </p>
 
 <dl>
   <dt>admin</dt>
-  <dd>Administrative SELinux policy modules (portage, logrotate, sudo, ...)</dd>
-  <dt>apps</dt>
-  <dd>Application SELinux policy modules (evolution, mozilla, screen, ...)</dd>
+  <dd>Core administrative SELinux policy modules (sudo, bootloader, usermanage, ...)</dd>
+  <dt>contrib</dt>
+  <dd>Non-core (most often application) SELinux policy modules (evolution, mozilla, screen, ...)</dd>
   <dt>kernel</dt>
   <dd>Kernel specific SELinux policy domains (corenetwork, kernel, ...)</dd>
   <dt>roles</dt>
   <dd>Domains specific to SELinux roles (sysadm, user, staff, ...)</dd>
   <dt>services</dt>
-  <dd>Daemon SELinux policy modules (postfix, apache, squid, ...)</dd>
+  <dd>Core daemon SELinux policy modules (postgresql, ssh, xserver, ...)</dd>
   <dt>system</dt>
-  <dd>Core SELinux policy modules (selinuxutil, mount, iptables, ...)</dd>
+  <dd>Core SELinux system policy modules (selinuxutil, mount, iptables, ...)</dd>
 </dl>
 
 <p>
-The categorization is arbitrary and serves no purpose other than keeping the
-modules a but separated. Each module must have a unique name, regardless of the
-category!
+The categorization is arbitrary and serves little purpose other than keeping the
+modules a bit separated. Each module must have a unique name, regardless of the
+category! The <path>contrib/</path> location has a specific meaning when
+committing patches to the reference policy as it is a subrepository. However,
+for Gentoo's <path>hardened-refpolicy</path> this isn't the case.
 </p>
 
 <p>
@@ -291,7 +225,7 @@ Inside the categories, the modules are available using their three files
 </p>
 
 <pre caption="Listing the available sudo files">
-~$ <i>cd dev/hardened/refpolicy.local/policy/modules/admin</i>
+~$ <i>cd hardened-refpolicy/policy/modules/admin</i>
 ~$ <i>ls sudo.*</i>
 sudo.fc    sudo.if     sudo.te
 </pre>
@@ -303,8 +237,15 @@ sudo.fc    sudo.if     sudo.te
 <body>
 
 <p>
-To build a module, go to the location where the module code is. Then, run
-<c>make</c> with the development Makefile as provided by the reference policy.
+To build a module, go to the location where the module code is. You might want
+to make a copy and work in the copy as the following step will add files and
+perhaps even directories in the work location. If you don't, then using
+<path>.gitignore</path> can help you not commit any unneeded files.
+</p>
+
+<p>
+Next, run <c>make</c> with the development Makefile offered by your
+installation.
 </p>
 
 <note>
@@ -314,14 +255,19 @@ current working directory - which of course contains the same interfaces.
 </note>
 
 <pre caption="Building the portage module">
-~$ <i>cd dev/hardened/refpolicy.local/policy/modules/admin</i>
-~$ <i>make -f /usr/share/selinux/strict/include/Makefile portage.pp</i>
+~$ <i>cd hardened-refpolicy/policy/modules/admin</i>
+~$ <i>make -f /usr/share/selinux/strict/include/Makefile sudo.pp</i>
 </pre>
 
 <p>
-You now have a <path>portage.pp</path> file available which you can load (using
-<c>semodule -i portage.pp</c>).
+You now have a <path>sudo.pp</path> file available which you can load (using
+<c>semodule -i sudo.pp</c>).
 </p>
+
+<note>
+In the above case, we used the Makefile as provided by our own installation.
+This Makefile is the same as in hardened-refpolicy/support/Makefile.devel.
+</note>
 
 </body>
 </section>
@@ -408,7 +354,7 @@ out if SELinux is to blame or not.
 <p>
 If running your system in permissive mode works around the problem, read on. If
 it doesn't, check the regular permissions (<c>strace</c>'ing the application
-might be a good idea too).
+might be a good idea too) as the problem is most likely not SELinux related.
 </p>
 
 </body>
@@ -435,34 +381,25 @@ tclass=capability
 
 <p>
 Analyzing the meaning of the AVC denial is covered by <uri 
-link="/proj/en/hardened/selinux/selinux-handbook.xml?part=2&amp;chap=3#avclog">Looking
-at the AVC Log</uri> in the Gentoo Hardened SELinux handbook. The denial should
+link="/proj/en/hardened/selinux/selinux-handbook.xml?part=2&amp;chap=2#doc_chap2">Reading
+Audit Logs</uri> in the Gentoo Hardened SELinux handbook. The denial should
 give you a pointer where to look for. However, it is possible that no denial is
 occurring, or at least no relevant ones.
 </p>
 
 <p>
-A first step to get potentially more denials is to switch the
-<c>gentoo_try_dontaudit</c> boolean off. This boolean is used by the Gentoo
-Hardened SELinux developers to hide denials which they assume are cosmetic. As
-these developers are known to have a human side (as well), they are known to
-make mistakes ;-)
-</p>
-
-<pre caption="Disabling gentoo's dontaudit statements">
-~# <i>setsebool gentoo_try_dontaudit off</i>
-</pre>
-
-<p>
-Retry getting the proper AVC denials.
+SELinux supports a <e>dontaudit</e> statement, which tells the policy not to log
+a denial if it occurs. These statements are used by SELinux policy developers
+when they believe a privilege is attempted by software which isn't needed. To
+make sure users aren't confused, these denials are hidden from regular sight.
 </p>
 
 <p>
-If it still doesn't work, you can disable all <e>dontaudit</e> statements:
+You can disable all <e>dontaudit</e> statements easily though:
 </p>
 
 <pre caption="Disabling all dontaudit statements">
-~# <i>semodule -R -D -B</i>
+~# <i>semodule -D -B</i>
 </pre>
 
 <p>
@@ -471,12 +408,12 @@ Retry getting the proper AVC denials.
 
 <p>
 The moment you get the denials you are looking for, isolate them and then undo
-the changes you made earlier:
+the changes you made earlier (to ensure that your audit or avc log isn't filled
+with these cosmetic denials):
 </p>
 
 <pre caption="Resetting the auditing defaults">
-~# <i>setsebool gentoo_try_dontaudit on</i>
-~# <i>semodule -R -B</i>
+~# <i>semodule -B</i>
 </pre>
 
 <p>
@@ -662,7 +599,7 @@ live ebuilds). These ebuilds get their repository and store it in the
 location. Rather than allowing <path>portage_sandbox_t</path> write privileges
 to <path>portage_ebuild_t</path>, a new type was created called
 <path>portage_svnsrc_t</path> for just this location and the rights are
-transferred towards type.
+copied and enhanced on this additional type.
 </p>
 
 </body>
@@ -709,7 +646,7 @@ interface(`mysql_stream_connect',`
 <p>
 The interface declares that the domain passed on as its first (and only)
 argument gets the rights offered by <c>stream_connect_pattern</c>, which is a
-macro (defined in <path>policy/support/ipc_patterns.spt</path> that looks like
+macro (defined in <path>policy/support/ipc_patterns.spt</path>) that looks like
 so:
 </p>
 
@@ -739,15 +676,19 @@ optional_policy(`
 </pre>
 
 <p>
-If the change you need is adding existing interface calls to the module (in 
-the <path>.te</path> file) then you should be able to test it easily by building
+If the change you need is adding statements (towards existing interface calls) in 
+the <path>.te</path> file, then you should be able to test it easily by building
 the changed module and loading it. However, if you need to change the interface
-of your module itself (in the <path>.if</path> file) you will eventually need
-to rebuild the base policy and even provide and install a new
-<path>sec-policy/selinux-base-policy</path> package as the interfaces are placed
-in <path>/usr/share/selinux/strict/include</path>. This is one of the reasons
-why the <path>sec-policy/selinux-base-policy</path> package in Gentoo Hardened
-has a high revision number (and many updates).
+of your (or another) module itself (in the <path>.if</path> file) you will eventually
+need to rebuild the base policy and even provide and install a new
+<path>sec-policy/selinux-base-policy</path> package as this package is
+responsible for placing the interfaces in <path>/usr/share/selinux/strict/include</path>.
+</p>
+
+<p>
+This is one of the reasons why the <path>sec-policy/selinux-base-policy</path> package
+in Gentoo Hardened is often updated. Updates on existing interface files (i.e.
+for already existing modules) always need to go through this package.
 </p>
 
 </body>
@@ -775,7 +716,7 @@ definitions offered by the <path>apache</path> module. By marking its executable
 file <path>httpd_exec_t</path> it runs in the <path>httpd_t</path> domain and
 uses the same policy like Apache. By labeling the files according to the
 <path>apache.fc</path> definitions (but now for lighttpd) it might Just Work
-&trade;
+(TM).
 </p>
 
 <p>
@@ -994,8 +935,9 @@ seshowdef() {
 
 <p>
 These functions can then be used to find the information / interfaces you are
-looking for. For instance, you need the application to read the postfix
-configuration files:
+looking for. Perhaps you need the application to read the postfix
+configuration files, so look for potential interfaces that use the
+<e>postfix_etc_t</e> type:
 </p>
 
 <pre caption="Looking for the interface(s) needed">
@@ -1120,34 +1062,6 @@ domain definition in mind):
 <chapter>
 <title>Policy Guidelines</title>
 <section>
-<title>Cosmetic denials</title>
-<body>
-
-<p>
-When working on policy modules, you'll notice that the application is trying to
-do things which are denied, but have no obvious effect on the applications
-functionality. This is to be expected: many applications do not handle file
-descriptors properly (file descriptor leaks are common) or applications read
-attributes of files but don't do anything with it. You'll notice that you learn
-a lot from the application while writing its policy ;-)
-</p>
-
-<p>
-Gentoo Hardened's idea here is to only allow what is actually needed by the
-application. Cosmetic denials are to be <c>dontaudit</c>'ed. Gentoo Hardened
-uses the <c>gentoo_try_dontaudit</c> boolean for this:
-</p>
-
-<pre caption="Example usage of gentoo_try_dontaudit">
-<comment># Hide sshd_t calling module_request from the kernel_t domain</comment>
-tunable_policy(`gentoo_try_dontaudit',`
-        kernel_dontaudit_request_load_module(sshd_t)
-')
-</pre>
-
-</body>
-</section>
-<section>
 <title>Gentoo Hardened SELinux policy</title>
 <body>
 
@@ -1204,36 +1118,28 @@ think is necessary and why.
 </body>
 </section>
 <section>
-<title>Module patches</title>
+<title>Policy patches</title>
 <body>
 
 <p>
-Module patches with changes that are intra-module (and have no effect outside)
-are best generated from the <path>policy/modules</path> location:
+Policy patches are best generated through the <c>git format-patch</c> approach.
 </p>
 
 <pre caption="Example generating patch for modular changes">
-~$ <i>cd dev/hardened/refpolicy.local/policy/modules</i>
-~$ <i>diff -ut ../../../refpolicy/policy/modules/services/openct.te services/openct.te</i>
---- ../../../../refpolicy/policy/modules/services/openct.te   2011-04-22 23:28:17.932918002 +0200
-+++ services/openct.te  2011-04-23 09:55:08.156918002 +0200
-@@ -47,6 +47,10 @@
- 
- miscfiles_read_localization(openct_t)
- 
-+tunable_policy(`gentoo_try_dontaudit',`
-+        kernel_dontaudit_read_system_state(openct_t)
-+')
-+
- userdom_dontaudit_use_unpriv_user_fds(openct_t)
- userdom_dontaudit_search_user_home_dirs(openct_t)
+~$ <i>cd hardened-refpolicy/policy/modules</i>
+<comment># Edit the file(s), like openct.te</comment>
+~$ <i>git add openct.te</i>
+~$ <i>git commit -m 'Openct does not need to read /proc'</i>
+~$ <i>git format-patch -n -s master</i>
+0001-openct-does-not-need-to-read-proc.patch
 </pre>
 
 <p>
 Attach this patch to the <uri link="https://bugs.gentoo.org">bugreport</uri>
 explaining why it is needed. If you think the patch itself is not obvious, make
 sure that the necessary comments are in place <e>inside the patch</e> for future
-reference.
+reference. If your patch contains many steps, it might be best to use separate
+commits in the repository so that the logic of the patch can be easily followed.
 </p>
 
 <p>
@@ -1243,50 +1149,10 @@ a single patch).
 
 </body>
 </section>
-<section>
-<title>Base policy patches</title>
-<body>
-
-<p>
-If a patch extends a single module, or it includes interface changes on a
-module, you'll need to create a patch for the base policy. In this case, the
-patch is best made from the upper location.
-</p>
-
-<pre caption="Generating a base policy patch">
-~$ <i>cd dev/hardened/refpolicy.local</i>
-~$ <i>diff -ut ../refpolicy/policy/modules/services/openct.if policy/modules/services/openct.if</i>
---- ../strict/policy/modules/services/openct.if    2011-04-22 23:28:17.918918002 +0200
-+++ policy/modules/services/openct.if       2011-04-23 10:01:38.753918001 +0200
-@@ -15,7 +15,7 @@
-                 type openct_t;
-         ')
- 
--        allow $1 openct_t:process signull;
-+        allow $1 openct_t:process { signull sigchld };
- ')
- 
- ########################################
-</pre>
-
-<p>
-Attach this patch to the <uri link="https://bugs.gentoo.org">bugreport</uri>
-explaining why it is needed. If you think the patch itself is not obvious, make
-sure that the necessary comments are in place <e>inside the patch</e> for future
-reference.
-</p>
-
-<p>
-Please have a separate patch file per major change (do not combine multiple
-unrelated changes in a single patch).
-</p>
-
-</body>
-</section>
 </chapter>
 
 <chapter>
-<title>Running Your Own Policy</title>
+<title>Fully Running Your Own Policy</title>
 <section>
 <title>Creating a local overlay</title>
 <body>
@@ -1346,8 +1212,9 @@ ebuilds:
 </p>
 
 <pre caption="Skeleton for ebuilds, example for postfix">
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-development.xml,v 1.4 2012/05/26 18:03:15 swift Exp $
 EAPI="4"
 
 IUSE=""
@@ -1355,14 +1222,15 @@ IUSE=""
 MODS="postfix"
 <comment># BASEPOL is optional, set it to the selinux-base-policy version which
 # includes the latest patch (or interface you use in the policy)</comment>
-BASEPOL="2.20110726-r3"
+BASEPOL="2.20120215-r9"
 
 inherit selinux-policy-2
 
 DESCRIPTION="SELinux policy for postfix"
 KEYWORDS="~amd64 ~x86"
 
-<comment># POLICY_PATCH is optional (only when you have a module patch)</comment>
+<comment># POLICY_PATCH is optional (only when you have a module patch which is not included</comment>
+<comment># in the patchbundle of the base policy you referred to in BASEPOL.</comment>
 POLICY_PATCH="${FILESDIR}/fix-services-postfix-r3.patch"
 </pre>
 
@@ -1386,9 +1254,9 @@ Don't forget to run <c>repoman manifest</c> with every change, and run
 <p>
 To provide updates on the base policy, it is recommended to keep all patches you
 made centrally in a directory (say <path>dev/hardened/base-patches</path>). When
-you want to create a new <path>sec-policy/selinux-base-policy</path> release,
-create a patchbundle from your patch directory, put the bundle in the
-<path>files</path> location, create the updated ebuild and try it out.
+you want to create a new <path>sec-policy/selinux-base-policy</path> and
+<path>sec-policy/selinux-base</path> release, create a patchbundle from your patch
+directory, put the bundle online somewhere, create the updated ebuild and try it out.
 </p>
 
 <pre caption="Building a base policy package">
@@ -1397,17 +1265,94 @@ create a patchbundle from your patch directory, put the bundle in the
 
 <comment># Add the patches you want to include, cfr Submitting Patches</comment>
 <comment># Then, create a new patch bundle</comment>
-~$ <i>tar cjvf ../overlay/sec-policy/selinux-base-policy/files/patchbundle-selinux-base-policy-2.20110726-r3.tar.bz2 *</i>
+~$ <i>tar cjvf ../overlay/sec-policy/selinux-base-policy/files/patchbundle-selinux-base-policy-2.20120215-r10.tar.bz2 *</i>
 
-<comment># Finally, bump the revision of the ebuild in the overlay</comment>
+<comment># Finally, bump the revision of the ebuilds in the overlay</comment>
 ~$ <i>cd ../overlay/sec-policy/selinux-base-policy</i>
-~$ <i>cp selinux-base-policy-2.20110726-r3.ebuild selinux-base-policy-2.20110726-r4.ebuild</i>
+~$ <i>cp selinux-base-policy-2.20120215-r9.ebuild selinux-base-policy-2.20120215-r10.ebuild</i>
+~$ <i>vim selinux-base-policy-2.20120215-r10.ebuild</i>
+<comment># Update references to the patchbundle and dependencies (like BASEPOL)</comment>
+~$ <i>cd ../selinux-base</i>
+~$ <i>cp selinux-base-2.20120215-r9.ebuild selinux-base-2.20120215-r10.ebuild</i>
 </pre>
 
 <p>
 Don't forget to run <c>repoman manifest</c> and <c>repoman scan</c>. You can
-then install <path>sec-policy/selinux-base-policy-2.20110726-r4</path> and test
+then install <path>sec-policy/selinux-base-policy-2.20120215-r10</path> and test
 it out.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Adding Third Party Policies</title>
+<section>
+<title>What is a Third Party Policy?</title>
+<body>
+
+<p>
+Most users who are responsible for handling the SELinux policies on one or more
+systems will most likely be writing their own policies too. Be it because the
+policy offered by Gentoo doesn't provide a policy for the package yet, or
+because the policy is needed for a local, non-Gentoo-provided package, it is
+still important for the administrator to easily manage these added policies on
+the systems.
+</p>
+
+<p>
+An administrator can perfectly build and load the policy once and then let it
+be. After all, once a SELinux policy is loaded, it will be reloaded after every
+(re)boot. But within Gentoo, we support simple ebuilds that install the policy
+on the system for you.
+</p>
+
+</body>
+</section>
+<section>
+<title>Creating an Ebuild</title>
+<body>
+
+<p>
+Assuming you already have an overlay, all you need to do is create a package for
+your third party policy. For instance, a policy for an Oracle database might be
+called <path>oracledb.pp</path> so you would then create a package
+<path>sec-policy/selinux-oracledb</path>.
+</p>
+
+<p>
+Then create the following ebuild:
+</p>
+
+<pre caption="Third party policy ebuild">
+# Copyright 1999-2012 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux-development.xml,v 1.4 2012/05/26 18:03:15 swift Exp $
+EAPI="4"
+
+IUSE=""
+MODS="oracledb"
+BASEPOL="2.20120215-r10"
+POLICY_FILES="oracledb.te oracledb.if oracledb.fc"
+
+inherit selinux-policy-2
+
+DESCRIPTION="SELinux policy for Oracle DB"
+
+KEYWORDS="~amd64 ~x86"
+</pre>
+
+<p>
+Finally, put the three policy-related files (assuming you have three) in the
+<path>files</path> directory of the package.
+</p>
+
+<p>
+With this in place, you can now install the package and it will install the
+SELinux policy module. If the package provided an interface, it will also be
+added to the <path>/usr/share/selinux/strict/include</path> location (or
+<path>targeted</path> or whatever your SELINUXTYPE is).
 </p>
 
 </body>
