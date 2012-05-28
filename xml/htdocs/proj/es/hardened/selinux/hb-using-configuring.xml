@@ -4,11 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-configuring.xml,v 1.2 2011/10/28 18:25:31 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-configuring.xml,v 1.3 2012/05/28 11:26:15 nimiux Exp $ -->
 
 <sections>
-<version>1</version>
-<date>2011-09-30</date>
+<version>2</version>
+<date>2012-05-26</date>
+
 
 <section>
 <title>Administrando usuarios</title>
@@ -23,7 +24,7 @@ hipotético llamado "juan" y lo hemos mapeado al usuario SELinux
 "staff_u". Si está corriendo un sistema multiusuario, la gestión de los
 mapeos de derechos es importante. Un usuario que se mapea al usuario
 "user_u" no obtendrá ningún derecho adicional. Incluso si le concediera
-derechos adicionales a través de comandos como <c>sudo</c>, la
+derechos adicionales a través de órdenes como <c>sudo</c>, la
 directriz de SELinux no le permitiría a este usuario hacer nada que esté
 relacionado con la administración.
 </p>
@@ -1047,6 +1048,114 @@ manualmente:
 # <i>emerge -C selinux-screen</i>
 # <i>semodule -r screen</i>
 </pre>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Siguientes pasos</title>
+<subsection>
+<title>¿Qué hacer ahora?</title>
+<body>
+
+<p>
+Hasta ahora, su sistema ha estado corriendo en <e>modo permisivo</e>.
+Necesitará habilitar el modo <e>forzado</e> antes de estar protegido
+adecuadamente mediante SELinux. Discutiremos cómo cambiar al modo forzado
+en <uri link="?part=2&amp;chap=4">Permisivo, no confinado, deshabilitado o
+lo que no...</uri>, pero antes de eso, necesitará tener en cuenta algunas
+cosas...
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Usuarios de Initramfs</title>
+<body>
+
+<p>
+Si su sistema utiliza un initramfs para arrancar, <e>no</e> podrá iniciar
+el sistema directamente en modo forzado (debido a la <uri
+link="https://bugs.gentoo.org/397567">incidencia #397597</uri>). Para
+evitar esta cuestión, puede crear el siguiente guión de inicio que
+cambiará de modo permisivo a modo forzado de una forma razonablemente
+rápida dentro del proceso de inicio (y antes de arrancar los servicios
+de red):
+</p>
+
+<pre caption="Contenido de /etc/init.d/selinux_enforce">
+#!/sbin/runscript
+# Copyright 1999-2012 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-configuring.xml,v 1.3 2012/05/28 11:26:15 nimiux Exp $
+
+description="Switch into SELinux enforcing mode"
+
+depend() {
+        need localmount
+}
+
+start() {
+        ebegin "Restoring file contexts in /dev"
+        restorecon -R /dev
+        eend 0
+
+        if get_bootparam "nosetenforce" ; then
+                ewarn "Skipping switching to enforcing mode as requested by kernel cmdline"
+        else
+                . /etc/selinux/config
+
+                if [ "${SELINUX}" = "enforcing" ];
+                then
+                        ebegin "Switching to enforcing mode"
+                        setenforce 1
+                        eend $?
+                fi
+        fi
+}
+</pre>
+
+<p>
+Añada el guión de inicio al nivel de ejecución boot, y edite la
+configuración de su gestor de arranque para arrancar siempre con la
+definición <c>enforcing=0</c>. El guión de inicio actualizará los
+contextos de fichero en <path>/dev</path> y a continuación, si su
+sistema está configurado para arrancar en modo forzado, cambiará a
+ese modo.
+</p>
+
+<p>
+Si necesita permanecer en modo permisivo de forma temporal, puede añadir
+<c>nosetenforce</c> como parámetro de inicio (despúes de <c>enforcing=0</c>)
+lo cual evitará el paso <c>setenforce</c>).
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Usuarios de entornos gráficos</title>
+<body>
+
+<p>
+Si arranca en un entorno gráfico (es decir, si utiliza GDM, KDM u otro
+gestor gráfico de acceso al sistema), necesitará actualizar el o los
+fichero(s) de configuración PAM de los gestores mediante las siguientes
+indicaciones:
+</p>
+
+<pre caption="Ejemplo de actualización del fichero de configuración LXDM PAM">
+<comment># /etc/pam.d/lxdm</comment>
+<comment># [...]</comment>
+session    required     pam_loginuid.so
+session    optional     pam_gnome_keyring.so auto_start
+<i>session optional     pam_selinux.so</i>
+</pre>
+
+<p>
+Esto asegurará que el contesto de seguridad en el que ha accedido al sistema
+está definido correctamente. Actualizaremos los paquete que definen esos
+ficheros PAM de forma adecuada, pero esto nos llevará algún tiempo.
+</p>
 
 </body>
 </subsection>
