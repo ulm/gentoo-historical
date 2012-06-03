@@ -1,0 +1,813 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/hardened-toolchain.xml,v 1.1 2012/06/03 21:48:11 nimiux Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide lang="es" disclaimer="draft">
+<title>La cadena de herramientas de Gentoo Hardened</title>
+
+<author title="Autor">
+  <mail link="kevquinn@gentoo.org">Kevin F. Quinn</mail>
+</author>
+<author title="Contribuyente">
+  <mail link="solar@gentoo.org">Ned Ludd</mail>
+</author>
+<author title="Contribuyente">
+  <mail link="pageexec@freemail.hu">The PaX Team</mail>
+</author>
+<author title="Traductor">
+  <mail link="nimiux"/>
+</author>
+
+<abstract>
+Descripción técnica (y razones de uso) de las modificaciones realizadas
+a la cadena de herramientas (toolchain) para Gentoo Hardened.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.0</version>
+<date>2006-08-31</date>
+
+<chapter id="introduction">
+<title>Introducción a la cadena de herramientas de Gentoo Hardened</title>
+
+<section id="todo">
+<title>TODO</title>
+<body>
+
+<ul>
+  <li>Modificaciones de Binutils para PaX</li>
+  <li>Comentario sobre la relación con SELinux</li>
+</ul>
+
+</body>
+</section>
+
+<section id="overview">
+<title>Vista general</title>
+<body>
+
+<p>
+El proyecto Gentoo Hardened introduce una serie de cambios al comportamiento
+por defecto de la cadena de herramientas de construcción (gcc, binutils,
+glibc/uclibc) pensados en el incremento de la seguridad. Este proyecto
+da soporte a otras iniciativas, en mayor medida PaX y Grsecurity, sin
+embargo, se puede aplicar también a SELinux y RSBAC. Este documento
+describe cada una de las modificaciones realizadas a la cadena de
+herramientas, mostrando lo que se consigue y como están relacionadas
+con la estrategia de Gentoo Hardened.
+</p>
+
+</body>
+</section>
+
+<section id="SSPintro">
+<title>Adición por defecto del Stack Smashing Protector (SSP o Protector contra Ataques a la Pila)</title>
+<body>
+
+<p>
+Desarrollado originalmente por el Dr. Hiroaki Etoh en IBM para las series
+3.x de GCC (denominado inicialmente ProPolice) y desarrollado de nuevo por
+RedHat de una forma diferente para las series 4.x, el objetivo del Stack
+Smashing Protector es la protección contra desbordamientos de búfer en
+la pila. Hace que el compilador inserte instrucciones para realizar
+comprobaciones de desbordamiento de la pila antes de que las llamadas
+a las funciones retornen. Si se intenta realizar un ataque (exploit)
+aprovechando una vulnerabilidad no corregida (y probablemente aún no
+descubierta) que exponga una debilidad basada en el desbordamiento de
+un búfer, la ejecución de la aplicación se terminará inmediatamente.
+Esto reduce cualquier ataque potencial del tipo denegación de servicio.
+</p>
+
+<p>
+Normalmente, se le debe indicar explícitamente al compilador para que
+cambie a modo de protección de pila utilizando las opciones del mismo.
+El compilador GCC de Gentoo hardened GCC cambia por defecto al modo
+protector de pila a menos que se especifique lo contrario. El capítulo
+"<uri link="#SSP">El Protector contra Ataques de Pila (Stack Smashing
+Protector)</uri>" describe las modificaciones a la cadena de herramientas
+para que el comportamiento sea este y los problemas que pueden surgir.
+</p>
+
+</body>
+</section>
+
+<section id="PIEintro">
+<title>Generación automática de código independiente de la posición (Position Independent Executables o PIEs)</title>
+<body>
+
+<p>
+Los ejecutables estándar tienen una dirección base fija, y se deben cargar
+en esta dirección o de lo contrario no se ejecutarán correctamente. Los
+ejecutables independientes de la posición se pueden cargar en cualquier
+dirección de memoria tal y como se hace con las librerías compartidas
+(shared libraries), permitiendo que la característica de
+<uri link="/proj/es/hardened/pax-quickstart.xml">PaX</uri> Address Space
+Layout Randomisation (Aleatorización de la Disposición del Espacio de
+Direcciones o ASLR) entre en acción. Esto se consigue construyendo el
+código de forma que sea independiente de la posición, y enlazándolo como
+objetos compartidos ELF.
+</p>
+
+<p>
+En 2003, Gentoo Hardened presentó un enfoque llamado '-y etdyn' el cual
+consiste en construir todo el código con la opción -fPIC, y modificando
+la fase de enlazado para ofrecer un ejecutable ET_DYN utilizando una
+versión modificada de crt1.o, ajustando igualmente la cabecera interp
+para conseguir que el ejecutable se cargara mediante el cargador de
+glibc. La versiones ET_DYN del objeto crt1.o se crearon para las
+arquitecturas x86, parisc, ppc y sparc.
+</p>
+
+<p>
+El trabajo posterior lo realizó RedHat, que implementó un conmutador
+'-pie' para el enlazador, y '-fPIE' para utilizarlo cuando se compilan
+objetos para ser enlazados en un ejecutable independiente de la posición
+(PIE). La construcción de un objeto con -fPIE es ligeramente diferente
+de -fPIC. En particular, no todos los símbolos se vectorizan a través de
+la Tabla Global de Desplazamientos (Global Offset Table o GOT), lo que
+implica que las librerías precargadas compartidas no sobreescriben estos
+símbolos en el ejecutable, lo cual es también el caso de los ejecutables
+ET_EXEC.
+</p>
+
+<p>
+A medida que el soporte para PIEs por parte del equipo de desarrollo
+maduró, Gentoo Hardened cambió a PIE, eliminando el soporte anterior
+de "-y et_dyn". Los PIEs tienen varias ventajas, una muy importante
+es el hecho de que el equipo de desarrollo principal carga con el
+soporte para gcc, glibc y binutils.
+</p>
+
+<p>
+El compilador GCC de Gentoo Hardened construye de forma automática
+los PIEs cuando general el código de la aplicación, a menos que se
+le indique lo contrario (hay algunas excepciones en las que no
+se desea este comportamiento). El capítulo "<uri link="#PIE">Ejecutables
+independientes de la posición</uri> describe las modificaciones
+realizadas a la cadena de herramientas para que esto suceda, así como
+los problemas que puedan surgir.
+</p>
+
+</body>
+</section>
+
+<section id="RELROintro">
+<title>Por defecto se marcan como de solo lectura las secciones que puede ser marcadas de esta forma una vez que el cargador ha terminado (RELRO)</title>
+<body>
+
+<p>
+Hay varias secciones en las que el cargador necesita escribir antes de que
+la aplicación se inicie, pero más tarde la propia aplicación no necesita
+escribir en ellas. Ajustando relro se le indica al enlazador que registre
+a que secciones aplica lo anterior, y el cargador las marcará como de
+solo lectura una antes de pasar o devolver el control a la aplicación.
+La secciones típicas en las que se realiza esto incluyen .ctors, .dtors,
+.jcr, .dynamic y .got, aunque la lista exacta varía dependiendo de la
+arquitectura. Si se define también <uri link="#NOWintro">BIND_NOW</uri>,
+entonces para algunas arquitecturas toda la información de GOT, incluyendo
+la PLT (Procedure Linkage Table) se puede definir como de solo lectura de
+esta forma, evitando varios métodos de ataque que incluyen la reescritura
+de las mismas.
+</p>
+
+<p>
+El compilador GCC de Gentoo Hardened ajusta de forma automática el
+enlazador para que defina RELRO, a menos que se le especifique lo
+contrario. El capítulo "<uri link="#RELRO">Tablas de relocalización de solo
+lectura</uri>" describe las modificaciones realizadas a la cadena de
+herramientas para que esto suceda.
+</p>
+
+</body>
+</section>
+
+<section id="NOWintro">
+<title>Enlazado por defecto en el momento de la carga (BIND_NOW)</title>
+<body>
+
+<p>
+Para reducir el tiempo transcurrido entre el inicio de la aplicación y
+el momento de poder utilizarla, la mayoría del software se construye
+con el llamado "enlazado perezoso" (lazy binding). Esto significa que
+las referencias a funciones en las librerías compartidas se resuelven
+cuando se carga la aplicación. La cadena de herramientas de Hardened
+cambia este comportamiento de modo que por defecto se define el
+ajuste "BIND_NOW", lo que provoca que el cargador resuelva todos estos
+enlaces antes de comenzar la ejecución. Esto mejora la eficiencia de
+<uri link="#RELROintro">RELRO</uri>.
+</p>
+
+<p>
+El compilador GCC de Gentoo hardened ajusta automáticamente el enlazador
+para definir BIND_NOW, a menos que se le indique lo contrario. El
+capítulo "<uri link="#NOW">Directriz de enlazado NOW</uri>" describe las
+modificaciones realizadas a la cadena de herramientas para que esto sea
+así.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="SSP">
+<title>El Protector de Ataque contra la Pila (Stack Smashing Protector o SSP)</title>
+
+<section id="SSPrationale">
+<title>Razones para habilitar el protector de ataque contra la pila de forma global</title>
+<body>
+
+<p>
+El protector de ataques contra la pila reorganiza el código de forma que
+el desbordamiento de la pila sea detectado por la aplicación, cuya ejecución
+abortará. Esto significa que un atacante, que intenta utilizar este tipo
+de error de desbordamiento de la pila puede conseguir que la aplicación
+aborte pero no utilizar el error para ejecutar código inyectado. Por lo
+tanto se reduce la amenaza de un escalado en los privilegios a una
+denegación de servicio que es una amenaza de menor importancia. Obviamente,
+se deben corregir este tipo de errores, por lo que la SSP no es una excusa
+para no corregirlos. Por otro lado, es muy difícil estar seguro de que este
+tipo de errores se han eliminado completamente incluso haciendo una
+revisión y prueba exhaustiva del código. De este modo, SSP se comporta
+como una malla de seguridad para detectar errores de desbordamiento de
+la pila que no han sido corregidos.
+</p>
+
+<p>
+Esto es una parte importante de toda la estrategia de Hardened para
+la cadena de herramientas, PaX y GRsecurity. PaX previene que los
+desbordamientos de la pila no se puedan ejecutar, de modo que un
+atacante no pueda simplemente poner su código del intérprete de comandos
+en un búfer que se desborda. Sin embargo, esto no previene contra ataques
+que afectan al flujo del programa, en particular aquéllos ataques que
+modifican la dirección de retorno almacenada en la pila.
+</p>
+
+</body>
+</section>
+
+<section id="SSPtoolchain">
+<title>Modificaciones a la cadena de herramientas para el SSP por defecto</title>
+<body>
+
+<p>
+En Gentoo, añadimos parches para protección contra ataques a la pila a las
+series de 3.x del compilador GCC y a la librería de C (glibc-2.3.x y uclibc),
+ya que esta es la acción mas invasiva para reforzar la cadena de
+herramientas. Desde la versión 4.1 de GCC y la 2.4 de glibc y siguientes,
+el equipo de desarrollo principal de la cadena de herramientas de GNU, ha
+realizado una implementación diferente de SSP. La librería glibc-2.4 se
+ha modificado por parte del equipo de Gentoo para dar soporte a la
+implementación de SSP en GCC-3.x, de modo que los binarios construidos con
+cualquier implementación de SSP continuarán funcionando.
+</p>
+
+<p>
+Los parches para GCC-3.x no son triviales por lo que una explicación
+detallada no cabe aquí, incluso si pudiéramos escribirla. Las modificaciones
+realizadas a la librería de C son más sencillas, ofrecen un valor "canario"
+que se aleatoriza de forma independiente para cada proceso (y de forma
+independiente para cada hilo de ejecución en la implementación de
+gcc-4.x/glibc-2.4), también la función de manejo llamada cuando se
+comprueba que el valor del canario se ha modificado. La función de manejo
+informa del error y para la ejecución del proceso. Esto se tiene que
+hacer de forma cuidadosa para asegurarse de que la propia función de
+manejo no puede ser reventada.
+</p>
+
+</body>
+</section>
+
+<section id="SSPissues">
+<title>Problemas que pueden aparecer en el SSP por defecto</title>
+<body>
+
+<p>
+La implementación de SSP en gcc-3.x no es en absoluto perfecta y puede
+provocar algunos problemas. En particular, puede que el código C++ se
+construya de forma inapropiada cuando se ha habilitado SSP, aunque los
+detalles exactos no están claros en este momento.
+</p>
+
+<p>
+La implementación de SSP en gcc-4.x es completamente diferente, incluso
+hasta el punto de cambiar la semántica de las opciones del compilador.
+En el momento de escribir este documento, tenemos poca experiencia en
+la implementación de SSP en gcc-4.x.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="PIE">
+<title>Ejecutables independientes de la posición (PIEs)</title>
+
+<section id="PIErationale">
+<title>Razones para construir ejecutables independientes de la posición (PIEs)</title>
+<body>
+
+<p>
+La razón para construir aplicaciones con posiciones independientes es para
+de permitir que la aplicación se cargue en una dirección aleatoria.
+Normalmente el núcleo carga todos los ejecutables en una dirección fija.
+Para un atacantes es más complicado reventar la aplicación si se
+aleatoriza la dirección en la que se carga la aplicación ya que es más
+difícil saber donde reside el código (y el montículo o heap).
+</p>
+
+<p>
+Esto es más efectivo cuando se ejecuta un núcleo PaX con Aleatorización
+de la Disposición del Espacio de Direcciones (Address Space Layout
+Randomisation o ASLR), lo cual incrementa significativamente la
+aleatorización de las distintas partes de un proceso. También es
+necesario habilitar la opción de GRsecurity para ocultar la localización
+de la información en el sistema de ficheros /proc, ¡de lo contrario el
+atacante puede buscar allí la información que necesita!
+</p>
+
+<p>
+Una nota sobre el pre-enlazado: éste define recomendaciones para la
+dirección base en la que se debe cargar el fichero ELF. Estas
+recomendaciones, si se siguen, podrían afectar a la efectividad de la
+ASLR. El núcleo PaX hace que se ignoren estas recomendaciones, de modo
+que el pre-enlazado no es de utilidad en los sistemas Gentoo Hardened.
+Ya que no hay necesidad de utilizar el pre-enlazado, simplemente, no lo
+use.
+</p>
+
+<p>
+Si no utiliza el pre-enlazado, no se tendrá que preocupar por los efectos
+secundarios de éste. Debido a que el pre-enlazado modifica los binarios
+ELF cada vez que se ejecuta, estos cambios se deberán propagar a otros
+sistemas que dependan de ellos. Por ejemplo los Sistemas de Detección
+de Intrusos (Intrusion Detection Systems o IDS) comprueban los cambios
+que se realizan en los ejecutables y librerías y por tanto se les debe
+notificar cualquier cambio realizado por el pre-enlazado. Si no se utiliza
+el pre-enlazado, entonces el mantenimiento de estos sistemas es más sencillo.
+</p>
+
+<p>
+Existen algunas tecnologías que pueden reducir la necesidad del pre-enlazado,
+algunas son las siguientes:
+</p>
+
+<ul>
+  <li>
+    Soporte para la visibilidad de símbolos, que, cuando se usa de forma
+    adecuada, reduce de forma dramática el número de símbolos para resolver
+    y por tanto el tiempo necesario para resolverlos.
+  </li>
+  <li>
+    Tablas hash, las cuales son generadas por el enlazador e incluidas
+    como una sección extra en el fichero ELF, lo que hace que la
+    búsqueda de símbolos a resolver sea prácticamente inmediata.
+  </li>
+  <li>
+    Enlazado Directo, lo que simplifica la búsqueda realizada por el
+    enlazador incorporando información en cada librería detallando
+    exactamente dónde está el símbolo a resolver.
+  </li>
+</ul>
+
+<p>
+Lea
+<uri link="#NOWissues">Problemas que pueden surgir en NOW por defecto</uri>
+para más información.
+</p>
+
+</body>
+</section>
+
+<section id="PIEtoolchain">
+<title>Modificaciones realizadas a la cadena de herramientas para PIEs automáticos</title>
+<body>
+
+<p>
+La cadena de herramientas estándar de GNU ofrece soporte para ejecutables
+independientes de la posición. Para PIEs, GCC ofrece diferentes versiones
+de algunos de los objetos de soporte del compilador, así por ejemplo en
+lugar de utilizar crtbegin.o, crt1.o y crtend.o, utiliza crtbeginS.o,
+Scrt1.o y crtendS.o (los ficheros exactos varían conforme al destino
+del compilador). También construye código de una forma similar al código
+de librería PIC, aunque en el caso de los ejecutables, algunos símbolos
+no se referencian a través de la Tabla Global de Desplazamientos (GOT).
+El compilador obtiene la lista de soporte de objetos a través del fichero
+de especificaciones ("specs"). Lea  "info gcc" (section 3: Invoking GCC.
+subsection 15: Spec Files). La construcción de código para PIEs se
+realiza añadiendo '-fPIE' a la hora de compilar y '-fPIE -pie' cuando
+se enlaza.
+</p>
+
+<p>
+Para cambiar el comportamiento por defecto en la construcción de
+ejecutables de posiciones absolutas a posiciones independientes, es
+necesario cambiar la selección del soporte de objetos y definir las
+opciones -fPIE y -pie de forma apropiada. Las reglas de especificación
+para esto son startfile, endfile, cc1 y link_command. Los detalles
+exactos de las modificaciones varían dependiendo del destino, para
+ilustrar esto, se muestran a continuación los cambios necesarios
+para la arquitectura x86:
+</p>
+
+<pre caption="Regla estándar cc1 para x86">
+%(cc1_cpu) %{profile:-p}
+</pre>
+
+<pre caption="Adición a la regla cc1 para x86">
+%{!D__KERNEL__: %{!static: %{!fno-PIC: %{!fno-pic: %{!shared:
+%{!nostdlib: %{!nostartfiles: %{!fno-PIE: %{!fno-pie: %{!nopie:
+%{!fPIC: %{!fpic:-fPIE} } } } } } } } } } } }
+</pre>
+
+<p>
+Esto tiene un aspecto más complicado de los que realmente trata. Todo
+lo que dice es que a menos que una o más de las opciones listadas se
+especifiquen, se añada -fPIE a la compilación. El núcleo define __KERNEL__
+en todas sus compilaciones, por lo que la comprobación -D__KERNEL__
+asegura que no se añade -fPIE cuando se construya el núcleo. El núcleo
+es un ejecutable estático pero tal y como
+<uri link="#PIEissues">se explica más abajo</uri> esto no es fácil de
+detectar. Cuando se construyen librería compartidas, se debe especificar
+bien -fPIC, bien -fpic, de modo que esto se utiliza para prevenir que se
+añada -fPIE cuando se construyan librerías compartidas. Las comprobaciones
+-fno-* están ahí para asegurar que si una construcción requiere
+explícitamente código que  no sea independiente de la posición, no se
+añadirá -fPIE.
+</p>
+
+<pre caption="Regla estándar link_command para x86">
+%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:    %(linker) %l
+%{pie: -pie} %X %{o*} %{A} %{d} %{e*} %{m} %{N} %{n} %{r}
+%{s} %{t} %{u*} %{x} %{z} %{Z} %{!A:%{!nostdlib:%{!nostartfiles:%S}}}
+%{static:} %{L*} %(link_libgcc) %o %{fprofile-arcs|fprofile-generate:-lgcov}
+%{!symbolic:%{!shared:%{fbounds-checking:libboundscheck.a%s}}}
+%{!symbolic:%{!shared:%{fbc-strings-only:libboundscheck.a%s}}}
+%{!nostdlib:%{!nodefaultlibs:%(link_gcc_c_sequence)}}
+%{!A:%{!nostdlib:%{!nostartfiles:%E}}} %{T*} }}}}}}
+</pre>
+
+<pre caption="Reemplazo por %{pie: -pie} en la regla link_command para x86">
+%{!nopie: %{!static: %{!A: %{!shared: %{!nostdlib: %{!nostartfiles:
+%{!fno-PIE: %{!fno-pie: -pie} } } } } } } } %{pie: -pie}
+</pre>
+
+<p>
+Al igual que con la regla cc1 rule, la adición, causa que -pie se defina
+para las órdenes de enlazado a menos que se especifiquen alguna de las
+opciones listadas. Observe que esto reemplaza la sección '%{pie: -pie}'
+en la regla link_command original.
+</p>
+
+<p>
+En ambas reglas hay una condición adicional '!nopie'. Esto ofrece
+un mecanismo para parar el compilador hardened volviendo al valor
+por defecto PIE añadiendo '-nopie' a CFLAGS. Esto es lo que hace
+filter-flags cuando se le pide que filtre -fPIE y el compilador
+es Hardened.
+</p>
+
+</body>
+</section>
+
+<section id="PIEissues">
+<title>Problemas con los PIEs</title>
+<body>
+
+<p>
+Idealmente, cuando se construye un ejecutable estático, una librería
+compartida o no se utilizan los ficheros del sistema gcc estándar, no
+se debería añadir PIE de forma automática. Lamentablemente, las opciones
+-static, -shared, -nostdlib y -nostartfiles son opciones de enlazado,
+por lo que normalmente se pasan únicamente a la orden de enlazado de
+un ejecutable y no a las órdenes de compilación de los objetos
+individuales. En estos casos, se añadirá -fPIE a las órdenes de
+compilación cuando, de hecho, no se deberían pasar. Esto es una
+limitación inevitable ya que es imposible saber para la orden
+de compilación de un objeto, qué orden de enlazado se utilizará.
+De hecho, en algunos casos se ejecutará más de una orden de enlazado
+utilizando los mismos objetos. Estos casos se deben tratar en el
+ebuild correspondiente para cada uno de los casos. Las opciones
+-nostdlib y -nostartfiles no son muy comunes. La opción -shared se
+utiliza normalmente cuando se han ejecutado las órdenes de compilación
+con -fPIC, por lo que la mayoría de estos casos no causan problemas.
+</p>
+
+<p>
+Cuando una aplicación construye las librería sin -fPIC, es necesario
+modificar el proceso de construcción para evitar que el compilador
+añada -fPIE. Para paquetes que construyen únicamente librerías, es
+suficiente hacer los siguiente:
+</p>
+
+<pre caption="Deshabilitar PIE automático para ebuilds de librería">
+inherit flag-o-matic
+...
+src_compile() {
+...
+filter-flags -fPIE
+...
+}
+</pre>
+
+<p>
+Sin embargo, si un ebuild crea tanto ejecutables como librerías, entonces
+se necesitan realizar modificaciones más detalladas para añadir
+-fno-PIE a la compilación de objetos destinados a las librerías.
+Cuando se utiliza un objeto para librerías y ejecutables, se necesita
+modificar el proceso de construcción de forma significativa para
+obtener los dos objetos, uno se debe construir con -fPIC y el otro
+con -fPIE para el enlazado de la librería y del ejecutable
+respectivamente. La mayoría de los paquete que ofrecen tanto
+librerías dinámicas como archivos estáticos, esto se realiza
+utilizando libtool, el cual realiza las acciones correctas de forma
+automática. Ambos enfoques se pueden realizar incondicionalmente,
+esto es, no es necesario realizar estos cambios condicionalmente cuando
+se utiliza el compilador Hardened.
+</p>
+
+<p>
+De forma ocasional, el código de la aplicación no compilará con -fPIE.
+Si esto ocurre, es debido normalmente a código ensamblador que no es
+independiente de la posición que es más común en la arquitectura X86,
+la cual tiene un conjunto limitado de registros de propósito general.
+Sin embargo, esto es raro en código de aplicación, ya que normalmente
+los autores de las aplicaciones ponen la mayoría de su código en
+librería compartidas, a pesar de ello, a veces ocurre.
+La mayoría de los problemas de construcción de código independiente
+de la posición ocurren en las librerías compartidas que no son
+construidas como independientes de la posición. Esto es un problema
+independiente de Hardened y no tiene nada que ver con PIE. Se trata
+simplemente de que el problema es mostrado por el compilador de
+hardened debido a la activación automática de -fPIE cuando -fPIC no
+se ha especificado. Lea la
+<uri link="/proj/en/hardened/pic-fix-guide.xml">Guía de corrección
+de PIC (en inglés)</uri> para encontrar información acerca de como
+corregir este tipo de problemas.
+</p>
+
+<p>
+Se ha informado de que algunas aplicaciones provocan un fallo de segmento
+cuando se construyen como PIEs. El motivo por el que ocurre esto todavía no
+está claro, pero parece que es debido a un fallo en el compilador por lo
+que probablemente será resuelto en versiones futuras del compilador.
+</p>
+
+<p>
+En el momento de escribir este documento, la depuración de los PIEs
+únicamente funciona con el paquete sys-devel/gdb-6.3-r5, el cual incluye
+parches creados por Elena Zannoni de RedHat. Estos parches nos se han
+incluido en la rama principal del desarrollo de gdb, de modo que no
+serán mantenidos en versiones futuras.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="RELRO">
+<title>Marcar las secciones apropiadas como de solo lectura</title>
+
+<section id="RELROrationale">
+<title>Razones para habilitar RELRO globalmente</title>
+<body>
+
+<p>
+Algunas secciones de un fichero ELF solo deben ser escritas por el cargador,
+no por la aplicación. Sin embargo, en circunstancias normales, estas
+secciones permanecen como de lectura/escritura a lo largo de la vida
+del proceso y existen métodos de ataque que se aprovechan de esto para
+afectar el flujo de ejecución del programa. Al habilitar RELRO se
+indica al cargador las secciones que se pueden marcar como de
+solo lectura una vez que el cargador ha terminado con ellas. También
+afecta ligeramente a la disposición de las secciones, para evitar
+tener secciones RELRO y secciones de lectura/escritura en la
+misma página de memoria. Al combinar RELRO con BIND_NOW también
+se permite en algunas arquitecturas gestionar la PLT de esta forma.
+</p>
+
+</body>
+</section>
+
+<section id="RELROauto">
+<title>Modificaciones a la cadena de herramientas para RELRO por defecto</title>
+<body>
+
+<p>
+RELRO es una opción del enlazador ("-z relro") ofrecida por la cadena
+de herramientas estándar GNU. Definirlo por defecto es simplemente cuestión
+de añadir una pequeña regla al fichero de especificaciones ("specs") de GCC
+tal y como se muestra a continuación:
+</p>
+
+<pre caption="Regla estándar link_command para x86">
+%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:    %(linker) %l
+%{pie: -pie} %X %{o*} %{A} %{d} %{e*} %{m} %{N} %{n} %{r}
+%{s} %{t} %{u*} %{x} %{z} %{Z} %{!A:%{!nostdlib:%{!nostartfiles:%S}}}
+%{static:} %{L*} %(link_libgcc) %o %{fprofile-arcs|fprofile-generate:-lgcov}
+%{!symbolic:%{!shared:%{fbounds-checking:libboundscheck.a%s}}}
+%{!symbolic:%{!shared:%{fbc-strings-only:libboundscheck.a%s}}}
+%{!nostdlib:%{!nodefaultlibs:%(link_gcc_c_sequence)}}
+%{!A:%{!nostdlib:%{!nostartfiles:%E}}} %{T*} }}}}}}
+</pre>
+
+<pre caption="Segmento adicional que sigue a %{pie: -pie} en la regla link_command para x86">
+%{!norelro: -z relro} %{relro: }
+</pre>
+
+<p>
+Aquí se introduce una nueva opción "norelro", que se puede utilizar para
+prevenir que el compilador hardened cambie automáticamente dependiendo de
+RELRO. Sin embargo, esto normalmente es obsoleto ya que las nuevas
+binutils ofrecen una opción "-z norelro" que se puede añadir a LDFLAGS
+de la forma: "-Wl,z,norelro".
+</p>
+
+</body>
+</section>
+
+<section id="RELROissues">
+<title>Problemas que pueden surgir en el RELRO por defecto</title>
+<body>
+
+<p>
+Hasta el momento, el proyecto Hardened no ha encontrado problemas con el
+cambio en por defecto en RELRO. Puede que la imagen del ejecutable sea
+un poco mayor (como media media página, osea 2KB) lo que puede ser de
+interés para destinos con memoria muy limitada.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="NOW">
+<title>Directriz de enlazado NOW</title>
+
+<section id="NOWrationale">
+<title>Razones para habilitar el enlazado NOW de forma global</title>
+<body>
+
+<p>
+Tal y como se describe en el capítulo <uri link="#RELRO">RELRO</uri>, al
+definir BIND_NOW se incrementa la eficiencia de RELRO. Así, los ataques
+que incluyen la sobreescritura de datos en la Tabla Global de Desplazamientos
+(GOT) fallarán.
+</p>
+
+</body>
+</section>
+
+<section id="NOWauto">
+<title>Modificaciones a la cadena de herramientas para NOW por defecto</title>
+<body>
+
+<p>
+El enlazado NOW es una opción del enlazador ("-z now") ofrecida por la
+cadena de herramientas estándar de GNU. Cambiar al modor por defecto
+es simplemente cuestión de añadir una pequeña regla al fichero de
+especificaciones ("specs") de GCC como se ilustra abajo:
+</p>
+
+<pre caption="Regla estándar link_command para x86">
+%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:    %(linker) %l
+%{pie: -pie} %X %{o*} %{A} %{d} %{e*} %{m} %{N} %{n} %{r}
+%{s} %{t} %{u*} %{x} %{z} %{Z} %{!A:%{!nostdlib:%{!nostartfiles:%S}}}
+%{static:} %{L*} %(link_libgcc) %o %{fprofile-arcs|fprofile-generate:-lgcov}
+%{!symbolic:%{!shared:%{fbounds-checking:libboundscheck.a%s}}}
+%{!symbolic:%{!shared:%{fbc-strings-only:libboundscheck.a%s}}}
+%{!nostdlib:%{!nodefaultlibs:%(link_gcc_c_sequence)}}
+%{!A:%{!nostdlib:%{!nostartfiles:%E}}} %{T*} }}}}}}
+</pre>
+
+<pre caption="Segmento adicional que sigue a %{pie: -pie} en la regla link_command para x86">
+%{!nonow: -z now} %{now: }
+</pre>
+
+<p>
+Se ha introducido una nueva opción "nonow", que puede utilizarse para
+evitar que el compilador Hardened cambie automáticamente al enlazado NOW.
+Sin embargo, esto es normalmente obsoleto, ya que las nuevas binutils
+ofrecen una opción "-z lazy" que se puede añadir a LDFLAGS de la forma:
+"-Wl,z,lazy".
+</p>
+
+</body>
+</section>
+
+<section id="NOWissues">
+<title>Problemas que pueden surgir en NOW por defecto</title>
+<body>
+
+<p>
+El enlazado NOW tiene algunos efectos notables. El primero es que el
+tiempo inicial de carga de las aplicaciones se incrementa, algunas
+veces de forma notable ya que el cargador resuelve todas las
+referencias antes de pasar el control de la ejecución al proceso que
+se carga.
+</p>
+
+<p>
+Una tecnología que puede reducir esta sobrecarga de forma significativa
+es la introducción del Enlazado Directo ("Direct Binding"), algo que
+ya existe en los sistemas Unix (por ejemplo en Solaris) pero que
+no está presente en la cadena de herramientas de GNU. El Enlazado
+Directo añade información a las librerías cuando éstas se construyen,
+para indicar al enlazador qué librería contiene el símbolo que se
+está buscando. Normalmente, el enlazador realiza una búsqueda en todas
+las librerías referenciadas para encontrar símbolos, lo cual afecta
+significativamente al tiempo empleado para resolverlos. Sin embargo,
+las implicaciones del Enlazado Directo son significativas y no se
+deben tomar a la ligera. Michael Meeks de Novell está trabajando en
+esto. Lea nuestra
+<uri link="http://bugs.gentoo.org/114008">incidencia #114008</uri> para
+conocer el estado de este trabajo.
+</p>
+
+<p>
+Otras tecnologías que pueden ayudar son la visibilidad de símbolos
+y las tablas hash en los ficheros ELF. Ambas tecnologías están
+soportadas por el equipo principal de desarrollo, de modo que
+cuando aparezcan estarán soportadas directamente. Con estas dos
+tecnologías conjuntas, parece que no se obtendrá mucho beneficio en
+el uso el Enlazado Directo y las complicaciones que pueden aparecer
+si no se le da soporte.
+</p>
+
+<p>
+Es segundo, y más serio, efecto es que las aplicaciones que no han
+sido escritas para hacer referencia a librerías compartidas de forma
+estándar, pueden fallar. El caso más obvio es el de X, que tiene
+módulos con resolución circular de dependencias
+entre otros comportamientos inusuales. Otro truco que se
+realiza con las aplicaciones es el de decidir entre un número
+determinado de librerías compartidas en el momento de la
+ejecución y utilizar enlazado perezoso para resolver las referencias
+a la librería elegida. Normalmente esto se podría realizar con
+dlopen(3) y funciones similares, incluyendo la obtención de las
+direcciones de los símbolos a través de dlsym(3). Sin embargo, es
+posible evitar el uso de dlsym(3) y un montón de punteros en el
+código utilizando enlazado perezoso, aunque esto no es muy bonito.
+</p>
+
+<p>
+En el momento de escribir este documento, los siguientes paquetes tenían
+problemas con BIND_NOW, y de algún modo tendrán que ser tratados.
+</p>
+
+<ul>
+  <li>
+    X - algunos controladores se componen de librerías que dependen unas
+    de otras, y los módulos frecuentemente referencian a otros módulos
+    que ellos mismos cargan.
+  </li>
+  <li>
+    transcode - depende de que el enlazado perezoso pueda cargar sus
+    propios módulos. Los problemas son los mismos que con X.
+  </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="references">
+<title>Referencias</title>
+
+<section id="gentoorefs">
+<title>Otra documentación de Gentoo</title>
+<body>
+
+<ul>
+  <li>
+    <uri link="/proj/es/hardened/pax-quickstart.xml">Guía de inicio rápido
+    de PaX</uri>
+  </li>
+  <li>
+    <uri link="/proj/es/hardened/pic-guide.xml">Introducción al Código
+    Independiente de la Posición (PIC)</uri>
+  </li>
+  <li>
+    <uri link="/proj/en/hardened/pic-fix-guide.xml">Guía para corregir
+    librerías compartidas que no son PIC (en inglés)</uri>
+  </li>
+</ul>
+
+</body>
+</section>
+
+<section id="externalrefs">
+<title>Documentación externa</title>
+<body>
+
+<ul>
+  <li><uri link="http://people.redhat.com/drepper/dsohowto.pdf">Cómo
+  escribir librerías dinámicas</uri> por Ulrich Drepper (PDF)</li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>
