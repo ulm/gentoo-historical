@@ -1,0 +1,1014 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/pic-fix-guide.xml,v 1.1 2012/06/09 11:26:30 nimiux Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide lang="en">
+<title>CÓMO localizar y corregir relocalizaciones .text (TEXTRELs)</title>
+
+<author title="Autor">
+ <mail link="vapier@gentoo.org">Mike Frysinger</mail>
+</author>
+<author title="Autor">
+ <mail link="solar@gentoo.org">solar</mail>
+</author>
+<author title="Contribuyente">
+ <mail link="pageexec@freemail.hu">El equipo PaX</mail>
+</author>
+<author title="Contribuyente">
+ <mail link="kevquinn@gentoo.org">Kevin F. Quinn</mail>
+</author>
+<author title="Traductor">
+  <mail link="nimiux"/>
+</author>
+
+<abstract>Una guía para localizar y corregir relocalizaciones .text
+(TEXTRELs)</abstract>
+
+<!-- El contenido de este documento es de dominio público, diviértase -->
+
+<version>1.2</version>
+<date>2007-08-19</date>
+
+<chapter>
+<title>Introducción</title>
+<section>
+<body>
+
+<p>
+Asegúrese de leer la <uri link="pic-guide.xml">Introducción al código
+independiente de la posición</uri> antes de abordar esta guía.
+</p>
+
+<p>
+Actualmente esta guía está centrada en la arquitectura x86. La razón
+para ello es que la mayoría de los ficheros objeto están rotos debido
+a código ensamblador x86 mal escrito y esto es a su vez, en la mayoría
+de las ocasiones, debido a que esta arquitectura tiene muy pocos
+registros. Otras arquitecturas tienen un conjunto mayor de registros
+suficientes para poder reservar uno de ellos como el "registro PIC" sin
+tener impacto en el rendimiento. Cada arquitectura debe tener en cuenta
+el uso de PIC y sus implicaciones. La arquitectura x86 simplemente
+parece la predominante en el mundo de escritorio del código abierto.
+</p>
+
+<p>
+Actualizaremos el documento para otras arquitecturas aparte de la x86 a
+medida que obtengamos detalles y ejemplos útiles.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Buscando código objeto roto</title>
+<section>
+<body>
+
+<p>
+Antes de empezar a corregir algo, obviamente necesita saber en primer
+lugar si está roto o no, ¿de acuerdo?. Por esta razón, hemos desarrollado
+un conjunto de herramientas llamadas <uri
+link="/proj/es/hardened/pax-utils.xml">utilidades PaX</uri>. Si no está
+familiarizado con estas utilidades, debería leer la <uri
+link="/proj/es/hardened/pax-utils.xml">guía de utilidades PaX</uri> ahora
+mismo. Los usuarios de Gentoo simplemente necesitan hacer
+<c>emerge pax-utils</c>. Los usuarios de otros sistemas debería encontrar
+una copia del tarball con los fuentes en <path>distfiles</path> en un
+<uri link="/main/en/mirrors.xml">servidor réplica de Gentoo Mirror</uri>.
+Una vez que tenga las utilidades PaX preparadas en su sistema, podemos
+empezar a jugar con <c>scanelf</c>.
+</p>
+
+<p>
+Recuerde que, aunque estas utilidades se llaman utilidades PaX, realmente
+no necesitan PaX o algo similar a ello instalado en su sistema. El nombre
+es un artificio histórico y los intentos de encontrar un nombre mejor
+no han sido fructíferos.
+</p>
+
+<p>
+Echemos un vistazo para ver si su sistema tiene algún fichero roto.
+</p>
+
+<pre caption="Escanear su sistema">
+$ <i>scanelf -lpqt</i>
+TEXTREL  /usr/lib/opengl/xorg-x11/lib/libGL.so.1.2
+TEXTREL  /usr/lib/libSDL-1.2.so.0.7.2
+TEXTREL  /usr/lib/libdv.so.4.0.2
+TEXTREL  /usr/lib/libsmpeg-0.4.so.0.1.3
+TEXTREL  /usr/lib/libOSMesa.so.4.0
+TEXTREL  /usr/lib/libxvidcore.so.4.1
+</pre>
+
+<p>
+Idealmente, scanelf no debería mostrar ninguna salida, pero en un
+sistema x86 system, esto sucede raramente. Aquí tenemos seis librerías
+com TEXTRELs dentro de ellas. Para averiguar rápidamente a qué paquete
+pertenecen estas librerías, los usuarios de Gentoo pueden hacer
+<c>emerge portage-utils</c> y utilizar <c>qfile</c>.
+</p>
+
+<pre caption="Determinar los paquetes rotos">
+$ <i>qfile `scanelf -qylpF%F#t`</i>
+media-libs/libdv (/usr/lib/libdv.so.4.0.2)
+media-libs/libsdl (/usr/lib/libSDL-1.2.so.0.7.2)
+media-libs/smpeg (/usr/lib/libsmpeg-0.4.so.0.1.3)
+media-libs/xvid (/usr/lib/libxvidcore.so.4.1)
+x11-base/xorg-x11 (/usr/lib/opengl/xorg-x11/lib/libGL.so.1.2)
+x11-base/xorg-x11 (/usr/lib/libOSMesa.so.4.0)
+</pre>
+
+<p>
+Ahora que conocemos los ficheros problemáticos, podemos decidir.
+Podemos enviar una incidencia al equipo de desarrollo del paquete
+(normalmente no podrán atención a la incidencia a no ser que también
+les enviemos la corrección). También podemos enviar una incidencia
+a <uri link="http://bugs.gentoo.org/">Gentoo Bugzilla</uri> (lo cual
+es una forma vaga de resolverlo) o podemos corregir el problema
+nosotros mismos (es por lo que está leyendo esta guía ¿no?). Debe
+comprobar que la versión del paquete que está instalado en su
+distribución es la misma que la última publicada por el equipo de
+desarrollo del paquete. Quien sabe, quizá tenga suerte y alguien
+ya lo ha corregido. Si necesita obtener consejos sobre su trabajo,
+no dude en contactar con el <mail link="hardened@gentoo.org">
+equipo Gentoo Hardened</mail>.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>"Falsos" Positivos</title>
+<body>
+
+<p>
+A veces puede topar con un paquete que contiene gran cantidad de
+TEXTRELs que parecen no tener relación con ensamblador. Esto puede
+ser simplemente debido a que los objetos no se compilaron adecuadamente
+con la opción PIC . La solución es muy simple: asegúrese de que cada
+fichero objeto está enlazado con el fichero compartido final usando
+las opción PIC apropiada (normalmente -fPIC).
+</p>
+
+<p>
+Por ejemplo, echemos un vistazo al paquete. Este paquete construye
+algunos módulos, sin embargo, solo compila algunos de los objetos con
+-fPIC los cuales se enlazan en el módulo final libsilc_core.so. ¡La salida
+de scanelf en este caso es muy extensa!.
+</p>
+
+<pre caption="Correr scanelf en silc-plugin">
+$ <i>scanelf -qT /usr/lib/irssi/modules/libsilc_core.so | wc -l</i>
+10734
+$ <i>scanelf -qT /usr/lib/irssi/modules/libsilc_core.so</i>
+...
+  libsilc_core.so: silc_client_ftp_ask_name [0xD542C] in silc_client_receive_new_id [0xD5380]
+  libsilc_core.so: silc_client_run_one [0xD55CA] in silc_client_receive_new_id [0xD5380]
+  libsilc_core.so: silc_id_payload_parse [0xD5842] in silc_client_packet_parse_type [0xD57B0]
+  libsilc_core.so: fgetc@@GLIBC_2.0 [0xD5857] in silc_client_packet_parse_type [0xD57B0]
+...
+</pre>
+
+<p>
+¿Un TEXTREL en la función fgetc() de glibc?. O se está llamando a fgetc()
+desde ensamblador (y se debería tener en cuenta) o algo distinto está
+ocurriendo. Una buena regla a seguir es que si cada referencia a una
+función o variable provoca un TEXTREL y todo está escrito en código C,
+entonces el fichero no se construyó como PIC. Simplemente revise la
+salida de la construcción y compruebe si la orden para compilar incluyó
+-fPIC. Si no, corrija el sistema de construcción ya que no necesita
+indagar en el código fuente. ¡Hemos esquivado la bala en esta ocasión!.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Diseccionando código objeto roto</title>
+<section>
+<body>
+
+<p>
+Hemos identificado algunas librerías rotas y queremos corregirlas. El
+problema es que el código de la librería puede ser enorme. Puede que
+tenga miles de funciones que proceden de miles de ficheros objeto y
+de miles de líneas de código fuente que ocupan varios megabytes (entre
+el código fuente y los objetos compilados). ¿Por dónde demonios empezamos?.
+Una vez más "Super Ratón" <c>scanelf</c> está aquí para ayudarnos. Antes
+de sumergirse en el código fuente, comprobemos algunas librerías.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Diseccionando libsmpeg</title>
+<body>
+
+<pre caption="Escanear libsmpeg">
+<comment>[Se han cortado unas 35 líneas de la salida]</comment>
+$ <i>scanelf -qT /usr/lib/libsmpeg-0.4.so.0.1.3</i>
+  libsmpeg-0.4.so.0.1.3: (memory/fake?) [0x2FB3C] in cpu_flags [0x2FB10]
+  libsmpeg-0.4.so.0.1.3: (memory/fake?) [0x2FB42] in cpu_flags [0x2FB10]
+  libsmpeg-0.4.so.0.1.3: (memory/fake?) [0x2FB55] in IDCT_mmx [0x2FB48]
+  libsmpeg-0.4.so.0.1.3: (memory/fake?) [0x2FB84] in IDCT_mmx [0x2FB48]
+  /usr/lib/libsmpeg-0.4.so.0.1.3
+</pre>
+
+<p>
+La salida anterior nos dice que las funciones <e>cpu_flags</e> e
+<e>IDCT_mmx</e> son las responsables de nuestros TEXTRELs. El primer
+campo indica que se está realizando un uso muy pobre de las referencias
+a memoria. Lamentablemente, el nombre simbólico de la memoria que se
+referencia no se almacena en el código del objeto (probablemente porque
+el código se ha escrito a mano en ensamblador), por lo tanto,
+necesitaremos investigar un poco. Aquí es donde los desplazamientos de
+las direcciones nos van a servir de ayuda junto con la utilidad
+<c>objdump</c> del paquete <e>binutils</e>. La primera dirección
+(por ejemplo 0x2FB3C) es el desplazamiento del TEXTREL mientras que la
+segunda dirección es el desplazamiento de la función (por ejemplo 0x2FB10).
+Acostúmbrese a esto ya que lo normal es no almacenar el nombre de los
+símbolos.
+</p>
+
+<pre caption="Diseccionando libsmpeg">
+$ <i>objdump -d /usr/lib/libsmpeg-0.4.so.0.1.3</i>
+...
+   2fb0f:       90                      nop
+
+<i>0002fb10 &lt;cpu_flags&gt;:</i>
+   2fb10:       9c                      pushf
+   2fb11:       58                      pop    %eax
+...
+   2fb32:       60                      pusha
+   2fb33:       b8 01 00 00 00          mov    $0x1,%eax
+   2fb38:       0f a2                   cpuid
+   <i>2fb3a:       89 15 d0 d3 03 00       mov    %edx,0x3d3d0</i>
+   2fb40:       61                      popa
+   <i>2fb41:       a1 d0 d3 03 00          mov    0x3d3d0,%eax</i>
+   2fb46:       c3                      ret
+   2fb47:       90                      nop
+...
+</pre>
+
+<p>
+Como puede ver aquí, las dos líneas remarcadas en el cuerpo de
+<e>cpu_flags</e> hacen referencia a direcciones de memoria absolutas.
+En este caso, ambas referencia a la dirección de memoria <e>0x3d3d0</e>.
+Ya que debe ser posible que este objeto se cargue en cualquier dirección,
+obviamente, el uso de una referencia absoluta no funcionará. Esto
+significa que cada vez que libsmpeg se carga en memoria, el cargador
+dinámico tiene que reescribir <e>0x3d3d0</e> a la dirección correcta,
+haciendo el cálculo correspondiente.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Diseccionando libdv</title>
+<body>
+
+<pre caption="Escanear libdv">
+<comment>[Se han cortado unas 180 líneas de la salida]</comment>
+$ <i>scanelf -qT /usr/lib/libdv.so.4.0.2</i>
+  libdv.so.4.0.2: (memory/fake?) [0x14AA9] in dv_parse_ac_coeffs_pass0 [0x14A84]
+  libdv.so.4.0.2: (memory/fake?) [0x14C28] in dv_parse_ac_coeffs_pass0 [0x14A84]
+  libdv.so.4.0.2: (memory/fake?) [0x14C8A] in dv_parse_video_segment [0x14C6F]
+  libdv.so.4.0.2: (memory/fake?) [0x14CA6] in dv_parse_video_segment [0x14C6F]
+  libdv.so.4.0.2: (memory/fake?) [0x15248] in _dv_idct_block_mmx [0x15210]
+  libdv.so.4.0.2: (memory/fake?) [0x152BE] in _dv_idct_block_mmx [0x15210]
+  libdv.so.4.0.2: (memory/fake?) [0x1583D] in _dv_dct_88_block_mmx [0x157F8]
+  libdv.so.4.0.2: (memory/fake?) [0x15847] in _dv_dct_88_block_mmx [0x157F8]
+  libdv.so.4.0.2: (memory/fake?) [0x15F91] in _dv_dct_248_block_mmx [0x15F58]
+  libdv.so.4.0.2: (memory/fake?) [0x15FE6] in _dv_dct_248_block_mmx [0x15F58]
+  libdv.so.4.0.2: (memory/fake?) [0x163D3] in _dv_rgbtoycb_mmx [0x163C8]
+  libdv.so.4.0.2: (memory/fake?) [0x163DD] in _dv_rgbtoycb_mmx [0x163C8]
+  libdv.so.4.0.2: dv_vlc_class_index_mask [0x149A7] in dv_decode_vlc [0x14998]
+  libdv.so.4.0.2: dv_vlc_class_index_rshift [0x149B0] in dv_decode_vlc [0x14998]
+  libdv.so.4.0.2: dv_vlc_classes [0x149B9] in dv_decode_vlc [0x14998]
+  libdv.so.4.0.2: dv_vlc_index_mask [0x149C4] in dv_decode_vlc [0x14998]
+  libdv.so.4.0.2: sign_mask [0x149EB] in dv_decode_vlc [0x14998]
+  libdv.so.4.0.2: sign_mask [0x14A5D] in __dv_decode_vlc [0x14A1C]
+  libdv.so.4.0.2: sign_mask [0x14B82] in dv_parse_ac_coeffs_pass0 [0x14A84]
+  libdv.so.4.0.2: dv_vlc_class_lookup5 [0x14A2F] in __dv_decode_vlc [0x14A1C]
+  libdv.so.4.0.2: dv_parse_ac_coeffs_pass0 [0x14E03] in dv_parse_video_segment [0x14C6F]
+  libdv.so.4.0.2: dv_parse_ac_coeffs [0x14E51] in dv_parse_video_segment [0x14C6F]
+  libdv.so.4.0.2: dv_quant_offset [0x14E69] in _dv_quant_88_inverse_x86 [0x14E5C]
+  libdv.so.4.0.2: dv_quant_offset [0x14FB3] in _dv_quant_x86 [0x14FA4]
+  /usr/lib/libdv.so.4.0.2
+</pre>
+
+<p>
+De nuevo, podemos ver que muchas funciones (como
+<e>dv_parse_ac_coeffs_pass0</e> y <e>_dv_idct_block_mmx</e>) tienen
+referencias absolutas a memoria. Lo que podemos ver también es que algunas
+funciones hacen referencias a variables. Por ejemplo, <e>dv_decode_vlc</e>
+hace un mal uso de la variable <e>dv_vlc_class_index_mask</e> y
+<e>dv_parse_video_segment</e> hace un mal uso de la variable
+<e>dv_parse_ac_coeffs</e>. Estos problemas son más fáciles de localizar
+en el código fuente cuando se conoce el nombre del símbolo.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Diseccionar libSDL</title>
+<body>
+
+<pre caption="Escanear libSDL">
+<comment>[Se han cortado unas 50 líneas de la salida]</comment>
+$ <i>scanelf -qT /usr/lib/libSDL-1.2.so.0.7.2</i>
+  libSDL-1.2.so.0.7.2: (memory/fake?) [0x4E213] in _ConvertMMXpII32_24RGB888 [0x4E210]
+  libSDL-1.2.so.0.7.2: (memory/fake?) [0x4E29E] in _ConvertMMXpII32_16RGB565 [0x4E29B]
+  libSDL-1.2.so.0.7.2: (memory/fake?) [0x4E3F6] in _ConvertMMXpII32_16BGR555 [0x4E3F3]
+  libSDL-1.2.so.0.7.2: (memory/fake?) [0x4E402] in _ConvertMMXpII32_16RGB555 [0x4E3FF]
+  libSDL-1.2.so.0.7.2: (memory/fake?) [0x4E555] in _Hermes_X86_CPU [0x4E529]
+  libSDL-1.2.so.0.7.2: _copy_row [0x316A2] in SDL_SoftStretch [0x313C0]
+  libSDL-1.2.so.0.7.2: _mmxreturn [0x4E4FB] in _ConvertMMXpII32_16RGB555 [0x4E3FF]
+  libSDL-1.2.so.0.7.2: _x86return [0x4E590] in _ConvertX86p16_16BGR565 [0x4E560]
+  libSDL-1.2.so.0.7.2: _x86return [0x4EE99] in _ConvertX86p32_16BGR555 [0x4EDCA]
+  libSDL-1.2.so.0.7.2: _x86return [0x4EF4D] in _ConvertX86p32_8RGB332 [0x4EE9D]
+  /usr/lib/libSDL-1.2.so.0.7.2
+</pre>
+
+<p>
+Parece que no hay nada nuevo aquí. El mal uso de la memoria en funciones
+como <e>_ConvertMMXpII32_24RGB888</e> y que no hay nombre del símbolo
+indica que probablemente se trata de código escrito a mano en ensamblador.
+La función <e>SDL_SoftStretch</e> no utiliza correctamente el símbolo
+<e>_copy_row</e>, y debido a que se ha conservado el nombre del símbolo,
+es probable que se trata de código ensamblador en línea.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Buscando el código fuente roto</title>
+<section>
+<body>
+
+<p>
+Hemos identificado las funciones, y en algunas ocasiones las variables
+que nos están causando dolores de cabeza. Sin embargo, antes de que
+podamos corregir estos problemas, debemos encontrar las líneas exactas
+del código fuente que los provocan. Como sabemos los nombres de las
+funciones y también el nombre del símbolo o su posición relativa
+dentro de la función, podremos focalizar nuestros esfuerzo fácilmente.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Sumergirnos el código fuente de libsmpeg</title>
+<body>
+
+<p>
+Comencemos con libsmpeg. Sabemos que, las funciones <e>cpu_flags</e>
+y <e>IDCT_mmx</e> están rotas. Pero, ¿dónde están definidas?.
+</p>
+
+<pre caption="Buscar los fuentes de libsmpeg">
+$ <i>tar zxf smpeg-0.4.4.tar.gz</i>
+$ <i>cd smpeg-0.4.4.tar.gz</i>
+
+<comment>[Encontrar la función cpu_flags]</comment>
+$ <i>grep -Rl cpu_flags *</i>
+video/mmxflags_asm.S
+video/parseblock.cpp
+$ <i>grep cpu_flags video/mmxflags_asm.S</i>
+.globl cpu_flags
+        .type    cpu_flags,@function <comment>&lt;-- aquí está lo que queremos</comment>
+cpu_flags:
+        jz cpu_flags.L1   # Processor is 386
+        je cpu_flags.L1
+cpu_flags.L1:
+        .size    cpu_flags,.Lfe1-cpu_flags
+
+<comment>[Encontrar la función IDCT_mmx]</comment>
+$ <i>grep -Rl IDCT_mmx *</i>
+video/parseblock.cpp
+video/mmxidct_asm.S
+$ <i>grep IDCT_mmx video/mmxidct_asm.S</i>
+.globl IDCT_mmx
+        .type    IDCT_mmx,@function <comment>&lt;-- aquí está lo que queremos</comment>
+IDCT_mmx:
+        .size    IDCT_mmx,.Lfe1-IDCT_mmx
+</pre>
+
+<p>
+Como sospechábamos, las funciones <e>cpu_flags</e> y <e>IDCT_mmx</e>
+se han escrito en código ensamblador puro. Esto hace que el seguimiento
+de las referencias a memoria que no tienen nombre sea más sencillo ya
+que el código fuente debería parecerse bastante a la salida de
+<c>objdump</c>. Si revisamos la salida de arriba, sabemos que se utiliza
+la instrucción <e>cpuid</e>. Ya que no es una instrucción muy común,
+podemos buscarla en el código fuente.
+</p>
+
+<pre caption="Buscar cpuid en cpu_flags">
+$ <i>grep -A 8 cpuid video/mmxflags_asm.S</i>
+        cpuid
+
+        movl %edx,flags
+
+        popa
+
+        movl flags,%eax
+
+cpu_flags.L1:
+</pre>
+
+<p>
+En el ensamblador de GNU, los registros tienen como prefijo el carácter
+<e>%</e> y las constantes utilizan el prefijo <e>$</e>, por ello
+<e>flags</e> parece sospechoso. También parece coincidir con la salida
+de <c>objdump</c> mostrada anteriormente. Por tanto, ¿qué es <e>flags</e>?
+</p>
+
+<pre caption="¿Qué es 'flags'?">
+$ <i>grep -C 2 flags video/mmxflags_asm.S</i>
+.data
+        .align 16
+        .type    flags,@object
+flags: .long 0
+
+.text
+</pre>
+
+<p>
+Parece que <e>flags</e> es una variable local de datos en
+<path>mmxflags_asm.S</path> cuyas funciones acceden usando referencias
+absolutas a memoria en lugar de utilizar referencias relativas. Casi
+hemos terminado. Esto es todo lo que necesitamos. Comenzamos con la
+librería <path>libsmpeg.so</path> y seguimos el camino hasta la función
+<e>cpu_flags</e> y la variable <e>flags</e> en el fichero
+<path>video/mmxflags_asm.S</path>. No fue tan duro como parecía ¿no?.
+</p>
+
+<p>
+Si analizamos la función <e>IDCT_mmx</e>, encontramos un patrón similar.
+</p>
+
+<pre caption="Fragmentos de código de IDCT_mmx">
+<comment>[Variables locales]</comment>
+.data
+    .align 8
+    .type   x4546454645464546,@object
+    .size   x4546454645464546,8
+<i>x4546454645464546</i>:
+    .long   0x45464546,0x45464546
+
+    .align 8
+    .type   x61f861f861f861f8,@object
+    .size   x61f861f861f861f8,8
+<i>x61f861f861f861f8</i>:
+    .long   0x61f861f8,0x61f861f8
+
+    .align 8
+    .type    scratch1,@object
+    .size    scratch1,8
+<i>scratch1</i>:
+    .long 0,0
+
+<comment>[Referencias absolutas a memoria]</comment>
+.text
+...
+    psraw $1, %mm5          /* t90=t93 */
+    pmulhw <i>x4546454645464546</i>,%mm0   /* V35 */
+    psraw $1, %mm2          /* t97 */
+...
+    psubsw %mm2, %mm1       /* V32 ; liberar mm2 */
+    pmulhw <i>x61f861f861f861f8</i>,%mm1   /* V36 */
+    psllw $1, %mm7          /* t107 */
+...
+    movq 8*3(%esi), %mm7
+    psraw $4, %mm4
+    movq %mm2, <i>scratch1</i>     /* out1 */
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Sumergirse en el código de libSDL</title>
+<body>
+
+<p>
+De nuevo, antes de entrar en el detalle de cómo solucionar estos problemas,
+analicemos algunos ficheros fuentes para tener una mejor visión para
+identificar el código problemático.
+</p>
+
+<pre caption="Código roto _ConvertMMXpII32_24RGB888 en libSDL">
+<comment>[objdump de la referencia a memoria de _ConvertMMXpII32_24RGB888]</comment>
+<i>0004e210 &lt;_ConvertMMXpII32_24RGB888&gt;:</i>
+   <i>4e210:       0f 6f 35 50 55 05 00    movq   0x55550,%mm6</i>
+   4e217:       0f ef ff                pxor   %mm7,%mm7
+
+<comment>[_ConvertMMXpII32_24RGB888 está definido en src/hermes/mmxp2_32.asm]</comment>
+        SECTION .data
+ALIGN 8
+;; Constantes para rutinas de conversión
+mmx32_rgb888_mask dd 00ffffffh,00ffffffh
+...
+        SECTION .text
+_ConvertMMXpII32_24RGB888: <comment>comienzo de la función 0x4E210</comment>
+        ; definir mm6 como la máscar, mm7 a 0
+        movq mm6, qword [mmx32_rgb888_mask] <comment>referencia a memoria 0x4E213</comment>
+        pxor mm7, mm7
+</pre>
+
+<p>
+Demasiado simple, la función <e>_ConvertMMXpII32_24RGB888</e> hace referencia
+a la variable <e>mmx32_rgb888_mask</e>.
+</p>
+
+<pre caption="Código roto SDL_SoftStretch en libSDL">
+<comment>[SDL_SoftStretch está definido en src/video/SDL_stretch.c]</comment>
+int SDL_SoftStretch(SDL_Surface *src, SDL_Rect *srcrect,
+                    SDL_Surface *dst, SDL_Rect *dstrect)
+{
+...
+#ifdef __GNUC__
+            __asm__ __volatile__ (
+            "call _copy_row"
+            : "=&amp;D" (u1), "=&amp;S" (u2)
+            : "0" (dstp), "1" (srcp)
+            : "memory" );
+#else
+</pre>
+
+<p>
+Otra incidencia de resolución rápida. Una referencia a la variable
+<e>_copy_row</e> en ensamblador. Si pudiéramos hacer que gcc gestione
+la referencia a <e>_copy_row</e> ...
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Cómo escribir PIC (en teoría)</title>
+
+<section>
+<title>Reglas generales</title>
+<body>
+
+<p>
+Ahora sabemos el aspecto que tiene el código roto. Podemos señalar a
+partes del código y declarar con seguridad "esa parte está rota". Aunque
+esto es bueno, no nos ayudará mucho si no sabemos como debería estar
+escrita. Comencemos con algunas reglas prácticas.
+</p>
+
+<p>Reglas generales</p>
+<ul>
+ <li>No mezclar código objeto PIC y no PIC</li>
+ <li>Las librerías compartidas contienen objetos PIC</li>
+ <li>
+   Las librerías estáticas contienen objetos no PIC (únicamente en sistemas
+   normales o no PIE)</li>
+ <li>
+   Hacer que gcc averigüe los detalles siempre que sea posible (esto es,
+   ensamblador en línea)</li>
+ <li>Usar la pila en lugar de variables para la carga de máscaras grandes</li>
+ <li>No llenar el registro PIC cuando generamos objetos PIC</li>
+</ul>
+
+<p>Reglas específicas para la arquitectura x86</p>
+<ul>
+ <li>Utilizar relocalizaciones @GOT cuando se usen símbolos externos</li>
+ <li>Utilizar relocalizaciones @GOTOFF cuando se usen símbolos locales</li>
+</ul>
+
+</body>
+</section>
+
+<section>
+<title>Registros PIC para cada arquitectura</title>
+<body>
+
+<table>
+ <tr><th>Arquitectura</th><th>Registro</th></tr>
+ <tr><ti>blackfin</ti><ti>P3</ti></tr>
+ <tr><ti>frv</ti><ti>GR15</ti></tr>
+ <tr><ti>hppa</ti><ti>r19</ti></tr>
+ <tr><ti>x86</ti><ti>ebx</ti></tr>
+</table>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Correcciones molde para PIC</title>
+
+<section>
+<title>No utilice el registro PIC</title>
+<body>
+
+<p>
+Si se encuentra con código que utiliza el registro PIC en código
+ensamblador en línea, una posible corrección podría ser la utilización
+de un registro diferente. Por ejemplo, la arquitectura x86 posee
+seis registros de propósito general (<e>eax</e>, <e>ebx</e>, <e>ecx</e>,
+<e>edx</e>, <e>esi</e>, <e>edi</e>). Si el código utiliza solo
+<e>eax</e> y <e>ebx</e>, simplemente cambie todas las referencias a
+<e>ebx</e> por referencias a <e>ecx</e> y ¡ha terminado!.
+</p>
+
+<p>
+Una solución más limpia podría consistir en indicar a gcc que localice
+los registros de la forma apropiada. Si el código ensamblador en línea
+no tiene en cuenta los registros que utiliza, cambie las referencias a
+<e>ebx</e> por referencias a <e>r</e> en la lista de objetos
+(clobber list), ya haga referencia a la variable usando su número.
+</p>
+
+<p>
+O, si el código ensamblador utiliza una instrucción que siempre llena
+<e>ebx</e> (por ejemplo <e>cpuid</e>), simplemente oculte el valor
+en otro registro (por ejemplo <e>esi</e>).
+</p>
+
+<p>
+Si nada de esto funciona, puede utilizar el método (más lento) push/pop
+<e>ebx</e> usando la pila.
+</p>
+
+<pre caption="Simplemente, no utilizar el registro PIC">
+<comment>/* cambie este código */</comment>
+asm("
+    mov %0, %%eax
+    mov %1, %%ebx
+    add %%eax, %%ebx
+    " : : "m"(input1), "m"(input2) : "eax" "ebx");
+
+<comment>/* a esta versión funcionalmente equivalente */</comment>
+asm("
+    mov %0, %%eax
+    mov %1, %%ecx
+    add %%eax, %%ecx
+    " : : "m"(input1), "m"(input2) : "eax" "ecx");
+</pre>
+
+<pre caption="Hagamos que gcc localice los registros">
+<comment>/* cambie este código */</comment>
+asm("
+    mov %2, %%eax
+    mov %3, %%ebx
+    add %%eax, %%ebx
+    " : "=a"(output1) "=b"(output2) : "m"(input1), "m"(input2));
+
+<comment>/* a esta versión funcionalmente equivalente */</comment>
+asm("
+    mov %2, %0
+    mov %3, %1
+    add %0, %1
+    " : "=r"(output1) "=r"(output2) : "m"(input1), "m"(input2));
+</pre>
+
+<pre caption="Ocultar el registro PIC">
+asm("cpuid" : : : "eax", "ebx", "ecx", "edx");
+
+<comment>/* para ocultar ebx se puede escribir */</comment>
+asm("
+    movl %%ebx, %%edi
+    cpuid
+    movl %%edi, %%ebx
+    " : : : "eax", "ecx", "edx", "edi");
+
+<comment>/* o una versión más lenta utilizando la pila */</comment>
+asm("
+    pushl %%ebx
+    cpuid
+    popl %%ebx
+    " : : : "eax", "ecx", "edx");
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Máscaras MMX/SSE</title>
+<body>
+
+<p>
+Mucho código x86 MMX/SSE carga máscaras de bits desde variables locales
+ya que necesitan llenar un registro que es mayor (MMX/64bits o SSE/128bits)
+que el ancho de bit nativo (x86/32bits). Esto se realizar definiendo
+la máscara en los bytes consecutivos en memoria y haciendo que la CPU
+cargue los datos desde la región de memoria.
+</p>
+
+<p>
+Una forma de evitar esto consiste en ser más creativo en el uso de la pila.
+En lugar de utilizar referencias absolutas a memoria para la máscara,
+se carga en la pila un puñado de valores de 32 bits y se utiliza la
+referencia a memoria que especifica el registro <e>esp</e>. Una vez
+haya terminado, simplemente añada una constante a <e>esp</e> en lugar
+de extraerla ya que los valores actuales no son importantes una vez se
+hayan cargado en los registros MMX/SSE.
+</p>
+
+<pre caption="Cargar máscaras en registros a través de la pila">
+<comment>/* Cargar máscaras desde memoria (provoca TEXTRELs) */</comment>
+        .data
+m0X000000: .byte   0,   0,   0,   0,   0,   0, 255,   0
+        .text
+        movq    m0X000000, %mm5
+
+<comment>/* Cargar máscaras desde la pila (no aparecen TEXTRELs)*/</comment>
+pushl   $0x00FF0000
+pushl   $0x00000000
+movq    (%esp), %mm5
+addl    8, %esp
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Hagamos que gcc se ocupe de ello</title>
+<body>
+
+<p>
+Gran parte del código ensamblador en línea se ha escrito con los nombres
+de los símbolos colocados correctamente en el código. En lugar de escribir
+código para gestionar PIC en ensamblador, simplemente hagamos que gcc
+se ocupe de ello. Pase el símbolo a través de la lista de operadores de
+entrada como una restricción de memoria ("m") y gcc se ocupará de todo.
+</p>
+
+<pre caption="Como hacer que gcc se ocupe de ello">
+unsigned long long a_mmx_mask = 0xf8007c00ffea0059ULL;
+void somefunction()
+{
+        <comment>/* Método común (pero incorrecto) para cargar máscaras */</comment>
+        asm("pmullw a_mmx_mask, %%mm0" : : );
+
+        <comment>/* La forma correcta es que lo haga gcc */</comment>
+        asm("pmullw %0, %%mm0" : : "m"(a_mmx_mask));
+}
+</pre>
+
+<p>
+Si se obtiene una advertencia/error sobre alguna de las entradas de
+memoria indicando que debe ser un lvalue, entonces, normalmente esto
+significa que se está intentando pasar un puntero a una matriz o
+estructura en lugar de la localización de memoria propiamente dicha.
+Esto normalmente se corrige simplemente dereferenciando la variable
+en la lista de restricciones en lugar del propio código ensamblador.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Golpe seco en ensamblador</title>
+<body>
+
+<p>
+El código ensamblador escrito de forma manual a veces necesita acceder
+a variables (bien sean locales o globales). Si ninguno de los trucos
+indicados anteriormente funcionaron, puede afilar sus dientes y
+sumergirse en el código para escribir referencias PIC reales utilizando
+la GOT. Asegúrese de que tiene en cuenta la primera regla general: No
+mezcle código objeto PIC y no PIC. Eso probablemente requiera preprocesar
+el código ensamblador escrito a mano antes de ensamblarlo, de modo que
+un fichero fuente ensamblador con un sufijo <e>.s</e> no funcionará,
+necesita tener un sufijo <e>.S</e>.
+</p>
+
+<p>
+También tenga en cuenta que el uso de @GOTOFF retornará la variable
+mientras que el uso de @GOT retornará un puntero a la variable. Por lo
+tanto, acceder a la variable a través de @GOT requerirá dos pasos.
+</p>
+
+<pre caption="Como hacer referencia a variables a través de la GOT">
+#ifdef __PIC__
+
+# undef __i686 /* gcc builtin define gets in our way */
+# define MUNG_LOCAL(sym)   sym ## @GOTOFF(%ebx)
+# define MUNG_EXTERN(sym)  sym ## @GOT(%ebx)
+# define DEREF_EXTERN(reg) movl (reg), reg
+# define INIT_PIC() \
+        call __i686.get_pc_thunk.bx ; \
+        addl $_GLOBAL_OFFSET_TABLE_, %ebx
+
+#else
+
+# define MUNG_LOCAL(sym)   sym
+# define MUNG_EXTERN(sym)  sym
+# define DEREF_EXTERN(reg)
+# define INIT_PIC()
+
+#endif
+
+...
+some_function:
+...
+        <comment>/* necesita estar antes que la primera referencia a memoria*/</comment>
+        INIT_PIC()
+...
+        movl MUNG_EXTERN(some_external_variable), %eax
+        DEREF_EXTERN(%eax)
+...
+        movl %eax, MUNG_LOCAL(some_local_variable)
+...
+
+#ifdef __PIC__
+        .section .gnu.linkonce.t.__i686.get_pc_thunk.bx,"ax",@progbits
+.globl __i686.get_pc_thunk.bx
+        .hidden  __i686.get_pc_thunk.bx
+        .type    __i686.get_pc_thunk.bx,@function
+__i686.get_pc_thunk.bx:
+        movl (%esp), %ebx
+        ret
+#endif
+</pre>
+
+<note>
+No se requiere usar <e>ebx</e> como registro para hacer direccionamiento
+relativo, simplemente se trata de una convención común. Los ejemplos de
+arriba podrían realizarse utilizando <e>ecx</e> o <e>edx</e>.
+</note>
+
+<p>
+Debido a que ocultamos los detalles de PIC detrás del preprocesador,
+(define <e>__PIC__</e>), sabemos que se generará el código correcto
+para los casos PIC y no PIC.
+</p>
+
+<p>
+La función <e>__i686.get_pc_thunk.bx</e> es un método estándar para
+obtener la dirección de la GOT en tiempo de ejecución y almacenar
+el resultado en <e>ebx</e>.  Este nombre tan curioso es el que
+utiliza gcc por convención cuando genera objetos PIC, por lo que
+hemos utilizado el mismo nombre. La notación <e>@GOT</e> y
+<e>@GOTOFF</e> le indica al ensamblador donde puede encontrar las
+variables en memoria. La <e>.section .gnu.linkonce.t</e> es útil
+ya que le indica al enlazador que únicamente incluya una instancia
+de esta función el código objeto final. Por lo que, si tiene varios
+ficheros que declaran la misma función, los cuales se compilan y
+enlazan en la misma librería final, el enlazador descartará todas
+las duplicadas de la función, salvando así espacio (lo cual es
+siempre algo bueno).
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Cómo corregir PIC roto (en la práctica)</title>
+<section>
+<body>
+
+<p>
+Si los fragmentos de código anteriores están rotos, se estará preguntando
+¿Cómo deberían ser?. Averigüémoslo.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Corregir libsmpeg</title>
+<body>
+
+<pre caption="Corregir cpu_flags en libsmpeg reescribiéndolo">
+<comment>[Versión no PIC]</comment>
+.type flags,@object
+flags: .long 0
+...
+        pusha
+        movl $1,%eax
+        cpuid
+        movl %edx,flags
+        popa
+        movl flags,%eax
+
+
+<comment>[Versión PIC]</comment>
+        pushl %ebx
+        movl $1,%eax
+        cpuid
+        movl %edx,%eax
+        popl %ebx
+</pre>
+
+<pre caption="Corregir IDCT_mmx en libsmpeg utilizando direccionamiento relativo">
+<comment>[Versión no PIC]</comment>
+        pmulhw x5a825a825a825a82, %mm1
+
+
+<comment>[Versión PIC]</comment>
+#ifdef __PIC__
+# undef __i686 /* gcc define gets in our way */
+        call __i686.get_pc_thunk.bx
+        addl $_GLOBAL_OFFSET_TABLE_, %ebx
+#endif
+...
+        pmulhw x5a825a825a825a82@GOTOFF(%ebx), %mm1
+...
+#ifdef __PIC__
+        .section .gnu.linkonce.t.__i686.get_pc_thunk.bx,"ax",@progbits
+.globl __i686.get_pc_thunk.bx
+        .hidden  __i686.get_pc_thunk.bx
+        .type    __i686.get_pc_thunk.bx,@function
+__i686.get_pc_thunk.bx:
+        movl (%esp), %ebx
+        ret
+#endif
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>Corregir libSDL</title>
+<body>
+
+<pre caption="Corregir _ConvertMMXpII32_24RGB888 en libSDL">
+<comment>[Versión no PIC]</comment>
+mmx32_rgb888_mask dd 00ffffffh,00ffffffh
+...
+        movq mm6, qword [mmx32_rgb888_mask]
+
+
+<comment>[Versión PIC]</comment>
+%macro _push_immq_mask 1
+        push dword %1
+        push dword %1
+%endmacro
+%macro load_immq 2
+        _push_immq_mask %2
+        movq %1, [esp]
+%endmacro
+%define mmx32_rgb888_mask 00ffffffh
+...
+        load_immq mm6, mmx32_rgb888_mask
+        CLEANUP_IMMQ_LOADS(1)
+</pre>
+
+<pre caption="Corregir SDL_SoftStretch en libSDL">
+<comment>[Versión no PIC]</comment>
+        __asm__ __volatile__ (
+                "call _copy_row"
+                : "=&amp;D" (u1), "=&amp;S" (u2)
+                : "0" (dstp), "1" (srcp)
+                : "memory" );
+
+
+<comment>[Versión PIC]</comment>
+        __asm__ __volatile__ (
+                "call *%4"
+                : "=&amp;D" (u1), "=&amp;S" (u2)
+                : "0" (dstp), "1" (srcp), "r" (&amp;_copy_row)
+                : "memory" );
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Referencias</title>
+<section>
+<body>
+
+<ul>
+ <li>Gracias al equipo PaX por el apretón de manos</li>
+ <li>
+   <uri
+   link="http://www.ibiblio.org/gferg/ldp/GCC-Inline-Assembly-HOWTO.html">
+   GCC Inline Assembly HOWTO</uri>
+ </li>
+ <li>
+   Documentación de <uri link="http://nasm.sourceforge.net/">NASM</uri> sobre
+   <uri
+   link="http://nasm.sourceforge.net/doc/html/nasmdoc6.html#section-6.5.2">
+   librerías compartidas ELF (en inglés)</uri>
+ </li>
+ <li>
+   Enlazadores y cargadores
+   <uri link="http://www.iecc.com/linker/linker08.html">
+   capítulo 8</uri> y <uri link="http://www.iecc.com/linker/linker10.html">
+   capítulo 10</uri> (en inglés)
+ </li>
+</ul>
+
+</body>
+</section>
+</chapter>
+</guide>
