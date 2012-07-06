@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/guide-localization.xml,v 1.28 2012/04/18 18:30:21 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fi/guide-localization.xml,v 1.29 2012/07/06 19:21:16 flammie Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide lang="fi">
@@ -22,6 +22,9 @@
 <author title="Toimittaja">
   <mail link="nightmorph"/>
 </author>
+<author title="Toimittaja">
+  <mail link="klondike"/>
+</author>
 <author title="Vastuullinen kääntäjä ja toimittaja">
   <mail link="flammie@gentoo.org">Flammie Pirinen</mail>
 </author>
@@ -34,8 +37,8 @@ alkuperäisen dokumentin englanninkielisestä käännöksestä. Mukana myös
 tieto siitä, miten eurot saa toimimaan valuuttasymbolina.
 </abstract>
 
-<version>1.46</version>
-<date>2010-02-14</date>
+<version>3</version>
+<date>2012-05-27</date>
 
 <chapter>
 <title>Aikavyöhyke</title>
@@ -46,7 +49,7 @@ tieto siitä, miten eurot saa toimimaan valuuttasymbolina.
 Jotta aika toimisi oikein, täytyy ottaa käyttöön oikea aikavyöhyke. Hakemiston
 <path>/usr/share/zoneinfo/</path> alta pitäisi löytyä jokseenkin sopiva
 suurkaupunki samalta aikavyöhykkeeltä. Aikavyöhyke asetetaan tiedostossa
-<path>/etc/conf.d/clock</path>. Vältä käyttämästä
+<path>/etc/timezone</path>. Vältä käyttämästä
 <path>/usr/share/zoneinfo/Etc/GMT*</path>-määrittelyjä, sillä niiden nimet
 ovat harhaanjohtavia. Esimerkiksi <path>GMT-8</path> viittaa aikavyöhykkeeseen
 GMT+8.
@@ -58,8 +61,8 @@ GMT+8.
 <comment>(Ensin kopioidaan oikea aikavyöhyke)</comment>
 # <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
 <comment>(Sitten määritellään se asetuksiin)</comment>
-# <i>nano -w /etc/conf.d/clock</i>
-TIMEZONE="Europe/Helsinki"
+# <i>nano -w /etc/timezone</i>
+Europe/Helsinki
 # <i>date</i>
 la 11.8.2007 19:23:08 +0300
 </pre>
@@ -87,18 +90,18 @@ Ympäristömuuttujan <c>TZ</c> voi asettaa shellin rc-tiedostossa (esim.
 
 <p>
 Useimmissa Gentoo Linux -järjestelmissä laitteiston kello asetetaan
-UTC-vyöhykeaikaan (tai GMT-vyöhykeaikaan, Greenwichin mediaaniajaksi),
-ja tämän jälkeen järjestelmä käyttää aikavyöhyketietoa laskeakseen
-paikallisajan. Jos kuitenkin laitteistokello on jossain muussa kuin
-UTC-vyöhykeajassa, täytyy muuttaa muuttujan <c>CLOCK</c> arvoa tiedostossa
-<path>/etc/conf.d/clock</path>.
+UTC-vyöhykeaikaan (tai GMT-vyöhykeaikaan), ja tämän jälkeen järjestelmä käyttää
+aikavyöhyketietoa laskeakseen paikallisajan. Jos kuitenkin laitteistokello on
+jossain muussa kuin UTC-vyöhykeajassa, täytyy muuttaa muuttujan <c>clock</c>
+arvoa tiedostossa <path>/etc/conf.d/hwclock</path> (tai Gentoo BSD:llä
+<path>/etc/conf.d/adjkerntz</path>)
 </p>
 
 <pre caption="Paikallinen tai GMT-aika">
 <comment>(suositellaan:)</comment>
-CLOCK="UTC"
+clock="UTC"
 <comment>(tai:)</comment>
-CLOCK="local"
+clock="local"
 </pre>
 
 </body>
@@ -368,7 +371,7 @@ Järjestelmän asennetut lokaalit voi tarkastaa <c>locale -a</c> -komennolla.
 <body>
 
 <p>
-Näppäimistöasettelua konsoliympäristössä määrittelee <c>KEYMAP</c>-muuttuja
+Näppäimistöasettelua konsoliympäristössä määrittelee <c>keymap</c>-muuttuja
 tiedostossa <path>/etc/conf.d/keymaps</path>. Käytettävät arvot löytyvät
 hakemistoista
 <path>/usr/share/keymaps/<c>{arch}</c>/</path>.
@@ -379,9 +382,9 @@ Tyypillisin suomelle käytettävä asetus lienee fi-latin9.
 </p>
 
 <pre caption="Konsolin näppäinasettelun valinta">
-KEYMAP="fi"
-KEYMAP="fi-latin1"
-KEYMAP="fi-latin9-nodeadkeys"
+keymap="fi"
+keymap="fi-latin1"
+keymap="fi-latin9-nodeadkeys"
 </pre>
 
 </body>
@@ -399,13 +402,14 @@ asetuksella <c>XkbLayout</c>.
 </p>
 
 <pre caption="X:n näppäinkartan asettaminen">
- Section "InputDevice"
-     Identifier  "Keyboard1"
-     ...
+ Section "InputClass"
+     Identifier  "Keyboard-all"
+     Driver "evdev"
      Option "XkbLayout"    "fi"
      Option "XkbModel"     "pc105"    <comment>## Suomalainen näppis ikkunanäppäimillä.</comment>
      # Option "XkbVariant"  "nodeadkeys"
-     ...
+     MatchIsKeyboard "on"
+ EndSection
 </pre>
 
 <p>
@@ -427,11 +431,13 @@ näppäimet niiden vaihtamiseksi:
 </p>
 
 <pre caption="Useampien asettelujen käyttäminen">
- Section "InputDevice"
-     Identifier  "Keyboard1"
-     ...
+ Section "InputClass"
+     Identifier  "Keyboard-all"
+     Driver "evdev"
      Option "XkbLayout"    "fi,us"
      Option "XkbOptions"   "grp:alt_shift_toggle,grp_led:scroll"
+     MatchIsKeyboard "on"
+ EndSection
 </pre>
 
 <p>
@@ -451,7 +457,7 @@ ilmaisee mitä asettelua käytetään.
 
 <p>
 KDE:n kotoistukset ovat paketeissa <c>kde-base/kde-l10n</c> ja
-<c>app-office/koffice-l10n</c>. KDE-i18n tukee <uri link="#variables">aiemmin
+<c>app-office/calligra-l10n</c>. KDE-i18n tukee <uri link="#variables">aiemmin
 kuvattua LINGUAS-muuttujaa</uri> kielten valinnassa.
 </p>
 
@@ -465,7 +471,7 @@ kuvattua LINGUAS-muuttujaa</uri> kielten valinnassa.
 <body>
 
 <p>
-Konsolin käyttöön euron saa kun asettaa <c>CONSOLEFONT</c>-muuttujan
+Konsolin käyttöön euron saa kun asettaa <c>consolefont</c>-muuttujan
 tiedostossa <path>/etc/conf.d/consolefont</path> sellaiseksi, jossa on euron
 symboli. Vaihtoehdot ovat hakemistossa <path>/usr/share/consolefonts/</path>
 (pääte <c>.psfu.gz</c> jätetään asetuksesta pois). Fontissa <c>lat9w-16</c> on
@@ -473,7 +479,7 @@ euron symboli.
 </p>
 
 <pre caption="Konsolifontin asettaminen">
-CONSOLEFONT="lat9w-16"
+consolefont="lat9w-16"
 </pre>
 
 <p>
