@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="generator" content="Docutils 0.9: http://docutils.sourceforge.net/" />
+  <title>GLEP 62 -- Optional runtime dependencies via runtime-switchable USE flags</title>
+  <link rel="stylesheet" href="tools/glep.css" type="text/css" /></head>
+<body bgcolor="white">
+<table class="navigation" cellpadding="0" cellspacing="0"
+       width="100%" border="0">
+<tr><td class="navicon" width="150" height="35">
+<a href="http://www.gentoo.org/" title="Gentoo Linux Home Page">
+<img src="http://www.gentoo.org/images/gentoo-new.gif" alt="[Gentoo]"
+ border="0" width="150" height="35" /></a></td>
+<td class="textlinks" align="left">
+[<b><a href="http://www.gentoo.org/">Gentoo Linux Home</a></b>]
+[<b><a href="http://www.gentoo.org/proj/en/glep">GLEP Index</a></b>]
+[<b><a href="http://www.gentoo.org/proj/en/glep/glep-0062.txt">GLEP Source</a></b>]
+</td></tr></table>
+<table class="rfc2822 docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">GLEP:</th><td class="field-body">62</td>
+</tr>
+<tr class="field"><th class="field-name">Title:</th><td class="field-body">Optional runtime dependencies via runtime-switchable USE flags</td>
+</tr>
+<tr class="field"><th class="field-name">Version:</th><td class="field-body">1.2</td>
+</tr>
+<tr class="field"><th class="field-name">Last-Modified:</th><td class="field-body"><a class="reference external" href="http://www.gentoo.org/cgi-bin/viewcvs.cgi/xml/htdocs/proj/en/glep/glep-0062.txt?cvsroot=gentoo">2012/07/11 20:24:37</a></td>
+</tr>
+<tr class="field"><th class="field-name">Author:</th><td class="field-body">Michał Górny &lt;mgorny&#32;&#97;t&#32;gentoo.org&gt;</td>
+</tr>
+<tr class="field"><th class="field-name">Status:</th><td class="field-body">Draft</td>
+</tr>
+<tr class="field"><th class="field-name">Type:</th><td class="field-body">Standards Track</td>
+</tr>
+<tr class="field"><th class="field-name">Content-Type:</th><td class="field-body"><a class="reference external" href="glep-0002.html">text/x-rst</a></td>
+</tr>
+<tr class="field"><th class="field-name">Created:</th><td class="field-body">17 Jun 2012</td>
+</tr>
+<tr class="field"><th class="field-name">Post-History:</th><td class="field-body">11 Jul 2012</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id6">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id7">Motivation</a></li>
+<li><a class="reference internal" href="#specification" id="id8">Specification</a></li>
+<li><a class="reference internal" href="#rationale" id="id9">Rationale</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id10">Reference implementation</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id11">Backwards compatibility</a></li>
+<li><a class="reference internal" href="#copyright" id="id12">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h1><a class="toc-backref" href="#id6">Abstract</a></h1>
+<p>This GLEP addresses the issue of referencing optional runtime
+dependencies in Gentoo packages and ebuilds. It does introduce
+a concept of runtime-switchable USE flags to achieve that goal.</p>
+</div>
+<div class="section" id="motivation">
+<h1><a class="toc-backref" href="#id7">Motivation</a></h1>
+<p>Optional runtime dependencies are often found in packages installing
+various scripts (shell, python, perl). These are not strictly required
+for the particular package to work but installing them enables
+additional functionality.</p>
+<p>Unlike in compiled programs, enabling or disabling those features
+(dependencies) does not affect the files installed by the package.
+They can be installed and uninstalled independently of the package,
+resulting in changes of functionality without a need to rebuild
+the package.</p>
+<p>Currently such dependencies are usually expressed only through
+<tt class="docutils literal">pkg_postinst()</tt> messages. This forces user to manually install
+the necessary dependencies, and uninstall them when they are no longer
+necessary.</p>
+<p>Another solution is to use regular USE flags. Those flags do not strictly
+follow the principles of USE flags because they do not affect files
+installed by the package and are not entirely effective to the package
+(a disabled feature will still be available if necessary dependency is
+installed). Additionally, it requires unnecessary rebuilds
+of the package in order to change the dependencies.</p>
+</div>
+<div class="section" id="specification">
+<h1><a class="toc-backref" href="#id8">Specification</a></h1>
+<p>The ebuilds aiming to provide features enabled through optional runtime
+dependencies should:</p>
+<ol class="arabic simple">
+<li>create regular USE flags for all those features, following
+appropriate specifications for Gentoo ebuilds, and including
+the flags in the <tt class="docutils literal">IUSE</tt> variable;</li>
+<li>introduce additional <tt class="docutils literal">IUSE_RUNTIME</tt> variable listing names of USE
+flags related to optional runtime dependencies (without prefixes
+related to IUSE defaults).</li>
+</ol>
+<p>Additionally, the ebuilds must obey the following rules:</p>
+<ol class="arabic simple">
+<li>all flags listed in <tt class="docutils literal">IUSE_RUNTIME</tt> have to be listed in <tt class="docutils literal">IUSE</tt>
+as well,</li>
+<li>flags listed in <tt class="docutils literal">IUSE_RUNTIME</tt> can be referenced in <tt class="docutils literal">RDEPEND</tt>,
+<tt class="docutils literal">PDEPEND</tt> and <tt class="docutils literal">REQUIRED_USE</tt> variables,</li>
+<li>flags listed in <tt class="docutils literal">IUSE_RUNTIME</tt> must not be referenced in phase
+functions, <tt class="docutils literal">DEPEND</tt>, <tt class="docutils literal">LICENSE</tt> or <tt class="docutils literal">SRC_URI</tt>,</li>
+<li>flags listed in <tt class="docutils literal">IUSE_RUNTIME</tt> can be referenced through USE
+dependencies by other packages' <tt class="docutils literal">DEPEND</tt>, <tt class="docutils literal">RDEPEND</tt>
+and <tt class="docutils literal">PDEPEND</tt> variables but it is unallowed to request disabling
+those flags (only <tt class="docutils literal">[flag]</tt> and <tt class="docutils literal"><span class="pre">[flag?]</span></tt> forms are allowed),</li>
+<li>flags listed in <tt class="docutils literal">IUSE_RUNTIME</tt> can be referenced through
+<tt class="docutils literal">has_version</tt> and <tt class="docutils literal">best_version</tt> yet the caller must not rely
+upon those flags being disabled.</li>
+</ol>
+<p>The package manager should treat flags listed in <tt class="docutils literal">IUSE_RUNTIME</tt>
+as regular USE flags, except for the following:</p>
+<ol class="arabic simple">
+<li>enabling or disabling any of the flags must not involve rebuilding
+the package,</li>
+<li>it should be possible for a package manager to change those flags
+on a installed package without using the original ebuild <a class="footnote-reference" href="#id3" id="id1">[1]</a>,</li>
+<li>when queried on a installed package, the package manager must
+consider a particular flag enabled only if its dependencies
+are satisfied already <a class="footnote-reference" href="#id4" id="id2">[2]</a>,</li>
+<li>the flags may be listed in the visual output in a distinct way
+to inform the user that they affect runtime dependencies only.</li>
+</ol>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>The package manager has to ensure that all relevant information
+is stored in the installed package metadata.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The result of this check can be cached when updating the metadata
+of installed package, and it is not strictly required that
+a package manager must ensure that the dependency graph is still
+consistent afterwards.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="rationale">
+<h1><a class="toc-backref" href="#id9">Rationale</a></h1>
+<p>The proposed solution tries to solve the issue of handling runtime
+dependencies while reusing the existing infrastructure. Most
+importantly, users will be able to reuse the existing tools
+and configuration files to enable and disable optional runtime
+and build-time dependencies alike.</p>
+<p>The remaining reused features include:</p>
+<ul class="simple">
+<li>dependency syntax (USE-conditionals),</li>
+<li>ability to use <tt class="docutils literal">REQUIRED_USE</tt>, USE dependencies,</li>
+<li>ability to describe flags in <cite>metadata.xml</cite>,</li>
+<li>global flag names (and descriptions).</li>
+</ul>
+<p>Alternative proposed solution involved creating additional <tt class="docutils literal">SDEPEND</tt>
+variable. That proposition had the following disadvantages:</p>
+<ul class="simple">
+<li>being package-oriented rather than feature-oriented,</li>
+<li>lack of ability to express multiple packages required by a single
+feature,</li>
+<li>lack of ability to express cross-feature dependencies,</li>
+<li>lack of ability to describe features provided by enabled packages,</li>
+<li>necessity of implementing a new user interface parts to control
+the dependencies,</li>
+<li>lack of backwards compatibility.</li>
+</ul>
+<p>Those disadvantages could be fixed by either extending dependency
+syntax alike Exherbo (grouping, annotations) or using USE flags.
+The latter is practically equivalent to this solution yet introduces
+another variable unnecessarily.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h1><a class="toc-backref" href="#id10">Reference implementation</a></h1>
+<p>In order to support runtime-switchable USE flag changes on installed
+packages, a package manager should store the following information
+in the installed package metadata:</p>
+<ol class="arabic simple">
+<li>a list of runtime-switchable flags (<tt class="docutils literal">IUSE_RUNTIME</tt>),</li>
+<li>a list of runtime dependencies conditional to runtime-switchable
+flags, not subjected to USE expansion (relevant part of <tt class="docutils literal">RDEPEND</tt>),</li>
+<li>a list of <tt class="docutils literal">REQUIRED_USE</tt> constraints relevant to runtime-switchable
+USE flags.</li>
+</ol>
+<p>The package manager should be also able to update the list of effective
+USE flags in installed package metadata (<tt class="docutils literal">USE</tt>) without rebuilding
+the package.</p>
+<p>The following procedure should apply when a dependency atom is
+considered (either as a package dependency or user-requested atom):</p>
+<ol class="arabic simple">
+<li>if the dependency is not satisfied with an installed package,
+perform the dependency resolution on ebuilds as usual (in order to
+install a new package);</li>
+<li>if runtime-switchable USE updates are disabled, continue to
+the next dependency (with this one satisfied);</li>
+<li><tt class="docutils literal">current_use</tt> = installed package metadata . <tt class="docutils literal">USE</tt>;</li>
+<li><tt class="docutils literal">effective_use</tt> = requested <tt class="docutils literal">USE</tt> for the package;</li>
+<li><tt class="docutils literal">use_changes</tt> = <tt class="docutils literal">current_use</tt> xor <tt class="docutils literal">effective_use</tt>;</li>
+<li>if <tt class="docutils literal">use_changes</tt> is empty, continue to the next dependency;</li>
+<li><tt class="docutils literal">iuse_runtime</tt> = installed package metadata . <tt class="docutils literal">IUSE_RUNTIME</tt>;</li>
+<li><tt class="docutils literal">reg_use_changes</tt> = <tt class="docutils literal">use_changes</tt> and not <tt class="docutils literal">iuse_runtime</tt>;</li>
+<li>if <tt class="docutils literal">reg_use_changes</tt> is not empty and regular USE updates
+are enabled, perform the dependency resolution on ebuilds (in order
+to rebuild the package);</li>
+<li><tt class="docutils literal">run_use_changes</tt> = <tt class="docutils literal">use_changes</tt> and <tt class="docutils literal">iuse_runtime</tt>;</li>
+<li>if <tt class="docutils literal">run_use_changes</tt> is empty, continue to the next dependency;</li>
+<li><tt class="docutils literal">required_use</tt> = installed package metadata . <tt class="docutils literal">REQUIRED_USE</tt>;</li>
+<li>perform a check for <tt class="docutils literal">required_use</tt> constraints being satisfied
+by <tt class="docutils literal">effective_use</tt>;</li>
+<li><tt class="docutils literal">run_rdepend</tt> = installed package metadata . <tt class="docutils literal">RDEPEND</tt> (with
+unexpanded <tt class="docutils literal">IUSE_RUNTIME</tt> conditionals);</li>
+<li>perform the dependency resolution for <tt class="docutils literal">run_rdepend</tt> with
+<tt class="docutils literal">effective_use</tt>,</li>
+<li>queue the package for runtime-switchable USE update.</li>
+</ol>
+<p>Furthermore, after installing all dependencies introduced by the above
+procedure (<tt class="docutils literal">run_rdepend</tt> resolution), if a package was queued for
+runtime-switchable USE update, the package manager should write a new
+value for <tt class="docutils literal">USE</tt> key in installed package metadata.</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h1><a class="toc-backref" href="#id11">Backwards compatibility</a></h1>
+<p>Package managers not implementing this GLEP will consider
+the <tt class="docutils literal">IUSE_RUNTIME</tt> variable as an irrelevant bash variable and treat
+runtime-switchable USE flags as regular USE flags. The dependency tree
+will still be consistent yet packages may be rebuilt unnecessarily.</p>
+</div>
+<div class="section" id="copyright">
+<h1><a class="toc-backref" href="#id12">Copyright</a></h1>
+<p>This document has been placed in the public domain.</p>
+</div>
+
+</div>
+<div class="footer">
+<hr class="footer" />
+<a class="reference external" href="glep-0062.txt">View document source</a>.
+Generated on: 2012-07-11 20:57 UTC.
+Generated by <a class="reference external" href="http://docutils.sourceforge.net/">Docutils</a> from <a class="reference external" href="http://docutils.sourceforge.net/rst.html">reStructuredText</a> source.
+
+</div>
+</body>
+</html>
