@@ -1,0 +1,121 @@
+GLEP: XXX
+Title: Crosscompile support for multilib profiles
+Version: $Revision: 1.1 $
+Last-Modified: $Date: 2012/07/12 21:38:21 $
+Author: Thomas Sachau <tommy@gentoo.org>
+Status: Draft
+Type: Standards Track
+Content-Type: text/x-rst
+Created: 24 Jun 2012
+Post-History: 2-Jun-2003
+
+
+Abstract
+========
+
+Currently, multilib profiles like amd64 do support other targets, but there
+is no simple way to build packages for those seperate targets.  A workaround
+for this issue are emul packages, which contain precompiled 32bit libs.  
+This GLEP extends the package manager to allow the user to build packages
+from source for targets supported by the profile and toolchain.  
+
+
+Motivation
+==========
+
+There is no way to build packages for other then the default target also
+the profile and toolchain do support them.  For amd64, there are precompiled
+emul packages, which only support a predefined subset of packages, are not
+compiled with the respect for the user USE or comiler flags and tend to
+become outdated due to the amount of packages they include.  
+
+
+Specification
+=============
+
+This GLEP will extend the functionality of package managers with a future
+EAPI.  With this EAPI, users will be able to select additional or different
+targets per package by adjusting the additional USE flags.  Ebuilds
+themselves dont have to be modified to support this.  If a dependency does
+support the future EAPI, depending packages may require a specific target
+to be enabled via use dependencies.  
+
+Exmaple:
+
+profile: amd64/multilib
+package dev-libs/a uses the future EAPI
+packge app-misc/b requires 32bit libs from dev-libs/a
+It can now define this in the dependency section as following:
+DEPEND="dev-libs/a[multilib_abi_x86]"
+
+
+Rationale
+=========
+
+The proposal does add USE flags for each supported target ABI.  This allows
+the user to select per package, if he wants to compile it for the default
+target, additionally for another target or just for another target.  
+An alternative would have been a global variable defining this support for
+all packages at once. This was not done, because it would force the user
+to either build all (even unneeded packages) or nothing with additional or
+different target support without the ability to choose on a per package level.
+
+
+The proposel does add a USE flag called "abiwrapper" to control the
+behaviour for binaries.  If this flag is enabled and there is a none-default
+target enabled, the binaries for each target are preserved and installed
+with their target as suffix.  A symlink is created for the binary name to a
+wrapper, which does execute the real binary based on a set environment
+variable.  Following alternative implementations have not been selected:
+
+* no wrapper: This would mean, that the installed binaries change, depending
+  on the selected targets. Since some binaries have target specific output,
+  this would reduce the possible targets for depending packages.
+* a variable to control the packages with wrapped binaries: This has the
+  same effect as a USE flag, but requires the user to look into an additional
+  location to see, if a package gets wrapped binaries or not.
+
+
+If a package has dependencies, then those dependencies are required to have
+at least the same targets enabled as the package. This makes sure, that
+the needed libs for that target do exist.  The alternative to go without
+those dependencies was not choosen, because this would result in compile
+failures due to missing libs for the specified target and in the need for
+the user to manually find the needed libs and to install them with the needed
+target.
+
+
+An enabled USE flag called "multilib" does restrict any cross-compilation
+and compiles and installs the package for the default target.  The added
+USE flags still exist, but are ignored.  This allows packages to do their
+own cross-compilation without conflicting with this feature.  The
+alternative to not have such a flag would make it much harder for certain
+packages (e.g. gcc, glibc or linux-headers) to be transferred to this
+future EAPI.
+
+
+Backwards Compatibility
+=======================
+
+To allow packages, which already compile and/or install files for different
+targets, to use this future EAPI, the multilib USE flag is used as a special
+flag to indicate, that this package already does the needed steps, so that
+the package manager wont attempt to additionally do this.
+
+
+Further backward compatibility issues are not known.
+
+
+Reference Implementation
+========================
+
+A reference implementation is done in a portage branch. The code can be
+found at [#1].
+An overlay containing an ebuild and the needed profile details can be
+found via layman.  It is called "multilib-portage".  The docs dir contains
+basic setup instructions.  For help with this overlay, ask in [#2].
+A stage 4 qemu image can be found on the Gentoo distfiles mirrors [#3].
+
+References
+==========
+
