@@ -1,13 +1,14 @@
 GLEP: XXX
 Title: Crosscompile support for multilib profiles
-Version: $Revision: 1.1 $
-Last-Modified: $Date: 2012/07/12 21:38:21 $
+Version: $Revision: 1.2 $
+Last-Modified: $Date: 2012/07/13 12:59:46 $
 Author: Thomas Sachau <tommy@gentoo.org>
+Author: Alec Warner <antarus@gentoo.org>
 Status: Draft
 Type: Standards Track
 Content-Type: text/x-rst
 Created: 24 Jun 2012
-Post-History: 2-Jun-2003
+Post-History: 11-Jul-2012
 
 
 Abstract
@@ -23,31 +24,47 @@ from source for targets supported by the profile and toolchain.
 Motivation
 ==========
 
-There is no way to build packages for other then the default target also
-the profile and toolchain do support them.  For amd64, there are precompiled
-emul packages, which only support a predefined subset of packages, are not
-compiled with the respect for the user USE or comiler flags and tend to
-become outdated due to the amount of packages they include.  
+There is no way to build a package for a target other than the default target
+for a given profile. It would be useful if the package manager and ebuilds were
+extended to build for multiple targets when enabled by the user. This would
+allow users to build 32-bit and 64-bit packages on amd64 for example. The
+existing system is a set of 32-bit 'emul' packages that contain precompiled
+32-bit copies of 'useful' libraries. Also of note is that other distributions
+like Debian have multilib support.
 
 
 Specification
 =============
 
-This GLEP will extend the functionality of package managers with a future
-EAPI.  With this EAPI, users will be able to select additional or different
-targets per package by adjusting the additional USE flags.  Ebuilds
-themselves dont have to be modified to support this.  If a dependency does
-support the future EAPI, depending packages may require a specific target
-to be enabled via use dependencies.  
+A new EAPI (4_multilib) will extend the functionality of package managers. In
+EAPI 4_multilib packages will have additional USE flags created via USE_EXPAND.
+A given profile will declare its targets:
+
+USE_EXPEND="multilib_abi"
+MULTILIB_API="x86 amd64"
 
 Exmaple:
 
 profile: amd64/multilib
 package dev-libs/a uses the future EAPI
-packge app-misc/b requires 32bit libs from dev-libs/a
+package app-misc/b requires 32bit libs from dev-libs/a
 It can now define this in the dependency section as following:
 DEPEND="dev-libs/a[multilib_abi_x86]"
 
+In EAPI 4_multilib the package manager will expose a USE flag for all packages
+called 'abiwrapper'. The purpose of abiwrapper is to enable users to have more
+than one installed binary, such as one binary per target. The abiwrapper flag
+will hint to the package manager to install binaries with a suffix of the
+target abi. The package manager will also install an 'abiwrapper' at the normal
+binary location that selects the correct binary to run based on the abi in the
+'ABI' environment variable.
+
+For instance:
+Installed: dev-util/gdb[multilib_abi_x86,multilib_abi_amd64]
+
+/usr/bin/gdb-amd64
+/usr/bin/gdb-x86
+/usr/bin/gdb -> /bin/abiwrapper 
 
 Rationale
 =========
@@ -101,7 +118,6 @@ To allow packages, which already compile and/or install files for different
 targets, to use this future EAPI, the multilib USE flag is used as a special
 flag to indicate, that this package already does the needed steps, so that
 the package manager wont attempt to additionally do this.
-
 
 Further backward compatibility issues are not known.
 
