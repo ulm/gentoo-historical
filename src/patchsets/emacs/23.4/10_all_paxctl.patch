@@ -1,21 +1,29 @@
-https://bugs.gentoo.org/411439
-http://debbugs.gnu.org/cgi/bugreport.cgi?bug=11398
-
 On grsecurity/PaX systems, unexec will fail due to a gap between
 the bss section and the heap.  This can be prevented by disabling
 memory randomization in temacs with "paxctl -r".
+https://bugs.gentoo.org/411439
+https://bugs.gentoo.org/426394
+http://debbugs.gnu.org/cgi/bugreport.cgi?bug=11398
 
 --- emacs-23.4-orig/configure.in
 +++ emacs-23.4/configure.in
-@@ -800,6 +800,8 @@
- AC_PATH_PROG(INSTALL_INFO, install-info,:, /sbin)
+@@ -801,6 +801,16 @@
  dnl Don't use GZIP, which is used by gzip for additional parameters.
  AC_PATH_PROG(GZIP_PROG, gzip)
-+AC_PATH_PROG(PAXCTL, paxctl,,
-+  [$PATH$PATH_SEPARATOR/sbin$PATH_SEPARATOR/usr/sbin])
  
++if test $opsys = gnu-linux; then
++  AC_PATH_PROG(PAXCTL, paxctl,,
++    [$PATH$PATH_SEPARATOR/sbin$PATH_SEPARATOR/usr/sbin])
++  if test "X$PAXCTL" != X; then
++    AC_MSG_CHECKING([whether binaries have a PT_PAX_FLAGS header])
++    AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
++      [if $PAXCTL -v conftest$EXEEXT >/dev/null 2>&1; then AC_MSG_RESULT(yes)
++      else AC_MSG_RESULT(no); PAXCTL=""; fi])
++  fi
++fi
  
  ## Need makeinfo >= 4.6 (?) to build the manuals.
+ AC_PATH_PROG(MAKEINFO, makeinfo, no)
 --- emacs-23.4-orig/src/Makefile.in
 +++ emacs-23.4/src/Makefile.in
 @@ -508,6 +508,12 @@
