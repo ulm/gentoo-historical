@@ -1,34 +1,36 @@
 #!/bin/bash
 
+PN="binutils"
+
 usage()
 {
-	echo "Usage: $0 <binutils ver> <patch ver> [uclibc ver]"
+	echo "Usage: $0 <${PN} ver> <patch ver> [uclibc ver]"
 	exit 1
 }
 
 [[ $# -eq 0 ]] && usage
 [[ $# -gt 3 ]] && usage
 
-bver=$1
+PV=$1
 pver=$2
 uver=$3
 
-if [[ ! -d ./${bver} ]] ; then
-	echo "Error: ${bver} is not a valid binutils ver"
+if [[ ! -d ./${PV} ]] ; then
+	echo "Error: ${PV} is not a valid ${PN} ver"
 	exit 1
 fi
-if [[ -n ${uver} ]] && [[ ! -d ./${bver}/uclibc ]] ; then
-	echo "Error: ${bver} doesnt support uClibc :("
+if [[ -n ${uver} ]] && [[ ! -d ./${PV}/uclibc ]] ; then
+	echo "Error: ${PV} doesnt support uClibc :("
 	exit 1
 fi
 
 if [[ -z ${pver} ]] ; then
-	pver=$(awk '{print $1; exit}' ./${bver}/README.history)
+	pver=$(awk '{print $1; exit}' ./${PV}/README.history)
 	[[ -z ${pver} ]] && usage
 fi
 
-tbase="binutils-${bver}"
-case ${bver} in
+tbase="${PN}-${PV}"
+case ${PV} in
 2.2[2-9].*)
 	comp="xz"
 	tsfx="tar.xz"
@@ -43,10 +45,10 @@ rm -rf tmp
 rm -f ${tbase}-*.${tsfx}
 
 mkdir -p tmp/patch
-cp -r ../README* ${bver}/*.patch ${bver}/README.history tmp/patch/ || exit 1
+cp -r ../README* ${PV}/*.patch ${PV}/README.history tmp/patch/ || exit 1
 if [[ -n ${uver} ]] ; then
 	mkdir -p tmp/uclibc-patches
-	cp -r ../README* ${bver}/uclibc/*.patch tmp/uclibc-patches/ || exit 1
+	cp -r ../README* ${PV}/uclibc/*.patch tmp/uclibc-patches/ || exit 1
 fi
 
 tar -cf - -C tmp patch | ${comp} > ${tbase}-patches-${pver}.${tsfx} || exit 1
