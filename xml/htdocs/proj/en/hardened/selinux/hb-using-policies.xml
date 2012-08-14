@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-policies.xml,v 1.4 2012/04/29 14:26:40 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-policies.xml,v 1.5 2012/08/14 18:12:07 swift Exp $ -->
 
 <sections>
-<version>4</version>
-<date>2012-04-29</date>
+<version>5</version>
+<date>2012-08-14</date>
 
 <section>
 <title>SELinux Policy Language</title>
@@ -511,6 +511,116 @@ from firefox-related denials:
 Keep the module name (given through the <c>-m</c> option) simple: only use
 characters (<c>[a-z]</c>) and numbers (<c>[0-9]</c>), and start the module name
 with a character.
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Creating Additional Roles</title>
+<subsection>
+<title>Create the Role and Domain</title>
+<body>
+
+<p>
+If you want to create additional roles on the system, you first need to create a
+SELinux module that creates that role, together with its main domain. Below is a
+very simple example for a database administration role.
+</p>
+
+<pre caption="Example dbadm_r and dbadm_t definition">
+policy_module(dbadm, 1.0.0)
+
+#######################################
+#
+# Declarations
+#
+
+role dbadm_r;
+
+# Create a user domain (dbadm_t) 
+userdom_base_user_template(dbadm)
+
+#######################################
+#
+# dbadm local policy
+#
+
+# Allow the user to interact with SEPostgreSQL (SELinux-supporting PostgreSQL)
+postgresql_role(dbadm_r, dbadm_t)
+
+# Grant the user admin rights on PostgreSQL (process-wise)
+postgresql_admin(dbadm_t, dbadm_r)
+</pre>
+
+<p>
+Build and load the module and verify that the role is now available:
+</p>
+
+<pre caption="Build and verify">
+# <i>make -f /usr/share/selinux/strict/include/Makefile dbadm.pp</i>
+# <i>semodule -i dbadm.pp</i>
+# <i>seinfo -r | grep dbadm</i>
+  dbadm_r
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Assign Users the Role</title>
+<body>
+
+<p>
+Next, assign users the role you just created. You can do this to existing
+SELinux users, but here we'll create an additional SELinux user for the role.
+</p>
+
+<pre caption="Grant a user the role">
+<comment>(Create a new SELinux user called dbadm_u and grant it the dbadm_r role)</comment>
+# <i>semanage user -a -R "dbadm_r system_r" dbadm_u</i>
+</pre>
+
+<p>
+Next map the user(s) to this SELinux user.
+</p>
+
+<pre caption="Mapping a set of users to the dbadm_u user">
+# <i>semanage login -a -s dbadm_u david</i>
+# <i>semanage login -a -s dbadm_u laura</i>
+</pre>
+
+<p>
+In the first <c>semanage</c> command, where we create the dbadm_u user, you
+might have noticed that we grant it the <e>system_r</e> role. This is because
+the user is granted the <c>postgresql_admin</c> role, allowing the user to
+manipulate the postgresql init script:
+</p>
+
+<pre caption="User restarting postgresql service">
+$ <i>ls -Z /etc/init.d/postgresql</i>
+system_u:object_r:postgresql_initrc_exec_t    /etc/init.d/postgresql
+$ <i>sudo -r dbadm_r -t dbadm_t /etc/init.d/postgresql restart</i>
+</pre>
+
+<p>
+Thanks to the SELinux support by <c>sudo</c>, you can also mention the role and
+type in the <path>sudoers</path> file:
+</p>
+
+<pre caption="Using the sudoers file for specific roles">
+david ALL=(ALL) ROLE="dbadm_r" TYPE="dbadm_t" NOPASSWD: /etc/init.d/postgresql [a-z]*
+</pre>
+
+<p>
+With this setting, the user can just run <c>sudo /etc/init.d/postgresql
+restart</c>. 
+</p>
+
+<p>
+By using <c>sudo</c> correctly, you can grant the user full administrative
+rights over a daemon (including editing files) with a much lower risk of the
+user elevating his rights to a more system-wide administrative role.
 </p>
 
 </body>
