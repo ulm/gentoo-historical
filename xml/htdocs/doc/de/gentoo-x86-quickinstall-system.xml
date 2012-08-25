@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/gentoo-x86-quickinstall-system.xml,v 1.1 2008/05/12 21:55:23 keytoaster Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/gentoo-x86-quickinstall-system.xml,v 1.2 2012/08/25 14:29:17 keytoaster Exp $ -->
 <!DOCTYPE included SYSTEM "/dtd/guide.dtd">
 
 <included>
 
-<version>2</version>
-<date>2008-03-05</date>
+<version>7</version>
+<date>2012-03-31</date>
 
 <section>
 <title>Konfiguration des Systems</title>
@@ -61,18 +61,22 @@ livecd etc # <i>nano -w fstab</i>
 Konfigurieren Sie Ihr Netzwerk in <path>/etc/conf.d/net</path>. Fügen Sie das
 init-Script <c>net.eth0</c> in den Runlevel default ein. Falls Sie mehrere NICs
 haben, erstellen Sie Symlinks für diese und fügen Sie sie ebenfalls zum Runlevel
-default hinzu. Entweder editieren Sie <path>/etc/conf.d/net</path> mit
-<c>nano</c> oder Sie verwenden folgende Kommandos:
+default hinzu. Vergessen Sie auch nicht, Ihren Hostnamen zu setzen. Editieren
+Sie entweder <path>/etc/conf.d/net</path> mit <c>nano</c> oder verwenden Sie
+folgende Kommandos:
 </p>
 
 <pre caption="Netzwerk-Konfiguration">
-livecd etc # <i>cd conf.d</i>
-livecd conf.d # <i>echo 'config_eth0=( "192.168.1.10/24" )' >> net</i>
-livecd conf.d # <i>echo 'routes_eth0=( "default via 192.168.1.1" )' >> net</i>
+livecd etc # <i>cd init.d</i>
+livecd init.d # <i>ln -s net.lo net.eth0</i>
+livecd init.d # <i>cd ../conf.d</i>
+livecd conf.d # <i>echo 'config_eth0="192.168.1.10 netmask 255.255.255.0 brd 192.168.1.255"' >> net</i>
+livecd conf.d # <i>echo 'routes_eth0="default via 192.168.1.1"' >> net</i>
+livecd conf.d # <i>echo 'hostname="myhostname"' > hostname</i>
 livecd conf.d # <i>rc-update add net.eth0 default</i>
 <comment>(Wenn Sie den Netzwerkkartentreiber als Modul konfiguriert haben, fügen
-Sie ihn zu /etc/modules.autoload.d/kernel-2.6 hinzu.)</comment>
-livecd conf.d # <i>echo r8169 >> /etc/modules.autoload.d/kernel-2.6</i>
+Sie ihn zu /etc/conf.d/modules hinzu.)</comment>
+livecd conf.d # <i>echo 'modules="r8169"' >> /etc/conf.d/modules</i>
 <comment>(Wenn Sie nach dem Neustart wieder mittels ssh eine Verbindung zum
 neuen Rechner aufnehmen wollen)</comment>
 livecd conf.d # <i>rc-update add sshd default</i>
@@ -95,24 +99,21 @@ passwd: password updated successfully
 </pre>
 
 <p>
-Editieren Sie <path>/etc/conf.d/clock</path>, um die Zeitzone zu bestimmen, die
-Sie zuvor verwendet haben.
+Editieren Sie <path>/etc/timezone</path>, um die Zeitzone, die Sie zuvor
+verwendet haben, zu definieren.
 </p>
 
-<pre caption="/etc/conf.d/clock editieren">
-livecd conf.d # <i>nano -w /etc/conf.d/clock</i>
-TIMEZONE="Europe/Berlin"
+<pre caption="/etc/timezone editieren">
+Europe/Brussels
 </pre>
 
 <p>
-Überprüfen Sie die Systemkonfiguration in <path>/etc/rc.conf</path>,
-<path>/etc/conf.d/rc</path> und <path>/etc/conf.d/keymaps</path> und passen Sie
-sie bei Bedarf an.
+Überprüfen Sie die Systemkonfiguration in <path>/etc/rc.conf</path> und
+<path>/etc/conf.d/keymaps</path> und passen Sie sie bei Bedarf an.
 </p>
 
 <pre caption="Optional: Einige Konfigurationsdateien anpassen">
 livecd conf.d # <i>nano -w /etc/rc.conf</i>
-livecd conf.d # <i>nano -w /etc/conf.d/rc</i>
 livecd conf.d # <i>nano -w /etc/conf.d/keymaps</i>
 </pre>
 
@@ -129,6 +130,8 @@ Installieren der RAID- und LVM2-Werkzeuge.
 
 <pre caption="Installieren der RAID- &amp; LVM2-Werkzeuge">
 livecd conf.d # <i>emerge mdadm lvm2</i>
+livecd conf.d # <i>rc-update add mdraid boot</i>
+livecd conf.d # <i>rc-update add lvm boot</i>
 </pre>
 
 </body>
@@ -183,7 +186,9 @@ livecd conf.d # <i>emerge ppp</i>            <comment>(Wenn Sie eine Verbindung
 <body>
 
 <p>
-Emergen Sie <c>grub</c> und konfigurieren Sie es.
+Emergen Sie <c>grub</c> und konfigurieren Sie es. Vergessen Sie nicht, die
+erforderlichen Boot-Parameter zu aktualisieren, wenn Sie ein initramfs
+verwenden.
 </p>
 
 <pre caption="Grub emergen und seine Konfigurationsdatei editieren">
@@ -201,7 +206,8 @@ timeout 10
 
 title Gentoo
 root (hd0,0)
-kernel /boot/kernel root=/dev/md3
+kernel /boot/kernel root=<keyval id="root"/>
+initrd /boot/initramfs <comment># Nur bei Verwendung einer initramfs</comment>
 </pre>
 
 <pre caption="Installation von grub" test="contains(func:keyval('root'),'md')">
