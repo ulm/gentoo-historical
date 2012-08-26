@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-bootloader.xml,v 1.14 2011/09/10 17:55:55 keytoaster Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-bootloader.xml,v 1.15 2012/08/26 21:08:17 keytoaster Exp $ -->
 
 <sections>
 
-<version>8</version>
-<date>2011-05-09</date>
+<version>11</version>
+<date>2012-08-04</date>
 
 <section>
 <title>Eine Wahl treffen</title>
@@ -194,24 +194,10 @@ anderen Editor):
 </pre>
 
 <p>
-Nun wollen wir eine <path>grub.conf</path> schreiben. Folgend finden Sie zwei
-mögliche <path>grub.conf</path> für das Partitionierungsbeispiel, das wir in
-diesem Leitfaden verwendet haben. Wir werden nur die erste
-<path>grub.conf</path> ausführlich erläutern. Stellen Sie sicher, dass Sie den
-Dateinamen <e>Ihres</e> Kernel Image und, wenn
+Nun wollen wir eine <path>grub.conf</path> schreiben. Stellen Sie sicher, dass
+Sie den Dateinamen <e>Ihres</e> Kernel-Images und, falls
 zutreffend, den Dateinamen <e>Ihrer</e> initrd benutzen.
 </p>
-
-<ul>
-  <li>
-    Die erste <path>grub.conf</path> ist für Leute, die nicht <c>genkernel</c>
-    benutzt haben
-  </li>
-  <li>
-    Die zweite <path>grub.conf</path> ist für Leute, die <c>genkernel</c>
-    benutzt haben
-  </li>
-</ul>
 
 <note>
 Grub weist Gerätenamen auf Grundlage des BIOS zu. Wenn Sie Ihre BIOS-
@@ -219,13 +205,14 @@ Einstellungen ändern, ändern sich auch die Buchstaben und Ziffern Ihrer
 Geräte. Wenn Sie zum Beispiel die Bootreihenfolge Ihrer Geräte ändern,
 müssen Sie möglicherweise auch Ihre Grub-Konfiguration ändern.
 </note>
+
 <note>
 Wenn Ihr Root-Dateisystem JFS ist, <e>müssen</e> Sie "ro" zu dem Kernelaufruf
 hinzufügen, da JFS sein Protokolldatei liest, bevor es ein read-write mounten
 zulässt.
 </note>
 
-<pre caption = "grub.conf für Nicht-genkernel Benutzer">
+<pre caption = "Beispiel: grub.conf">
 <comment># Welcher Eintrag standardmäßig gebootet werden soll. 0 ist der Erste, 1 ist der Zweite usw.</comment>
 default 0
 <comment># Wie viele Sekunden gewartet werden soll, bevor der Standardeintrag gebootet wird.</comment>
@@ -252,21 +239,18 @@ makeactive
 chainloader +1
 </pre>
 
-<pre caption = "grub.conf für genkernel Benutzer">
-default 0
-timeout 30
-splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+<p>
+Falls Sie sich beim Bauen des Linux-Kernels dazu entschieden haben zum Booten
+ein initramfs zu verwenden, dann müssen Sie die Konfiguration verändern, indem
+Sie auf diese initramfs-Datei verweisen und der initramfs mitteilen, wo sich
+Ihr reales Root-Device befindet:
+</p>
 
+<pre caption="GRUB-Auszug für initramfs-verwendende Kernel">
 title Gentoo Linux <keyval id="kernel-version"/>
 root (hd0,0)
-kernel /boot/<keyval id="genkernel-name"/> real_root=/dev/sda3
-initrd /boot/<keyval id="genkernel-initrd"/>
-
-<comment># Nur wenn Sie einen Dual-Boot einrichten möchten</comment>
-title Windows XP
-rootnoverify (hd0,5)
-makeactive
-chainloader +1
+kernel /boot/<keyval id="kernel-version"/> <i>real_</i>root=/dev/sda3
+<i>initrd /boot/<keyval id="genkernel-initrd"/></i>
 </pre>
 
 <p>
@@ -491,23 +475,12 @@ Vor einigen Abschnitten baten wir Sie, sich den Namen des Kernel-Images zu
 merken, welches Sie erstellt haben. In der folgenden <path>lilo.conf</path>
 Beispielsdatei nehmen wir an, dass der Imagename
 <path>kernel-2.6.11-gentoo-r3</path> ist. Wir benutzen zudem das
-Beispielpartitionsschema in diesem Beispiel, es gibt zwei verschiedene Teile:
+Beispielpartitionsschema in diesem Beispiel.
 </p>
 
-<ul>
-  <li>
-    Einen für diejenigen, die <c>genkernel</c> nicht benutzt haben um den Kernel
-    zu bauen
-  </li>
-  <li>
-    Einen für diejenigen, die <c>genkernel</c> zum bauen des Kernel benutzt
-    haben.
-  </li>
-</ul>
-
 <p>
-Stellen Sie sicher, dass Sie den Dateinamen <e>Ihres</e> Kernel-Images und, wenn
-zutreffend, den Dateinamen <e>Ihrer</e> initrd benutzen.
+Stellen Sie sicher, dass Sie den Dateinamen <e>Ihres</e> Kernel-Images und,
+falls zutreffend, den Dateinamen <e>Ihrer</e> initrd verwenden.
 </p>
 
 <note>
@@ -521,7 +494,6 @@ prompt                    <comment># Gib dem Benutzer die Möglichkeit eine ande
 timeout=50                <comment># Warte 5 (fünf) Sekunden bevor die Standardsektion gebootet wird</comment>
 default=gentoo            <comment># Wenn das Timeout verstrichen ist, dann boote die "gentoo" Sektion</comment>
 
-<comment># Nur für Nicht-genkernel Benutzer</comment>
 image=/boot/<keyval id="kernel-name"/>
   label=gentoo            <comment># Der Name den wir der Sektion geben</comment>
   read-only               <comment># Starte mit einem nur-lesen Root. Nicht ändern!</comment>
@@ -533,12 +505,6 @@ image=/boot/<keyval id="kernel-name"/>
   root=/dev/sda3          <comment># Ort des Root-Dateisystems</comment>
   append="init=/bin/bb"   <comment># Starten der statischen Gentoo-Rescue-Shell</comment>
 
-<comment># Für genkernel Benutzer</comment>
-image=/boot/<keyval id="genkernel-name"/>
-  label=gentoo
-  read-only
-  append="real_root=/dev/sda3"
-  initrd=/boot/<keyval id="genkernel-initrd"/>
 <comment># Die nächsten zwei Zeilen werden nur benötigt, wenn Sie Dualboot mit einem Windowssystem einrichten wollen.</comment>
 <comment># In diesem Fall liegt Windows auf /dev/sda6.</comment>
 other=/dev/sda6
@@ -549,6 +515,21 @@ other=/dev/sda6
 Wenn Sie ein anderes Partitionierungsschema verwenden, passen Sie die
 Konfiguration entsprechend an.
 </note>
+
+<p>
+Falls Sie sich beim Bauen des Linux-Kernels dazu entschieden haben zum Booten
+ein initramfs zu verwenden, dann müssen Sie die Konfiguration verändern, indem
+Sie auf diese initramfs-Datei verweisen und der initramfs mitteilen, wo sich
+Ihr reales Root-Device befindet:
+</p>
+
+<pre caption="LILO-Auszuag für initramfs-verwendende Kernel">
+image=/boot/<keyval id="kernel-name"/>
+  label=gentoo
+  read-only
+  <i>append="real_root=/dev/sda3"</i>
+  <i>initrd=/boot/<keyval id="genkernel-initrd" /></i>
+</pre>
 
 <p>
 Wenn Sie weitere Optionen an den Kernel übermitteln müssen, fügen Sie eine
