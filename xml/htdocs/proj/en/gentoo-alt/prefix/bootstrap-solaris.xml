@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/bootstrap-solaris.xml,v 1.97 2012/08/11 13:30:14 grobian Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/gentoo-alt/prefix/bootstrap-solaris.xml,v 1.98 2012/08/26 19:50:46 grobian Exp $ -->
 
 <guide link="/proj/en/gentoo-alt/prefix/bootstrap-solaris.xml" lang="en">
   <title>Gentoo Prefix Bootstrap Process for UNIX-like systems</title>
@@ -19,8 +19,8 @@
   <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
   <license/>
 
-  <version>1.67</version>
-  <date>2012-08-07</date>
+  <version>1.68</version>
+  <date>2012-08-26</date>
 
   <chapter>
     <title>Bootstrapping</title>
@@ -49,14 +49,18 @@
           default, e.g. make sure your shell doesn't automatically load
           any environment variables that setup those repositories.
           Think of <c>PATH</c>, <c>CFFLAGS</c>, <c>CFLAGS</c>,
-          <c>LDFLAGS</c> and the always harmful <c>LD_LIBRARY_PATH</c>.
+          <c>LDFLAGS</c>, <c>PKG_CONFIG_PATH</c> and the always harmful
+          <c>LD_LIBRARY_PATH</c>.
           This is important, because Prefix tends to be very sensitive
           about this.  Afterall, it's whole purpose is to provide all of
           those tools by itself without external help!
         </p>
         <p>
-          If you happen to run into troubles, don't despair.  Feel free
-          to ask in the <c>gentoo-prefix</c> IRC channel, or mailing list
+          If you happen to run into trouble, don't despair
+          (immediately).  Feel free to ask in the <c>gentoo-prefix</c>
+          IRC channel, or <uri
+            link="http://archives.gentoo.org/gentoo-alt">gentoo-alt
+            mailing list</uri>.
         </p>
         <note>
           IMPORTANT: Gentoo Prefix does NOT require root-privileges.
@@ -173,39 +177,42 @@ $ <i>export PATH="$EPREFIX/usr/bin:$EPREFIX/bin:$EPREFIX/tmp/usr/bin:$EPREFIX/tm
           From the directory where the bootstrap script was stored execute
           the following commands:
         </p>
-        <pre caption="Use the bootstrap script">
+        <pre caption="Use the bootstrap script for stage1">
 $ <i>chmod 755 bootstrap-prefix.sh</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp make</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp wget</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp sed</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp m4</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp bison</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp coreutils</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp findutils</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp tar</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp patch</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp grep</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp gawk</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp bash</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp zlib</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX/tmp python</i>
+$ <i>./bootstrap-prefix.sh $EPREFIX/tmp stage1</i>
         </pre>
         <note>
-          Please note that all tools are installed in
-          <path>$EPREFIX/tmp</path>!
+          Please note the usage of <path>$EPREFIX/tmp</path>!
         </note>
         <p>
-          Now that we have some minimal tools to run <c>emerge</c>,
-          let's setup the <path>$EPREFIX</path>
-          directory, download a Portage tree snapshot, unpack it and
-          download and install Portage.  Afterwards the script will try
-          to setup some sane defaults, watch closely if it reported to
-          be successful in this.  If it doesn't, your system is not yet
-          recognised, and manual intervention to continue is necessary.
+          The stage1 should have installed some basic packages
+          necessary to run Portage, without Portage's help.  When stage1
+          finished successfully, a Portage can be installed.
         </p>
-        <pre caption="bootstrap Portage">
-$ <i>./bootstrap-prefix.sh $EPREFIX tree</i>
-$ <i>./bootstrap-prefix.sh $EPREFIX portage</i>
+        <p>
+          The Portage tree installed by default is a known to be good
+          snapshot.  This can, however, for various reasons not be
+          good enough, in which case the lastest snapshot available can
+          be used instead.  Only use this when you have problems with
+          the known to be good snapshot.  If you want to use the lastest
+          snapshot when bootstrapping, export LATEST_TREE_YES=1 in
+          your environment before running the following:
+        </p>
+        <pre caption="bootstrap Portage and its tree">
+$ <i>./bootstrap-prefix.sh $EPREFIX stage2</i>
+        </pre>
+        <p>
+          We continue with emerging some of the core toolchain packages
+          that make sure we compile and link everything taking the
+          Prefix into account.  Next to that this step emerges the full
+          set of applications and that Portage needs and removes the
+          tools installed by stage1.  It finishes things by getting an
+          up-to-date tree (removing any hacks stage2 applied to the
+          activated profile) and emerging everything in the
+          <c>system</c> set.
+        </p>
+        <pre caption="bootstrap a self-hosted Portage">
+$ <i>./bootstrap-prefix.sh $EPREFIX stage3</i>
         </pre>
         <p>
           Because we installed some new applications, most notably
@@ -219,144 +226,13 @@ $ <i>hash -r</i>
           tcsh users can use the <c>rehash</c> command.
         </note>
         <p>
-          We continue adding some necessary tools which will slowly make
-          the just born Prefix less fragile.
-        </p>
-        <pre caption="emerge sed">
-$ <i>emerge --oneshot sed</i>
-        </pre>
-        <p>
-          Next, we emerge the <c>bash</c> shell Portage heavily relies
-          on.
-        </p>
-        <pre caption="emerge bash">
-$ <i>emerge --oneshot --nodeps bash</i> (avoid deps that install scripts with shebang /bin/sh)
-        </pre>
-        <p>
-          Now, we will emerge a compiler which will use the gnu linker.
-          This is a requirement for many packages that follow in the
-          bootstrap process, in particular Perl.  The packages to emerge
-          include the <c>baselayout-prefix</c> package.  Some, if not
-          many, scripts and tools within a Gentoo system assume the
-          availability of the <c>baselayout-prefix</c> package for all
-          communication using the Gentoo colour scheme.
-        </p>
-        <pre caption="emerge toolchain pre-requisites">
-$ <i>emerge --oneshot --nodeps sys-apps/baselayout-prefix</i>
-$ <i>emerge --oneshot --nodeps app-arch/xz-utils</i>
-$ <i>emerge --oneshot --nodeps sys-devel/m4</i>
-$ <i>emerge --oneshot --nodeps sys-devel/flex</i>
-$ <i>emerge --oneshot --nodeps sys-devel/bison</i>
-$ <i>emerge --oneshot --nodeps sys-devel/binutils-config</i>
-$ <i>emerge --oneshot --nodeps sys-devel/gcc-config</i>
-        </pre>
-        <p>
-          Non Mac OS X users can immediately continue here with the
-          toolchain, and skip the bit below about Xcode.
-          <e>Mac OS X users need to skip this step, and perform the step
-            below instead.</e>
-        </p>
-        <pre caption="Non Mac OS X: emerge GNU linker and compiler">
-$ <i>emerge --oneshot --nodeps sys-devel/binutils</i>
-$ <i>emerge --oneshot --nodeps "=sys-devel/gcc-4.2*"</i>
-        </pre>
-        <p>
-          <e>If you're not on Mac OS X, you can skip this step.</e>
-          Due to different versions of Xcode, the following step
-          requires some close watch to the output of <c>gcc
-            --version</c>.  If the first line reports a version <e>
-            4.2.1</e>, the latest binutils-apple needs to be emerged,
-          otherwise, version should report <e>4.0.1</e> and
-          <c>=binutils-apple-3.2</c> must be emerged.
-        </p>
-        <pre caption="Mac OS X: emerge Apple linker and GNU/Apple compiler">
-$ <i>emerge --oneshot --nodeps "=sys-devel/binutils-apple-3.2"</i> (for gcc 4.0.1)
-$ <i>emerge --oneshot --nodeps sys-devel/binutils-apple</i>    (for gcc 4.2.1)
-$ <i>emerge --oneshot --nodeps sys-devel/gcc-apple</i>
-        </pre>
-        <p>
-          We continue getting more tools in our Prefix.  We no longer
-          ignore dependencies all the time, so a lot of packages will be
-          emerged at this stage.  Slowly our Prefix gets more robust as
-          we progress here.
-        </p>
-        <pre caption="emerge several tools">
-$ <i>emerge --oneshot sys-apps/coreutils</i>
-$ <i>emerge --oneshot sys-apps/findutils</i>
-$ <i>emerge --oneshot '&lt;app-arch/tar-1.26-r1'</i>
-$ <i>emerge --oneshot sys-apps/grep</i>
-$ <i>emerge --oneshot sys-devel/patch</i>
-$ <i>emerge --oneshot sys-apps/gawk</i>
-$ <i>emerge --oneshot sys-devel/make</i>
-$ <i>emerge --oneshot sys-libs/zlib</i>
-$ <i>emerge --oneshot --nodeps sys-apps/file</i>
-$ <i>emerge --oneshot --nodeps app-admin/eselect</i>
-$ <i>emerge --oneshot app-misc/pax-utils</i>
-$ <i>emerge --oneshot "&lt;net-misc/wget-1.13.4-r1"</i> (until we fix #393277)
-$ <i>emerge --oneshot virtual/os-headers</i>
-        </pre>
-        <p>
-          Now we have a good bunch of programs that Portage needs, we
-          can replace the bootstrapped Portage by a properly installed
-          one, using Portage itself.  Also here a few dependencies are
-          first emerged, such as the language Portage is written in:
-          <c>python</c>.  We need to temporarily tell Portage that the
-          bootstrapped Portage can be overwritten.
-        </p>
-        <pre caption="emerge portage">
-$ <i>env FEATURES="-collision-protect" emerge --oneshot sys-apps/portage</i>
-        </pre>
-        <p>
-          Now we have emerged everything we bootstrapped before, we
-          remove the temporary directory and its use as it is no longer
-          necessary.
-        </p>
-        <pre caption="remove tmp directory">
-$ <i>rm -Rf $EPREFIX/tmp/*</i>
-$ <i>hash -r</i>
-        </pre>
-        <p>
-          Before we do any further merges, we are going to update our
-          tree.  Updating the tree is done using:
-        </p>
-        <pre caption="Updating the tree">
-$ <i>emerge --sync</i>
-        </pre>
-        <note>
-          If you're behind a firewall that blocks rsync traffic, you can
-          try to run <c>${EPREFIX}/usr/bin/emerge-webrsync</c> instead.
-        </note>
-        <p>
-          Before we can finish emerging the system set, we need to work
-          around a circular dependency of <c>gcc</c> on <c>mpc</c>, and
-          <c>mpc</c> on <c>gcc</c>.  Since Mac OS X systems use
-          <c>gcc-apple</c>, this step is not necessary for them.
-          <e>Mac OS X users should skip this step.</e>
-        </p>
-        <pre caption="Non Mac OS X: emerge an older mpc">
-$ <i>emerge --oneshot "&lt;dev-libs/mpc-0.9"</i>
-        </pre>
-        <p>
-          Next, we let Portage emerge all packages that complete a
-          system install that we eventually need to finalise this Prefix
-          installation.
-        </p>
-        <pre caption="emerge system">
-$ <i>env USE=-git emerge -u system</i>
-        </pre>
-        <p>
-          Now is a good time to set the preferences for our soon to be
-          Prefix.  This includes customisations such as general
-          <c>USE</c>-flags, <c>CFLAGS</c> and <c>MAKEOPTS</c> in
+          Now is a good time to set the preferences for your Prefix.
+          This includes customisations such as general <c>USE</c>-flags,
+          <c>CFLAGS</c> and <c>MAKEOPTS</c> in
           <path>$EPREFIX/etc/portage/make.conf</path>.  Be conservative with
-          <c>CFLAGS</c>!  Note that the code below is an example, and is
-          meant for inspiration only.
+          <c>CFLAGS</c>!  The stage3 function already sed some moderate
+          defaults.
         </p>
-        <pre caption="Customising the Prefix installation - example">
-$ <i>echo 'USE="unicode nls"' >> $EPREFIX/etc/portage/make.conf</i>
-$ <i>echo 'CFLAGS="-O2 -pipe"' >> $EPREFIX/etc/portage/make.conf</i>
-$ <i>echo 'CXXFLAGS="${CFLAGS}"' >> $EPREFIX/etc/portage/make.conf</i>
-        </pre>
         <note>
           You can consider adding CPU-specific tuning flags to
           <c>CFLAGS</c>.  If you don't know what your CPU is, or what
@@ -374,26 +250,6 @@ $ <i>echo 'CXXFLAGS="${CFLAGS}"' >> $EPREFIX/etc/portage/make.conf</i>
           just forget about this setting.  Note that setting a wrong
           value breaks things.
         </note>
-        <p>
-          For non Mac OS X users, it is likely that you emerged a newer
-          GCC than the 4.2 version we used during the bootstrap.  Since
-          we reinstall all packages, we like to take advantage of this
-          newer GCC.  By default, this newer GCC will not be enabled.
-          Check the output of <c>gcc-config -l</c>, and make sure that
-          the newest compiler is selected (marked by an asterisk).
-          Another GCC can be selected by running <c>gcc-config
-            &lt;number&gt;</c>.
-        </p>
-        <pre caption="activating the most recent compiler">
-$ <i>gcc-config -l</i>
- [1] i386-pc-solaris2.10-4.2.4 *
- [2] i386-pc-solaris2.10-4.5.3
-$ <i>gcc-config 2</i>
- * Switching native-compiler to i386-pc-solaris2.10-4.5.3 ...
-$ <i>gcc-config -l</i>
- [1] i386-pc-solaris2.10-4.2.4
- [2] i386-pc-solaris2.10-4.5.3 *
-        </pre>
         <p>
           Since we have everything in place for a self-catered rebuild,
           we can start the final stage to install the Prefix system.
