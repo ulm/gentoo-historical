@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-working-portage.xml,v 1.35 2011/09/10 19:11:37 keytoaster Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-working-portage.xml,v 1.36 2012/08/26 21:32:04 keytoaster Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Dieses Kapitel erklärt die "einfachen" Schritte, die ein Benutzer definitiv
 kennen muss, um Software auf seinem System zu betreuen.
 </abstract>
 
-<version>3</version>
-<date>2011-08-12</date>
+<version>7</version>
+<date>2012-08-15</date>
 
 <section>
 <title>Willkommen zu Portage</title>
@@ -95,6 +95,15 @@ automatisch und installiert den aktuellsten Snapshot in Ihrem System:
 <pre caption="Running emerge-webrsync">
 # <i>emerge-webrsync</i>
 </pre>
+
+<p>
+Ein weiterer Vorteil von <c>emerge-webrsync</c> ist, dass es erlaubt, nur
+Portage-Tree-Schnappschüsse herunterzuladen, die mit dem
+Gentoo-Release-Engineering-GPG-Schlüssel signiert sind. Weitere Informationen
+dazu finden Sie im Abschnitt <uri link="?part=2&amp;chap=3">Portage
+Features</uri> unter <uri link="?part=2&amp;chap=3#webrsync-gpg">Laden
+validierter Portage-Tree-Schnappschüsse</uri>.
+</p>
 
 </body>
 </subsection>
@@ -304,12 +313,24 @@ Portage wird nun nach neueren Versionen von Anwendungen suchen, die Sie
 installiert haben. Es werden jedoch nur Versionen von Anwendungen überprüft, die
 Sie <e>explizit</e> installiert haben (die Anwendungen aufgelistet in
 <path>/var/lib/portage/world</path>); Abhängigkeiten werden nicht ausführlich
-geprüft. Wenn Sie <e>jedes einzelne Paket</e> auf Ihrem System aktualisieren
+geprüft. Wenn Sie die Abhängigkeiten dieser Pakete ebenfalls aktualisieren
 möchten, fügen sie das <c>--deep</c> Argument hinzu:
 </p>
 
-<pre caption="Aktualisierung des gesamten Systems">
+<pre caption="Aktualisierung Ihres Systems inkl. Abhängigkeiten">
 # <i>emerge --update --deep world</i>
+</pre>
+
+<p>
+Dies betrifft jedoch nicht <e>alle Pakete</e>: Einige Pakete auf Ihrem System
+werden während des Kompilierungsprozesses von Paketen benötigt, aber sobald
+diese Pakete installiert sind, werden diese Abhängigkeiten nicht mehr benötigt.
+Portage nennt diese <e>Build-Abhängigkeiten</e>. Um auch diese in einem
+Aktualisierungs-Zyklus einzuschließen, fügen Sie <c>--with-bdeps=y</c> hinzu:
+</p>
+
+<pre caption="Aktualisierung Ihres gesamten Systems">
+# <i>emerge --update --deep --with-bdeps=y world</i>
 </pre>
 
 <p>
@@ -326,7 +347,7 @@ Neuinstallation der existierenden hinreichend ist:
 </p>
 
 <pre caption="Durchführen einer vollen Aktualisierung">
-# <i>emerge --update --deep --newuse world</i>
+# <i>emerge --update --deep --with-bdeps=y --newuse world</i>
 </pre>
 
 </body>
@@ -400,10 +421,11 @@ Akzeptanzerklärung erfordern.
 
 <p>
 Die Variable, die die erlaubten Lizenzen kontrolliert, heißt
-<c>ACCEPT_LICENSE</c> und kann in <path>/etc/make.conf</path> gesetzt werden:
+<c>ACCEPT_LICENSE</c> und kann in <path>/etc/portage/make.conf</path> gesetzt
+werden:
 </p>
 
-<pre caption="Standardmäßige ACCEPT_LICENSE in /etc/make.conf">
+<pre caption="Standardmäßige ACCEPT_LICENSE in /etc/portage/make.conf">
 ACCEPT_LICENSE="* -@EULA"
 </pre>
 
@@ -414,7 +436,7 @@ EULA <e>werden</e> installiert.
 </p>
 
 <p>
-Sie können <c>ACCEPT_LICENSE</c> global in <path>/etc/make.conf</path>
+Sie können <c>ACCEPT_LICENSE</c> global in <path>/etc/portage/make.conf</path>
 oder pro Paket in <path>/etc/portage/package.license</path> setzen.
 </p>
 
@@ -448,7 +470,7 @@ global die GPL-kompatible Lizenzgruppe erlaut, sowie einige weitere Gruppen und
 einzelne Lizenzen:
 </p>
 
-<pre caption="ACCEPT_LICENSE in /etc/make.conf">
+<pre caption="ACCEPT_LICENSE in /etc/portage/make.conf">
 ACCEPT_LICENSE="@GPL-COMPATIBLE @OSI-APPROVED @EULA atheros-hal BitstreamVera"
 </pre>
 
@@ -503,8 +525,13 @@ aber anders implementiert sind. Zum Beispiel sind <c>metalogd</c>,
 Anwendungen die einen System-Protokollierdienst benötigen, können zum Beispiel
 nicht auf <c>metalogd</c> bestehen, da die anderen System-Protokollierdienste
 auch eine gute Wahl sind. Portage erlaubt daher <e>virtuals</e>: Jeder
-System-Protokollierdienst bietet <c>virtual/syslog</c>, so dass Anwendungen von
-<c>virtual/syslog</c> abhängig sein können.
+System-Logger ist als "exklusive" Abhängigkeit des Logging-Dienstes im
+virtuellen Paket <c>logger</c> der Kategorie <c>virtual</c> aufgelistet, so
+dass Applikationen einfach vom Paket <c>virtual/logger</c> abhängen können.
+Wenn dieses installiert wird, zieht das Paket einfach das erste Logging-Paket,
+das im Paket erwähnt wird, hinein, sofern vorher nicht schon ein
+Logging-Paket installiert war (in welchem Falle die virtuelle Abhängigkeit
+schon erfüllt ist).
 </p>
 
 <p>
@@ -649,7 +676,7 @@ maskiert ist:
     <b>license</b> bedeutet, dass die Lizenz des Paketes nicht mit Ihrer
     <c>ACCEPT_LICENSE</c> Einstellung kompatibel ist. Sie müssen die
     entsprechende Lizenz oder Lizenzgruppe explizit erlauben, indem Sie sie in
-    <path>/etc/make.conf</path> oder in
+    <path>/etc/portage/make.conf</path> oder in
     <path>/etc/portage/package.license</path> angeben. Sehen Sie sich <uri
     link="#license">Lizenzen</uri> genauer an, um herauszufinden, wie jegliche
     funktionieren.
@@ -692,8 +719,9 @@ USE-Flag ist auf dem System nicht gesetzt.
 
 <p>
 Um dieses Problem zu lösen, fügen Sie entweder das erforderliche USE-Flag zu
-Ihren globalen USE-Flags in der <path>/etc/make.conf</path> hinzu, oder setzen
-Sie es für das spezifische Paket in der <path>/etc/portage/package.use</path>.
+Ihren globalen USE-Flags in der <path>/etc/portage/make.conf</path> hinzu, oder
+setzen Sie es für das spezifische Paket in der
+<path>/etc/portage/package.use</path>.
 </p>
 
 </body>
