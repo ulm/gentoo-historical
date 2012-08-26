@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-kernel.xml,v 1.22 2011/09/10 16:54:53 keytoaster Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/handbook/hb-install-x86+amd64-kernel.xml,v 1.23 2012/08/26 20:10:30 keytoaster Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Der Linux-Kernel ist der Kern einer jeden Distribution. Dieses Kapitel
 erläutert, wie man den Kernel konfiguriert.
 </abstract>
 
-<version>12</version>
-<date>2011-09-03</date>
+<version>17</version>
+<date>2012-04-12</date>
 
 <section>
 <title>Setzen der Zeitzone des Systems</title>
@@ -31,8 +31,10 @@ Wirklichkeit GMT+8.
 
 <pre caption="Setzen der Zeitzone">
 # <i>ls /usr/share/zoneinfo</i>
-<comment>(Beispiel: GMT)</comment>
-# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+<comment>(Beispiel: Europe/Brussels)</comment>
+# <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
+<comment>(Nun die Zeitzone setzen)</comment>
+# <i>echo "Europe/Brussels" &gt; /etc/timezone</i>
 </pre>
 
 </body>
@@ -208,6 +210,19 @@ Processor type and features ---&gt;
 <body>
 
 <p>
+Wählen Sie nun <e>Maintain a devtmpfs file system to mount at /dev</e> aus, so
+dass kritische Gerätedateien schon früh während des Boot-Prozesses verfügbar
+sind.
+</p>
+
+<pre caption="Aktivieren von devtmpfs Unterstützung">
+Device Drivers ---&gt;
+  Generic Driver Options ---&gt;
+    [*] Maintain a devtmpfs filesystem to mount at /dev
+    [ ]   Automount devtmpfs at /dev, after the kernel mounted the rootfs
+</pre>
+
+<p>
 Gehen Sie nun in <c>File Systems</c> und selektieren Sie Unterstützung für die
 Dateisysteme die Sie benutzen. Kompilieren Sie diese <e>nicht</e> als Module,
 ansonsten wird ihr Gentoo System nicht fähig sein, Ihre Partitionen beim Booten
@@ -217,10 +232,6 @@ zu mounten. Selektieren Sie auch <c>Virtual memory</c>,
 
 <pre caption="Auswählen der benötigten Dateisysteme">
 File systems ---&gt;
-  Pseudo Filesystems ---&gt;
-    [*] /proc file system support
-    [*] Virtual memory file system support (former shm fs)
-
 <comment>(Wählen Sie eine oder mehrere der folgenden Optionen, wie von Ihrem System benötigt, aus.)</comment>
   &lt;*&gt; Second extended fs support
   &lt;*&gt; Ext3 journalling file system support
@@ -232,6 +243,12 @@ File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
+
+<comment>(Aktivieren Sie GPT-Partitions-Label-Unterstützung, falls Sie das vorhin verwendet haben)</comment>
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+      ...
+      [*] EFI GUID Partition support
 </pre>
 
 <p>
@@ -241,7 +258,7 @@ Sie folgende Optionen im Kernel:
 
 <pre caption="Auswählen von Treibern, notwendig für PPPoE">
 Device Drivers ---&gt;
-  Networking device Support ---&gt;
+  Network device support ---&gt;
     &lt;*&gt; PPP (point-to-point protocol) support
     &lt;*&gt;   PPP support for async serial ports
     &lt;*&gt;   PPP support for sync tty ports
@@ -352,8 +369,63 @@ Kernels zu ersetzen.
   # <i>cp arch/<keyval id="arch-sub"/>/boot/bzImage /boot/<keyval id="kernel-name"/></i>
 </pre>
 
+</body>
+</subsection>
+<subsection id="initramfs">
+<title>(Optional) Bauen eines initramfs</title>
+<body>
+
 <p>
-Fahren Sie nun mit <uri link="#kernel_modules">Kernelmodule</uri> fort.
+Wenn Sie ein spezifisches Partitions-Layout verwenden, bei dem wichtige
+Dateisystemorte (wie <path>/usr</path> oder <path>/var</path>) auf separaten
+Partitionen liegen, dann müssen Sie ein initramfs aufsetzen, so dass diese
+Partitionen gemountet werden können, bevor sie benötigt werden.
+</p>
+
+<p>
+Ohne ein initramfs laufen Sie Gefahr, dass das System nicht richtig booten wird,
+da die Tools, die dafür verantwortlich sind, dass die Dateisysteme gemountet
+werden, Informationen benötigen, die auf gerade diesen Dateisystemen liegen.
+Ein initramfs zieht alle benötigten Dateien in ein Archiv, das dann direkt nach
+dem Booten des Kernels benutzt wird, aber noch bevor die Kontrolle an das
+<c>init</c> Tool übergeben wird. Skripte im initramfs sorgen dann dafür, dass
+die Partitionen richtig gemountet werden, bevor das System mit dem Booten
+fortfährt.
+</p>
+
+<p>
+Um ein initramfs zu installieren, installieren Sie zunächst <c>genkernel</c>
+und lassen Sie es dann ein initramfs für Sie generieren.
+</p>
+
+<pre caption="Bauen eines initramfs">
+# <i>emerge genkernel</i>
+# <i>genkernel --install initramfs</i>
+</pre>
+
+<p>
+Wenn Sie bestimmte Funktionalitäten in dem initramfs benötigen, wie bspw. lvm
+oder raid, verwenden Sie die entsprechenden Optionen für genkernel. Siehe
+<c>genkernel --help</c> für weitere Informationen, oder das nächste Beispiel,
+welches Unterstützung für LVM und Software-RAID (mdadm) aktiviert:
+</p>
+
+<pre caption="Bauen eines initramfs mit Unterstützung für LVM und Software-RAID">
+# <i>genkernel --lvm --mdadm --install initramfs</i>
+</pre>
+
+<p>
+Das initramfs wird unter <path>/boot</path> gespeichert. Sie können die Datei
+durch einfaches Auflisten der mit <path>initramfs</path> beginnenden Dateien
+finden:
+</p>
+
+<pre caption="Finden der initramfs-Datei">
+# <i>ls /boot/initramfs*</i>
+</pre>
+
+<p>
+Fahren Sie nun mit den <uri link="#kernel_modules">Kernelmodulen</uri> fort.
 </p>
 
 </body>
