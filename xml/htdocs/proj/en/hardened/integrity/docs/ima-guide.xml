@@ -1,0 +1,404 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/integrity/docs/ima-guide.xml,v 1.1 2012/10/01 20:22:35 swift Exp $ -->
+
+<guide lang="en">
+<title>Using Integrity Measurement Architecture in Gentoo</title>
+
+<author title="Author">
+  <mail link="swift"/>
+</author>
+
+<abstract>
+The Linux IMA subsystem is responsible for calculating the hashes
+of files and programs before they are loaded, and supports reporting
+on the hashes and validate if they adhere to a predefined list. In this
+guide, we introduce this technology and how it can be enabled in Gentoo
+Linux.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/3.0 -->
+<license version="3.0" />
+
+<version>1</version>
+<date>2012-10-01</date>
+
+<chapter>
+<title>Purpose of IMA</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+The Linux IMA subsystem introduces hooks within the Linux kernel to
+support measuring the integrity of files that are loaded (including
+application code) before it is executed or mmap()ed to memory. The
+measured value (hash) is then registered in a log that can be consulted
+by administrators.
+</p>
+
+<p>
+To support proven integrity of the files, the IMA subsystem can interact
+with the TPM chip within the system to protect the registered hashes from
+tampering by a rogue administrator or application.
+The IMA subsystem, as already supported by the Linux kernel, supports
+<e>reporting</e> on the hashes of files and commands ran by privileged
+accounts (and more if you create your own measurement policies).
+</p>
+
+<p>
+With a pending patch, called the <e>IMA appraisal patch</e>, 
+the IMA subsystem can even register the measured
+value as an extended attribute, and after subsequent measurement(s) 
+validate this extended attribute against the measured value and refuse
+to load the file (or execute the application) if the hash does not match.
+In that case, the IMA subsystem allows files and applications to be loaded
+if the hashes match (and will save the updated hash if the file is modified)
+but refuse to load it if it doesn't. This provides some protection against
+offline tampering of the files.
+</p>
+
+<p>
+Protection of the extended attribute itself is handled by EVM, which is
+discussed in a separate document.
+</p>
+
+</body>
+</section>
+<section>
+<title>Trusted Computing Base</title>
+<body>
+
+<p>
+The Trusted Computing Base defines a set of rules that a properly,
+integrity-protected system should adhere to. The Linux IMA subsystem supports
+this set of rules through the <e>ima_tcb</e> policy. This policy roughly states
+that all files read by root (applications, but also regular files, libraries,
+...) need to be measured and registered against the security log, as well as
+application binaries when ran (or mmap()ed for execution) by any user.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Setting up IMA</title>
+<section>
+<title>Kernel configuration</title>
+<body>
+
+<p>
+First of all, enable the IMA subsystem in the Linux kernel configuration.
+IMA is supported in the main tree since 2.6.30, and it is expected that
+the IMA appraisal patch (needed when you want the system to stop if it
+detects an off-line modified file) will hit the main tree with Linux
+3.7.
+</p>
+
+<pre caption="Linux kernel configuration for IMA">
+CONFIG_INTEGRITY=y
+CONFIG_IMA=y
+CONFIG_IMA_MEASURE_PCR_IDX=10
+CONFIG_IMA_AUDIT=y
+CONFIG_IMA_LSM_RULES=y
+
+<comment># Only if the IMA appraisal patch is available:</comment>
+CONFIG_INTEGRITY_SIGNATURE=y
+CONFIG_IMA_APPRAISE=y
+</pre>
+
+</body>
+</section>
+<section>
+<title>Bootloader configuration</title>
+<body>
+
+<p>
+Next, configure the bootloader to enable the TCB policy:
+</p>
+
+<pre caption="Bootloader configuration to enable IMA TCB policy">
+kernel /boot/vmlinuz root=/dev/vda1 <i>ima_tcb</i>
+
+<comment># Only if IMA appraisal patch is enabled:</comment>
+kernel /boot/vmlinuz root=/dev/vda1 <i>ima_tcb ima_appraise=enforce ima_appraise_tcb</i>
+</pre>
+
+<p>
+However, at the first boot, you will need to set <c>ima_appraise=fix</c>
+instead. Otherwise, your system will surely refuse to boot as no preregistered
+values are available.
+</p>
+
+</body>
+</section>
+<section>
+<title>Enable security file system</title>
+<body>
+
+<p>
+Finally, have the security file system mounted (if this is not already the
+case):
+</p>
+
+<pre caption="Mounting the security file system">
+~# <i>mount | grep securityfs</i>
+securityfs on /sys/kernel/security type securityfs (rw,nosuid,nodev,noexec,relatime)
+</pre>
+
+</body>
+</section>
+<section>
+<title>Enable i_version mount option</title>
+<body>
+
+<p>
+Mount all file systems with the <e>i_version</e> support (which, sadly, means
+you need to mount it with <c>iversion</c> mount option - without the
+underscore). This is needed for IMA to detect changes on files, allowing it to
+remeasure the hash of the file.
+</p>
+
+<pre caption="Enabling i_version on all mounts">
+<comment># Example for a single partition, in /etc/fstab:</comment>
+/dev/vda1  /  ext4  noatime<i>,iversion</i>  1 2
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Using the IMA subsystem</title>
+<section>
+<title>Reading the integrity log</title>
+<body>
+
+<p>
+To read the integrity log as registered by the IMA subsystem, look at the
+<path>/sys/kernel/security/ima/ascii_runtime_measurements</path> file:
+</p>
+
+<pre caption="Reading the ascii_runtime_measurements file">
+~# <i>head /sys/kernel/security/ima/ascii_runtime_measurements</i>
+10 0000000000000000000000000000000000000000 ima 0000000000000000000000000000000000000000 boot_aggregate
+10 dc99efa590c706a43792618dde88c590a6942ec7 ima fe932380326d7c51d17bac45f5d1c9f576d19f6c /sbin/init
+10 fcaa7505fae70096cb9b6a8ec06ec6400b756aa2 ima 0ddd922ae7f5a6dcf788438db1fe47e9a0641e6d ld-2.15.so
+10 501975777299919e49aac14c262d6388eae38e79 ima 8d848950517879e0dd77dc9602cad294b454b05a ld.so.cache
+10 195830b88844db79ff994c57022e94da416c486c ima 28c4c3a750f5679b9092b2bb2f98c5f745e422f7 libselinux.so.1
+10 770cd9400624a5678da388545df1297e182ccd10 ima 03db374e3cedeaf987db096a034bccb5c5bcf3d0 libc-2.15.so
+10 82d48ec5fc4344a18a9d17ec1bf1bd8511f99fe6 ima e801e50a5f3ce7acc6e39b1133bce04120c46c35 libpcre.so.1.0.1
+10 81ee4b0bbf4f5b464135e3e3d79b2777bceaa236 ima 869231d2fe1afe45ab284adc0efe5a237509bc7f libdl-2.15.so
+10 67f5923749dfa266721ee0d6ad038102297c1170 ima e5f8003967fd31f295a115e1d682dd0169b34592 config
+10 24894f13a9def8dd2f18838f04fde4becc184fc3 ima 032663452ea268aa1528bd466dda3738bb59a8f2 libsepol.so.1
+
+# <i>tail /sys/kernel/security/ima/ascii_runtime_measurements</i>
+10 d326b31af052ccb96366e4eceaf34f72450dad4b ima def5be24075b501b43ad864bd7141e9db1c55611 /bin/getfattr
+10 3059f6b0f617256e42617c9e09ad13f6a1eb8f24 ima 7bb939b0ef153dce06098fd5460e31e6052af2a8 libattr.so.1.1.0
+10 8c4a121f6e06255e5a8cf3cb94f526412273d661 ima 66abbade137338df340767b0f54a5da6b132e4c6 /usr/bin/touch
+10 a8cf6c5215be6e6a2de12f50f09b8dbb12af04c8 ima f0cf26d5095d4b19134d8aaf71763bc8f53cd6a9 /usr/bin/zgrep
+10 60fd90cb2d9581feb241a165f2f83e03abe46c24 ima 8c72350a7d0774c25f8b36b49327d874dec19ea5 test.te
+10 e359faf89a81e105d3d470d6a513b3ee201376de ima 6b4aa6f895bcdd34ace49879f9a25c1c12197317 /usr/bin/tail
+10 4a91a89db743704b7afe599528156823b48f192b ima 34228b5c748b13b6d51168c88b0ddf10467a5979 mtab
+10 5c4c4ffec7487c7fb07a9946238efc3c2957075e ima 41ec2f49dd9c025bcf2810f17bf69de80d45bec1 user_u
+10 0000000000000000000000000000000000000000 ima 0000000000000000000000000000000000000000 utmp
+10 6582662a747e7bcf051a6b83367c69c854d5d414 ima 38ccbf9330666831e0b4d9dafa2d5364a3449e1d /usr/bin/du
+</pre>
+
+<p>
+What you see here are:
+</p>
+
+<ul>
+  <li>
+    The PCR (Process Control Register) in which the values are registered. This
+    only makes sense if you have a TPM chip in use.
+  </li>
+  <li>
+    The hash of the hash of the file + filename (padded with null characters to
+    the length of 255 bytes)
+  </li>
+  <li>
+    The subsystem that registered the integrity value (ima in our case)
+  </li>
+  <li>
+    The hash of the file content
+  </li>
+</ul>
+
+<p>
+Unless you have asked for a different hashing algorithm, the default one will be
+used which is the SHA-1 hashing algorithm.
+</p>
+
+</body>
+</section>
+<section>
+<title>Registering the file hashes for the system</title>
+<body>
+
+<note>
+This is only applicable when IMA appraisal patch is enabled.
+</note>
+
+<p>
+First boot with the <c>ima_appraise=fix</c> boot option. This will allow the
+system to boot up even when no (or wrong) hashes are registered.
+</p>
+
+<p>
+Next, have all files on the file system checked and their value stored as an
+extended attribute. This is done by reading all files that the default appraisal
+policy will check and take action on (which is all root-owned files).
+</p>
+
+<pre caption="Registering all files">
+~# <i>find / \( -fstype rootfs -o ext4 -type f \) -uid 0 -exec head -n 1 '{}' > /dev/null \;</i>
+</pre>
+
+<p> 
+When done, you should be able to see the registered hash value as an extended
+attribute:
+</p>
+
+<pre caption="Viewing the extended attributes of a file">
+~# <i>getfattr -m . -d /boot/grub/grub.conf</i>
+# file: grub.conf
+security.selinux="root:object_r:boot_t"
+security.ima="76a0d787be14d84dfe3cf3930ac3da38bb389464"
+</pre>
+
+<p>
+Finally, reboot with <c>ima_appraise=enforce</c>. The system should now run with
+appraisal enabled, causing the system to validate the hash against the stored
+value before using it. If it doesn't match, then the file is not loaded. If it
+does match, and afterwards the file is modified, then the new hash is stored as
+extended attribute.
+</p>
+
+<p>
+You can check if this works by booting with <c>ima_appraise=off</c> and changing
+the contents of a root-owned file (or the value of the extended attribute) and
+reboot with <c>ima_appraise=enforce</c>.
+</p>
+
+</body>
+</section>
+<section>
+<title>Using immutable files</title>
+<body>
+
+<p>
+The IMA appraisal code also supports immutable files. In this case, an RSA-key
+based signature is taken of the file and stored in the extended attribute. The
+private key is used to sign the files, whereas the public key is used to verify
+the signature. This provides additional protection against tampering as the
+private key does not need to be available on the system while its running (only
+during the initial marking).
+</p>
+
+<p>
+To sign such immutable files (like kernel modules and application code), you
+need to use the <c>evmctl</c> command provided by the
+<path>sys-admin/ima-evm-utils</path> package:
+</p>
+
+<pre caption="Signing files to mark them as immutable">
+~# <i>find /lib/modules -name "*.ko" -type f -uid 0 -exec \
+   evmctl sign --imasig '{}' /path/to/rsa_private.pem \;</i>
+</pre>
+
+<p>
+This private key can be generated first using <c>openssl</c>:
+</p>
+
+<pre caption="Generating a public/private key pair">
+<comment># Unencrypted private key (non-protected):</comment>
+~# <i>openssl genrsa -out rsa_private.pem 1024</i>
+
+<comment># Or encrypted private key (password-protected):</comment>
+~# <i>openssl genrsa -des3 -out rsa_private.pem 1024</i>
+
+<comment># Public key:</comment>
+~# <i>openssl rsa -pubout -in rsa_private.pem -out rsa_public.pem</i>
+</pre>
+
+<p>
+To allow the IMA subsystem to validate the signature, you will need to load the
+public key onto the IMA keyring. You will need to do this every time the system
+boots, so it makes sense to do so within an initramfs (early in the boot
+process):
+</p>
+
+<pre caption="Loading the public key in the IMA keyring">
+~# <i>ima_id=`keyctl newring _ima @u`</i>
+~# <i>evmctl import /path/to/rsa_public.pem $ima_id</i>
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Working with a TPM</title>
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+When your system supports TPM, the measured hash values can be registered
+against the TPM to provide protection against tampering. In that case, the list
+provided by <path>ascii_runtime_measurements</path> can be validated against the
+TPM chip. This is done by <e>extending</e> a register inside the TPM chip with
+the measured value.
+</p>
+
+<p>
+When a register is extended, its value (which is a hash) is appended with the
+value that it is extended with. Then, this new code is hashed again and stored
+in the register. Because of this operation, the entire measured list can be
+replayed by a third party and the final result validated against the value in
+the TPM chip. If it matches, then the list surely comes from this system, and
+hasn't been tampered by a rogue administrator or application.
+</p>
+
+</body>
+</section>
+<section>
+<title>Taking ownership</title>
+<body>
+
+<p>
+Before you can use the TPM on your device, you need to take ownership. This will
+allow you to set a specific password (to manage the TPM) and is needed for the
+TPM to generate specific keys it'll use later.
+</p>
+
+<p>
+To take ownership, first install the <path>app-crypt/tpm-tools</path> package.
+Then start the <e>tcsd</e> service and execute <c>tpm_takeownership -u -z</c>.
+</p>
+
+<pre caption="Taking ownership of the TPM">
+~# <i>emerge app-crypt/tpm-tools</i>
+~# <i>rc-service tcsd start</i>
+~# <i>tpm_takeownership -u -z</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>Validating the measured list</title>
+<body>
+
+<p>
+$$$TODO
+</p>
+
+</body>
+</section>
+</chapter>
+
+</guide>
