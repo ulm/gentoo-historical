@@ -1,0 +1,139 @@
+2011-04-27	Magnus Granberg		<zorry@gentoo.org>
+
+		* configure.ac		Add --enable-esp.  Add -fno-stack-protector
+		to stage1_cflags.
+		* gcc/configure.ac		Add --enable-esp and check if SSP works.
+		Define ENABLE_ESP ENABLE_ESP_SSP.
+		Check if we support crtbeginP and define ENABLE_CRTBEGINP.
+
+--- a/configure.ac	2011-11-29 22:36:43.000000000 +0100
++++ b/configure.ac	2011-12-07 23:29:26.125712475 +0100
+@@ -419,6 +419,25 @@ if test "${ENABLE_LIBADA}" != "yes" ; th
+   noconfigdirs="$noconfigdirs gnattools"
+ fi
+ 
++# Check whether --enable-esp was given and target have the support.
++AC_ARG_ENABLE([esp],
++[AS_HELP_STRING([--enable-esp],
++		[Enable Stack protector, Position independent executable as 
++		 default if we have suppot for it when compiling
++		 and link with -z relro and -z now as default.
++		 Linux targets supported i*86, x86_64, x86_x32, powerpc, powerpc64, ia64 and arm.])],
++[
++  case $target in
++    i?86*-*-linux* | x86_??*-*-linux* | powerpc-*-linux* | powerpc64-*-linux* | arm*-*-linux* | ia64-*-linux*)
++      enable_espf=yes
++      ;;
++    *)
++      AC_MSG_WARN([*** --enable-esp is not supported on this $target target.])
++      ;;
++  esac
++])
++AC_SUBST([enable_esp])
++
+ AC_ARG_ENABLE(libssp,
+ [AS_HELP_STRING([--enable-libssp], [build libssp directory])],
+ ENABLE_LIBSSP=$enableval,
+@@ -3211,6 +3230,11 @@ if test "$GCC" = yes -a "$ENABLE_BUILD_W
+   CFLAGS="$saved_CFLAGS"
+ fi
+ 
++# Disable -fstack-protector on stage1
++if test x$enable_esp = xyes; then
++  stage1_cflags="$stage1_cflags -fno-stack-protector"
++fi
++
+ AC_SUBST(stage1_cflags)
+ 
+ # Enable --enable-checking in stage1 of the compiler.
+--- a/gcc/configure.ac	2011-11-18 11:52:32.000000000 +0100
++++ b/gcc/configure.ac	2012-10-02 17:39:15.649526241 +0200
+@@ -5130,6 +5237,88 @@ if test x"${LINKER_HASH_STYLE}" != x; th
+                                          [The linker hash style])
+ fi
+ 
++# --------------
++# Esp checks
++# --------------
++
++# Check whether --enable-esp was given and target have the support.
++AC_ARG_ENABLE([esp],
++[AS_HELP_STRING([--enable-esp],
++		[Enable Stack protector, Position independent executable and
++		 Fortify_sources as default if we have suppot for it when compiling
++		 and link -z now as default.
++		 Linux targets supported i*86, x86_64, x86_x32, powerpc, powerpc64, ia64 and arm])],
++	set_enable_espf=$enableval,
++	set_enable_espf=no)
++if test $set_enable_esp = yes ; then
++  AC_MSG_CHECKING(if $target support esp)
++if test $set_enable_esp = yes ; then
++  case "$target" in
++    i?86*-*-linux* | x86_??*-*-linux* | powerpc-*-linux* | powerpc64-*-linux* | arm*-*-linux* | ia64-*-linux*)
++      enable_esp=yes
++      AC_DEFINE(ENABLE_ESP, 1,
++        [Define if your target support esp and you have enable it.])
++      ;;
++    *)
++      enable_esp=no
++      ;;
++  esac
++else
++ enable_esp=no
++fi
++AC_MSG_RESULT($enable_esp)
++fi
++AC_SUBST([enable_esp])
++if test $enable_esp = yes ; then
++
++ AC_MSG_CHECKING(if we can default to use -fstack-protector-all)
++  ssp_link_test=no
++  if test x$gcc_cv_libc_provides_ssp = xyes && test x$set_have_as_tls = xyes; then
++    if $EGREP '^ 	*#[ 	]*define[ 	]+__UCLIBC__[ 	]+1' \
++       $target_header_dir/features.h > /dev/null; then
++      if test -f $target_header_dir/bits/uClibc_config.h && \
++	 $EGREP '^ 	*#[ 	]*define[ 	]+__UCLIBC_SUBLEVEL__[ 	]+([3-9][2-9]|[4-9][0-9])' \
++	 $target_header_dir/bits/uClibc_config.h > /dev/null && \
++	 $EGREP '^ 	*#[ 	]*define[ 	]+__UCLIBC_HAS_TLS__[ 	]+1' \
++	 $target_header_dir/bits/uClibc_config.h > /dev/null; then
++	ssp_link_test=yes
++      fi
++    else
++      ssp_link_test=yes
++    fi
++  fi
++  if test x$ssp_link_test=xyes ; then
++    saved_CFLAGS="$CFLAGS"
++    CFLAGS="$CFLAGS -O2 -fstack-protector-all -Werror"
++    AC_TRY_LINK(,,
++      [AC_MSG_RESULT([yes]); enable_esp_ssp=yes],
++      [AC_MSG_RESULT([no]); enable_esp_ssp=no])
++    CFLAGS="$saved_CFLAGS"
++  else
++    [AC_MSG_RESULT([no]); enable_esp_ssp=no]
++  fi
++  if test $enable_esp_ssp = yes ; then
++    AC_DEFINE(ENABLE_ESP_SSP, 1,
++      [Define if your compiler will default to use -fstack-protector-all.])
++  fi
++  AC_MSG_CHECKING(checking for crtbeginP.o support)
++    if test x$enable_esp = xyes ; then
++      case "$target" in
++	ia64*-*-linux*)
++          enable_crtbeginP=no ;;
++        *-*-linux*)
++          if test x$gcc_cv_ld_pie = xyes && test x$lt_cv_prog_compiler_static_works = xyes; then
++            enable_crtbeginP=yes
++            AC_DEFINE(ENABLE_CRTBEGINP, 1,
++              [Define if your compiler will support crtbeginP.])
++     	  fi
++          ;;
++  	*) enable_crtbeginP=no ;;
++      esac
++    fi
++  AC_MSG_RESULT($enable_crtbeginP)
++fi
++
+ # Configure the subdirectories
+ # AC_CONFIG_SUBDIRS($subdirs)
+ 
