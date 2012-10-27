@@ -12,6 +12,13 @@ import StringIO
 from xml.etree import cElementTree as etree
 
 
+# Directories --project skips (relative to the path passed as last argument).
+PROJECT_SKIP_DIRS = frozenset([
+        'pr/events',
+        'userrel/soc/archives',
+        ])
+
+
 def getretired(userinfo_path):
     """Generator yielding names of retired devs from userinfo.xml."""
     userinfo = etree.parse(userinfo_path)
@@ -59,7 +66,10 @@ def project(userinfo_path, path):
         print >>sys.stderr, "Couldn't parse userinfo.xml (%s)" % (e,)
         return 1
 
-    for root, dirs, files in os.walk(path):
+    for root, dirs, files in os.walk(path, topdown=True):
+        if root[len(path):].lstrip('/') in PROJECT_SKIP_DIRS:
+            del dirs[:]
+            continue
         for file in files:
             if file.endswith('.xml'):
                 fpath = root + '/' + file
@@ -195,6 +205,7 @@ def main(args):
                        for f in [herds, metadata_dev, metadata_herd, project])
     if len(args) == 1:
         usage()
+        return 1
     try:
         subcommand = subcommands[args[1]]
     except KeyError:
