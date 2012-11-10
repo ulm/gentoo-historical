@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-x86+amd64-bootloader.xml,v 1.18 2012/02/26 08:35:15 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-x86+amd64-bootloader.xml,v 1.19 2012/11/10 13:39:21 ago Exp $ -->
 
 <sections>
 
-<version>8</version>
-<date>2011-05-09</date>
+<version>12</version>
+<date>2012-09-11</date>
 
 <section>
 <title>La scelta</title>
@@ -195,20 +195,10 @@ altro editor):
 </pre>
 
 <p>
-Ora è necessario modificare <path>grub.conf</path>. Seguono due possibili
-<path>grub.conf</path> per l'esempio di partizione usato in questa guida. Viene
-però analizzato a fondo solo il primo <path>grub.conf</path>. Assicurarsi di
+Ora è necessario modificare <path>grub.conf</path>. Assicurarsi di
 personalizzare le impostazioni indicando la propria immagine del kernel e il
 proprio initrd.
 </p>
-
-<ul>
-  <li>
-    Il primo <path>grub.conf</path> è per chi non ha usato <c>genkernel</c> per
-    compilare il kernel
-  </li>
-  <li>Il secondo <path>grub.conf</path> è per chi ha usato <c>genkernel</c></li>
-</ul>
 
 <note>
 Grub assegna i dispositivi prendendo la configurazione dal BIOS. Se si cambiano
@@ -224,7 +214,7 @@ linea <c>kernel</c> perchè JFS ha bisogno di esaminare il proprio log prima di
 concedere il mount in scrittura.
 </note>
 
-<pre caption="grub.conf per utenti che non hanno usato genkernel">
+<pre caption="Esempio di grub.conf">
 <comment># Quale opzione viene avviata in modo predefinito. 0 è la prima, 1 la seconda, ecc.</comment>
 default 0
 <comment># Quanti secondi attenedere prima di avviare l'opzione predefinita.</comment>
@@ -250,21 +240,17 @@ makeactive
 chainloader +1
 </pre>
 
-<pre caption="grub.conf per utenti che hanno usato genkernel">
-default 0
-timeout 30
-splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+<p>
+Se durante la compilazione del kernel, hai optato per includere un initramfs all'avvio, 
+sarà necessario modificare la configurazione facendo riferimento a questo initramfs e 'dire'
+dove la tua reale radice è situata
+</p>
 
+<pre caption="Esempio di GRUB per initramfs">
 title Gentoo Linux <keyval id="kernel-version"/>
 root (hd0,0)
-kernel /boot/<keyval id="genkernel-name"/> real_root=/dev/sda3
-initrd /boot/<keyval id="genkernel-initrd"/>
-
-<comment># Solo nel caso si desideri il dual-boot</comment>
-title Windows XP
-rootnoverify (hd0,5)
-makeactive
-chainloader +1
+kernel /boot/<keyval id="kernel-version"/> <i>real_</i>root=/dev/sda3
+<i>initrd /boot/<keyval id="genkernel-initrd"/></i>
 </pre>
 
 <p>
@@ -484,14 +470,9 @@ preferito (in questo manuale si usa <c>nano</c>) e creare il file.
 
 <p>
 In una sezione precedente, si è chiesto di ricordare il nome dell'immagine del
-kernel che si è creata. Nel prossimo esempio di <path>lilo.conf</path> si usa lo
-schema di partizioni dell'esempio precedente. Ci sono due sezioni separate:
+kernel che si è creata. Nel prossimo esempio di <path>lilo.conf</path> si usa il
+l'esempio di partizionamento.
 </p>
-
-<ul>
-  <li>Una per chi non ha usato <c>genkernel</c> per compilare il kernel</li>
-  <li>Una per chi ha usato <c>genkernel</c> per compilare il kernel</li>
-</ul>
 
 <p>
 E' importante assicurarsi di usare la <e>propria</e> immagine del kernel ed
@@ -510,7 +491,6 @@ prompt                    <comment># Dà possibilità di selezionare un'altra se
 delay=50                  <comment># Aspetta 5 secondi prima di avviare la scelta predefinita</comment>
 default=gentoo            <comment># Passato il timeout, avvia la sezione "gentoo"</comment>
 
-<comment># Per utenti che non hanno usato genkernel</comment>
 image=/boot/<keyval id="kernel-name"/>
   label=gentoo            <comment># Il nome dato alla sezione</comment>
   read-only               <comment># Avvio con root di sola lettura. Non modificare!</comment>
@@ -522,13 +502,6 @@ image=/boot/<keyval id="kernel-name"/>
   root=/dev/sda3          <comment># Posizione del filesystem root</comment>
   append="init=/bin/bb"   <comment># Lancia la shell statica di emergenza</comment>
 
-<comment># Per utenti che hanno usato genkernel</comment>
-image=/boot/<keyval id="genkernel-name"/>
-  label=gentoo
-  read-only
-  append="real_root=/dev/sda3"
-  initrd=/boot/<keyval id="genkernel-initrd"/>
-
 <comment># Le due righe seguenti sono necessarie solo per un dualboot con Windows.</comment>
 <comment># In questo caso, Windows è in /dev/sda6.</comment>
 other=/dev/sda6
@@ -539,6 +512,20 @@ other=/dev/sda6
 Se si usa uno schema di partizioni differente e/o un'immagine del kernel non
 uguale a quella dell'esempio, cambiare le impostazioni di conseguenza.
 </note>
+
+<p>
+Se durante la compilazione del kernel, hai optato per includere un initramfs all'avvio, 
+sarà necessario modificare la configurazione facendo riferimento a questo initramfs e 'dire'
+dove la tua reale radice è situata:
+</p>
+
+<pre caption="Esempio di LILO per initramfs">
+image=/boot/<keyval id="kernel-name"/>
+  label=gentoo
+  read-only
+  <i>append="real_root=/dev/sda3"</i>
+  <i>initrd=/boot/<keyval id="genkernel-initrd" /></i>
+</pre>
 
 <p>
 Se si ha bisogno di inserire ulteriori opzioni al kernel, si deve aggiungere
@@ -645,6 +632,21 @@ Le sezioni che cominciano con <c>image</c> definiscono le varie immagini
 avviabili. Ogni immagine ha una semplice <c>label</c>, un filesystem di
 <c>root</c>, e monta il filesystem di root <c>read-only</c>.
 </p>
+
+<p>
+Se durante la compilazione del kernel, hai optato per includere un initramfs all'avvio, 
+sarà necessario modificare la configurazione facendo riferimento a questo initramfs e 'dire'
+dove la tua reale radice è situata:
+</p>
+
+<pre caption="Esempio di ELILO per initramfs">
+image=/vmlinuz
+	label=Gentoo
+	<i>initrd=/<keyval id="genkernel-initrd"/></i>
+	<i>append = "initrd=<keyval id="genkernel-initrd"/>
+real_root=/dev/sda2 console=ttyS0,9600"</i>
+	read-only
+</pre>
 
 <p>
 Una volta terminata la configurazione è sufficiente eseguire <c>elilo
