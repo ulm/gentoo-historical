@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-policies.xml,v 1.6 2012/10/07 08:11:24 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-policies.xml,v 1.7 2012/11/11 08:31:30 swift Exp $ -->
 
 <sections>
-<version>6</version>
-<date>2012-10-07</date>
+<version>7</version>
+<date>2012-11-11</date>
 
 <section>
 <title>SELinux Policy Language</title>
@@ -526,7 +526,8 @@ with a character.
 <p>
 If you want to create additional roles on the system, you first need to create a
 SELinux module that creates that role, together with its main domain. Below is a
-very simple example for a database administration role.
+very simple example for a database administration role, which we will offer
+through the <c>sec-policy/selinux-dbadm</c> package later:
 </p>
 
 <pre caption="Example dbadm_r and dbadm_t definition">
@@ -547,11 +548,22 @@ userdom_base_user_template(dbadm)
 # dbadm local policy
 #
 
-# Allow the user to interact with SEPostgreSQL (SELinux-supporting PostgreSQL)
-postgresql_role(dbadm_r, dbadm_t)
+allow dbadm_t self:capability { dac_override dac_read_search sys_ptrace };
 
-# Grant the user admin rights on PostgreSQL (process-wise)
-postgresql_admin(dbadm_t, dbadm_r)
+files_dontaudit_search_all_dirs(dbadm_t)
+files_delete_generic_locks(dbadm_t)
+files_list_var(dbadm_t)
+
+selinux_get_enforce_mode(dbadm_t)
+
+logging_send_syslog_msg(dbadm_t)
+
+userdom_dontaudit_search_user_home_dirs(dbadm_t)
+
+optional_policy(`
+	# Grant the user admin rights on PostgreSQL (process-wise)
+	postgresql_admin(dbadm_t, dbadm_r)
+')
 </pre>
 
 <p>
@@ -578,7 +590,7 @@ SELinux users, but here we'll create an additional SELinux user for the role.
 
 <pre caption="Grant a user the role">
 <comment>(Create a new SELinux user called dbadm_u and grant it the dbadm_r role)</comment>
-# <i>semanage user -a -R "dbadm_r system_r" dbadm_u</i>
+# <i>semanage user -a -R "staff_r dbadm_r system_r" dbadm_u</i>
 </pre>
 
 <p>
@@ -588,6 +600,15 @@ Next map the user(s) to this SELinux user.
 <pre caption="Mapping a set of users to the dbadm_u user">
 # <i>semanage login -a -s dbadm_u david</i>
 # <i>semanage login -a -s dbadm_u laura</i>
+</pre>
+
+<p>
+Also load in the following policy to support transitioning to the dbadm_r role
+for the staff_r role:
+</p>
+
+<pre caption="Allow transitioning to dbadm_r">
+dbadm_role_change(staff_r)
 </pre>
 
 <p>
@@ -621,6 +642,13 @@ restart</c>.
 By using <c>sudo</c> correctly, you can grant the user full administrative
 rights over a daemon (including editing files) with a much lower risk of the
 user elevating his rights to a more system-wide administrative role.
+</p>
+
+<p>
+The idea behind this approach is that the user stays within its main domain
+(like <c>staff_t</c>) but is allowed to perform administrative actions through
+<c>sudo</c> which allow him to (temporarily) transition to the <c>dbadm_r</c>
+role.
 </p>
 
 </body>
