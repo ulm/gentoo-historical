@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-policies.xml,v 1.5 2012/10/08 09:35:10 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-policies.xml,v 1.6 2012/11/13 17:41:51 nimiux Exp $ -->
 
 <sections>
-<version>6</version>
-<date>2012-10-07</date>
+<version>7</version>
+<date>2012-11-11</date>
 
 <section>
 <title>Lenguaje de la directriz SELinux</title>
@@ -453,11 +453,11 @@ interfaz que añade exactamente lo que necesita y nada más.
   <ti>_domtrans</ti>
   <ti>dmesg_domtrans(dominio)</ti>
   <ti>
-    Concede a un dominio ejecutar y transicionar privilegios hacia el
-    nuevo dominio. Esta interfaz es comúnmente utilizada para permitir
-    a los dominios de aplicación transicionar a otros dominios. En el
-    ejemplo dado, dmesg se ejecuta con los privilegios del dominio
-    dmesg_t.
+    Concede a un dominio privilegios de ejecución y de realizar
+    transiciones hacia el nuevo dominio. Esta interfaz es comúnmente
+    utilizada para permitir a los dominios de aplicación realizar
+    transiciones a otros dominios. En el ejemplo dado, dmesg se ejecuta
+    con los privilegios del dominio dmesg_t.
   </ti>
 </tr>
 <tr>
@@ -465,10 +465,11 @@ interfaz que añade exactamente lo que necesita y nada más.
   <ti>netutils_run(dominio, rol)</ti>
   <ti>
     Concede a un rol y dominio dados los derechos para ejecutar y
-    transicionar hacia el dominio dado. Esto se concede normalmente a
-    roles y dominios de usuario (ya existentes) y les da un conjunto de
-    privilegios necesarios para interactuar de forma segura con el
-    nuevo dominio (interactivo), tal como el acceso a un terminal.
+    realizar transiciones hacia el dominio dado. Esto se concede
+    normalmente a roles y dominios de usuario (ya existentes) y les
+    da un conjunto de privilegios necesarios para interactuar de forma
+    segura con el nuevo dominio (interactivo), tal como el acceso a un
+    terminal.
   </ti>
 </tr>
 <tr>
@@ -476,11 +477,12 @@ interfaz que añade exactamente lo que necesita y nada más.
   <ti>xserver_role(rol, dominio)</ti>
   <ti>
     Permite al rol y dominio dado los permisos necesarios para
-    transicionar e interactuar con el dominio dado. Esta interfaz se
-    ha mejorado con los privilegios para interactuar más extensamente
-    con el dominio (y sus ficheros correspondientes), y normalmente
-    se asigna a los nuevos usuarios y roles creados en la directriz
-    (en lugar de mejorar los dominios y roles de usuario ya existentes).
+    realizar transiciones e interactuar con el dominio dado.
+    Esta interfaz se ha mejorado con los privilegios para interactuar
+    de forma más amplia con el dominio (y sus ficheros correspondientes),
+    y normalmente se asigna a los nuevos usuarios y roles creados en la
+    directriz (en lugar de mejorar los dominios y roles de usuario ya
+    existentes).
   </ti>
 </tr>
 <tr>
@@ -567,10 +569,11 @@ sencillo: únicamente utilice caracteres (<c>[a-z]</c>) y números
 <body>
 
 <p>
-Si quiere crear roles adicionales en el sistema, en primer lugar
+Si desea crear roles adicionales en el sistema, en primer lugar
 necesitará crear un módulo SELinux que cree ese rol, a la vez que su
 dominio principal. Abajo se muestra un ejemplo muy sencillo para un
-rol de administración de base de datos.
+rol de administración de base de datos, el cual ofrecemos a
+través del paquete <c>sec-policy/selinux-dbadm</c>:
 </p>
 
 <pre caption="Ejemplo de definición de dbadm_r y dbadm_t">
@@ -591,11 +594,23 @@ userdom_base_user_template(dbadm)
 # Directriz local dbadm
 #
 
-# Permitir al usuario interactuar con SEPostgreSQL (PostgreSQL con soporte SELinux)
-postgresql_role(dbadm_r, dbadm_t)
+allow dbadm_t self:capability { dac_override dac_read_search sys_ptrace };
 
-# Conceder al usuario los derechos de administración sobre (estando al tanto de los procesos)
-postgresql_admin(dbadm_t, dbadm_r)
+files_dontaudit_search_all_dirs(dbadm_t)
+files_delete_generic_locks(dbadm_t)
+files_list_var(dbadm_t)
+
+selinux_get_enforce_mode(dbadm_t)
+
+logging_send_syslog_msg(dbadm_t)
+
+userdom_dontaudit_search_user_home_dirs(dbadm_t)
+
+optional_policy(`
+       # Conceder al usuario privilegios de administración de PostgreSQL
+       # (sobre todos los procesos)
+       postgresql_admin(dbadm_t, dbadm_r)
+')
 </pre>
 
 <p>
@@ -623,7 +638,7 @@ crearemos un usuario SELinux adicional para el rol.
 
 <pre caption="Conceder el rol al usuario">
 <comment>(Crear un nuevo usuario SELinux llamado dbadm_u y concederle el rol dbadm_r)</comment>
-# <i>semanage user -a -R "dbadm_r system_r" dbadm_u</i>
+# <i>semanage user -a -R "staff_r dbadm_r system_r" dbadm_u</i>
 </pre>
 
 <p>
@@ -633,6 +648,15 @@ Lo siguiente es mapear el usuario(s) a este usuario SELinux.
 <pre caption="Mapear un conjunto de usuarios al usuario dbadm_u">
 # <i>semanage login -a -s dbadm_u david</i>
 # <i>semanage login -a -s dbadm_u laura</i>
+</pre>
+
+<p>
+También se debe cargar la siguiente directriz para dar soporte a
+la transición hacia el rol dbadm_r para el rol staff_r:
+</p>
+
+<pre caption="Permitir la transición a dbadm_r">
+dbadm_role_change(staff_r)
 </pre>
 
 <p>
@@ -667,12 +691,19 @@ Con este ajuste, el usuario puede ejecutar simplemente
 Utilizando <c>sudo</c> de forma correcta, se puede conceder al usuario
 derechos completos de administración sobre un demonio (incluyendo la
 edición de ficheros), con bastante menor riesgo de que el usuario pueda
-escalar sus derechos a un rol administrativo con más privilegios sobre
+escalar sus privilegios a un rol administrativo con más privilegios sobre
 el sistema.
+</p>
+
+<p>
+La idea detrás de este enfoque es que el usuario permanezca en su dominio
+principal (como <c>staff_t</c>) pero que se le permita realizar acciones
+administrativas a través de <c>sudo</c> lo que le permite (de forma
+temporal) realizar la transición al rol <c>dbadm_r</c>.
+role.
 </p>
 
 </body>
 </subsection>
 </section>
-
 </sections>
