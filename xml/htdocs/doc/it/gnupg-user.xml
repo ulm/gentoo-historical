@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/gnupg-user.xml,v 1.26 2012/11/05 15:13:00 ago Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/gnupg-user.xml,v 1.27 2012/11/14 10:08:47 ago Exp $ -->
 
 <guide lang="it">
 <title>Guida Utente a GnuPG in Gentoo</title>
@@ -13,6 +13,9 @@
 </author>
 <author title="Redazione">
   <mail link="swift@gentoo.org">Sven Vermeulen</mail>
+</author>
+<author title="Redazione">
+  <mail link="nightmorph"/>
 </author>
 <author title="Traduzione">
 <mail link="myzelf@omnidea.it">Gilberto De Faveri</mail>
@@ -39,8 +42,8 @@ la comunicazione sicura.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
  <license/>
 
-<version>3</version>
-<date>2012-10-31</date>
+<version>4</version>
+<date>2012-11-13</date>
 
 <chapter>
 <title>Introduzione</title>
@@ -113,19 +116,19 @@ This is free software, and you are welcome to redistribute it
 under certain conditions. See the file COPYING for details.
 
 Please select what kind of key you want:
-   (1) DSA and ElGamal (default)
-   (2) DSA (sign only)
-   (4) ElGamal (sign and encrypt)
-   (5) RSA (sign only)
+   (1) RSA and RSA (default)
+   (2) DSA and Elgamal
+   (3) DSA (sign only)
+   (4) RSA (sign only)
    Your selection? <i>1</i>
 </pre>
 
 <p>
 A questo punto c'è la possibilità di scegliere il tipo di chiave desiderata. La
-maggior parte degli utenti può utilizzare il tipo predefinito, DSA e ElGamal. Il
+maggior parte degli utenti può utilizzare il tipo predefinito, RSA e RSA. Il
 punto successivo riguarda la scelta della dimensione della chiave: una chiave
 grande è preferibile, ma è importante ricordare di non utilizzare chiavi più
-grandi di 2048 con DSA/ElGamal. Normalmente 1024 è più che sufficiente per il
+grandi di 2048 con DSA/ElGamal. Normalmente 2048 è più che sufficiente per il
 normale uso con le email.
 </p>
 
@@ -136,12 +139,9 @@ non scade mai, oppure con scadenza pari a 2 o 3 anni.
 </p>
 
 <pre caption = "Scelta della dimensione della chiave" >
-DSA keypair will have 1024 bits.
-About to generate a new ELG-E keypair.
-              minimum keysize is  768 bits
-              default keysize is 1024 bits
-    highest suggested keysize is 2048 bits
-    What keysize do you want? (1024) <i>2048</i>
+RSA keypair will have 1024 bits.
+RSA keys may be between 1024 and 4096 bits long.
+    What keysize do you want? (2048) <i>2048</i>
 Requested keysize is 2048 bits
 Please specify how long the key should be valid.
          0 = key does not expire
@@ -162,9 +162,7 @@ dovrebbe inserire qui il proprio indirizzo mail originale.
 <pre caption = "Inserimento informazioni utente" >
 Is this correct (y/n)? <i>y</i>
 
-You need a User-ID to identify your key; the software constructs the user id
-from Real Name, Comment and Email Address in this form:
-"Heinrich Heine (Der Dichter) &lt;heinrichh@duesseldorf.de&gt;"
+GnuPG needs to construct a user ID to identify your key.
 
 Real name: <i>John Doe</i>
 Email address: <i>john@nowhere.someplace.flick</i>
@@ -482,7 +480,7 @@ la chiave, ovviamente, se l'agente GPG è configurato per permetterlo.
 </p>
 
 <p>
-Gentoo fornisce diversi agenti GPG. Il pacchetto <c>app-crypt/gpg-agent</c> può
+Gentoo fornisce diversi agenti GPG. Il pacchetto <c>app-crypt/gnupg</c> può
 essere considerato come punto di riferimento, e sarà pertanto illustrato in
 questo documento.
 </p>
@@ -490,31 +488,42 @@ questo documento.
 </body>
 </section>
 <section>
-<title>Installazione e configurazione di gpg-agent e pinentry</title>
+<title>Configurazione di gpg-agent e pinentry</title>
 <body>
 
 <p>
-E' necessario installare <c>gnupg-1.9.*</c>, il quale include <c>gpg-agent</c>,
-e <c>pinentry</c>. Quest'ultimo è l'applicazione di supporto che l'agente gpg
-usa per richiedere la password in una finestra grafica. Propone tre possibilità:
-può far comparire una finestra facendo uso delle gtk+, Qt, o librerie curses
-(dipende dalle USE flag impostate durante l'installazione).
+GnuPG include <c>gpg-agent</c> e <c>pinentry</c>. <c>pinentry</c> è l'applicazione usata da 
+gpg-agent per chiedere la password della chiave tramite una finestra grafica.
+Esso è disponibile in tre versioni: gtk+, Qt, o curses (il tutto dipende dalla tua
+configurazione in <path>/etc/portage/make.conf</path>).
 </p>
 
-<pre caption="Installare gpg-agent e pinentry">
-# <i>emerge \>=gnupg-1.9.20 pinentry</i>
+<p>
+Se hai installato <c>pinentry</c> con più opzioni puoi scegliere la predefinita attraverso 
+<c>eselect-pinentry</c>:
+</p>
+
+<pre caption="Switching popup windows">
+# <i>eselect pinentry list</i>
+Available pinentry implementations:
+  [1]   pinentry-gtk-2 *
+  [2]   pinentry-curses
+  [3]   pinentry-qt4
+
+# <i>eselect pinentry set 1</i>
 </pre>
 
+
 <p>
-Bisogna però creare il file <path>~/.gnupg/gpg-agent.conf</path> e inserire le
+Ora bisogna creare il file <path>~/.gnupg/gpg-agent.conf</path> e inserire le
 seguenti righe che definiscono il tempo di timeout predefinito della password
 (ad esempio 30 minuti) e l'applicazione che deve essere chiamata quando viene
-richiesta la password per la prima volta (ad esempio la versione Qt di
+richiesta la password per la prima volta (ad esempio la versione gtk+ di
 pinentry).
 </p>
 
 <pre caption="Modificare ~/.gnupg/gpg-agent.conf">
-pinentry-program /usr/bin/pinentry-qt
+pinentry-program /usr/bin/pinentry-gtk-2
 no-grab
 default-cache-ttl 1800
 </pre>
