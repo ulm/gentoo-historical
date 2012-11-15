@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-system.xml,v 1.40 2010/11/17 21:20:29 scen Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/it/handbook/hb-install-system.xml,v 1.41 2012/11/15 15:06:44 ago Exp $ -->
 
 <sections>
 
@@ -14,8 +14,8 @@ un sistema base Gentoo a disposizione dell'utente. Il capitolo descrive come
 arrivare a questo punto.
 </abstract>
 
-<version>10.5</version>
-<date>2010-11-14</date>
+<version>17</version>
+<date>2012-07-24</date>
 
 <section>
 <title>Effettuare il chroot</title>
@@ -26,15 +26,16 @@ arrivare a questo punto.
 <p>
 Per scaricare rapidamente i codici sorgenti si raccomanda di selezionare un
 mirror rapido. Portage cerca in <path>make.conf</path> la variabile
-GENTOO_MIRRORS ed utilizza i mirror in essa elencati. E' possibile visitare la
+GENTOO_MIRRORS ed utilizza i mirror in essa elencati. È possibile visitare la
 <uri link="/main/en/mirrors.xml">lista dei mirror</uri> e cercare uno o più
-mirror vicini, visto che spesso sono i più rapidi. E' anche possibile utilizzare
+mirror vicini, visto che spesso sono i più rapidi. È anche possibile utilizzare
 uno strumento chiamato <c>mirrorselect</c> che fornisce una comoda interfaccia
-per la seleziona dei mirror preferiti.
+per la selezione dei mirror preferiti. Ci si può semplicemente posizionare sui
+mirror di propria scelta e premere spazio.
 </p>
 
 <pre caption="Utilizzo di mirrorselect per la variabile GENTOO_MIRRORS">
-# <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+# <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/portage/make.conf</i>
 </pre>
 
 <p>
@@ -47,12 +48,12 @@ SYNC, <c>mirrorselect</c> può farlo automaticamente:
 </p>
 
 <pre caption="Selezionare un mirror rsync tramite mirrorselect">
-# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/portage/make.conf</i>
 </pre>
 
 <p>
 Dopo l'esecuzione di <c>mirrorselect</c> è consigliabile controllare la
-correttezza delle impostazioni in <path>/mnt/gentoo/etc/make.conf</path> !
+correttezza delle impostazioni in <path>/mnt/gentoo/etc/portage/make.conf</path> !
 </p>
 
 <note>
@@ -87,19 +88,26 @@ per la rete.
 </body>
 </subsection>
 <subsection test="not(func:keyval('arch')='IA64')">
-<title>Montare i filesystem /proc e /dev</title>
+<title>Montare i filesystem necessari</title>
 <body>
+
+<p>
+Di qui a poco sarà necessario spostare la directory root nella nuova posizione.
+Per essere certi che il nuovo ambiente funzionerà correttamente, occorre rendere
+disponibili alcuni file system anche in tale nuova posizione.
+</p>
 
 <p>
 Montare il filesystem <path>/proc</path> su <path>/mnt/gentoo/proc</path> per
 permettere all'installazione di usare informazioni fornite dal kernel anche
-dentro l'ambiente in cui si è effettuato il chroot; montare poi tramite bind il
-filesystem <path>/dev</path>.
+dentro l'ambiente in cui si è effettuato il chroot; montare poi tramite bind i
+filesystem <path>/dev</path> e <path>/sys</path>.
 </p>
 
 <pre caption="Montare /proc e /dev">
 # <i>mount -t proc none /mnt/gentoo/proc</i>
-# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
 </pre>
 
 </body>
@@ -109,16 +117,16 @@ filesystem <path>/dev</path>.
 <body>
 
 <p>
-Montare il filesystem <path>/proc</path> su <path>/mnt/gentoo/proc</path> per
-permettere all'installazione di usare informazioni fornite dal kernel anche
-dentro l'ambiente in cui si è effettuato il chroot; montare poi tramite bind i
+Montare il filesystem <path>/proc</path> su <path>/mnt/gentoo/proc</path> in
+modo da consentire al processo di installazione di utilizzare le informazioni
+fornite dal kernel nel contesto dell'ambiente di chroot, quindi montare anche i
 filesystem <path>/dev</path> e <path>/sys</path>.
 </p>
 
 <pre caption="Montare /proc /sys e /dev">
 # <i>mount -t proc none /mnt/gentoo/proc</i>
-# <i>mount -o bind /dev /mnt/gentoo/dev</i>
-# <i>mount -o bind /sys /mnt/gentoo/sys</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
 </pre>
 
 </body>
@@ -155,6 +163,12 @@ ambiente. Nella terza si caricano queste variabili in memoria, con
 <p>
 Congratulazioni! Da adesso si è dentro Gentoo Linux. Naturalmente la fine
 dell'installazione è lontana, poiché mancano ancora alcune sezioni.
+</p>
+
+<p>
+Qualora dovesse sorgere l'esigenza di accedere all'ambiente di chroot da
+un altro terminale, tutto ciò che occorre fare è eseguire nuovamente le
+instruzioni precedenti.
 </p>
 
 </body>
@@ -213,7 +227,7 @@ profilo.
 </p>
 
 <p>
-E' possibile visualizzare l'attuale profilo in uso con il seguente comando:
+È possibile visualizzare l'attuale profilo in uso con il seguente comando:
 </p>
 
 <pre caption="Visualizzare il profilo del sistema">
@@ -225,14 +239,9 @@ Available profile symlink targets:
 </pre>
 
 <p>
-Il profilo predefinito implementa un sistema basato su kernel 2.6. Questa è
-l'impostazione raccomandata, ma è anche possibile scegliere un altro profilo.
-</p>
-
-<p>
-Per alcune architetture sono inoltre disponibili i sottoprofili <c>desktop</c> e
-<c>server</c>. L'esecuzione di <c>eselect profile list</c> visualizzerà tutti i
-profili disponibili.
+Come è possibile notare, per alcune architetture sono inoltre disponibili i
+sottoprofili <c>desktop</c> e <c>server</c>. L'esecuzione di
+<c>eselect profile list</c> visualizzerà tutti i profili disponibili.
 </p>
 
 <p>
@@ -310,15 +319,15 @@ sistema ottimizzato per GNOME.
 Le impostazioni predefinite di <c>USE</c> sono conservate nel file
 <path>make.defaults</path> del proprio profilo. I file
 <path>make.defaults</path> si trovano nella directory a cui punta il
-collegamento <path>/etc/make.profile</path> e in tutte le directory a pari
+collegamento <path>/etc/portage/make.profile</path> e in tutte le directory a pari
 livello. L'impostazione <c>USE</c> che viene utilizzata in modo predefinito è la
 somma di tutte le <c>USE</c> in tutti i file <path>make.defaults</path>. Ciò che
-viene specificato in <path>/etc/make.conf</path> è considerato rispetto alle
+viene specificato in <path>/etc/portage/make.conf</path> è considerato rispetto alle
 impostazioni predefinite. Se si aggiunge qualcosa alle impostazioni di
 <c>USE</c>, lo si aggiunge anche all'elenco predefinito. Se si rimuove qualcosa
 dalle impostazioni di <c>USE</c> (mettendo un trattino davanti), lo si rimuove
 anche dall'elenco predefinito (se era nell'elenco). Non si deve cambiare
-<e>mai</e> nessuna opzione nella directory <path>/etc/make.profile</path>; in
+<e>mai</e> nessuna opzione nella directory <path>/etc/portage/make.profile</path>; in
 quanto essa viene sovrascritta quando si aggiorna Portage.
 </p>
 
@@ -331,7 +340,7 @@ descrizione completa sulle flag USE disponibili si trova in
 
 <pre caption="Vedere le flag USE disponibili">
 # <i>less /usr/portage/profiles/use.desc</i>
-<comment>(E' possibile muoversi con le frecce ed uscire con 'q')</comment>
+<comment>(È possibile muoversi con le frecce ed uscire con 'q')</comment>
 </pre>
 
 <p>
@@ -339,52 +348,13 @@ Come esempio ecco le impostazioni di <c>USE</c> per un sistema basato su KDE, e
 con il supporto per DVD, ALSA e masterizzazione CD:
 </p>
 
-<pre caption="Si apre /etc/make.conf">
-# <i>nano -w /etc/make.conf</i>
+<pre caption="Si apre /etc/portage/make.conf">
+# <i>nano -w /etc/portage/make.conf</i>
 </pre>
 
 <pre caption="Impostazioni USE">
 USE="-gtk -gnome qt4 kde dvd alsa cdr"
 </pre>
-
-</body>
-</subsection>
-<subsection>
-<title>Opzionale: Localizzazioni di glibc</title>
-<body>
-
-<p>
-Di solito su un sistema vengono utilizzate le impostazioni per una o due lingue.
-E' possibile specificare le lingue di cui si ha bisogno nel file
-<path>/etc/locale.gen</path>.
-</p>
-
-<pre caption="Modificare /etc/locale.gen">
-# <i>nano -w /etc/locale.gen</i>
-</pre>
-
-<p>
-L'esempio che segue imposta l'utilizzo dell'inglese (Stati Uniti) e tedesco
-(Germania) con i relativi formati di carattere (come UTF-8):
-</p>
-
-<pre caption="Specificare le lingue">
-en_US ISO-8859-1
-en_US.UTF-8 UTF-8
-de_DE ISO-8859-1
-de_DE@euro ISO-8859-15
-</pre>
-
-<p>
-Il passo successivo consiste nell'esecuzione di <c>locale-gen</c>. Il comando
-genera il supporto per tutte le lingue specificate nel file
-<path>/etc/locale.gen</path>.
-</p>
-
-<p>
-Continuare ora con la <uri link="?part=1&amp;chap=7">Configurazione del
-Kernel</uri>.
-</p>
 
 </body>
 </subsection>
