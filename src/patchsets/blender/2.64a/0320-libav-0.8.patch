@@ -1,0 +1,278 @@
+Index: blender-2.64a/intern/audaspace/ffmpeg/AUD_FFMPEGWriter.cpp
+===================================================================
+--- blender-2.64a.orig/intern/audaspace/ffmpeg/AUD_FFMPEGWriter.cpp
++++ blender-2.64a/intern/audaspace/ffmpeg/AUD_FFMPEGWriter.cpp
+@@ -38,6 +38,8 @@ extern "C" {
+ #include <libavcodec/avcodec.h>
+ #include <libavformat/avformat.h>
+ #include <libavformat/avio.h>
++#include <libavutil/mathematics.h>
++#include <libavutil/avstring.h>
+ #include "ffmpeg_compat.h"
+ }
+ 
+@@ -55,10 +57,15 @@ AUD_FFMPEGWriter::AUD_FFMPEGWriter(std::
+ {
+ 	static const char* formats[] = { NULL, "ac3", "flac", "matroska", "mp2", "mp3", "ogg", "wav" };
+ 
+-	if(avformat_alloc_output_context2(&m_formatCtx, NULL, formats[format], filename.c_str()))
+-		AUD_THROW(AUD_ERROR_FFMPEG, context_error);
++	m_formatCtx = avformat_alloc_context();
++	if (!m_formatCtx) AUD_THROW(AUD_ERROR_FFMPEG, context_error);
+ 
+-	m_outputFmt = m_formatCtx->oformat;
++	av_strlcpy(m_formatCtx->filename, filename.c_str(), sizeof(m_formatCtx->filename));
++	m_outputFmt = m_formatCtx->oformat = av_guess_format(formats[format], filename.c_str(), NULL);
++	if (!m_outputFmt) {
++		avformat_free_context(m_formatCtx);
++		AUD_THROW(AUD_ERROR_FFMPEG, context_error);
++	}
+ 
+ 	switch(codec)
+ 	{
+Index: blender-2.64a/intern/audaspace/ffmpeg/AUD_FFMPEGReader.cpp
+===================================================================
+--- blender-2.64a.orig/intern/audaspace/ffmpeg/AUD_FFMPEGReader.cpp
++++ blender-2.64a/intern/audaspace/ffmpeg/AUD_FFMPEGReader.cpp
+@@ -237,13 +237,7 @@ AUD_FFMPEGReader::~AUD_FFMPEGReader()
+ {
+ 	avcodec_close(m_codecCtx);
+ 
+-	if(m_aviocontext)
+-	{
+-		avformat_close_input(&m_formatCtx);
+-		av_free(m_aviocontext);
+-	}
+-	else
+-		av_close_input_file(m_formatCtx);
++	avformat_close_input(&m_formatCtx);
+ }
+ 
+ int AUD_FFMPEGReader::read_packet(void* opaque, uint8_t* buf, int buf_size)
+Index: blender-2.64a/intern/ffmpeg/ffmpeg_compat.h
+===================================================================
+--- blender-2.64a.orig/intern/ffmpeg/ffmpeg_compat.h
++++ blender-2.64a/intern/ffmpeg/ffmpeg_compat.h
+@@ -32,7 +32,6 @@
+ 
+ #include <libavcodec/avcodec.h>
+ #include <libavutil/rational.h>
+-#include <libavutil/opt.h>
+ 
+ #if (LIBAVFORMAT_VERSION_MAJOR > 52) || ((LIBAVFORMAT_VERSION_MAJOR >= 52) && (LIBAVFORMAT_VERSION_MINOR >= 101))
+ #define FFMPEG_HAVE_PARSE_UTILS 1
+Index: blender-2.64a/source/blender/blenkernel/intern/writeffmpeg.c
+===================================================================
+--- blender-2.64a.orig/source/blender/blenkernel/intern/writeffmpeg.c
++++ blender-2.64a/source/blender/blenkernel/intern/writeffmpeg.c
+@@ -43,6 +43,7 @@
+ #include <libavcodec/avcodec.h>
+ #include <libavutil/rational.h>
+ #include <libavutil/samplefmt.h>
++#include <libavutil/opt.h>
+ #include <libswscale/swscale.h>
+ 
+ #include "MEM_guardedalloc.h"
+@@ -459,7 +460,7 @@ static AVStream *alloc_video_stream(Rend
+ 
+ 	error[0] = '\0';
+ 
+-	st = av_new_stream(of, 0);
++	st = avformat_new_stream(of, NULL);
+ 	if (!st) return NULL;
+ 
+ 	/* Set up the codec context */
+@@ -525,24 +526,11 @@ static AVStream *alloc_video_stream(Rend
+ 	}
+ 	
+ 	/* Keep lossless encodes in the RGB domain. */
+-	if (codec_id == CODEC_ID_HUFFYUV) {
++	if (codec_id == CODEC_ID_HUFFYUV || codec_id == CODEC_ID_FFV1) {
+ 		/* HUFFYUV was PIX_FMT_YUV422P before */
+ 		c->pix_fmt = PIX_FMT_RGB32;
+ 	}
+ 
+-	if (codec_id == CODEC_ID_FFV1) {
+-#ifdef FFMPEG_FFV1_ALPHA_SUPPORTED
+-		if (rd->im_format.planes == R_IMF_PLANES_RGBA) {
+-			c->pix_fmt = PIX_FMT_RGB32;
+-		}
+-		else {
+-			c->pix_fmt = PIX_FMT_BGR0;
+-		}
+-#else
+-		c->pix_fmt = PIX_FMT_RGB32;
+-#endif
+-	}
+-
+ 	if (codec_id == CODEC_ID_QTRLE) {
+ 		if (rd->im_format.planes == R_IMF_PLANES_RGBA) {
+ 			c->pix_fmt = PIX_FMT_ARGB;
+@@ -572,7 +560,7 @@ static AVStream *alloc_video_stream(Rend
+ 
+ 	set_ffmpeg_properties(rd, c, "video");
+ 	
+-	if (avcodec_open(c, codec) < 0) {
++	if (avcodec_open2(c, codec, NULL) < 0) {
+ 		BLI_strncpy(error, IMB_ffmpeg_last_error(), error_size);
+ 		return NULL;
+ 	}
+@@ -656,15 +644,6 @@ static AVStream *alloc_audio_stream(Rend
+ }
+ /* essential functions -- start, append, end */
+ 
+-static void ffmpeg_dict_set_int(AVDictionary **dict, const char *key, int value)
+-{
+-	char buffer[32];
+-
+-	BLI_snprintf(buffer, sizeof(buffer), "%d", value);
+-
+-	av_dict_set(dict, key, buffer, 0);
+-}
+-
+ static int start_ffmpeg_impl(struct RenderData *rd, int rectx, int recty, ReportList *reports)
+ {
+ 	/* Handle to the output file */
+@@ -713,13 +692,13 @@ static int start_ffmpeg_impl(struct Rend
+ 	of->oformat = fmt;
+ 	of->packet_size = rd->ffcodecdata.mux_packet_size;
+ 	if (ffmpeg_audio_codec != CODEC_ID_NONE) {
+-		ffmpeg_dict_set_int(&opts, "muxrate", rd->ffcodecdata.mux_rate);
++		av_opt_set_int(of, "muxrate", rd->ffcodecdata.mux_rate, 0);
+ 	}
+ 	else {
+-		av_dict_set(&opts, "muxrate", "0", 0);
++		av_opt_set_int(of, "muxrate", 0, 0);
+ 	}
+ 
+-	ffmpeg_dict_set_int(&opts, "preload", (int)(0.5 * AV_TIME_BASE));
++	av_opt_set_int(of, "preload", (int)(0.5*AV_TIME_BASE), 0);
+ 
+ 	of->max_delay = (int)(0.7 * AV_TIME_BASE);
+ 
+@@ -1152,23 +1131,23 @@ IDProperty *BKE_ffmpeg_property_add(Rend
+ 	}
+ 
+ 	switch (o->type) {
+-		case FF_OPT_TYPE_INT:
+-		case FF_OPT_TYPE_INT64:
++		case AV_OPT_TYPE_INT:
++		case AV_OPT_TYPE_INT64:
+ 			val.i = FFMPEG_DEF_OPT_VAL_INT(o);
+ 			idp_type = IDP_INT;
+ 			break;
+-		case FF_OPT_TYPE_DOUBLE:
+-		case FF_OPT_TYPE_FLOAT:
++		case AV_OPT_TYPE_DOUBLE:
++		case AV_OPT_TYPE_FLOAT:
+ 			val.f = FFMPEG_DEF_OPT_VAL_DOUBLE(o);
+ 			idp_type = IDP_FLOAT;
+ 			break;
+-		case FF_OPT_TYPE_STRING:
++		case AV_OPT_TYPE_STRING:
+ 			val.string.str = (char *)"                                                                               ";
+ 			val.string.len = 80;
+ /*		val.str = (char *)"                                                                               ";*/
+ 			idp_type = IDP_STRING;
+ 			break;
+-		case FF_OPT_TYPE_CONST:
++		case AV_OPT_TYPE_CONST:
+ 			val.i = 1;
+ 			idp_type = IDP_INT;
+ 			break;
+@@ -1229,10 +1208,10 @@ int BKE_ffmpeg_property_add_string(Rende
+ 	if (!o) {
+ 		return 0;
+ 	}
+-	if (param && o->type == FF_OPT_TYPE_CONST) {
++	if (param && o->type == AV_OPT_TYPE_CONST) {
+ 		return 0;
+ 	}
+-	if (param && o->type != FF_OPT_TYPE_CONST && o->unit) {
++	if (param && o->type != AV_OPT_TYPE_CONST && o->unit) {
+ 		p = my_av_find_opt(&c, param, o->unit, 0, 0);	
+ 		if (p) {
+ 			prop = BKE_ffmpeg_property_add(rd, (char *) type, p - c.av_class->option, o - c.av_class->option);
+Index: blender-2.64a/source/blender/imbuf/intern/anim_movie.c
+===================================================================
+--- blender-2.64a.orig/source/blender/imbuf/intern/anim_movie.c
++++ blender-2.64a/source/blender/imbuf/intern/anim_movie.c
+@@ -486,8 +486,8 @@ static int startffmpeg(struct anim *anim
+ 		return -1;
+ 	}
+ 
+-	if (av_find_stream_info(pFormatCtx) < 0) {
+-		av_close_input_file(pFormatCtx);
++	if (avformat_find_stream_info(pFormatCtx, NULL)<0) {
++		avformat_close_input(&pFormatCtx);
+ 		return -1;
+ 	}
+ 
+@@ -508,7 +508,7 @@ static int startffmpeg(struct anim *anim
+ 		}
+ 
+ 	if (videoStream == -1) {
+-		av_close_input_file(pFormatCtx);
++		avformat_close_input(&pFormatCtx);
+ 		return -1;
+ 	}
+ 
+@@ -1042,7 +1042,6 @@ static ImBuf *ffmpeg_fetchibuf(struct an
+ 				ret = av_seek_frame(anim->pFormatCtx, 
+ 				                    -1,
+ 				                    pos, AVSEEK_FLAG_BYTE);
+-				av_update_cur_dts(anim->pFormatCtx, v_st, dts);
+ 			}
+ 			else {
+ 				av_log(anim->pFormatCtx, AV_LOG_DEBUG, 
+Index: blender-2.64a/source/blender/imbuf/intern/indexer.c
+===================================================================
+--- blender-2.64a.orig/source/blender/imbuf/intern/indexer.c
++++ blender-2.64a/source/blender/imbuf/intern/indexer.c
+@@ -758,7 +758,7 @@ static IndexBuildContext *index_ffmpeg_c
+ 		return NULL;
+ 	}
+ 
+-	if (av_find_stream_info(context->iFormatCtx) < 0) {
++	if (avformat_find_stream_info(context->iFormatCtx, NULL) < 0) {
+ 		av_close_input_file(context->iFormatCtx);
+ 		MEM_freeN(context);
+ 		return NULL;
+Index: blender-2.64a/source/blender/imbuf/intern/util.c
+===================================================================
+--- blender-2.64a.orig/source/blender/imbuf/intern/util.c
++++ blender-2.64a/source/blender/imbuf/intern/util.c
+@@ -293,9 +293,9 @@ static int isffmpeg(const char *filename
+ 		return 0;
+ 	}
+ 
+-	if (av_find_stream_info(pFormatCtx) < 0) {
++	if (avformat_find_stream_info(pFormatCtx, NULL)<0) {
+ 		if (UTIL_DEBUG) fprintf(stderr, "isffmpeg: av_find_stream_info failed\n");
+-		av_close_input_file(pFormatCtx);
++		avformat_close_input(&pFormatCtx);
+ 		return 0;
+ 	}
+ 
+@@ -327,7 +327,7 @@ static int isffmpeg(const char *filename
+ 		return 0;
+ 	}
+ 
+-	if (avcodec_open(pCodecCtx, pCodec) < 0) {
++	if (avcodec_open2(pCodecCtx, pCodec, NULL)<0) {
+ 		av_close_input_file(pFormatCtx);
+ 		return 0;
+ 	}
+Index: blender-2.64a/source/gameengine/VideoTexture/VideoFFmpeg.cpp
+===================================================================
+--- blender-2.64a.orig/source/gameengine/VideoTexture/VideoFFmpeg.cpp
++++ blender-2.64a/source/gameengine/VideoTexture/VideoFFmpeg.cpp
+@@ -170,7 +170,7 @@ int VideoFFmpeg::openStream(const char *
+ 	if (avformat_open_input(&formatCtx, filename, inputFormat, formatParams)!=0)
+ 		return -1;
+ 
+-	if (av_find_stream_info(formatCtx)<0) 
++	if (avformat_find_stream_info(formatCtx, formatParams)<0)
+ 	{
+ 		av_close_input_file(formatCtx);
+ 		return -1;
