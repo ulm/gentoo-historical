@@ -1,0 +1,190 @@
+Index: blender-2.63a/build_files/scons/tools/Blender.py
+===================================================================
+--- blender-2.63a.orig/build_files/scons/tools/Blender.py
++++ blender-2.63a/build_files/scons/tools/Blender.py
+@@ -270,6 +270,8 @@ def setup_syslibs(lenv):
+         syslibs += Split(lenv['BF_SDL_LIB'])
+     if not lenv['WITH_BF_STATICOPENGL']:
+         syslibs += Split(lenv['BF_OPENGL_LIB'])
++    if lenv['WITH_BF_BULLET']:
++	syslibs += Split(lenv['BF_BULLET_LIB'])
+     if lenv['OURPLATFORM'] in ('win32-vc', 'win32-mingw','linuxcross', 'win64-vc', 'win64-mingw'):
+         syslibs += Split(lenv['BF_PTHREADS_LIB'])
+     if lenv['WITH_BF_COLLADA']:
+Index: blender-2.63a/doc/doxygen/Doxyfile
+===================================================================
+--- blender-2.63a.orig/doc/doxygen/Doxyfile
++++ blender-2.63a/doc/doxygen/Doxyfile
+@@ -617,8 +617,7 @@ INPUT                  = doxygen.main \
+                          doxygen.intern \
+                          doxygen.extern \
+                          ../../source \
+-                         ../../intern \
+-                         ../../extern/bullet2
++                         ../../intern
+ 
+ # This tag can be used to specify the character encoding of the source files 
+ # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is 
+Index: blender-2.63a/extern/CMakeLists.txt
+===================================================================
+--- blender-2.63a.orig/extern/CMakeLists.txt
++++ blender-2.63a/extern/CMakeLists.txt
+@@ -28,10 +28,6 @@ remove_strict_flags()
+ 
+ add_subdirectory(colamd)
+ 
+-if(WITH_BULLET)
+-	add_subdirectory(bullet2)
+-endif()
+-
+ if(WITH_MOD_CLOTH_ELTOPO)
+ 	add_subdirectory(eltopo)
+ endif()
+Index: blender-2.63a/intern/smoke/CMakeLists.txt
+===================================================================
+--- blender-2.63a.orig/intern/smoke/CMakeLists.txt
++++ blender-2.63a/intern/smoke/CMakeLists.txt
+@@ -26,10 +26,10 @@
+ set(INC
+ 	intern
+ 	../memutil
+-	../../extern/bullet2/src
+ )
+ 
+ set(INC_SYS
++	/usr/include/bullet
+ 	${PNG_INCLUDE_DIR}
+ 	${ZLIB_INCLUDE_DIRS}
+ )
+Index: blender-2.63a/intern/smoke/SConscript
+===================================================================
+--- blender-2.63a.orig/intern/smoke/SConscript
++++ blender-2.63a/intern/smoke/SConscript
+@@ -13,7 +13,7 @@ if env['WITH_BF_OPENMP']:
+     defs += ' PARALLEL=1'
+ 
+ incs += ' ' + env['BF_PNG_INC'] + ' ' + env['BF_ZLIB_INC'] 
+-incs += ' intern ../../extern/bullet2/src ../memutil ../guardealloc '
++incs += ' intern /usr/include/bullet ../memutil ../guardealloc '
+ 
+ if env['WITH_BF_FFTW3']:
+     defs += ' WITH_FFTW3'
+Index: blender-2.63a/source/blender/blenkernel/CMakeLists.txt
+===================================================================
+--- blender-2.63a.orig/source/blender/blenkernel/CMakeLists.txt
++++ blender-2.63a/source/blender/blenkernel/CMakeLists.txt
+@@ -241,8 +241,8 @@ if(WITH_AUDASPACE)
+ endif()
+ 
+ if(WITH_BULLET)
+-	list(APPEND INC
+-		../../../extern/bullet2/src
++    list(APPEND INC_SYS
++		/usr/include/bullet
+ 	)
+ 	add_definitions(-DUSE_BULLET)
+ endif()
+Index: blender-2.63a/source/blender/blenkernel/SConscript
+===================================================================
+--- blender-2.63a.orig/source/blender/blenkernel/SConscript
++++ blender-2.63a/source/blender/blenkernel/SConscript
+@@ -9,7 +9,7 @@ incs += ' ../blenlib ../blenfont ../make
+ incs += ' ../render/extern/include #/intern/decimation/extern ../makesrna'
+ incs += ' ../imbuf ../ikplugin ../avi #/intern/elbeem/extern ../nodes ../modifiers'
+ incs += ' #/intern/iksolver/extern ../blenloader'
+-incs += ' #/extern/bullet2/src'
++incs += ' /usr/include/bullet'
+ incs += ' #/intern/opennl/extern #/intern/bsp/extern'
+ incs += ' ../gpu #/extern/glew/include'
+ incs += ' ../bmesh'
+Index: blender-2.63a/source/gameengine/BlenderRoutines/CMakeLists.txt
+===================================================================
+--- blender-2.63a.orig/source/gameengine/BlenderRoutines/CMakeLists.txt
++++ blender-2.63a/source/gameengine/BlenderRoutines/CMakeLists.txt
+@@ -23,7 +23,6 @@ set(INC
+ 	../../blender/makesdna
+ 	../../blender/makesrna
+ 	../../blender/windowmanager
+-	../../../extern/bullet2/src
+ 	../../../intern/container
+ 	../../../intern/guardedalloc
+ 	../../../intern/moto/include
+@@ -33,6 +32,7 @@ set(INC
+ 
+ set(INC_SYS
+ 	${PTHREADS_INCLUDE_DIRS}
++	/usr/include/bullet
+ )
+ 
+ set(SRC
+Index: blender-2.63a/source/gameengine/Converter/CMakeLists.txt
+===================================================================
+--- blender-2.63a.orig/source/gameengine/Converter/CMakeLists.txt
++++ blender-2.63a/source/gameengine/Converter/CMakeLists.txt
+@@ -49,7 +49,6 @@ set(INC
+ 	../../blender/makesdna
+ 	../../blender/makesrna
+ 	../../blender/windowmanager
+-	../../../extern/bullet2/src
+ 	../../../intern/container
+ 	../../../intern/guardedalloc
+ 	../../../intern/moto/include
+@@ -60,6 +59,7 @@ set(INC
+ set(INC_SYS
+ 	${PTHREADS_INCLUDE_DIRS}
+ 	/usr/include/eigen3
++	/usr/include/bullet
+ 
+ )
+ 
+Index: blender-2.63a/source/gameengine/Ketsji/CMakeLists.txt
+===================================================================
+--- blender-2.63a.orig/source/gameengine/Ketsji/CMakeLists.txt
++++ blender-2.63a/source/gameengine/Ketsji/CMakeLists.txt
+@@ -242,9 +242,11 @@ endif()
+ 
+ if(WITH_BULLET)
+ 	list(APPEND INC
+-		../../../extern/bullet2/src
+ 		../Physics/Bullet
+ 	)
++	list(APPEND INC_SYS
++		/usr/include/bullet
++	)
+ 	add_definitions(-DUSE_BULLET)
+ endif()
+ 
+Index: blender-2.63a/source/gameengine/Physics/Bullet/CcdPhysicsEnvironment.cpp
+===================================================================
+--- blender-2.63a.orig/source/gameengine/Physics/Bullet/CcdPhysicsEnvironment.cpp
++++ blender-2.63a/source/gameengine/Physics/Bullet/CcdPhysicsEnvironment.cpp
+@@ -2804,7 +2804,8 @@ float		CcdPhysicsEnvironment::getApplied
+ 
+ void	CcdPhysicsEnvironment::exportFile(const char* filename)
+ {
+-	btDefaultSerializer*	serializer = new btDefaultSerializer();
++	// Workaround bullet-2.77 api change.
++	btDefaultSerializer*	serializer = new btDefaultSerializer(0);
+ 	
+ 		
+ 	for (int i=0;i<m_dynamicsWorld->getNumCollisionObjects();i++)
+Index: blender-2.63a/source/gameengine/Physics/Bullet/CMakeLists.txt
+===================================================================
+--- blender-2.63a.orig/source/gameengine/Physics/Bullet/CMakeLists.txt
++++ blender-2.63a/source/gameengine/Physics/Bullet/CMakeLists.txt
+@@ -37,7 +37,6 @@ set(INC
+ 	../../../blender/blenkernel
+ 	../../../blender/blenlib
+ 	../../../blender/makesdna
+-	../../../../extern/bullet2/src
+ 	../../../../intern/container
+ 	../../../../intern/guardedalloc
+ 	../../../../intern/moto/include
+@@ -45,6 +44,7 @@ set(INC
+ )
+ 
+ set(INC_SYS
++	/usr/include/bullet
+ 	${GLEW_INCLUDE_PATH}
+ 	${PYTHON_INCLUDE_DIRS}
+ )
