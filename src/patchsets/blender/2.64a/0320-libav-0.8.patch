@@ -30,10 +30,46 @@ Index: blender-2.64a/intern/audaspace/ffmpeg/AUD_FFMPEGWriter.cpp
  
  	switch(codec)
  	{
+@@ -116,7 +123,7 @@ AUD_FFMPEGWriter::AUD_FFMPEGWriter(std::
+ 		if(m_outputFmt->audio_codec == CODEC_ID_NONE)
+ 			AUD_THROW(AUD_ERROR_SPECS, codec_error);
+ 
+-		m_stream = av_new_stream(m_formatCtx, 0);
++		m_stream = avformat_new_stream(m_formatCtx, NULL);
+ 		if(!m_stream)
+ 			AUD_THROW(AUD_ERROR_FFMPEG, stream_error);
+ 
+@@ -164,7 +171,7 @@ AUD_FFMPEGWriter::AUD_FFMPEGWriter(std::
+ 			if(!codec)
+ 				AUD_THROW(AUD_ERROR_FFMPEG, codec_error);
+ 
+-			if(avcodec_open(m_codecCtx, codec))
++			if(avcodec_open2(m_codecCtx, codec, NULL))
+ 				AUD_THROW(AUD_ERROR_FFMPEG, codec_error);
+ 
+ 			m_output_buffer.resize(FF_MIN_BUFFER_SIZE);
 Index: blender-2.64a/intern/audaspace/ffmpeg/AUD_FFMPEGReader.cpp
 ===================================================================
 --- blender-2.64a.orig/intern/audaspace/ffmpeg/AUD_FFMPEGReader.cpp
 +++ blender-2.64a/intern/audaspace/ffmpeg/AUD_FFMPEGReader.cpp
+@@ -107,7 +107,7 @@ void AUD_FFMPEGReader::init()
+ 	m_position = 0;
+ 	m_pkgbuf_left = 0;
+ 
+-	if(av_find_stream_info(m_formatCtx)<0)
++	if(avformat_find_stream_info(m_formatCtx, NULL)<0)
+ 		AUD_THROW(AUD_ERROR_FFMPEG, streaminfo_error);
+ 
+ 	// find audio stream and codec
+@@ -133,7 +133,7 @@ void AUD_FFMPEGReader::init()
+ 	if(!aCodec)
+ 		AUD_THROW(AUD_ERROR_FFMPEG, nodecoder_error);
+ 
+-	if(avcodec_open(m_codecCtx, aCodec)<0)
++	if(avcodec_open2(m_codecCtx, aCodec, NULL)<0)
+ 		AUD_THROW(AUD_ERROR_FFMPEG, codecopen_error);
+ 
+ 	// XXX this prints file information to stdout:
 @@ -237,13 +237,7 @@ AUD_FFMPEGReader::~AUD_FFMPEGReader()
  {
  	avcodec_close(m_codecCtx);
@@ -53,11 +89,12 @@ Index: blender-2.64a/intern/ffmpeg/ffmpeg_compat.h
 ===================================================================
 --- blender-2.64a.orig/intern/ffmpeg/ffmpeg_compat.h
 +++ blender-2.64a/intern/ffmpeg/ffmpeg_compat.h
-@@ -32,7 +32,6 @@
+@@ -32,7 +32,7 @@
  
  #include <libavcodec/avcodec.h>
  #include <libavutil/rational.h>
 -#include <libavutil/opt.h>
++#include <libavutil/mathematics.h>
  
  #if (LIBAVFORMAT_VERSION_MAJOR > 52) || ((LIBAVFORMAT_VERSION_MAJOR >= 52) && (LIBAVFORMAT_VERSION_MINOR >= 101))
  #define FFMPEG_HAVE_PARSE_UTILS 1
@@ -73,6 +110,51 @@ Index: blender-2.64a/source/blender/blenkernel/intern/writeffmpeg.c
  #include <libswscale/swscale.h>
  
  #include "MEM_guardedalloc.h"
+@@ -368,7 +369,7 @@ static void set_ffmpeg_property_option(A
+ {
+ 	char name[128];
+ 	char *param;
+-	const AVOption *rv = NULL;
++	int rv;
+ 
+ 	PRINT("FFMPEG expert option: %s: ", prop->name);
+ 
+@@ -383,30 +384,30 @@ static void set_ffmpeg_property_option(A
+ 	switch (prop->type) {
+ 		case IDP_STRING:
+ 			PRINT("%s.\n", IDP_String(prop));
+-			av_set_string3(c, prop->name, IDP_String(prop), 1, &rv);
++			rv = av_opt_set(c, prop->name, IDP_String(prop), 0);
+ 			break;
+ 		case IDP_FLOAT:
+ 			PRINT("%g.\n", IDP_Float(prop));
+-			rv = av_set_double(c, prop->name, IDP_Float(prop));
++			rv = av_opt_set_double(c, prop->name, IDP_Float(prop), 0);
+ 			break;
+ 		case IDP_INT:
+ 			PRINT("%d.\n", IDP_Int(prop));
+ 
+ 			if (param) {
+ 				if (IDP_Int(prop)) {
+-					av_set_string3(c, name, param, 1, &rv);
++					rv = av_opt_set(c, name, param, 0);
+ 				}
+ 				else {
+ 					return;
+ 				}
+ 			}
+ 			else {
+-				rv = av_set_int(c, prop->name, IDP_Int(prop));
++				rv = av_opt_set_int(c, prop->name, IDP_Int(prop), 0);
+ 			}
+ 			break;
+ 	}
+ 
+-	if (!rv) {
++	if (rv) {
+ 		PRINT("ffmpeg-option not supported: %s! Skipping.\n", prop->name);
+ 	}
+ }
 @@ -459,7 +460,7 @@ static AVStream *alloc_video_stream(Rend
  
  	error[0] = '\0';
@@ -117,6 +199,24 @@ Index: blender-2.64a/source/blender/blenkernel/intern/writeffmpeg.c
  		BLI_strncpy(error, IMB_ffmpeg_last_error(), error_size);
  		return NULL;
  	}
+@@ -607,7 +595,7 @@ static AVStream *alloc_audio_stream(Rend
+ 	AVCodecContext *c;
+ 	AVCodec *codec;
+ 
+-	st = av_new_stream(of, 1);
++	st = avformat_new_stream(of, NULL);
+ 	if (!st) return NULL;
+ 
+ 	c = st->codec;
+@@ -626,7 +614,7 @@ static AVStream *alloc_audio_stream(Rend
+ 
+ 	set_ffmpeg_properties(rd, c, "audio");
+ 
+-	if (avcodec_open(c, codec) < 0) {
++	if (avcodec_open2(c, codec, NULL) < 0) {
+ 		//XXX error("Couldn't initialize audio codec");
+ 		return NULL;
+ 	}
 @@ -656,15 +644,6 @@ static AVStream *alloc_audio_stream(Rend
  }
  /* essential functions -- start, append, end */
@@ -150,6 +250,15 @@ Index: blender-2.64a/source/blender/blenkernel/intern/writeffmpeg.c
  
  	of->max_delay = (int)(0.7 * AV_TIME_BASE);
  
+@@ -1121,7 +1100,7 @@ IDProperty *BKE_ffmpeg_property_add(Rend
+ 	
+ 	val.i = 0;
+ 
+-	avcodec_get_context_defaults(&c);
++	avcodec_get_context_defaults3(&c, NULL);
+ 
+ 	o = c.av_class->option + opt_index;
+ 	parent = c.av_class->option + parent_index;
 @@ -1152,23 +1131,23 @@ IDProperty *BKE_ffmpeg_property_add(Rend
  	}
  
@@ -180,6 +289,15 @@ Index: blender-2.64a/source/blender/blenkernel/intern/writeffmpeg.c
  			val.i = 1;
  			idp_type = IDP_INT;
  			break;
+@@ -1208,7 +1187,7 @@ int BKE_ffmpeg_property_add_string(Rende
+ 	char *param;
+ 	IDProperty *prop = NULL;
+ 	
+-	avcodec_get_context_defaults(&c);
++	avcodec_get_context_defaults3(&c, NULL);
+ 
+ 	strncpy(name_, str, sizeof(name_));
+ 
 @@ -1229,10 +1208,10 @@ int BKE_ffmpeg_property_add_string(Rende
  	if (!o) {
  		return 0;
@@ -217,6 +335,15 @@ Index: blender-2.64a/source/blender/imbuf/intern/anim_movie.c
  		return -1;
  	}
  
+@@ -523,7 +523,7 @@ static int startffmpeg(struct anim *anim
+ 
+ 	pCodecCtx->workaround_bugs = 1;
+ 
+-	if (avcodec_open(pCodecCtx, pCodec) < 0) {
++	if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
+ 		av_close_input_file(pFormatCtx);
+ 		return -1;
+ 	}
 @@ -1042,7 +1042,6 @@ static ImBuf *ffmpeg_fetchibuf(struct an
  				ret = av_seek_frame(anim->pFormatCtx, 
  				                    -1,
@@ -229,12 +356,50 @@ Index: blender-2.64a/source/blender/imbuf/intern/indexer.c
 ===================================================================
 --- blender-2.64a.orig/source/blender/imbuf/intern/indexer.c
 +++ blender-2.64a/source/blender/imbuf/intern/indexer.c
+@@ -496,7 +496,7 @@ static struct proxy_output_ctx *alloc_pr
+ 
+ 	fprintf(stderr, "Starting work on proxy: %s\n", rv->of->filename);
+ 
+-	rv->st = av_new_stream(rv->of, 0);
++	rv->st = avformat_new_stream(rv->of, NULL);
+ 	rv->c = rv->st->codec;
+ 	rv->c->codec_type = AVMEDIA_TYPE_VIDEO;
+ 	rv->c->codec_id = CODEC_ID_MJPEG;
+@@ -531,8 +531,8 @@ static struct proxy_output_ctx *alloc_pr
+ 	/* there's no  way to set JPEG quality in the same way as in AVI JPEG and image sequence,
+ 	 * but this seems to be giving expected quality result */
+ 	ffmpeg_quality = (int)(1.0f + 30.0f * (1.0f - (float)quality / 100.0f) + 0.5f);
+-	av_set_int(rv->c, "qmin", ffmpeg_quality);
+-	av_set_int(rv->c, "qmax", ffmpeg_quality);
++	av_opt_set_int(rv->c, "qmin", ffmpeg_quality);
++	av_opt_set_int(rv->c, "qmax", ffmpeg_quality);
+ 
+ 	if (rv->of->flags & AVFMT_GLOBALHEADER) {
+ 		rv->c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+@@ -545,7 +545,7 @@ static struct proxy_output_ctx *alloc_pr
+ 		return 0;
+ 	}
+ 
+-	avcodec_open(rv->c, rv->codec);
++	avcodec_open2(rv->c, rv->codec, NULL);
+ 
+ 	rv->video_buffersize = 2000000;
+ 	rv->video_buffer = (uint8_t *)MEM_mallocN(
 @@ -758,7 +758,7 @@ static IndexBuildContext *index_ffmpeg_c
  		return NULL;
  	}
  
 -	if (av_find_stream_info(context->iFormatCtx) < 0) {
 +	if (avformat_find_stream_info(context->iFormatCtx, NULL) < 0) {
+ 		av_close_input_file(context->iFormatCtx);
+ 		MEM_freeN(context);
+ 		return NULL;
+@@ -797,7 +797,7 @@ static IndexBuildContext *index_ffmpeg_c
+ 
+ 	context->iCodecCtx->workaround_bugs = 1;
+ 
+-	if (avcodec_open(context->iCodecCtx, context->iCodec) < 0) {
++	if (avcodec_open2(context->iCodecCtx, context->iCodec, NULL) < 0) {
  		av_close_input_file(context->iFormatCtx);
  		MEM_freeN(context);
  		return NULL;
@@ -273,6 +438,15 @@ Index: blender-2.64a/source/gameengine/VideoTexture/VideoFFmpeg.cpp
  
 -	if (av_find_stream_info(formatCtx)<0) 
 +	if (avformat_find_stream_info(formatCtx, formatParams)<0)
+ 	{
+ 		av_close_input_file(formatCtx);
+ 		return -1;
+@@ -205,7 +205,7 @@ int VideoFFmpeg::openStream(const char *
+ 		return -1;
+ 	}
+ 	codecCtx->workaround_bugs = 1;
+-	if (avcodec_open(codecCtx, codec)<0) 
++	if (avcodec_open2(codecCtx, codec, NULL)<0)
  	{
  		av_close_input_file(formatCtx);
  		return -1;
