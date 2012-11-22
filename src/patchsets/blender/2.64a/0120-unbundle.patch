@@ -1,0 +1,323 @@
+Index: blender-2.64a/extern/libredcode/SConscript
+===================================================================
+--- blender-2.64a.orig/extern/libredcode/SConscript
++++ blender-2.64a/extern/libredcode/SConscript
+@@ -7,7 +7,8 @@ import shutil
+ Import('env')
+ 
+ sources = env.Glob('*.c')
+-incs = '. ../libopenjpeg'
++#incs = '. ../libopenjpeg'
++incs = '. /usr/include'
+ 
+ env.BlenderLib ( libname='extern_redcode', 
+                  sources=sources, includes=Split(incs),
+Index: blender-2.64a/extern/SConscript
+===================================================================
+--- blender-2.64a.orig/extern/SConscript
++++ blender-2.64a/extern/SConscript
+@@ -2,7 +2,6 @@
+ 
+ Import('env')
+ 
+-SConscript(['glew/SConscript'])
+ SConscript(['colamd/SConscript'])
+ 
+ if env['WITH_BF_GAMEENGINE']:
+@@ -14,9 +13,6 @@ if env['WITH_BF_ELTOPO']:
+ if env['WITH_BF_BULLET']:
+     SConscript(['bullet2/src/SConscript'])
+ 
+-if env['WITH_BF_OPENJPEG'] and env['BF_OPENJPEG_LIB'] == '':
+-    SConscript(['libopenjpeg/SConscript'])
+-
+ if env['WITH_BF_REDCODE'] and env['BF_REDCODE_LIB'] == '':
+     SConscript(['libredcode/SConscript'])
+ 
+Index: blender-2.64a/build_files/scons/tools/Blender.py
+===================================================================
+--- blender-2.64a.orig/build_files/scons/tools/Blender.py
++++ blender-2.64a/build_files/scons/tools/Blender.py
+@@ -271,6 +271,8 @@ def setup_syslibs(lenv):
+         syslibs += Split(lenv['BF_FFMPEG_LIB'])
+         if lenv['WITH_BF_OGG']:
+             syslibs += Split(lenv['BF_OGG_LIB'])
++    if lenv['WITH_BF_OPENJPEG']:
++        syslibs += Split(lenv['BF_OPENJPEG_LIB'])
+     if lenv['WITH_BF_JACK']:
+         syslibs += Split(lenv['BF_JACK_LIB'])
+     if lenv['WITH_BF_SNDFILE'] and not lenv['WITH_BF_STATICSNDFILE']:
+@@ -292,6 +294,10 @@ def setup_syslibs(lenv):
+         else:
+             syslibs += Split(lenv['BF_OPENCOLLADA_LIB'])
+         syslibs.append(lenv['BF_EXPAT_LIB'])
++    syslibs += [
++        'BulletSoftBody', 'BulletDynamics', 'BulletCollision', 'LinearMath',
++        'colamd', 'ldl', 'glog', 'gflags', 'ceres'
++        ]
+ 
+     if lenv['WITH_BF_JEMALLOC']:
+         if not lenv['WITH_BF_STATICJEMALLOC']:
+Index: blender-2.64a/doc/doxygen/Doxyfile
+===================================================================
+--- blender-2.64a.orig/doc/doxygen/Doxyfile
++++ blender-2.64a/doc/doxygen/Doxyfile
+@@ -617,8 +617,7 @@ INPUT                  = doxygen.main \
+                          doxygen.intern \
+                          doxygen.extern \
+                          ../../source \
+-                         ../../intern \
+-                         ../../extern/bullet2
++                         ../../intern
+ 
+ # This tag can be used to specify the character encoding of the source files 
+ # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is 
+Index: blender-2.64a/extern/libmv/bundle.sh
+===================================================================
+--- blender-2.64a.orig/extern/libmv/bundle.sh
++++ blender-2.64a/extern/libmv/bundle.sh
+@@ -124,7 +124,6 @@ cat > CMakeLists.txt << EOF
+ 
+ set(INC
+ 	.
+-	../Eigen3
+ 	third_party/ssba
+ 	third_party/ldl/Include
+ 	../colamd/Include
+@@ -132,6 +131,7 @@ set(INC
+ )
+ 
+ set(INC_SYS
++	/usr/include/eigen3
+ 	\${PNG_INCLUDE_DIR}
+ 	\${ZLIB_INCLUDE_DIRS}
+ )
+@@ -251,7 +251,7 @@ defs.append('GOOGLE_GLOG_DLL_DECL=')
+ src = env.Glob("*.cpp")
+ $src
+ 
+-incs = '. ../Eigen3 third_party/ceres/include'
++incs = '. /usr/include/eigen3 third_party/ceres/include'
+ incs += ' ' + env['BF_PNG_INC']
+ incs += ' ' + env['BF_ZLIB_INC']
+ 
+Index: blender-2.64a/extern/libmv/libmv-capi.cpp
+===================================================================
+--- blender-2.64a.orig/extern/libmv/libmv-capi.cpp
++++ blender-2.64a/extern/libmv/libmv-capi.cpp
+@@ -34,7 +34,7 @@
+ 
+ #include "libmv-capi.h"
+ 
+-#include "third_party/gflags/gflags/gflags.h"
++#include "gflags/gflags.h"
+ #include "glog/logging.h"
+ #include "libmv/logging/logging.h"
+ 
+Index: blender-2.64a/extern/libmv/SConscript
+===================================================================
+--- blender-2.64a.orig/extern/libmv/SConscript
++++ blender-2.64a/extern/libmv/SConscript
+@@ -25,12 +25,10 @@ src += env.Glob('libmv/numeric/*.cc')
+ src += env.Glob('libmv/simple_pipeline/*.cc')
+ src += env.Glob('libmv/tracking/*.cc')
+ src += env.Glob('third_party/fast/*.c')
+-src += env.Glob('third_party/gflags/*.cc')
+-src += env.Glob('third_party/ldl/Source/*.c')
+ src += env.Glob('third_party/ssba/Geometry/*.cpp')
+ src += env.Glob('third_party/ssba/Math/*.cpp')
+ 
+-incs = '. ../Eigen3 third_party/ceres/include'
++incs = '. /usr/include/eigen3 third_party/ceres/include'
+ incs += ' ' + env['BF_PNG_INC']
+ incs += ' ' + env['BF_ZLIB_INC']
+ 
+@@ -55,15 +53,11 @@ if env['OURPLATFORM'] in ('win32-vc', 'w
+             ccflags_libmv += Split(env['REL_CCFLAGS'])
+             cxxflags_libmv += Split(env['REL_CXXFLAGS'])
+ else:
+-    src += env.Glob("third_party/glog/src/*.cc")
+-    incs += ' ./third_party/glog/src'
+     if not env['BF_DEBUG']:
+         cflags_libmv += Split(env['REL_CFLAGS'])
+         ccflags_libmv += Split(env['REL_CCFLAGS'])
+         cxxflags_libmv += Split(env['REL_CXXFLAGS'])
+ 
+-incs += ' ./third_party/ssba ./third_party/ldl/Include ../colamd/Include'
++incs += ' ./third_party/ssba'
+ 
+ env.BlenderLib ( libname = 'extern_libmv', sources=src, includes=Split(incs), defines=defs, libtype=['extern', 'player'], priority=[20,137], compileflags=cflags_libmv, cc_compileflags=ccflags_libmv, cxx_compileflags=cxxflags_libmv )
+-
+-SConscript(['third_party/SConscript'])
+Index: blender-2.64a/extern/libmv/third_party/ceres/bundle.sh
+===================================================================
+--- blender-2.64a.orig/extern/libmv/third_party/ceres/bundle.sh
++++ blender-2.64a/extern/libmv/third_party/ceres/bundle.sh
+@@ -117,13 +117,13 @@ cat > CMakeLists.txt << EOF
+ 
+ set(INC
+ 	.
+-	../../../Eigen3
+ 	include
+ 	internal
+ 	../gflags
+ )
+ 
+ set(INC_SYS
++	/usr/include/eigen3
+ )
+ 
+ set(SRC
+@@ -215,7 +215,7 @@ defs.append('CERES_RESTRICT_SCHUR_SPECIA
+ if 'Mac OS X 10.5' in env['MACOSX_SDK_CHECK']:
+     defs.append('CERES_NO_TR1')
+ 
+-incs = '. ../../ ../../../Eigen3 ./include ./internal ../gflags'
++incs = '. ../../ /usr/include/eigen3 ./include ./internal ../gflags'
+ 
+ # work around broken hashtable in 10.5 SDK
+ if env['OURPLATFORM'] == 'darwin' and env['WITH_BF_BOOST']:
+Index: blender-2.64a/extern/libmv/third_party/ssba/Math/v3d_optimization.cpp
+===================================================================
+--- blender-2.64a.orig/extern/libmv/third_party/ssba/Math/v3d_optimization.cpp
++++ blender-2.64a/extern/libmv/third_party/ssba/Math/v3d_optimization.cpp
+@@ -21,7 +21,7 @@ with SSBA. If not, see <http://www.gnu.o
+ 
+ #if defined(V3DLIB_ENABLE_SUITESPARSE)
+ //# include "COLAMD/Include/colamd.h"
+-# include "colamd.h"
++# include <colamd.h>
+ extern "C"
+ {
+ //# include "LDL/Include/ldl.h"
+Index: blender-2.64a/intern/dualcon/SConscript
+===================================================================
+--- blender-2.64a.orig/intern/dualcon/SConscript
++++ blender-2.64a/intern/dualcon/SConscript
+@@ -3,7 +3,7 @@ Import ('env')
+ 
+ sources = env.Glob('intern/*.cpp')
+ 
+-incs = '. ../../extern/Eigen3'
++incs = '. /usr/include/eigen3'
+ defs = ''
+ 
+ env.BlenderLib ('bf_intern_dualcon', sources, Split(incs), Split(defs), libtype=['intern'], priority=[100] )
+Index: blender-2.64a/intern/itasc/SConscript
+===================================================================
+--- blender-2.64a.orig/intern/itasc/SConscript
++++ blender-2.64a/intern/itasc/SConscript
+@@ -5,7 +5,7 @@ sources = env.Glob('*.cpp')
+ sources += env.Glob('kdl/*.cpp')
+ sources += env.Glob('kdl/utilities/*.cpp')
+ 
+-incs = '. ../../extern/Eigen3'
++incs = '. /usr/include/eigen3'
+ 
+ defs = []
+ 
+Index: blender-2.64a/intern/opennl/SConscript
+===================================================================
+--- blender-2.64a.orig/intern/opennl/SConscript
++++ blender-2.64a/intern/opennl/SConscript
+@@ -3,7 +3,7 @@ Import ('env')
+ 
+ sources = env.Glob('intern/*.c') + env.Glob('superlu/*.c')
+ 
+-incs = 'extern superlu ../../extern/colamd/Include'
++incs = 'extern superlu'
+ 
+ if (env['OURPLATFORM'] in ('win32-mingw', 'win64-mingw')):
+     env.BlenderLib ('bf_intern_opennl', sources, Split(incs), [], libtype=['core','intern'], priority=[1,80] )
+Index: blender-2.64a/intern/opennl/superlu/get_perm_c.c
+===================================================================
+--- blender-2.64a.orig/intern/opennl/superlu/get_perm_c.c
++++ blender-2.64a/intern/opennl/superlu/get_perm_c.c
+@@ -10,7 +10,7 @@
+  */
+ 
+ #include "ssp_defs.h"
+-#include "colamd.h"
++#include <colamd.h>
+ 
+ extern int  genmmd_(int *, int *, int *, int *, int *, int *, int *, 
+ 		    int *, int *, int *, int *, int *);
+Index: blender-2.64a/intern/smoke/SConscript
+===================================================================
+--- blender-2.64a.orig/intern/smoke/SConscript
++++ blender-2.64a/intern/smoke/SConscript
+@@ -13,7 +13,7 @@ if env['WITH_BF_OPENMP']:
+     defs += ' PARALLEL=1'
+ 
+ incs += ' ' + env['BF_PNG_INC'] + ' ' + env['BF_ZLIB_INC'] 
+-incs += ' intern ../../extern/bullet2/src ../memutil ../guardealloc '
++incs += ' intern /usr/include/bullet ../memutil ../guardealloc '
+ 
+ if env['WITH_BF_FFTW3']:
+     defs += ' WITH_FFTW3'
+Index: blender-2.64a/source/blender/blenkernel/SConscript
+===================================================================
+--- blender-2.64a.orig/source/blender/blenkernel/SConscript
++++ blender-2.64a/source/blender/blenkernel/SConscript
+@@ -13,7 +13,7 @@ incs += ' ../blenlib ../blenfont ../make
+ incs += ' ../render/extern/include #/intern/decimation/extern ../makesrna'
+ incs += ' ../imbuf ../ikplugin ../avi #/intern/elbeem/extern ../nodes ../modifiers'
+ incs += ' #/intern/iksolver/extern ../blenloader'
+-incs += ' #/extern/bullet2/src'
++incs += ' /usr/include/bullet'
+ incs += ' #/intern/opennl/extern #/intern/bsp/extern'
+ incs += ' ../gpu #/extern/glew/include'
+ incs += ' ../bmesh'
+Index: blender-2.64a/source/blender/editors/include/BIF_gl.h
+===================================================================
+--- blender-2.64a.orig/source/blender/editors/include/BIF_gl.h
++++ blender-2.64a/source/blender/editors/include/BIF_gl.h
+@@ -33,7 +33,7 @@
+ #ifndef __BIF_GL_H__
+ #define __BIF_GL_H__
+ 
+-#include "GL/glew.h"
++#include <GL/glew.h>
+ 
+ /*
+  * these should be phased out. cpack should be replaced in
+Index: blender-2.64a/source/blender/ikplugin/SConscript
+===================================================================
+--- blender-2.64a.orig/source/blender/ikplugin/SConscript
++++ blender-2.64a/source/blender/ikplugin/SConscript
+@@ -4,7 +4,7 @@ defs = []
+ sources = env.Glob('intern/*.c') + env.Glob('intern/*.cpp')
+ 
+ incs = '#/intern/guardedalloc #/intern/iksolver/extern ../makesdna ../blenlib'
+-incs += ' ../blenkernel ../include ../ikplugin #/intern/itasc #/extern/Eigen3'
++incs += ' ../blenkernel ../include ../ikplugin #/intern/itasc /usr/include/eigen3'
+ 
+ defs.append('WITH_IK_ITASC')
+ defs.append('WITH_IK_SOLVER')
+Index: blender-2.64a/source/gameengine/Converter/SConscript
+===================================================================
+--- blender-2.64a.orig/source/gameengine/Converter/SConscript
++++ blender-2.64a/source/gameengine/Converter/SConscript
+@@ -21,7 +21,7 @@ incs += ' #source/blender/windowmanager'
+ incs += ' #source/blender/makesrna'
+ incs += ' #source/blender/ikplugin'
+ incs += ' #extern/recastnavigation/Detour/Include'
+-incs += ' #extern/Eigen3'
++incs += ' /usr/include/eigen3'
+ 
+ incs += ' ' + env['BF_BULLET_INC']
+ 
+Index: blender-2.64a/source/gameengine/Physics/Bullet/CcdPhysicsEnvironment.cpp
+===================================================================
+--- blender-2.64a.orig/source/gameengine/Physics/Bullet/CcdPhysicsEnvironment.cpp
++++ blender-2.64a/source/gameengine/Physics/Bullet/CcdPhysicsEnvironment.cpp
+@@ -2813,7 +2813,8 @@ float		CcdPhysicsEnvironment::getApplied
+ 
+ void	CcdPhysicsEnvironment::exportFile(const char* filename)
+ {
+-	btDefaultSerializer*	serializer = new btDefaultSerializer();
++	// Workaround bullet-2.77 api change.
++	btDefaultSerializer*	serializer = new btDefaultSerializer(0);
+ 	
+ 		
+ 	for (int i=0;i<m_dynamicsWorld->getNumCollisionObjects();i++)
