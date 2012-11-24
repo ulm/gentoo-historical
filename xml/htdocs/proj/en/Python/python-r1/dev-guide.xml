@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.1 2012/11/10 08:26:20 mgorny Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.2 2012/11/24 21:34:34 mgorny Exp $ -->
 
 <guide lang="en">
 <title>python-r1 Developer's Guide</title>
@@ -23,8 +23,8 @@
 <!-- See http://creativecommons.org/licenses/by-sa/3.0/ -->
 <license version="3.0"/>
 
-<version>1</version>
-<date>2012-11-04</date>
+<version>2</version>
+<date>2012-11-24</date>
 
 <chapter id="Introductory_info">
 	<title>Introductory information</title>
@@ -52,42 +52,151 @@
 		</body>
 	</section>
 
+	<section id="ii_Types_of_Python_packages">
+		<title>Types of Python packages</title>
+
+		<body>
+			<p>
+				The Python packages in Gentoo, that is packages either
+				installing Python modules or embedding the Python interpreter,
+				can be divided into three main groups:
+			</p>
+
+			<ol>
+				<li>
+					packages which are capable of being installed for multiple
+					selected Python implementations;
+				</li>
+
+				<li>
+					packages which are capable of being installed for a single
+					chosen Python implementation only;
+				</li>
+
+				<li>
+					packages being installed independently of Python
+					implementations.
+				</li>
+			</ol>
+
+			<p>
+				The first group is the most common one and comprises most
+				of the packages installing Python modules and/or scripts.
+				The installed files are either directed
+				to implementation-specific directories or renamed in order
+				to allow installing multiple copies, one for each enabled Python
+				implementation. This way, the packages can cleanly guarantee
+				that the particular packages can be used with any implementation
+				installed.
+			</p>
+
+			<p>
+				The second group consists of most of the packages embedding
+				the Python interpreter or installing Python bindings as a part
+				of a more general build system. The installed files can
+				be installed only once and only for one chosen Python
+				implementation. The package can't be used by any other
+				installed Python implementation.
+			</p>
+
+			<p>
+				The third group comprises mostly very specific packages which
+				do not fit the regular Python package model. This includes
+				packages which are installed externally and can be used
+				by multiple Python implementations,
+				such as <c>sys-apps/portage</c>.
+			</p>
+		</body>
+	</section>
+
 	<section id="ii_Purpose_of_the_eclasses">
 		<title>Purpose of the eclasses</title>
 
 		<body>
 			<p>
-				The python-r1 suite consists of the python-r1 and distutils-r1
-				eclasses.
+				The python-r1 suite consists of four eclasses:
+			</p>
+
+			<ol>
+				<li><c>python-utils-r1</c>,</li>
+				<li><c>python-r1</c>,</li>
+				<li><c>distutils-r1</c>,</li>
+				<li><c>python-single-r1</c>.</li>
+			</ol>
+
+			<p>
+				The <c>python-utils-r1</c> eclass is the most fundamental eclass
+				in the suite. It does not export any phase functions nor set
+				any metadata. It does not require the package to fit
+				any specific model.
 			</p>
 
 			<p>
-				The python-r1 eclass is the fundamental eclass for all Python
-				packages. It covers the general aspects, helping ebuild
-				developers to handle building packages for multiple Python
-				implementations and write proper dependency strings. However,
-				it does not enforce any dependencies itself nor export phase
+				The <c>python-r1</c> eclass is the second fundamental eclass.
+				It extends the former eclass with the metadata and variables
+				suited for packages supporting multiple Python implementations:
+				the implementation choice flags, dependency strings. It does
+				not, however, enforce any dependencies directly nor export phase
 				functions.
 			</p>
 
 			<p>
-				The distutils-r1 eclass extends python-r1 with a simple to use
-				framework to build and install packages using the standard
-				Python distutils build system. It follows the common practices
-				for build system eclasses, exporting phase functions which
-				handle applying patches, building and installing.
+				The <c>distutils-r1</c> eclass extends python-r1 with a set
+				of basic phase functions to build and install packages using
+				the distutils build system of the inbuilt Python module
+				<c>distutils</c>. It follows the common practices for build
+				system eclasses, including patching and installing
+				documentation.
 			</p>
 
 			<p>
-				In the vast majority of cases, the distutils-r1 will the best
-				choice for your ebuild. The python-r1 should be mostly used
-				in packages which do not use the distutils build system or use
-				it in a non-standard way.
+				The <c>python-single-r1</c> eclass is an alternative
+				to <c>python-r1</c> for packages which do not support being
+				installed for multiple Python implementations. It exports
+				similar metadata and variables, and a <c>pkg_setup</c> phase
+				function handling the target implementation choice.
 			</p>
 
+			<p>
+				The choice of eclass for your package could follow the following
+				algorithm:
+			</p>
+
+			<ol>
+				<li>
+					if the package supports being installed for multiple Python
+					implementations, the Python part of it is unconditional
+					and uses the distutils build system (or one very similar),
+					use the <c>distutils-r1</c> eclass;
+				</li>
+
+				<li>
+					if the package supports being installed for multiple Python
+					implementations separately and installs Python modules,
+					scripts or embeds Python, use <c>python-r1</c>;
+				</li>
+
+				<li>
+					if the package can be installed for a single Python
+					implementation only and installs Python modules, scripts
+					or embeds Python, use <c>python-single-r1</c>;
+				</li>
+
+				<li>
+					if the package has a specific or loose connection to Python,
+					installs Python modules for multiple implementations
+					in a common location, or has any other special needs,
+					consider using <c>python-utils-r1</c> (although you may
+					not need any eclass at all).
+				</li>
+			</ol>
+
 			<note>
-				Please note that the distutils-r1 eclass inherits python-r1
-				implicitly. There is therefore no need to ever inherit both.
+				Please note that the <c>distutils-r1</c>
+				and <c>python-single-r1</c> eclasses inherit <c>python-r1</c>
+				implicitly, and <c>python-r1</c> inherits
+				<c>python-utils-r1</c>. There is therefore no need to ever
+				inherit more than one eclass from the suite.
 			</note>
 		</body>
 	</section>
@@ -95,6 +204,18 @@
 
 <chapter id="The_fundamentals_of_python_r1_eclass">
 	<title>The fundamentals of python-r1 eclass</title>
+
+	<section id="pr1_General_notes">
+		<title>General notes</title>
+
+		<body>
+			<note>
+				The variables listed in this section apply to ebuilds using
+				<c>python-single-r1</c> and <c>distutils-r1</c> eclasses as well,
+				through the rules of implicit inheritance.
+			</note>
+		</body>
+	</section>
 
 	<section id="pr1_Listing_supported_Python_implementations">
 		<title>Listing supported Python implementations</title>
@@ -107,11 +228,10 @@
 			</p>
 
 			<p>
-				The list of supported implementations is specified using
-				the <c>PYTHON_COMPAT</c> variable. It is an obligatory array
-				which has to be declared before the <c>inherit</c> command.
-				It should list <e>all</e> supported implementations using
-				the following naming scheme:
+				This list is specified using the <c>PYTHON_COMPAT</c> variable.
+				It is an obligatory array which has to be declared before
+				the <c>inherit</c> command.  It should list <e>all</e> supported
+				implementations using the following naming scheme:
 			</p>
 
 			<ol>
@@ -155,8 +275,9 @@
 		<body>
 			<note>
 				Please note that this section applies to the sole use
-				of python-r1 eclass only. The distutils-r1 eclass
-				unconditionally adds Python dependency.
+				of <c>python-r1</c> or <c>python-single-r1</c> only.
+				The <c>distutils-r1</c> eclass unconditionally adds this
+				dependency.
 			</note>
 
 			<p>
@@ -303,103 +424,6 @@
 </pre>
 		</body>
 	</section>
-
-	<section id="pr1_Obtaining_Python_implementation_information">
-		<title>Obtaining Python implementation information</title>
-
-		<body>
-			<p>
-				Sometimes it is necessary to obtain information specific
-				to a particular Python implementations, in particular
-				interpreter-specific paths. The python-r1 eclass provides
-				the following means of obtaining that information:
-			</p>
-
-			<ol>
-				<li><c>python_export</c> function,</li>
-				<li><c>python_export_best</c> function,</li>
-				<li>getter functions.</li>
-			</ol>
-
-			<p>
-				The <c>python_export</c> and <c>python_export_best</c> functions
-				take an optional list of variable names and export
-				the requested variables. When no variable names are passed,
-				the default variable list is used.
-			</p>
-
-			<p>
-				The <c>python_export</c> can additionally take a Python
-				implementation as a first argument, either in the form of a USE
-				flag or an <c>EPYTHON</c> value. If such a form is used,
-				the values specific to the passed implementation are exported.
-				Otherwise, the currently used implementation (the <c>EPYTHON</c>
-				environment variable) is used.
-			</p>
-
-			<p>
-				The <c>python_export_best</c> exports variables for the ‘best’
-				of the currently enabled implementations; that is, the newest
-				interpreter version from the most preferred group. These groups
-				are, in order of preference:
-			</p>
-
-			<ol>
-				<li>CPython 2,</li>
-				<li>CPython 3,</li>
-				<li>PyPy,</li>
-				<li>Jython.</li>
-			</ol>
-
-			<p>
-				The getter functions print the value of a specific property
-				to standard output. The output can be captured using bash
-				command substitution. These functions take an optional parameter
-				specifying the requested Python implementation.
-				If not specified, the current one will be used.
-			</p>
-
-			<p>
-				The following table lists all the available variables, along
-				with the respective getter functions:
-			</p>
-
-			<table>
-				<tr>
-					<th>Variable name</th>
-					<th>Getter function</th>
-					<th>Default?</th>
-					<th>Description</th>
-				</tr>
-
-				<tr>
-					<ti><c>EPYTHON</c></ti>
-					<ti><c>python_get_EPYTHON</c></ti>
-					<ti>yes</ti>
-					<ti>
-						The Python implementation name (Gentoo-specific).
-					</ti>
-				</tr>
-				<tr>
-					<ti><c>PYTHON</c></ti>
-					<ti><c>python_get_PYTHON</c></ti>
-					<ti>yes</ti>
-					<ti>
-						Absolute path to the Python interpreter.
-					</ti>
-				</tr>
-				<tr>
-					<ti><c>PYTHON_SITEDIR</c></ti>
-					<ti><c>python_get_sitedir</c></ti>
-					<ti>no</ti>
-					<ti>
-						Path to the Python site-packages directory (where modules
-						should be installed).
-					</ti>
-				</tr>
-			</table>
-		</body>
-	</section>
 </chapter>
 
 <chapter id="The_distutils_r1_eclass">
@@ -462,36 +486,38 @@
 			<p>
 				The distutils-r1 eclass utilises a mechanism inspired by phase
 				functions to make writing ebuilds relatively easy. For each
-				phase function handled by distutils-r1, namely all <c>src_*</c>
-				phases, two ‘partial’ phases are used; the per-implementation
-				sub-phase and the common sub-phase.
+				of the <c>src_*</c> phases, two ‘partial’ phases are used;
+				the implementation-specific sub-phase
+				and the implementation-common sub-phase.
 			</p>
 
 			<p>
-				The sub-phase functions are named for the corresponding
-				<c>src_*</c> phase but with the <c>src</c> prefix replaced
-				by <c>python</c>. For example, the compilation sub-phase
-				function has to be named <c>python_compile</c>. These functions
-				are called once for each enabled Python implementation
-				and perform tasks specific to it. They are called
-				with the standard implementation information variables exported
-				(<c>EPYTHON</c>, <c>PYTHON</c>…).
+				Each of the implementation-specific sub-phases is named
+				according to its corresponding <c>src_*</c> phase but with
+				the <c>src_</c> prefix replaced with <c>python_</c>.
+				For example, <c>src_compile()</c> becomes
+				<c>python_compile()</c>. It is called once for each enabled
+				Python implementation. For the call scope, the default set
+				of informational variables is exported (<c>EPYTHON</c>,
+				<c>PYTHON</c>, <c>BUILD_DIR</c>, <c>PYTHONPATH</c>
+				if necessary).
 			</p>
 
 			<p>
-				An additional <c>_all</c> suffix is appended to the common
-				sub-phase functions. For example, the installation sub-phase
-				function is subsequently named <c>python_install_all</c>. These
-				functions are called only once in the main source directory
-				and they perform tasks common to all enabled implementations.
+				Each of the implementation-common sub-phases has an additional
+				<c>_all</c> suffix appended. For example, the phase
+				corresponding to <c>src_install()</c>
+				is <c>python_install_all()</c>. It is called only once during
+				the build process. It is invoked in the main source directory.
+				No Python implementation is selected in the call scope.
 			</p>
 
 			<p>
 				The distutils-r1 eclass provides default functions for all
-				per-implementation sub-phases and for <c>python_prepare_all</c>
-				and <c>python_install_all</c>. If you are replacing any
-				of those phase functions, you ought call the respective
-				<c>distutils-r1_*</c> phase function in it.
+				implementation-specific sub-phases
+				and for <c>python_prepare_all</c> and <c>python_install_all</c>.
+				If you are defining any of those phase functions, you ought
+				call the respective distutils-r1 phase function.
 			</p>
 
 			<pre caption="Example of defining sub-phase functions">
@@ -534,29 +560,336 @@
 				in the <c>BUILD_DIR</c> variable, all calls to <c>setup.py</c>
 				pass additional <c>build --build-base…</c> parameters pointing
 				to it and the <path>lib</path> subdirectory of the build
-				directory is added to <c>PYTHONPATH</c>. As a side effect,
+				directory is added to <c>PYTHONPATH</c>. As a consequence,
 				the package is built on the first <c>setup.py</c> invocation.
 			</p>
 
 			<p>
-				The in-source builds are implemented for more problematic
-				packages where out-of-source builds may not work due to bugs
-				in the build system. They are enabled either explicitly
-				when the <c>DISTUTILS_IN_SOURCE_BUILD</c> variable is set
-				(to any value) or implicitly when the <c>python_prepare</c>
-				(per-implementation one) sub-phase is declared.
+				The in-source builds are implemented for packages where
+				out-of-source builds are problematic. They are enabled either
+				explicitly when the <c>DISTUTILS_IN_SOURCE_BUILD</c> variable
+				is set (to any value) or implicitly
+				when the <c>python_prepare</c> sub-phase is declared.
 			</p>
 
 			<p>
 				When in-source builds are enabled, the default
 				<c>python_prepare_all</c> first creates a copy of all
 				the sources in the <c>BUILD_DIR</c> for each implementation.
-				Common sub-phase functions are still executed in the source
-				directory but per-implementation sub-phases are executed
-				in the build directory for each implementation. There is
-				no explicit linking between the source copies, therefore
-				the build system is allowed to modify them freely.
+				The implementation-common sub-phase functions are still executed
+				in the source directory but the implementation-specific ones
+				are executed in the build directory for each implementation.
+				There is no explicit linking between the source copies,
+				therefore the build system is allowed to modify them freely.
 			</p>
+		</body>
+	</section>
+</chapter>
+
+<chapter id='Advanced_python_r1_functions'>
+	<title>Advanced python-r1 functions</title>
+
+	<section id='pr1_Repeating_commands_for_multiple_Python_implementations'>
+		<title>Repeating commands for multiple Python implementations</title>
+
+		<body>
+			<note>
+				This function is mostly useful for ebuilds not using
+				the <c>distutils-r1</c> eclass. For those using it, placing
+				the commands in an appropriate sub-phase function is preferred.
+			</note>
+
+			<p>
+				If it is necessary to run a command repeatedly for multiple
+				Python implementations, the <c>python_foreach_impl</c> function
+				can be used. It takes a command and a list of its paraameters/,
+				and runs it once for each Python implementation enabled.
+				The command can also name a local function.
+			</p>
+
+			<p>
+				The commands are run with the following environment variables
+				set:
+			</p>
+
+			<table>
+				<tr>
+					<th>Variable name</th>
+					<th>Description</th>
+					<th>Example value</th>
+				</tr>
+
+				<tr>
+					<ti><c>EPYTHON</c></ti>
+					<ti>
+						The Python implementation name.
+					</ti>
+					<ti>
+						<c>python2.7</c>, <c>pypy-c1.8</c>
+					</ti>
+				</tr>
+				<tr>
+					<ti><c>PYTHON</c></ti>
+					<ti>
+						Absolute path to the Python interpreter.
+					</ti>
+					<ti>
+						<c>/usr/bin/python2.7</c>
+					</ti>
+				</tr>
+				<tr>
+					<ti><c>BUILD_DIR</c></ti>
+					<ti>
+						The ‘standard’ build directory path for the implementation.
+					</ti>
+					<ti>
+						<c>${WORKDIR}/frobnicate-1.3-python2.7</c>
+					</ti>
+				</tr>
+			</table>
+
+			<warn>
+				Please note that <c>python_foreach_impl</c> does not create
+				the <c>BUILD_DIR</c> automatically. Unless the build system
+				does so, the ebuild author is responsible for creating it.
+			</warn>
+
+			<pre caption='Running commands for each enabled implementation'>
+src_install() {
+	<comment># I wonder how many ebuilds will copy that name…</comment>
+	<ident>sub_install</ident>() {
+		<comment># BUILD_DIR contains a module built for appropriate impl</comment>
+		<keyword>python_domodule</keyword> <var>"${BUILD_DIR}"</var>/mymodule
+	}
+
+	<comment># Run the function for each enabled implementation</comment>
+	<keyword>python_foreach_impl</keyword> <ident>sub_install</ident>
+
+	<comment># Run python_doscript (install script) for each implementation</comment>
+	<keyword>python_foreach_impl python_doscript</keyword> mymodule-ui
+}
+</pre>
+		</body>
+	</section>
+</chapter>
+
+<chapter id='Helper_functions_in_python_utils_r1_eclass'>
+	<title>Helper functions in python-utils-r1 eclass</title>
+
+	<section id="pur1_General_notes">
+		<title>General notes</title>
+
+		<body>
+			<note>
+				The functions listed in this section are directly available
+				to packages using any of the eclasses in python-r1 suite, except
+				where noted otherwise.
+			</note>
+		</body>
+	</section>
+
+	<section id="pur1_Obtaining_Python_implementation_information">
+		<title>Obtaining Python implementation information</title>
+
+		<body>
+			<p>
+				Sometimes it is necessary to obtain information specific
+				to a particular Python implementations, in particular
+				interpreter-specific paths. The <c>python-utils-r1</c> eclass
+				provides the following means of obtaining that information:
+			</p>
+
+			<ol>
+				<li><c>python_export</c> function,</li>
+				<li><c>python_export_best</c> function,</li>
+				<li>getter functions.</li>
+			</ol>
+
+			<p>
+				The <c>python_export</c> and <c>python_export_best</c> functions
+				take an optional list of variable names and export
+				the requested variables. When no variable names are passed,
+				the default variable list is used.
+			</p>
+
+			<p>
+				The <c>python_export</c> can additionally take a Python
+				implementation as a first argument, either in the form of a USE
+				flag or an <c>EPYTHON</c> value. If such a form is used,
+				the values specific to the passed implementation are exported.
+				Otherwise, the currently used implementation (the <c>EPYTHON</c>
+				environment variable) is used.
+			</p>
+
+			<p>
+				The <c>python_export_best</c> exports variables for the ‘best’
+				of the currently enabled implementations; that is, the newest
+				interpreter version from the most preferred group. These groups
+				are, in order of preference:
+			</p>
+
+			<ol>
+				<li>CPython 2,</li>
+				<li>CPython 3,</li>
+				<li>PyPy,</li>
+				<li>Jython.</li>
+			</ol>
+
+			<note>
+				The <c>python_export_best</c> function is available
+				in the <c>python-r1</c> eclass only. The <c>python-utils-r1</c>
+				eclass does not trace enabled implementations,
+				and <c>python-single-r1</c> sets the only enabled implementation
+				as the current one, making direct <c>python_export</c>
+				sufficient.
+			</note>
+
+			<p>
+				The getter functions print the value of a specific property
+				to standard output. The output can be captured using bash
+				command substitution. These functions take an optional parameter
+				specifying the requested Python implementation.
+				If not specified, the current one will be used.
+			</p>
+
+			<p>
+				The following table lists all the available variables, along
+				with the respective getter functions:
+			</p>
+
+			<table>
+				<tr>
+					<th>Variable name</th>
+					<th>Getter function</th>
+					<th>Default?</th>
+					<th>Description</th>
+				</tr>
+
+				<tr>
+					<ti><c>EPYTHON</c></ti>
+					<ti><c>python_get_EPYTHON</c></ti>
+					<ti>yes</ti>
+					<ti>
+						The Python implementation name (Gentoo-specific).
+					</ti>
+				</tr>
+				<tr>
+					<ti><c>PYTHON</c></ti>
+					<ti><c>python_get_PYTHON</c></ti>
+					<ti>yes</ti>
+					<ti>
+						Absolute path to the Python interpreter.
+					</ti>
+				</tr>
+				<tr>
+					<ti><c>PYTHON_SITEDIR</c></ti>
+					<ti><c>python_get_sitedir</c></ti>
+					<ti>no</ti>
+					<ti>
+						Path to the Python site-packages directory (where modules
+						should be installed).
+					</ti>
+				</tr>
+			</table>
+		</body>
+	</section>
+
+	<section id="pur1_Installing_Python_scripts_and_modules_manually">
+		<title>Installing Python scripts and modules manually</title>
+
+		<body>
+			<p>
+				The <c>python-utils-r1</c> eclass provides two major helpers
+				which could be used to install Python scripts and modules
+				manually. They can be used whenever the build system
+				is not capable of installing them correctly, or the package
+				maintainer wishes to install additional files.
+			</p>
+
+			<p>
+				These functions are:
+			</p>
+
+			<ol>
+				<li><c>python_domodule</c>,</li>
+				<li><c>python_doscript</c>.</li>
+			</ol>
+
+			<p>
+				The <c>python_domodule</c> helper takes a list of file
+				and/or directory names and installs the named modules
+				and packages recursively.  The files are installed
+				in the <c>site-packages</c> directory by default.
+				The destination can be changed through setting
+				the <c>python_moduleroot</c> variable or using
+				the <c>python_moduleinto</c> function. It can be either
+				an absolute path or relative to the <c>site-packages</c> root.
+			</p>
+
+			<p>
+				The installed modules will be byte-compiled using the current
+				Python implementation. The selected implementation determines
+				the <c>site-packages</c> location as well.
+			</p>
+
+			<pre caption='Installing Python modules and packages'>
+src_install() {
+	<keyword>python_export</keyword> <const>python2_7</const> <var>EPYTHON PYTHON PYTHON_SITEDIR</var>
+
+	<comment># Installs /usr/lib*/python2.7/site-packages/mypackage directory</comment>
+	<keyword>python_domodule</keyword> mypackage
+
+	<comment># Installs /usr/lib*/python2.7/site-packages/epython.py (and .pyc, .pyo…)</comment>
+	<keyword>python_domodule</keyword> epython.py
+
+	<comment># Installs …/site-packages/foo/bar.py (and .pyc, .pyo…)</comment>
+	<keyword>python_moduleinto</keyword> foo
+	<keyword>python_domodule</keyword> bar.py
+
+	<comment># Installs /usr/lib/portage/pym (and compiles for py2.7)</comment>
+	<keyword>python_moduleinto</keyword> /usr/lib/portage
+	<keyword>python_domodule</keyword> pym
+
+	<comment># Installs /usr/lib*/python*/site-packages/mypackage</comment>
+	<keyword>local</keyword> <var>python_moduleroot</var>
+	<keyword>python_foreach_impl python_domodule</keyword> mypackage
+}
+</pre>
+
+			<p>
+				The <c>python_doscript</c> helper takes a list of script names
+				and installs them. The files are installed
+				in <path>/usr/bin</path> by default. The destination can
+				be changed through setting the <c>python_scriptpath</c> variable
+				or using the <c>python_scriptinto</c> function.
+			</p>
+
+			<p>
+				The installed scripts will be renamed to end
+				with an implementation-specific suffix. A wrapper will be linked
+				in place of the original name.
+			</p>
+
+			<pre caption='Installing Python scripts'>
+src_install() {
+	<keyword>python_export</keyword> <const>python3_2</const> <var>EPYTHON</var>
+
+	<comment># Installs /usr/bin/frobnicate-python3.2</comment>
+	<comment># and a wrapper symlink at /usr/bin/frobnicate</comment>
+	<keyword>python_doscript</keyword> frobnicate
+
+	<comment># Installs /usr/sbin/whyamihere-python3.2</comment>
+	<comment># and a wrapper symlink at /usr/sbin/whyamihere</comment>
+	<keyword>python_scriptinto</keyword> /usr/sbin
+	<keyword>python_doscript</keyword> whyamihere
+
+	<comment># Installs /usr/bin/myscript-* for all implementations</comment>
+	<comment># and a wrapper symlink at /usr/bin/myscript</comment>
+	<keyword>local</keyword> <var>python_scriptroot</var>
+	<keyword>python_foreach_impl python_doscript</keyword> myscript
+}
+</pre>
+
 		</body>
 	</section>
 </chapter>
