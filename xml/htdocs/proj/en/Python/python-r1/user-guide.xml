@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/user-guide.xml,v 1.6 2012/11/16 19:14:46 mgorny Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/user-guide.xml,v 1.7 2012/11/26 10:02:10 mgorny Exp $ -->
 
 <guide lang="en">
 <title>python-r1 User's Guide</title>
@@ -24,8 +24,8 @@
 <!-- See http://creativecommons.org/licenses/by-sa/3.0/ -->
 <license version="3.0"/>
 
-<version>5</version>
-<date>2012-11-16</date>
+<version>6</version>
+<date>2012-11-26</date>
 
 <chapter id="Multi_implementation_support">
 	<title>Multi-implementation support</title>
@@ -67,50 +67,102 @@
 		</body>
 	</section>
 
-	<section id="mis_PYTHON_TARGETS_setting">
-		<title>PYTHON_TARGETS setting</title>
+	<section id="mis_PYTHON_TARGETS_and_PYTHON_SINGLE_TARGET_settings">
+		<title>PYTHON_TARGETS and PYTHON_SINGLE_TARGET settings</title>
 
 		<body>
 			<p>
 				Having a number of implementations to choose from, the modern
 				Python packages provide users with an ability to explicitly
 				select one or more Python implementations. This selection
-				is performed through the use of <c>PYTHON_TARGETS</c> expanded
-				USE flags.
+				is made via USE flags.
+			</p>
+
+			<p>
+				There are two relevant expanded USE variables:
+			</p>
+
+			<ol>
+				<li><c>PYTHON_TARGETS</c>,</li>
+				<li><c>PYTHON_SINGLE_TARGET</c>.</li>
+			</ol>
+
+			<p>
+				The <c>PYTHON_TARGETS</c> variable is used whenever more
+				than one Python implementation can be enabled at the same time.
+				Therefore, it can list multiple interpreters.
+			</p>
+
+			<p>
+				The <c>PYTHON_SINGLE_TARGET</c> variable is used whenever only
+				a single Python implementation can be enabled, and it takes
+				precedence over <c>PYTHON_TARGETS</c>. It can list one
+				implementation only.
+			</p>
+
+			<p>
+				By default, Python 2.7 and 3.2 are enabled, with Python 2.7
+				being used for packages not supporting multiple implementations.
+				Those defaults can be overriden through specifying the relevant
+				variables in <path>make.conf</path>. The following values can
+				be used:
+			</p>
+
+			<ol>
+				<li><c>pythonX_Y</c> for CPython X.Y;</li>
+				<li><c>pypyX_Y</c> for PyPy X.Y;</li>
+				<li><c>jythonX_Y</c> for Jython X.Y.</li>
+			</ol>
+
+			<pre caption="Example make.conf enabling Python 2.6, 2.7 and 3.2">
+<var>PYTHON_TARGETS</var>=<const>"python2_6 python2_7 python3_2"</const>
+<var>PYTHON_SINGLE_TARGET</var>=<const>"python2_7"</const>
+</pre>
+
+			<p>
+				If it is necessary to change the enabled implementations
+				for a single package, the expanded form of the USE flags can
+				be used in <path>package.use</path> file:
+			</p>
+
+			<pre caption="Example package.use file enabling Python 3.1
+				on two packages">
+<ident>app-portage/flaggie</ident> <const>python_targets_python3_1</const>
+<ident>net-libs/libproxy</ident> <const>python_targets_python3_1 python_single_target_python3_1</const> <comment>-python_single_target_python2_7</comment>
+</pre>
+
+			<note>
+				Please note that while setting the variables
+				in <path>make.conf</path> overrides the default values, setting
+				them in <path>package.use</path> only appends to the previous
+				value. Therefore, it may be necessary to explicitly disable global
+				or default values.
+			</note>
+
+			<p>
+				The implementations enabled for a package can be listed
+				by the output of <c>emerge --verbose</c>. If a package lists
+				the <c>PYTHON_SINGLE_TARGET</c>, the enabled implementation
+				is used, rendering <c>PYTHON_TARGETS</c> moot. Otherwise, all
+				implementations enabled in <c>PYTHON_TARGETS</c> are used.
 			</p>
 
 			<pre caption="Example output of emerge with PYTHON_TARGETS-aware
-				package">
-$ <i>emerge -pv app-portage/flaggie</i>
+				packages">
+$ <i>emerge -pv app-portage/flaggie net-libs/libproxy</i>
 
 These are the packages that would be merged, in order:
 
 Calculating dependencies... done!
-[<keyword>ebuild   R   *</keyword>] <ident>app-portage/flaggie-9999::mgorny</ident>  <var>PYTHON_TARGETS</var>="<const>python2_6 python2_7 python3_2</const> <comment>-python3_1</comment>" 0 kB
+[<keyword>ebuild   R    </keyword>] <ident>app-portage/flaggie-0.2-r2::gentoo-cvs</ident>
+                   <var>PYTHON_TARGETS</var>="<const>python2_6 python2_7 python3_2</const> <comment>-python3_1</comment>" 0 kB
+[<keyword>ebuild   R    </keyword>] <ident>net-libs/libproxy-0.4.10-r1::gentoo-cvs</ident>
+                   <var>PYTHON_SINGLE_TARGET</var>="<const>python2_7</const> <comment>-python2_6</comment>"
+                   <var>PYTHON_TARGETS</var>="<const>python2_6 python2_7</const>" 0 kB
 
-Total: 1 package (1 reinstall), Size of downloads: 0 kB
+Total: 2 packages (2 reinstalls), Size of downloads: 0 kB
 </pre>
 
-			<p>
-				As you can see in the above sample, the package in question
-				supports four Python implementations of which three are enabled.
-				This means that all the Python modules and scripts will be
-				installed for those three Python versions, and thus they will
-				be available to the scripts run using those versions.
-			</p>
-
-			<p>
-				CPython versions 2.7 and 3.2 are enabled by default. If you wish
-				to use a different set of enabled implementations, you have
-				to set the <c>PYTHON_TARGETS</c> variable
-				in <path>make.conf</path>. Please note that it is
-				not incremental — that is, you need to list all the enabled
-				implementations.
-			</p>
-
-			<pre caption="Example make.conf enabling Python 2.6, 2.7 and 3.2">
-<var>PYTHON_TARGETS</var>=<const>"python2_6 python2_7 python3_2"</const>
-</pre>
 		</body>
 	</section>
 
