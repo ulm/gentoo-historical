@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.4 2012/11/27 17:47:42 mgorny Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.5 2012/11/27 20:41:24 mgorny Exp $ -->
 
 <guide lang="en">
 <title>python-r1 Developer's Guide</title>
@@ -23,7 +23,7 @@
 <!-- See http://creativecommons.org/licenses/by-sa/3.0/ -->
 <license version="3.0"/>
 
-<version>4</version>
+<version>5</version>
 <date>2012-11-27</date>
 
 <chapter id="Introductory_info">
@@ -198,6 +198,116 @@
 				<c>python-utils-r1</c>. There is therefore no need to ever
 				inherit more than one eclass from the suite.
 			</note>
+		</body>
+	</section>
+
+	<section id="ii_The_active_Python_interpreter_in_ebuild_scope">
+		<title>The active Python interpreter in ebuild scope</title>
+
+		<body>
+			<p>
+				A key concept in the workflow of python-r1 suite is the setting
+				of the active Python interpreter. Its value is stored
+				and exported in the <c>EPYTHON</c> environment variable.
+			</p>
+
+			<p>
+				The setting of active Python interpreter can affect;
+			</p>
+
+			<ol>
+				<li>
+					the interpreter used to run external Python scripts,
+				</li>
+
+				<li>
+					the implementation used by helpers,
+					such as <c>python_domodule</c> and <c>python_doscript</c>,
+				</li>
+
+				<li>
+					the default implementation for <c>python_export</c>
+					and the associated getter functions.
+				</li>
+			</ol>
+
+			<p>
+				The <c>EPYTHON</c> variable is set implicitly in the following
+				scopes;
+			</p>
+
+			<ol>
+				<li>
+					in commands and functions run by <c>python_foreach_impl</c>,
+				</li>
+
+				<li>
+					in implementation-specific sub-phases of <c>distutils-r1</c>,
+				</li>
+
+				<li>
+					in ebuilds using the <c>python-single-r1</c> eclass after
+					running <c>python-single-r1_pkg_setup</c>.
+				</li>
+			</ol>
+
+			<p>
+				If it is otherwise necessary to set the active Python
+				interpreter, it can be either set using the <c>python_export</c>
+				function or by setting the <c>EPYTHON</c> variable directly.
+				For the details on the former solution, please refer to the <uri
+					link="#pur1_Obtaining_Python_implementation_information">Obtaining
+					Python implementation information</uri> section.
+			</p>
+
+			<p>
+				If <c>EPYTHON</c> is set directly, it needs to have one
+				of the following values;
+			</p>
+
+			<ol>
+				<li>
+					<c>pythonX.Y</c> for CPython X.Y;
+				</li>
+
+				<li>
+					<c>pypy-cX.Y</c> for PyPy X.Y;
+				</li>
+
+				<li>
+					<c>jythonX.Y</c> for Jython X.Y.
+				</li>
+			</ol>
+
+			<note>
+				Please note that for <c>EPYTHON</c> to be effective to external
+				programs, it needs to be exported.
+			</note>
+
+			<pre caption='Setting EPYTHON for the function scope'>
+pkg_setup() {
+	<comment># Variant 1</comment>
+	<comment># The variables are not local, therefore the setting is preserved</comment>
+	<comment># through phase functions.</comment>
+	<keyword>python_export</keyword> <ident>python2_7</ident>
+}
+
+src_compile() {
+	<comment># Variant 2</comment>
+	<comment># The variables are kept local.</comment>
+	local <var>EPYTHON PYTHON</var>
+	<keyword>python_export</keyword> <ident>python2_7</ident>
+
+	<comment># …</comment>
+}
+
+src_install() {
+	<comment># Variant 3</comment>
+	local <var>EPYTHON</var>=<ident>python2.7</ident>
+
+	<comment># …</comment>
+}
+</pre>
 		</body>
 	</section>
 </chapter>
@@ -712,12 +822,11 @@ src_install() {
 			</p>
 
 			<p>
-				The <c>python_export</c> can additionally take a Python
+				The <c>python_export</c> function can additionally take a Python
 				implementation as a first argument, either in the form of a USE
 				flag or an <c>EPYTHON</c> value. If such a form is used,
 				the values specific to the passed implementation are exported.
-				Otherwise, the currently used implementation (the <c>EPYTHON</c>
-				environment variable) is used.
+				Otherwise, the currently active implementation is used.
 			</p>
 
 			<p>
@@ -827,9 +936,9 @@ src_install() {
 			</p>
 
 			<p>
-				The installed modules will be byte-compiled using the current
-				Python implementation. The selected implementation determines
-				the <c>site-packages</c> location as well.
+				The installed modules will be byte-compiled using the currently
+				active Python implementation. The selected implementation
+				determines the <c>site-packages</c> location as well.
 			</p>
 
 			<pre caption='Installing Python modules and packages'>
@@ -866,8 +975,9 @@ src_install() {
 
 			<p>
 				The installed scripts will be renamed to end
-				with an implementation-specific suffix. A wrapper will be linked
-				in place of the original name.
+				with an implementation-specific suffix specific to the currently
+				active Python interpreter. A wrapper will be linked in place
+				of the original name.
 			</p>
 
 			<pre caption='Installing Python scripts'>
@@ -913,8 +1023,8 @@ src_install() {
 			</p>
 
 			<p>
-				The modules are compiled using the current Python implementation
-				(<c>EPYTHON</c>).
+				The modules are compiled using the currently active Python
+				implementation.
 			</p>
 
 			<pre caption='Compiling Python modules'>
