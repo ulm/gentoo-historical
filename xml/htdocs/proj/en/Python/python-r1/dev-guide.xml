@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.3 2012/11/26 12:14:31 mgorny Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.4 2012/11/27 17:47:42 mgorny Exp $ -->
 
 <guide lang="en">
 <title>python-r1 Developer's Guide</title>
@@ -23,8 +23,8 @@
 <!-- See http://creativecommons.org/licenses/by-sa/3.0/ -->
 <license version="3.0"/>
 
-<version>3</version>
-<date>2012-11-26</date>
+<version>4</version>
+<date>2012-11-27</date>
 
 <chapter id="Introductory_info">
 	<title>Introductory information</title>
@@ -547,21 +547,23 @@
 			<p>
 				There are two modes of building packages with distutils-r1;
 				‘out-of-source builds’ (the default) and ‘in-source builds’.
-				An out-of-source build uses a common source directory, reads
-				files from that directory but locates the built files
-				in a separate directory. An in-source build locates both
-				the source and output files in the same directory.
 			</p>
 
 			<p>
-				When an out-of-source build is used, the phase functions are run
-				in the <c>${S}</c> directory. The build directory used
-				for the particular implementation is stored
-				in the <c>BUILD_DIR</c> variable, all calls to <c>setup.py</c>
-				pass additional <c>build --build-base…</c> parameters pointing
-				to it and the <path>lib</path> subdirectory of the build
-				directory is added to <c>PYTHONPATH</c>. As a consequence,
-				the package is built on the first <c>setup.py</c> invocation.
+				When an out-of-source build is performed, the build directory
+				(<c>${BUILD_DIR}</c>) is used to store output files, while
+				the sources are kept in their original location. Therefore,
+				the build system must not attempt to modify any of the input
+				files or write to <c>${S}</c>.
+			</p>
+
+			<p>
+				In order to support out-of-source builds, the build directory
+				is appended to <c>PYTHONPATH</c> and <c>esetup.py</c> command
+				adds build directory paths to the <c>setup.py</c> invocation.
+				Due to technical limitations of distutils, this results
+				in the package being built on the first <c>esetup.py</c>
+				invocation.
 			</p>
 
 			<p>
@@ -573,15 +575,11 @@
 			</p>
 
 			<p>
-				When in-source builds are enabled, the default
-				<c>python_prepare_all</c> first creates a copy of all
-				the sources in the <c>BUILD_DIR</c> for each implementation.
-				The implementation-common sub-phase functions are still executed
-				in the source directory, but those
-				of the implementation-specific sub-phases are executed in build
-				directories. There is no explicit linking between the source
-				copies, therefore the build system is allowed to modify them
-				freely.
+				When an in-source build is performed, the build directory acts
+				both as a source and output directory. The package sources
+				are copied there first, and all implementation-specific
+				sub-phases are executed in the build directory. Therefore,
+				the build system is allowed to modify the sources freely.
 			</p>
 		</body>
 	</section>
@@ -603,7 +601,7 @@
 			<p>
 				If it is necessary to run a command repeatedly for multiple
 				Python implementations, the <c>python_foreach_impl</c> function
-				can be used. It takes a command and a list of its paraameters/,
+				can be used. It takes a command and a list of its parameters
 				and runs it once for each Python implementation enabled.
 				The command can also name a local function.
 			</p>
@@ -750,7 +748,8 @@ src_install() {
 				to standard output. The output can be captured using bash
 				command substitution. These functions take an optional parameter
 				specifying the requested Python implementation.
-				If not specified, the current one will be used.
+				If not specified, the implementation set as <c>EPYTHON</c> will
+				be used.
 			</p>
 
 			<p>
