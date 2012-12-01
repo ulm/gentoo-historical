@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.7 2012/11/30 11:04:15 mgorny Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.8 2012/12/01 09:27:16 mgorny Exp $ -->
 
 <guide lang="en">
 <title>python-r1 Developer's Guide</title>
@@ -23,8 +23,8 @@
 <!-- See http://creativecommons.org/licenses/by-sa/3.0/ -->
 <license version="3.0"/>
 
-<version>6</version>
-<date>2012-11-28</date>
+<version>7</version>
+<date>2012-12-01</date>
 
 <chapter id="Introductory_info">
 	<title>Introductory information</title>
@@ -114,14 +114,15 @@
 
 		<body>
 			<p>
-				The python‑r1 suite consists of four eclasses:
+				The python‑r1 suite consists of five eclasses:
 			</p>
 
 			<ol>
 				<li><c>python-utils-r1</c>,</li>
 				<li><c>python-r1</c>,</li>
 				<li><c>distutils-r1</c>,</li>
-				<li><c>python-single-r1</c>.</li>
+				<li><c>python-single-r1</c>,</li>
+				<li><c>python-any-r1</c>.</li>
 			</ol>
 
 			<p>
@@ -158,36 +159,57 @@
 			</p>
 
 			<p>
+				The <c>python‑any‑r1</c> eclass is designed to be used
+				on packages which do not need explicit implementation choice
+				or rely on specific implementation installed being invariable.
+				This mostly involves packages having strictly build-time
+				dependency on Python. It exports metadata suitable for setting
+				an appropriate dependency, and a <c>pkg_setup</c> phase function
+				handling finding the best installed implementation.
+			</p>
+
+			<p>
 				The choice of eclass for your package could follow the following
 				algorithm:
 			</p>
 
 			<ol>
 				<li>
-					if the package supports being installed for multiple Python
-					implementations, the Python part of it is unconditional
-					and uses the distutils build system (or one very similar),
-					use the <c>distutils‑r1</c> eclass;
+					If the package supports being installed for multiple Python
+					implementations;
+
+					<ol>
+						<li>
+							and if the Python-related content uses the distutils build
+							system and is free of being conditional to a USE flag,
+							then use <c>distutils‑r1</c>;
+						</li>
+
+						<li>
+							and if the Python-related content is conditional
+							to a USE flag or the package uses non-distutils build
+							system, then use <c>python‑r1</c>.
+						</li>
+					</ol>
 				</li>
 
 				<li>
-					if the package supports being installed for multiple Python
-					implementations separately and installs Python modules,
-					scripts or embeds Python, use <c>python‑r1</c>;
-				</li>
-
-				<li>
-					if the package can be installed for a single Python
+					If the package can be installed for a single Python
 					implementation only and installs Python modules, scripts
-					or embeds Python, use <c>python‑single‑r1</c>;
+					or embeds Python, then use <c>python‑single‑r1</c>.
 				</li>
 
 				<li>
-					if the package has a specific or loose connection to Python,
-					installs Python modules for multiple implementations
-					in a common location, or has any other special needs,
-					consider using <c>python‑utils‑r1</c> (although you may
-					not need any eclass at all).
+					If the package has a strictly build-time dependency on Python
+					or installs Python modules or scripts in a common variant
+					for multiple Python implementations,
+					then use <c>python‑any‑r1</c>.
+				</li>
+
+				<li>
+					If the package has a specific or loose connection to Python
+					where no other eclass serves the intended purpose,
+					then consider using <c>python‑utils‑r1</c>.
 				</li>
 			</ol>
 
@@ -440,7 +462,7 @@ src_install() {
 				</tr>
 
 				<tr>
-					<ti><c>python‑r1</c> &amp; <c>distutils‑r1</c></ti>
+					<ti><c>python‑r1</c></ti>
 					<ti>
 						USE-conditional upon <c>PYTHON_TARGETS</c>
 					</ti>
@@ -461,6 +483,18 @@ src_install() {
 						<c>
 							python_single_target_python2_6? ( dev-lang/python:2.6 )
 							python_single_target_python2_7? ( dev-lang/python:2.7 )
+						</c>
+					</ti>
+				</tr>
+
+				<tr>
+					<ti><c>python‑any‑r1</c></ti>
+					<ti>
+						unconditional, satisfied by any supported version
+					</ti>
+					<ti>
+						<c>
+							|| ( dev-lang/python:2.7 dev-lang/python:2.6 )
 						</c>
 					</ti>
 				</tr>
@@ -518,20 +552,20 @@ src_install() {
 </pre>
 
 			<p>
-				The compatibility of <c>PYTHON_USEDEP</c> with ebuilds using
-				different eclasses according to the inherited eclass is listed
-				in the following table:
+				The compatibilities of <c>PYTHON_USEDEP</c> with packages
+				using different eclasses according to the inherited eclass
+				of the ebuild being developed are listed in the following table:
 			</p>
 
 			<table>
 				<tr>
 					<th>Eclass</th>
-					<th>Compatible with</th>
+					<th>Compatible with packages using</th>
 					<th>Example value</th>
 				</tr>
 
 				<tr>
-					<ti><c>python‑r1</c> &amp; <c>distutils‑r1</c></ti>
+					<ti><c>python‑r1</c></ti>
 					<ti>
 						<c>python‑r1</c>, <c>python‑distutils‑ng</c>
 					</ti>
@@ -544,11 +578,21 @@ src_install() {
 					<ti><c>python‑single‑r1</c></ti>
 					<ti>
 						<c>python‑r1</c>,
-						<c>python‑single‑r1</c>,
-						<c>python‑distutils‑ng</c>
+						<c>python‑distutils‑ng</c>,
+						<c>python‑single‑r1</c>
 					</ti>
 					<ti>
 						<c>python_targets_python2_6?,​python_targets_python2_7?,​python_single_target_python2_6(+)?,​python_single_target_python2_7(+)?</c>
+					</ti>
+				</tr>
+
+				<tr>
+					<ti><c>python‑any‑r1</c></ti>
+					<ti>
+						not used in eclass
+					</ti>
+					<ti>
+						n/a
 					</ti>
 				</tr>
 			</table>
@@ -564,7 +608,7 @@ src_install() {
 				belongs to the Python implementation itself but is not always
 				available. The availability can depend both on Python version
 				and USE flags. These features can be divided into two types;
-				those having replacement modules and those lacking them.
+				those having replacement packages and those lacking them.
 			</p>
 
 			<p>
