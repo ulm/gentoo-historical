@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/treecleaners/maintainer-needed.xml,v 1.290 2012/12/06 10:02:01 moult Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/qa/treecleaners/maintainer-needed.xml,v 1.291 2012/12/06 12:26:40 moult Exp $ -->
 
 
 
@@ -31,9 +31,39 @@
   <body>
   <p>
 Packages which do not have an active maintainer to take care of them are marked as <b>maintainer-needed</b>. This means that they will gonna rot or be removed from portage tree unless someone steps up and take care of them. You are free to do it your self if you feel like it. More information about <b>maintainer-needed</b> packages you may find on <uri link='http://www.gentoo.org/proj/en/qa/treecleaners/'>treecleaners project page</uri>.
-Gentoo developers and users are encouraged to pick up maintenance for maintainer-needed packages. Users can become maintainers for packages via the <uri link="http://overlays.gentoo.org/proj/sunrise/wiki/ProxyMaintainer">proxy-maintainer process</uri>. If you would like to see which of your installed packages are orphaned, you could use <uri link="http://gist.github.com/4223307">this</uri> python script developed by Ewoud Kohl Van Wijngaarden.
+Gentoo developers and users are encouraged to pick up maintenance for maintainer-needed packages. Users can become maintainers for packages via the <uri link="http://overlays.gentoo.org/proj/sunrise/wiki/ProxyMaintainer">proxy-maintainer process</uri>. If you would like to see which of your installed packages are orphaned, you could use the following python script developed by Ewoud Kohl Van Wijngaarden.
 
   </p>
+  <pre caption="Python script to check for installed orphaned packages">
+#!/usr/bin/python
+from bs4 import BeautifulSoup
+import portage
+import urllib2
+
+<var>url</var> = 'http://www.gentoo.org/proj/en/qa/treecleaners/maintainer-needed.xml'
+
+<comment># Build a to remove set</comment>
+<var>f</var> = urllib2.urlopen(url)
+<var>soup</var> = BeautifulSoup(f.read())
+<var>table</var> = soup.find('table', {'class': 'ntable'})
+<var>toremove</var> = <keyword>set</keyword>(row.findChild('a').text for row in table.findChildren('tr')[1:])
+<var>f</var>.close()
+
+<comment># Build an installed set</comment>
+<var>vartree</var> = portage.db[portage.root]['vartree']
+<var>installed</var> = <keyword>set</keyword>(vartree.dbapi.cp_all())
+
+<comment># Print installed, but to be removed</comment>
+<var>packages</var> = <keyword>sorted</keyword>(toremove.intersection(installed))
+if packages:
+    print "The following %d installed package(s) need a maintainer" % <keyword>len</keyword>(packages)
+    for package in packages:
+        print "-", package
+    <keyword>exit</keyword>(1)
+else:
+    print "All installed packages have a maintainer :)"
+    <keyword>exit</keyword>(0)
+  </pre>
   </body>
   </section>
 <section>
