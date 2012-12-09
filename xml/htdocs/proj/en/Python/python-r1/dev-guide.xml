@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.10 2012/12/07 18:00:57 mgorny Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.11 2012/12/09 14:39:47 mgorny Exp $ -->
 
 <guide lang="en">
 <title>python-r1 Developer's Guide</title>
@@ -23,8 +23,8 @@
 <!-- See http://creativecommons.org/licenses/by-sa/3.0/ -->
 <license version="3.0"/>
 
-<version>9</version>
-<date>2012-12-07</date>
+<version>10</version>
+<date>2012-12-09</date>
 
 <chapter id="Introductory_info">
 	<title>Introductory information</title>
@@ -949,6 +949,140 @@ src_install() {
 	<keyword>python_foreach_impl python_doscript</keyword> mymodule-ui
 }
 </pre>
+		</body>
+	</section>
+</chapter>
+
+<chapter id='Eclasses_for_use_of_a_single_Python_implementation'>
+	<title>Eclasses for use of a single Python implementation</title>
+
+	<section id="spi_Introduction">
+		<title>Introduction</title>
+
+		<body>
+			<p>
+				The python‑r1 suite provides two eclasses for work with a single
+				Python implementation:
+			</p>
+
+			<ol>
+				<li><c>python-single-r1</c>,</li>
+
+				<li><c>python-any-r1</c>.</li>
+			</ol>
+
+			<p>
+				The python‑single‑r1 eclass is intended for packages where
+				the choice of the used Python implementation is made available
+				to the user. This group includes packages which install Python
+				modules or scripts specific to the chosen implementation.
+			</p>
+
+			<p>
+				The python‑any‑r1 eclass is intended for packages which
+				are not bound to a single Python implementation and its
+				selection, therefore, is unimportant. These are mostly
+				packages with build-time tools written in Python.
+			</p>
+
+			<p>
+				Both eclasses share the same core API being a superset of the core
+				python‑r1 API. It includes;
+			</p>
+
+			<ol>
+				<li>
+					use of <c>PYTHON_COMPAT</c> to list supported Python
+					implementations,
+				</li>
+
+				<li>
+					setting of <c>PYTHON_DEPS</c> to a proper dependency string,
+					respecting <c>PYTHON_REQ_USE</c>,
+				</li>
+
+				<li>
+					export of <c>pkg_setup()</c> phase function which performs
+					the choice of Python implementation and exports
+					implementation-specific variables.
+				</li>
+			</ol>
+
+			<p>
+				It should be noted that if the Python-related code in the ebuild
+				is conditional upon a USE flag, a proper USE-conditional need
+				be used around <c>${PYTHON_DEPS}</c>
+				and the <c>python-single-r1_pkg_setup</c>
+				or <c>python-any-r1_pkg_setup</c> invocation need be used
+				conditionally.
+			</p>
+
+			<pre caption='Example conditional use of python‑single‑r1'>
+<var>PYTHON_COMPAT</var>=( python{2_6,2_7} )
+inherit <ident>python-single-r1</ident>
+
+<var>IUSE</var>="<const>python</const>"
+
+<var>RDEPEND</var>="<const>python?</const> ( <ident>${PYTHON_DEPS}</ident> )"
+<var>DEPEND</var>=${RDEPEND}
+
+pkg_setup() {
+	<keyword>use</keyword> <const>python</const> &amp;&amp; <keyword>python-single-r1_pkg_setup</keyword>
+}
+</pre>
+		</body>
+	</section>
+
+	<section id="spi_python_single_r1">
+		<title>python‑single‑r1</title>
+
+		<body>
+			<p>
+				The python‑single‑r1 eclass, much alike python‑r1, provides
+				an explicit implementation choice with the help of USE flags.
+				However, in order not to collide with common setups enabling
+				multiple Python implementations, it uses a different variable —
+				<c>PYTHON_SINGLE_TARGET</c>.
+			</p>
+
+			<p>
+				The <c>python-single-r1_pkg_setup</c> phase function obtains
+				the value of <c>PYTHON_SINGLE_TARGET</c> and exports the default
+				set of variables specific to the chosen Python implementation.
+			</p>
+		</body>
+	</section>
+
+	<section id="spi_python_any_r1">
+		<title>python‑any‑r1</title>
+
+		<body>
+			<p>
+				The python‑any‑r1 eclass performs an implicit choice of Python
+				implementation. It accepts any of the supported Python
+				interpreters (therefore using an any-of dependency
+				in <c>PYTHON_DEPS</c>), and chooses the best installed one.
+			</p>
+
+			<p>
+				The <c>python-any-r1_pkg_setup</c> phase function obtains
+				the best Python implementation installed. The choice algorithm
+				follows one used by python‑exec tool, that is in order:
+			</p>
+
+			<ol>
+				<li>
+					the implementation specified in <c>EPYTHON</c>,
+				</li>
+
+				<li>
+					the implementation chosen by eselect‑python,
+				</li>
+
+				<li>
+					the default implementation preference.
+				</li>
+			</ol>
 		</body>
 	</section>
 </chapter>
