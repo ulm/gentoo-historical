@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-sparc-kernel.xml,v 1.5 2006/03/30 20:58:50 achumakov Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-sparc-kernel.xml,v 1.6 2012/12/09 19:13:29 swift Exp $ -->
 
 <sections>
 
-<version>2.7</version>
-<date>2006-01-06</date>
+<version>3</version>
+<date>2012-09-11</date>
 
 <section>
 <title>Часовой пояс</title>
@@ -18,16 +18,18 @@
 <p>
 Сначала вы должны выбрать часовой пояс (time zone), чтобы система знала, где вы 
 находитесь. Найдите нужный пояс в <path>/usr/share/zoneinfo</path>, затем 
-скопируйте его в <path>/etc/localtime</path>. Постарайтесь, пожалуйста, 
-избегать использования часовых поясов 
-<path>/usr/share/zoneinfo/Etc/GMT*</path>, т. к. их названия не соответствуют
-ожидаемым поясам. Например, <path>GMT-8</path> фактически является поясом GMT+8.
+скопируйте его в <path>/etc/localtime</path>. Постарайтесь
+избегать использования часовых поясов <path>/usr/share/zoneinfo/Etc/GMT*</path>, 
+т. к. их названия не соответствуют ожидаемым поясам. Например, <path>GMT-8</path> 
+фактически является поясом GMT+8.
 </p>
 
 <pre caption="Установка часового пояса">
 # <i>ls /usr/share/zoneinfo</i>
-<comment>(допустим, вы хотите использовать GMT)</comment>
-# <i>cp /usr/share/zoneinfo/GMT /etc/localtime</i>
+<comment>(допустим, вы хотите использовать Europe/Brussels)</comment>
+# <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
+<comment>(Затем установите часовой пояс)</comment>
+# <i>echo "Europe/Brussels" &gt; /etc/timezone</i>
 </pre>
 
 </body>
@@ -47,39 +49,29 @@ link="/doc/en/gentoo-kernel.xml">путеводителе по ядру Gentoo (
 </p>
 
 <p>
-Для sparc-ориентированных систем у нас имеется <c>sparc-sources</c> (исходный 
-код ядра оптимизированного для пользователей SPARC) и <c>vanilla-sources</c> 
-(исходный код ядра по умолчанию разработанный программистами linux-kernel).
+Для <keyval id="arch"/>-ориентированных систем у нас имеется <c>gentoo-sources</c> 
+(исходные коды ядра, с патчами для дополнительных возможностей).
 </p>
 
 <p>
-Выберите ядро и установите его используя команду <c>emerge</c>.
-</p>
-
-<p>
-В нашем примере мы воспользуемся установкой ядра <c>sparc-sources</c>. Вы 
-можете изменить его в соответствии с выбранным вами исходником, здесь 
-приводится просто пример. <c>USE="-doc"</c> требуется, чтобы на этом этапе 
-избежать установки xorg-x11 или других зависимых пакетов. <c>USE="symlink"</c> 
-для новой установки не требуется, но обеспечивает правильное создание 
-символьной ссылки <path>/usr/src/linux</path>.
+Выберите ваши исходные коды ядра, и установите их с помощью <c>emerge</c>.
 </p>
 
 <pre caption="Установка исходных кодов ядра">
-# <i>USE="-doc symlink" emerge sparc-sources</i>
+# <i>emerge gentoo-sources</i>
 </pre>
 
 <p>
 Посмотрев в каталог <path>/usr/src</path>, вы увидите символическую ссылку, 
 названную <path>linux</path>, указывающую на исходный код ядра. В данном 
 случае, установленный исходный код ядра указывает на 
-<c>gentoo-sources-2.6.12-r10</c>. Ваша версия может отличаться, имейте это в 
+<c>linux-<keyval id="kernel-version"/></c>. Ваша версия может отличаться, имейте это в 
 виду:
 </p>
 
 <pre caption="Символическая ссылка на исходный код ядра">
 # <i>ls -l /usr/src/linux</i>
-lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-2.4.31-sparc
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
 </pre>
 
 <p>
@@ -137,45 +129,33 @@ lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; lin
 <body>
 
 <p>
-Во-первых, активизируйте использование разработочного и экспериментального 
-кода/драйверов. Это необходимо, иначе некоторые очень важные программы/драйвера 
-будут не видимы.
+Сначала нам нужно настроить правильные настройки кросс-компиляции, чтобы
+быть уверенным в том, что ядро Linux будет создано для корректного типа
+системы. Чтобы это сделать, установите <e>Cross-compiler tool prefix</e> в
+<c>sparc64-unknown-linux-gnu-</c> (включая последнее тире):
 </p>
 
-<pre caption="Выбор экспериментального кода/драйверов">
-Code maturity level options ---&gt;
-  [*] Prompt for development and/or incomplete code/drivers
+<pre caption="Определяем правильную платформу для кросс-компиляции">
+General setup ---&gt;
+  (<i>sparc64-unknown-linux-gnu-</i>) Cross-compiler tool prefix
 </pre>
 
 <p>
-Далее идите в <c>File Systems</c> и выберите поддержку используемых файловых 
+Затем идите в <c>File Systems</c> и выберите поддержку используемых файловых 
 систем. <e>Не</e> компилируйте их как модули, иначе система Gentoo не сможет 
-смонтировать их как разделы. Также выберите <c>Virtual memory</c>, <c>/proc 
-file system</c>. Если вы используете ядро 2.4, также следует выбрать <c>/dev 
-file system</c> + <c>Automatically mount at boot</c>:
+смонтировать их как разделы. Также выберите <c>Virtual memory</c> и <c>/proc 
+file system</c>.
 </p>
 
 <pre caption="Выбор необходимых файловых систем">
-<comment>(для ядра 2.4.x)</comment>
-File systems ---&gt;
-  [*] Virtual memory file system support (former shm fs)
-  [*] /proc file system support
-  [*] /dev file system support (EXPERIMENTAL)
-  [*]   Automatically mount at boot
-  [ ] /dev/pts file system for Unix98 PTYs
-
-<comment>(для ядра 2.6.x)</comment>
 File systems ---&gt;
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
 
 <comment>(Выберите один или больше параметров в соответствии с требованиями системы)</comment>
-  &lt;*&gt; Reiserfs support
   &lt;*&gt; Ext3 journalling file system support
-  &lt;*&gt; JFS filesystem support
   &lt;*&gt; Second extended fs support
-  &lt;*&gt; XFS filesystem support
 </pre>
 
 <p>
@@ -184,15 +164,8 @@ File systems ---&gt;
 </p>
 
 <pre caption="Выбор необходимых драйверов для PPPoE">
-<comment>(для ядра 2.4.x)</comment>
-Network device support ---&gt;
-  &lt;*&gt; PPP (point-to-point protocol) support
-  &lt;*&gt;   PPP support for async serial ports
-  &lt;*&gt;   PPP support for sync tty ports
-
-<comment>(для ядра 2.6.x)</comment>
 Device Drivers ---&gt;
-  Networking support ---&gt;
+  Network device support ---&gt;
     &lt;*&gt; PPP (point-to-point protocol) support
     &lt;*&gt;   PPP support for async serial ports
     &lt;*&gt;   PPP support for sync tty ports
@@ -201,11 +174,7 @@ Device Drivers ---&gt;
 <p>
 Две директивы сжатия не навредят, но не являются необходимыми, точно также как 
 и директива <c>PPP over Ethernet</c>, которая должна использоваться только для 
-варианта <c>rp-pppoe</c> когда настраивается режим ядра PPPoE.
-</p>
-
-<p>
-Если необходимо, не забудьте включить в ядро поддержку сетевой Ethernet-карты.
+варианта <c>ppp</c> когда настраивается режим ядра PPPoE.
 </p>
 
 <p>
@@ -258,7 +227,26 @@ Network device support ---&gt;
 <p>
 Если у вас имеется 4-х портовый Ethernet компьютер (10/100 или 10/100/1000) 
 порядок портов отличается от используемого в Solaris. Можете использовать 
-<c>sys-apps/ethtool</c> или <c>mii-tool</c> для проверки связи состояния порта.
+<c>sys-apps/ethtool</c> для проверки связи состояния порта.
+</p>
+
+<p>
+Если вы используете контроллер диска qla2xxx, вам нужно ядро 2.6.27 или более
+новое. Кроме того, вам нужно установить <c>sys-block/qla-fc-firmware</c>. Далее
+запустите <c>make menuconfig</c> и зайдите в раздел Device Drivers. Вам нужно
+добавить поддержку загрузки внешней прошивки.
+</p>
+
+<pre caption="Enabling external firmware">
+Device Drivers ---&gt;
+  Generic Driver Options ---&gt;
+  () External firmware blobs to build into the kernel binary
+  () Firmware blobs root directory
+</pre>
+
+<p>
+Установите "External firmware blobs" в <path>ql2200_fw.bin</path> и
+"Firmware blobs root directory" в <path>/lib/firmware</path>.
 </p>
 
 <p>
@@ -273,16 +261,11 @@ link="#compiling">Компиляция и установка</uri>. Тем не 
 </pre>
 
 <p>
-Если размер несжатого ядра больше чем 2.5 MB (для Sparc32) или 3.5MB (Sparc64), 
-перенастройте ваше ядро так чтобы оно не превышало этих пределов. Одним из 
-путей достижения этого является компиляция большинства драйверов ядра как 
-модулей. Игнорирование этого может привести к незагружаемому ядру.
+Если размер несжатого ядра больше чем 7.5 MB, перенастройте ваше ядро так 
+чтобы оно не превышало этих пределов. Одним из путей достижения этого 
+является компиляция большинства драйверов ядра как модулей. Игнорирование 
+этого может привести к незагружаемому ядру.
 </p>
-
-<note>
-Если вы используете ядро версии 2.6.3 или выше, ядро sparc64 может иметь размер 
-до 7.5 MB.
-</note>
 
 <p>
 Также если ваше ядро чуть-чуть больше чем необходимо, Вы можете попробовать 
@@ -305,103 +288,37 @@ link="#compiling">Компиляция и установка</uri>. Тем не 
 </p>
 
 <pre caption="Компилирование ядра">
-<comment>(Для ядра 2.4, sparc32)</comment>
-# <i>make dep &amp;&amp; make clean vmlinux modules modules_install</i>
-
-<comment>(Для ядра 2.4, sparc64)</comment>
-# <i>make dep &amp;&amp; make clean vmlinux image modules modules_install</i>
-
-<comment>(Для ядра 2.6, sparc32)</comment>
 # <i>make &amp;&amp; make modules_install</i>
-
-<comment>(Для ядра 2.6, sparc64)</comment>
-# <i>make &amp;&amp; make image modules_install</i>
 </pre>
 
 <p>
 Когда процесс компиляции ядра завершится, скопируйте полученный образ ядра в 
-каталог <path>/boot</path>. Не забудьте заменить 
-<path>&lt;версия-ядра&gt;</path> на имя и версию своего ядра.
+каталог <path>/boot</path>.
 </p>
 
 <pre caption="Установка ядра">
-<comment>(Для ядра 2.4, sparc32)</comment>
-# <i>cp vmlinux /boot/&lt;версия-ядра&gt;</i>
-
-<comment>(Для ядра 2.4, sparc64)</comment>
-# <i>cp arch/sparc64/boot/image /boot/&lt;версия-ядра&gt;</i>
-
-<comment>(Для ядра 2.6, sparc32)</comment>
-# <i>cp arch/sparc/boot/image /boot/&lt;версия-ядра&gt;</i>
-
-<comment>(Для ядра 2.6, sparc64)</comment>
-# <i>cp arch/sparc64/boot/image /boot/&lt;версия-ядра&gt;</i>
+# <i>cp arch/sparc/boot/image /boot/<keyval id="kernel-name"/></i>
 </pre>
-
-<p>
-Теперь можете продолжать по ссылке <uri link="#kernel_modules">Установка 
-Отдельных Модулей Ядра</uri>.
-</p>
-
 </body>
 </subsection>
+
+<subsection>
+<include href="hb-install-initramfs.xml"/>
+</subsection>
+
 </section>
 <section id="kernel_modules">
-<title>Установка Отдельных Модулей Ядра</title>
+<title>Модули ядра</title>
 <subsection>
-<title>Настройка Модулей</title>
-<body>
-
-<p>
-Вы должны вставить список модулей, которые вы хотите загружать по умолчанию в 
-файл <path>/etc/modules.autoload.d/kernel-2.4</path> (or 
-<path>kernel-2.6</path>). Можно также добавить дополнительные параметры для 
-этих модулей.
-</p>
-
-<p>
-Чтобы увидеть все доступные модули, запустите команду <c>find</c>. Не забудьте 
-заменить "&lt;kernel version&gt;" на версию ядра которое только что было 
-скомпилировано:
-</p>
-
-<pre caption="Просмотр всех доступных модулей">
-# <i>find /lib/modules/&lt;kernel version&gt;/ -type f -iname '*.o' -or -iname '*.ko'</i>
-</pre>
-
-<p>
-Например, чтобы автоматически загружать модуль <c>3c59x.o</c>, отредактируйте 
-файл <path>kernel-2.4</path> или <path>kernel-2.6</path> и вставьте в него имя 
-модуля.
-</p>
-
-<pre caption="Редактирование файла /etc/modules.autoload.d/kernel-2.4">
-<comment>(Пример для ядра версии 2.4)</comment>
-# <i>nano -w /etc/modules.autoload.d/kernel-2.4</i>
-</pre>
-
-<pre caption="Файл /etc/modules.autoload.d/kernel-2.4 or kernel-2.6">
-3c59x
-</pre>
-
-<p>
-Продолжайте установку по ссылке <uri link="?part=1&amp;chap=8">Настройка вашей 
-Системы</uri>.
-</p>
-
-</body>
+<include href="hb-install-kernelmodules.xml"/>
 </subsection>
 </section>
 </sections>
 
 <!-- *$Localization:
 target-language: Russian
-target-version: 2.7-r1
-target-date: 2006-01-23
-source-cvs-revision: 1.22
+target-date: 2012-09-11
+source-cvs-revision: 1.44
 translated-by: Igor Korot <ikorot@earthlink.net>
-edited-by:
-
-notes:
-needs refinement
+edited-by: Romanov Vladimir <blueboar2@gmail.com>
 -->
