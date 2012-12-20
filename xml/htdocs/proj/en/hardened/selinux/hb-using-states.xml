@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-states.xml,v 1.6 2012/06/14 18:09:51 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-states.xml,v 1.7 2012/12/20 09:45:06 swift Exp $ -->
 
 <sections>
-<version>3</version>
-<date>2012-06-14</date>
+<version>4</version>
+<date>2012-12-20</date>
 
 <section>
 <title>SELinux States</title>
@@ -338,27 +338,62 @@ that hard) to switch between types.
 </p>
 
 <p>
-First, you need to edit <path>/etc/selinux/config</path> so that it both
-switches the policy type as well as put the mode in <e>permissive</e>. This is
-necessary, since at your next reboot, many labels might (or will) be incorrect.
+First switch your system to permissive mode using <c>setenforce 0</c> or, if
+your system does not allow switching the mode, edit
+<path>/etc/selinux/config</path> to have the system boot in permissive mode. If
+you cannot use <c>setenforce 0</c> then you need to reboot now so that the
+system is in permissive mode.
 </p>
 
 <p>
-Next, edit <path>/etc/fstab</path> and make sure that the domains you use there
-are updated accordingly. For instance, the line for <path>/tmp</path>:
+Next, edit <path>/etc/selinux/config</path> and change the <c>SELINUXTYPE</c>
+variable from the current policy type to the new one. This will tell SELinux to
+load the right policy at boot time.
+</p>
+
+<p>
+Now go to the built policy modules in <path>/usr/share/selinux</path> because we
+need to load in the new policy (as you are currently still running with the old
+type). The next example shows how to do this if you come from a <e>strict</e>
+policy type and want to go to <e>mcs</e>:
+</p>
+
+<pre caption="Loading in the mcs policy">
+# <i>cd /usr/share/selinux/mcs</i>
+# <i>semodule -b base.pp -i $(ls *.pp | grep -v base.pp | grep -v unconfined.pp)</i>
+</pre>
+
+<p>
+You are now running with the mcs policy loaded, but will have lots of denials if
+you do anything on the file system, because the files on your file system are
+not labeled correctly: the mcs policy type requires the labels to have a
+sensitivity label on them, which isn't the case if you use the strict policy. So
+let's relabel the entire file system, including those locations that might be
+hidden because other file systems are mounted on top of it.
+</p>
+
+<pre caption="Relabeling the entire file system">
+# <i>rlpkg -a -r</i>
+# <i>mount -o bind / /mnt/gentoo</i>
+# <i>setfiles -r /mnt/gentoo /etc/selinux/strict/contexts/files/file_contexts /mnt/gentoo/dev</i>
+# <i>setfiles -r /mnt/gentoo /etc/selinux/strict/contexts/files/file_contexts /mnt/gentoo/lib64</i>
+# <i>umount /mnt/gentoo</i>
+</pre>
+
+<p>
+Finally, edit <path>/etc/fstab</path> and update the <c>rootcontext=</c>
+parameters to include a sensitivity label as well (in case you switched towards
+mcs or mls) or not anymore (in case you switched to targeted or strict).
 </p>
 
 <pre caption="Changing /etc/fstab">
 <comment># Example when switching from strict to mcs</comment>
-tmpfs  /tmp  tmpfs  defaults,noexec,nosuid,rootcontext=system_u:object_r:tmp_t<i>:c0</i>  0 0
+tmpfs  /tmp  tmpfs  defaults,noexec,nosuid,rootcontext=system_u:object_r:tmp_t<i>:s0</i>  0 0
 </pre>
 
 <p>
-When this is done, reboot your system. Log on as root, and relabel your entire
-file system using <c>rlpkg -a -r</c>. Finally, reboot again and then validate if
-your context (such as when logged on as a user) is correct again. Once you are
-confident that the domains and contexts are correct, switch the SELinux policy
-mode back to "enforcing".
+With all these steps now completed, reboot to ensure that everything is still
+working correctly (even the boot-up).
 </p>
 
 </body>
