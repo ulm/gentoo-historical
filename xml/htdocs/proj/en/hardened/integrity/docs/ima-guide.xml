@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/integrity/docs/ima-guide.xml,v 1.2 2012/12/26 20:07:30 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/integrity/docs/ima-guide.xml,v 1.3 2012/12/27 20:32:39 swift Exp $ -->
 
 <guide lang="en">
 <title>Using Integrity Measurement Architecture in Gentoo</title>
@@ -21,8 +21,8 @@ Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/3.0 -->
 <license version="3.0" />
 
-<version>2</version>
-<date>2012-12-26</date>
+<version>3</version>
+<date>2012-12-27</date>
 
 <chapter>
 <title>Purpose of IMA</title>
@@ -48,8 +48,8 @@ accounts (and more if you create your own measurement policies).
 </p>
 
 <p>
-With a pending patch, called the <e>IMA appraisal patch</e>, 
-the IMA subsystem can even register the measured
+Since kernel 3.7, an additional patch, called the <e>IMA appraisal patch</e>, 
+has been merged within the IMA subsystem so it can even register the measured
 value as an extended attribute, and after subsequent measurement(s) 
 validate this extended attribute against the measured value and refuse
 to load the file (or execute the application) if the hash does not match.
@@ -81,6 +81,36 @@ application binaries when ran (or mmap()ed for execution) by any user.
 
 </body>
 </section>
+<section>
+<title>The Big Fat Warnings</title>
+<body>
+
+<p>
+Using IMA on your system is currently only recommended for development purposes.
+Gentoo Hardened is working on integrating IMA properly, so please be aware
+that:
+</p>
+
+<ul>
+  <li>
+    users might be able to have your machine run out of (kernel) memory by
+    having (root-owned) processes generate new files over and over again, which
+    all get measured and their hashes stored
+  </li>
+  <li>
+    the system might have issues booting if not all files have their hash
+    registered properly; you are easily warned if this is the case through the
+    Linux audit subsystem
+  </li>
+</ul>
+
+<p>
+We are working on fine-tuning the default policies so that measurements only
+occur on legitimate resources.
+</p>
+
+</body>
+</section>
 </chapter>
 
 <chapter>
@@ -91,10 +121,9 @@ application binaries when ran (or mmap()ed for execution) by any user.
 
 <p>
 First of all, enable the IMA subsystem in the Linux kernel configuration.
-IMA is supported in the main tree since 2.6.30, and it is expected that
-the IMA appraisal patch (needed when you want the system to stop if it
-detects an off-line modified file) will hit the main tree with Linux
-3.7.
+IMA is supported in the main tree since 2.6.30, and IMA appraisal (needed when
+you want the system to stop if it detects an off-line modified file) is merged
+in the main tree since 3.7.
 </p>
 
 <pre caption="Linux kernel configuration for IMA">
@@ -104,7 +133,7 @@ CONFIG_IMA_MEASURE_PCR_IDX=10
 CONFIG_IMA_AUDIT=y
 CONFIG_IMA_LSM_RULES=y
 
-<comment># Only if the IMA appraisal patch is available:</comment>
+<comment># Since 3.7:</comment>
 CONFIG_INTEGRITY_SIGNATURE=y
 CONFIG_IMA_APPRAISE=y
 </pre>
@@ -122,7 +151,7 @@ Next, configure the bootloader to enable the TCB policy:
 <pre caption="Bootloader configuration to enable IMA TCB policy">
 kernel /boot/vmlinuz root=/dev/vda1 <i>ima_tcb</i>
 
-<comment># Only if IMA appraisal patch is enabled:</comment>
+<comment># Only if IMA appraisal is wanted:</comment>
 kernel /boot/vmlinuz root=/dev/vda1 <i>ima_tcb ima_appraise=enforce ima_appraise_tcb</i>
 </pre>
 
@@ -240,7 +269,7 @@ used which is the SHA-1 hashing algorithm.
 <body>
 
 <note>
-This is only applicable when IMA appraisal patch is enabled.
+This is only applicable when IMA appraisal is enabled.
 </note>
 
 <p>
@@ -251,12 +280,20 @@ system to boot up even when no (or wrong) hashes are registered.
 <p>
 Next, have all files on the file system checked and their value stored as an
 extended attribute. This is done by reading all files that the default appraisal
-policy will check and take action on (which is all root-owned files).
+policy will check and take action on (which is all root-owned files). Note that
+this can take a long time...
 </p>
 
 <pre caption="Registering all files">
-~# <i>find / \( -fstype rootfs -o -fstype ext4 -a -type f \) -uid 0 -exec head -n 1 '{}' > /dev/null \;</i>
+~# <i>find / \( -fstype rootfs -o -fstype ext4 \) -type -uid 0 -exec head -n 1 '{}' > /dev/null \;</i>
 </pre>
+
+<p>
+You might also need to bind-mount the root file system somewhere (like on
+<path>/mnt/gentoo</path>) and do the same for the <path>lib64/rc/init.d</path>
+location as well as other locations that contain files but become hidden once
+the system mounts another file system on top of it.
+</p>
 
 <p> 
 When done, you should be able to see the registered hash value as an extended
@@ -281,7 +318,8 @@ extended attribute.
 <p>
 You can check if this works by booting with <c>ima_appraise=off</c> and changing
 the contents of a root-owned file (or the value of the extended attribute) and
-reboot with <c>ima_appraise=enforce</c>.
+reboot with <c>ima_appraise=enforce</c>, or by directly editing virtual guest
+images.
 </p>
 
 </body>
@@ -302,8 +340,22 @@ during the initial marking).
 <p>
 To sign such immutable files (like kernel modules and application code), you
 need to use the <c>evmctl</c> command provided by the
-<path>sys-admin/ima-evm-utils</path> package:
+<path>sys-admin/ima-evm-utils</path> package (currently only available in the
+hardened-dev overlay). But first, setup the kernel keyring:
 </p>
+
+<pre caption="Loading the public key in the IMA keyring">
+~# <i>ima_id=`keyctl newring _ima @u`</i>
+~# <i>evmctl import /path/to/rsa_public.pem $ima_id</i>
+</pre>
+
+<p>
+This allows the IMA subsystem to validate the signature (which is also needed
+when initially setting the signature) by loading the public key onto the IMA
+keyring. You will need to do this every time the system boots, so it makes
+sense to do so within an initramfs (early in the boot process):
+</p>
+
 
 <pre caption="Signing files to mark them as immutable">
 ~# <i>find /lib/modules -name "*.ko" -type f -uid 0 -exec \
@@ -326,15 +378,101 @@ This private key can be generated first using <c>openssl</c>:
 </pre>
 
 <p>
-To allow the IMA subsystem to validate the signature, you will need to load the
-public key onto the IMA keyring. You will need to do this every time the system
-boots, so it makes sense to do so within an initramfs (early in the boot
-process):
+Immutable file support is mainly used to digitally sign the Linux kernel and the
+kernel modules and is supported through the EVM technology (which we will
+discuss in different documentation) but works well on ELF and other binaries as
+well.
 </p>
 
-<pre caption="Loading the public key in the IMA keyring">
-~# <i>ima_id=`keyctl newring _ima @u`</i>
-~# <i>evmctl import /path/to/rsa_public.pem $ima_id</i>
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Asked Questions with Answers</title>
+<section>
+<title>How do I know IMA with appraisal is working?</title>
+<body>
+
+<p>
+This is as simple as finding a file that does not have its hash value stored as
+an extended attribute while ima_appraise is in enforcing mode.
+</p>
+
+<pre caption="Checking if IMA with appraisal is working">
+# <i>getfattr -m . -d /etc/mtab</i>
+getfattr: Removing leading '/' from absolute path names
+# file: etc/mtab
+security.selinux="system_u:object_r:etc_runtime_t"
+
+# <i>cat /etc/mtab</i>
+cat: /etc/mtab: Permission denied
+
+# <i>dmesg | tail -1</i>
+[  256.756465] type=1800 audit(1356637858.947:53): pid=3852 uid=0 auid=0 ses=2
+subj=root:sysadm_r:sysadm_t op="appraise_data" cause="missing-hash" comm="cat"
+name="/etc/mtab" dev="dm-2" ino=394144 res=0
+</pre>
+
+<p>
+In the above example, the IMA subsystem reports that the <path>/etc/mtab</path>
+file misses its hash value (which should be stored as <e>security.ima</e>) and
+as such is denying the <c>cat</c> application access to it.
+</p>
+
+<p>
+If you can miss the file (such as with <path>/etc/mtab</path>) you can remove it
+and regenerate it if you wish:
+</p>
+
+<pre caption="Regenerating file">
+# <i>rm /etc/mtab</i>
+# <i>cat /proc/mounts &gt; /etc/mtab</i>
+# <i>restorecon /etc/mtab</i> <comment># If using SELinux</comment>
+# <i>evmctl ima_hash /etc/mtab</i>
+# <i>getfattr -m . -d /etc/mtab</i>
+getfattr: Removing leading '/' from absolute path names
+# file: etc/mtab
+security.ima=0sAUlIU5ffoobWOh0FsSIbgh9Ac8YK
+security.selinux="root:object_r:etc_runtime_t"
+</pre>
+
+</body>
+</section>
+<section>
+<title>I was able to edit an 'immutable' file and still run it. How come?</title>
+<body>
+
+<p>
+If you digitally signed a script using <c>evmctl sign --imasig &lt;file&gt;
+&lt;private-key&gt;</c> and then edited the file with <c>vim</c>, then this
+behavior is to be expected. <c>vim</c> removes the original file and replaces it
+with a new one. The newly created file is given an appropriate hash (but no
+digital signature of course) and thus you can still execute it.
+</p>
+
+<p>
+The use of digital signatures is more for kernel modules and ELF binaries. But
+below an example of how it does work - if you edit the file rather than replace
+it.
+</p>
+
+<pre caption="Example of digitally signed file">
+# <i>evmctl sign --imasig ./test.sh /root/rsa_private.pem</i>
+# <i>./test.sh</i>
+Hello World (again)
+# echo "echo \"And now...\"" >> test.sh 
+# <i>./test.sh</i>
+bash: ./test.sh: Permission denied
+# <i>cat test.sh</i>
+cat: test.sh: Permission denied
+# <i>dmesg | tail -2</i>
+[  643.211490] type=1800 audit(1356639603.315:37): pid=3956 uid=0 auid=0 ses=3
+subj=root:sysadm_r:sysadm_t op="appraise_data" cause="invalid-signature"
+comm="bash" name="/bin/test.sh" dev="dm-2" ino=131466 res=0
+[  649.123917] type=1800 audit(1356639609.227:38): pid=3958 uid=0 auid=0 ses=3
+subj=root:sysadm_r:sysadm_t op="appraise_data" cause="invalid-signature"
+comm="cat" name="/bin/test.sh" dev="dm-2" ino=131466 res=0
 </pre>
 
 </body>
