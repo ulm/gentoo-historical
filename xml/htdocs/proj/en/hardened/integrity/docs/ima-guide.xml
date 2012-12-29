@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/integrity/docs/ima-guide.xml,v 1.4 2012/12/28 20:09:04 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/integrity/docs/ima-guide.xml,v 1.5 2012/12/29 13:11:04 swift Exp $ -->
 
 <guide lang="en">
 <title>Using Integrity Measurement Architecture in Gentoo</title>
@@ -21,8 +21,8 @@ Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/3.0 -->
 <license version="3.0" />
 
-<version>4</version>
-<date>2012-12-28</date>
+<version>5</version>
+<date>2012-12-29</date>
 
 <chapter>
 <title>Purpose of IMA</title>
@@ -152,13 +152,14 @@ Next, configure the bootloader to enable the TCB policy:
 kernel /boot/vmlinuz root=/dev/vda1 <i>ima_tcb</i>
 
 <comment># Only if IMA appraisal is wanted:</comment>
-kernel /boot/vmlinuz root=/dev/vda1 <i>ima_tcb ima_appraise=enforce ima_appraise_tcb</i>
+kernel /boot/vmlinuz root=/dev/vda1 <i>ima_tcb ima_appraise=fix ima_appraise_tcb</i>
 </pre>
 
 <p>
-However, at the first boot, you will need to set <c>ima_appraise=fix</c>
-instead. Otherwise, your system will surely refuse to boot as no preregistered
-values are available.
+We currently set <c>ima_appraise=fix</c> because the integrity hashes have not
+been stored yet. If we would run with <c>ima_appraise=enforce</c> immediately,
+the system would simply refuse to boot properly as all file accesses would be
+denied. We will switch to <c>ima_appraise=enforce</c> later.
 </p>
 
 </body>
@@ -193,6 +194,17 @@ remeasure the hash of the file.
 <pre caption="Enabling i_version on all mounts">
 <comment># Example for a single partition, in /etc/fstab:</comment>
 /dev/vda1  /  ext4  noatime<i>,iversion</i>  1 2
+</pre>
+
+<p>
+For the root file system, you might want to enable it through the
+<c>rootflags</c> kernel parameter as well so that it gets mounted immediately
+with i_version support when the Linux kernel mounts the root file system.
+</p>
+
+<pre caption="Using rootflags in the bootloader configuration">
+<comment># Example kernel line for a GRUB setup</comment>
+kernel /boot/kernel root=/dev/vg/root rootflags=i_version dolvm ima_tcb ima_appraise=enforce ima_appraise_tcb
 </pre>
 
 </body>
@@ -310,7 +322,8 @@ security.ima="76a0d787be14d84dfe3cf3930ac3da38bb389464"
 <p>
 Finally, reboot with <c>ima_appraise=enforce</c>. The system should now run with
 appraisal enabled, causing the system to validate the hash against the stored
-value before using it. If it doesn't match, then the file is not loaded. If it
+value before using it. If it doesn't match, then the file is not loaded and any
+access towards it will be denied with a <e>Permission denied</e> error. If it
 does match, and afterwards the file is modified, then the new hash is stored as
 extended attribute.
 </p>
@@ -474,6 +487,77 @@ comm="bash" name="/bin/test.sh" dev="dm-2" ino=131466 res=0
 subj=root:sysadm_r:sysadm_t op="appraise_data" cause="invalid-signature"
 comm="cat" name="/bin/test.sh" dev="dm-2" ino=131466 res=0
 </pre>
+
+</body>
+</section>
+<section>
+<title>How do I load in my own, custom IMA policy?</title>
+<body>
+
+<p>
+You can load in an IMA policy by <c>cat</c>'ing it into
+<path>/sys/kernel/security/ima/policy</path>. If the policy is accepted, then
+the command will succeed and the <path>policy</path> (pseudo)file will disappear
+(this is by design, so that malicious users cannot alter the policy once
+loaded).
+</p>
+
+<p>
+Below is an example custom policy, taken from the default one with one addition:
+ask it not to measure and appraise log files (through the use of the SELinux
+<c>logfile</c> attribute).
+</p>
+
+<pre caption="Example IMA custom policy">
+<comment># Magics can be found in kernel/include/uapi/linux/magic.h
+# Default can be found in security/integrity/ima/ima_policy.c
+# PROC_SUPER_MAGIC = 0x9fa0</comment>
+dont_measure fsmagic=0x9fa0
+dont_appraise fsmagic=0x9fa0
+<comment># SYSFS_MAGIC = 0x62656572</comment>
+dont_measure fsmagic=0x62656572
+dont_appraise fsmagic=0x62656572
+<comment># DEBUGFS_MAGIC = 0x64626720</comment>
+dont_measure fsmagic=0x64626720
+dont_appraise fsmagic=0x64626720
+<comment># TMPFS_MAGIC = 0x01021994</comment>
+dont_measure fsmagic=0x01021994
+dont_appraise fsmagic=0x01021994
+<comment># RAMFS_MAGIC = 0x858458f6</comment>
+dont_measure fsmagic=0x858458f6
+dont_appraise fsmagic=0x858458f6
+<comment># DEVPTS_SUPER_MAGIC = 0x1cd1</comment>
+dont_measure fsmagic=0x1cd1
+dont_appraise fsmagic=0x1cd1
+<comment># BINFMTFS_MAGIC = 0x42494e4d</comment>
+dont_measure fsmagic=0x42494e4d
+dont_appraise fsmagic=0x42494e4d
+<comment># SECURITYFS_MAGIC = 0x73636673</comment>
+dont_measure fsmagic=0x73636673
+dont_appraise fsmagic=0x73636673
+<comment># SELINUX_MAGIC = 0xf97cff8c</comment>
+dont_measure fsmagic=0xf97cff8c
+dont_appraise fsmagic=0xf97cff8c
+<comment># CGROUP_SUPER_MAGIC = 0x27e0eb</comment>
+dont_appraise fsmagic=0x27e0eb
+<comment># Do not measure all types that have the "logfile" SELinux attribute</comment>
+dont_measure obj_type=logfile
+dont_appraise obj_type=logfile
+<comment># Remainder of the defaults</comment>
+measure func=FILE_MMAP mask=MAY_EXEC
+measure func=BPRM_CHECK mask=MAY_EXEC
+measure func=FILE_CHECK mask=MAY_READ uid=0
+appraise fowner=0
+</pre>
+
+<p>
+Make sure no empty lines are in the policy; if not, it will be refused. You can
+check the output of <c>dmesg</c> for hints why the policy was refused (it shows
+what was accepted, so the next line would be a not-accepted line), or the audit
+logs (but you will need to have <c>auditd</c> running) if you get lines such as
+<e>audit_printk_skb: XX callbacks suppressed</e> as you then might not have all
+the information you need.
+</p>
 
 </body>
 </section>
