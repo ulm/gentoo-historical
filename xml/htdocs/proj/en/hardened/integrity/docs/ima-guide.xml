@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/integrity/docs/ima-guide.xml,v 1.6 2012/12/29 18:18:27 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/integrity/docs/ima-guide.xml,v 1.7 2012/12/29 21:31:17 swift Exp $ -->
 
 <guide lang="en">
 <title>Using Integrity Measurement Architecture in Gentoo</title>
@@ -21,7 +21,7 @@ Linux.
 <!-- See http://creativecommons.org/licenses/by-sa/3.0 -->
 <license version="3.0" />
 
-<version>6</version>
+<version>7</version>
 <date>2012-12-29</date>
 
 <chapter>
@@ -29,6 +29,10 @@ Linux.
 <section>
 <title>Introduction</title>
 <body>
+
+<warn>
+Using IMA on your system is currently only recommended for development purposes.
+</warn>
 
 <p>
 The Linux IMA subsystem introduces hooks within the Linux kernel to
@@ -209,6 +213,130 @@ kernel /boot/kernel root=/dev/vg/root rootflags=i_version dolvm ima_tcb ima_appr
 
 </body>
 </section>
+<section>
+<title>Registering the file hashes for the system</title>
+<body>
+
+<note>
+This is only applicable when IMA appraisal is enabled.
+</note>
+
+<p>
+First boot with the <c>ima_appraise=fix</c> boot option. This will allow the
+system to boot up even when no (or wrong) hashes are registered.
+</p>
+
+<p>
+Next, have all files on the file system checked and their value stored as an
+extended attribute. We use the <c>evmctl</c> command for this (which is provided
+by the <e>ima-evm-utils</e> package). Note that this will take a long time and
+will take a lot of memory (as the measurement log for IMA is filled up).
+</p>
+
+<pre caption="Registering all files">
+~# <i>find / \( -fstype rootfs -o -fstype ext4 \) -type -uid 0 -exec evmctl ima_hash '{}' > /dev/null \;</i>
+</pre>
+
+<p>
+You might also need to bind-mount the root file system somewhere (like on
+<path>/mnt/gentoo</path>) and do the same for the <path>lib64/rc/init.d</path>
+location as well as other locations that contain files but become hidden once
+the system mounts another file system on top of it.
+</p>
+
+<p> 
+When done, you should be able to see the registered hash value as an extended
+attribute:
+</p>
+
+<pre caption="Viewing the extended attributes of a file">
+~# <i>getfattr -m . -d /boot/grub/grub.conf</i>
+# file: grub.conf
+security.selinux="root:object_r:boot_t"
+security.ima="76a0d787be14d84dfe3cf3930ac3da38bb389464"
+</pre>
+
+<p>
+Finally, reboot with <c>ima_appraise=enforce</c>. The system should now run with
+appraisal enabled, causing the system to validate the hash against the stored
+value before using it. If it doesn't match, then the file is not loaded and any
+access towards it will be denied with a <e>Permission denied</e> error. If it
+does match, and afterwards the file is modified, then the new hash is stored as
+extended attribute.
+</p>
+
+<p>
+You can check if this works by booting with <c>ima_appraise=off</c> and changing
+the contents of a root-owned file (or the value of the extended attribute) and
+reboot with <c>ima_appraise=enforce</c>, or by directly editing virtual guest
+images.
+</p>
+
+</body>
+</section>
+<section>
+<title>Using digital signatures for immutable files</title>
+<body>
+
+<p>
+The IMA appraisal code also supports immutable files. In this case, an RSA-key
+based signature is taken of the file and stored in the extended attribute. The
+private key is used to sign the files, whereas the public key is used to verify
+the signature. This provides additional protection against tampering as the
+private key does not need to be available on the system while its running (only
+during the initial marking).
+</p>
+
+<p>
+To sign such immutable files (like kernel modules and application code), you
+need to use the <c>evmctl</c> command provided by the
+<path>sys-admin/ima-evm-utils</path> package (currently only available in the
+hardened-dev overlay). But first, setup the kernel keyring:
+</p>
+
+<pre caption="Loading the public key in the IMA keyring">
+~# <i>ima_id=`keyctl newring _ima @u`</i>
+~# <i>evmctl import /path/to/rsa_public.pem $ima_id</i>
+</pre>
+
+<p>
+This allows the IMA subsystem to validate the signature (which is also needed
+when initially setting the signature) by loading the public key onto the IMA
+keyring. You will need to do this every time the system boots, so it makes
+sense to do so within an initramfs (early in the boot process):
+</p>
+
+
+<pre caption="Signing files to mark them as immutable">
+~# <i>find /lib/modules -name "*.ko" -type f -uid 0 -exec \
+   evmctl sign --imasig '{}' /path/to/rsa_private.pem \;</i>
+</pre>
+
+<p>
+This private key can be generated first using <c>openssl</c>:
+</p>
+
+<pre caption="Generating a public/private key pair">
+<comment># Unencrypted private key (non-protected):</comment>
+~# <i>openssl genrsa -out rsa_private.pem 1024</i>
+
+<comment># Or encrypted private key (password-protected):</comment>
+~# <i>openssl genrsa -des3 -out rsa_private.pem 1024</i>
+
+<comment># Public key:</comment>
+~# <i>openssl rsa -pubout -in rsa_private.pem -out rsa_public.pem</i>
+</pre>
+
+<p>
+Immutable file support is mainly used to digitally sign the Linux kernel and the
+kernel modules and is supported through the EVM technology (which we will
+discuss in different documentation) but works well on ELF and other binaries as
+well.
+</p>
+
+</body>
+</section>
+
 </chapter>
 
 <chapter>
@@ -272,129 +400,6 @@ What you see here are:
 <p>
 Unless you have asked for a different hashing algorithm, the default one will be
 used which is the SHA-1 hashing algorithm.
-</p>
-
-</body>
-</section>
-<section>
-<title>Registering the file hashes for the system</title>
-<body>
-
-<note>
-This is only applicable when IMA appraisal is enabled.
-</note>
-
-<p>
-First boot with the <c>ima_appraise=fix</c> boot option. This will allow the
-system to boot up even when no (or wrong) hashes are registered.
-</p>
-
-<p>
-Next, have all files on the file system checked and their value stored as an
-extended attribute. This is done by reading all files that the default appraisal
-policy will check and take action on (which is all root-owned files). Note that
-this can take a long time...
-</p>
-
-<pre caption="Registering all files">
-~# <i>find / \( -fstype rootfs -o -fstype ext4 \) -type -uid 0 -exec head -n 1 '{}' > /dev/null \;</i>
-</pre>
-
-<p>
-You might also need to bind-mount the root file system somewhere (like on
-<path>/mnt/gentoo</path>) and do the same for the <path>lib64/rc/init.d</path>
-location as well as other locations that contain files but become hidden once
-the system mounts another file system on top of it.
-</p>
-
-<p> 
-When done, you should be able to see the registered hash value as an extended
-attribute:
-</p>
-
-<pre caption="Viewing the extended attributes of a file">
-~# <i>getfattr -m . -d /boot/grub/grub.conf</i>
-# file: grub.conf
-security.selinux="root:object_r:boot_t"
-security.ima="76a0d787be14d84dfe3cf3930ac3da38bb389464"
-</pre>
-
-<p>
-Finally, reboot with <c>ima_appraise=enforce</c>. The system should now run with
-appraisal enabled, causing the system to validate the hash against the stored
-value before using it. If it doesn't match, then the file is not loaded and any
-access towards it will be denied with a <e>Permission denied</e> error. If it
-does match, and afterwards the file is modified, then the new hash is stored as
-extended attribute.
-</p>
-
-<p>
-You can check if this works by booting with <c>ima_appraise=off</c> and changing
-the contents of a root-owned file (or the value of the extended attribute) and
-reboot with <c>ima_appraise=enforce</c>, or by directly editing virtual guest
-images.
-</p>
-
-</body>
-</section>
-<section>
-<title>Using immutable files</title>
-<body>
-
-<p>
-The IMA appraisal code also supports immutable files. In this case, an RSA-key
-based signature is taken of the file and stored in the extended attribute. The
-private key is used to sign the files, whereas the public key is used to verify
-the signature. This provides additional protection against tampering as the
-private key does not need to be available on the system while its running (only
-during the initial marking).
-</p>
-
-<p>
-To sign such immutable files (like kernel modules and application code), you
-need to use the <c>evmctl</c> command provided by the
-<path>sys-admin/ima-evm-utils</path> package (currently only available in the
-hardened-dev overlay). But first, setup the kernel keyring:
-</p>
-
-<pre caption="Loading the public key in the IMA keyring">
-~# <i>ima_id=`keyctl newring _ima @u`</i>
-~# <i>evmctl import /path/to/rsa_public.pem $ima_id</i>
-</pre>
-
-<p>
-This allows the IMA subsystem to validate the signature (which is also needed
-when initially setting the signature) by loading the public key onto the IMA
-keyring. You will need to do this every time the system boots, so it makes
-sense to do so within an initramfs (early in the boot process):
-</p>
-
-
-<pre caption="Signing files to mark them as immutable">
-~# <i>find /lib/modules -name "*.ko" -type f -uid 0 -exec \
-   evmctl sign --imasig '{}' /path/to/rsa_private.pem \;</i>
-</pre>
-
-<p>
-This private key can be generated first using <c>openssl</c>:
-</p>
-
-<pre caption="Generating a public/private key pair">
-<comment># Unencrypted private key (non-protected):</comment>
-~# <i>openssl genrsa -out rsa_private.pem 1024</i>
-
-<comment># Or encrypted private key (password-protected):</comment>
-~# <i>openssl genrsa -des3 -out rsa_private.pem 1024</i>
-
-<comment># Public key:</comment>
-~# <i>openssl rsa -pubout -in rsa_private.pem -out rsa_public.pem</i>
-</pre>
-
-<p>
-Immutable file support is mainly used to digitally sign the Linux kernel and the
-kernel modules and is supported through the EVM technology (which we will
-discuss in different documentation) but works well on ELF and other binaries as
-well.
 </p>
 
 </body>
@@ -597,7 +602,7 @@ script to load it early on:
 #!/sbin/runscript
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/integrity/docs/ima-guide.xml,v 1.6 2012/12/29 18:18:27 swift Exp $
+# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/integrity/docs/ima-guide.xml,v 1.7 2012/12/29 21:31:17 swift Exp $
 
 description="Load in custom IMA policy"
 
@@ -611,6 +616,18 @@ start() {
         eend $?
 }
 </pre>
+</body>
+</section>
+<section>
+<title>Online resources tell me I can use head -n 1 to regenerate the hashes</title>
+<body>
+
+<p>
+I have bad experiences with this method. Some files are left without a hash, or
+when I later enable EVM the EVM hash itself remains missing. The use of the
+<c>evmctl</c> command does the trick pretty well.
+</p>
+
 </body>
 </section>
 </chapter>
