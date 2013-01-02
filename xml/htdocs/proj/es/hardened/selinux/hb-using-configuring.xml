@@ -4,11 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-configuring.xml,v 1.5 2012/08/15 17:06:22 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-configuring.xml,v 1.6 2013/01/02 18:28:08 nimiux Exp $ -->
 
 <sections>
-<version>3</version>
-<date>2012-08-14</date>
+
+<version>4</version>
+<date>2012-12-29</date>
 
 <section>
 <title>Administrando usuarios</title>
@@ -1088,29 +1089,37 @@ de red):
 #!/sbin/runscript
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-configuring.xml,v 1.5 2012/08/15 17:06:22 nimiux Exp $
+# $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-configuring.xml,v 1.6 2013/01/02 18:28:08 nimiux Exp $
 
 description="Switch into SELinux enforcing mode"
 
 depend() {
-        need localmount
+        need sysfs
 }
 
 start() {
-        ebegin "Restoring file contexts in /dev"
-        restorecon -R /dev
-        eend 0
+       if get_bootparam "norestorecon" ; then
+               ewarn "Skipping restoring file contexts in /dev as requested"
+       else
+               ebegin "Restoring file contexts in /dev"
+                       restorecon -R /dev
+               eend 0
+       fi
 
-        if get_bootparam "nosetenforce" ; then
-                ewarn "Skipping switching to enforcing mode as requested by kernel cmdline"
-        else
-                . /etc/selinux/config
 
-                if [ "${SELINUX}" = "enforcing" ];
-                then
-                        ebegin "Switching to enforcing mode"
-                        setenforce 1
-                        eend $?
+       if get_bootparam "nosetenforce" ; then
+               ewarn "Skipping switching to enforcing mode as requested by kernel cmdline"
+       else
+               . /etc/selinux/config
+               CURRENTMODE=$(cat /sys/fs/selinux/enforce)
+
+               if [ "${SELINUX}" = "enforcing" ] &amp;&amp; [ "${CURRENTMODE}" = "0" ];
+               then
+                       ebegin "Switching to enforcing mode"
+                       echo 1 &gt; /sys/fs/selinux/enforce
+                       eend $?
+                else
+                       ewarn "Not switching to enforcing mode, or enforcing mode already enabled"
                 fi
         fi
 }
