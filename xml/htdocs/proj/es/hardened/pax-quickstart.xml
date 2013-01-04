@@ -1,15 +1,21 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/pax-quickstart.xml,v 1.3 2012/04/26 20:42:41 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/pax-quickstart.xml,v 1.4 2013/01/04 16:54:43 nimiux Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide lang="es">
 <title>Guía de inicio rápido para usar PaX con Gentoo Hardened</title>
 
 <author title="Autor">
+  <mail link="blueness@gentoo.org">Anthony G. Basile</mail>
+</author>
+<author title="Contribuyente">
+  <mail link="klondike@gentoo.org">Francisco Izquierdo</mail>
+</author>
+<author title="Contribuyente">
   <mail link="tseng@gentoo.org">Brandon Hale</mail>
 </author>
 <author title="Editor">
-  <mail link="blackace@gentoo.org">Blackace</mail>
+  <mail link="blackace@gentoo.org">blackace</mail>
 </author>
 <author title="Editor">
   <mail link="solar@gentoo.org">solar</mail>
@@ -19,15 +25,15 @@
 </author>
 
 <abstract>
-Guía de inicio rápido que cubre PaX y Gentoo Hardened.
+Comprendiendo PaX y trabajando con él en Gentoo Hardened.
 </abstract>
 
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
 <license/>
 
-<version>1.4</version>
-<date>2007-09-11</date>
+<version>2.0</version>
+<date>2012-12-19</date>
 
 <chapter>
 <title>¿Qué es Gentoo Hardened?</title>
@@ -35,10 +41,15 @@ Guía de inicio rápido que cubre PaX y Gentoo Hardened.
 <body>
 
 <p>
-Gentoo Hardened es un proyecto interesado en reforzar el sistema Gentoo.
-Soportamos diferentes soluciones y existe una flexibilidad adecuada para
-crear su propia configuración. En el corazón de la configuración de un
-sistema Gentoo común está <e>PaX</e>.
+El proyecto Hardened de Gentoo trata de añadir características a un
+sistema Gentoo que ayuden a evitar compromisos de seguridad. Este
+enfoque no es siempre sistemático, y muchas de las características
+son añadidas. Algunos de éstas complementan otras (por ejemplo PIE
+de la cadena de herramientas reforzada y ASLR del núcleo PaX
+reforzado), en cambio otras son mutuamente excluyentes (como SELinux
+y el núcleo RSBAC de Grsecurity reforzado). Este documento se centra
+en <c>PaX</c> que añade una mejora en la seguridad a ese área entre
+el núcleo y la zona de usuario.
 </p>
 
 </body>
@@ -52,23 +63,170 @@ sistema Gentoo común está <e>PaX</e>.
 
 <p>
 PaX es un parche para el núcleo Linux que ofrece el reforzamiento del
-mismo de dos formas:
+mismo de tres formas:
 </p>
 
 <p>
-La primera, <e>ASLR</e> (Address Space Layout Randomization o Esquema de
-Aleatorización del Espacio de Direcciones) ofrece una forma de
-aleatorizar la distribución de direcciones de todos los datos cargados
-en memoria. Cuando se construye una aplicación como un <e>PIE</e>
-(Position Independent Executable o Ejecutable Independiente de la
-Posición), Pax puede aleatorizar las direcciones de la aplicación base.
+<b>1.</b> La primera protección que ofrece PaX es un reforzamiento
+juicioso de memoria no ejecutable. Esto evita un tipo común de
+ataque en el que el atacante introduce código ejecutable en el
+espacio de direcciones de un proceso y a continuación lo ejecuta,
+secuestrando el proceso y posiblemente escalando privilegios. El
+vector normal de inserción es a traves de datos ofrecidos por el
+usuario que encuentran su camino hasta la memoria ejecutable.
+Asegurándonos de que los "datos" viven únicamente en memoria que
+no es ejecutable y que el "texto" se encuentra en memoria que
+es ejecutable, PaX protege de forma preventiva contra esta clase
+de ataques.
 </p>
 
 <p>
-La segunda forma de protección ofrecida por PaX es la memoria no
-ejecutable. Esto impide una forma muy común de ataque en el cual
-un atacante inserta código ejecutable en memoria. Se puede encontrar más
-información sobre PaX en esta misma guía, pero la página oficial está en
+Ejecute le siguiente código con MPROTECT de PaX reforzado y no
+reforzado para ver esta característica en acción:
+</p>
+
+<pre caption="mmap-rwx.c: viola MPROTECT con RWX mmap">
+/*
+ * Compare al compilarlo con:
+ *   gcc -UBAD -o mmap-rw mmap-rwx.c
+ *   gcc -DBAD -o mmap-rwx mmap-rwx.c
+ */
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+
+int main()
+{
+       size_t *m;
+
+#ifdef BAD
+       m = mmap( NULL, 1024, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
+#else
+       m = mmap( NULL, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
+#endif
+
+       if( m == MAP_FAILED )
+               printf("mmap failed: %s\n", strerror(errno));
+       else
+               printf("mmap succeeded: %p\n", m);
+
+        return 0;
+}
+</pre>
+
+<p>
+De forma similar, ejecute el siguiente código con EMULTRAMP habilitado
+y deshabilitado. Este complicado código fuerza a gcc a preparar un
+trampolín para la función anidada f2(). El trampolín es código ejecutable
+que vive en la pila y podría permitir que el usuario inyectara su
+propio código a través de la variable i.
+</p>
+
+<pre caption="trampoline.c: forzar a gcc a que genere un trampolín">
+/*
+ * Comparar al compilarlo con:
+ *   gcc -DTRAMPOLINE -o trampoline trampoline.c
+ *   gcc -UTRAMPOLINE -o trampoline trampoline.c
+ *
+ */
+
+#include &lt;stdio.h&gt;
+
+typedef void (*fptr)(void) ;
+
+void f0(fptr f)
+{
+        (*f)();
+}
+
+void f1()
+{
+       int i ;
+       printf("Enter an integer: ");
+       scanf("%d", &amp;i);
+
+        void f2()
+       {
+               printf("%d: Bouncey bouncey bounce!\n", i);
+        }
+
+#ifdef TRAMPOLINE
+       f0(f2);
+#endif
+}
+
+int main ()
+{
+       f1() ;
+       return 0;
+}
+</pre>
+
+<p>
+<b>2.</b> La segunda protección es la Aleatorización del Esquema del
+Espacio de Direcciones (ASLR o Address Space Layout Randomization).
+Esta protección ofrece una aleatorización del mapa de memoria de un
+proceso (tal y como informa, por ejemplo, pmap) y así, hace que sea
+más difícil para un atacante encontrar código que pueda constituir
+una amenaza en ese espacio. Cada vez que un proceso se creado desde
+un ejecutable ELF en particular, su mapa de memoria es diferente. Así
+el código peligroso que podría vivir en 0x00007fff5f281000 para
+una instancia del ejecutable, podría encontrarse en
+0x00007f4246b5b000 para otra. A pesar que el los fuentes del núcleo
+Linux ofrecen alguna forma de ASLR, un núcleo parcheado con PaX
+incremente este efecto. Aún más, cuando una aplicación se construye
+como un Ejecutable Independiente de la Posición (<c>PIE</c> o
+Position Independent Executable), incluso la dirección base se
+aleatoriza. Intente ejecutar de forma repetida el siguiente código
+tanto en un núcleo Linux sin modificaciones como en uno preparado
+con PaX, con y sin PIE:
+</p>
+
+<pre caption="aslr-test.c: aleatorizar la dirección base para PIE">
+/*
+ * Comparar al compilarlo con:
+ *   gcc -o aslr-test-withpie -fPIC -pie aslr-test.c
+ *   gcc -o aslr-test-without -fno-PIC -nopie aslr-test.c
+ *
+ */
+
+#include &lt;stdio.h&gt;
+
+void doit()
+{
+        ;
+        return ;
+}
+
+int main()
+{
+        printf("main @ %p\n", main);
+        printf("doit @ %p\n", doit);
+        return 0;
+}
+</pre>
+
+<p>
+Para obtener más información sobre PIE, lea nuestra documentación
+sobre <uri link='hardened-toolchain.xml'>Cadena de Herramientas de
+Gentoo Hardened</uri>.
+</p>
+
+<p>
+<b>3.</b> Por último, los parches de PaX ofrecen algún reforzamiento
+extra: borrado de la pila cuando se retorna de una llamada al sistema,
+rechazo a la hora de dereferenciar los punteros a la zona de usuario
+en algunos contextos, detectando el desbordamiento de ciertos
+contadores de referencia, corrigiendo los desbordamientos de algunos
+de los contadores de enteros, forzado del tamaño de las copias entre
+el núcleo y la zona de usuarios y oferta de entropía extra.
+</p>
+
+<p>
+Se puede obtener más información sobre PaX en su página oficial,
 <uri>http://pax.grsecurity.net</uri>.
 </p>
 
@@ -77,44 +235,238 @@ información sobre PaX en esta misma guía, pero la página oficial está en
 </chapter>
 
 <chapter>
-<title>Una introducción a PIE y SSP</title>
+<title>Comprender PaX</title>
 <section>
 <body>
 
 <p>
-Como se ha mencionado arriba, PaX se complementa con PIE. Este método
-de construir ejecutables almacena información necesaria para relocalizar
-partes del ejecutable en memoria, de ahí el nombre <e>Independiente de la
-Posición</e>.
+El primer paso para trabajar con PaX es configurar y arrancar un
+núcleo parcheado con PaX. Dependiendo de si se ha configurado
+PaX para SOFTMODE o no SOFTMODE, el núcleo arrancará automáticamente
+el forzado de restricciones de memoria y una aleatorización del
+espacio de direcciones de todos los procesos. Idealmente, no
+debería de hacer nada más, sin embargo, para ejecutables problemáticos
+en no SOFTMODE, se requiere un segundo paso: deberá relajar algunas
+restricciones PaX para cada objeto ELF. Esto se hace modificando
+los ajustes PaX que lee el núcleo cuando el fichero ELF se carga en
+memoria y comienza su ejecución. Este segundo paso normalmente es
+directo excepto cuando el objeto ELF que requiere esta relajación
+es una librería. En este caso, los ajustes de la librería tienen
+que portarse al ejecutable que enlaza a la librería debido a que
+cuando PaX fuerza o relaja sus características, lo hace basándose
+en los ajustes del ejecutable, no en los de la librería a la cual
+enlaza. Discutiremos ambos pasos en detalle más abajo, pero en
+primer lugar necesitamos echar un vistazo rápido a las características
+de PaX. Las enumeraremos aquí, y para más detalles, remitiremos
+al lector a la
+<uri link='http://pax.grsecurity.net/docs/index.html'>documentación
+oficial de PaX</uri>.
 </p>
 
 <p>
-<e>SSP</e> (Stack Smashing Protector o Protector contra Ataques a la Pila)
-es una tecnología que se añade al ejecutable en el momento de su
-construcción. SSP fue originalmente introducida por IBM bajo el nombre
-<e>ProPolice</e>. Modifica el compilador de C para insertar código de
-inicialización en funciones que crean un buffer en memoria.
-</p>
-
-<note>
-En las nuevas versiones de SSP, es posible aplicar SSP a todas las
-funciones, añadiendo protección a funciones cuyo buffer normalmente
-estaría por debajo del límite de tamaño para SSP. Esto es habilitado
-mediante la CFLAG -fstack-protector-all.
-</note>
-
-<p>
-Durante la ejecución, cuando se crea un buffer, SSP añade un valor
-aleatorio secreto al final del buffer: el chivato. Cuando la función
-retorna, SSP se asegura de que el chivato no ha sido modificado. Si un
-atacante quisiera intentar un desbordamiento de buffer, sobreescribiría
-este valor y esto desembocaría en un manejador de ataque a pila.
-Consecuentemente esto causaría la finalización del proceso atacado.
+<b>SOFTMODE:</b> Si se selecciona esta opción, la protección de PaX
+no se forzará por defecto para aquéllas características que se
+pueden habilitar o deshabilitar en tiempo de ejecución, por lo que
+este el el modo "permitir por defecto" contrario al "prohibir por
+defecto" que se obtiene cuando no se selecciona esta opción. En
+SOFTMODE, el usuario debe explícitamente marcar los ejecutables
+para forzar las protecciones PaX, mientras que en no SOFTMODE,
+el usuario debe marcar explícitamente para relajar las protecciones
+PaX.
 </p>
 
 <p>
-<uri link="http://www.trl.ibm.com/projects/security/ssp/">Más información
-sobre SSP.</uri>
+<b>Forzar páginas no ejecutables:</b>
+</p>
+
+<dl>
+  <dd>
+    <b>PAX_NOEXEC</b> - Esta opción habilita la protección de las
+    páginas de memoria reservadas como no ejecutables si no so parte
+    del segmento de texto del proceso que se está ejecutando
+    actualmente. Es necesario para PAGEEXEC, SEGMEXEC and KERNEXEC.
+  </dd>
+  <dd>
+    <b>PAGEEXEC</b> - El núcleo protegerá las páginas no ejecutables
+    basándose en la característica que posee la CPU. Esto a veces se
+    denomina "marcar la página con el bit <e>NX</e>" en otros sistemas
+    operativos. Esta característica se pueden controlar en cada objeto
+    ELF object basis mediante los ajustes PaX <c>P</c> y <c>p</c>.
+  </dd>
+  <dd>
+    <b>SEGMEXEC</b> - Esta opción es como PAGEEXEC, pero se basa en
+    la característica de segmentación que ofrece la CPU y se controla
+    mediante los ajustes PaX <c>S</c> y <c>s</c>. Observe que
+    SEGMEXEC únicamente está disponible en CPUs que ofrecen
+    segmentación de memoria, principalmente x86.
+  </dd>
+  <dd>
+    <b>EMUTRAMP</b> - El núcleo emulará trampolines (fragmentos
+    de código escritos sobre la marcha) para los procesos que los
+    necesiten, por ejemplo, funciones anidadas en C y en algunos
+    compiladores JIT. Ya que los trampolines tratan de ejecutar el
+    código escrito por el propio proceso a la memoria marcada como
+    no ejecutable por PAGEEXEC o SEGMEXEC, el núcleo PaX podría
+    matar cualquier proceso que intente hacer uso de alguna. EMUTRAMP
+    permite a estos procesos correr sin tener que deshabilitar
+    completamente el forzado de memoria no ejecutable. Esta
+    característica se puede controlar para cada objeto ELF mediante
+    el ajuste de PaX <c>E</c> y <c>e</c>.
+  </dd>
+  <dd>
+    <b>MPROTECT</b> - El núcleo evitará la introducción de nuevas
+    páginas ejecutables en el proceso que se está ejecutando
+    mediante distintas técnicas: Prohibirá cambiar el estado de
+    ejecución de las páginas o la creación de mapeos RWX anónimos,
+    o hacer que las páginas de datos RELRO sean escribibles. Esto
+    se puede controlar para cada objeto ELF mediante el ajuste PaX
+    <c>M</c> y <c>m</c>.
+  </dd>
+  <dd>
+    <b>KERNEXEC</b> - Este el ajuste equivalente a PAGEEXEC y
+    MPROTECT en la zona del núcleo. No se puede deshabilitar mientras
+    el núcleo está corriendo.
+  </dd>
+</dl>
+
+<p>
+<b>Aleatorización del Esquema del Espacio de Direcciones Mejorado
+(ASLR):</b>
+</p>
+
+<dl>
+  <dd>
+    <b>PAX_ASLR</b> - El núcleo expandirá el número de bits
+    aleatorizados para las distintas secciones del espacio de
+    direcciones. Esta opción es necesaria para RANDMMAP, RANDKSTACK
+    y RANDUSTACK.
+  </dd>
+  <dd>
+    <b>RANDMMAP</b> - El núcleo utilizará una base de direcciones
+    aleatorizada para las peticiones mmap() que no especifiquen
+    una a través del ajuste MAP_FIXED. Esto se controla mediante
+    los ajustes PaX <c>R</c> y <c>r</c>.
+  </dd>
+  <dd>
+    <b>RANDKSTACK</b> - El núcleo aleatorizará cada pila de de
+    tareas del núcleo en todas las llamadas al sistema. No se
+    puede deshabilitar mientras el núcleo se está ejecutando.
+  </dd>
+  <dd>
+    <b>RANDUSTACK</b> - El núcleo aleatorizará cada pila de
+    tarea de la zona de usuario. Esta característica se puede
+    controlar para cada binario ELF mediante los ajustes PaX
+    <c>R</c> y <c>r</c>.
+  </dd>
+</dl>
+
+<p>
+<b>Métodos de protección de memoria misceláneos:</b>
+</p>
+
+<dl>
+  <dd>
+    Ninguna de las siguientes características se pueden deshabilitar
+    mientras el núcleo se está ejecutando:
+  </dd>
+  <dd>
+    <b>STACKLEAK</b> - El núcleo borrará su pila antes de retornar
+    desde una llamada al sistema. Esta característica no se puede
+    deshabilitar mientras el núcleo se está ejecutando.
+  </dd>
+  <dd>
+    <b>UDEREF</b> - El núcleo no dereferenciará punteros en zona de
+    usuario en contextos en los que se esperan únicamente punteros
+    del propio núcleo. Esta característica no se puede deshabilitar
+    mientras el núcleo se está ejecutando.
+  </dd>
+  <dd>
+    <b>REFCOUNT</b> - El núcleo detectará y evitará el desbordamientos
+    de varios (pero no todos) los tipos de contadores de referencias
+    a objetos.
+  </dd>
+  <dd>
+    <b>USERCOPY</b> - El núcleo forzará el tamaño de los objetos
+    del montículo cuando se copian en cualquier dirección entre
+    el núcleo y la zona de usuario.
+  </dd>
+  <dd>
+    <b>SIZE_OVERFLOW</b> - El núcleo recalculará expresiones de
+    argumentos de función marcados por un atributo size_overflow
+    con una precisión de entero doble.
+  </dd>
+  <dd>
+    <b>LATENT_ENTROPY</b> - El núcleo utilizará el código de arranque
+    cuanto antes para generar entropía extra, lo cual es especialmente
+    útil en sistemas empotrados.
+  </dd>
+</dl>
+
+<p>
+Tal y como se describe más arriba, algunas de las características de
+PaX se pueden forzar (en el caso de SOFTMODE) o relajar (en el caso
+de no SOFTMODE) para cada objeto ELF. Éstos son PAGEEXEC, EMULTRAP,
+MPROTECT, RANDMMAP y SEGMEXEC y éstos se controlan respectivamente
+mediante los siguientes ajustes: P, E, M, R, S y p, e, m, r, s.
+Los ajustes en mayúsculas indican "reforzar" en SOFTMODE y aquéllos
+en minúsculas indican "relajar" en no SOFTMODE. Una tercera
+posibilidad es que ni los ajustes para reforzar ni para relajar
+están habilitados, en cuyo caso el núcleo simplemente utiliza
+el valor por defecto para esa protección en particular. Por ejemplo,
+is ni P ni p están habilitados para un objeto, entonces el núcleo
+no forzará PAGEEXEC en SOFTMODE y lo forzará en no SOFTMODE.
+</p>
+
+<p>
+Actualmente, los parches PaX ofrecen tres formas de realizar
+marcados PaX: EI_PAX, PT_PAX y XATTR_PAX. EI_PAX coloca los ajustes
+PaX en los bytes 14 y 15 del campo e_ident de la cabecera de un
+objeto ELF. Sin embargo, esto no funciona así en las versiones
+recientes de glibc y ya no se ofrece soporte. Mire la
+<uri link='https://bugs.gentoo.org/365825'>incidencia #365825</uri>.
+PT_PAX coloca los ajustes en una cabecera de programa del objeto
+ELF llamada PAX_FLAGS. Esto tiene como ventaja que los ajustes
+están en el cuerpo del objeto y siempre se conservarán cuando
+se copie el mismo. Sin embargo, tiene la desventaja de que
+el objeto deberá tener la cabecera de programa PAX_FLAGS para que
+funcione. La mayoría de distribuciones Linux no construyen
+los ejecutables y librerías con esta cabecera de y el hecho de
+añadirlo da problemas: no hay suficiente espacio en el objeto
+ELF para añadirlo o, si se convierte a una cabecera de programa
+GNU_STACK, que no es utilizada por el núcleo PaX, puede causar
+problemas posteriormente bajo otros núcleos si el objeto se
+exporta. En el peor de los casos, cambiar el binario ELF romperá
+los ejecutables que se autocomprueban ya que comprobarán que han
+sido "modificados". Mire la
+<uri link='https://bugs.gentoo.org/100507'>incidencia
+#100507</uri>.
+</p>
+
+<p>
+Aunque todavía se ofrece soporte para PT_PAX, la forma preferida
+es utilizar XATTR_PAX que localiza los ajustes PaX en los atributos
+extendidos del sistema de ficheros. Esto tiene la ventaja de que no
+modifica el objeto ELF de ninguna forma, sin embargo, tiene la
+desventaja de que el sistema de ficheros que aloje estos objetos,
+y las utilidades que se empleen para copiarlos, moverlos y
+archivarlos, deben ofrecer soporte para atributos extendidos (xattrs).
+En el caso de Gentoo y portage, esto significa que tmpfs debe dar
+soporte al espacio de nombres xattr de usuario user.pax.* en el cual
+se localizan los ajustes PaX, no solo los espacios de nombres
+security.* y trusted.* (Nota: user.pax.* es el subespacio
+de user.* que se utilizará para la información xattr relacionada
+con PaX. No habilitamos completamente el espacio de usuario
+user.* en tmpfs para reducir el riesgo de vectores de ataque
+enfocados a esa ruta).
+</p>
+
+<p>
+Un apunte final sobre los dos métodos soportados para realizar marcados
+PaX: el núcleo PaX le permite habilitar tanto PT_PAX como XATTR_PAX,
+pero si lo hace, no impondrá los marcados a menos que los mismos
+ajustes se hallen en ambas localizaciones. Por esta razón, no
+recomendamos habilitar ambos, incluso para la migración que se
+describe más abajo.
 </p>
 
 </body>
@@ -122,62 +474,140 @@ sobre SSP.</uri>
 </chapter>
 
 <chapter>
-<title>Construyendo un núcleo con PaX habilitado</title>
+<title>Construir un núcleo PaX</title>
 <section>
 <body>
 
 <p>
-Varios árboles con el núcleo parcheado con PaX están disponibles en
-Gentoo.
+El equipo Gentoo Hardened mantiene y ofrece soporte para el paquete
+<c>hardened-sources</c>, que comentaremos aquí. Otros paquetes del
+árbol del núcleo pueden ofrecer PaX, y mucho de lo que se comente
+aquí se podrá aplicar a ellos. Sin embargo, tendrá que estudiar
+esas diferencias, nosotros no las comentaremos. El paquete
+hardened-sources incluye los parches Grsecurity
+(<uri>http://grsecurity.net/</uri>), que incluyen a su vez a los
+parches PaX. Si únicamente quiere los parches PaX, los puede obtener
+de forma aislada desde <uri>http://www.grsecurity.net/~paxguy1/</uri>.
+Si está interesado en aprender más sobre el reforzado con Grsecurity
+en general, lo cubriremos en nuestro
+<uri link='grsecurity.xml'>Guía rápida de Grsecurity</uri>.
 </p>
 
 <p>
-Para las máquinas basadas en 2.4/2.6, los núcleos recomendados son
-<c>hardened-sources</c>
+Al hacer emerge del núcleo hardened-sources, el árbol de los fuentes
+se localiza en /usr/src, pero no están configurados. Será entonces
+el momento de asegurarse de que PaX está configurado de modo que
+refuerce o relaje lo que desee. Abajo no concentraremos en las
+configuraciones recomendadas, pero si lo desea modifíquelas. La
+sección anterior debería haberle dado alguna idea de cada una
+de las opciones que se ofrecen para que así pueda elegir las opciones
+acertadas. Le recomendamos comenzar con una configuración muy
+reforzada y relajar solo cuando no se puede encontrar otra salida.
 </p>
 
 <p>
-Obtenga uno de los árboles fuente recomendados, o aplique los parches
-apropiados presentes en <uri>http://pax.grsecurity.net</uri> a su árbol
-y configúrelo como normalmente lo haría para la máquina destino.
+Como ya se ha comentado, los parches PaX están incluidos en Grsecurity,
+por lo que las opciones de configuración de PaX se encuentran bajo
+<c>Security Options -&gt; Grsecurity -&gt; Customize Configuration -&gt;
+PaX</c>. Tiene también la opción de seleccionar uno de los perfiles
+preconfigurados de Grsecurity en
+<c>Security Options -&gt; Grsecurity -&gt; Configuration Method</c>.
+Éstos le ofrecerán un punto de partida con sentido para la
+configuración de PaX.
 </p>
 
 <p>
-En <c>Security Options -&gt; PaX</c>, aplique las opciones que se
-muestran abajo.
+Si está realizando la configuración únicamente para PT_PAX, lo que
+sigue debería ser suficiente. Observe que debido a que estamos
+intentando mostrar las opciones de configuración tanto para
+x86 como para amd64, hemos marcado estas diferencias con un
+símbolo <c>&gt;</c> en la columna que está más a la izquierda.
 </p>
 
-<pre caption="Configuración del núcleo">
+<pre caption="Configuración del núcleo para PT_PAX">
 [*] Enable various PaX features
 
 PaX Control -&gt;
 
  [ ] Support soft mode
- [*] Use legacy ELF header marking
+ [ ] Use legacy ELF header marking
  [*] Use ELF program header marking
+ [ ] Use filesystem extended attributes marking
      MAC system integration (none)  ---&gt;
 
 Non-executable page -&gt;
 
  [*] Enforce non-executable pages
  [*]   Paging based non-executable pages
- [*]   Segmentation based non-executable pages
+ [*]   Segmentation based non-executable pages                       &lt;--- Not available on amd64
  [*] Emulate trampolines
  [*] Restrict mprotect()
- [ ]   Disallow ELF text relocations
+ [ ]   Use legacy/compat protection demoting (read help)
+ [ ]   Allow ELF text relocations (read help)
+ [*] Enforce non-executable kernel pages
+     Return Address Instrumentation Method (or)  --->                &lt;--- Not available on x86
+     (4) Minimum amount of memory reserved for module code           &lt;--- Not available on amd64
 
 Address Space Layout Randomization -&gt;
 
  [*] Address Space Layout Randomization
- [*]   Randomize kernel stack base
- [*]   Randomize user stack base
- [*]   Randomize mmap() base
- [*]     Randomize ET_EXEC base
+ [*] Randomize kernel stack base
+ [*] Randomize user stack base
+ [*] Randomize mmap() base
+
+Miscellaneous hardening features  --->
+
+ [*] Sanitize all freed memory
+ [*] Sanitize kernel stack
+ [*] Prevent invalid userland pointer dereference
+ [*] Prevent various kernel object reference counter overflows
+ [*] Harden heap object copies between kernel and userland
+ [*] Prevent various integer overflows in function size parameters
+ [*] Generate some entropy during boot
 </pre>
 
 <p>
-Construya este núcleo como lo haría normalmente e instálelo en
-<path>/boot</path>.
+Preferentemente, deberíamos optar por los ajustes XATTR_PAX. En
+este caso, toda la información de arriba podría incluirse tal y
+como está, sin embargo, podríamos también cambiar la configuración
+de control de PaX:
+</p>
+
+<pre caption="Configuración del núcleo con ajustes XATTR_PAX">
+PaX Control -&gt;
+
+ [ ] Support soft mode
+ [ ] Use legacy ELF header marking
+ [ ] Use ELF program header marking
+ [*] Use filesystem extended attributes marking
+     MAC system integration (none)  ---&gt;
+</pre>
+
+<p>
+Debido a que los ajustes PaX residen ahora en los atributos extendidos
+de su sistema de ficheros, deberemos habilitar xattr en esos sistemas
+de ficheros. El equipo de PaX ya ha definido una dependencia. Por
+ejemplo, para Ext4 tenemos:
+</p>
+
+<pre caption="Selección automática de EXT4_FS_XATTR mediante XATTR_PAX_FLAGS">
+File systems  ---&gt;
+ &lt;*&gt; The Extended 4 (ext4) filesystem
+ -*-   Ext4 extended attributes
+ [ ]     Ext4 POSIX Access Control Lists
+ [ ]     Ext4 Security Labels
+ [ ]   EXT4 debugging support
+</pre>
+
+<p>
+Aquí los <c>atributos extendidos de Ext4</c> se han seleccionado
+automáticamente por <c>PAX_XATTR_PAX_FLAGS [=y] &amp;&amp;
+GRKERNSEC [=y] &amp;&amp; PAX [=y] &amp;&amp; EXT4_FS [=y]</c>.
+Ni que decir tiene que, en caso de que esté utilizando un sistema
+de ficheros que no tiene esta dependencia en la selección, deberá
+comprobar que la selección se realiza, y si no es así, abrir un
+informe de incidencia para que su sistema de ficheros tenga mejor
+soporte en lo que se refiere a PaX.
 </p>
 
 </body>
@@ -185,134 +615,588 @@ Construya este núcleo como lo haría normalmente e instálelo en
 </chapter>
 
 <chapter>
-<title>Construyendo una zona de usuario con PIE/SSP habilitado</title>
+<title>Control de PaX</title>
 <section>
 <body>
 
 <p>
-Gentoo Hardened ha añadido soporte para la construcción transparente
-de PIE/SSP usando un fichero de especificación de GCC. Esto significa
-que cualquier usuario que realice una actualización de instalaciones
-anteriores de Hardened deberá eliminar cualquier LDFLAGS o CFLAGS
-usadas para activar PIE/SSP. También, se debe tener en cuenta que
-el paquete <c>hardened-gcc</c> es ahora obsoleto y debe ser
-desinstalado (la versión 5.0 es una paquete inútil). Para obtener
-la versión actual de GCC, añada <c>USE="hardened pic"</c> a
-<path>/etc/make.conf</path> si no está usando el perfil hardened.
+Como hemos mencionado más arriba, existen cinco protecciones PaX
+que pueden ser activada (en SOFTMODE) or relajadas (en no SOFTMODE)
+para cada objeto ELF: PAGEEXEC, EMULTRAP, MPROTECT, RANDMMAP y
+SEGMEXEC. La última, SEGMEXEC, está disponible únicamente en las
+CPUs x86 que ofrecen soporte para segmentación, al contrario que
+la paginación que está soportada por todas las CPUs, incluso las
+x86. Debido a que algunos programas se rompen por alguna u otra
+razón bajo un reforzado PaX completo, tenemos que enfrentarnos
+con las alternativas: bien corregir el código para que funcione
+con PaX, bien relajar una o más de estas protecciones. En la
+praćtica, "corregir el código" puede resultar muy difícil y por
+tanto nos decantaremos por la segunda alternativa. El enfoque
+general debería consistir en intentar el reforzado completo y,
+en caso de que algo se rompa, utilizar dmesg para obtener un
+informe del núcleo indicando el porqué y a continuación relajar
+esa protección en particular. Esto puede no ser necesario
+en un sistema Gentoo debido a que los ebuilds deberían definir
+correctamente los ajustes a través de pax-util.eclass. Si
+necesita definir sus propios ajustes, le pedimos que informe
+de una incidencia.
 </p>
 
 <p>
-Para mantener un conjunto de herramientas consistente, primero haga
-<c>emerge binutils gcc virtual/libc</c>. A continuación, reconstruya
-el sistema completo haciendo <c>emerge -e world</c>. A partir de ese
-momento todos los paquetes se construirán usando las tecnologías PIE/SSP.
+En general, la definición de los ajustes PaX es sencilla, sin
+embargo, el usuario debería tener en cuenta algunas cosas:
 </p>
-
-<warn>
-Tanto PIE como SSP pueden causar algún tipo de problema con algunos
-paquetes. Si encuentra alguno que falle al compilar, por favor,
-informe de una nueva y detallada incidencia incluyendo los datos
-de la compilación que ha fallado y la salida de <c>emerge info</c> en
-<uri>http://bugs.gentoo.org/</uri>.
-</warn>
 
 <p>
-Probablemente quiera también hacer emerge de pax-utils.
-A menudo, si un fichero ELF tiene relocalizaciones ejecutables en
-el segmento de texto, éstas pueden causarnos problemas.
-scanelf -BRylptq
+1) Uno puede definir los ajustes PT_PAX o XATTR_PAX en un objeto
+ELF independientemente de otro objeto. De forma similar, el núcleo
+se puede configurar para leer uno, los dos o ninguno de estos
+campos. Es su decisión asegurarse de que define los ajustes en el
+campo que está utilizando el núcleo para obtener los resultados
+deseados. Por ejemplo, si tiene PT_PAX="Pe---" y XATTR_PAX no
+está presente en el objeto, pero el núcleo está configurado
+para utilizar únicamente XATTR_PAX, ¡podría obtener un resultado
+no deseado!
 </p>
-
-</body>
-</section>
-</chapter>
-
-<chapter>
-<title>Cuando las cosas no van como debieran (PaX Control)</title>
-<section>
-<body>
 
 <p>
-Algunas aplicaciones legítimas intentarán generar código en tiempo de
-ejecución, el cual se ejecuta fuera de memoria. Naturalmente, PaX no
-lo permitirá y terminará las aplicaciones que intenten hacerlo.
+2) El enfoque recomendado es marcar los campos PT_PAX y XATTR_PAX
+de forma idéntica en los objetos siempre que sea posible y ajustar
+el núcleo para que lea únicamente XATTR_PAX. El paso "siempre que
+sea posible" es el paso en el que las cosas se ponen complicadas
+y los dos campos puede que no contengan los mismos ajustes. Si
+el objeto ELF no contiene una cabecera de programa PAX_FLAGS, el
+marcado PT_PAX fallará. Sin embargo, la ausencia de esta cabecera
+de programa no afectará a las marcas XATTR_PAX. Si el ELF
+está ocupado (esto es, hay un proceso corriendo que utilizar el
+texto del  ELF), entonces se puede leer los ajustes PT_PAX pero no
+definirlos. De nuevo, esto no afectar definir u obtener los ajustes
+XATTR_PAX. Por el contrario, si está utilizando sistemas de ficheros
+que no ofrecen soporte para atributos extendidos, entonces el
+marcado XATTR_PAX fallará en los sistemas de ficheros mientras que
+el marcado PT_PAX no se verá afectado, excepto en la situación
+ya comentada. Esto puede ser muy sutil ya que, copiar un fichero
+desde un sistema de ficheros con xattrs a otro que no los tiene
+y volver a copiarlos a su origen hará que se pierdan los ajustes
+XATTR_PAX. O empaquetar con una versión antigua de tar que
+no conserva los xattrs hará que también perdamos nuestros
+ajustes.
 </p>
-
-<note>
-La más notable de este tipo de aplicaciones es XFree/Xorg, mplayer y
-herramientas multimedia basadas en xine-lib. La forma más fácil de
-evitar estos problemas es desactivar las protecciones de PaX.
-</note>
 
 <p>
-Afortunadamente existe una utilidad para activar o desactivar las
-protecciones para un ejecutable: <e>paxctl</e>. Al igual que otros
-paquetes en Gentoo, instale paxctl mediante el comando
-<c>emerge paxctl</c>. El uso de esta utilidad se muestra mediante
-<c>paxctl -h</c>.
+3) Los ajustes PaX únicamente son reforzados cuando un proceso se
+carga desde un ejecutable ELF. Este ejecutable normalmente enlaza
+dinámicamente contra objetos compartidos en memoria. El uso
+de `cat /proc/&lt;pid&gt;/status  | grep PaX` le ofrece el
+reforzamiento resultante del proceso que está corriendo con
+PID=&lt;pid&gt;. Pero, ya que el ejecutable y los objetos
+compartidos tienen ajustes diferentes, la pregunta surge,
+¿Cuáles de ellos se utilizan para determinar los reforzamientos
+finales de PaX?. La respuesta es que se utiliza el ejecutable
+por razones de control y seguridad. Si las librerías fueran
+a definir el reforzado de PaX en tiempo de ejecución, entonces
+¿Cuál de las librerías "ganarían" si un ejecutable está enlazado
+con todas ellas?. Además una librería demasiado relajada podría
+hacer que los privilegios sobre los muchos ejecutables que
+enlazan a ella también se relajaran. Por ejemplo, relajar
+todas las protecciones sobre glibc implicaría que PaX se
+desactivara en el sistema. Por supuesto, es el código de
+la propia librería el que necesita la relajación de algún
+reforzamiento PaX. En este caso uno tiene que "portar hacia
+atrás" los ajustes de la librería al ejecutable que los utiliza.
 </p>
 
-<note>
-Si tiene una versión antigua de binutils, necesitará usar <e>chpax</e>,
-el cual edita las marcas de PaX con el formato antiguo. El uso de chpax
-es muy parecido al de paxctl. Esto también requiere el soporte de marcas
-construido en su núcleo.
-Las nuevas versiones de paxctl hacen chpax obsoleto.
-</note>
+<p>
+Abajo, describimos las utilidades ofrecidas en un sistema Gentoo
+para trabajar con marcados PaX. Existen varios ya que mientras
+PaX evolucionaba, se necesitaban nuevas características. Cada
+una hace hincapié en una necesidad diferente con respecto a las
+cuestiones planteadas arriba.
+</p>
+
+<p>
+<b>1. paxctl</b>
+</p>
+
+<p>
+Este es el paquete tradicional para la definición de ajustes
+PaX. Está limitado únicamente en el hecho en que solo define
+PT_PAX, no XATTR_PAX. Se ofrece mediante el paquete
+sys-apps/paxctl. Tiene una funcionalidad que ninguna otra
+utilidad posee: puede crear una cabecera de programa
+PAX_FLAGS o convertir una GNU_STACK a PAX_FLAGS. Ambos no
+se recomiendan ya que pueden romper ELF bajo ciertas
+circunstancias. Sin embargo, en el caso extremo en que no
+pueda utilizar XATTR_PAX (por ejemplo, no puede utilizar
+el sistema de ficheros que soporta los atributos extendidos)
+y esté tratando con un objeto ELF que no se construyó con
+una cabecera de programa PAX_FLAGS, entonces estas opciones
+están disponibles a través de esta utilidad.
+</p>
+
+<p>
+A continuación se muestra una sinopsis del su utilización:
+</p>
 
 <pre caption="paxctl -h">
+PaX control v0.7
+Copyright 2004,2005,2006,2007,2009,2010,2011,2012 PaX Team &lt;pageexec@freemail.hu&gt;
+
 usage: paxctl &lt;options&gt; &lt;files&gt;
 
 options:
         -p: disable PAGEEXEC            -P: enable PAGEEXEC
-        -e: disable EMUTRMAP            -E: enable EMUTRMAP
+        -e: disable EMUTRAMP            -E: enable EMUTRAMP
         -m: disable MPROTECT            -M: enable MPROTECT
         -r: disable RANDMMAP            -R: enable RANDMMAP
         -x: disable RANDEXEC            -X: enable RANDEXEC
         -s: disable SEGMEXEC            -S: enable SEGMEXEC
 
         -v: view flags                  -z: restore default flags
-        -q: suppress error messages     -Q: report flags in short format flags
+        -q: suppress error messages     -Q: report flags in short format
+        -c: convert PT_GNU_STACK into PT_PAX_FLAGS (see manpage!)
+        -C: create PT_PAX_FLAGS (see manpage!)
 </pre>
 
 <p>
-La primera opción que se suele usar es <c>-v</c>, la cual muestra los
-ajustes realizados en un binario en particular.
+Observe que paxctl también informa de la antigua protección PaX
+llamada RANDEXEC. Esta opción ya no se utiliza. La aleatorización
+de la dirección base de un proceso ahora es parte de ASLR en
+todos los ejecutables que se construyen con ET_DYN en lugar
+de EX_EXEC. Aquí se muestra a paxctl en acción:
 </p>
 
-<pre caption="paxctl -v">
-shell user # paxctl -v /usr/bin/Xorg
-PaX control v0.2
-Copyright 2004 PaX Team &lt;pageexec@freemail.hu&gt;
+<pre caption="paxctl en acción">
+# <i>paxctl -v /usr/bin/python3.2</i>
+PaX control v0.7
+Copyright 2004,2005,2006,2007,2009,2010,2011,2012 PaX Team &lt;pageexec@freemail.hu&gt;
 
-- PaX flags: -p-sM--x-eR- [/usr/bin/Xorg]
-        PAGEEXEC is disabled
-        SEGMEXEC is disabled
-        MPROTECT is enabled
+- PaX flags: -----m-x-e-- [/usr/bin/python3.2]
+        MPROTECT is disabled
         RANDEXEC is disabled
         EMUTRAMP is disabled
-        RANDMMAP is enabled
+
+# paxctl -P /usr/bin/python3.2
+# paxctl -v /usr/bin/python3.2
+PaX control v0.7
+Copyright 2004,2005,2006,2007,2009,2010,2011,2012 PaX Team &lt;pageexec@freemail.hu&gt;
+
+- PaX flags: P----m-x-e-- [/usr/bin/python3.2]
+        PAGEEXEC is enabled                             &lt;--- Nota: Esto se añade a ajustes anteriores, no los sobreescribe.
+        MPROTECT is disabled
+        RANDEXEC is disabled
+        EMUTRAMP is disabled
 </pre>
 
 <p>
-Esto muestra un binario XFree con todas las protecciones deshabilitadas.
+<b>2. getfattr setfattr</b>
 </p>
 
 <p>
-Para activar una de estas protecciones en un binario, nos será útil la
-opción <c>-z</c> ya que restaura el valor por defecto de esa protección.
+No hay utilidades específicas PaX sino utilidades generales
+para definir los atributos extendidos de un fichero. En Gentoo
+se ofrecen haciendo emerge de sys-apps/attr. Ya que  XATTR_PAX
+utiliza el espacio de nombres user.* namespace (específicamente
+"user.pax.flags"), puede utilizar set/getfattr para trabajar
+con este campo. Sin embargo, tenga en cuenta que
+setfattr y getfattr no saben nada acerca de PaX, por lo que
+no realizarán ninguna comprobación de seguridad sobre lo que
+ponga en ese campo. Únicamente si define user.pax.flags
+a alguna combinación con sentido de los caracteres
+PpEeMmRr, el núcleo respetará su elección, en caso contrario,
+volverá a los valores por defecto. El siguiente listado ofrece
+algunos ejemplos.
 </p>
 
 <p>
-Para desactivar las protecciones en Xorg, ejecute
-<c>paxctl -zpeMRxs /usr/bin/Xorg</c>.
+Lo que sigue es un ejemplo de su uso para XATTR_PAX:
+</p>
+
+<pre caption="setfattr y getfattr en acción">
+# <i>getfattr -n user.pax.flags /usr/bin/python3.2</i>
+getfattr: Removing leading '/' from absolute path names
+# file: usr/bin/python3.2
+user.pax.flags="em"
+
+# <i>setfattr -n user.pax.flags -v P /usr/bin/python3.2</i>
+# <i>getfattr -n user.pax.flags /usr/bin/python3.2</i>
+getfattr: Removing leading '/' from absolute path names
+# file: usr/bin/python3.2
+user.pax.flags="P"                                              &lt;--- Nota: Esto sobreescribe los ajustes anteriores, no los añade.
+
+# <i>setfattr -n user.pax.flags -v "Hola Mamá."  /usr/bin/python3.2</i>
+# <i>getfattr -n user.pax.flags /usr/bin/python3.2</i>
+getfattr: Removing leading '/' from absolute path names
+# file: usr/bin/python3.2
+user.pax.flags="Hola Mamá."                                     &lt;--- Mamá lo agradece, pero PaX no. No hay comprobación de seguridad.
+</pre>
+
+
+<p>
+<b>3. paxctl-ng</b>
 </p>
 
 <p>
-Puede probar a activar/desactivar varias protecciones para comprobar
-cuáles son las mínimas para poder trabajar. A menudo se comprueba que
-son necesarias las combinaciones -m -sp.
+paxctl-ng el la nueva navaja suiza para trabajar con marcados
+PT_PAX y XATTR_PAX. Se puede construir con soporte para uno, otro
+o ambos tipos de marcados. Cuando se construye con soporte para
+ambos, puede copiar campos PT_PAX a campos XATTRP_PAX o
+viceversa, para asegurarse de que hay consistencia. En definitiva,
+puede hacer todo lo que paxctl y set/getfattr pueden hacer, salvo
+no intentar crear o convertir una cabecera de programa PAX_FLAGS.
+Esto no se recomienda y debe emplearse solo en el caso aislado
+mencionado arriba. A continuación mostramos un resumen de su
+utilización:
 </p>
+
+<pre caption="paxctl-ng -h">
+Package Name : elfix 0.7.1
+Bug Reports  : http://bugs.gentoo.org/
+Program Name : paxctl-ng
+Description  : Get or set pax flags on an ELF object
+
+Usage        : paxctl-ng -PpEeMmRrSsv ELF | -Zv ELF | -zv ELF
+             : paxctl-ng -Cv ELF | -cv ELF | -dv ELF
+             : paxctl-ng -Fv ELF | -fv ELF
+             : paxctl-ng -Lv ELF | -lv ELF
+             : paxctl-ng -v ELF | -h
+
+Options      : -P enable PAGEEXEC       -p disable  PAGEEXEC
+             : -E enable EMUTRAMP       -e disable  EMUTRAMP
+             : -M enable MPROTECT       -m disable  MPROTECT
+             : -R enable RANDMMAP       -r disable  RANDMMAP
+             : -S enable SEGMEXEC       -s disable  SEGMEXEC
+             : -Z all secure settings   -z all default settings
+             :
+             : -C create XATTR_PAX with most secure setting
+             : -c create XATTR_PAX all default settings
+             : -F copy PT_PAX to XATTR_PAX
+             : -f copy XATTR_PAX to PT_PAX
+             : -L set only PT_PAX flags
+             : -l set only XATTR_PAX flags
+             :
+             : -v view the flags, along with any accompanying operation
+             : -h print out this help
+
+Note         :  If both enabling and disabling flags are set, the default - is used
+</pre>
+
+<p>
+A continuación se muestra un ejemplo de paxctl-ng en acción:
+</p>
+
+<pre caption="paxctl-ng en acción">
+# <i>paxctl-ng -v /usr/bin/python3.2</i>                        &lt;--- Ver los campos PT_PAX y XATTR_PAX (-v)
+/usr/bin/python3.2:
+        PT_PAX   : Pem--
+        XATTR_PAX: Pem--
+
+# <i>paxctl-ng -lPpv /usr/bin/python3.2</i>                     &lt;--- Definir el valor por defecto '-' para PAGEEXEC (-Pp)
+/usr/bin/python3.2:                                             &lt;--- Solo para XATTR_FLAGS (-l)
+        PT_PAX   : Pem--                                        &lt;--- E informar del resultado (-v)
+        XATTR_PAX: -em--
+
+# <i>paxctl-ng -dv /usr/bin/python3.2</i>                       &lt;--- Borrar todo el campo XATTR_PAX (-d)
+/usr/bin/python3.2:                                             &lt;--- E informar del resultado (-v)
+        PT_PAX   : Pem--
+        XATTR_PAX: not found
+
+# <i>paxctl-ng -lemv /usr/bin/python3.2</i>                     &lt;--- Definir los ajustes "em" (-em)
+/usr/bin/python3.2:                                             &lt;--- Solo para XATTR_FLAGS (-l)
+        PT_PAX   : Pem--                                        &lt;--- E informar del resultado (-v)
+        XATTR_PAX: -em--
+
+# <i>paxctl-ng -fv /usr/bin/python3.2</i>                       &lt;--- Copiar los ajustes XATTR_PAX a PT_PAX, sobreescribiendo estos últimos (-f)
+/usr/bin/python3.2:                                             &lt;--- E informar del resultado (-v)
+        PT_PAX   : -em--
+        XATTR_PAX: -em--
+
+# <i>paxctl-ng -d /usr/bin/python3.2</i>                        &lt;--- Borrar de forma silenciosa el campo XATTR_PAX (-d pero no -v)
+# <i>paxctl-ng -v /usr/bin/python3.2</i>                        &lt;--- Ver los campos PT_PAX y XATTR_PAX (-v)
+/usr/bin/python3.2:
+        PT_PAX   : -em--
+        XATTR_PAX: not found
+</pre>
+
+<p>
+<b>4.</b>Módulo Python, <b>pax.so</b>, y una interfase simple de
+Python, <b>pypaxctl</b>.
+</p>
+
+<p>
+También ofrecemos añadidos a python a través de un módulo, pax.so,
+el cual se instala haciendo emerge de dev-python/pypax. Este paquete
+es una dependencia de sys-apps/elfix ya que tanto revdep-pax como
+migrate-pax lo importan. Se puede compilar con soporta tanto para
+PT_PAX como para XATTR_PAX o para ambos a la vez. Es similar a
+paxctl-ng, per no tiene tantas características como éste, ya que
+su alcance está limitado las necesidades de revdep-pax y de
+migrate-pax. Esto puede cambiar en el futuro si hay necesidad
+de una mejor integración entre el marcado PaX con portage, el cual
+está escrito en python.
+</p>
+
+<p>
+Actualmente pax.so exporta públicamente lo siguiente:
+</p>
+
+<dl>
+  <dt>
+    <b>pax.setstrflags(str_flags):</b>
+  </dt>
+  <dd>
+    Esta función definirá los ajustes PT_PAX y XATTR_PAX para
+    que tengan el mismo valor. Los ajustes se especifican como
+    una cadena de los siguientes caracteres: PpEeMmRrSs. Si,
+    tanto el carácter para activar como para desactivar se
+    indican para una protección en particular, entonces el
+    valor por defecto '-' se utiliza en su lugar.
+  </dd>
+  <dt>
+    <b>pax.setbinflags(bin_flags):</b>
+  </dt>
+  <dd>
+    Esta función es la misma que pax.setstrflags pero toma
+    los ajustes como un O lógico bit a bit de la representación
+    en binario de los ajustes. El campo PT_PAX se almacena
+    de esta forma, mientras que el campo XATTR_PAX se almacena
+    como una cadena de los caracteres PpEeMmRrSs.
+  </dd>
+  <dt>
+    <b>pax.getflags(elf):</b>
+  </dt>
+  <dd>
+   Esta función devuelve los ajustes PaX como una tupla
+   representando ambas formas (str_flags, bin_flags), esto
+   es, se devuelve tanto como una cadena como su representación
+   equivalente en binario. Si se han definido los dos PT_PAX
+   y XATTR_PAX, entonces los ajustes XATTR_PAX sobreescribirán
+   los ajustes PT_PAX.
+  </dd>
+  <dt>
+    <b>pax.deletextpax(elf):</b>
+  </dt>
+  <dd>
+    Esta función borrará el campo XATTR_PAX completamente. No
+    toca el campo PT_PAX, que no se puede eliminar (¡fácilmente!).
+  </dd>
+  <dt>
+    <b>pax.PaxError:</b>
+  </dt>
+  <dd>
+    Esta excepción se lanza cada vez que se produce un fallo
+    al obtener o se definir los ajustes, o cuando el borrado
+    del campo XATTR_PAX falla.
+  </dd>
+</dl>
+
+<p>
+pypaxctl es una interfase simple para pax.so que simplemente
+obtiene y define los valores de los ajustes de PaX utilizando
+la misma lógica. Cuando se obtiene el valor de los ajustes,
+si ambos PT_PAX y XATTR_PAX están presentes, el segundo tendrá
+prioridad sobre el primero. Cuando se define el valor, se
+definirán ambos campos siempre que sea posible. Aquí lo
+vemos en acción:
+</p>
+
+<pre caption="pypaxctl en acción con PT_PAX y XATTR_PAX">
+# <i>pypaxctl -g /usr/bin/python3.2</i>         &lt;--- Recuperar tanto PT_PAX como XATTR_PAX. El segundo tiene prioridad si está definido.
+-em--                                           &lt;--- La orden canónica es PEMRS.
+# <i>paxctl-ng -v /usr/bin/python3.2</i>        &lt;--- Resulta que XATTR_PAX no existe, por lo que obtenemos PT_PAX.
+/usr/bin/python3.2:
+        PT_PAX: -em--
+        XT_PAX: not found
+
+# <i>paxctl-ng -lPMEv /usr/bin/python3.2</i>    &lt;--- Definir algunos ajustes XATTR_PAX.
+/usr/bin/python3.2:
+        PT_PAX: -em--
+        XT_PAX: PEM--
+
+# <i>pypaxctl -g /usr/bin/python3.2</i>         &lt;--- ¡Ahora está mostrando los ajustes XATTR_PAX!
+PEM--
+# <i>pypaxctl -s me /usr/bin/python3.2</i>      &lt;--- Definir "me" para PT_PAX y XATTR_PAX
+# <i>paxctl-ng -v /usr/bin/python3.2</i>
+/usr/bin/python3.2:
+        PT_PAX: -em--                           &lt;--- Al igual que paxctl y paxctl-ng, no sobreescribimos los ajustes, solo los añadimos.
+        XT_PAX: Pem--
+
+# <i>pypaxctl -s Pp /usr/bin/python3.2</i>      &lt;--- Pero, ¿Qué ocurre si queremos desactivar PAGEEXEC? Entonces definimos Pp al valor por defecto '-'.
+# <i>paxctl-ng -v /usr/bin/python3.2</i>
+/usr/bin/python3.2:
+        PT_PAX: -em--
+        XT_PAX: -em--
+</pre>
+
+<p>
+Si no desea que la lógica de XATTR_PAX tenga precedencia
+sobre PT_PAX,  is not what you want, se puede compilar
+con soporte PT_PAX xor XATTR_PAX. En este caso, el otro
+campo nunca se modifica, tal y como se muestra abajo:
+</p>
+
+<pre caption="pypaxctl en acción con solo PT_PAX">
+#  <i>paxctl-ng -v /usr/bin/python3.2</i>
+/usr/bin/python3.2:
+        PT_PAX: -em--
+        XT_PAX: PEM--
+
+# <i>pypaxctl -g /usr/bin/python3.2</i>
+-em--
+# <i>pypaxctl -s p /usr/bin/python3.2</i>
+# <i>paxctl-ng -v /usr/bin/python3.2</i>
+/usr/bin/python3.2:
+        PT_PAX: pem--
+        XT_PAX: PEM--
+
+# <i>pypaxctl -s PpEem /usr/bin/python3.2</i>
+# <i>paxctl-ng -v /usr/bin/python3.2</i>
+/usr/bin/python3.2:
+        PT_PAX: --m--
+        XT_PAX: PEM--
+</pre>
+
+<p>
+<b>5. revdep-pax</b>
+</p>
+
+<p>
+Esta utilidad se emplea para mapear los enlaces entre
+todos los objetos ELF en su sistema con sus objetos
+compartidos en ambas direcciones. Se puede entonces
+buscar marcados de ajustes PaX que no corresponden entre
+los objetos compartidos y los ejecutables y, opcionalmente,
+se permite al usuario migrar los marcados hacia delante o
+hacia atrás para cada objeto ELF. Aquí tenemos un resumen
+de su utilización:
+</p>
+
+<pre caption="revdep-pax -h">
+Package Name : elfix
+Bug Reports  : http://bugs.gentoo.org/
+Program Name : revdep-pax
+Description  : Get or set pax flags on an ELF object
+
+Usage        : revdep-pax -f [-v]             print out all forward mappings for all system binaries
+             : revdep-pax -r [-ve]            print out all reverse mappings for all system sonames
+             : revdep-pax -b OBJECT  [-myv]   print all forward mappings only for OBJECT
+             : revdep-pax -s SONAME  [-myve]  print all reverse mappings only for SONAME
+             : revdep-pax -l LIBRARY [-myve]  print all reverse mappings only for LIBRARY file
+             : revdep-pax [-h]                print out this help
+             : -v                             verbose, otherwise just print mismatching objects
+             : -e                             only print out executables in shell $PATH
+             : -m                             don't just report, but mark the mismatching objects
+             : -y                             assume "yes" to all prompts for marking (USE CAREFULLY!)
+</pre>
+
+<p>
+Aquí tenemos a revdep-pax en acción. Debido a que la salida
+es larga, la hemos acortado con algunos puntos suspensivos:
+</p>
+
+<pre caption="revdep-pax en acción">
+# <i>revdep-pax -f</i>                                                          &lt; --- Informar de todos los enlaces hacia delante que no concuerden.
+          .....
+/usr/bin/python3.2 ( --m-- )
+
+        libpython3.2.so.1.0     /usr/lib64/libpython3.2.so.1.0 ( -e--- )
+        libpthread.so.0 /lib64/libpthread-2.16.so ( -e--- )
+        libc.so.6       /lib64/libc-2.16.so ( -e--- )
+        libdl.so.2      /lib64/libdl-2.16.so ( -e--- )
+        libutil.so.1    /lib64/libutil-2.16.so ( -e--- )
+        libm.so.6       /lib64/libm-2.16.so ( -e--- )
+          .....
+
+# <i>revdep-pax -m -b /usr/bin/python3.2</i>                                    &lt; --- Portar los ajustes PaX únicamente para python3.2.
+/usr/bin/python3.2 (--m--)
+
+        libpython3.2.so.1.0     /usr/lib64/libpython3.2.so.1.0 ( -e--- )
+        libpthread.so.0 /lib64/libpthread-2.16.so ( -e--- )
+        libc.so.6       /lib64/libc-2.16.so ( -e--- )
+        libdl.so.2      /lib64/libdl-2.16.so ( -e--- )
+        libutil.so.1    /lib64/libutil-2.16.so ( -e--- )
+        libm.so.6       /lib64/libm-2.16.so ( -e--- )
+
+        Will mark libraries with --m--
+
+        Set flags for /usr/lib64/libpython3.2.so.1.0 (y/n): <i>n</i>            &lt; --- Se solicitará confirmación a no ser que se emplee -y.
+        Set flags for /lib64/libpthread-2.16.so (y/n): <i>n</i>                 &lt; --- Contestaremos 'n' a cada pregunta de esta demostración.
+        Set flags for /lib64/libc-2.16.so (y/n): <i>n</i>
+        Set flags for /lib64/libdl-2.16.so (y/n): <i>n</i>
+        Set flags for /lib64/libutil-2.16.so (y/n): <i>n</i>
+        Set flags for /lib64/libm-2.16.so (y/n): <i>n</i>
+
+# <i>revdep-pax -r</i>                                                          &lt; --- Informar de todos los enlaces hacia atrás que no concuerden.
+          .....
+libpython3.2.so.1.0    /usr/lib64/libpython3.2.so.1.0 ( -e--- )                 &lt; --- El formato es soname /camino/a/su/objeto_elf (ajustes).
+
+        /usr/bin/python3.2 ( --m-- )                                            &lt; --- Aquí tenemos algo que no concuerda, tal y como esperábamos
+          .....                                                                             en el paso anterior.
+
+# <i>revdep-pax -m -s libpython3.2.so.1.0</i>                                   &lt; --- Migraremos desde los ajustes de la librería al ejecutable
+libpython3.2.so.1.0    /usr/lib64/libpython3.2.so.1.0 (-e---)                               utilizando el soname (-s). Podríamos también haber
+                                                                                            utilizado /usr/lib64/libpython3.2.so.1.0 con el ajuste -l.
+        /usr/bin/python3.2 ( --m-- )
+
+        Will mark binaries with -e---
+
+        Set flags for /usr/bin/python3.2 (y/n): <i>y</i>                        &lt; --- Confirmar 'y' que queremos hacer esto.
+
+                    /usr/bin/python3.2 ( -em-- )
+
+# <i>paxctl-ng -v /usr/bin/python3.2</i>                                        &lt; --- Comprobar de nuevo.
+/usr/bin/python3.2:
+        PT_PAX: -em--
+        XT_PAX: -em--
+</pre>
+
+<p>
+Una nota final sobre los entresijos de revdep-pax. Actualmente
+utiliza un enfoque "mixto" para encontrar todos los objetos
+ELF en un sistema y sus objetos compartidos. Para obtener la
+lista de objetos, utiliza la base de datos de Gentoo portage
+en /var/db/pkg, pero para obtener los enlaces, utiliza
+/usr/bin/ldd que es un guión envoltorio bash a
+`LD_TRACE_LOADED_OBJECTS=1 /lib/ld-linux.so.2` en glibc, y
+su propio programa en uclibc. Estamos trabajando hacia dos
+enfoques separados:
+1) El futuro revdep-pax utilizará /var/db/pkg para la lista
+de objetos ELF y sus enlaces a objetos compartidos. Esto hará
+que todos sea más rápido que en la actualidad.
+2) Habrá un revdep-pax-ng que no asumirá que se ejecuta en
+un sistema Gentoo, sino que construirá una lista de objetos
+ELF recopilados de un $PATH combinado para los ejecutables
+y /etc/ld.so.conf para los objetos compartidos. Esta utilidad
+funcionará en sistemas que no sean Gentoo y será más
+exhaustiva que revdep-pax, pero mucho más lenta. Aquí -ng
+significa No Gentoo.
+</p>
+
+<p>
+<b>6. migrate-pax</b>
+</p>
+
+<p>
+Llegados a este punto, probablemente estará harto de tanta gestión
+de los campos PT_PAX y XATTR_PAX su relación con la configuración
+del núcleo, y simplemente quiera eliminar los antiguos PT_PAX y
+¡Continuar con su vida!. La herramienta migrate-pax hace exactamente
+eso. Recorrerá todos los objetos ELF en su sistema y migrará el
+campo PT_PAX a XATTR_PAX. Eso es todo.
+</p>
+
+<pre caption="migrate-pax -h">
+Package Name : elfix
+Bug Reports  : http://bugs.gentoo.org/
+Program Name : migrate
+Description  : Migrate PT_PAX to XATTR_PAX Flags on all system ELF objects
+
+Usage        : migrate -v        print out all system ELF objects
+             : migrate -m [-v]   migrate flags on all system ELF objects
+             : migrate -d [-v]   delete XATTR_PAX on all system ELF objects
+             : migrate [-h]      print out this help
+             : -v                be verbose when migrating
+</pre>
 
 </body>
 </section>
