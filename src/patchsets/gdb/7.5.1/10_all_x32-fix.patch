@@ -1,0 +1,35 @@
+From d4bfaa32689ef68e0bea696bb95803123eb22987 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 8 Jan 2013 13:40:58 -0500
+Subject: [PATCH] gdb: x86: fix x32 builds with inline asm
+
+We need to cast the pointer up to 64bits so that the push works on x32
+targets.  For 64bit targets, this makes no difference.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+
+2012-01-08  Mike Frysinger  <vapier@gentoo.org>
+
+	* common/linux-ptrace.c (linux_ptrace_test_ret_to_nx) [__x86_64__]:
+	Cast return_address to 64bits.
+---
+ gdb/common/linux-ptrace.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/gdb/common/linux-ptrace.c b/gdb/common/linux-ptrace.c
+index 761ef59..886be80 100644
+--- a/gdb/common/linux-ptrace.c
++++ b/gdb/common/linux-ptrace.c
+@@ -114,7 +114,8 @@ linux_ptrace_test_ret_to_nx (void)
+ 			".globl linux_ptrace_test_ret_to_nx_instr;"
+ 			"linux_ptrace_test_ret_to_nx_instr:"
+ 			"ret"
+-			: : "r" (return_address) : "%rsp", "memory");
++			: : "r" ((uint64_t) (uintptr_t) return_address)
++			: "%rsp", "memory");
+ #else
+ # error "!__i386__ && !__x86_64__"
+ #endif
+-- 
+1.8.0.2
+
