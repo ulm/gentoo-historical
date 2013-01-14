@@ -1,0 +1,328 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/pax-migrate-xattr.xml,v 1.1 2013/01/14 11:09:06 nimiux Exp $ -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide lang="es">
+<title>Migración de los ajustes PaX desde PT_PAX a XATTR_PAX</title>
+
+<author title="Autor">
+  <mail link="blueness@gentoo.org">Anthony G. Basile</mail>
+</author>
+<author title="Traductor">
+  <mail link="nimiux"/>
+</author>
+
+<abstract>
+Una guía rápida sobre la migración de los ajustes PaX desde PT_PAX
+a XATTR_PAX.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.0 -->
+<license/>
+
+<version>1.0</version>
+<date>2013-01-03</date>
+
+<chapter>
+<title>¡Antes de que comience a leer la guía!</title>
+<section>
+<body>
+
+<p>
+Esta página es una descripción rápida sobre cómo migrar los ajustes
+desde PT_PAX a XATTR_PAX. Se presupone que el lector sabe de qué
+trata PaX. Lea nuestra <uri link='pax-quickstart.xml'>Guía de inicio
+rápido de Pax</uri> para conocerlo mejor. Para obtener una
+explicación en profundidad acerca de cómo funciona PaX, lea la
+<uri link='http://pax.grsecurity.net'>Página oficial del equipo
+de PaX</uri>.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Las tres formas de marcar los ajustes PaX: EI_PAX, PT_PAX y XATTR_PAX</title>
+<section>
+<body>
+
+<p>
+PaX ofrece varios tipos de protección contra los abusos de memoria.
+Algunas de estas protecciones solo se pueden habilitar o deshabilitar
+(re)configurando el núcleo y a continuación recompilar y reiniciar.
+Sin embargo, algunos ajustes importantes (PAGEEXEC, EMUTRAMP, MPROTECT,
+RANDMMAP y SEGMEXEC) se pueden modificar mientras el sistema está
+en funcionamiento mediante el marcado PaX en los objetos ELF del
+programa que se desea ejecutar. Debido a muchos programas necesitan
+utilizar la memoria de una forma que está prohibida por PaX, tendremos
+que relajar algunas restricciones en cada programa.
+</p>
+
+<p>
+A lo largo de la historia, los ajustes PaX se han almacenado en tres
+localizaciones diferentes. En primer lugar se almacenaron en la
+cabecera ELF de los objetos (EI_PAX), pero esto rompía las
+actualizaciones de glibc. Entonces se movieron a una cabecera
+del programa ELF (PT_PAX) y con esta solución los resultados al
+menos eran satisfactorios, excepto que para algunos programas, el
+añadir esta cabecera ocasionaba problemas, por una razón u otra.
+La siguiente generación, localiza los ajustes en los atributos
+extendidos del sistema de ficheros. Mientras todos los sistemas
+de ficheros y las utilidades que trabajan con ellos respeten
+los atributos extendidos, esta es la mejor solución ya que,
+esencialmente, no se modifican los binarios ELF.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Migrar desde PT_PAX a XATTR_PAX</title>
+<section>
+<body>
+
+<p>
+El marcado de la cabecera ELF (EI_PAX) se ha discontinuado
+completamente en Gentoo. Si tiene sistemas antiguos que todavía
+utilizan EI_PAX, entonces seguramente estén tan rotos en este
+momento que no se podrá realizar ninguna migración. Comience de
+nuevo.
+</p>
+
+<p>
+El marcado de la cabecera del programa ELF (PT_PAX) todavía está
+soportado, pero ese soporte desaparecerá <b>lentamente</b>. En
+la versión glibc-2.16, el fichero cabecera elf.h ya no contendrá
+definiciones de la cabecera de programa PT_PAX_FLAGS ni tampoco
+ninguno de los valores de los ajustes PaX definidos allí
+(<uri link='https://bugs.gentoo.org/show_bug.cgi?id=440018'>
+incidencia #440018</uri>). En algún momento, el parche para
+binutils que incluye la cabecera de programa PT_PAX_FLAGS
+también lo incluirá. En ese momento, únicamente se mantendrá
+XATTR_FLAGS. Puede que quiera adelantarse a los acontecimientos
+y migrar ahora.
+</p>
+
+<p>
+El proceso de migración es seguro debido a que en ningún momento
+vamos a volcar los ajustes PT_PAX, de modo que siempre podremos
+volver al comienzo si algo va mal. Lo esencial a recordar es que
+el núcleo decide en última instancia se utiliza PT_PAX, XATTR_PAX
+o ambos. Por lo tanto, puede tener ambos marcados en un objeto
+ELF y hacer que el núcleo lea uno e ignore el otro. Observe que
+si habilita <b>ambos</b> PT_PAX y XATTR_PAX en el núcleo, <b>y</b>
+crea un campo XATTR_PAX, entonces el núcleo espera que ambos
+campos sean idénticos, de lo contrario no se respetará ninguno.
+<b>Es</b> correcto habilitar ambos campos toda vez que no cree
+XATTR_PAX, entonces el campo PT_PAX se respeta completamente.
+Podemos utilizar esto como parte de la migración, pero en general
+no recomendamos ajustarlos ambos a menos que haya una buena
+razón. Simplemente cambie de uno a otro, esto es: PT_PAX xor
+XATTR_PAX.
+</p>
+
+<p>
+Por tanto, partiendo de un sistema PT_PAX, puede migrar a XATTR_PAX
+de la siguiente forma:
+</p>
+
+<dl>
+  <dt>
+    <b>1. Preliminares en zona de usuario:</b>
+  </dt>
+  <dd>
+    En primer lugar, nos aseguraremos de que las utilidades de
+    su zona de usuario pueden gestionar atributos extendidos en
+    general y XATTR_PAX en particular. Si no puede, entonces, bien
+    los ajustes XATTR_PAX fallarán o se perderán cuando empaquetemos
+    o desempaquetemos nuestros objetos ELF, por ejemplo al utilizar
+    tar. Por tanto,
+  </dd>
+  <dd>
+    <b>a.</b> asegúrese de que define USE=xattr en sus ajustes
+    globales USE, y
+  </dd>
+  <dd>
+    <b>b.</b> haga emerge de >=sys-apps/elfix-0.8.1 sin deshabilitar
+    ni el ajuste USE ptpax ni el xtpax.
+  </dd>
+  <dt>
+    <b>2. Preliminares en Portage:</b>
+  </dt>
+  <dd>
+    El fichero pax-utils.eclass que actualmente se halla en el árbol
+    no está preparado para XATTR_PAX, y por tanto necesitamos utlizar
+    pax-utils.eclass desde <uri
+    link='http://git.overlays.gentoo.org/gitweb/?p=proj/hardened-dev.git;a=summary'>
+    el overlay hardened-development</uri>. Añada el overlay utilizando
+    layman y asegúrese de que define su fichero repos.conf de modo
+    que ignora el fichero eclass del árbol (lea la página del manual
+    de portage para obtener detalles de como definir su repos.conf).
+    Este paso se eliminará una vex que actualicemos el fichero eclass
+    en el árbol (<uri
+    link='https://bugs.gentoo.org/show_bug.cgi?id=431092'>
+    incidencia #431092</uri>).
+  </dd>
+  <dt>
+    <b>3. Preliminares del núcleo:</b>
+  </dt>
+  <dd>
+    Conforme realiza la migración, debe asegurarse de que su sistema de
+    ficheros puede contener atributos extendidos, ¡Incluyendo tmpfs!.
+    Si su núcleo no se ha configurado para ellos, hágalo ahora y
+    reinicie el sistema. Al elegir PAX_XATTR_PAX_FLAGS bajo el menú
+    PaX se definirán automáticamente los atributos extendidos en todos
+    los sistemas de ficheros que se pueda. Recuerde, puede habilitar
+    tanto PT_PAX como XATTR_PAX en el núcleo en este momento y
+    PT_PAX se respetará hasta que cree los campos XATTR_PAX en los
+    binarios. Se tolera esto como una transición, sin embargo, se
+    recomienda utilizar únicamente XATTR_PAX.
+  </dd>
+  <dt>
+    <b>4. Migrar los ajustes:</b>
+  </dt>
+  <dd>
+    El paquete elfix incluye migrate-pax. Al correrlo con el ajuste
+    -m se copiarán los ajustes PT_PAX a XATTR_PAX para cada objeto
+    ELF del que portage tiene conocimiento, <b>excepto</b> para
+    aquéllos objetos que tienen ajustes <b>por defecto</b>. Debido
+    a que un núcleo configurado para utilizar solo XATTR_PAX usará
+    los ajustes por defecto cuando no se encuentran campos XATTR_PAX,
+    no hay razón para crear este campo cuando se quieren utilizar
+    los ajustes por defecto. Correr <c>migrate-pax -m</c> es muy
+    seguro y se pude deshacer corriendo <c>migrate-pax -d</c>.
+  </dd>
+  <dt>
+    <b>5. Inicie en un núcleo con XATTR_PAX únicamente:</b>
+  </dt>
+  <dd>
+    Puede iniciar ahora en un núcleo puro XATTR_PAX. Asegúrese de que
+    PT_PAX está deshabilitado. Incluso aunque los ajustes sean los
+    mismos en ambos campos, o XATTR_PAX no esté presente en el
+    caso de ajustes por defecto, seremos conservadores y
+    mantendremos el control sobre los ajustes efectivos utilizando
+    únicamente XATTR_PAX.
+  </dd>
+  <dt>
+    <b>6. ¡Resultados!</b>
+  </dt>
+  <dd>
+    Si realmente desea asegurarse de que ha funcionado, el paquete
+    elfix contiene algunas baterías de prueba. Son un poco truculentas
+    en caso de que tenga una combinación incorrecta de configuraciones
+    PT_PAX contra XATTR_PAX en la zona de usuario y del núcleo. En este
+    caso obtendrá un número importante de falsos fallos. En la
+    siguiente sección se muestra cómo realizar pruebas.
+  </dd>
+</dl>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Probar si la migración fue correcta y se respetaron los ajustes XATTR_PAX</title>
+<section>
+<body>
+
+<p>
+¿Fue todo bien en la migración?. ¿Está reconociendo el núcleo los
+marcados XATTR_PAX?. Puede verificar que la migración fue correcta
+comprobándolo con paxctl-ng. Intente algo como lo siguiente:
+</p>
+
+<pre caption="Comprobar la migración con paxctl-ng">
+# <i>paxctl-ng -v /bin/*</i>
+      ....
+/bin/uncompress:
+        ELF ERROR: elf_kind() fail: this is not an elf file.   &lt;--- Esto no es realmente un objeto ELF, fallo esperado
+        PT_PAX   : not found
+        XATTR_PAX: not found
+
+/bin/vdir:                                                     &lt;--- ¡Bien! Si no hay ajustes XATTR_PAX significa que hemos obtenido los valores por defecto
+        PT_PAX   : -e---                                       &lt;--- Únicamente 'e' (no se emulan trampolines) es el ajuste por defecto.
+        XATTR_PAX: not found
+
+/bin/ypdomainname:                                             &lt;--- ¡Bien! Tanto PT_PAX como  XATTR_PAX son idénticos
+        PT_PAX   : -em--
+        XATTR_PAX: -em--
+      ....
+# <i>paxctl-ng -v /lib/*</i>
+      ....
+/lib/libz.so.1.2.7:                                            &lt;--- Incluso las librerías deberían tener marcas similares (este es el resultado por defecto)
+        PT_PAX   : -e---
+        XATTR_PAX: not found
+
+/lib/modules:
+        open(O_RDWR) failed: cannot change PT_PAX flags        &lt;--- Esto es un directorio, fallo esperado
+        ELF ERROR: elf_begin() fail: (null)
+        PT_PAX   : not found
+        XATTR_PAX: not found
+      ....
+</pre>
+
+<p>
+Para comprobar si el núcleo está reconociendo los marcados XATTR_PAX,
+utilizaremos una batería de pruebas del paquete sys-apps/elfix.
+Tendremos que obtener el repositorio git ya que el ebuild no
+correo pruebas. Estas son truculentas y pueden mostrar muchos
+falsos negativos si no tiene la combinación adecuada de
+PT_PAX contra XATTR_PAX tanto en zona de usuario como en el núcleo.
+Puede proceder de la siguiente forma:
+</p>
+
+<pre caption="Usar las pruebas de elfix para comprobar si XATTR_PAX está funcionando">
+# <i>git clone  git://git.overlays.gentoo.org/proj/elfix.git</i>
+# <i>cd elfix</i>
+# <i>./autogen.sh</i>
+    ....
+# <i>./configure --disable-ptpax --enable-xtpax --enable-tests</i>
+    ....
+# <i>make</i>
+    ....
+# <i>cd tests/pxtpax/</i>
+# <i>./daemontest.sh</i>
+================================================================================
+
+ RUNNIG DAEMON TEST
+
+ NOTE:
+   1) This test is only for amd64 and i686
+   2) This test will fail on amd64 unless the following are enabled in the kernel:
+        CONFIG_PAX_PAGEEXEC
+        CONFIG_PAX_EMUTRAMP
+        CONFIG_PAX_MPROTECT
+        CONFIG_PAX_RANDMMAP
+   3) This test will fail on i686 unless the following are enabled in the kernel:
+        CONFIG_PAX_EMUTRAMP
+        CONFIG_PAX_MPROTECT
+        CONFIG_PAX_RANDMMAP
+        CONFIG_PAX_SEGMEXEC
+
+................................................................................
+................................................................................
+................................................................................
+...
+
+ Mismatches = 0
+
+================================================================================
+</pre>
+
+<p>
+¡Todo concuerda!. Funcionó. Lo que hace la prueba es marcar un
+demonio con cada posible combinación de ajustes PaX, lo ejecuta,
+comprueba que está corriendo con los ajustes esperados e informa
+de los resultados. Si quiere divertirse con esto, intente habilitar
+PT_PAX y deshabilitar XATTR_PAX cuando configure elfix, y mantenga
+únicamente el soporte a XATTR_PAX en el núcleo. Esto fallará
+visiblemente ya que nos se respetan los ajustes PaX.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
