@@ -1,0 +1,470 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-ia64-disk.xml,v 1.1 2013/01/20 17:02:17 swift Exp $ -->
+
+<sections>
+
+<version>9</version>
+<date>2012-10-06</date>
+
+<section>
+<title>مقدمه ائی بر شیوه قالب بندی</title>
+
+<subsection>
+<include href="hb-install-blockdevices.xml"/>
+</subsection>
+
+<subsection>
+<title>پارتیشن ها</title>
+<body>
+
+<p>
+هرچند در تئوری امکان پذیر است که از همه دیسک برای اسکان دستگاه لینوکس استفاده نمود، در عمل تقریبا هرگز چنین چیزی اتفاق نمی افتد. در دستگاه‌های بلوک بندی همه دیسک به دستگاههای کوچکتر و قابل مدیریت تر شکسته می شود. بروی دستگاه های <keyval id="arch"/> این، <e>پارتیشن ها</e> نامیده می شود. 
+</p>
+
+<p>
+دستگاه های Itanium برای راه اندازی از EFI استفاده می نمایند، رابط فریم ور توسعه پذیر. فرمت پارتیشنی که EFI آنرا می فهمد GPT است، یا جدول پارتیشن راهنما. برنامه پارتیشن بندی که GPT را می فهمد <c>"parted"</c> نامیده می شود، بنابر این آن نرم افزاری است که ما استفاده می نماییم. به علاوه، EFI فقط می تواند فایل سیستم های FAT را بخواند، بنابر این آن فرمتی خواهد بود که برای پارتیشن راه انداز EFI استفاده خواهیم نمود، که کرنل بروی آن بوسیله <c>"elilo"</c> نصب خواهد شد.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>ذخیره سازی پیشرفته</title>
+<body>
+
+<p>
+لوح های فشرده نصب <keyval id="arch"/> از LVM2 پشتیبانی می نمایند. LVM2 قابلیت انعطاف بیشتری به برپائی پارتیشن بندی شما هدیه می دهد. در حین ساختارهای نصب، ما بروی پارتیشن های عادی تمرکز می نماییم، اما هنوز این مفید خواهد بود که بدانید از LVM2 بخوبی پشتیبانی می گردد.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>طراحی نمایه پارتیشن بندی</title>
+<subsection>
+<title>نمایه پارتیشن بندی پیش فرض</title>
+<body>
+
+<p>
+اگر علاقمند به طراحی نمایه پارتیشن بندی برای دستگاه خودتان نیستید، می توانید از نمایه پارتیشن بندی که ما در امتداد این کتاب استفاده می نماییم، استفاده نمایید: 
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Filesystem</th>
+  <th>Size</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>vfat</ti>
+  <ti>32M</ti>
+  <ti>EFI Boot partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>(swap)</ti>
+  <ti>512M</ti>
+  <ti>Swap partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ext3</ti>
+  <ti>Rest of the disk</ti>
+  <ti>Root partition</ti>
+</tr>
+</table>
+
+<p>
+اگر علاقمندید که بدانید یک پارتیشن می تواند تا به چه اندازه بزرگ باشد، یا اینکه به چه تعداد پارتیشن نیازمندید، به خواندن ادامه دهید. در غیر اینصورت با خواندن <uri link="#parted">استفاده کردن از parted برای پارتیشن بندی دیسک</uri> دیسک خود را پارتیشن بندی نمایید.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>چه مقدار و چه اندازه بزرگ؟</title>
+<body>
+
+<p>
+شماره پارتیشن ها بشدت به محیط شما وابسته است. برای مثال، اگر تعداد زیادی کاربر دارید، به احتمال زیاد شما باید <path>/home</path>  خود را برای بالا بردن امنیت و راحت تر نمودن گرفتن پشتیبان جدا نمایید.
+اگر جنتو را به عنوان یک mailserver نصب می نمایید، باید <path>/var</path> خود را جدا نمایید چراکه mailها در <path>/var</path> نگهداری می شوند. یک انتخاب مناسب فایل سیستمی کارائی شما را بالا خواهد برد. Gameservers یک  <path>/opt</path> مجزا خواهند داشت چراکه بیشتر سرورهای بازی در آنجا نصب خواهند شد. علت مشابه <path>/home</path> است:
+امنیت و پشتیبانگیری. مطمئنا شما می خواهید <path>/usr</path> را بزرگتر بگیرید:
+نه فقط بخاطر اینکه غالب برنامه ها در آن نگهداری می شوند، شاخه های پرتیج به تنهائی ۵۰۰ مگابایت را خواهند گرفت به استثناء کدمنبع های بسیاری که در آن نگهداری خواهد شد.
+</p>
+
+<p>
+چنانکه می توانید ببینید، اینکار بشدت به اینکه شما می خواهید به چه چیزی برسید، وابسته است. پارتیشن ها یا ولوم های مجزا این مزیت ها را خواهند داشت:
+</p>
+
+<ul>
+<li>
+  می توانید فایل سیستم کاراتری برای هر پارتیشن یا ولوم انتخاب نمایید
+</li>
+<li>
+  اگر یک ابزار مرده به نوشتن فایل ها بروی یک پارتیشن یا ولوم ادامه داد، کل سیستم شما خارج از استفاده نخواهد شد.
+</li>
+<li>
+  اگر لازم باشد، بررسی فایل های سیستمی زمان کمتری خواهد برد، چنانکه بررسی چندگانه می تواند بطور همزمان اعمال گردد (همچنین این مزیت شامل دیسک های چندگانه با پارتیشن های چندگانه نیز می گردد)
+</li>
+<li>
+  امنیت می تواند با مانت نمودن برخی پارتیشن ها بصورت فقط-خواندنی، nosuid (چشم پوشی از setuid ) و noexec (چشم پوشی از خوداجرائی) و غیره، بالاتر برود،
+</li>
+</ul>
+
+<p>
+هرچند، تعدد پارتیشن ها ایراداتی هم دارد. اگر بخوبی پیکربندی نشود، شما دستگاهی خواهید داشت با مقدار زیادی فضای آزاد در یک پارتیشن و کمبود فضا در پارتیشن دیگر. اشکال دیگر پارتیشن های مجزا، خصوصا برای مانت پوینت های مهمی همچون <path>/usr</path> یا <path>/var</path> اغلب لازم است تا مدیر دستگاه آنها را قبل از راه اندازی کدهای راه انداز، راه اندازی نماید. به هر حال همیشه این موارد رخ نمی دهند و نتایج شما ممکن است متفاوت باشند.
+</p>
+
+
+<p>
+همچنین محدودیتی ۱۵ پارتیشنی برای SCSI و SATA وجود دارد.
+</p>
+
+<p>
+یک مثال برای پارتیشن بندی، که ما برای یک دیسک ۲۰ گیگابایتی نشان می دهیم، برای یک لپتاپ استفاده می شود (شامل وب سرور، مایل سرور، گنوم، ... ):
+</p>
+
+<pre caption="Filesystem usage example">
+$ <i>df -h</i>
+Filesystem    Type    Size  Used Avail Use% Mounted on
+/dev/sda5     ext3    509M  132M  351M  28% /
+/dev/sda2     ext3    5.0G  3.0G  1.8G  63% /home
+/dev/sda7     ext3    7.9G  6.2G  1.3G  83% /usr
+/dev/sda8     ext3   1011M  483M  477M  51% /opt
+/dev/sda9     ext3    2.0G  607M  1.3G  32% /var
+/dev/sda1     ext2     51M   17M   31M  36% /boot
+/dev/sda6     swap    516M   12M  504M   2% &lt;not mounted&gt;
+<comment>(Unpartitioned space for future usage: 2 GB)</comment>
+</pre>
+
+<p>
+دایرکتوری <path>/usr</path> بیشترین فضا را (۸۳٪) در اینجا اشغال نموده، اما بمجرد اینکه همه نرم افزارها نصب گردیدند، <path>/usr</path> قابلیت وسعت یافتن بیشتر را ندارد. اگرچه اختصاص دادن مقداری کمی از گیگابایت های فضا برای  <path>/var</path> ممکن است افراطی به نظر برسد، بخاطر داشته باشید که پورتیج این دایرکتوری را بطور پیش فرض برای کامپایل کردن بسته ها استفاده می نماید. اگر می خواهید <path>/var</path> را بصورت معقولانه تری نگهداری نمایید، مثلا ۱ گیگابایت، نیاز دارید تا متغیر <c>PORTAGE_TMPDIR</c> خودتان را در <path>/etc/make.conf</path> برای اعلام فضای آزاد لازم برای کامپایل نمودن بسته های بسیار بزرگتر مانند OpenOffice تغییر دهید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="parted">
+<title>استفاده کردن از parted برای پارتیشن بندی نمودن دیسکتان</title>
+<subsection>
+<body>
+
+<p>
+بخش بعد چگونگی ایجاد لایه بندی پارتیشنی که پیشتر ذکر شد را با گفتن نام آنها تشریح می نماید:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>EFI Boot partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Swap partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Root partition</ti>
+</tr>
+</table>
+
+<p>
+پارتیشن بندی را مطابق با اولویت های خودتان تغییر دهید.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>مشاهده لایه بندی پارتیشن های موجود</title>
+<body>
+
+<p>
+برنامه <c>parted</c> ویرایشگر پارتیشن  است. برنامه <c>parted</c> را بروی دیسک خودتان روشن نمایید (در نمونه مان، از <path>/dev/sda</path> استفاده می نماییم):
+</p>
+
+<pre caption="Starting parted">
+# <i>parted /dev/sda</i>
+</pre>
+
+<p>
+به محض راه افتادن <c>parted</c> ، با خط فرمانی مانند این روبرو خواهید شد:
+</p>
+
+<pre caption="parted prompt">
+GNU Parted 1.6.22
+Copyright (C) 1998 - 2005 Free Software Foundation, Inc.
+This program is free software, covered by the GNU General Public License.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+Using /dev/sda
+(parted)
+</pre>
+
+<p>
+در این نقطه یکی از دستورهای موجود <c>help</c> است، که اگر می خواهید دیگر دستورهای موجود را ببینید باید از آن استفاده نمایید. دستور دیگر <c>print</c> است که باید آنرا در ادامه برای دیدن پیکربندی پارتیشن فعلی تایپ نمایید:
+</p>
+
+<pre caption="An example partition configuration">
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017    203.938  fat32                             boot
+2        203.938   4243.468  linux-swap
+3       4243.469  34724.281  ext3
+</pre>
+
+<p>
+این پیکربندی بسیار به آنچه ما در بالا پیشنهاد نمودیم شبیه است. توجه نمایید که در خط دوم نوع جدول پارتیشن GPT است. اگر متفاوت باشد، دستگاه ia64 نخواهد توانست دیسک را راه اندازی نماید. برای منظور این راهنما ما همه پارتیشن ها را پاک کرده و آنها را از نو ایجاد خواهیم نمود.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>پاک کردن همه پارتیشن ها</title>
+<body>
+
+<note>
+بی شباهت به fdisk یا دیگر برنامه های پارتیشن بندی که اعمال تغییرات بروی دیسک را تا زمانی که شما کار را به پایان ببرید به عقب می اندازند،دستور parted تاثیرها را در لحظه اعمال می نماید. بنابر این به محض اینکه شما شروع به کم یا اضافه نمودن پارتیشن ها نمودید، بسادگی بدون اینکه آنها را بروی دیسک رونوشت نمایید نمی توانید خارج شوید...  آنها رونوشت خواهند شد.
+</note>
+
+<p>
+راه ساده برای پاک نمودن همه پارتیشن ها و شروع تازه، که استفاده ما از نوع پارتیشن مناسب را گارانتی می نماید، ایجاد جدول پارتیشن بندی جدید با استفاده از دستور <c>mklabel</c> است. پس از آنکه آنرا انجام دادید، شما یک جدول پارتیشن بندی خالی GPT خواهید داشت.
+</p>
+
+<pre caption="Creating a new partition table">
+(parted) <i>mklabel gpt</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+</pre>
+
+<p>
+اکنون که جدول پارتیشن خالی است، آماده ایم تا پارتیشن ها را ایجاد نماییم. ما از نمایه پارتیشن بندی پیش فرض که پیشتر توضیح دادیم، استفاده می نماییم. البته، اگر چنین نمایه پارتیشن بندی نمی خواهید، آنرا مطابق آنچه نوشته شده پیگیری ننمایید!
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>ایجاد کردن پارتیشن راه انداز EFI</title>
+<body>
+
+<p>
+ابتدا یک پارتیشن راه انداز EFI کوچک ایجاد می نماییم. برای آنکه فریم ور <keyval id="arch"/> بتواند آنرا بخواند، لازم است فایل سیستم آن FAT باشد. نمونه ما آنرا ۳۲ مگابایت می سازد، که برای نگاه داری کرنل و <c>elilo</c> مناسب است. می توانید توقع داشته باشید هر کرنل <keyval id="arch"/> حدود ۵ مگابایت حجم داشته باشد، بنابر این این پیکربندی مقداری مکان برای رشد دادن و تجربه نمودن به شما می دهد.
+</p>
+
+<pre caption="Creating the boot partition">
+(parted) <i>mkpart primary fat32 0 32</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017     32.000  fat32
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>ایجاد پارتیشن سواپ</title>
+<body>
+
+<p>
+اجازه دهید پارتیشن سواپ را ایجاد نماییم. اندازه سنتی پارتیشن سواپ دوبرابر مقدار RAM است که در دستگاه وجود دارد. در دستگاه های پیشرفته با مقدار زیادی رم، چیز مورد نیازی نیست. برای بیشتر دستگاه های میزکار، یک پارتیشن سواپ ۵۱۲ مگابایتی مناسب است. برای یک سرور، باید به چیزهائی که موجب واکنش سرور و موارد نیاز آن است توجه نمایید.
+</p>
+
+<pre caption="Creating the swap partition">
+(parted) <i>mkpart primary linux-swap 32 544</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017     32.000  fat32
+2         32.000    544.000
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>ایجاد پارتیشن ریشه</title>
+<body>
+
+<p>
+سر انجام اجازه دهید تا پارتیشن ریشه را ایجاد نماییم. پیکربندی ما باقی مانده همه دیسک را به پارتیشن ریشه واگذار می نماید. پیش فرض ما ext3 است اما شما می توانید از ext2 , jfs, reiserfs و یا xfs هم اگر به آنها تکیه می کنید استفاده نمایید. فایل سیستم واقعی در این گام ایجاد نمی شود، اما جدول پارتیشن شامل یک نشانگر از نوع فایل سیستمی که بروی پارتیشن نگهداری خواهد شد می باشد، و ایده خوبی است که جدول را با منظور خودتان هماهنگ نمایید.
+</p>
+
+<pre caption="Creating the root partition">
+(parted) <i>mkpart primary ext3 544 34732.890</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017     32.000  fat32
+2         32.000    544.000
+3        544.000  34732.874
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>خروج از برنامه</title>
+<body>
+
+<p>
+برای خروج از parted، دستور <c>quit</c> را تایپ نمایید. از آنجا که parted همه تغییرات را بطور فوری بروی دیسک اعمال می نماید، نیازی به گام دیگری برای ذخیره سازی تغییرات اعمال شده نیست. هنگامیکه در حال خارج شدن هستید، parted به عنوان یک یاد آوری به شما اعلام می نماید که فایل <c>/etc/fstab</c> خود را بروزرسانی نمایید، که بعدها بخوبی در این راهنما به آن پرداخته خواهد شد.
+</p>
+
+<pre caption="Quit from parted">
+(parted) <i>quit</i>
+Information: Don't forget to update /etc/fstab, if necessary.
+</pre>
+
+<p>
+اکنون که پارتیشن های شما ایجاد گردیدند، با <uri link="#filesystems">ایجاد فایل سیستم ها</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="filesystems">
+<title>ایجاد کردن فایل سیستم ها</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+اکنون که پارتیشن هایتان ایجاد شدند، زمان آن است که filesystem هائی بروی آنها قرار دهیم. اگر نظری درباره انتخاب filesystem خاصی ندارید و با آنچه ما به عنوان پیش فرض در این کتاب راهنما استفاده می کنیم راحت هستید، با <uri  link="#filesystems-apply">بکاربستن یک filesystem بروی یک پارتیشن</uri> ادامه دهید.
+درغیر اینصورت یادگیری درباره انواع filesystem های موجود را بخوانید ...
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<include href="hb-install-filesystems.xml"/>
+</subsection>
+
+<subsection id="filesystems-apply">
+<title>بکاربستن یک filesystem بروی یک پارتیشن</title>
+<body>
+
+<p>
+برای ایجاد یک فایل سیستمی بروی یک پارتیشن یا حجم، ابزارهائی برای هر فایل سیستمی وجود دارد:
+</p>
+
+<table>
+<tr>
+  <th>Filesystem</th>
+  <th>Creation Command</th>
+</tr>
+<tr>
+  <ti>vfat</ti>
+  <ti><c>mkdosfs</c></ti>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mkfs.ext2</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkreiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+
+<p>
+برای مثال، برای داشتن vfat بروی پارتیشن راه انداز (در مثال ما <path>/dev/sda1</path> ) و ext3 (در مثال ما <path>/dev/sda3</path>) بروی پارتیشن ریشه (چنانکه در مثال ما آمد)، شما لازم دارید دستور زیر را وارد نمایید:
+</p>
+
+<pre caption="Applying a filesystem on a partition">
+# <i>mkdosfs /dev/sda1</i>
+# <i>mkfs.ext3 /dev/sda3</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>فعال نمودن پارتیشن سواپ</title>
+<body>
+
+<p>
+دستور <c>mkswap</c> دستوری برای دادن ارزش آغازین به پارتیشن های سواپ است:
+</p>
+
+<pre caption="Creating a Swap signature">
+# <i>mkswap /dev/sda2</i>
+</pre>
+
+<p>
+برای فعال نمودن پارتیشن سواپ، از دستور <c>swapon</c> استفاده نمایید:
+</p>
+
+<pre caption="Activating the swap partition">
+# <i>swapon /dev/sda2</i>
+</pre>
+
+<p>
+با دستوراتی که در بالا ذکر شد سواپ را ایجاد و فعال نمایید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>مانت کردن</title>
+<body>
+
+<p>
+اکنون که پارتیشن های شما ارزش آغازین گرفتند و فایل سیستم ها در آنها جای گیر شدند، زمان مانت نمودند آن پارتیشن ها رسیده است. از دستور <c>mount</c> استفاده نمایید. فراموش ننمایید که دایرکتوری های لازم برای مانت نمودن هر پارتیشنی که ایجاد نمودید را بوجود بیاورید. به عنوان یک مثال ما پارتیشن های راه انداز و ریشه را مانت می نماییم:
+</p>
+
+<pre caption="Mounting the root partition">
+# <i>mount /dev/sda3 /mnt/gentoo</i>
+</pre>
+
+<note>
+بر خلاف دیگر معماری های مورد پشتیبانی جنتو، پارتیشن <path>/boot</path> در  مانت نمی شود. دلیل آن این است که پارتیشن راه انداز  در هر بار که دستور <c>elilo</c>  را اجرا می نمایید بطور خودکار مانت و رونوشت می شود. به همین دلیل <path>/boot</path> در فایل سیستم ریشه قرار دارد و بوسیله پیکربندی <c>elilo</c> به عنوان ماخذ نگهداری کرنل استفاده می شود.
+</note>
+
+<note>
+اگر می خواهید <path>/tmp</path> شما در پارتیشنی مجزا قرار گیرد، مطمئن شوید پس از مانت نمودن آن پرمیژن آنرا تغییر دهید: <c>chmod 1777 /mnt/gentoo/tmp</c>. این دستور همچنین برای <path>/var/tmp</path> هم صادق است.
+</note>
+
+<p>
+همچنین ما نیاز داریم تا فایل سیستم proc (یک واسط مجازی با کرنل) را نیز در <path>/proc</path> مانت نماییم. اما اول نیازداریم تا فایل های خودمان را در پارتیشن ها قرار دهیم.
+</p>
+
+<p>
+با <uri link="?part=1&amp;chap=5">نصب کردن فایل های نصب جنتو</uri> ادامه دهید.
+</p>
+
+</body>
+</section>
+</sections>

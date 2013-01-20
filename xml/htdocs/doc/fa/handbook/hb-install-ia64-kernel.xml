@@ -1,0 +1,318 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-ia64-kernel.xml,v 1.1 2013/01/20 17:02:17 swift Exp $ -->
+
+<sections>
+
+<version>17</version>
+<date>2012-09-11</date>
+
+<section>
+<title>منطقه زمانی</title>
+<body>
+
+<p>
+ابتدا لازم است تا منطقه زمانی خودتان را انتخاب نمایید تا دستگاه شما دریابد در چه موقعیتی قرار دارد. به منطقه های زمانی در <path>/usr/share/zoneinfo</path> نگاه بیاندازید و سپس آنرا در <path>/etc/localtime</path> رونوشت نمایید. لطفا از منطقه زمانی به شکل <path>/usr/share/zoneinfo/Etc/GMT*</path> دوری نمایید چون به عنوان یک نام، منطقه قابل توقعی را نشان نمی دهد. برای مثال <path>GMT-8</path> درواقع  GMT+8 است.
+</p>
+
+<pre caption="Setting the timezone information">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Suppose you want to use Europe/Brussels)</comment>
+# <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
+<comment>(Next set the timezone)</comment>
+# <i>echo "Europe/Brussels" &gt; /etc/timezone</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>نصب کردن منابع</title>
+<subsection>
+<title>انتخاب یک کرنل</title>
+<body>
+
+<p>
+هسته ائی که همه توزیع ها بدور آن ساخته می شوند، کرنل لینوکس است. این لایه ائیست بین برنامه های کاربر و سخت افزار دستگاه شما. جنتو برای کاربرانش چندین کدمنبع کرنل ممکن فراهم آورده است. یک فهرست کامل بهمراه توضیحات آنها در آدرس  <uri link="/doc/en/gentoo-kernel.xml">راهنمای کرنل جنتو</uri> موجود است. 
+</p>
+
+<p>
+برای دستگاه های مبتنی بر <keyval id="arch"/> ما <c>gentoo-sources</c> را داریم (کدمنبع کرنل برای خصیصه های بیشتر).
+</p>
+
+<p>
+کرنل خود را با استفاده از <c>emerge</c> نصب نمایید.
+</p>
+
+<pre caption="Installing a kernel source">
+# <i>emerge gentoo-sources</i>
+</pre>
+
+<p>
+هنگامیکه نگاهی به <path>/usr/src</path> بیاندازید باید میانبری بنام <path>linux</path> به کدمنبع کرنل خودتان ببینید. در این مورد، کدمنبع <c>gentoo-sources-<keyval id="kernel-version"/></c> است. نسخه شما ممکن است متفاوت باشد، پس این را بخاطر داشته باشید.
+</p>
+
+<pre caption="Viewing the kernel source symlink">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root   root    12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+<p>
+اکنون زمان پیکربندی و کامپایل کد منبع کرنل است. همه معماری ها می توانند از <c>genkernel</c> برای اینکار استفاده نمایند، که یک کرنل عمومی مشابه آنچه در لوح فشرده نصب استفاده می شود را خواهد ساخت. ما ابتدا پیکربندی دستی را توضیح خواهیم داد چراکه، این بهترین راه برای بهینه سازی محیط شماست.
+</p>
+
+<p>
+اگر می خواهید کرنل خودتان را بطور دستی پیکربندی نمایید، با <uri link="#manual">پیش فرض: پیکربندی دستی</uri> ادامه دهید. اگر می خواهید از <c>genkernel</c> استفاده نمایید باید <uri link="#genkernel">جایگزین: استفاده کردن از genkernel</uri> را بجای آن بخوانید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>پیش فرض: پیکربندی دستی</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+پیکربندی دستی یک کرنل اغلب به عنوان سخت ترین کاری که یک کاربر لینوکس در تمام مدت انجام می دهد دیده می شود. این چیزی بیشتر از واقعیت است -- بعد از پیکربندی یک مشت از کرنل ها شما اصلا بخاطر نخواهید آورد که اینکار زمانی مشکل بوده ;) 
+</p>
+
+<p>
+هرچند، یک چیز <e>درست</e> است : شما باید هنگامیکه شروع به پیکربندی دستی یک کرنل می نمایید دستگاهتان را بخوبی بشناسید. غالب اطلاعات می توانند به کمک emergingemerge pciutils ( <c>emerge pciutils</c> ) گردآوری شوند که شامل <c>lspci</c> نیز می شود. شما اکنون قادرید درون محیط chroot شده از <c>lspci</c> استفاده نمایید. ممکن است بطور ایمنی هر اخطار <e>pcilib</e> را نادیده بگیرید (شبیه <c>pcilib: cannot open  /sys/bus/pci/devices</c> ) که lspci به بیرون می دهد. بطور جایگزین می توانید lspci را از یک محیط <e>non-chrooted</e> اجرا نمایید. نتیجه مشابه است. همچنین می توانید <c>lsmod</c> را برای اینکه ببینید لوح فشرده نصب از چه ماژول هائی استفاده نموده اجرا نمایید (اینکار ممکن است شما را به شکل زیبائی آگاه نماید که چه چیز را باید فعال نمایید).
+</p>
+
+<p>
+اکنون به دایرکتوری کدمنبع کرنل خودتان بروید و <c>make menuconfig</c> را اجرا نمایید. این دستور یک فهرست انتخاب پیکربندی نیمه راهنمائی کننده را روشن خواهد نمود.
+</p>
+
+<pre caption="Invoking menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+شما با چندین بخش پیکربندی ملاقات خواهید نمود. ما ابتدا برخی انتخاب ها را که شما باید فعال نمایید (در غیر اینصورت جنتو کارنخواهد نمود و یا بدون اضافات پیچیده بخوبی کار نخواهد نمود) را فهرست خواهیم نمود.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>فعال نمودن انتخاب های مورد نیاز</title>
+<body>
+
+<p>
+مطمئن شوید که هر درایوری که برای راه اندازی دستگاه شما حیاتی است (مانند کنترل کننده های SCSI ، ...) همگی <e>در داخل</e> کرنل کامپایل می شوند و نه به شکل یک ماژول، در غیر اینصورت دستگاه شما قادر به راه افتادن کامل نخواهد بود. 
+</p>
+
+<p>
+اکنون نوع دقیق دستگاه و پردازشگر را انتخاب نمایید. اگر نمی دانید از چه نوع دستگاه IA64 استفاده می نمایید، <c>DIG-compliant</c> انتخاب پیش فرض خوبی است. اگر در حال نصب بروی یک دستگاه SGI هستید، مطمئن شوید نوع دستگاه SGI را انتخاب می نمایید، در غیر اینصورت ممکن است کرنل شما در گام راه اندازی دچار اختلال شود. 
+</p>
+
+<pre caption="Selecting correct system type">
+System type ---&gt;
+  <comment>(Change according to your system)</comment>
+  <i>DIG-compliant</i>
+Processor type ---&gt;
+  <comment>(Change according to your system)</comment>
+  <i>Itanium 2</i>
+</pre>
+
+<p>
+اکنون به <c>File Systems</c> بروید و پشتیبانی برای فایل سیستمی که استفاده می نمایید را انتخاب نمایید. آنرا به عنوان یک ماژول کامپایل <e>نکنید</e> ، در غیر اینصورت دستگاه جنتوی شما نخواهد توانست پارتیشن های شما را مانت نماید. همچنین <c>Virtual memory</c> و <c>/proc file system</c> را هم انتخاب نمایید:
+</p>
+
+<pre caption="Selecting necessary file systems">
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>(Select one or more of the following options as needed by your system)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+
+<comment>(Be sure to enable VFAT support for the EFI partition)</comment>
+  DOS/FAT/NT Filesystems  ---&gt;
+    &lt;*&gt; VFAT (Windows-95) fs support
+
+<comment>(Enable GPT partition label support if you used that previously</comment>
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+      ...
+      [*] EFI GUID Partition support
+</pre>
+
+<p>
+اگر برای ارتباط به اینترنت از PPPoE استفاده می نمایید یا در حال استفاده از یک مودم دیال آپ هستید، نیاز دارید که انتخاب های زیر را در کرنل پیگیری نمایید:
+</p>
+
+<pre caption="Selecting PPPoE necessary drivers">
+Device Drivers ---&gt;
+  Network device support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+دو انتخاب فشرده شده به هم آسیبی نمی زنند اما ضرورتی هم ندارند، هنگامیگه کرنل را پیکربندی می نمایید تا در حالت PPPoE باشد، انتخاب <c>PPP over Ethernet</c> که ممکن است فقط بوسیله <c>ppp</c> استفاده شوند، هیچ کاری انجام نمی دهند.
+</p>
+
+<p>
+اگر به آن نیاز داشتید، فراموش ننمایید که پشتیبانی کرنل از کارت ethernet خودتان را هم وارد نمایید.
+</p>
+
+<p>
+اگر یک CPU اینتل دارید که از HyperThreading (tm) پشتیبانی می نماید، یا دستگاهی با چند CPU دارید، باید " Symmetric multi-processing support " را نیز انتخاب نمایید: 
+</p>
+
+<pre caption="Activating SMP support">
+Processor type and features  ---&gt;
+  [*] Symmetric multi-processing support
+</pre>
+
+<p>
+اگر از دستگاه های در USB قرار دادنی (مانند صفحه کلید یا موشواره) استفاده می نمایید فراموش ننمایید که آنها را هم بخوبی فعال نمایید: 
+</p>
+
+<pre caption="Activating USB Support for Input Devices">
+Device Drivers ---&gt;
+  [*] HID Devices  ---&gt;
+    &lt;*&gt;   USB Human Interface Device (full HID) support
+</pre>
+
+<p>
+هنگامیکه پیکربندی کرنل را به پایان رساندید، با <uri  link="#compiling">کامپایل کردن و نصب نمودن</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>کامپایل کردن و نصب نمودن</title>
+<body>
+
+<p>
+اکنون که کرنل شما پیکربندی شد، زمان کامپایل کردن و نصب کردن آن رسیده. از پیکربندی خارج شوید و روند کامپایل کردن را آغاز نمایید:
+</p>
+
+<pre caption="Compiling the kernel">
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+When the kernel has finished compiling, copy the kernel image to <path>/</path>.
+Use whatever name you feel is appropriate for your kernel choice and remember it
+as you will need it later on when you configure your bootloader. Remember to
+replace <c>vmlinuz</c> with the name and version of your kernel.
+هنگامیکه کامپایل شدن کرنل بپایان رسید، تصویر کرنل را به <path>/</path> رونوشت نمایید. از هر نامی که با آن احساس راحتی می نمایید برای نامگذاری کرنلتان استفاده نمایید و آنرا بخاطر بسپارید چرا که بعدا و هنگامیکه راه انداز دستگاه خود را نصب می نمایید، به آن نیاز خواهید داشت. بخاطر داشته باشید <c>vmlinuz</c> را با نام و نسخه کرنل خودتان جایگزین نمایید.
+</p>
+
+<pre caption="Installing the kernel">
+# <i>cp vmlinux.gz /boot/vmlinuz</i>
+</pre>
+
+</body>
+</subsection>
+<subsection id="initramfs">
+<title>(انتخابی) تهیه نمودن یک Initramfs</title>
+<body>
+
+<p>
+اگر از یک لایه بندی خاص پارتیشن استفاده می نمایید که در آن موقعیت فایل های سیستمی مهم است (مانند <path>/usr</path> و <path>/var</path> ) که در پارتیشن مجزائی باشند، لازم دارید یک initramfs برپا نمایید تا این پارتیشن ها پیش از مورد نیاز واقع شدن بتوانند مانت شوند.
+</p>
+
+<p>
+بدون یک initramfs، شما ریسک از دست داده شدن فایل های لازم برای راه اندازی به دلیل قرار داشتن در پارتیشنی که موقعیت آن مانت نگردیده را برای دستگاه بوجود می آورید. یک initramfs فایل های مورد نیاز را در یک بایگانی که پس از راه اندازی کرنل راه اندازی می شود، اما قبل از اینکه کنترل به دست ابزار <c>init</c> داده شود، نگهداری می نماید. کدهای موجود در initramfs پس از آن مطمئن می شوند که پارتیشن ها پیش از اینکه دیستگاه راه اندازی را ادامه دهد، بخوبی مانت شوند.
+
+</p>
+
+<p>
+برای نصب یک initramfs ابتدا <c>genkernel</c> را نصب نمایید، پس از ان خودش برای شما یکی ایجاد خواهد نمود.
+</p>
+
+<pre caption="Building an initramfs">
+# <i>emerge genkernel</i>
+# <i>genkernel --bootdir=/. --no-mountboot --install initramfs</i>
+</pre>
+
+<p>
+اگر پشتیبانی از چیز خاصی را در initramfs مانند lvm یا raid، آنرا در انتخاب های مناسب خود در genkernel اضافه نمایید. برای اطلاعات بیشتر <c>genkernel --help</c> را ببینید یا نمونه بعدی پشتیبانی برای LVM و نرم افزار raid را (mdadm) را فراهم می آورد:
+</p>
+
+<pre caption="Building an initramfs with support for LVM and software raid">
+# <i>genkernel --bootdir=/. --no-mountboot --lvm --mdadm --install initramfs</i>
+</pre>
+ 
+<p>
+فایل initramfs در <path>/</path> نگاه داشته خواهد شد. می توانید فایل را با فهرست نمودن فایل هائی که با <path>initramfs</path> آغاز می شوند بیابید:
+</p>
+
+<pre caption="Checking the initramfs file name">
+# <i>ls /initramfs*</i>
+</pre>
+
+<p>
+اکنون با <uri link="#kernel_modules">ماژول های کرنل</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="genkernel">
+<title>جایگزین: استفاده کردن از genkernel</title>
+<body>
+
+<p>
+اگر در حال خواندن این بخش هستید، انتخاب کرده اید که از کد <c>genkernel</c> ما برای پیکربندی کرنلتان استفاده نمایید. 
+</p>
+
+<p>
+اکنون که شاخه کد منبع کرنل تان نصب گردیده، زمان آن است که کرنلتان را با استفاده از کد <c>genkernel</c> کامپایل نمایید تا بطور خودکار یک کرنل برایتان بسازد. <c>genkernel</c> بصورت پیکربندی نمودن یک کرنل تقریبا مشابه با آنچنان که کرنل لوح فشرده نصب ما پیکربندی گردیده، کار می نماید. این به آن معنی است که هنگامیکه شما از <c>genkernel</c> برای پیکربندی کرنلتان استفاده می نمایید، دستگاه شما عموما همه سخت افزار شما را در زمان راه اندازی، مشابه آنچه لوح فشرده نصب ما انجام می دهد، راه اندازی می نماید. به دلیل اینکه genkernel نیاز به هیچ پیکربندی دستی کرنلی ندارد، ایده راه حلی برای کاربرانی است که ممکن است با کامپایل کردن کرنل خودشان راحت نباشند. 
+</p>
+
+<p>
+اکنون، اجازه دهید تا ببینیم چگونه از genkernel استفاده نماییم. ابتدا ائی بیلد genkernel را emerge نمایید:
+</p>
+
+<pre caption="Emerging genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+اکنون کدمنبع کرنل خود را با اجرای دستور <c>genkernel all</c> کامپایل نمایید. مدنظر داشته باشید که <c>genkernel</c> یک کرنل که تقریبا از همه سخت افزارها پشتیبانی می نماید، کامپایل می کند، چنین کامپایل کردنی مقداری زمان می برد تا به پایان برسد!
+</p>
+
+<note>
+کاربران LVM2 مطمئنا می خواهند <c>--lvm2</c> را به خط فرمان genkernel اضافه نمایند.
+</note>
+
+<pre caption="Running genkernel">
+# <i>genkernel --bootdir=/. --no-mountboot all</i>
+</pre>
+
+<p>
+بمجرد اینکه <c>genkernel</c> بپایان رسید، مجموعه کاملی از ماژول ها و <e>initial ram disk</e> ،(initramfs) ایجاد خواهند گردید. ما از کرنل و initrd هنگامیکه یک راه انداز دستگاه بعدا در همین مستند پیکربندی می نماییم، استفاده خواهیم نمود. نام کرنل و initrd را از آنجا که در هنگام پیکربندی فایل راه انداز نیاز خواهید داشت آنها را بنویسید، یادداشت نمایید. فایل initrd بعد از راه اندازی برای انجام اتصال خودکار سخت افزار (شبیه آنچه در لوح فشرده نصب انجام می شود) قبل از اینکه دستگاه واقعی شما آغاز بکار نماید، فورا شروع بکار می نماید. 
+</p>
+
+<pre caption="Checking the created kernel image name and initrd">
+# <i>ls /kernel* /initramfs*</i>
+</pre>
+
+</body>
+</section>
+<section id="kernel_modules">
+<title>ماژول های کرنل</title>
+
+<subsection>
+<include href="hb-install-kernelmodules.xml"/>
+</subsection>
+
+</section>
+</sections>
