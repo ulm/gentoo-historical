@@ -1,0 +1,467 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-ppc-bootloader.xml,v 1.1 2013/01/20 17:06:55 swift Exp $ -->
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<sections>
+
+<abstract>
+چندین نوع راه انداز دستگاه وجود دارد.هر کدام از آنها مسیر پیکربندی خود را دارد. ما در مسیر اجرای پیکربندی یک راه انداز دستگاه مطابق با نیازهای شما گام برمی داریم.
+</abstract>
+
+<version>12</version>
+<date>2011-05-09</date>
+
+<section>
+<title>تصمیم به انتخابتان</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+اکنون که کرنل شما پیکربندی و کامپایل شد و فایل های ضروری پیکربندی دستگاه با دقت پر شدند، زمان آن فرا رسیده که برنامه ائی نصب نماییم که کرنل شما را هنگامیکه دستگاه را راه می اندازید روشن نماید. به چنین برنامه هائی <e>راه انداز دستگاه</e> گفته می شود.
+</p>
+
+<p>
+راه انداز دستگاهی که استفاده می نمایید وابسته به نوع ماشین PPC است که دارید.
+</p>
+
+<p>
+اگر از یک ماشین NewWorld Apple یا IBM استفاده می نمایید، نیاز دارید از <uri link="#yaboot">yaboot</uri> استفاده نمایید. ماشین های OldWorld Apple دو انتخاب دارند، <uri link="#bootx">BootX</uri> (پیشنهادی) و <uri link="#quik">quik</uri>. ماشین های Pegasos نیازی به راه انداز ندارند، اما نیاز دارید تا <uri link="#bootcreator">bootcreator</uri> را برای ایجاد فهرست انتخاب راه انداز SmartFirmware امرژ نمایید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="yaboot">
+<title>پیش فرض: استفاده از yaboot</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<impo>
+راه انداز yaboot فقط می تواند بروی دستگاه های NewWorld Apple و IBM استفاده شود!
+</impo>
+
+<p>
+برای سفارش یافتن دستگاه راه انداز، yaboot نیاز دارد به device nodes که بوسیله udev در آغاز راه کار ایجاد شده است و فایل سیستم sysfs دسترسی داشته باشد. این دو فایل سیستم به ترتیب در <path>/dev</path> و <path>sys</path> پیدا می گردند. برای انجام این، لازم است تا این دو فایل سیستم را از روی ریشه موجود در لوح فشرده بروی نقطه‌های مانت <path>/dev</path> و <path>/sys</path> درون دستگاه chroot شده <c>"bind mount"</c> نمایید. اگر در حال حاضر این دو فایل سیستم را bind mount نموده اید، نیازی به تکرار آن وجود ندارد.
+</p>
+
+<pre caption="Bind-mounting the device and sysfs filesystems">
+# <i>exit </i> # this will exit the chroot
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>/usr/sbin/env-update &amp;&amp; source /etc/profile </i>
+</pre>
+
+<p>
+برای برپا نمودن yaboot، می توانید از <c>yabootconfig</c> برای ایجاد و پیکربندی خودکار فایل استفاده نمایید. اگر در حال نصب جنتو بروی یک G5 (که <c>yabootconfig</c> همیشه بروی آن کار نمی کند) هستید، یا نقشه ائی برای راه اندازی از روی فریم ور یا USB دارید، لازم دارید تا yaboot را بطور دستی پیکربندی نمایید.
+</p>
+
+<note>
+هنگامیکه از <c>genkernel</c> استفاده می نمایید لازم دارید تا <path>yaboot.conf</path> را بطور دستی پیکربندی نمایید، حتی اگر در حال استفاده از <c>yabootconfig</c> هستید. بخش تصویر کرنل از <path>yaboot.conf</path> باید بشکل زیر ویرایش گردد (با استفاده از <path>vmlinux</path> و <path>initrd</path> به عنوان نام کرنل و تصویر <path>initrd</path> ):
+</note>
+
+<pre caption="Adding genkernel boot arguments to yaboot.conf">
+<comment>###########################################################
+## This section can be duplicated if you have more than one
+## kernel or set of boot options - replace the image and initrd
+## with the exact filename of your kernel and initrd image.
+###########################################################</comment>
+image=/boot/<keyval id="genkernel-name"/>
+  label=Linux
+  root=/dev/ram0
+  partition=3
+  initrd=/boot/<keyval id="genkernel-initrd"/>
+  <comment># You can add additional kernel arguments to append such as 
+  # rootdelay=10 for a USB/Firewire Boot</comment>
+  append="real_root=/dev/sda3"  
+  read-only
+<comment>##########################################################</comment>
+</pre>
+
+<ul>
+  <li><uri link="#yabootconfig">پیش فرض: استفاده نمودن از yabootconfig</uri></li>
+  <li>
+    <uri link="#manual_yaboot">جایگزین: پیکربندی yaboot بطور دستی</uri>
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection id="yabootconfig">
+<title>پیش فرض: استفاده نمودن از yabootconfig</title>
+<body>
+
+<p>
+کد <c>yabootconfig</c> بطور خودکار پارتیشن ها را بروی دستگاه شما شناسائی نموده و مجموعه دوتائی یا سه تائی از راه اندازی لینوکس، مک او اس و مک او اس ایکس را تنظیم می نماید.
+</p>
+
+<p>
+برای استفاده از <c>yabootconfig</c>، درایو شما باید یک پارتیشن Apple_Bootstrap باشد، و <path>/etc/fstab</path> باید توسط پارتیشن لینوکس شما پیکربندی گردد. (توجه داشته باشید که پارتیشن Bootstrap نباید بروی fstab شما باشد)این توسط گام های بالا انجام گردیده. اما <path>/etc/fstab</path> را پیش از آغاز کار بررسی نمایید. اکنون <c>yaboot</c> را نصب نمایید.
+</p>
+
+<pre caption = "Installing yaboot">
+# <i>emerge yaboot</i>
+</pre>
+
+<p>
+اکنون از chroot خارج شوید و <c>yabootconfig --chroot /mnt/gentoo</c> را اجرا نمایید. ابتدا برنامه موقعیت پارتیشن bootstrap را تایید می‌نماید. اگر در حال استفاده از نمایه پیشنهادی برای پارتیشن‌ها هستید، پارتیشن bootstrap شما باید <path>/dev/sda2</path> باشد. اگر خروجی دقیق بود <c>Y</c> را تایپ نمایید. اگر اینطور نیست، دوباره <path>/etc/fstab</path> را بررسی نمایید. پس از آن <c>yabootconfig</c> تنظیمات دستگاه شما را وارسی نموده، <path>/etc/yaboot.conf</path> را ایجاد و <c>mkofboot</c> را برای شما اجرا می نماید. <c>mkofboot</c> برای فرمت نمودن پارتیشن Apple_Bootstrap استفاده می شود، و فایل پیکربندی yaboot در آن نصب می گردد. پس از این دوباره وارد chroot شوید.
+</p>
+
+<pre caption="Re-enter the chroot">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>/usr/sbin/env-update &amp;&amp; source /etc/profile</i>
+</pre>
+
+<p>
+ممکن است بخواهید مفاد <path>/etc/yaboot.conf</path> را تایید نمایید. اگر تغییراتی در <path>/etc/yaboot.conf</path> اعمال نمودید (شبیه تنظیم سیستم عامل راه انداز پیش فرض)، مطمئن شوید که <c>ybin -v</c> را مجددا اجرا نمایید تا تغییرات در پارتیشن bootstrap اعمال گردند. هرگاه تغییراتی در  دادید، مانند آزمایش یک کرنل جدید، همیشه بخاطر داشته باشید <c>ybin -v</c> را اجرا نمایید تا پارتیشن bootstrap را بروز نگاه دارید.
+</p>
+
+<p>
+اکنون با <uri link="#reboot">راه اندازی مجدد دستگاهتان</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+<subsection id="manual_yaboot">
+<title>جایگزین: پیکربندی yaboot بطور دستی</title>
+<body>
+
+<p>
+ابتدا <c>yaboot</c> را بروی دستگاهتان نصب نمایید:
+</p>
+
+<pre caption="Installing yaboot">
+# <i>emerge yaboot</i>
+</pre>
+
+<p>
+در زیر شما یک فایل کامل <path>yaboot.conf</path> دارید. آنرا مطابق نیاز خود تغییر دهید.
+</p>
+
+<pre caption = "/etc/yaboot.conf">
+<comment>## /etc/yaboot.conf
+##
+## run: "man yaboot.conf" for details. Do not make changes until you have!!
+## see also: /usr/share/doc/yaboot/examples for example configurations.
+##
+## For a dual-boot menu, add one or more of:
+## bsd=/dev/sdaX, macos=/dev/sdaY, macosx=/dev/sdaZ
+
+## The bootstrap partition:</comment>
+
+boot=/dev/sda2
+
+<comment>## ofboot is the Open Firmware way to specify the bootstrap partition.
+## If this isn't defined, yaboot fails on the G5 and some G4s (unless 
+## you pass the necessary arguments to the mkofboot/ybin program).
+## hd:X means /dev/sdaX.
+## 
+## G5 users should uncomment this line!!
+
+#ofboot=hd:2
+
+## Users booting from firewire should use something like this line:
+# ofboot=fw/node/sbp-2/disk@0:
+
+## Users booting from USB should use something like this line:
+# ofboot=usb/disk@0:
+
+## hd: is shorthand for the first hard drive Open Firmware sees</comment>
+device=hd:
+
+<comment>## Firewire and USB users will need to specify the whole OF device name
+## This can be found using ofpath, which is included with yaboot.
+
+# device=fw/node@0001d200e00d0207/sbp-2@c000/disk@0:
+</comment>
+
+delay=5
+defaultos=macosx
+timeout=30
+install=/usr/lib/yaboot/yaboot
+magicboot=/usr/lib/yaboot/ofboot
+
+<comment>############################################################
+## This section can be duplicated if you have more than one
+## kernel or set of boot options - replace the image variable
+## with the exact filename of your kernel.
+###########################################################</comment>
+image=/boot/<keyval id="kernel-name"/>
+  label=Linux
+  root=/dev/sda3
+  partition=3
+<comment>#  append="rootdelay=10"  # Required for booting USB/Firewire</comment>
+  read-only
+<comment>##################
+
+## G5 users and some G4 users should set 
+##   macos=hd:13/
+##   macosx=hd:12
+## instead of the example values.</comment>
+macos=/dev/sda13
+macosx=/dev/sda12
+enablecdboot
+enableofboot
+</pre>
+
+<p>
+به مجرد اینکه <path>yaboot.conf</path> بشکلی دلخواه تنظیم گردید، <c>mkofboot -v</c> را برای نصب تنظیمات در پارتیشن Apple_bootstrap اجرا نمایید. اگر  را پس از اینکه پارتیشن Apple_bootstrap ایجاد گردید تغییر داده اید، می توانید تنظیمات را با <c>ybin -v</c> بروز رسانی نمایید.
+</p>
+
+<pre caption="Setting up the bootstrap partition">
+# <i>mkofboot -v</i>
+</pre>
+
+<p>
+برای اطلاعات بیشتر درباره yaboot، نگاهی به <uri link="http://penguinppc.org/projects/yaboot">yaboot project</uri> بیاندازید. برای اکنون، نصب را با <uri link="#reboot">راه اندازی مجدد دستگاهتان</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="bootx">
+<title>جایگزین: BootX</title>
+<body>
+
+<impo>
+راه انداز BootX فقط می تواند بروی دستگاه های OldWorld Apple با MacOS 9 یا قدیمی‌تر استفاده گردد!
+</impo>
+
+<p>
+از آنجا که BootX لینوکس را از درون MacOS راه اندازی می نماید، لازم است کرنل از پارتیشن لینوکس به پارتیشن MacOS رونوشت برداری گردد. از <c>mac-fdisk -l</c> برای پیدا نمودن شماره پارتیشن MacOS استفاده نمایید، در اینجا sda6 فقط به عنوان نمونه مورد استفاده قرار گرفته. به مجرد اینکه پارتیشن مانت شد، ما کرنل را به پوشه فایل سیستم رونوشت می نماییم تا BootX بتواند آنرا پیدا کند.
+</p>
+
+<pre caption="Copying the kernel to the MacOS partition">
+# <i>exit</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/usr/src/linux/vmlinux "/mnt/mac/System Folder/Linux Kernels/<keyval id="kernel-name"/>"</i>
+</pre>
+
+<p>
+اگر از genkernel استفاده می شود، کرنل و initrd هر دو لازم است به پارتیشن MacOS رونوشت گردند.
+</p>
+
+<pre caption="Copying the Genkernel kernel and initrd to the MacOS partition">
+# <i>exit</i>
+cdimage ~# <i>mkdir /mnt/mac</i>
+cdimage ~# <i>mount /dev/sda6 /mnt/mac -t hfs</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/<keyval id="genkernel-name"/> "/mnt/mac/System Folder/Linux Kernels"</i>
+cdimage ~# <i>cp /mnt/gentoo/boot/<keyval id="genkernel-initrd"/> "/mnt/mac/System Folder"</i>
+</pre>
+
+<p>
+اکنون که کرنل رونوشت برداری شد، لازم داریم تا تنظیمات BootX را راه اندازی مجدد نماییم.
+</p>
+
+<pre caption="Unmounting all partitions and rebooting">
+cdimage ~# <i>cd /</i>
+cdimage ~# <i>umount -l /mnt/gentoo/dev{/pts,/shm,}</i>
+cdimage ~# <i>umount -l /mnt/gentoo{/proc,/sys,}</i>
+cdimage ~# <i>umount -l /mnt/mac</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<p>
+البته فراموش ننمایید که لوح فشرده را از لوح خوان خارج نمایید، وگرنه بجای MacOS دوباره لوح فشرده راه اندازی خواهد شد.
+</p>
+
+<p>
+به مجرد اینکه ماشین در MacOS راه اندازی گردید، پنل کنترل BootX را باز نمایید، اگر در حال استفاده از genkernel نیستید، <c>Options</c> را انتخاب و <c>Use specified RAM disk</c> را از حالت انتخاب بیرون بیاورید، مطمئن شوید که initrd متعلق به genkernel بجای initrd لوح فشرده نصب انتخاب شده باشد. اگر در حال استفاده از genkernel نیستید، انتخابی برای مشخص نمودن پارتیشن و ریشه لینوکس ماشین وجود دارد. آنرا با مقدارهای مناسب پر نمایید. وابسته به پیکربندی کرنل، آرگومنت های اضافی برای راه اندازی ممکن است لازم باشد.
+</p>
+
+<p>
+راه انداز BootX می تواند برای اغاز لینوکس در ابتدای راه اندازی پیکربندی گردد. اگر اینکار را انجام دادید، خواهید دید که ابتدا در هنگام راه اندازی ماشین شما راه انداز وارد MacOS می گردد، و در زمان مراحل راه اندازی، BootX لینوکس را لود نموده و راه اندازی می نماید. برای اطلاعات بیشتر <uri link="http://penguinppc.org/bootloaders/bootx/">صفحه خانگی BootX</uri> را ببینید.
+</p>
+
+<impo>
+مطمئن شوید پشتیبانی برای فایل‌سیستم‌های HFS و HFS+ در کرنل شما وجود داشته باشد، وگرنه نخواهید توانست کرنل خودتان را بروی پارتیشن MacOS ارتقاء داده یا تغییر دهید.
+</impo>
+
+<p>
+اکنون دوباره راه اندازی مجدد نمایید و وارد لینوکس شوید، پس از آن با <uri link="?part=1&amp;chap=11">به پایان بردن نصب جنتوی شما</uri> ادامه دهید.
+</p>
+
+</body>
+</section>
+<section id="quik">
+<title>جایگزین: quik</title>
+<body>
+
+<p>
+راه انداز <c>quik</c> به OldWorld Macها امکان راه اندازی بدون MacOS را می دهد، اما بخوبی پشتیبانی نمی شود و تعدادی ایراد دارد. اگر امکان دارید، پیشنهاد می شود از BootX که بیشتر قابل اطمینان و ساده تر برای تنظیم است، بجای quik استفاده نمایید.
+</p>
+
+<p>
+ابتدا، نیاز داریم <c>quik</c> را نصب نماییم:
+</p>
+
+<pre caption="Emerge quik">
+# <i>emerge quik</i>
+</pre>
+
+<p>
+پس از آن نیاز داریم تا آنرا تنظیم نماییم. فایل <path>/etc/quik.conf</path> را ویرایش نمایید و تصویرتان را به کرنل را که به پارتیشن راه انداز رونوشت نمودیم را تنظیم نمایید. 
+</p>
+
+<pre caption="Configuring quik.conf">
+# Example of quik.conf
+init-message = "Gentoo Linux\n"
+<comment># This is the boot partition</comment>
+partition = 2
+root = /dev/sda4
+timeout = 30
+default = gentoo
+<comment># This is your kernel</comment>
+image = /<keyval id="kernel-name"/>
+  label = gentoo
+</pre>
+
+<p>
+فایل <path>quik.conf</path> شما <e>باید</e> در دیسکس باشد که تصویر راه انداز quik در آن قرار دارد، هرچند می توان در یک دیسک بروی پارتیشن های متفاوتی باشد، اگرچه پیشنهاد می شود که آنرا به پارتیشن راه انداز خودتان منتقل نمایید.
+</p>
+
+<pre caption="Moving quik.conf to /boot">
+# <i>mv /etc/quik.conf /boot/quik.conf</i>
+</pre>
+
+<p>
+اکنون می توانیم متغییرهای راه اندازی شما را برای لود شدن توسط quik در راه اندازی تنظیم نماییم. برای انجام این، از برنامه ائی به نام <c>nvsetenv</c> استفاده می‌نماییم. متغییرهائی که می خواهید تنظیم نمایید از ماشینی به ماشین دیگر بسیار متفاوت می باشند، بهتر است پیش از آغاز به این کار متغییرهای مربوط به ماشین خود را در <uri link="http://penguinppc.org/bootloaders/quik/quirks.php">quirks</uri> پیدا نمایید.
+</p>
+
+<pre caption="Setting the boot variables">
+# <i>nvsetenv auto-boot true</i> <comment># Set to false if you want to boot into OF, not all models can display the OF output</comment>
+# <i>nvsetenv output-device video</i> <comment># Check the quirks page, there are many variations here</comment>
+# <i>nvsetenv input-device kbd</i>
+# <i>nvsetenv boot-device scsi/sd@1:0</i> <comment># For SCSI</comment>
+# <i>nvsetenv boot-device ata/ata-disk@0:0</i> <comment># For ATA</comment>
+# <i>nvsetenv boot-file /boot/<keyval id="kernel-name"/> root=/dev/sda4</i> <comment>First item is the path to the kernel, the second is the root partition.  You may append any kernel options to the end of this line.</comment>
+# <i>nvsetenv boot-command boot</i> <comment># Set this to bye for MacOS and boot for Linux</comment>
+</pre>
+
+<note>
+همچنین این امکان وجود دارد که متغییرهایتان را از MacOS تغییر دهید. وابسته به مدل <uri
+link="http://penguinppc.org/bootloaders/quik/BootVars.sit.hqx">bootvars</uri> یا <uri link="ftp://ftp.apple.com/developer/macosxserver/utilities/SystemDisk2.3.1.smi.bin"> باید مورد استفاده قرار گیرند. برای اطلاعات بیشتر لطفا صفحه quirks مربوط به quik را در بالا بازبین فرمایید.
+</uri>
+</note>
+
+<p>
+اکنون که ماشینمان را برای راه اندازی تنظیم نمودیم، لازم داریم تا مطمئن شویم تصویر راه انداز به دقت نصب شده باشد. دستور <c>quik -v -C /boot/quik.conf</c> را اجرا نمایید. این به شما خواهد گفت که چه در اولین بلوک راه انداز استیج QUIK نصب گردیده است.
+</p>
+
+<note>
+اگر چیزی درست پیش نرفت، همیشه می توانید PRMA خودتان را با نگهداشتن <c>command + option + p + r</c> قبل از راه اندازی ماشین به حالت تنظیمات اولیه بازگردانید. این به شما این امکان را می دهد که تنظیماتی را که با nvsetenv تنظیم نمودید را پاک نموده و باید اجازه راه اندازی با دیسک راه انداز MacOS یا دیسک راه انداز لینوکس را بدهد.
+</note>
+
+<p>
+اکنون، نصب را با <uri link="#reboot">راه اندازی مجدد دستگاه</uri> ادامه دهید.
+</p>
+
+</body>
+</section>
+<section id="bootcreator">
+<title>جایگزین: BootCreator</title>
+<body>
+
+<impo>
+راه انداز BootCreator یک فهرست انتخاب راه اندازی زیبا SmartFirmware که در Forth برای Pegasos نوشته شده خواهد ساخت.
+</impo>
+
+<p>
+ابتدا مطمئن شوید <c>bootcreator</c> را بروی دستگاه خود نصب نموده اید:
+</p>
+
+<pre caption = "Installing bootcreator">
+# <i>emerge bootcreator</i>
+</pre>
+
+<p>
+اکنون فایل <path>/etc/bootmenu.example</path> را بداخل <path>/etc/bootmenu</path> رونوشت نمایید و آنرا مطابق با نیاز خودتان ویرایش نمایید:
+</p>
+
+<pre caption = "Edit the bootcreator config file">
+# <i>cp /etc/bootmenu.example /etc/bootmenu</i>
+# <i>nano -w /etc/bootmenu</i>
+</pre>
+
+<p>
+در زیر یک فایل پیکربندی <path>/etc/bootmenu</path> کامل وجود دارد. vmlinux و initrd باید با نام کرنل و تصویر initrd شما جایگزین شوند.
+</p>
+
+<pre caption = "bootcreator config file">
+<comment>#
+# Example description file for bootcreator 1.1
+#</comment>
+
+[VERSION]
+1
+
+[TITLE]
+Boot Menu
+
+[SETTINGS]
+AbortOnKey = false
+Timeout    = 9
+Default    = 1
+
+[SECTION]
+Local HD -> Morphos      (Normal)
+ide:0 boot2.img ramdebug edebugflags="logkprintf"
+
+[SECTION]
+Local HD -> Linux (Normal)
+ide:0 <keyval id="kernel-name"/> video=radeonfb:1024x768@70 root=/dev/sda3
+
+[SECTION]
+Local HD -> Genkernel (Normal)
+ide:0 <keyval id="genkernel-name"/> root=/dev/ram0
+real_root=/dev/sda3 initrd=<keyval id="genkernel-initrd"/>
+</pre>
+
+<p>
+سرانجام <path>bootmenu</path> باید به Forth منتقل شده و بروی پارتیشن راه انداز شما رونوشت بردای گردد، تا SmartFirmware بتواند آنرا بخواند. بنابر این شما در حال فراخوانی <c>bootcreator</c> هستید:
+</p>
+
+<pre caption = "Install the bootmenu">
+# <i>bootcreator /etc/bootmenu /boot/menu</i>
+</pre>
+
+<note>
+مطمئن شوید هنگامیکه راه اندازی مجدد می نمایید، نگاهی به داخل تنظیمات SmartFirmware بیاندازید، چراکه <path>menu</path> فایلی است که بطور پیش فرض لود خواهد گردید.
+</note>
+
+<p>
+برای اکنون، نصب را با <uri link="#reboot">راه اندازی مجدد دستگاه</uri> ادامه دهید.
+</p>
+
+</body>
+</section>
+<section id="reboot">
+<title>راه اندازی مجدد دستگاه</title>
+<subsection>
+<body>
+
+<p>
+از محیط chroot خارج شوید و همه پارتیشن های مانت شده را از حالت مانت خارج نمایید. سپس آن دستور جادوئی که در انتظارش بودید را تایپ نمایید: <c>reboot</c>. 
+</p>
+
+<pre caption="Exiting the chroot, unmounting all partitions and rebooting">
+# <i>exit</i>
+livecd ~# <i>umount -l /mnt/gentoo/dev{/pts,/shm,}</i>
+livecd ~# <i>umount -l /mnt/gentoo{/proc,/sys,}</i>
+livecd ~# <i>reboot</i>
+</pre>
+
+<p>
+هنگامی که نصب جنتو را با ریبوت نمودن بپایان بردید، با <uri link="?part=1&amp;chap=11">به پایان رساندن نصب جنتوی شما</uri> کار را به پایان ببرید.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>

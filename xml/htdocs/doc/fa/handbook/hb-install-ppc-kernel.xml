@@ -1,0 +1,332 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-ppc-kernel.xml,v 1.1 2013/01/20 17:06:55 swift Exp $ -->
+
+<sections>
+
+<abstract>
+کرنل لینوکس هسته هر توزیعی است. این فصل توضیح می دهد چگونه کرنل خود را پیکربندی نمایید.
+</abstract>
+
+<version>15</version>
+<date>2012-10-06</date>
+
+<section>
+<title>منطقه زمانی</title>
+<body>
+
+<p>
+ابتدا لازم است تا منطقه زمانی خودتان را انتخاب نمایید تا دستگاه شما دریابد در چه موقعیتی قرار دارد. به منطقه های زمانی در <path>/usr/share/zoneinfo</path> نگاه بیاندازید و سپس آنرا در <path>/etc/localtime</path> رونوشت نمایید. لطفا از منطقه زمانی به شکل <path>/usr/share/zoneinfo/Etc/GMT*</path> دوری نمایید چون به عنوان یک نام، منطقه قابل توقعی را نشان نمی دهد. برای مثال <path>GMT-8</path> درواقع  GMT+8 است.
+</p>
+
+<pre caption="Setting the timezone information">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Suppose you want to use Europe/Brussels)</comment>
+# <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
+<comment>(Next set the timezone)</comment>
+# <i>echo "Europe/Brussels" &gt; /etc/timezone</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>نصب کردن منبع کرنل</title>
+<subsection>
+<title>انتخاب یک کرنل</title>
+<body>
+
+<p>
+هسته ائی که همه توزیع ها بدور آن ساخته می شوند، کرنل لینوکس است. این لایه ائیست بین برنامه های کاربر و سخت افزار دستگاه شما. جنتو برای کاربرانش چندین کدمنبع کرنل ممکن فراهم آورده است. یک فهرست کامل بهمراه توضیحات آنها در آدرس  <uri link="/doc/en/gentoo-kernel.xml">راهنمای کرنل جنتو</uri> موجود است. 
+</p>
+
+<p>
+برای دستگاه های مبتنی بر <keyval id="arch"/> ما <c>gentoo-sources</c> را داریم (کدمنبع کرنل برای خصیصه های بیشتر).
+</p>
+
+<p>
+کرنل خود را انتخاب نمایید و آنرا با استفاده از <c>emerge</c> نصب نمایید.
+</p>
+
+<pre caption="Installing a kernel source">
+# <i>emerge gentoo-sources</i>
+</pre>
+
+<p>
+هنگامیکه نگاهی به <path>/usr/src</path> بیاندازید باید میانبری بنام <path>linux</path> به کدمنبع کرنل خودتان ببینید. در این مورد، کدمنبع <c>gentoo-sources-<keyval id="kernel-version"/></c> است. نسخه شما ممکن است متفاوت باشد، پس این را بخاطر داشته باشید.
+</p>
+
+<pre caption="Viewing the kernel source symlink">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root   root    12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+<p>
+اکنون زمان پیکربندی و کامپایل کد منبع کرنل است. شما می توانید از <c>genkernel</c> برای اینکار استفاده نمایید، که یک کرنل عمومی مشابه آنچه در لوح فشرده نصب استفاده می شود را خواهد ساخت. ما ابتدا پیکربندی دستی را توضیح خواهیم داد چراکه، این بهترین راه برای بهینه سازی محیط شماست.
+</p>
+
+<p>
+اگر می خواهید کرنل خودتان را بطور دستی پیکربندی نمایید، با <uri link="#manual">پیش فرض: پیکربندی دستی</uri> ادامه دهید. اگر می خواهید از <c>genkernel</c> استفاده نمایید باید <uri link="#genkernel">جایگزین: استفاده کردن از genkernel</uri> را بجای آن بخوانید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>پیش فرض: پیکربندی دستی</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+پیکربندی دستی یک کرنل اغلب به عنوان سخت ترین کاری که یک کاربر لینوکس در تمام مدت انجام می دهد دیده می شود. این چیزی بیشتر از واقعیت است -- بعد از پیکربندی یک مشت از کرنل ها شما اصلا بخاطر نخواهید آورد که اینکار زمانی مشکل بوده ;)
+</p>
+
+<p>
+هرچند، یک چیز <e>درست</e> است : شما باید هنگامیکه شروع به پیکربندی دستی یک کرنل می نمایید دستگاهتان را بخوبی بشناسید. غالب اطلاعات می توانند به کمک emergingemerge pciutils ( <c>emerge pciutils</c> ) گردآوری شوند که شامل <c>lspci</c> نیز می شود. شما اکنون قادرید درون محیط chroot شده از <c>lspci</c> استفاده نمایید. ممکن است بطور ایمنی هر اخطار <e>pcilib</e> را نادیده بگیرید (شبیه <c>pcilib: cannot open  /sys/bus/pci/devices</c> ) که lspci به بیرون می دهد. بطور جایگزین می توانید lspci را از یک محیط <e>non-chrooted</e> اجرا نمایید. نتیجه مشابه است. همچنین می توانید <c>lsmod</c> را برای اینکه ببینید لوح فشرده نصب از چه ماژول هائی استفاده نموده اجرا نمایید (اینکار ممکن است شما را به شکل زیبائی آگاه نماید که چه چیز را باید فعال نمایید).
+</p>
+
+<p>
+اکنون به دایرکتوری کدمنبع کرنل خودتان بروید، این زمان پیکربندی کرنلتان است. با اولین اجرای دستور <c>make pmac32_defconfig</c> شروع به پیکربندی کرنلی نمایید که بیشتر ماشین های ۳۲ بیتی PowerPC را راه اندازی مینماید. پس از اینکه پیکربندی پیش فرض ایجاد گردید، دستور <c>make menuconfig</c> را اجرا نمایید تا یک فهرست انتخاب ncurses-based را آغاز نماید.
+</p>
+
+<pre caption="Invoking menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make pmac32_defconfig</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+شما با چندین بخش پیکربندی ملاقات خواهید نمود. ما ابتدا برخی انتخاب ها را که شما باید فعال نمایید (در غیر اینصورت جنتو کارنخواهد نمود و یا بدون اضافات پیچیده بخوبی کار نخواهد نمود) را فهرست خواهیم نمود.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>فعال نمودن انتخاب های مورد نیاز</title>
+<body>
+
+<p>
+ابتدا به <c>File Systems</c> بروید و پشتیبانی برای فایل سیستمی که استفاده می نمایید را انتخاب نمایید. آنرا به عنوان یک ماژول کامپایل <e>نکنید</e> ، در غیر اینصورت دستگاه جنتوی شما نخواهد توانست پارتیشن های شما را مانت نماید. همچنین <c>Virtual memory</c> و <c>/proc file system</c> را هم انتخاب نمایید. همچنین مطمئن شوید که پشتیبانی برای پارتیشن های Amiga را اگر از Pegasos استفاده می نمایید را و یا پارتیشن های مکینتاش را اگر از یک رایانه Apple استفاده می نمایید را فعال نمایید، 
+</p>
+
+<pre caption="Selecting necessary file systems">
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+<comment>(/proc may already be forced on by your configuration, if so, you'll see --- instead)</comment>
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+  Partition Types ---&gt;
+    [*] Advanced partition support
+    [*]   Amiga partition table support
+    [*]   Macintosh partition map support
+
+<comment>(Select one or more of the following options as needed by your system)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<p>
+کاربران ماشین ها NewWorld و OldWorld پشتیبانی از HFS را نیز بخوبی نیاز خواهند داشت. کاربران OldWorld آنرا برای رونوشت برداری از کرنل های کامپایل شده به پارتیشن MacOS نیاز دارند. کاربران NewWorld آنرا برای پیکربندی خاص پارتیشن Apple_Bootstrap نیاز دارند:
+</p>
+
+<pre caption="Activating HFS support">
+File Systems ---&gt;
+  Miscellaneous filesystems ---&gt;
+    &lt;M&gt; Apple Macintosh file system support
+    &lt;M&gt; Apple Extended HFS file system support
+</pre>
+
+<p>
+اگر از PPPoE برای ارتباط با اینترنت استفاده می نمایید یا در حال استفاده از یک مودم دیال آپ هستید، نیاز به انتخاب های زیر در کرنل دارید:
+</p>
+
+<pre caption="Selecting PPPoE necessary drivers">
+Device Drivers ---&gt;
+  Network device support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+دو انتخاب فشرده شده به هم آسیبی نمی زنند اما ضرورتی هم ندارند، هنگامیگه کرنل را پیکربندی می نمایید تا در حالت PPPoE باشد، انتخاب <c>PPP over Ethernet</c> که ممکن است فقط بوسیله <c>ppp</c> استفاده شوند، هیچ کاری انجام نمی دهند. 
+</p>
+
+<p>
+فراموش ننمایید که پشتیبانی از کارت ethernet را در کرنل فعال نمایید! بیشتر رایانه های اپل جدید از درایور SunGEM ethernet استفاده می نمایند. iMacs های قدیمی‌تر از درایور BMAC استفاده می نمایند.
+</p>
+
+<pre caption="Selecting the network driver">
+Device Drivers ---&gt;
+  Network device support ---&gt;
+    Ethernet (10 or 100Mbit) ---&gt;
+      [*] Ethernet (10 or 100Mbit)
+      &lt;*&gt;   Generic Media Independent Interface device support
+      &lt;*&gt;   MACE (Power Mac ethernet) support
+      &lt;*&gt;   BMAC (G3 ethernet) support
+      &lt;*&gt;   Sun GEM support
+</pre>
+
+<p>
+اگر از یک فرم ور راه اندازی می نمایید، نیاز دارید تا این انتخاب را فعال نمایید. اگر نمی خواهید پشتیبانی آنرا وارد کرنل نمایید، نیاز خواهید داشت تا آنرا وارد ماژول نموده و نیازمندی های آنرا در یک initrd وارد نمایید.
+</p>
+
+<pre caption="Enable support for FireWire devices on boot">
+Device Drivers ---&gt;
+  IEEE 1394 (FireWire) support ---&gt;
+    &lt;*&gt; IEEE 1394 (FireWire) support
+    &lt;*&gt;   OHCI-1394 support
+    &lt;*&gt;   SBP-2 support (Harddisks etc.)
+</pre>
+
+<p>
+اگر از یک USB راه اندازی می نمایید، نیاز به فعال سازی این انتخاب خواهید داشت. اگر نمی خواهید پشتیبانی آنرا وارد کرنل نمایید، نیاز خواهید داشت تا آنرا وارد ماژول نموده و نیازمندی های آنرا در یک initrd وارد نمایید.
+</p>
+
+<pre caption="Enable support for USB devices on boot">
+Device Drivers ---&gt;
+  USB support ---&gt;
+    &lt;*&gt; Support for Host-side USB
+    &lt;*&gt;   OHCI HCD support
+    &lt;*&gt;   USB Mass Storage support
+</pre>
+
+<p>
+به دلیل اینکه برای یک راه اندازی موفق مورد نیاز است، پشتیبانی فریم بافر را غیرفعال ننمایید. اگر از یک چیپ ست بر مبنای NVIDIA استفاده می نمایید، باید از فریم بافر فریم ور باز استفاده نمایید. اگر از یک چیپ ست بر مبنای ATI استفاده می نمایید، باید بر اساس چیپ ست خودتان درایور فریم بافر مربوط را (Mach64, Rage128 or Radeon) انتخاب نمایید.
+</p>
+
+<pre caption="Choosing a Framebuffer Driver">
+Device Drivers ---&gt;
+  Graphics support ---&gt;
+    &lt;*&gt; Support for frame buffer devices
+    [*] Open Firmware frame buffer device support
+    &lt;*&gt; ATI Radeon display support
+    &lt;*&gt; ATI Rage128 display support
+    &lt;*&gt; ATI Mach64 display support
+    Console display driver support ---&gt;
+      &lt;*&gt; Framebuffer Console support
+</pre>
+
+<note>
+اگر بیش از یک دستگاه فریم بافر را انتخاب نمایید، کقدار بهینه سازی را کمتر می نماید. برای جلوگیری از این کار درایور فقط یک دستگاه فریم بافر خاص را که از آن استفاده می نمایید را به خط مربوط به ویدئو در کرنل مانند: <c>video=radeonfb</c> ارجاع دهید. 
+</note>
+
+<p>
+هنگامیکه پیکربندی کرنل را به پایان رساندید، با <uri  link="#compiling">کامپایل کردن و نصب نمودن</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>کامپایل کردن و نصب نمودن</title>
+<body>
+
+<p>
+اکنون که کرنل شما پیکربندی شد، زمان کامپایل کردن و نصب کردن آن رسیده. از پیکربندی خارج شوید و دستور زیر را اجرا نمایید:
+</p>
+
+<pre caption="Compiling the kernel">
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+هنگامیکه کامپایل شدن کرنل بپایان رسید، تصویر کرنل را مانند آنچه در زیر نشان داده می شود به <path>/boot</path> رونوشت نمایید. اگر یک پارتیشن راه انداز جادگانه دارید، مانند رایانه های Pegasos، مطمئن شوید که آنرا بخوبی مانت می نمایید. اگر از راه انداز BootX استفاده می نمایید، کرنل را دس از این رونوشت خواهیم نمود.
+</p>
+
+<p>
+دو راه‌انداز Yaboot و BootX برخلاف دیگر راه‌اندازها از یک کرنل فشرده نشده استفاده می‌نمایند. به کرنل فشرده نشده vmlinux گفته می‌شود و پس از آنکه کرنل کامپایل گردید، در <path>/usr/src/linux</path> قرار می‌گیرد. اگر از یک ماشین Pegasos استفاده می‌نمایید، فریم‌ور Pegasos نیاز به یک کرنل فشرده شده به نام zImage دارد که می‌تواند در <path>/usr/src/linux/arch/powerpc/boot/images</path> پیدا شود.
+</p>
+
+<pre caption="Installing the kernel">
+# <i>cd /usr/src/linux</i>
+<comment>Note, your kernel version might be different</comment>
+<comment>(Apple/IBM)</comment>
+# <i>cp vmlinux /boot/<keyval id="kernel-name"/></i>
+<comment>(Pegasos)</comment>
+# <i>cp arch/powerpc/boot/images/zImage /boot/<keyval id="kernel-name"/></i>
+</pre>
+
+<p>
+اکنون با <uri link="#kernel_modules">ماژول های کرنل</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="genkernel">
+<title>جایگزین: استفاده کردن از genkernel</title>
+<body>
+
+<p>
+اکنون که شاخه کد منبع کرنل تان نصب گردیده، زمان آن است که کرنلتان را با استفاده از کد <c>genkernel</c> کامپایل نمایید تا بطور خودکار یک کرنل برایتان بسازد. <c>genkernel</c> بصورت پیکربندی نمودن یک کرنل تقریبا مشابه با آنچنان که کرنل لوح فشرده نصب ما پیکربندی گردیده، کار می نماید. این به آن معنی است که هنگامیکه شما از <c>genkernel</c> برای پیکربندی کرنلتان استفاده می نمایید، دستگاه شما عموما همه سخت افزار شما را در زمان راه اندازی، مشابه آنچه لوح فشرده نصب ما انجام می دهد، راه اندازی می نماید. به دلیل اینکه genkernel نیاز به هیچ پیکربندی دستی کرنلی ندارد، ایده راه حلی برای کاربرانی است که ممکن است با کامپایل کردن کرنل خودشان راحت نباشند.
+</p>
+
+<p>
+اکنون، اجازه دهید تا ببینیم چگونه از genkernel استفاده نماییم. ابتدا ائی بیلد genkernel را emerge نمایید:
+</p>
+
+<pre caption="Emerging genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+اگر از راه‌انداز فریم‌ور یا USB استفاده می‌نمایید، نیاز دارید ماژوالها را به initrd اضافه نمایید. برای پشتیبانی از فریم‌ور <path>/usr/share/genkernel/arch/ppc/modules_load</path> را ویرایش نمایید و <c>MODULES_FIREWIRE="ieee1394 ohci1394 sbp2"</c> را تغییر دهید یا برای پشتیبانی برای USB فایل <c>MODULES_USB="usbcore ohci-hcd ehci-hcd usb-storage"</c> را تغییر دهید.
+</p>
+
+<p>
+پیش از کامپایل نمودن منابعتان، فایل fstab نیاز دارد تا مقداری سازگاری پیدا نماید. تنظیم کامل آن در گام بعدی خواهد بود، بنابر این اکنون نگران جزئیات نباشید. اگر یک پارتیشن راه‌انداز جداگانه ایجاد ننموده‌اید (نه bootstrap که چیز متفاوتی است)، از فایل <path>/etc/fstab</path> مسیر ارجاع‌دهنده به <path>/boot</path> را حذف نمایید. این کمینه در رایانه‌های Apple باید اجرا شود.
+</p>
+
+<pre caption="Removing /boot from /etc/fstab on machines without a boot partition">
+# <i>nano -w /etc/fstab</i>
+<comment>Remove this line</comment>
+/dev/BOOT  /boot    ext2    noauto,noatime    0 2
+</pre>
+
+<p>
+اکنون کدمنبع کرنل خود را با اجرای دستور <c>genkernel --genzimage all</c> کامپایل نمایید. برای Pegasos، نیاز به استفاده از پیکربندی متفاوت و ایجاد یک zImage بجای کرنل vmlinux که در ماشین های Apple استفاده می شود داریم. مدنظر داشته باشید که <c>genkernel</c> یک کرنل که تقریبا از همه سخت افزارها پشتیبانی می نماید، کامپایل می کند، چنین کامپایل کردنی مقداری زمان می برد تا به پایان برسد!
+</p>
+
+<p>
+توجه داشته باشید که اگر پارتیشن راه انداز شما از فایل سیستم های ext2 یا ext3 استفاده نمی کند ممکن است لازم باشد تا کرنلتان را با استفاده از <c>genkernel --menuconfig all</c> بطور دستی پیکربندی نمایید و پشتیبانی برای فایل سیستمی تان را <e>در</e> کرنل فعال نمایید( مثلا <e>نه</e> به عنوان یک ماژول).کاربران LVM2 قطعا لازم دارند تا <c>--lvm2</c> را به عنوان یک آرگومنت مهم اضافه نمایند. 
+</p>
+
+<pre caption="Running genkernel">
+# <i>genkernel all</i>
+</pre>
+
+<pre caption="Running genkernel on the Pegasos">
+# <i>genkernel --genzimage all</i>
+</pre>
+
+<p>
+بمجرد اینکه <c>genkernel</c> بپایان رسید، مجموعه کاملی از ماژول ها و <e>initial ram disk</e> ،(initramfs) ایجاد خواهند گردید. ما از کرنل و initrd هنگامیکه یک راه انداز دستگاه بعدا در همین مستند پیکربندی می نماییم، استفاده خواهیم نمود. نام کرنل و initrd را از آنجا که در هنگام پیکربندی فایل راه انداز نیاز خواهید داشت آنها را بنویسید، یادداشت نمایید. فایل initrd بعد از راه اندازی برای انجام اتصال خودکار سخت افزار (شبیه آنچه در لوح فشرده نصب انجام می شود) قبل از اینکه دستگاه واقعی شما آغاز بکار نماید، فورا شروع بکار می نماید. مطمئن شوید که همچنین آرگومنت های زاه اندازی مورد نیاز را رونوشت نمایید، چراکه این برای یک راه اندازی موفق با genkernel لازم است.
+</p>
+
+<pre caption="Checking the created kernel image name and initrd">
+<comment>Note, your kernel version might be different</comment>
+# <i>ls /boot/<keyval id="genkernel-name"/> /boot/<keyval id="genkernel-initrd"/></i>
+</pre>
+
+<p>
+اکنون با <uri link="#kernel_modules">ماژول های کرنل</uri> ادامه دهید.
+</p>
+
+</body>
+</section>
+<section id="kernel_modules">
+<title>ماژول های کرنل</title>
+
+<subsection>
+<include href="hb-install-kernelmodules.xml"/>
+</subsection>
+
+</section>
+</sections>
+
