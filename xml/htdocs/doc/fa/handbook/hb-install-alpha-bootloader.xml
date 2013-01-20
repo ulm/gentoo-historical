@@ -1,0 +1,216 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-alpha-bootloader.xml,v 1.1 2013/01/20 16:56:25 swift Exp $ -->
+
+<sections>
+
+<version>12</version>
+<date>2012-09-11</date>
+
+<section>
+<title>انتخاب خودتان را بنمایید</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+اکنون که کرنل شما کامپایل گردید و فایل های پیکر بندی ضروری دستگاهتان بدقت تنظیم گردیدند، زمان آن است که برنامه ائی برای راه اندازی کرنل‌تان در هنگام راه اندازی دستگاهتان نصب نمایید. به چنین برنامه هائی <e>راه‌انداز دستگاه</e> گفته می شود.
+</p>
+
+<p>
+چندین راه‌انداز دستگاه برای آلفا/لینوکس وجود دارد. شما باید یکی را که پشتیبانی
+می شود انتخاب نمایید، نه همه را. انتخاب شما بین <uri link="#aboot">aBoot</uri>
+و <uri link="#milo">MILO</uri> است.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="aboot">
+<title>پیش فرض: استفاده از aboot</title>
+<body>
+
+<note>
+<c>aboot</c> فقط راه اندازی از روی پارتیشن های <b>ext2</b> و <b>ext3</b>
+را پشتیبانی می نماید.
+</note>
+
+<p>
+ابتدا aboot را بروی سیستم‌مان نصب می نماییم. دقیقا برای اینکار از <c>emerge</c> بمانند
+این استفاده می نماییم:
+</p>
+
+<pre caption="Installing aboot">
+# <i>emerge aboot</i>
+</pre>
+
+<p>
+گام بعدی راه انداز نمودن دیسک راه اندازمان است. این کار <c>aboot</c>
+را هنگامی که دستگاهتان را راه می اندازید آغاز خواهد نمود. ما دیسک راه اندازمان را بتوسط
+نوشتن راه انداز <c>aboot</c> در آغاز دیسک، راه انداز می نماییم.
+</p>
+
+<pre caption="Making your bootdisk bootable">
+# <i>swriteboot -f3 /dev/sda /boot/bootlx</i> 
+# <i>abootconf /dev/sda 2</i>
+</pre>
+
+<note>
+اگر شما از نمایه پارتیشنی متفاوت از آنچه ما در این فصل
+استفاده نمودیم، استفاده می نمایید، باید دستورات را مطابق با آن نمایه تغییر دهید.
+لطفا صفحات راهنما اختصاص داده شده (<c>راهنمای ۸ swriteboot</c> و <c>راهنمای ۸ swriteboot</c>) 
+را مطالعه بفرمایید. همچنین اگر فایل سیستمی ریشه شما با فایل سیستمی JFS
+کار می کند، با اضافه نمودن یک <c>ro</c> در ابتدای انتخاب های کرنل مطمئن شوید که
+بصورت فقط-خواندنی مانت شود.
+</note>
+
+<p>
+همچنانکه <c>aboot</c> اکنون نصب گردیده، هنوز به نوشتن یک فایل پیکربندی 
+برای آن نیاز داریم. aboot تنها به یک خط برای پیکربندی نیاز دارد، بنابر این ما
+آنرا اینچنین انجام می دهیم:
+
+</p>
+
+<pre caption="Creating /etc/aboot.conf">
+# <i>echo '0:2/boot/vmlinux.gz root=/dev/sda2' &gt; /etc/aboot.conf</i>
+
+<comment>
+اگر در حین ساختن یک کرنل لینوکس، شما قید نمودید که یک راه انداز کرنل در زمان راه اندازی
+وارد شود، نیاز دارید تا پیکربندی را با اشاره به این فایل راه انداز هسته تغییر
+داده و به روش زیر به راه انداز هسته بگویید اسباب ریشه واقعی شما کجاست:
+</comment>
+
+# <i>echo '0:2/boot/vmlinux.gz initrd=/boot/<keyval id="genkernel-initrd"/> real_root=/dev/sda2' &gt; /etc/aboot.conf</i>
+</pre>
+
+
+<p>
+افزون بر آن، می توانید بکمک تنظیمات برخی متغییر های SRM جنتو را بطور خودکار
+راه اندازی نمایید. شما می توانید این تغییرات را از داخل لینوکس اعمال نمایید، اما ممکن است
+ساده تر باشد که آنرا از داخل خود کنسول SRM انجام دهید.
+</p>
+
+<pre caption="Automatically booting Gentoo">
+# <i>cd /proc/srm_environment/named_variables</i>
+# <i>echo -n 0 &gt; boot_osflags</i>
+# <i>echo -n '' &gt; boot_file</i>
+# <i>echo -n 'BOOT' &gt; auto_action</i>
+# <i>echo -n 'dkc100' &gt; bootdef_dev</i>
+<comment>(را با هر آنچه اسباب ریشه شما واقعا هست، تغییر دهید dkc100 مقدار)</comment>
+</pre>
+
+<p> 
+اگر نیاز داشتید تا در آینده مجددا به کنسول SRM وارد شوید (برای ترمیم 
+جنتویتان ، اجرای برخی متغییرها یا هر چیز دیگر)، فقط دگمه
+کنترل+C را فشار دهید تا پردازش لود شدن خودکار را متوقف نمایید.
+</p>
+
+<p>
+اگر در حال نصب مجدد با استفاده از سریال کنسول هستید، فراموش ننمایید که پرچمک های 
+راه‌انداز سریال کنسول را در <path>aboot.conf</path> وارد نمایید. برای
+اطلاعات بیشتر <path>/etc/aboot.conf.example</path> را ببینید.
+</p>
+
+<p>
+aboot اکنون پیکربندی شده و برای استفاده آماده است. با بخش 
+<uri link="#reboot">راه‌اندازی‌نمودن دوباره دستگاه</uri> ادامه دهید.
+</p>
+
+</body>
+</section>
+<section id="milo">
+<title>جایگزین: استفاده از MILO</title>
+<body>
+
+<p>
+قبل از ادامه باید تصمیم بگیرید که چگونه از MILO استفاده نمایید. در این
+بخش، ما فرض بر این می گذاریم که شما می خواهید از فلاپی راه انداز MILO استفاده نمایید. اگر شما
+در حال راه اندازی از یک پارتیشن MS-DOS بروی دیسک سختتان هستید، باید
+دستورات را بطور مورد نیاز اصلاح نمایید.
+</p>
+
+<p>
+برای نصب میلو، ما از <c>emerge</c> استفاده می نماییم.
+
+</p>
+
+<pre caption="Installing MILO">
+# <i>emerge milo</i>
+</pre>
+
+<p>
+بعد از اینکه MILO نصب گردید، تصویر MILO باید در
+
+<path>/opt/milo</path> باشد. دستورات زیر یک فلاپی راه‌انداز برای استفاده 
+با MILO ایجاد می نمایند. بخاطر داشته باشید از تصویر درست برای دستگاه آلفای خودتان استفاده نمایید.
+</p>
+
+<pre caption="Installing MILO on a floppy">
+<comment>(ابتدا یک فلاپی خام وارد نمایید)</comment>
+# <i>fdformat /dev/fd0</i>
+# <i>mformat a:</i>
+# <i>mcopy /opt/milo/milo-2.4-18-gentoo-ruffian a:\milo</i>
+# <i>mcopy /opt/milo/linload.exe a:\linload.exe</i>
+<comment>(و فقط اگر یک روفین دارید:</comment>     
+  # <i>mcopy /opt/milo/ldmilo.exe a:\ldmilo.exe</i>
+<comment>)</comment>
+# <i>echo -ne '\125\252' | dd of=/dev/fd0 bs=1 seek=510 count=2</i>
+</pre>
+
+<p>
+فلاپی راه‌انداز MILO اکنون آماده است و جنتو را راه اندازی می نماید. ممکن است نیاز داشته باشید
+متغییرهای محیطی در فیرم‌ور ARCS خوتان را برای آغاز بکار MILO تنظیم نمایید،
+همه آن در  
+<uri
+link="http://tldp.org/HOWTO/MILO-HOWTO/">MILO-چگونگی</uri>
+به همراه مقداری نمونه بروی دستگاه های رایج، و نمونه‌هائی از دستورهائی که در حالت فعل و انفعالی استفاده می شوند، شرح داده شده است.
+</p>
+
+<p>
+نخواندن <uri link="http://tldp.org/HOWTO/MILO-HOWTO/">MILO-چگونگی</uri> 
+ایده <e>بدی</e> است.
+</p>
+
+<p>
+اکنون با <uri link="#reboot">ریبوت نمودن دستگاه</uri> ادامه دهید.
+</p>
+
+</body>
+</section>
+<section id="reboot">
+<title>ریبوت نمودن دستگاه</title>
+<subsection>
+<body>
+
+<p>
+ از محیط chroot خارج شوید و همه پارتیشن های مانت شده را آن مانت نمایید.
+و اکنون آن دستور جادوئی که منتظر آن بودید: <c>reboot</c>.
+</p>
+
+<pre caption="Exiting the chroot, unmounting all partitions and rebooting">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount -l /mnt/gentoo/dev{/shm,/pts,}</i>
+cdimage ~# <i>umount -l /mnt/gentoo{/boot,/proc,}</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<p>
+البته فراموش ننمایید که لوح فشرده راه اندازی را خارج نمایید، در غیر اینصورت لوح فشرده
+دوباره بجای دستگاه جنتوی شما راه‌اندازی خواهد شد.
+</p>
+
+<p>
+با راه اندازی مجدد دستگاه با <uri
+link="?part=1&amp;chap=11">بپایان رساندن نصب جنتوی شما</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+</section>
+
+</sections>

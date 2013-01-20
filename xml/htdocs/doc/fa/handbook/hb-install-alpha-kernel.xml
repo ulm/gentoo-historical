@@ -1,0 +1,283 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-alpha-kernel.xml,v 1.1 2013/01/20 16:56:25 swift Exp $ -->
+
+<sections>
+
+<version>14</version>
+<date>2012-09-11</date>
+
+<section>
+<title>منطقه زمانی</title>
+<body>
+
+<p>
+ابتدا لازم است تا منطقه زمانی خودتان را انتخاب نمایید تا دستگاه شما دریابد در چه موقعیتی قرار دارد. به منطقه های زمانی در /usr/share/zoneinfo نگاه بیاندازید و سپس آنرا در /etc/localtime رونوشت نمایید. لطفا از منطقه زمانی به شکل /usr/share/zoneinfo/Etc/GMT* دوری نمایید چون به عنوان یک نام، منطقه قابل توقعی را نشان نمی دهد. برای مثال GMT-8 درواقع GMT+8 است. 
+</p>
+
+<pre caption="Setting the timezone information">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Suppose you want to use Europe/Brussels)</comment>
+# <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
+<comment>(Next set the timezone)</comment>
+# <i>echo "Europe/Brussels" &gt; /etc/timezone</i>
+</pre>
+
+</body>
+</section>
+<section>
+<title>نصب کردن کدهای منبع</title>
+<subsection>
+<title>انتخاب یک کرنل</title>
+<body>
+
+<p>
+هسته ائی که همه توزیع ها بدور آن ساخته می شوند، کرنل لینوکس است. این لایه ائیست بین برنامه های کاربر و سخت افزار دستگاه شما. جنتو برای کاربرانش چندین کدمنبع کرنل ممکن فراهم آورده است. یک فهرست کامل بهمراه توضیحات آنها در آدرس  <uri link="/doc/en/gentoo-kernel.xml">راهنمای کرنل جنتو</uri> موجود است.  
+</p>
+
+<p>
+برای دستگاه های مبتنی بر Alpha ما <c>gentoo-sources</c> را داریم (کدمنبع کرنل ۲.۶ پیش فرض). 
+</p>
+
+<pre caption="Installing a kernel source">
+# <i>emerge gentoo-sources</i>
+</pre>
+
+<p>
+هنگامیکه نگاهی به <path>/usr/src</path> بیاندازید باید میانبری بنام <path>linux</path> به کدمنبع کرنل خودتان ببینید. در این مورد، <c>gentoo-sources-<keyval id="kernel-version"/></c> است. نسخه شما ممکن است متفاوت باشد، پس این را بخاطر داشته باشید. 
+</p>
+
+<pre caption="Viewing the kernel source symlink">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+<p>
+اکنون زمان آن است که کد منبع کرنل خود را پیکربندی و کامپایل نمایید. برای اینکار می توانید از <c>genkernel</c> استفاده نمایید، که کرنل عمومی مانند آنکه توسط لوح فشرده نصب استفاده می شود، خواهد ساخت. ما ابتدا پیکربندی " دستی " را به خاطر اینکه بهترین راه برای بهینه سازی محیط شما است، شرح می دهیم. 
+</p>
+
+<p>
+اگر می خواهید کرنل خودتان را بطور دستی پیکربندی نمایید، با <uri link="#manual">پیش فرض: پیکربندی دستی</uri> ادامه دهید. اگر می خواهید از genkernel استفاده نمایید، باید <uri link="#genkernel">جایگزین: استفاده از genkernel</uri> را بجای آن بخوانید. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>پیش فرض: پیکربندی دستی</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+پیکربندی دستی یک کرنل اغلب به عنوان سخت ترین کاری که یک کاربر لینوکس در تمام مدت انجام می دهد دیده می شود. این چیزی بیشتر از واقعیت است -- بعد از پیکربندی یک مشت از کرنل ها شما اصلا بخاطر نخواهید آورد که اینکار زمانی مشکل بوده ;) 
+</p>
+
+<p>
+هرچند، یک چیز <e>درست</e> است : شما باید هنگامیکه شروع به پیکربندی دستی یک کرنل می نمایید دستگاهتان را بخوبی بشناسید. غالب اطلاعات می توانند به کمک emergingemerge pciutils ( <c>emerge pciutils</c> ) گردآوری شوند که شامل <c>lspci</c> نیز می شود. شما اکنون قادرید درون محیط chroot شده از <c>lspci</c> استفاده نمایید. ممکن است بطور ایمنی هر اخطار <e>pcilib</e> را نادیده بگیرید (شبیه <c>pcilib: cannot open  /sys/bus/pci/devices</c> ) که lspci به بیرون می دهد. بطور جایگزین می توانید lspci را از یک محیط <e>non-chrooted</e> اجرا نمایید. نتیجه مشابه است. همچنین می توانید <c>lsmod</c> را برای اینکه ببینید لوح فشرده نصب از چه ماژول هائی استفاده نموده اجرا نمایید (اینکار ممکن است شما را به شکل زیبائی آگاه نماید که چه چیز را باید فعال نمایید). 
+</p>
+
+<p>
+اکنون به دایرکتوری کدمنبع کرنل خودتان بروید و <c>make menuconfig</c> را اجرا نمایید. این دستور یک فهرست انتخاب پیکربندی نیمه راهنمائی کننده را روشن خواهد نمود. 
+</p>
+
+<pre caption="Invoking menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+شما با چندین بخش پیکربندی ملاقات خواهید نمود. ما ابتدا برخی انتخاب ها را که شما باید فعال نمایید (در غیر اینصورت جنتو کارنخواهد نمود و یا بدون اضافات پیچیده بخوبی کار نخواهد نمود) را فهرست خواهیم نمود. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>فعال نمودن انتخاب های مورد نیاز</title>
+<body>
+
+<p>
+ابتدا به <c>File Systems</c> بروید و مطمئن شوید فایل سیستمی که استفاده می نمایید، به عنوان یک ماژول کامپایل <e>نخواهد</e> شد. در غیر اینصورت دستگاه جنتوی شما قادر به مانت نمودن پارتیشن های شما نخواهد بود. همچنین <c>Virtual memory</c> و <c>/proc file system</c> را نیز انتخاب نمایید.
+</p>
+
+<pre caption="Selecting necessary file systems">
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>(Select one or more of the following options as needed by your system)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<p>
+اگر برای ارتباط به اینترنت از PPPoE استفاده می نمایید یا در حال استفاده از یک مودم دیال آپ هستید، نیاز دارید که انتخاب های زیر را در کرنل پیگیری نمایید: 
+</p>
+
+<pre caption="Selecting PPPoE necessary drivers">
+Device Drivers ---&gt;
+  Network device support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+دو انتخاب فشرده شده به هم آسیبی نمی زنند اما ضرورتی هم ندارند، هنگامیگه کرنل را پیکربندی می نمایید تا در حالت PPPoE باشد، انتخاب <c>PPP over Ethernet</c> که ممکن است فقط بوسیله <c>ppp</c> استفاده شوند، هیچ کاری انجام نمی دهند.
+</p>
+
+<p>
+اگر به آن نیاز داشتید، فراموش ننمایید که پشتیبانی کرنل از کارت ethernet خودتان را هم وارد نمایید. 
+</p>
+
+<p>
+انتخاب های زیر هم با تاکید پیشنهاد می شوند:
+</p>
+
+<pre caption="Recommended Alpha options">
+General setup ---&gt;
+  &lt;*&gt; SRM environment through procfs
+  &lt;*&gt; Configure uac policy via sysctl
+
+Plug and Play configuration ---&gt;
+  &lt;*&gt; Plug and Play support
+  &lt;M&gt;   ISA Plug and Play support
+
+SCSI support ---&gt;
+  SCSI low-level drivers ---&gt;
+    &lt;*&gt; SYM53C8XX Version 2 SCSI support (NEW)
+    &lt;*&gt; Qlogic ISP SCSI support
+
+Network device support ---&gt;
+  Ethernet (10 or 100 Mbit) ---&gt;
+    &lt;M&gt; DECchip Tulip (dc21x4x) PCI support
+    &lt;M&gt; Generic DECchip &amp; DIGITAL EtherWORKS PCI/EISA
+    &lt;M&gt; EtherExpressPro/100 support (eepro100)
+    &lt;M&gt; EtherExpressPro/100 support (e100)
+  Ethernet (1000 Mbit) ---&gt;
+    &lt;M&gt; Alteon AceNIC
+      [*] Omit support for old Tigon I
+    &lt;M&gt; Broadcom Tigon3
+  [*] FDDI driver support
+  &lt;M&gt; Digital DEFEA and DEFPA
+  &lt;*&gt; PPP support
+    &lt;*&gt; PPP Deflate compression
+
+Character devices ---&gt;
+  [*] Support for console on serial port
+  [*] Direct Rendering Manager
+
+File systems ---&gt;
+  &lt;*&gt; Kernel automounter version 4 support
+  Network File Systems ---&gt;
+    &lt;*&gt; NFS
+      [*] NFSv3 client
+      &lt;*&gt; NFS server
+      [*] NFSv3 server
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+    [*] Alpha OSF partition support
+  Native Language Support
+    &lt;*&gt; NLS ISO 8859-1
+
+Sound ---&gt;
+  &lt;M&gt; Sound card support
+    &lt;M&gt; OSS sound modules
+      [*] Verbose initialisation
+      [*] Persistent DMA buffers
+      &lt;M&gt; 100% Sound Blaster compatibles
+</pre>
+
+<p>
+هنگامیکه در حال بپایان بردن پیکربندی کرنل هستید، با <uri link="#compiling">کامپایل کردن و نصب کردن</uri> ادامه دهید. 
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>کامپایل کردن و نصب کردن</title>
+<body>
+
+<p>
+اکنون که کرنل شما پیکربندی شد، زمان کامپایل کردن و نصب کردن آن رسیده. از پیکربندی خارج شوید و روند کامپایل کردن را آغاز نمایید: 
+</p>
+
+<pre caption="Compiling the kernel">
+# <i>make &amp;&amp; make modules_install</i>
+# <i>make boot</i>
+</pre>
+
+<p>
+هنگامیکه کامپایل شدن کرنل بپایان رسید، تصویر کرنل را به <path>/boot</path> رونوشت نمایید. کرنل جدید ممکن است بجای <path>vmlinux.gz</path> دست به ایجاد <path>vmlinux</path> بزند. این را هنگامی که تصویر کرنل خودتان را رونوشت برداری می نمایید، بخاطر داشته باشید.
+</p>
+
+<pre caption="Installing the kernel">
+# <i>cp arch/alpha/boot/vmlinux.gz /boot/</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<include href="hb-install-initramfs.xml"/>
+</subsection>
+
+</section>
+<section id="genkernel">
+<title>جایگزین: استفاده کردن از genkernel</title>
+<body>
+
+<p>
+اگر در حال خواندن این بخش هستید، انتخاب کرده اید که از کد <c>genkernel</c> ما برای پیکربندی کرنلتان استفاده نمایید. 
+</p>
+
+<p>
+اکنون که شاخه کد منبع کرنل تان نصب گردیده، زمان آن است که کرنلتان را با استفاده از کد <c>genkernel</c> کامپایل نمایید تا بطور خودکار یک کرنل برایتان بسازد. <c>genkernel</c> بصورت پیکربندی نمودن یک کرنل تقریبا مشابه با آنچنان که کرنل لوح فشرده نصب ما پیکربندی گردیده، کار می نماید. این به آن معنی است که هنگامیکه شما از <c>genkernel</c> برای پیکربندی کرنلتان استفاده می نمایید، دستگاه شما عموما همه سخت افزار شما را در زمان راه اندازی، مشابه آنچه لوح فشرده نصب ما انجام می دهد، راه اندازی می نماید. به دلیل اینکه genkernel نیاز به هیچ پیکربندی دستی کرنلی ندارد، ایده راه حلی برای کاربرانی است که ممکن است با کامپایل کردن کرنل خودشان راحت نباشند. 
+</p>
+
+<p>
+اکنون اجازه دهید تا ببینیم genkernel چگونه کار می کند. ابتدا، ائی بویلد genkernel را emerge نمایید:
+</p>
+
+<pre caption="Emerging genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+اکنون کدمنبع کرنل خود را با اجرای دستور <c>genkernel all</c> کامپایل نمایید. مدنظر داشته باشید که <c>genkernel</c> یک کرنل که تقریبا از همه سخت افزارها پشتیبانی می نماید، کامپایل می کند، چنین کامپایل کردنی مقداری زمان می برد تا به پایان برسد.
+</p>
+
+<p>
+توجه داشته باشید که اگر پارتیشن راه انداز شما از فایل سیستم های ext2 یا ext3 استفاده نمی کند ممکن است لازم باشد تا کرنلتان را با استفاده از <c>genkernel --menuconfig all</c> بطور دستی پیکربندی نمایید و پشتیبانی برای فایل سیستمی تان را <e>در</e> کرنل فعال نمایید( مثلا <e>نه</e> به عنوان یک ماژول).
+</p>
+
+<pre caption="Running genkernel">
+# <i>genkernel all</i>
+</pre>
+
+<p>
+بمجرد اینکه <c>genkernel</c> بپایان رسید، مجموعه کاملی از ماژول ها و <e>initial ram disk</e> یا (initramfs)ایجاد خواهند گردید. ما از کرنل و initrd هنگامیکه یک راه انداز دستگاه بعدا در همین مستند پیکربندی می نماییم، استفاده خواهیم نمود. نام کرنل و initrd را از آنجا که در هنگام پیکربندی فایل راه انداز نیاز خواهید داشت آنها را بنویسید، یادداشت نمایید. فایل initrd بعد از راه اندازی برای انجام اتصال خودکار سخت افزار (شبیه آنچه در لوح فشرده نصب انجام می شود) قبل از اینکه دستگاه واقعی شما آغاز بکار نماید، فورا شروع بکار می نماید. 
+</p>
+
+<pre caption="Checking the created kernel image name and initrd">
+# <i>ls /boot/kernel* /boot/initramfs-*</i>
+</pre>
+
+</body>
+</section>
+<section id="kernel_modules">
+<title>ماژول های کرنل</title>
+
+<subsection>
+<include href="hb-install-kernelmodules.xml"/>
+</subsection>
+
+</section>
+</sections>
