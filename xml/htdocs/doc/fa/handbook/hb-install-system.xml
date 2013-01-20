@@ -1,0 +1,272 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-system.xml,v 1.1 2013/01/20 17:18:56 swift Exp $ -->
+
+<sections>
+
+<abstract>
+پس از نصب کردن و پیکربندی یک طبقه۳، نتیجه احتمالی آنستکه شما مبانی دستگاه جنتو را در دسترس دارید. این فصل تشریح می کند که چگونه به آن مرحله برسید. 
+</abstract>
+
+<version>17</version>
+<date>2012-07-24</date>
+
+<section>
+<title>Chrooting</title>
+<subsection>
+<title>انتخابی: انتخاب کردن میرورها</title>
+<body>
+
+<p>
+برای درخواست پایین گذاری سریع کد منبع پیشنهاد می شود که یک میرور با سرعت انتخاب نمایید. پرتیج بدنبال متغییر GENTOO_MIRRORS به فایل <path>make.conf</path> شما نگاه خواهد نمود و از میرورهای فهرست شده در آن استفاده خواهد نمود. می توانید به کنکاش در <uri link="/main/en/mirrors.xml">فهرست میرور</uri> بپردازید و بدنبال یک یا چند میرور نزدیک به خودتان (و آنکه از همه سرعت بیشتری دارد)، بگردید، اما ما هم یک ابزار مفید که به آن <c>mirrorselect</c> گفته می شود تهیه نموده ایم که شما را با یک رابط کاربری زیبا برای انتخاب میرورهائی که می خواهید مهیا می نماید. فقط در میان میرورها بالا و پایین نمایید و انتخاب نمایید و برای انتخاب یکی یا بیشتر از آنها دگمه اسپیس بار را فشار دهید. 
+</p>
+  
+<pre caption="Using mirrorselect for the GENTOO_MIRRORS variable">
+# <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/portage/make.conf</i>
+</pre>
+
+<p>
+دومین تنظیمات مهم در <path>make.conf</path> تنظیمات SYNC است.این متغییر شامل سرورهای rsync است که در هنگامیکه می خواهید شاخه پرتیج (مجموعه ائی از ebuild ها، کدک هائی که حاوی همه اطلاعاتی که پرتیج برای پایین گذاری و نصب نرم افزارها لازم دارد) را بروز رسانی نمایید استفاده می شود. هرچند می توانید SYNC سرورها را بطور دستی برای خودتان وارد نمایید، <c>mirrorselect</c> می تواند آنرا براحتی برای شما اداره نماید: 
+</p>
+
+<pre caption="Selecting an rsync mirror using mirrorselect">
+# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/portage/make.conf</i>
+</pre>
+
+<p>
+پس از اجرا نمودن <c>mirrorselect</c> عاقلانه است که مجددا تنظیمات خودتان را در <path>/mnt/gentoo/etc/portage/make.conf</path> بررسی نمایید! 
+</p>
+
+<note>
+اگر می خواهید سرورهای SYNC را بطور دستی در <path>make.conf</path> تنظیم نمایید باید برای پیدا نمودن نزدیک ترین میرور به خودتان <uri link="/main/en/mirrors-rsync.xml">فهرست میرورهای مجتمع</uri> را بررسی نمایید. ما پیشنهاد می نماییم یک <e>rotation</e> مانند <c>rsync.us.gentoo.org</c> انتخاب نمایید، علاوه بر آن یک میرور منفرد نیز انتخاب نمایید. اینکار کمک می نماید که یک فایل ایمن در مواقعی که یک میرور خاص برخط نیست لود و فراهم نمایید. 
+</note>
+
+</body>
+</subsection>
+<subsection>
+<title>نسخه برداری اطلاعات DNS</title>
+<body>
+
+<p>
+قبل از اینکه وارد محیط جدید شویم، یک چیز هنوز باقی مانده که باید انجام شود و آن نسخه برداری از روی اطلاعات DNS موجود در <path>/etc/resolv.conf</path> است.باید اینکار را انجام دهید تا مطمئن شوید شبکه شما بعد از ورود به محیط جدید هنوز کار می کند. فایل <path>/etc/resolv.conf</path> حاوی nameserver های شبکه شماست. 
+</p>
+
+<pre caption="Copy over DNS information">
+<comment>(The "-L" option is needed to make sure we don't copy a symbolic link)</comment>
+# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/</i>
+</pre>
+
+</body>
+</subsection>
+<subsection test="not(func:keyval('arch')='IA64')">
+<title>مانت کردن فایل سیستم های ضروری</title>
+<body>
+
+<p>
+در چند لحظه آینده ما ریشه لینوکس را به محیط جدید تغییر می دهیم. برای اینکه مطمئن شویم که محیط جدید بخوبی کار می نماید، نیاز داریم تا فایل های سیستمی را در آنجا بخوبی در اختیار داشته باشیم. 
+</p>
+
+<p>
+فایل سیستم <path>/proc</path> را بروی <path>/mnt/gentoo/proc</path> مانت می نماییم تا به عملیات نصب امکان دهیم تا از اطلاعات فراهم شده-کرنل درون محیط chroot استفاده نماید، و بعد از آن فایل سیستم های <path>/dev</path> و <path>/sys</path> را بطور bind-مانت می نماییم. 
+</p>
+
+<pre caption="Mounting /proc and /dev">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
+</pre>
+
+</body>
+</subsection>
+<subsection test="func:keyval('arch')='IA64'">
+<title>مانت کردن فایل سیستم های /proc, /sys و /dev </title>
+<body>
+
+<p>
+فایل سیستم <path>/proc</path> را بروی <path>/mnt/gentoo/proc</path> مانت می نماییم تا به عملیات نصب امکان دهیم تا از اطلاعات فراهم شده-کرنل درون محیط chroot استفاده نماید، و بعد از آن فایل سیستم های <path>/dev</path> و <path>/sys</path> را بطور bind-مانت می نماییم. 
+</p>
+
+<pre caption="Mounting /proc /sys and /dev">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>وارد شدن به محیط جدید</title>
+<body>
+
+<p>
+اکنون که همه پارتیشن ها ارزشگذاری آغازین شده اند و مبانی محیط نصب گردیده، زمان آن است تا با استفاده از <e>chrooting</e> وارد محیط جدیدمان شویم. این به آن معنی است که ما از محیط نصب قطعی (لوح فشرده نصب یا دیگر رسانه های نصب) به سیستم نصب شده شما (به معنی پارتیشن هائی که ارزش آغازین داده شده اند) تغییر موضع می دهیم. 
+</p>
+
+<p>
+این chroot نمودن در طی سه مرحله انجام می پذیرد. ابتدا ما ریشه را از <path>/</path> (بروی رسانه نصب) به <path>/mnt/gentoo</path> (بروی پارتیشن) با استفاده از <c>chroot</c> تغییر می دهیم. پس از آن با استفاده از <c>env-update</c> محیط جدیدی ایجاد می نماییم که ضرورتا متغییرهای محیط را ایجاد می نماید. سر انجام، ما آن متغییرها را با استفاده از <c>source</c> در داخل حافظه لود می نماییم. 
+</p>
+
+<pre caption = "Chrooting into the new environment">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+>> Regenerating /etc/ld.so.cache...
+# <i>source /etc/profile</i>
+# <i>export PS1="(chroot) $PS1"</i>
+</pre>
+
+<p>
+تبریک می گوییم! شما اکنون داخل محیط لینوکس جنتوی خودتان هستید. البته هنوز راه درازی تا پایان وجود دارد، که دلیل این است که چرا هنوز مراحل دیگری از عملیات نصب باقی مانده :-) 
+</p>
+
+<p>
+اگر هر زمان نیاز به ترمینال یا کنسول دیگری برای دسترسی به محیط chroot شده داشتید، همه آنچه نیاز به انجام آن دارید، اجرا نمودن مجدد مراحل بالا است. 
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>پیکربندی کردن پرتیج</title>
+<subsection>
+<title>بروزرسانی کردن شاخه پرتیج</title>
+<body>
+
+<p>
+اکنون باید شاخه پرتیج خودتان را به آخرین نسخه بروزرسانی نمایید. دستور <c>emerge  --sync</c> اینکار را برای شما انجام می دهد.
+</p>
+
+<pre caption="Updating the Portage tree">
+# <i>emerge --sync</i>
+<comment>(If you're using a slow terminal like some framebuffers or a serial
+console, you can add the --quiet option to speed up this process:)</comment>
+# <i>emerge --sync --quiet</i>
+</pre>
+
+<p>
+اگر در پشت دیوار آتشی که تردد rsync را مسدود می نماید هستید، می توانید از <c>emerge-webrsync</c> استفاده نمایید که یک تصویرفوری پرتیج را برای شما پایین گذاری و نصب می نماید. 
+</p>
+
+<p>
+اگر به شما هشدار داده شد که نسخه جدید از پرتیج ایجاد شده و شما باید پرتیج خود را بروزرسانی نمایید، اکنون باید با استفاده از <c>emerge --oneshot portage</c> اینکار را انجام دهید. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>انتخاب کردن پروفایل درست</title>
+<body>
+
+<p>
+ابتدا جای یک تعریف کوچک وجود دارد. 
+</p>
+
+<p>
+یک پروفایل یک بلوک قابل ساخت برای هر دستگاه جنتوئی است. نه فقط مقدارهای از پیش تعریف شده ائی را به متغییرهای USE و CFLAGS و دیگر متغییرهای مهم اضافه می نماید، بلکه سیستم را هم در طیف محرزی ار نسخه های بسته ها قفل می نماید. همه این‌ها بوسیله گسترش‌دهندگان جنتو نگهداری می شوند.
+</p>
+
+<p>
+پیشتر، چنین پروفایلی برای کاربر قابل دسترس نبود. هرچند، ممکن است موقعیتی خاص وجود داشته باشد که در آن تصمیم یگیرید عوض نمودن یک پروفایل امری ضروری است. 
+</p>
+
+<p>
+با دستور زیر می توانید ببینید در حال استفاده از کدام پروفایل هستید:
+</p>
+
+<pre caption="Verifying system profile">
+# <i>eselect profile list</i>
+Available profile symlink targets:
+  [1]   <keyval id="profile"/> *
+  [2]   <keyval id="profile"/>/desktop
+  [3]   <keyval id="profile"/>/server
+</pre>
+
+<p>
+چنانکه می بینید، برای برخی معماری ها زیرپروفایل های <c>desktop</c> و <c>server</c> آماده هستند. اجرای دستور <c>eselect profile list</c> همه پروفایل های آماده را نمایش می دهد. 
+</p>
+
+<p>
+پس از آنکه همه پروفایل های موجود برای معماریتان را مشاهده نمودید، می توانید در صورت تمایل از یکی دیگر استفاده نمایید: 
+</p>
+
+<pre caption="Changing profiles">
+# <i>eselect profile set 2</i>
+</pre>
+
+<p test="func:keyval('arch')='AMD64'">
+اگر می خواهید یک محیط ۶۴ بیتی خالص داشته باشید، بدون هیچ برنامه ۳۲ بیتی یا کتابخانه هایش، باید از یک پروفایل non-multilib استفاده نمایید:
+</p>
+
+<pre test="func:keyval('arch')='AMD64'" caption="Switching to a non-multilib profile">
+# <i>eselect profile list</i>
+Available profile symlink targets:
+  [1]   <keyval id="profile"/> *
+  [2]   <keyval id="profile"/>/desktop
+  [3]   <keyval id="profile"/>/no-multilib
+  [4]   <keyval id="profile"/>/server
+<comment>(Choose the no-multilib profile)</comment>
+# <i>eselect profile set 3</i>
+<comment>(Verify the change)</comment>
+# <i>eselect profile list</i>
+Available profile symlink targets:
+  [1]   <keyval id="profile"/>
+  [2]   <keyval id="profile"/>/desktop
+  [3]   <keyval id="profile"/>/no-multilib *
+  [4]   <keyval id="profile"/>/server
+</pre>
+
+<note>
+زیر پروفایل <c>developer</c> مخصوص انجام کارهای گسترش دهندگان لینوکس جنتو است. این به آن معنی <e>نیست</e> که برای دریافت کمک محیط های گسترش عمومی را تنظیم نمایید. 
+</note>
+
+</body>
+</subsection>
+<subsection id="configure_USE">
+<title>پیکربندی متغییر USE</title>
+<body>
+
+<p>
+متغییر <c>USE</c> یکی از قوی ترین متغییرهائی است که جنتو برای کاربران خود فراهم آورده. برنامه های مختلف می توانند با یا بدون پشتیبانی انتخابی برای اقلام قطعی کامپایل شوند. برای مثال، برخی برنامه ها می توانند با پشتیبانی-gtk یا پشتیبانی-qt کامپایل شوند. برخی دیگر می توانند با یا بدون پشتیبانی SSL کامپایل شوند. حتی برخی برنامه ها می توانند با پشتیبانی framebuffer ( svgalib ) بجای پشتیبانی X11 ( X-server ) کامپایل گردند. 
+</p>
+
+<p>
+غالب توزیع ها بی توجه به مقدار عظیم وابستگی های مورد نیاز، بسته های خود را با پشتیبانی از تعداد هرچه بیشتر حالت های مختلف کامپایل می نمایند، که موجب افزایش اندازه برنامه می گردد. به کمک جنتو می توانید دریابید یک بسته با چه انتخاب هائی باید کامپایل گردد. این همان جائیست که <c>USE</c> وارد بازی می شود. 
+</p>
+
+<p>
+در متغییر <c>USE</c> کلمات کلیدی را تعریف می نمایید که نقشه شرایط کامپایل را ترسیم می نمایند. برای مثال، <e>ssl</e> پشتیبانی-ssl را در برنامه هائی که آنرا پشتیبانی می نمایند، کامپایل خواهد نمود. <e>-X</e> پشتیبانی X-server را (به علامت منها در جلوی آن توجه نمایید) حذف خواهد نمود. <e>gnome gtk -kde -qt4</e> برنامه های شما را با پشتیبانی gnome (و gtk) کامپایل خواهد نمود، و بدون پشتیبانی kde (و qt)، که دستگاه شما را مختص استفاده از GNOME خواهد ساخت. 
+</p>
+
+<p>
+تنظیمات پیش فرض <c>USE</c> در فایل های <path>make.defaults</path> در پروفایل شما قرار گرفته اند. می توانید فایل های <path>make.defaults</path> را در دایرکتوری <path>/etc/portage/make.profile</path> که بخوبی در بالای همه دایرکتوری ها قرار گرفته، پیدا نمایید. تنظیمات پیش فرض <c>USE</c> مجموع همه تنظیمات <c>USE</c> در همه فایل های <path>make.defaults</path> است. آنچه در <path>/etc/portage/make.conf</path> قرار می دهید در مقابل این تنظیمات پیش فرض قرار می گیرد. اگر چیزی به تنظیمات <c>USE</c> اضافه نمایید، به فهرست پیش فرض اضافه می گردد. اگر چیزی را در تنظیمات حذف نمایید (با قرار دادن یک منها در مقابل آن)، از فهرست پیش فرض حذف می گردد (البته اگر اصلا در فهرست پیش فرض قرار داشته باشد). <e>هرگز</e> چیزی را در داخل دایرکتوری <path>/etc/portage/make.profile</path> تغییر ندهید; این دایرکتوری هنگامی که پرتیج خود را بروزرسانی می‌نمایید، دوباره‌نویسی می شود! 
+</p>
+
+<p> 
+توضیحات کامل درباره <c>USE</c> را می توان در بخش دوم کتاب راهنمای جنتو در بخش <uri link="?part=2&amp;chap=2">پرچمک‌های USE</uri> پیدا نمود، توضیح کاملی درباره USE های موجود را می توان بروی دستگاهتان در <path>/usr/portage/profiles/use.desc</path> پیدا نمود. 
+</p>
+
+<pre caption="Viewing available USE flags">
+# <i>less /usr/portage/profiles/use.desc</i>
+<comment>(You can scroll using your arrow keys, exit by pressing 'q')</comment>
+</pre>
+
+<p>
+به عنوان یک مثال ما یک تنظیم <c>USE</c> برای یک دستگاه برمبنای-KDE به همراه DVD، ALSA و قابلیت ضبط لوح فشرده را نمایش می دهیم: 
+</p>
+
+<pre caption="Opening /etc/portage/make.conf">
+# <i>nano -w /etc/portage/make.conf</i>
+</pre>
+
+<pre caption="USE setting">
+USE="-gtk -gnome qt4 kde dvd alsa cdr"
+</pre>
+
+</body>
+</subsection>
+</section>
+</sections>
