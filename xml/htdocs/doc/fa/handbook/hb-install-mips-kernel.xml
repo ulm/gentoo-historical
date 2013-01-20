@@ -1,0 +1,259 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-mips-kernel.xml,v 1.1 2013/01/20 17:04:55 swift Exp $ -->
+<sections>
+
+<abstract>
+کرنل لینوکس هسته هر توزیعی است. این فصل توضیح می دهد چگونه کرنل خود را پیکربندی نمایید. 
+</abstract>
+
+<version>11</version>
+<date>2012-02-22</date>
+
+<section>
+<title>منطقه زمانی</title>
+<body>
+
+<p>
+ابتدا لازم است تا منطقه زمانی خودتان را انتخاب نمایید تا دستگاه شما دریابد در چه موقعیتی قرار دارد. به منطقه های زمانی در <path>/usr/share/zoneinfo</path> نگاه بیاندازید و سپس آنرا در <path>/etc/localtime</path> رونوشت نمایید. لطفا از منطقه زمانی به شکل <path>/usr/share/zoneinfo/Etc/GMT*</path> دوری نمایید چون به عنوان یک نام، منطقه قابل توقعی را نشان نمی دهد. برای مثال <path>GMT-8</path> درواقع  GMT+8 است.
+</p>
+
+<pre caption="Setting the timezone information">
+# <i>ls /usr/share/zoneinfo</i>
+<comment>(Suppose you want to use Europe/Brussels)</comment>
+# <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
+<comment>(Next set the timezone)</comment>
+# <i>echo "Europe/Brussels" &gt; /etc/timezone</i>
+</pre>
+
+</body>
+</section>
+
+<section>
+<title>نصب کردن منابع</title>
+<subsection>
+<title>انتخاب یک کرنل</title>
+<body>
+
+<p>
+هسته ائی که همه توزیع ها بدور آن ساخته می شوند، کرنل لینوکس است. این لایه ائیست بین برنامه های کاربر و سخت افزار دستگاه شما. جنتو برای کاربرانش چندین کدمنبع کرنل ممکن فراهم آورده است. یک فهرست کامل بهمراه توضیحات آنها در آدرس  <uri link="/doc/en/gentoo-kernel.xml">راهنمای کرنل جنتو</uri> موجود است.
+</p>
+
+<p>
+دستگاه های بر اساس MIPS فقط یک شاخه کرنل برای انتخاب دارند، <c>mips-sources</c> . این ساختار اصلاح شده با کرنل های موجود برای دیگر معماری ها متفاوت است، که در آن مقدار زیادی از خصوصییت ها برای معماری MIPS اصلاح گردیده اند.
+</p>
+
+<pre caption="Merging kernel sources...">
+# <i>emerge mips-sources</i>
+</pre>
+
+<impo>
+در خاستگاه Origin 200/2000, Indigo2 Impact (R10000), Octane/Octane2 و O2 یک کرنل ۶۴ بیتی برای راه اندازی این دستگاه ها مورد نیاز است. برای این ماشین ها، شما باید <c>emerge kgcc64</c> نمایید تا کامپایلر مناسب برای ساختن کرنل ۶۴ بیتی را ایجاد نمایید.
+</impo>
+
+<pre caption="Installing kgcc64">
+# <i>emerge kgcc64</i>
+</pre>
+
+<p>
+هنگامیکه نگاهی به <path>/usr/src</path> بیاندازید باید میانبری بنام <path>linux</path> به کدمنبع کرنل خودتان ببینید. در این مورد، کدمنبع <c>gentoo-sources-<keyval id="kernel-version"/></c> است. نسخه شما ممکن است متفاوت باشد، پس این را بخاطر داشته باشید.
+</p>
+
+<pre caption="Viewing the kernel source symlink">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+<p>
+اکنون زمان کامپایل کردن و نصب کردن منبع کرنل شما رسیده.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>کرنل کامپایل کردن &amp; نصب نمودن</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+پیشتر، ما به میان پیکربندی دستی چگونگی برپائی منبع کرنل می رفتیم. این کار با تعداد زیاد دستگاه هائی که اکنون پشتیبانی می گردند، غیر ممکن است. این بخش جزئیات پیکربندی های کرنل های متعددی را تشریح می نماید.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>استفاده کردن از پیکربندی های نمونه در منبع کرنل</title>
+<body>
+
+<p>
+بسیاری از دستگاه های مورد پشتیبانی یک <c>.config</c> ساده که در منبع کرنل پنهان گردیده دارند. همه دستگاه ها از این طریق برای پیکربندی استفاده نمی نمایند. آنهائی که می کنند، می توانند از دستورهای ذکر گردیده در جدول زیر برای پیکربندی استفاده نمایند.
+</p>
+
+<table>
+<tr>
+  <th>System</th>
+  <th>Configure command</th>
+</tr>
+<tr>
+  <ti>Cobalt Servers</ti>
+  <ti><c>make cobalt_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indy, Indigo2 (R4k), Challenge S</ti>
+  <ti><c>make ip22_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Origin 200/2000</ti>
+  <ti><c>make ip27_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indigo2 Impact (R10k)</ti>
+  <ti>
+    <c>make ip28_defconfig</c>
+  </ti>
+</tr>
+<tr>
+  <ti>O2</ti>
+  <ti><c>make ip32_defconfig</c></ti>
+</tr>
+</table>
+
+</body>
+</subsection>
+
+<subsection>
+<title>استفاده کردن از اجرای فایل پیکربندی کرنل از رسانه نصب</title>
+<body>
+
+<p>
+همه تصویرهای نصب جنتو یک انتخاب پیکربندی کرنل به عنوان بخشی از تصویر خودشان فراهم می آورند، که در <path>/proc/config.gz</path> مورد تایید قرار می گیرد. این ممکن است در موارد بسیاری مورد استفاده قرار گیرد. بهترین مورد کاربرد هماهنگ نمودن منبع کرنل بسته شده با کرنلی که اکنون در حال اجرا می باشد است. برای از حالت فشرده خارج نمودن آن، بسادگی آنرا با دستور <c>zcat</c> شبیه به آنچه در زیر نشان داده شده اجرا نمایید.
+</p>
+
+<pre caption="Extracting .config from /proc/config.gz">
+# <i>zcat /proc/config.gz > .config</i>
+</pre>
+
+<impo>
+این فایل پیکربندی کرنل برای یک تصویر تحت شبکه راه انداز برپا شده است. که به آن معنی است که توقع دارد یک تصویر فایل سیستم ریشه در هر جائی در اطراف و همچنین یک دایرکتوری برای initramfs پیدا نماید، یا یک دستگاه برگشت پذیر برای initrd بیابد. هنگامیکه شما <c>make menuconfig</c> را در زیر اجرا می نمایید، فراموش ننمایید که به داخل تنظیمات عمومی بروید و انتخاب های مربوط به initramfs را از کار بیاندازید. 
+</impo>
+
+</body>
+</subsection>
+
+<subsection>
+<title>منبع اطلاعاتی با قابلیت سخت افزار</title>
+<body>
+
+<p>
+به عنوان یک کمک به کاربران برای پیدا نمودن تنظیماتی کخه کار نماید، یک منبع اطلاعاتی با قابلیت سخت افزاری برپا گردیده. این منبع اطلاعاتی فهرست همه دستگاه های MIPS تحت پشتیبانی گوناگون را در خود دارد، و به کاربران امکان به اشتراک گذاری پیکربندی های کرنل هایشان را که به عنوان پیکربندی هائی که کار می کنند شناخته شده اند را می دهد. آدرس این پایگاه اینترنتی <uri>http://stuartl.longlandclan.hopto.org/gentoo/mips</uri> است.
+</p>
+
+<p>
+اگر این خدمات را مفید یافتید، از به اشتراک گذاری مطالب و فایل پیکربندی تان که می تواند دیگران را از تجربه های شما مطلع نماید، استقبال می شود. هرچند این نکته هم باید ذکر شود که هیچ تضمینی برای کارکردن همه پیکربندی هائی که از این پایگاه پایین گذاری می شوند هم وجود ندارد.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>بهینه سازی پیکربندی مطابق با نیازهای شما</title>
+<body>
+
+<p>
+به مجرد آنکه شما یک پیکربندی یافتید، آنرا به دایرکتوری منبع کرنل خود پایین گذاری نمایید، و آنرا به <path>.config</path> تغییر نام دهید. در آنجا، می توانید دستور  را اجرا نمایید تا همه چیز را بروز نگاه دارید، و به شما این امکان را می دهد تا پیکربندی را قبل از کامپایل بهینه سازی نمایید.
+</p>
+
+<pre caption="Configuring the kernel">
+# <i>cd /usr/src/linux</i>
+# <i>cp /path/to/example-config .config</i>
+# <i>make oldconfig</i>
+<comment>(Just press ENTER at each prompt to accept the defaults... we'll customise later)</comment>
+# <i>make menuconfig</i>
+</pre>
+
+<impo>
+در بخش هک کردن کرنل، انتخابی به نام <c>"Are You Using A Cross Compiler?"</c> وجود دارد. این به کرنل می گوید <c>mips-linux-</c> را (یا <c>mipsel-linux</c> یا هر چیز دیگری را) در دستورهای <c>gcc</c>  و <c>as</c> هنگام کامپایل نمودن کرنل در نظر بگیرد. بطور خاص اگر پیشوند مورد استفاده در متغییر <c>CROSS_COMPILE</c> مطابق آنچه در زیر نشان داده می شود باشد و اگر از کروز کامپایل می نمایید این باید خاموش باشد.
+</impo>
+
+<impo>
+یک نتیجه شناخته شده با JFS و ALSA در دستگاه های اکتان وجود دارد که در آن ALSA کار نمی کند. نتیجه تجربی که JFS در MIPS می دهد، پیشنهاد می نماید که مردم از استفاده از JFS برای صرفه جوئی در وقت پرهیز نمایند.
+</impo>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>کامپایل کردن و نصب نمودن</title>
+<body>
+
+<p>
+اکنون که کرنل شما پیکربندی شد، زمان کامپایل کردن و نصب کردن آن رسیده. از پیکربندی خارج شوید و روند کامپایل کردن را آغاز نمایید:
+</p>
+
+<note>
+On 64-bit machines, you need to specify
+<c>CROSS_COMPILE=mips64-unknown-linux-gnu-</c> (or <c>mips64el-...</c> if on a
+little-endian system) to use the 64-bit compiler.
+</note>
+
+<pre caption="Compiling the kernel">
+<comment>(Compiling natively)</comment>
+# <i>make vmlinux modules modules_install</i>
+
+<comment>(Cross-compiling on target machine)</comment>
+<comment>(Adjust the mips64-unknown-linux-gnu- accordingly)</comment>
+# <i>make vmlinux modules modules_install CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+
+<comment>(When compiling on another machine, such as an x86 box, use the)</comment>
+<comment>(following commands to compile the kernel &amp; install modules into)</comment>
+<comment>(a specific directory to be transferred to the target machine.)</comment>
+# <i>make vmlinux modules CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+# <i>make modules_install INSTALL_MOD_PATH=/somewhere</i>
+</pre>
+
+<impo>
+When compiling a 64-bit kernel for the Indy, Indigo2 (R4k), Challenge S and O2,
+use the <c>vmlinux.32</c> target instead of <c>vmlinux</c>. Otherwise, your
+machine will not be able to boot. This is to work around the PROM not
+understanding the ELF64 format.
+</impo>
+
+<pre caption="Using the vmlinux.32 target">
+# <i>make vmlinux.32</i>
+<comment>(This will create vmlinux.32 -- which is your final kernel)</comment>
+</pre>
+
+<p>
+When the kernel has finished compiling, copy the kernel image to
+<path>/boot</path>. 
+</p>
+
+<note>
+On Cobalt servers, the bootloader will expect to see a compressed kernel image.
+Remember to <c>gzip -9</c> the file once it is in <path>/boot</path>.
+</note>
+
+<pre caption="Installing the kernel">
+# <i>cp vmlinux /boot/kernel-<keyval id="kernel-version"/></i>
+
+<comment>(Cobalt Servers -- Compressing the kernel image)</comment>
+# <i>gzip -9v /boot/kernel-<keyval id="kernel-version"/></i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section id="kernel_modules">
+<title>ماژول های کرنل</title>
+
+<subsection>
+<include href="hb-install-kernelmodules.xml"/>
+</subsection>
+
+</section>
+</sections>

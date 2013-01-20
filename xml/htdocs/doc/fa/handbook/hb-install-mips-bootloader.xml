@@ -1,0 +1,507 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-mips-bootloader.xml,v 1.1 2013/01/20 17:04:55 swift Exp $ -->
+
+<sections>
+
+<abstract>
+در هر دوی ماشین های گرافیکی سیلیکون، و سرورهای کوبالت، هر دو نیازمند یک راه انداز برای لود نمودن کرنل هستند. این بخش برپائی  arcboot/arcload را (برای ماشین های SGI) و colo برای  سرورهای کوبالت را پوشش می دهد.
+</abstract>
+
+<version>11</version>
+<date>2011-05-09</date>
+
+<section id="sgi">
+<title>ماشین های گرافیکی سیلیکون -- برپا کردن arcload</title>
+<subsection>
+<title>کدام یک؟</title>
+<body>
+
+<p>
+بروی ماشین های SGI، ما از راه انداز <c>arcload</c> استفاده می نماییم. در نسخه های قبلی، همچنین <c>arcboot</c> را هم فراهم می آوردیم، هرچند بخاطر توجه ما به <c>arcload</c> آن قطعا بطور رسمی از کار افتاه شده.
+</p>
+
+<note>
+نام فایل سربرگ ولوم SGI محدود به ۸ رقم است،  و امکان استفاده بیشتر از ۱۶ فایل از یک سربرگ وجود ندارد.
+</note>
+
+</body>
+</subsection>
+
+<subsection>
+<title>نصب کردن arcload</title>
+<body>
+
+<p>
+راه انداز <c>arcload</c> برای ماشین هائی نوشته شده که نیاز به کرنل ۶۴ بیتی دارند، و بنابر این نمی توانند از <c>arcboot</c> استفاده نمایند (که به سادگی به باینری ۶۴ بیتی کامپایل نمی شود).همچنین آن با ویژگی هائی کار می نماید که در آن کرنل مستقیما از ولوم سربرگ لود شود. بنابر این، اکنون که شما می دانید این درباره چه چیزی است، ما می توانیم به مراحل نصب بپردازیم:
+</p>
+
+<pre caption="Merging arcload and dvhtool">
+# <i>emerge arcload dvhtool</i>
+</pre>
+
+<p>
+Once this has finished, you should find the <c>arcload</c> binary in
+<path>/usr/lib/arcload</path>. Now, two files exist:
+به محض اینکه این بپایان رسید، می توانید باینری <c>arcload</c> را در <path>/usr/lib/arcload</path> بیابید. اکنون دو فایل وجود دارند:
+</p>
+
+<ul>
+  <li>
+    <c>sashARCS</c>: The 32-bit binary برای Indy, Indigo2 (R4k), Challenge S و
+    O2 systems
+  </li>
+  <li>
+    <c>sash64</c>: The 64-bit binary برای Octane/Octane2, Origin 200/2000 و
+    Indigo2 Impact systems
+  </li>
+</ul>
+
+<p>
+از <c>dvhtool</c> برای نصب مناسب باینری در ولوم سربرگ دستگاهتان استفاده نمایید:
+</p>
+
+<pre caption="Placing arcload in the volume header">
+<comment>(Indy/Indigo2/Challenge S/O2 users)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sashARCS sashARCS</i>
+
+<comment>(Indigo2 Impact/Octane/Octane2/Origin 200/Origin 2000 users)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sash64 sash64</i>
+</pre>
+
+<note>
+تا هنگامیکه ولوم سربرگ را از یک لوح فشرده خودراه انداز نصب نکرده باشید، امکان استفاده از <c>sashARCS</c>  یا <c>sash64</c> را ندارید. برای راه اندازی عادی از دیسک، اگر دوست دارید، ممکن است آنها به نام دیگری نامگذاری نمایید، 
+</note>
+
+<p>
+اکنون فقط از <c>dvhtool</c> برای تایید داشتن ولوم سربرگ استفاده نمایید.
+</p>
+
+<pre caption="Checking arcload is present in the volume header">
+# <i>dvhtool --print-volume-directory</i>
+----- directory entries -----
+Entry #0, name "sash64", start 4, bytes 55859
+#
+</pre>
+
+<p>
+اکنون، فایل <c>arc.cf</c> یک نحو C-like دارد. برای اطلاعات کامل درباره اینکه آنرا چگونه پیکربندی نمایید، پیوند <uri link="http://www.linux-mips.org/wiki/Arcload">arcload page on the Linux/MIPS wiki</uri> رابازبین فرمایید. بطور خلاصه، شما یک عدد از انتخاب ها را شناسائی نمودید، که آنرا در زمان راه اندازی با استفاده از متغییر <c>OSLoadFilename</c> فعال یا غیر فعال می نمایید.
+</p>
+
+<pre caption="An example arc.cf">
+<comment># ARCLoad Configuration</comment>
+
+<comment># Some default settings...</comment>
+append  "root=/dev/sda3";
+append  "ro";
+append  "console=ttyS0,9600";
+
+<comment># Our main definition. ip28 may be changed if you wish.</comment>
+ip28 {
+        <comment># Definition for a "working" kernel</comment>
+        <comment># Select this by setting OSLoadFilename="ip28(working)"</comment>
+        working {
+                description     "SGI Indigo2 Impact R10000\n\r";
+                image system    "/working";
+        }
+
+        <comment># Definition for a "new" kernel</comment>
+        <comment># Select this by setting OSLoadFilename="ip28(new)"</comment>
+        new {
+                description     "SGI Indigo2 Impact R10000 - Testing Kernel\n\r";
+                image system    "/new";
+        }
+
+        <comment># For debugging a kernel</comment>
+        <comment># Select this by setting OSLoadFilename="ip28(working,debug)"</comment>
+        <comment># or OSLoadFilename="ip28(new,debug)"</comment>
+        debug {
+                description     "Debug console";
+                append          "init=/bin/bash";
+        }
+}
+</pre>
+
+<p>
+شروع کردن با <c>arcload-0.5</c> ، <path>arc.cf</path> و کرنل ها ممکن است هم در ولوم سربرگ، یا در یک وارتیشن اقامت داشته باشد. از مایل هستید از این خصوصثت جدید استفاده نمایید، ممکن است بجای آن فایل ها را در پارتیشن <path>/boot</path> خودتان (یا در <path>/</path> اگر پارتیشن بوت شما مجزا نیست) قرار دهید. <c>arcload</c> از کد درایور فایل سیستم مربوط به راه انداز معروف <c>grub</c> استفاده می نماید، و بنابر این طیفی از فایل سیستم ها را پشتیبانی می نماید.
+</p>
+
+<pre caption="Placing arc.cf and kernel in the volume header">
+# <i>dvhtool --unix-to-vh arc.cf arc.cf</i>
+# <i>dvhtool --unix-to-vh /usr/src/linux/vmlinux new</i>
+</pre>
+
+<p>
+با انجام این، آنچه باقی مانده تنظیم نمودن برخی انتخاب ها است در PROM. بخش <uri link="#reboot">راه اندازی مجدد دستگاه</uri> را بازبین فرمائید.
+</p>
+
+</body>
+</subsection>
+
+</section>
+
+<section id="cobalt">
+<title>میکرو سرور های کوبالت -- تنظیم کردن CoLo</title>
+<subsection>
+<title>نصب کردن CoLo</title>
+<body>
+
+<p>
+در سرورهای کوبالت، ایم ماشین ها قابلیت کمتر نصب فریم ور بروی چیپ ها را دارند. کوبالت BOOTROM قدیمی ترین است، که بوسیله فشرده سازی SGI PROM کار می نماید و محدودیت های جدی دارد.
+</p>
+
+<ul>
+  <li>
+یک محدودیت (نهایتا) ۶۷۵ کیلوبایتی برای کرنل وجود دارد. اندازه قطعی لینوکس ۲.۴ تقریبا غر ممکن است که کرنلی با این اندازه ایجاد نماید. دربارهه لینوکس ۲.۶ اصلا این قابل بحث نیست.
+  </li>
+  <li>
+کرنل های ۶۴ بیتی از فر یم ور استوک (و همچنین به احتمال زیاد در این زمان از ماشین های کوبالت) پشتیبانی نمی نمایند.
+  </li>
+  <li>
+    یک شل ابتدائی بهترین حالت است.
+  </li>
+</ul>
+
+<p>
+در بالای این محدودیت ها یک فریم ور جایگزین وجود دارد که به آن <uri
+link="http://www.colonel-panic.org/cobalt-mips/">CoLo</uri> گفته می شود (راه انداز کوبالت) که گسترش می یافت. این یک تصویر BOOTROM است که می تواند همچنین بروی داخل چیپ سرور کوبالت انداخته شود، یا از فریم ور موجود لود شود.
+</p>
+
+<note>
+این راهنما برای تنظیم نمودن Colo که بوسیله فریم ور استوک لود می گردد، به شما کمک خواهد نمود. این تنها راه امن، و پیشنهاد شده برای تنظیم Colo است.
+</note>
+
+<warn>
+ممکن است، اگر علاقمند باشید، آنرا به داخا سرور بتابانید، و در مجموع فریم ور اصلی را با آن جایگزین نمایید -- هرچند، در انصورت تنها به خودتان متکی خواهید بود. اگر چیزی اشتباه شد، نیاز دارید تا بطور فیزیکی  BOOTROM را حذف نمایید و آنرا بوسیله فریم ور استوک مجددا برنامه ریزی نمایید. اگر مطمئن نیستید آنرا چگونه انجام دهید -- پس آنرا بروی ماشین خود <e>نتابانید</e> . ما مسئول اینکه اگر این حرف عاقلانه را قبول ننمودید، نیستیم
+</warn>
+
+<p>
+بسیار خوب، با اخطارهای بالا اکنون، می رویم ببینیم Colo چگونه نصب می گردد. ابتدا بسته آنرا emerge نمایید.
+</p>
+
+<pre caption="Emerging colo">
+# <i>emerge colo</i>
+</pre>
+
+<p>
+با آن نصب (توقع دارم آن پیام را خوانده باشید ;-) باید قادر به ورود به دایرکتوری <path>/usr/lib/colo</path> برای پافتن دو فایل، <path>colo-chain.elf</path> : کرنلی برای فریم ور استوک برای لود شدن، و <path>colo-rom-image.bin</path> :یک تصویر ROM برای تاباندن بروی BOOTROM باشید. ما با مانت نمودن <path>/boot</path> و روبرداری از یک رونوشت  <path>colo-chain.elf</path> در <path>/boot</path> که دستگاه آنرا توقع دارد آغاز می نماییم.
+</p>
+
+<pre caption="Putting CoLo in its place">
+# <i>gzip -9vc /usr/lib/colo/colo-chain.elf &gt; /boot/vmlinux.gz</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>پیکربندی کردن CoLo</title>
+
+<body>
+
+<p>
+اکنون هنگامیکه دستگاه راه اندازی می گردد، CoLo را لود می نماید که یک فهرست انتخاب بروی LCD باز می گرداند. انتخاب اول (و انتخاب پیش فرض بعد از تقریبا ۵ ثانیه) راه اندازی دیسک سخت است. پس از آن دستگاه اولین پارتیشن لینوکسی را که پیدا می نماید را راه اندای می نماید و کد <path>default.colo</path> را هم راه اندازی می کند. نحو آن بطور کامل در مستندات CoLo مستند گردیده. ( یک <path>/usr/share/doc/colo-X.YY/README.shell.gz</path> دارید که در ان  X.YY نسخه نصب شده است)، و بسیار ساده است.
+</p>
+
+<note>
+فقط یک نکته: هنگامیکه کرنل ها را نصب می نمایید، من معمولا دو تصویر کرنل ایجاد می نمایم،  <path>kernel.gz.new</path> -- یک کرنل در حال کار شناخته شده، و <path>kernel.gz.new</path> -- یک کرنل که فقط کامپایل گردیده. می توانید از میانبر به نقطه کرنل جدید یا در حال کار استفاده نمایید، یا نام فقط تصویر کرنل را عوض نمایید. 
+</note>
+
+<pre caption="A basic default.colo">
+<comment>#:CoLo:#</comment>
+mount hda1
+load /kernel.gz.working
+execute root=/dev/sda3 ro console=ttyS0,115200
+</pre>
+
+<note>
+راه انداز CoLo کدی را که خط <c>#:CoLo:#</c> نداشته باشد را اجرا نمی نماید. به آن به عنوان معادل  <c>#!/bin/sh</c> در کد شل فکر کنید
+</note>
+
+<p>
+همچنین در زمان شماری پیش فرض ممکن است یک سئوال پرسیده شود، که پیکربندی کدام کرنل &amp; دوست دارید راه اندازی شود. این پیکربندی واقعا آنرا انجام نمی دهد، از کاربر می پرسد که کدام کرنل را دوست دارد استفاده نماید، و تصویر انتخاب شده را اجرا می ماید. <path>vmlinux.gz.new</path> و <path>vmlinux.gz.working</path> ممکن است کرنل های فعال باشند، یا فقط نقطه میانبر به تصویر کرنل بروی ان دیسک باشند. آرگومنت <c>50</c> در <c>select</c> مشخص می نماید که باید مراحل با اولین انتخاب در حال کار بعد از 50/10 ثانیه کار نماید.
+</p>
+
+<pre caption="Menu-based configuration">
+<comment>#:CoLo:#</comment>
+
+lcd "Mounting hda1"
+mount hda1
+select "Which Kernel?" 50 Working New
+
+goto {menu-option}
+var image-name vmlinux.gz.working
+goto 3f
+@var image-name vmlinux.gz.working
+goto 2f
+@var image-name vmlinux.gz.new
+
+@lcd "Loading Linux" {image-name}
+load /{image-name}
+lcd "Booting..."
+execute root=/dev/sda5 ro console=ttyS0,115200
+boot
+</pre>
+
+<p>
+برای جزئیات بیشتر مستندات را در <path>/usr/share/doc/colo-VERSION</path> بازبین فرمائید.
+</p>
+
+</body>
+
+</subsection>
+</section>
+
+<section>
+<title>تنظیم کردن سریال کنسول</title>
+
+<subsection>
+<body>
+
+<p>
+بسیار خوب نصب لینوکس اکنون به نقطه باثباتی رسیده است، که بخوبی راه اندازی می شود، اما همانطور که فرض نمودید شما می روید از یک ترمینال فیزیکی وارد شوید. در ماشین های کوبالت، این بسیار بد است -- چیزی به اسم ترمینال فیزیکی وجود ندارد.
+</p>
+
+<note>
+کسانی که از چیپ ست ویدئو پشتیبانی می نمایند ممکن است اگر دوست دارند از این بخش پرش نمایند.
+</note>
+
+<p>
+ابتدا، یک ادیتور راه اندازی نمایید و مسیر <path>/etc/inittab</path> را هک نمایید. درون آن فایل چیزی شبیه به این خواهید دید:
+</p>
+
+<pre caption="inittab Configuration">
+<comment># SERIAL CONSOLE</comment>
+<comment>#c0:12345:respawn:/sbin/agetty 9600 ttyS0 vt102</comment>
+
+<comment># TERMINALS</comment>
+c1:12345:respawn:/sbin/agetty 38400 tty1 linux
+c2:12345:respawn:/sbin/agetty 38400 tty2 linux
+c3:12345:respawn:/sbin/agetty 38400 tty3 linux
+c4:12345:respawn:/sbin/agetty 38400 tty4 linux
+c5:12345:respawn:/sbin/agetty 38400 tty5 linux
+c6:12345:respawn:/sbin/agetty 38400 tty6 linux
+
+<comment># What to do at the "Three Finger Salute".</comment>
+ca:12345:ctrlaltdel:/sbin/shutdown -r now
+</pre>
+
+<p>
+ابتدا خط <c>c0</c> را از حالت توضیح خارج نمایید. بطور پیش فرض،  آن برای استفاده از یک ترمینال در رنج  تنظیم گردیده. در سرورهای کوبالت، ممکن است بخواهید آنرا به  تغییر دهید تا با سرعت  شما هماهنگ گردد. این آن چیزی است که در ماشین من وجود دارد. در یک ماشین بدون سربرگ (برای نمونه سرورهای کوبالت)، من همچنین پیشنهاد می کنم خط موجود ترمینال محلی  را هم از حالت توضیحات خارج نمایید (از <c>c1</c> در مسیر <c>c6</c> )که این عادت بدی است در زمانیکه آنها نمی توانند <path>/dev/ttyX</path> را باز نمایند.
+</p>
+
+<pre caption="Example snippet from inittab">
+<comment># SERIAL CONSOLE</comment>
+c0:12345:respawn:/sbin/agetty 115200 ttyS0 vt102
+
+<comment># TERMINALS -- These are useless on a headless qube</comment>
+<comment>#c1:12345:respawn:/sbin/agetty 38400 tty1 linux</comment>
+<comment>#c2:12345:respawn:/sbin/agetty 38400 tty2 linux</comment>
+<comment>#c3:12345:respawn:/sbin/agetty 38400 tty3 linux</comment>
+<comment>#c4:12345:respawn:/sbin/agetty 38400 tty4 linux</comment>
+<comment>#c5:12345:respawn:/sbin/agetty 38400 tty5 linux</comment>
+<comment>#c6:12345:respawn:/sbin/agetty 38400 tty6 linux</comment>
+</pre>
+
+<p>
+اکنون، در آخر... ما به دستگاه می گوییم، که درگاه سریال محلی می تواند به عنوان یک ترمینال امن قابل اطمینان باشد. فایلی که باسد تغییر دهیم <path>/etc/securetty</path> است. این فایل حاوی فهرستی از ترمینال ها است که دستگاه به آنها اعتماد دارد. ما بسادگی دو خط به آن اضافه می نماییم، برای تغییر آن نیاز به استفاده از کاربر <c>root</c> است.
+</p>
+
+<pre caption="Enabling root logins on serial console">
+<comment>(/dev/ttyS0 -- the traditional name for the first serial port)</comment>
+# <i>echo 'ttyS0' >> /etc/securetty</i>
+
+<comment>(Lately, Linux also calls this /dev/tts/0 -- so we add this
+too)</comment>
+# <i>echo 'tts/0' >> /etc/securetty</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section id="reboot">
+<title>راه اندازی مجدد دستگاه</title>
+<subsection>
+<body>
+
+<p>
+از محیط chroot شده خارج شوید و همه پارتیشن های مانت شده را از حالت مانت خارج نمایید. پس از ان آن دستور جادوئی <c>reboot</c> را که منتظر آن بودید را تایپ نمایید.
+</p>
+
+<pre caption="Exiting the chroot, unmounting all partitions and rebooting">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount -l /mnt/gentoo/dev{/shm,/pts,}</i>
+cdimage ~# <i>umount -l /mnt/gentoo{/boot,/proc,}</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<note>
+<e>Cobalt Users:</e> The rest of this section covers the setting up of the SGI
+PROM so that it boots <c>arcload</c> off disk and loads
+Linux.
+This is not applicable to the setup of Cobalt servers. In fact, all your work
+is done -- there is no configuration needed for the first boot up, you can skip
+to the next section: <uri link="?part=1&amp;chap=11">Finalising your Gentoo
+Installation</uri>
+در ادامه بخش <e>Cobalt Users:</e> تنظیمات SGI PROM تحت پوشش قرار گرفته که <c>arcload</c> را از راه اندازی دیسک باز می دارد و لینوکس را لود می نماید.
+تنظیم نمودن سرورهای کوبالت قابل برنامه ریزی نیست. در حقیقت، همه کارهای شما انجام شده -- هیچ پیکربندی برای اولین راه اندازی مورد نیاز نیست، می توانید از بخش بعدی پرش نمایید: <uri link="?part=1&amp;chap=11">بپایان بردن نصب جنتوی شما</uri>.
+</note>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>پیچاندن SGI PROM</title>
+<subsection>
+<title>تنظیم نمودن تنظیمات عمومی PROM</title>
+<body>
+
+<p>
+اکنون که راه انداز دستگاه را نصب نموده اید، آماده اید تا ماشین را راه اندازی مجدد نمایید.
+</p>
+
+<pre caption="Rebooting">
+<comment>(Exit the chroot environment)</comment>
+# <i>exit</i>
+
+<comment>(Unmount the drives)</comment>
+cdimage ~# <i>umount -l /mnt/gentoo/dev{/shm,/pts,}</i>
+cdimage ~# <i>umount -l /mnt/gentoo{/boot,/proc,}</i>
+
+<comment>(Reboot)</comment>
+# <i>reboot</i>
+</pre>
+
+<p>
+هنگامیکه راه اندازی مجدد نمودید، به <e>System Maintenance Menu</e> بروید و <e>Enter Command Monitor</e> را (<c>5</c>) مانند آنچه ماشین را تحت شبکه راه اندازی نمودید انتخاب نمایید.
+</p>
+
+<pre caption="Configuring the PROM to Boot Gentoo">
+1) Start System
+2) Install System Software
+3) Run Diagnostics
+4) Recover System
+5) Enter Command Monitor
+
+Option? <i>5</i>
+Command Monitor. Type "exit" to return to the menu.
+
+<comment>(Set some options for arcload)</comment>
+
+<comment>(Provide the location of the Volume Header)</comment>
+&gt;&gt; <i>setenv SystemPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
+
+<comment>(Automatically boot Gentoo)</comment>
+&gt;&gt; <i>setenv AutoLoad Yes</i>
+
+<comment>(Set the timezone)</comment>
+&gt;&gt; <i>setenv TimeZone EST5EDT</i>
+
+<comment>(Use the serial console - graphic adapter users should have "g" instead of "d1" (one))</comment>
+&gt;&gt; <i>setenv console d1</i>
+
+<comment>(Setting the serial console baud rate. This is optional, 9600 is the          )
+(default setting, although one may use rates up to 38400 if that is desired.  )</comment>
+&gt;&gt; <i>setenv dbaud 9600</i>
+</pre>
+
+<p>
+اکنون، تنظیمات بعدی وابسته به این است که چگونه دستگاه را راه اندازی نموده اید.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>تنظیمات برای راه اندازی volume-header مستقیم</title>
+<body>
+
+<p>
+آن در اینجا بطور کامل تحت پوشش قرار می گیرد. پیشنهاد می شود بجای آن کاربران به نصب کردن <c>arcload</c> بپردازند.
+</p>
+
+<note>
+این فقط بروی Indy, Indigo2 (R4k) and Challenge S کار می نماید.
+</note>
+
+<pre caption="PROM settings for booting off the volume header">
+<comment>(&lt;root device&gt; = Gentoo's root partition, e.g. /dev/sda3)</comment>
+&gt;&gt; <i>setenv OSLoadPartition &lt;root device&gt;</i>
+
+<comment>(To list the available kernels, type "ls")</comment>
+&gt;&gt; <i>setenv OSLoader &lt;kernel name&gt;</i>
+&gt;&gt; <i>setenv OSLoadFilename &lt;kernel name&gt;</i>
+
+<comment>(Declare the kernel parameters you want to pass)</comment>
+&gt;&gt; <i>setenv OSLoadOptions &lt;kernel parameters&gt;</i>
+</pre>
+
+<p>
+اگر می خواهید کرنلی را بدون از دست دادن پارامترهای کرنل استفاده نمایید، ممکن است از <c>boot -f</c> دستور PROM استفاده نمایید.
+</p>
+
+<pre caption="Booting without changing environment variables">
+<comment>(Booting a kernel, "new", with additional options)</comment>
+# <i>boot -f new root=/dev/sda3 ro</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>تنظیمات برای arcload</title>
+<body>
+
+<p>
+دستگاه <c>arcload</c> از انتخاب <c>OSLoadFilename</c> استفاده می نماید تا مشخص نماید کدام انتخاب ها از <path>arc.cf</path> تنظیم شده اند. فایل پیکربندی لزوما یک کد است، که در مراحل بالا تصویر راه انداز را برای دستگاه های مختلف شناسائی می نماید، و داخل آنها، تنظیمات انتخابی بوجود می آورد. بنابر این،  تنظیمات <c>OSLoadFilename=mysys(serial)</c> به بلوک <c>mysys</c> کشیده می شود، سپس انتخاب های بیشتر در <c>serial</c> دوباره نویسی می شوند.
+</p>
+
+<p>
+در فایل مثال بالا، ما یک دستگاه قالب بندی تعریف شده، <c>ip28</c> با <c>working</c> ، <c>new</c> و انتخاب های موجود <c>debug</c> داریم. ما متغییر PROM خودمان را به این شکل تعریف می نماییم:
+</p>
+
+<pre caption="PROM settings for using arcload">
+<comment>(Select arcload as the bootloader:- sash64 or sashARCS)</comment>
+&gt;&gt; <i>setenv OSLoader sash64</i>
+
+<comment>(Use the "working" kernel image, defined in "ip28" section of arc.cf)</comment>
+&gt;&gt; <i>setenv OSLoadFilename ip28(working)</i>
+</pre>
+
+<p>
+با <c>arcload-0.5</c> شروع می نماید، فایل بیشتر از این نیاز به ماندن در ولوم سربرگ را ندارد -- ممکن است بجای آن در یک پارتیشن قرار گیرد. برای گفتن به  که به این فایل پیکربندی و کرنل نگاه کند،  یک <c>arcload</c> باید در متغییر <c>OSLoadPartition</c> تنظیم شود. مقدار واقعی در اینجا وابسته به این است که کجا دیسک شما بروی SCSI bus اقامت دارد. از متغییر PROM <c>SystemPartition</c> به عنوان یک راهنما استفاده نمایید -- فقط هنگامیکه شماره پارتیشن لازم است تغییر داده شود.
+</p>
+
+<note>
+در مورد لینوکس، پارتیشن ها بجای ۱ از ۰ شمرده می شوند.
+</note>
+
+<pre caption="Telling arcload where to find arc.cf">
+<comment>(If you wish to load from the volume header -- use partition 8)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
+
+<comment>(Otherwise, specify the partition and filesystem type)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(0)[ext2]</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>همه چیز انجام شد</title>
+<body>
+
+<p>
+اکنون آماده اید تا از جنتو لذت ببرید! نصب جنتوی خودتان را راه اندازی نمایید  و با <uri link="?part=1&amp;chap=11">بپایان رساندن نصب جنتوی شما</uri> بپایان ببرید.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>

@@ -1,0 +1,404 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-mips-system.xml,v 1.1 2013/01/20 17:04:55 swift Exp $ -->
+
+<sections>
+
+<version>11</version>
+<date>2012-06-29</date>
+
+<section>
+<title>Chrooting</title>
+<subsection>
+<title>نسخه برداری اطلاعات DNS</title>
+<body>
+
+<p>
+قبل از اینکه وارد محیط جدید شویم، یک چیز هنوز باقی مانده که باید انجام شود و آن نسخه برداری از روی اطلاعات DNS موجود در <path>/etc/resolv.conf</path> است.باید اینکار را انجام دهید تا مطمئن شوید شبکه شما بعد از ورود به محیط جدید هنوز کار می کند. فایل <path>/etc/resolv.conf</path> حاوی nameserver های شبکه شماست. 
+</p>
+
+<pre caption="Copy over DNS information">
+<comment>(The "-L" option is needed to make sure we don't copy a symbolic link)</comment>
+# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>مانت کردن فایل سیستم های ضروری</title>
+<body>
+
+<p>
+فایل سیستم <path>/proc</path> را بروی <path>/mnt/gentoo/proc</path> مانت می نماییم تا به عملیات نصب امکان دهیم تا از اطلاعات فراهم شده-کرنل درون محیط chroot استفاده نماید، و بعد از آن فایل سیستم های <path>/dev</path> و <path>/sys</path> را بطور <c>-bind</c> مانت می نماییم.
+</p>
+
+<pre caption="Mounting /proc and /dev">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>وارد شدن به محیط جدید</title>
+<body>
+
+<p>
+اکنون که همه پارتیشن ها ارزشگذاری آغازین شده اند و مبانی محیط نصب گردیده، زمان آن است تا با استفاده از <e>chrooting</e> وارد محیط جدیدمان شویم. این به آن معنی است که ما از محیط نصب قطعی (لوح فشرده نصب یا دیگر رسانه های نصب) به سیستم نصب شده شما (به معنی پارتیشن هائی که ارزش آغازین داده شده اند) تغییر موضع می دهیم. 
+</p>
+
+<p>
+این chroot نمودن در طی سه مرحله انجام می پذیرد. ابتدا ما ریشه را از <path>/</path> (بروی رسانه نصب) به <path>/mnt/gentoo</path> (بروی پارتیشن) با استفاده از <c>chroot</c> تغییر می دهیم. پس از آن با استفاده از <c>env-update</c> محیط جدیدی ایجاد می نماییم که ضرورتا متغییرهای محیط را ایجاد می نماید. سر انجام، ما آن متغییرها را با استفاده از <c>source</c> در داخل حافظه لود می نماییم. 
+</p>
+
+<pre caption = "Chrooting into the new environment">
+# <i>chroot /mnt/gentoo /bin/bash</i>
+# <i>env-update</i>
+>> Regenerating /etc/ld.so.cache...
+# <i>source /etc/profile</i>
+# <i>export PS1="(chroot) $PS1"</i>
+</pre>
+
+<p>
+تبریک می گوییم! شما اکنون داخل محیط لینوکس جنتوی خودتان هستید. البته هنوز راه درازی تا پایان وجود دارد، که دلیل این است که چرا هنوز مراحل دیگری از عملیات نصب باقی مانده :-) 
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>پیکربندی کردن پرتیج</title>
+<subsection>
+<title>بروزرسانی کردن شاخه پرتیج</title>
+<body>
+
+<p>
+اکنون باید شاخه پرتیج خودتان را به آخرین نسخه بروزرسانی نمایید. دستور <c>emerge  --sync</c> اینکار را برای شما انجام می دهد.
+</p>
+
+<pre caption="Updating the Portage tree">
+# <i>emerge --sync</i>
+<comment>(If you're using a slow terminal like some framebuffers or a serial
+console, you can add the --quiet option to speed up this process:)</comment>
+# <i>emerge --sync --quiet</i>
+</pre>
+
+<p>
+اگر در پشت دیوار آتشی که تردد rsync را مسدود می نماید هستید، می توانید از <c>emerge-webrsync</c> استفاده نمایید که یک تصویرفوری پرتیج را برای شما پایین گذاری و نصب می نماید. 
+</p>
+
+<p>
+اگر به شما هشدار داده شد که نسخه جدید از پرتیج ایجاد شده و شما باید پرتیج خود را بروزرسانی نمایید، اکنون باید با استفاده از <c>emerge --oneshot portage</c> اینکار را انجام دهید.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>انتخاب کردن پروفایل درست</title>
+<body>
+
+<p>
+ابتدا جای یک تعریف کوچک وجود دارد. 
+</p>
+
+<p>
+یک پروفایل یک بلوک قابل ساخت برای هر دستگاه جنتوئی است. نه فقط مقدارهای از پیش تعریف شده ائی را به متغییرهای CHOST و CFLAGS و دیگر متغییرهای مهم اضافه می نماید، بلکه سیستم را هم در طیف محرزی ار نسخه های بسته ها قفل می نماید. همه این ها بوسیله گسترش دهندگان جنتو فراهم آورده می شود.
+</p>
+
+<p>
+پیشتر، چنین پروفایلی برای کاربر قابل دسترس نبود. هرچند، ممکن است موقعیتی خاص وجود داشته باشد که در آن تصمیم یگیرید عوض نمودن یک پروفایل امری ضروری است. 
+</p>
+
+<p>
+از ۲۰۰۶.۰ یک بهم آمیختگی برای پروفایل های دستگاه های MIPS بوجود آمد. این پروفایل ها انتخاب های گوناگونی را با وارد نمودن در پرچمک های USE تنظیم می نمایند که تاثیر آنها مشخص می نماید چه مسیری بهمراه چه بسته های حیاتی گوناگونی فعال گردند (با اعلام به <c>gcc</c>  و <c>mips-sources</c> ).
+</p>
+
+<p>
+بنابر این، از اینکه چه نوع پروفایلی را بروی دستگاهتان فعال می نمایید، مطمئن گردید. از جنتو/MPIS نسخه ۲۰۰۷.۰ به بعد پروفایل ها به این گونه هستند:
+</p>
+
+<table>
+  <tr>
+    <th>System</th>
+    <th>Profile</th>
+    <th>Userland</th>
+    <th>Status/Notes</th>
+  </tr>
+  <tr>
+    <ti>Cobalt Qube/RaQ</ti>
+    <ti>default-linux/mips/2007.0/cobalt/o32</ti>
+    <ti>32-bit Linuxthreads</ti>
+    <ti>Recommended</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/cobalt/o32/nptl</ti>
+    <ti>32-bit NPTL</ti>
+    <ti>In Testing (1)</ti>
+  </tr>
+  <tr>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+  </tr>
+  <tr>
+    <ti>
+      Generic Big Endian<br />
+      <e>Including SGI Indy, Indigo2 (R4x00), Challenge S and O2</e>
+    </ti>
+    <ti>default-linux/mips/2007.0/generic-be/o32</ti>
+    <ti>32-bit Linuxthreads</ti>
+    <ti>Recommended</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/generic-be/o32/nptl</ti>
+    <ti>32-bit NPTL</ti>
+    <ti>In Testing (1)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/generic-be/n32</ti>
+    <ti>N32 Linuxthreads</ti>
+    <ti>Highly Experimental (2)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/generic-be/n32/nptl</ti>
+    <ti>N32 NPTL</ti>
+    <ti>Highly Experimental (1) (2)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/generic-be/n64</ti>
+    <ti>N64 Linuxthreads</ti>
+    <ti>Unsupported (3)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/generic-be/n64/nptl</ti>
+    <ti>N64 NPTL</ti>
+    <ti>Unsupported (1) (3)</ti>
+  </tr>
+  <tr>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+  </tr>
+  <tr>
+    <ti>SGI Origin 200/2000</ti>
+    <ti>default-linux/mips/2007.0/ip27/o32</ti>
+    <ti>32-bit Linuxthreads</ti>
+    <ti>Recommended</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/ip27/o32/nptl</ti>
+    <ti>32-bit NPTL</ti>
+    <ti>In Testing (1)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/ip27/n32</ti>
+    <ti>N32 Linuxthreads</ti>
+    <ti>Highly Experimental (2)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/ip27/n32/nptl</ti>
+    <ti>N32 NPTL</ti>
+    <ti>Highly Experimental (1) (2)</ti>
+  </tr>
+
+  <tr>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+  </tr>
+  <tr>
+    <ti>SGI Indigo2 Impact R10000</ti>
+    <ti>default-linux/mips/2007.0/ip28/o32</ti>
+    <ti>32-bit Linuxthreads</ti>
+    <ti>Recommended</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/ip28/o32/nptl</ti>
+    <ti>32-bit NPTL</ti>
+    <ti>In Testing (1)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/ip28/n32</ti>
+    <ti>N32 Linuxthreads</ti>
+    <ti>Highly Experimental (2)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/ip28/n32/nptl</ti>
+    <ti>N32 NPTL</ti>
+    <ti>Highly Experimental (1) (2)</ti>
+  </tr>
+  <tr>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+    <th>&nbsp;</th>
+  </tr>
+  <tr>
+    <ti>SGI Octane/Octane2</ti>
+    <ti>default-linux/mips/2007.0/ip30/o32</ti>
+    <ti>32-bit Linuxthreads</ti>
+    <ti>Recommended</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/ip30/o32/nptl</ti>
+    <ti>32-bit NPTL</ti>
+    <ti>In Testing (1)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/ip30/n32</ti>
+    <ti>N32 Linuxthreads</ti>
+    <ti>Highly Experimental (2)</ti>
+  </tr>
+  <tr>
+    <ti>"</ti>
+    <ti>default-linux/mips/2007.0/ip30/n32/nptl</ti>
+    <ti>N32 NPTL</ti>
+    <ti>Highly Experimental (1) (2)</ti>
+  </tr>
+</table>
+
+<impo>
+(۱) نوع NPTL بروی MIPS در حال حاضر در حال آزمایش است، که به <c>gcc-4.1</c> و <c>glibc-2.4</c> نیاز دارد. باور بر این است که NPTL اکنون به اندازه کافی برای استفاده مردم ایمن است، و نقشه بر این است که در آینده به عنوان پروفایل پیش فرض مورد استفاده قرار گیرد. کاربران شجاع تشویق می گردند از این پروفایل استفاده نمایند و درباره کارکرد آن گزارش بدهند.
+</impo>
+
+<warn>
+(۲) سطح کاربری n32 بسیار تجربی است، نرم افزارهای بسیاری با این ABI مشکل دارند، و بنابر این بطور تجربی گارانتی می گردد که در برخی موارد با استفاده از آن با مشکلات پایداری روبرو گردید. برای ارتقاء آن در حال حاضر بروی آن کار می شود، هرچند هیچ پشتیبانی اگر از آن استفاده نمایید، از شما به عمل نخواهد آمد، مگر آنکه به دنبال برطرف نمودن مشکلات با ثبت نمودن راه حل ها باشید.
+</warn>
+
+<warn>
+(۳) سطح کاربری n64 در حال حاضر بطور کامل بروی همه دستگاه ها غیر قابل پشتیبانی است. در این زمان هیچ استیجی برای پشتیبانی از n64 وجود ندارد، و به نظر نمی رسد بزودی تغییری در این وضعیت رخ دهد.
+</warn>
+
+<p>
+با دستور زیر می توانید ببینید در حال استفاده از کدام پروفایل هستید: 
+</p>
+
+<pre caption="Verifying system profile">
+# <i>ls -FGg /etc/make.profile</i>
+lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/<keyval id="profile"/>
+</pre>
+
+<p>
+نگاهی به پروفایل های بالا بیاندازید، و تصمیم بگیرید کدام یک برای شما مناسب تر است، فقط نیاز به یک میانبر <path>make.profile</path> برای تحت تاثیر قرار دادن آن دارید. بطور پیش فرض، پروفایل در <path>/usr/portage/profiles</path> است، بنابر این اگر شاخه پرتیج خود را به هر جائی تغییر دادید (که پیشنهاد نمی شود)، دستورات را مطابق زیر اصلاح نمایید.
+</p>
+
+<pre caption="Setting the profile">
+<comment>(Delete the old profile symlink)</comment>
+# <i>rm -f /etc/make.profile</i>
+
+<comment>(Create a new symlink pointing to your chosen profile     )
+(For example, this is what one would use on an Indy or O2.)</comment>
+# <i>ln -s /usr/portage/profiles/default-linux/mips/2007.0/generic-be/o32</i>
+</pre>
+
+<note>
+نکته ائی برای آنهائی که با شل دوباره Bourne آشنا نیستند... اگر بخشی از نام فایل یا دستور را تایپ نمایید، و پس از آن دگمه تب را فشار دهید، کاراکترهای ادامه نام آن فایل یا دستور را بشکلی که معمولا استفاده می گردد را به شما نشان خواهد داد. برای نمونه تایپ نمودن <c>/usr/portage/profiles/def&lt;TAB&gt;</c> ، <c>bash</c> بطور خودکار <c>default-</c> را پایین خواهد آورد. فشار دادن چندین باره دگمه تب امکان های ممکن را مشخص خواهد نمود، <c>default-linux</c> ، <c>default-darwin</c> و <c>default-bsd</c>. آنرا ازمایش نمایید، آنرا برای مدیریت خط دستور بسیار مفید خواهید یافت.
+</note>
+
+</body>
+</subsection>
+<subsection id="configure_USE">
+<title>پیکربندی نمودن متغییر USE</title>
+<body>
+
+<p>
+متغییر <c>USE</c> یکی از قوی ترین متغییرهائی است که جنتو برای کاربران خود فراهم آورده. برنامه های مختلف می توانند با یا بدون پشتیبانی انتخابی برای اقلام قطعی کامپایل شوند. برای مثال، برخی برنامه ها می توانند با پشتیبانی-gtk یا پشتیبانی-qt کامپایل شوند. برخی دیگر می توانند با یا بدون پشتیبانی SSL کامپایل شوند. حتی برخی برنامه ها می توانند با پشتیبانی framebuffer ( svgalib ) بجای پشتیبانی X11 ( X-server ) کامپایل گردند. 
+</p>
+
+<p>
+غالب توزیع ها بی توجه به مقدار عظیم وابستگی های مورد نیاز، بسته های خود را با پشتیبانی از تعداد هرچه بیشتر حالت های مختلف کامپایل می نمایند، که موجب افزایش اندازه برنامه می گردد. به کمک جنتو می توانید دریابید یک بسته با چه انتخاب هائی باید کامپایل گردد. این همان جائیست که <c>USE</c> وارد بازی می شود. 
+</p>
+
+<p>
+در متغییر <c>USE</c> کلمات کلیدی را تعریف می نمایید که نقشه شرایط کامپایل را ترسیم می نمایند. برای مثال، <e>ssl</e> پشتیبانی-ssl را در برنامه هائی که آنرا پشتیبانی می نمایند، کامپایل خواهد نمود. <e>-X</e> پشتیبانی X-server را (به علامت منها در جلوی آن توجه نمایید) حذف خواهد نمود. <e>gnome gtk -kde -qt4</e> برنامه های شما را با پشتیبانی gnome (و gtk) کامپایل خواهد نمود، و بدون پشتیبانی kde (و qt)، که دستگاه شما را مختص استفاده از GNOME خواهد ساخت. 
+</p>
+
+<p>
+تنظیمات پیش فرض <c>USE</c> در فایل های <path>make.defaults</path> در پروفایل شما قرار گرفته اند. می توانید فایل های <path>make.defaults</path> را در دایرکتوری <path>/etc/make.profile</path> که بخوبی در بالای همه دایرکتوری ها قرار گرفته، پیدا نمایید. تنظیمات پیش فرض <c>USE</c> مجموع همه تنظیمات <c>USE</c> در همه فایل های <path>make.defaults</path> است. آنچه در <path>/etc/make.conf</path> قرار می دهید در مقابل این تنظیمات پیش فرض قرار می گیرد. اگر چیزی به تنظیمات <c>USE</c> اضافه نمایید، به فهرست پیش فرض اضافه می گردد. اگر چیزی را در تنظیمات حذف نمایید (با قرار دادن یک منها در مقابل آن)، از فهرست پیش فرض حذف می گردد (البته اگر اصلا در فهرست پیش فرض قرار داشته باشد). هرگز چیزی را در داخل دایرکتوری <path>/etc/make.profile</path> تغییر ندهید; این دایرکتوری هنگامی که پرتیج خود را بروزرسانی می نمایید، دوباره نویسی می شود! 
+</p>
+
+<p> 
+توضیحات کامل درباره <c>USE</c> را می توان در بخش دوم کتاب راهنمای جنتو در بخش <uri link="?part=2&amp;chap=2">پرچمک های یو اس ائی</uri> پیدا نمود، توضیح کاملی درباره USE های موجود را می توان بروی دستگاهتان در <path>/usr/portage/profiles/use.desc</path> پیدا نمود. 
+</p>
+
+<pre caption="Viewing available USE flags">
+# <i>less /usr/portage/profiles/use.desc</i>
+<comment>(You can scroll using your arrow keys, exit by pressing 'q')</comment>
+</pre>
+
+<p>
+به عنوان یک مثال ما یک تنظیم <c>USE</c> برای یک دستگاه برمبنای-KDE به همراه DVD، ALSA و قابلیت ضبط لوح فشرده را نمایش می دهیم: 
+</p>
+
+<pre caption="Opening /etc/make.conf">
+# <i>nano -w /etc/make.conf</i>
+</pre>
+
+<pre caption="USE setting">
+USE="-gtk -gnome qt4 kde dvd alsa cdr"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>انتخابی: محل GLIBC</title>
+<body>
+
+<p>
+قطعا از یک یا شاید دو موقعیت محلی در دستگاهتان استفاده می نمایید. باید موقعیت های محلی را که لازم دارید در <path>/etc/locale.gen</path> مشخص نمایید.
+</p>
+
+<pre caption="Opening /etc/locale.gen">
+# <i>nano -w /etc/locale.gen</i>
+</pre>
+
+<p>
+موقعیت های محلی مثال زیر مثالی برای گرفتن دو موقعیت انگلیسی (United State) و آلمان (Germany) با همراهی فرمت کاراکتر (مانند UTF-8) است. 
+</p>
+
+<pre caption="Specify your locales">
+en_US ISO-8859-1
+en_US.UTF-8 UTF-8
+de_DE ISO-8859-1
+de_DE@euro ISO-8859-15
+</pre>
+
+<p>
+گام بعدی اجرا نمودن <c>locale-gen</c> است. این دستور همه موقعیت هائی را که در فایل <path>/etc/locale.gen</path> مشخص نمودید را ایجاد می نماید. 
+</p>
+
+<pre caption="Running locale-gen">
+# <i>locale-gen</i>
+</pre>
+
+<p>
+اکنون با <uri link="?part=1&amp;chap=7">پیکربندی نمودن کرنل</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>

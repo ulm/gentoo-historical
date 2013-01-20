@@ -1,0 +1,569 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-mips-disk.xml,v 1.1 2013/01/20 17:04:55 swift Exp $ -->
+
+<sections>
+
+<abstract>
+برای اینکه قادر به نصب جنتو باشید، باید پارتیشن های ضروری را ایجاد نمایید. این فصل چگونگی پاتیشن بندی یک دیسک برای استفاده بعدی را تشریح می کند. 
+</abstract>
+
+<version>6</version>
+<date>2012-10-06</date>
+
+<section>
+<title>مقدمه ائی بر شیوه قالب بندی</title>
+
+<subsection>
+<include href="hb-install-blockdevices.xml"/>
+</subsection>
+
+<subsection>
+<title>پارتیشن ها</title>
+<body>
+
+<p>
+هرچند در تئوری امکان پذیر است که از همه دیسک برای اسکان دستگاه لینوکس استفاده نمود، در عمل تقریبا هرگز چنین چیزی اتفاق نمی افتد. در دستگاههای بلوک بندی همه دیسک به دستگاههای کوچکتر و قابل مدیریت تر شکسته می شود. این، <e>پارتیشن ها</e> نامیده می شود. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>طراحی نمایه پارتیشن بندی</title>
+<subsection>
+<title>چه مقدار و چه اندازه بزرگ؟</title>
+<body>
+
+<p>
+شماره پارتیشن ها بشدت به محیط شما وابسته است. برای مثال، اگر تعداد زیادی کاربر دارید، به احتمال زیاد شما باید <path>/home</path>  خود را برای بالا بردن امنیت و راحت تر نمودن گرفتن پشتیبان جدا نمایید.
+اگر جنتو را به عنوان یک mailserver نصب می نمایید، باید <path>/var</path> خود را جدا نمایید چراکه mailها در <path>/var</path> نگهداری می شوند. یک انتخاب مناسب فایل سیستمی کارائی شما را بالا خواهد برد. Gameservers یک  <path>/opt</path> مجزا خواهند داشت چراکه بیشتر سرورهای بازی در آنجا نصب خواهند شد. علت مشابه <path>/home</path> است:
+امنیت و پشتیبانگیری. مطمئنا شما می خواهید <path>/usr</path> را بزرگتر بگیرید:
+نه فقط بخاطر اینکه غالب برنامه ها در آن نگهداری می شوند، شاخه های پرتیج به تنهائی ۵۰۰ مگابایت را خواهند گرفت به استثناء کدمنبع های بسیاری که در آن نگهداری خواهد شد.
+</p>
+
+<p>
+چنانکه می توانید ببینید، اینکار بشدت به اینکه شما می خواهید به چه چیزی برسید، وابسته است. پارتیشن ها یا ولوم های مجزا این مزیت ها را خواهند داشت:
+</p>
+
+<ul>
+<li>
+ می توانید فایل سیستم کاراتری برای هر پارتیشن یا ولوم انتخاب نمایید
+</li>
+<li>
+  اگر یک ابزار مرده به نوشتن فایل ها بروی یک پارتیشن یا ولوم ادامه داد، کل سیستم شما خارج از استفاده نخواهد شد.
+</li>
+<li>
+اگر لازم باشد، بررسی فایل های سیستمی زمان کمتری خواهد برد، چنانکه بررسی چندگانه می تواند بطور همزمان اعمال گردد (همچنین این مزیت شامل دیسک های چندگانه با پارتیشن های چندگانه نیز می گردد)
+</li>
+<li>
+امنیت می تواند با مانت نمودن برخی پارتیشن ها بصورت فقط-خواندنی، nosuid (چشم پوشی از setuid ) و noexec (چشم پوشی از خوداجرائی) و غیره، بالاتر برود،
+</li>
+</ul>
+
+<p>
+هرچند، تعدد پارتیشن ها ایراداتی هم دارد. اگر بخوبی پیکربندی نشود، شما دستگاهی خواهید داشت با مقدار زیادی فضای آزاد در یک پارتیشن و کمبود فضا در پارتیشن دیگر. اشکال دیگر پارتیشن های مجزا، خصوصا برای مانت پوینت های مهمی همچون <path>/usr</path> یا <path>/var</path> اغلب لازم است تا مدیر دستگاه آنها را قبل از راه اندازی کدهای راه انداز، راه اندازی نماید. به هر حال همیشه این موارد رخ نمی دهند و نتایج شما ممکن است متفاوت باشند.
+</p>
+
+<p>
+همچنین محدودیتی ۱۵ پارتیشنی برای SCSI و SATA وجود دارد.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>استفاده از fdisk در MIPS برای پارتیشن بندی دیسک شما</title>
+<subsection>
+<title>ماشین های SGI: ایجاد یک برچسب دیسک SGI</title>
+<body>
+
+<p>
+همه دیسک ها در دستگاه SGI به  نیاز دارند، که سروری است مشابه توابع برچسب ها &amp; MS-DOS -- که اطلاعات درباره پارتیشن های دیسک را در خود نگاه می دارد. ایجاد یک برچسب دیسک SGI دو پارتیشن اختصاصی را بروی دیسک ایجاد می نماید:
+</p>
+
+<ul>
+  <li>
+پارتیشن <e>SGI Volume Header</e> که (نهمین پارتیشن) است: این پارتیشن بسیار مهم است. این جائی است که راه انداز در آن مقیم می شود، و در برخی موارد، شامل تصویر کرنل نیز خواهد بود.
+  </li>
+  <li>
+پارتیشن <e>SGI Volume</e> که (یازدهیمن پارتیشن) است: این پارتیشن مشابه کار برچسب های سومین پارتیشن از دیسک کامل Sun را انجام می دهد. این پارتیشن انتهای دیسک را تقسیم می نماید، و باید دست نخورده باقی بماند. این پارتیشن هیچ کار دیگری بغییر از غیر قابل دسترس نمودن PROM (یا در برخی موارد مورد استفاده قرار گرفتن توسط IRIX برای برخی کارها) ندارد.
+  </li>
+</ul>
+
+<warn>
+ولوم سربرگ SGI <e>باید</e> در سیلندر ۰ باشد. نبود این حالت به معنی آن است که موفق به راه اندازی دیسک نخواهید شد.
+</warn>
+
+<p>
+در زیر نمونه ائی گلچین شده از یک جلسه کاری <c>fdisk</c> است. آنرا مطابق با نیاز خودتان خوانده و بهینه نمایید ...
+</p>
+
+<pre caption="Creating an SGI Disklabel">
+# <i>fdisk /dev/sda</i>
+
+Command (m for help): <i>x</i>
+
+Expert command (m for help): <i>m</i>
+Command action
+   b   move beginning of data in a partition
+   c   change number of cylinders
+   d   print the raw data in the partition table
+   e   list extended partitions
+   f   fix partition order
+   g   create an IRIX (SGI) partition table
+   h   change number of heads
+   m   print this menu
+   p   print the partition table
+   q   quit without saving changes
+   r   return to main menu
+   s   change number of sectors/track
+   v   verify the partition table
+   w   write table to disk and exit
+
+Expert command (m for help): <i>g</i>
+Building a new SGI disklabel. Changes will remain in memory only,
+until you decide to write them. After that, of course, the previous
+content will be irrecoverably lost.
+
+Expert command (m for help): <i>r</i>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/sda (SGI disk label): 64 heads, 32 sectors, 17482 cylinders
+Units = cylinders of 2048 * 512 bytes
+
+----- partitions -----
+Pt#     Device  Info     Start       End   Sectors  Id  System
+ 9:  /dev/sda1               0         4     10240   0  SGI volhdr
+11:  /dev/sda2               0     17481  35803136   6  SGI volume
+----- Bootinfo -----
+Bootfile: /unix
+----- Directory Entries -----
+
+Command (m for help):
+</pre>
+
+<note>
+اگر دیسک شما هم اکنون یک برچسب SGI دارد، fdisk اجازه ایجاد یک برچسب جدید را به شما نمی دهد. دو راه برای رد نمودن این مطلب وجود دارد. یکی ایجاد برچسب Sun یا MS-DOS ، رونوشت آن بروی دیسک و راه اندازی مجدد fdisk است. راه دوم رونوشت بروی اطلاعات دیسک توسط اطلاعات نال شده با استفاده از دستور <c>dd if=/dev/zero of=/dev/sda bs=512 count=1</c> است.
+</note>
+</body>
+</subsection>
+
+<subsection>
+<title>دادن اندازه صحیح به سربرگ ولوم SGI خودتان</title>
+<body>
+
+<impo>
+این مرحله معمولا بخاطر وجود یک باگ در <c>fdisk</c> لازم است. برای برخی دلائل، سربرگ ولوم بدقت ایجاد نمی شود، نتیجه نهائی آن شروع و به پایان رسیدن آن در سیلندر ۰ است. این باعث ایجاد چند پارتیشنی غیر مجاز می شود. برای رفع این مشکل ... به خواندن ادامه دهید.
+</impo>
+
+<p>
+اکنون یک برچسب SGI ایجاد گردیده، پارتشن ممکن است اکنون شناخته شود. در نمونه بالا، دو پارتیشن قابل شناسائی برای شما تعریف گردید. این دو پارتیشن خاص در بالا معمولا نباید دستکاری شوند. هرچند تصویر کرنل (وابسته به نوع دستگاه) مستقیما در ولوم سربرگ لود می شود. ولوم سربرگ به تنهائی می تواند <e>هشت</e> تصویر را با هر اندازه ائی در خود نگاه دارد، که با هر تصویر اجازه یک نام هشت-رقمی هم وجود دارد. 
+</p>
+
+<p>
+مراحل بزرگتر ساختن ولوم سربرگ بسادگی صورت نمی پذیرد. یک اشکال در آن وجود دارد. کسی نمی تواند بسادگی در حین کارکرد fdisk ولوم سربرگ را پاک یا حجیم تر نماید. در نمونه ائی که در زیر فراهم آمده،  یک ولوم سربرگ ۵۰ مگابایتی در یک پارتیشن <c>/boot</c> با حجم ۵۰۰ مگابابت راه اندازی نمودیم. لایه بندی واقعی دیسک شما می تواند متفاوت باشد، اما این فقط به منظور توضیح دادن است.
+</p>
+
+<pre caption="Resizing the SGI Volume Header correctly">
+Command (m for help): <i>n</i>
+Partition number (1-16): <i>1</i>
+First cylinder (5-8682, default 5): <i>51</i>
+ Last cylinder (51-8682, default 8682): <i>101</i>
+
+<comment>(Notice how fdisk only allows Partition #1 to be re-created starting at a     )
+(minimum of cylinder 5?  Had you attempted to delete &amp; re-create the SGI      )
+(Volume Header this way, this is the same issue you would have encountered.   )
+(In our example, we want /boot to be 50MB, so we start it at cylinder 51 (the )
+(Volume Header needs to start at cylinder 0, remember?), and set its ending   )
+(cylinder to 101, which will roughly be 50MB (+/- 1-5MB).                     )</comment>
+
+Command (m for help): <i>d</i>
+Partition number (1-16): <i>9</i>
+
+<comment>(Delete Partition #9 (SGI Volume Header))</comment>
+
+Command (m for help): <i>n</i>
+Partition number (1-16): <i>9</i>
+First cylinder (0-50, default 0): <i>0</i>
+ Last cylinder (0-50, default 50): <i>50</i>
+
+<comment>(Re-Create Partition #9, ending just before Partition #1)</comment>
+</pre>
+
+<p>
+اگر مطمئن نیستید چگونه از <c>fdisk</c> استفاده نمایید، نگاهی به پایین در ساختار پارتیشن بندی بروی کوبالت بیاندازید. مفاهیم دقیقا مشابه هستند -- فقط بخاطر داشته باشید که ولوم سربرگ را ترک نمایید و همه پارتیشن های دیسک را جدا قرار دهید.
+</p>
+
+<p>
+به مجرد اینکه این به پایان رسید، ایمن هستید که باقی مانده پارتیشن خود را چنانکه می بینید اندازه نمایید. هنگامیکه همه پارتیشن های شما لایه بندی شدند، مطمئن شوید نشانک پارتیشن سواپ را بروی <c>82</c> تنظیم نمایید، که سواپ لینوکس است، بطور پیش فرض آن <c>83</c> خواهد بود که عمومی برای لینوکس است.
+</p>
+
+<p>
+اکنون که پارتیشن های شما ایجاد گردیدند، می توانید با <uri link="#filesystems">ایجاد کردن فایل سیستم ها</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>ماشین های کوبالت: پارتیشن بندی نمودن درایوهای شما</title>
+<body>
+
+<p>
+در ماشین های کوبالت، BOOTROM توقع دارد یک MS-DOS MBR ببیند، بنابر این پارتیشن بندی نمودن درایو واقعا سر راست است -- در حقیقت، این کار به همان طریقی که برای یک ماشین x86 انجام می پذیرد، انجام می شود. <e>هرچند</e> چیزهائی وجود دارند که باید در ذهن خود بسپارید.
+</p>
+
+<ul>
+  <li>
+فریم ور کوبالت توقع پارتیشن با فرمت <e>EXT2 بازبینی 0</e> بروی <path>/dev/sda1</path> را خواهد داشت. نکته: <e>بازبینی ۱ در فرمت EXT2 کار نخواهد کرد!</e> (محدوده BOOTROM کوبالت فقط EXT2r0 را می فهمد)
+  </li>
+  <li>
+در بالا گفته شد پارتیشن باید حاوی یک تصویر ELF gzipped باشد، <path>vmlinux.gz</path> در ریشه آن پارتیشن، که به عنوان کرنل لود می شود.
+  </li>
+</ul>
+
+<p>
+به دلائلی، من پیشنهاد می دهم یک پارتیشن <path>/boot</path> با حجم تقریبی ۲۰ مگابایت با فرمت EXT2r0 بر مکانی که می توانید CoLo &amp; کرنل خودتان را نصب نمایید، قرار دهید. این به شما امکان می دهد تا یک فایل سیستم جدید (EXT3 یا ReiserFS) برای فایل سیستم ریشه خود اجرا نمایید.
+</p>
+
+<p>
+فرض می کنم شما <path>/dev/sda1</path> را ایجاد نموده اید تا پس از این به عنوان پارتیشن <path>/boot</path> آنرا مانت نمایید. اگر دوست دارید آنرا <path>/</path> قرار دهید، لازم است تا انتظارات PROM را در ذهن خود بسپارید.
+</p>
+
+<p>
+بنابر این، ادامه می دهیم با ... برای ایجاد پارتیشن ها <c>fdisk /dev/sda</c> را در خط فرمان تایپ  نمایید. دستورات اصلی که باید آنها را بدانید، این ها هستند:
+</p>
+
+<ul>
+  <li>
+    <c>o</c>: پاک کردن جدول پارتیشن قدیمی و نگارش یک جدول پارتیشن MS-DOS جدید
+  </li>
+  <li>
+    <c>n</c>: پارتیشن جدید
+  </li>
+  <li>
+    <c>t</c>: تغییر نوع پارتیشن
+    <ul>
+	<li>استفاده از نوع <c>82</c> برای سواپ لینوکس و <c>83</c> برای FS لینوکس</li>
+    </ul>
+  </li>
+  <li>
+    <c>d</c>: حذف کرد یک پارتیشن
+  </li>
+  <li>
+    <c>p</c>: نمایش (پرینت) جدول پارتیشن
+  </li>
+  <li>
+    <c>q</c>: خروج -- بیرون آمدن با باقی ماندن جدول پارتیشن قدیمی
+  </li>
+  <li>
+    <c>w</c>: خروج -- نگارش جدول پارتیشن جاری بروی دیسک
+  </li>
+</ul>
+
+<pre caption="Partitioning the disk">
+# <i>fdisk /dev/sda</i>
+
+The number of cylinders for this disk is set to 19870.
+There is nothing wrong with that, but this is larger than 1024,
+and could in certain setups cause problems with:
+1) software that runs at boot time (e.g., old versions of LILO)
+2) booting and partitioning software from other OSs
+   (e.g., DOS FDISK, OS/2 FDISK)
+
+<comment>(Start by clearing out any existing partitions)</comment>
+Command (m for help): <i>o</i>
+Building a new DOS disklabel. Changes will remain in memory only,
+until you decide to write them. After that, of course, the previous
+content won't be recoverable.
+
+
+The number of cylinders for this disk is set to 19870.
+There is nothing wrong with that, but this is larger than 1024,
+and could in certain setups cause problems with:
+1) software that runs at boot time (e.g., old versions of LILO)
+2) booting and partitioning software from other OSs
+   (e.g., DOS FDISK, OS/2 FDISK)
+Warning: invalid flag 0x0000 of partition table 4 will be corrected by w(rite)
+
+<comment>(You can now verify the partition table is empty using the 'p' command)</comment>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+
+<comment>(Create the /boot partition)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   e   extended
+   p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+
+<comment>(Just press ENTER here to accept the default)</comment>
+
+First cylinder (1-19870, default 1):
+Last cylinder or +size or +sizeM or +sizeK (1-19870, default 19870): <i>+20M</i>
+
+<comment>(and now if we type 'p' again, we should see the new partition)</comment>
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1          40       20128+  83  Linux
+
+<comment>(The rest, I prefer to put in an extended partition, so I'll create that)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   e   extended
+   p   primary partition (1-4)
+<i>e</i>
+Partition number (1-4): <i>2</i>
+
+<comment>(Again, the default is fine, just press ENTER.)</comment>
+
+First cylinder (41-19870, default 41):
+Using default value 41
+
+<comment>(We want to use the whole disk here, so just press ENTER again)</comment>
+Last cylinder or +size or +sizeM or +sizeK (41-19870, default 19870):
+Using default value 19870
+
+<comment>(Now, the / partition -- I use separate partitions for /usr, /var,
+etc... so / can be small. Adjust as per your preference.)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   l   logical (5 or over)
+   p   primary partition (1-4)
+<i>l</i>
+First cylinder (41-19870, default 41):<i>&lt;Press ENTER&gt;</i>
+Using default value 41
+Last cylinder or +size or +sizeM or +sizeK (41-19870, default 19870): <i>+500M</i>
+
+<comment>(... and similar for any other partitions ...)</comment>
+
+<comment>(Last but not least, the swap space. I recommend at least 250MB swap,
+preferrably 1GB)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   l   logical (5 or over)
+   p   primary partition (1-4)
+<i>l</i>
+First cylinder (17294-19870, default 17294): <i>&lt;Press ENTER&gt;</i>
+Using default value 17294
+Last cylinder or +size or +sizeM or +sizeK (1011-19870, default 19870): <i>&lt;Press ENTER&gt;</i>
+Using default value 19870
+
+<comment>(Now, if we check our partition table, everything should mostly be ship
+shape except for one thing...)</comment>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+Device Boot      Start         End      Blocks      ID  System
+/dev/sda1               1          21       10552+  83  Linux
+/dev/sda2              22       19870    10003896    5  Extended
+/dev/sda5              22        1037      512032+  83  Linux
+/dev/sda6            1038        5101     2048224+  83  Linux
+/dev/sda7            5102        9165     2048224+  83  Linux
+/dev/sda8            9166       13229     2048224+  83  Linux
+/dev/sda9           13230       17293     2048224+  83  Linux
+/dev/sda10          17294       19870     1298776+  83  Linux
+
+<comment>(Notice how #10, our swap partition is still type 83?)</comment>
+
+Command (m for help): <i>t</i>
+Partition number (1-10): <i>10</i>
+Hex code (type L to list codes): <i>82</i>
+Changed system type of partition 10 to 82 (Linux swap)
+
+<comment>(That should fix it... just to verify...)</comment>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+Device Boot      Start         End      Blocks      ID  System
+/dev/sda1               1          21       10552+  83  Linux
+/dev/sda2              22       19870    10003896    5  Extended
+/dev/sda5              22        1037      512032+  83  Linux
+/dev/sda6            1038        5101     2048224+  83  Linux
+/dev/sda7            5102        9165     2048224+  83  Linux
+/dev/sda8            9166       13229     2048224+  83  Linux
+/dev/sda9           13230       17293     2048224+  83  Linux
+/dev/sda10          17294       19870     1298776+  82  Linux Swap
+
+<comment>(Now, we write out the new partition table.)</comment>
+
+Command (m for help): <i>w</i>
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+#
+</pre>
+
+<p>
+و همه اس همین است. اکنون که پارتیشن های شما ایجاد گردیدند، با <uri link="#filesystems">ایجاد فایل سیستم ها</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section id="filesystems">
+<title>ایجاد کردن فایل سیستم ها</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+اکنون که پارتیشن هایتان ایجاد شدند، زمان آن است که filesystem هائی بروی آنها قرار دهیم. اگر نظری درباره انتخاب filesystem خاصی ندارید و با آنچه ما به عنوان پیش فرض در این کتاب راهنما استفاده می کنیم راحت هستید، با <uri  link="#filesystems-apply">بکاربستن یک filesystem بروی یک پارتیشن</uri> ادامه دهید.
+درغیر اینصورت یادگیری درباره انواع filesystem های موجود را بخوانید ...
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<include href="hb-install-filesystems.xml"/>
+</subsection>
+
+<subsection id="filesystems-apply">
+<title>بکاربستن یک filesystem بروی یک پارتیشن</title>
+<body>
+
+<p>
+برای ایجاد یک فایل سیستمی بروی یک پارتیشن یا حجم، ابزارهائی برای هر فایل سیستمی وجود دارد:
+</p>
+
+<table>
+<tr>
+  <th>Filesystem</th>
+  <th>Creation Command</th>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mkfs.ext2</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkfs.reiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+
+<p>
+برای مثال، برای داشتن ext2 بروی پارتیشن راه انداز (در مثال ما <path>/dev/sda1</path> ) و ext3 (در مثال ما <path>/dev/sda3</path>) بروی پارتیشن ریشه (چنانکه در مثال ما آمد)، شما لازم دارید اینکار را انجام دهید:
+</p>
+
+<pre caption="Applying a filesystem on a partition">
+# <i>mkfs.ext2 /dev/sda1</i>
+# <i>mkfs.ext3 /dev/sda3</i>
+</pre>
+
+<p>
+اکنون فایل های سیستمی بروی پارتیشن های جدیدی که ایجاد نمودید (یا حجم محلی) سوار شد.
+</p>
+
+<warn>
+اگر در حال نصب بروی یک سرور کوبالت هستید، بخاطر داشته باشید <path>/dev/sda1</path> باید از نوع <e>EXT2 revision 0</e> باشد; هر چیز دیگری (مثلا EXT2 revision 1, EXT3,
+ReiserFS, XFS, JFS  یا غیره) کار <e>نخواهد نمود!</e> می توانید پارتیشن را با استفاده از دستور <c>mkfs.ext2 -r 0 /dev/sda1</c> فرمت نمایید.
+</warn>
+
+</body>
+</subsection>
+<subsection>
+<title>فعال نمودن پارتیشن سواپ</title>
+<body>
+
+<p>
+برای فعال نمودن پارتیشن سواپ، از دستور <c>swapon</c> استفاده نمایید:
+</p>
+
+<pre caption="Creating a Swap signature">
+# <i>mkswap /dev/sda2</i>
+</pre>
+
+<p>
+برای فعال نمودن پارتیشن سواپ، از دستور <c>swapon</c> استفاده نمایید:
+</p>
+
+<pre caption="Activating the swap partition">
+# <i>swapon /dev/sda2</i>
+</pre>
+
+<p>
+با دستوراتی که در بالا ذکر شد سواپ را ایجاد و فعال نمایید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>مانت کردن</title>
+<body>
+
+<p>
+اکنون که پارتیشن های شما ارزش آغازین گرفتند و فایل سیستم ها در آنها جای گیر شدند، زمان مانت نمودند آن پارتیشن ها رسیده است. از دستور <c>mount</c> استفاده نمایید. فراموش ننمایید که دایرکتوری های لازم برای مانت نمودن هر پارتیشنی که ایجاد نمودید را بوجود بیاورید. به عنوان یک مثال ما پارتیشن های راه انداز و ریشه را مانت می نماییم:
+</p>
+
+<pre caption="Mounting partitions">
+# <i>mount /dev/sda3 /mnt/gentoo</i>
+# <i>mkdir /mnt/gentoo/boot</i>
+# <i>mount /dev/sda1 /mnt/gentoo/boot</i>
+</pre>
+
+<note>
+اگر می خواهید <path>/tmp</path> شما در پارتیشنی مجزا قرار گیرد، مطمئن شوید پس از مانت نمودن آن پرمیژن آنرا تغییر دهید: <c>chmod 1777 /mnt/gentoo/tmp</c>. این دستور همچنین برای <path>/var/tmp</path> هم صادق است.
+</note>
+
+<p>
+همچنین ما نیاز داریم تا فایل سیستم proc (یک واسط مجازی با کرنل) را نیز در <path>/proc</path> مانت نماییم. اما اول نیازداریم تا فایل های خودمان را در پارتیشن ها قرار دهیم.
+</p>
+
+<p>
+با <uri link="?part=1&amp;chap=5">نصب کردن فایل های نصب جنتو</uri> ادامه دهید.
+</p>
+
+</body>
+</section>
+</sections>
