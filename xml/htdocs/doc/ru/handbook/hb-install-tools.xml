@@ -1,37 +1,20 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
-<!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <!-- Текст этого документа распространяется на условиях лицензии CC-BY-SA -->
 <!-- См. http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-tools.xml,v 1.11 2006/09/25 20:35:24 achumakov Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-tools.xml,v 1.12 2013/01/20 15:47:40 swift Exp $ -->
 
 <sections>
 
-<version>7.1</version>
-<date>2006-09-08</date>
+<abstract>
+В этой главе мы поможем вам выбрать и установить некоторые важные инструменты. 
+</abstract>
 
-<section>
-<title>Диспетчер устройств</title>
-<body>
+<version>8</version>
+<date>2011-10-23</date>
 
-<p>
-Если вы используете ядро 2.4, <e>и при этом</e> устанавливаете Gentoo из файла 
-третьей стадии (stage3), вам <e>необходимо</e> еще кое-что сделать. Так как 
-теперь в Gentoo по умолчанию используется udev, а ядром 2.4 udev не 
-поддерживается, вам потребуется установить devfsd, и убрать udev.
-</p>
-
-<pre caption="Установка devfsd">
-<comment>(для тех, кто использует ядро 2.4.x при установке c третьей стадии)</comment>
-# <i>emerge --unmerge udev</i>
-# <i>emerge devfsd</i>
-</pre>
-
-</body>
-</section>
 <section>
 <title>Системные службы журналирования</title>
 <body>
@@ -64,14 +47,6 @@
 может потребоваться установка <c>logrotate</c>, поскольку в этих службах
 журналирования не предусмотрен никакой механизм ротации системных журналов.
 </p>
-
-<!--
-Хотя syslog-ng не делает ротацию журналов, она соответствует syslog RFC 
-(http://www.faqs.org/rfcs/rfc3164.html), и является значительно более мощной, 
-чем большинство других служб журналирования. Поэтому в некоторых архитектурах 
-предпочтение отдано syslog-ng (metalog, например, не всегда корректно работает 
-на sparc). 
--->
 
 <p>
 Чтобы установить выбранную службу журналирования, воспользуйтесь <c>emerge</c>, 
@@ -127,23 +102,63 @@
 
 <p>
 Если вы хотите индексировать файлы в своей системе, чтобы быстро находить их с 
-помощью <c>locate</c>, нужно установить <c>sys-apps/slocate</c>:
+помощью <c>locate</c>, нужно установить <c>sys-apps/mlocate</c>:
 </p>
 
-<pre caption="Установка slocate">
-# <i>emerge slocate</i>
+<pre caption="Установка mlocate">
+# <i>emerge mlocate</i>
 </pre>
 
 </body>
 </section>
+
+<section>
+<title>Дополнительно: Удаленный Доступ</title>
+<body>
+
+<p>
+Если вам нужен доступ к вашей системе удаленно после установки, 
+не забудьте добавить sshd на уровень запуска по умолчанию:
+</p>
+
+<pre caption="Добавляем sshd к уровню запуска по умолчанию">
+# <i>rc-update add sshd default</i>
+</pre>
+
+<p>
+Если вам нужен доступ к терминалу по последовательному порту (что возможно 
+в случае удаленных серверов), вам нужно раскомментировать
+соответствующий раздел в <path>/etc/inittab</path>.
+</p>
+
+<pre caption="Редактируем /etc/inittab">
+# <i>nano -w /etc/inittab</i>
+</pre>
+
+<p>
+Следующая выдержка показывает раскомментированный раздел:
+</p>
+
+<pre caption="Раскомментирование раздела терминалов по последовательным портам в inittab">
+<comment># SERIAL CONSOLES</comment>
+s0:12345:respawn:/sbin/agetty 9600 ttyS0 vt100
+s1:12345:respawn:/sbin/agetty 9600 ttyS1 vt100
+</pre>
+
+</body>
+</section>
+
 <section>
 <title>Утилиты для обслуживания файловых систем</title>
+<subsection>
 <body>
 
 <p>
 Для проверки целостности файловых систем, создания дополнительных файловых 
 систем, и т.п., вам потребуются определенные утилиты, состав которых зависит от 
-используемых файловых систем.
+используемых файловых систем. Обратите внимание, что программы для работы
+с файловыми системами ext2/ext3 (<c>e2fsprogs</c>) уже установлены как
+часть вашей системы.
 </p>
 
 <p>
@@ -174,30 +189,41 @@
 </tr>
 </table>
 
+</body>
+</subsection>
+
+<subsection test="contains('PPC PPC64', func:keyval('arch'))">
+<title>Необязательно: Утилиты RAID для оборудования фирмы IBM</title>
+<body>
+
 <p>
-Если вы используете EVMS, также необходимо установить <c>evms</c>:
+Если вы используете SCSI RAID на системе, основанной на POWER5,
+вы должны принять во внимание установку <c>iprutils</c>, которая
+позволит вам среди других функций, работать с массивом дисков RAID, 
+получать статус дисков в массивах, а также обновлять микрокод.
 </p>
 
-<pre caption="Установка утилит EVMS">
-# <i>USE="-gtk" emerge evms</i>
+<pre caption="Устанавливаем iprutils">
+# <i>emerge iprutils</i>
 </pre>
 
-<p>
-<c>USE="-gtk"</c> предотвратит установку пакетов, от которых зависит данный. 
-При желании включить графические средства <c>evms</c>, потом можно 
-перекомпилировать <c>evms</c>.
-</p>
+</body>
+</subsection>
+</section>
+
+<section id="networking-tools">
+<title>Сетевые средства</title>
+<subsection>
+<body>
 
 <p>
-Если вам не нужны никакие дополнительные сетевые средства (типа rp-pppoe или 
+Если вам не нужны никакие дополнительные сетевые средства (вроде ppp или 
 клиента dhcp), переходите к <uri link="?part=1&amp;chap=10">настройке 
 начального загрузчика</uri>.
 </p>
 
 </body>
-</section>
-<section id="networking-tools">
-<title>Сетевые средства</title>
+</subsection>
 <subsection>
 <title>Дополнительно: установка клиента DHCP</title>
 <body>
@@ -222,35 +248,11 @@ link="?part=4&amp;chap=3">Модульное построение сети</uri>
 <body>
 
 <p>
-Если для выхода в сеть требуется <c>rp-pppoe</c>, его нужно установить.
+Если для выхода в сеть требуется <c>ppp</c>, его нужно установить.
 </p>
 
-<pre caption="Установка rp-pppoe">
-# <i>USE="-X" emerge rp-pppoe</i>
-</pre>
-
-<p>
-<c>USE="-X"</c> запрещает установку xorg-x11 в порядке зависимости (в 
-<c>rp-pppoe</c> есть графические средства; если их нужно подключить, можно 
-перекомпилировать <c>rp-pppoe</c> позже, или же установить xorg-x11 сейчас: при
-его установке потребуется много времени на компиляцию).
-</p>
-
-</body>
-</subsection>
-<subsection>
-<title>Дополнительно: утилиты RAID для оборудования IBM</title>
-<body>
-
-<p>
-Если в составе системы на базе POWER5 вы используете RAID-массивы SCSI, стоит 
-задуматься об установке <c>iprutils</c>, которые, среди прочего, позволяют 
-работать с дисковыми массивами, выяснять состояние дисков в составе массива и 
-обновлять микрокод.
-</p>
-
-<pre caption="Установка iprutils">
-# <i>emerge iprutils</i>
+<pre caption="Установка ppp">
+# <i>emerge ppp</i>
 </pre>
 
 <p>
@@ -265,9 +267,10 @@ link="?part=4&amp;chap=3">Модульное построение сети</uri>
 
 <!-- *$Localization:
 target-language: Russian
-target-version: 7.1-r1
-target-date: 2006-09-25
-source-cvs-revision: 1.42
-translated-by: Aleksey Glazunov [glazunov_aleksey@mail.ru], Alexey Chumakov
+target-date: 2011-10-23
+source-cvs-revision: 1.52
+translated-by: Aleksey Glazunov [glazunov_aleksey@mail.ru]
+translated-by: Alexey Chumakov
 edited-by: Alexey Chumakov [achumakov@gentoo.org]
+edited-by: Vladimir Romanov [blueboar2@gmail.com]
 -->

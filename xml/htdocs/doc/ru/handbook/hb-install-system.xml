@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
-<!-- The content of this document is licensed under the CC-BY-SA license -->
-<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <!-- Текст этого документа распространяется на условиях лицензии CC-BY-SA -->
 <!-- См. http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-system.xml,v 1.15 2006/11/06 18:00:24 achumakov Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-system.xml,v 1.16 2013/01/20 15:47:40 swift Exp $ -->
 
 <sections>
 
-<version>7.1</version>
-<date>2006-09-17</date>
+<abstract>
+После установки и настройки третьей стадии в вашем распоряжении оказывается 
+базовая система Gentoo. Здесь описывается, как этого достичь. 
+</abstract>
+
+<version>8</version>
+<date>2013-01-08</date>
 
 <section>
 <title>Изменение корневого каталога</title>
@@ -26,16 +29,13 @@ Portage ищет переменную GENTOO_MIRRORS в файле <path>make.co
 link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать одно или 
 несколько, географически ближайших к вам (чаще всего они и будут самыми
 быстрыми), но мы предлагаем вам удобную утилиту <c>mirrorselect</c>, которая
-позволяет выбрать желаемые зеркала более удобным способом.
+позволяет выбрать желаемые зеркала более удобным способом. Просто перейдите
+к желаемым зеркалам, и нажмите пробел для выбора одного или более зеркал.
 </p>
 
 <pre caption="Запуск mirrorselect для установки переменной GENTOO_MIRRORS">
-# <i>mirrorselect -i -o &gt;&gt;/mnt/gentoo/etc/make.conf</i>
+# <i>mirrorselect -i -o &gt;&gt;/mnt/gentoo/etc/portage/make.conf</i>
 </pre>
-
-<warn>
-Не выбирайте зекрала IPv6. Файлы стадий пока не поддерживают протокол IPv6.
-</warn>
 
 <p>
 Вторая важная настройка &mdash; установка значения переменной SYNC в файле 
@@ -47,13 +47,22 @@ link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать о
 </p>
 
 <pre caption="Выбор зеркала rsync с помощью mirrorselect">
-# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/portage/make.conf</i>
 </pre>
 
 <p>
 После выполнения <c>mirrorselect</c>, мы рекомендуем проверить все значения в
-файле <path>/mnt/gentoo/etc/make.conf</path>!
+файле <path>/mnt/gentoo/etc/portage/make.conf</path>!
 </p>
+
+<note>
+Если вы хотите установить SYNC-сервер в <path>make.conf</path> вручную, вам
+нужно свериться со <uri link="/main/en/mirrors-rsync.xml">списком зеркал
+сообщества</uri>, и выбрать зеркало, наиболее близкое к вам. Мы рекомендуем
+выбрать зеркало с <e>ротацией</e>, такое, как <c>rsync.us.gentoo.org</c>,
+а не единственное зеркало. Это помогает распределить нагрузку, и дает
+надежное решение, в случае, если одно из зеркал выйдет из строя.
+</note>
 
 </body>
 </subsection>
@@ -72,25 +81,54 @@ link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать о
 <pre caption="Копирование информации о DNS">
 <comment>(параметр &laquo;-L&raquo; нужен, чтобы случайно не скопировать
  символьную ссылку)</comment>
-# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/resolv.conf</i>
+# <i>cp -L /etc/resolv.conf /mnt/gentoo/etc/</i>
 </pre>
 
 </body>
 </subsection>
-<subsection>
-<title>Монтирование файловых систем /proc и /dev</title>
+<subsection test="not(func:keyval('arch')='IA64')">
+<title>Монтирование необходимых файловых систем</title>
+<body>
+
+<p>
+Скоро мы изменим корень файловой системы Linux на новое местоположение.
+Чтобы удостовериться, что новое окружение работает как надо, нам нужно,
+чтобы там существовали некоторый файловые системы.
+</p>
+
+<p>
+Смонтируйте файловую систему <path>/proc</path> в
+<path>/mnt/gentoo/proc</path>, чтобы после изменения корневого каталога
+устанавливаемая система смогла обращаться к информации, предоставляемой ядром,
+а затем создайте привязку монтирования файловых систем <path>/dev</path>
+и <path>/sys</path>.
+</p>
+
+<pre caption="Монтирование /proc и /dev">
+# <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection test="func:keyval('arch')='IA64'">
+<title>Монтирование файловых систем /proc, /sys и /dev</title>
 <body>
 
 <p>
 Смонтируйте файловую систему <path>/proc</path> в
 <path>/mnt/gentoo/proc</path>, чтобы после изменения корневого каталога
 устанавливаемая система смогла обращаться к информации, предоставляемой ядром,
-а затем создайте привязку монтирования файловой системы <path>/dev</path>.
+а затем создайте привязку монтирования файловых систем <path>/dev</path>
+и <path>/sys</path>.
 </p>
 
-<pre caption="Монтирование /proc и /dev">
+<pre caption="Монтирование /proc /sys и /dev">
 # <i>mount -t proc none /mnt/gentoo/proc</i>
-# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
 </pre>
 
 </body>
@@ -110,16 +148,14 @@ link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать о
 <p>
 Изменение выполняется в три этапа. Сначала мы с помощью <c>chroot</c> изменим 
 корневой каталог с <path>/</path> (находящийся на установочном носителе) на 
-<path>/mnt/gentoo</path> (находящийся на ваших дисковых разделах). Затем мы 
-создадим новую среду, пользуясь утилитой <c>env-update</c>, которая, 
-собственно, создает переменные среды. Наконец, мы загрузим эти переменные в 
-память при помощи <c>source</c>.
+<path>/mnt/gentoo</path> (находящийся на ваших дисковых разделах). Затем мы
+перезагрузим некоторые настройки, как прописано в <path>/etc/profile</path>
+в память, используя <c>source</c>. Последним шагом, мы изменим вид
+приглашения, чтобы он напоминал нам, что мы находимся в новой среде.
 </p>
 
 <pre caption="Изменение корневого каталога для перехода в новую среду">
 # <i>chroot /mnt/gentoo /bin/bash</i>
-# <i>env-update</i>
->> Regenerating /etc/ld.so.cache...
 # <i>source /etc/profile</i>
 # <i>export PS1="(chroot) $PS1"</i>
 </pre>
@@ -130,19 +166,52 @@ link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать о
 разделов :-)
 </p>
 
+<p>
+Если вам в любое время понадобится еще один терминал или консоль с доступом
+к новой среде, все, что вам будет нужно сделать - повторить вышеприведенные
+шаги еще раз.
+</p>
+
 </body>
 </subsection>
 </section>
 
-<section>
+<section id="installing_portage">
 <title>Настройка Portage</title>
 <subsection>
-<title>Обновление дерева Portage</title>
+<title>Распаковка снимка дерева портежей</title>
 <body>
 
 <p>
-Теперь надо обновить дерево Portage до самой последней версии с помощью команды
-<c>emerge --sync</c>:
+Теперь вам нужно установить снимок дерева портежей &mdash; набор файлов, 
+содержащих сведения для Portage о программном обеспечении, доступном для 
+установки, имеющихся профилях и т.д. Содержимое данного снимка будет
+установлено в <path>/usr/portage</path>.
+</p>
+
+<p>
+Мы рекомендуем использовать <c>emerge-webrsync</c>. Данная команда
+скачает самый новый образ Portage (который Gentoo выпускает каждый день)
+с одного из наших зеркал, и установит его на вашу систему.
+</p>
+
+<pre caption="Запускаем emerge-webrsync для установки образа Portage">
+# <i>mkdir /usr/portage</i>
+# <i>emerge-webrync</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Необязательно: Обновление дерева Portage</title>
+<body>
+
+<p>
+Теперь вы можете обновить дерево Portage до самой последней версии. Команда
+<c>emerge --sync</c> будет использовать протокол rsync для обновления дерева
+Portage (которое вы загрузили ранее с помощью <c>emerge-webrsync</c>) до
+самого нового состояния.
 </p>
 
 <pre caption="Обновление дерева портежей">
@@ -155,13 +224,13 @@ link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать о
 
 <p>
 Если компьютер подключен к интернету через межсетевой экран, блокирующий 
-прохождение rsync-пакетов, вы можете воспользоваться командой 
-<c>emerge-webrsync</c>, которая скачивает и устанавливает снимок дерева.
+прохождение rsync-пакетов, вы можете проигнорировать данный шаг, так как
+у вас уже достаточно новое дерево Portage.
 </p>
 
 <p>
 Если выдано предупреждение, что имеется новая версия Portage и ее нужно 
-обновить, выполните обновление командой <c>emerge portage</c>.
+обновить, выполните обновление командой <c>emerge --oneshot portage</c>.
 </p>
 
 </body>
@@ -176,17 +245,15 @@ link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать о
 
 <p>
 Профиль &mdash; конструктивный элемент любой системы Gentoo. В нем указываются
-не только значения по умолчанию для CHOST, CFLAGS и других важных переменных, 
+не только значения по умолчанию для USE, CFLAGS и других важных переменных, 
 он также привязывает систему к определенному диапазону допустимых версий 
 пакетов. Диапазоны поддерживаются разработчиками Gentoo.
 </p>
 
 <p>
-Раньше пользователь редко касался профиля. Однако, пользователи х86, hppa 
-и alpha могут выбирать из двух вариантов профиля: одного для ядра 2.4, другого 
-для ядра 2.6. Это вызвано необходимостью улучшения интеграции ядер 2.6. Для 
-архитектур ppc и ppc64 также существует несколько профилей. Мы поговорим о них 
-позже.
+Ранее такой профиль не трогался пользователями. Однако могут быть
+некоторые ситуации, когда вы можете решить, что необходимо изменить
+профиль.
 </p>
 
 <p>
@@ -195,94 +262,55 @@ link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать о
 </p>
 
 <pre caption="Выяснение используемого профиля">
-# <i>ls -FGg /etc/make.profile</i>
-lrwxrwxrwx  1 48 Apr  8 18:51 /etc/make.profile -> ../usr/portage/profiles/default-linux/x86/2006.1/
+# <i>eselect profile list</i>
+Available profile symlink targets:
+  [1] <keyval id="profile"/> *
+  [2] <keyval id="profile"/>/desktop
+  [3] <keyval id="profile"/>/server
 </pre>
 
 <p>
-Если вы используете одну из трех упомянутых архитектур, профиль по умолчанию 
-даст вам систему с ядром 2.6. Это рекомендуется по умолчанию, но за вами 
-сохраняется и право выбора другого профиля.
+Как вы можете видеть, для некоторых архитектур также предусмотрены подпрофили 
+<c>desktop</c> и <c>server</c>. Запустите <c>eselect profile list</c>, и вы увидите
+список всех существующих профилей.
 </p>
 
 <p>
-Для некоторых архитектур также предусмотрены подпрофили <c>desktop</c> и
-<c>server</c>. Загляните в профиль <path>2006.1/</path>, чтобы узнать, есть
-ли подпрофили для вашей архитектуры. Возможно, вы захотите заглянуть в
-<path>make.defaults</path> профиля <c>desktop</c>, чтобы определить,
-подходит ли он вам.
+После просмотра профилей, которые существуют для вашей архитектуры, 
+вы можете выбрать какой-нибудь другой профиль, если захотите:
 </p>
 
-<p>
-Некоторым пользователям, возможно, захочется установить систему, основанную на
-старом профиле, с ядром 2.4. Если для этого есть веские основания, сначала надо 
-проверить, существует ли такой дополнительный профиль. На системах x86 это 
-можно сделать следующей командой:
-</p>
-
-<pre caption="Выяснение наличия дополнительного профиля">
-# <i>ls -d /usr/portage/profiles/default-linux/x86/no-nptl/2.4</i>
-/usr/portage/profiles/default-linux/x86/no-nptl/2.4
+<pre caption="Изменяем профили">
+# <i>eselect profile set 2</i>
 </pre>
 
-<p>
-В приведенном примере дополнительный профиль 2.4 существует (т.е. нет сообщений 
-об отсутствующем файле или каталоге). Рекомендуется использовать профиль по 
-умолчанию, но если вы все же хотите сменить его, это можно сделать так:
+<p test="func:keyval('arch')='AMD64'">
+Если вы хотите чистое 64-битное окружение, без 32-битных приложений или библиотек,
+вам нужно использовать профиль no-multilib:
 </p>
 
-<pre caption="Переключение профиля на 2.4">
-<comment>(убедитесь, что используете нужную архитектуру; этот пример - для x86)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/x86/no-nptl/2.4 /etc/make.profile</i>
-<comment>(вывод списка файлов в профиле 2.4)</comment>
-# <i>ls -FGg /etc/make.profile/</i>
-total 12
--rw-r--r--  1 939 Dec 10 14:06 packages
--rw-r--r--  1 347 Dec  3  2004 parent
--rw-r--r--  1 573 Dec  3  2004 virtuals
+<pre test="func:keyval('arch')='AMD64'" caption="Переключаемся на профиль no-multilib">
+# <i>eselect profile list</i>
+Available profile symlink targets:
+  [1] <keyval id="profile"/> *
+  [2] <keyval id="profile"/>/desktop
+  [3] <keyval id="profile"/>/no-multilib
+  [4] <keyval id="profile"/>/server
+<comment>(Выберите профиль no-multilib)</comment>
+# <i>eselect profile set 3</i>
+<comment>(Проверьте результат изменений)</comment>
+# <i>eselect profile list</i>
+Available profile symlink targets:
+  [1] <keyval id="profile"/>
+  [2] <keyval id="profile"/>/desktop
+  [3] <keyval id="profile"/>/no-multilib *
+  [4] <keyval id="profile"/>/server
 </pre>
 
-<p>
-Для архитектуры ppc в выпуске 2006.1 появилось несколько новых профилей:
-</p>
-
-<pre caption="Профили для PPC">
-<comment>(базовый профиль PPC, подходит для всех PPC-машин, минимальный)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.1 /etc/make.profile</i>
-<comment>(профиль для G3)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.1/G3 /etc/make.profile</i>
-<comment>(профиль для G3 Pegasos)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.1/G3/Pegasos/ /etc/make.profile</i>
-<comment>(профиль для G4 (Altivec))</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.1/G4 /etc/make.profile</i>
-<comment>(профиль для G4 (Altivec) Pegasos)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc32/2006.1/G4/Pegasos/ /etc/make.profile</i>
-</pre>
-
-<p>
-Для архитектуры ppc64 в выпуске 2006.1 также появилось несколько новых 
-профилей:
-</p>
-
-<pre caption="Профили для PPC64">
-<comment>(базовый профиль PPC64 с 64-битным режимом пользователя, для всех PPC64-машин)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/64bit-userland /etc/make.profile</i>
-<comment>(базовый профиль PPC64 с 32-битным режимом пользователя, для всех PPC64-машин)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/32bit-userland /etc/make.profile</i>
-<comment>(для каждого режима пользователя существуют подпрофили, как показано ниже.)</comment>
-<comment>(&laquo;userland&raquo; необходимо заменять на нужный вариант режима из примеров выше)</comment>
-<comment>(профиль 970 для JS20)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/970 /etc/make.profile</i>
-<comment>(профиль для G5)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/970/pmac /etc/make.profile</i>
-<comment>(профиль для POWER3)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/power3 /etc/make.profile</i>
-<comment>(профиль для POWER4)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/power4 /etc/make.profile</i>
-<comment>(профиль для POWER5)</comment>
-# <i>ln -snf /usr/portage/profiles/default-linux/ppc/ppc64/2006.1/(userland)/power5 /etc/make.profile</i>
-<comment>(многорежимные профили на дату выхода этого выпуска нестабильны)</comment>
-</pre>
+<note>
+Подпрофиль <c>developer</c> создан специально для целей разработки Gentoo Linux.
+Он <e>не</e> предназначен для настройки общих окружений для разработки.
+</note>
 
 </body>
 </subsection>
@@ -313,7 +341,7 @@ total 12
 параметрах компиляции. Например, параметр <e>ssl</e> включает компиляцию с 
 поддержкой ssl всех программ, которые способны его поддерживать. <e>-X</e> 
 отключает поддержку X-сервера (обратите внимание на предшествующий знак 
-&laquo;минус&raquo;). Параметры <e>gnome gtk -kde -qt</e> обеспечивают 
+&laquo;минус&raquo;). Параметры <e>gnome gtk -kde -qt4</e> обеспечивают 
 компиляцию ваших  программ с поддержкой Gnome и gtk, но без поддержки KDE и qt, 
 делая систему оптимальной для GNOME.
 </p>
@@ -324,7 +352,7 @@ total 12
 который указывает <path>/etc/make.profile</path>, а также во всех родительких
 каталогах. Значение <c>USE</c> по умолчанию &mdash; это сумма всех значений
 <c>USE</c> во всех файлах <path>make.defaults</path>. Все, что вы вносите в
-<path>/etc/make.conf</path>, рассчитывается относительно этих значений. Когда 
+<path>/etc/portage/make.conf</path>, рассчитывается относительно этих значений. Когда 
 вы добавляете что-либо к значению <c>USE</c>, оно добавляется в список по 
 умолчанию. Когда удаляете что-либо (указывая ключевое слово с предшествующим 
 знаком минус), оно удаляется из списка по умолчанию (если оно там вообще было). 
@@ -335,8 +363,8 @@ total 12
 <p>
 Полное описание переменной <c>USE</c> находится во второй части настольной 
 книги Gentoo в главе <uri link="?part=2&amp;chap=2">USE-флаги</uri>. Полное 
-описание возможных значений признаков использования находится в вашей системе 
-в файле <path>/usr/portage/profiles/use.desc</path>.
+список возможных USE-флагов находится в вашей системе
+в файле <path>/usr/portage/profiles/use.desc</path>
 </p>
 
 <pre caption="Просмотр допустимых USE-флагов">
@@ -349,60 +377,13 @@ total 12
 включением поддержки DVD, ALSA и записи CD:
 </p>
 
-<pre caption="Открытие файла /etc/make.conf">
-# <i>nano -w /etc/make.conf</i>
+<pre caption="Открытие файла /etc/portage/make.conf">
+# <i>nano -w /etc/portage/make.conf</i>
 </pre>
 
 <pre caption="Значение USE">
-USE="-gtk -gnome qt kde dvd alsa cdr"
+USE="-gtk -gnome qt4 kde dvd alsa cdr"
 </pre>
-
-</body>
-</subsection>
-<subsection>
-<title>Дополнительно: региональные параметры GLIBC</title>
-<body>
-
-<p>
-Скорее всего, вы будете использовать в системе один-два набора региональных 
-параметров. Нужные регионы можно указать в <path>/etc/locale.gen</path>.
-</p>
-
-<pre caption="Открытие /etc/locale.gen">
-# <i>nano -w /etc/locale.gen</i>
-</pre>
-
-<p>
-Вот пример одновременного подключения как английского (США), так и немецкого 
-(Германия) с соответствующими кодировками (например, UTF-8).
-</p>
-<!-- (**) решить с русским языком: ссылка на руководство или как? -->
-<pre caption="Укажите свои региональные настройки">
-en_US/ISO-8859-1
-en_US.UTF-8/UTF-8
-de_DE/ISO-8859-1
-de_DE@euro/ISO-8859-15
-</pre>
-
-<p>
-Следующий шаг &mdash; запустить <c>locale-gen</c>. Это сгенерирует настройки
-для всех регионов, указанных вами в файле <path>/etc/locale.gen</path>.
-</p>
-
-<note>
-<c>locale-gen</c> имеется в <c>glibc-2.3.6-r4</c> и более новой. Если у вас
-старшая версия glibc, сейчас ее следует обновить.
-</note>
-
-<note>
-Настройки, подобной приведенной, для поддержки русского языка недостаточно.
-За дополнительными сведениями обращайтесь к отдельным руководствам по 
-русификации Gentoo. <e>&mdash; прим. пер.</e>
-</note>
-
-<p>
-Теперь приступим к <uri link="?part=1&amp;chap=7">настройке ядра</uri>.
-</p>
 
 </body>
 </subsection>
@@ -411,10 +392,11 @@ de_DE@euro/ISO-8859-15
 
 <!-- *$Localization:
 target-language: Russian
-target-version: 7.1-r2
-target-date: 2006-09-25
-source-cvs-revision: 1.99
+target-date: 2013-01-08
+source-cvs-revision: 1.130
 translated-by: Vasiliy Golubev [vas@nightmail.ru]
-edited-by:  Azamat H. Hackimov; Alexey Chumakov [achumakov@gentoo.org] 
-notes:
+edited-by: Azamat H. Hackimov
+edited-by: Alexey Chumakov [achumakov@gentoo.org]
+edited-by: Vladimir Romanov [blueboar2@gmail.com]
 -->
+
