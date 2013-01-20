@@ -1,0 +1,521 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-sparc-disk.xml,v 1.1 2013/01/20 17:08:47 swift Exp $ -->
+
+<sections>
+
+<version>7</version>
+<date>2011-09-04</date>
+
+<section>
+<title>مقدمه ائی بر شیوه قالب بندی</title>
+
+<subsection>
+<include href="hb-install-blockdevices.xml"/>
+</subsection>
+
+<subsection>
+<title>پارتیشن ها</title>
+<body>
+
+<p>
+هرچند در تئوری امکان پذیر است که از همه دیسک برای اسکان دستگاه لینوکس استفاده نمود، در عمل تقریبا هرگز چنین چیزی اتفاق نمی افتد. در دستگاههای بلوک‌بندی همه دیسک به دستگاههای کوچکتر و قابل مدیریت‌تر شکسته می‌شود. این به <e>پارتیشن‌ها</e> یا <e>تکه‌ها یا برش‌ها</e> شناخته می شود.
+</p>
+
+<p>
+اولیت پارتیشن در اولین دیسک SCSI به <path>/dev/sda1</path> شمرده می شود، دومین <path>/dev/sda2</path> و به همین ترتیب.
+</p>
+
+<p>
+سومین پارتیشن در دستگاه‌های Sun برای اقامت تکه کامل دیسک تنظم گردیده. این پارتیشن نباید دارای فایل سیستم باشد.
+</p>
+
+<p>
+کاربرانی که از نمایه پارتیشن بندی DOS استفاده نموده‌اند باید توجه نمایند که برچسب دیسک Sun دارای پارتیشن‌های <c>"primary"</c> و <c>"extended"</c> نیست. بجای آن، در هر درایور بیشتر از هشت پارتیشن وجود دارد، که سه‌تای از آنها رزرو گردیده.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>طراحی نمایه پارتیشن بندی</title>
+<subsection>
+<title>نمایه پارتیشن بندی پیش فرض</title>
+<body>
+
+<p>
+اگر علاقمند به طراحی نمایه پارتیشن بندی برای دستگاه خودتان نیستید، جدول زیر نقطه شروع مناسبی برای بیشتر دستگاه‌ها است
+</p>
+
+<p>
+توجه داشته باشید که در SPARK پارتیشن جداگانه <path>/boot</path> بیشتر زمان‌ها پیشنهاد <e>نمی‌گردد</e>.
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Filesystem</th>
+  <th>Size</th>
+  <th>Mount Point</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti>/dev/sda1</ti>
+  <ti>ext3</ti>
+  <ti>&lt;2 GB</ti>
+  <ti>/</ti>
+  <ti>
+    Root partition. For SPARC64 systems with older OBP versions, this
+    <e>must</e> be less than 2 GB in size, and the first partition on the
+    disk.
+  </ti>
+</tr>
+<tr>
+  <ti>/dev/sda2</ti>
+  <ti>swap</ti>
+  <ti>512 MB</ti>
+  <ti>none</ti>
+  <ti>
+    Swap partition. For bootstrap and certain larger compiles, at least 512
+    MB of RAM (including swap) is required.
+  </ti>
+</tr>
+<tr>
+  <ti>/dev/sda3</ti>
+  <ti>none</ti>
+  <ti>Whole disk</ti>
+  <ti>none</ti>
+  <ti>Whole disk partition. This is required on SPARC systems.</ti>
+</tr>
+<tr>
+  <ti>/dev/sda4</ti>
+  <ti>ext3</ti>
+  <ti>at least 2 GB</ti>
+  <ti>/usr</ti>
+  <ti>
+    /usr partition. Applications are installed here. By default this partition
+    is also used for Portage data (which takes around 500 MB excluding
+    source code).
+  </ti>
+</tr>
+<tr>
+  <ti>/dev/sda5</ti>
+  <ti>ext3</ti>
+  <ti>at least 1 GB</ti>
+  <ti>/var</ti>
+  <ti>
+    /var partition. Used for program-generated data. By default Portage uses
+    this partition for temporary space whilst compiling. Certain larger
+    applications such as Mozilla and OpenOffice.org can require over 1 GB
+    of temporary space here when building.
+  </ti>
+</tr>
+<tr>
+  <ti>/dev/sda6</ti>
+  <ti>ext3</ti>
+  <ti>remaining space</ti>
+  <ti>/home</ti>
+  <ti>/home partition. Used for users' home directories.</ti>
+</tr>
+</table>
+
+</body>
+</subsection>
+</section>
+
+<section id="fdisk">
+<title>استفاده کردن از fdisk برای پارتیشن بندی نمودن دیسکتان</title>
+<subsection>
+<body>
+
+<p>
+بخش متعاقب شرح می دهد چگونه پارتیشن بندی مثال پیشتر اشاره گردید را ایجاد نماییم: 
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+    <ti>/dev/sda1</ti>
+    <ti>/</ti>
+</tr>
+<tr>
+    <ti>/dev/sda2</ti>
+    <ti>swap</ti>
+</tr>
+<tr>
+    <ti>/dev/sda3</ti>
+    <ti>whole disk slice</ti>
+</tr>
+<tr>
+    <ti>/dev/sda4</ti>
+    <ti>/usr</ti>
+</tr>
+<tr>
+    <ti>/dev/sda5</ti>
+    <ti>/var</ti>
+</tr>
+<tr>
+    <ti>/dev/sda6</ti>
+    <ti>/home</ti>
+</tr>
+</table>
+
+<p>
+لایه بندی پارتیشن را مطابق با نیاز خودتان تغییر دهید. بخاطر داشته باشید که در دستگاه‌های قدیمی پارتیشن ریشه را ۲ گیگابایت اولیه سراسر دیسک قرار دهید. همچنین یک محدودیت ۱۵ پارتیشنی برای SCSI و SATA وجود دارد.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>روشن کردن fdisk</title>
+<body>
+
+<p>
+برنامه <c>fdisk</c> را با نام دیسک‌تان به عنوان آرگومنت روشن نمایید:
+</p>
+
+<pre caption="Starting fdisk">
+# <i>fdisk /dev/sda</i>
+</pre>
+
+<p>
+باید با خط فرمان fdisk ملاقات نمایید:
+</p>
+
+<pre caption="The fdisk prompt">
+Command (m for help):
+</pre>
+
+<p>
+برای مشاهده پارتیشن‌های موجود، حرف <c>p</c> را تایپ نمایید:
+</p>
+
+<pre caption="Listing available partitions">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda (Sun disk label): 64 heads, 32 sectors, 8635 cylinders
+Units = cylinders of 2048 * 512 bytes
+
+   Device Flag    Start       End    Blocks   Id  System
+/dev/sda1             0       488    499712   83  Linux native
+/dev/sda2           488       976    499712   82  Linux swap
+/dev/sda3             0      8635   8842240    5  Whole disk
+/dev/sda4           976      1953   1000448   83  Linux native
+/dev/sda5          1953      2144    195584   83  Linux native
+/dev/sda6          2144      8635   6646784   83  Linux native
+</pre>
+
+<p>
+به <c>Sun disk label</c> در خروجی دقت نمایید. اگر این وجود نداشت، دیسک از پارتیشن بندی DOS استفاده می نماید، نه پارتیشن بندی Sun. در این مورد، از <c>s</c> برای اطمینان از اینکه یک جدول پارتیشن‌بندی Sun در دیسک وجود دارد، استفاده نمایید:  
+</p>
+
+<pre caption="Creating a Sun Disklabel">
+Command (m for help): <i>s</i>
+Building a new sun disklabel. Changes will remain in memory only,
+until you decide to write them. After that, of course, the previous
+content won't be recoverable.
+
+Drive type
+   ?   auto configure
+   0   custom (with hardware detected defaults)
+   a   Quantum ProDrive 80S
+   b   Quantum ProDrive 105S
+   c   CDC Wren IV 94171-344
+   d   IBM DPES-31080
+   e   IBM DORS-32160
+   f   IBM DNES-318350
+   g   SEAGATE ST34371
+   h   SUN0104
+   i   SUN0207
+   j   SUN0327
+   k   SUN0340
+   l   SUN0424
+   m   SUN0535
+   n   SUN0669
+   o   SUN1.0G
+   p   SUN1.05
+   q   SUN1.3G
+   r   SUN2.1G
+   s   IOMEGA Jaz
+Select type (? for auto, 0 for custom): <i>0</i>
+Heads (1-1024, default 64): 
+Using default value 64
+Sectors/track (1-1024, default 32): 
+Using default value 32
+Cylinders (1-65535, default 8635): 
+Using default value 8635
+Alternate cylinders (0-65535, default 2): 
+Using default value 2
+Physical cylinders (0-65535, default 8637): 
+Using default value 8637
+Rotation speed (rpm) (1-100000, default 5400): <i>10000</i>
+Interleave factor (1-32, default 1): 
+Using default value 1
+Extra sectors per cylinder (0-32, default 0): 
+Using default value 0
+</pre>
+
+<p>
+می توانید مقدار دقیق را در مستندات دیسک خود بیابید. انتخاب <c>'auto configure'</c> بیشتر زمان ها کار نمی‌کند.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>پاک کردن پارتیشن های موجود</title>
+<body>
+
+<p>
+اکنون زمان پاک‌کردن همه پارتیشن های موجود است. <c>d</c> را تایپ نمایید و اینتر را فشار دهید. پس از آن با شماره پارتیشنی که دوست دارید آنرا پاک‌نمایید برخورد می نمایید. برای پاک‌کردن <path>/dev/sda1</path> از پیش موجود، باید تایپ نمایید: 
+</p>
+
+<pre caption="Deleting a partition">
+Command (m for help): <i>d</i>
+Partition number (1-4): <i>1</i>
+</pre>
+
+<p>
+از آنجا که آن مورد نیاز است <e>نباید پارتیشن ۳ را (سراسر دیسک) پاک نمایید</e>. اگر این پارتیشن موجود نیست، ساختار <c>ایجاد کردن یک برچسب دیک Sun</c> را در بالا پیگیری نمایید.
+</p>
+
+<p>
+پس از اینکه همه پارتیشن‌های دیسک را بجز کل دیسک پاک نمودید، باید لایه‌بندی پارتیشنی مانند زیر داشته باشد:
+</p>
+
+<pre caption="View an empty partition scheme">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda (Sun disk label): 64 heads, 32 sectors, 8635 cylinders
+Units = cylinders of 2048 * 512 bytes
+
+   Device Flag    Start       End    Blocks   Id  System
+/dev/sda3             0      8635   8842240    5  Whole disk
+</pre>
+
+
+</body>
+</subsection>
+
+<subsection>
+<title>ایجاد پارتیشن ریشه</title>
+<body>
+
+<p>
+آماده‌ایم تا پارتیشن ریشه را ایجاد نماییم. برای انجام این، حرف <c>n</c> را تایپ نمایید تا یک پارتیشن جدید ایجاد شود، سپس <c>1</c> را تایپ نمایید تا پارتیشن ایجاد گردد. هنگامیکه از اولین سیلندر پرسش نمود، اینتر را فشار دهید. هنگامیکه از سیلندر آخر پرسش نمود، <c>+512M</c> را تایپ نمایید تا یک پارتیشن <c>512 MB</c> اندازه‌ائی ایجاد نمایید. مطمئن شوید که همه پارتیشن ریشه در اولین ۲ گیگابایت دیسک قرار داشته باشد. می توانید خروجی این گام را در زیر ببینید:
+</p>
+
+<pre caption="Creating a root partition">
+Command (m for help): <i>n</i>
+Partition number (1-8): <i>1</i>
+First cylinder (0-8635): <i>(press Enter)</i>
+Last cylinder or +size or +sizeM or +sizeK (0-8635, default 8635): <i>+512M</i>
+</pre>
+
+<p>
+اکنون، هنگامیکه <c>p</c> را تایپ می نمایید، باید چنین چاپی از پارتیشن ها ببینید:
+</p>
+
+<pre caption="Listing the partition layout">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda (Sun disk label): 64 heads, 32 sectors, 8635 cylinders
+Units = cylinders of 2048 * 512 bytes
+
+   Device Flag    Start       End    Blocks   Id  System
+/dev/sda1             0       488    499712   83  Linux native
+/dev/sda3             0      8635   8842240    5  Whole disk
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>ایجاد کردن یک پارتیشن سواپ</title>
+<body>
+
+<p>
+آماده‌ایم تا پارتیشن سواپ را ایجاد نماییم. برای انجام این، حرف <c>n</c> را تایپ نمایید تا یک پارتیشن جدید ایجاد شود، سپس <c>2</c> را تایپ نمایید تا در نمونه ما پارتیشن <path>/dev/sda2</path> ایجاد گردد. هنگامیکه از اولین سیلندر پرسش نمود، اینتر را فشار دهید. هنگامیکه از سیلندر آخر پرسش نمود، <c>+512M</c> را تایپ نمایید تا یک پارتیشن ۵۱۲ مگابایتی ایجاد نمایید. پس از آنکه آنرا انجام دادید، <c>t</c> را تایپ نمایید تا نوع پارتیشن را تنظیم نمایید، و سپس <c>82</c> را تایپ نمایید تا نوع پارتیشن را <c>"Linux Swap"</c> تنظیم نمایید. پس از به پایان بردن این گام ها، تایپ کردن <c>p</c> باید جدول پارتیشن‌بندی شبیه به این نمایش دهد:
+</p>
+
+<pre caption="Listing of available partitions">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda (Sun disk label): 64 heads, 32 sectors, 8635 cylinders
+Units = cylinders of 2048 * 512 bytes
+
+   Device Flag    Start       End    Blocks   Id  System
+/dev/sda1             0       488    499712   83  Linux native
+/dev/sda2           488       976    499712   82  Linux swap
+/dev/sda3             0      8635   8842240    5  Whole disk
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>ایجاد کردن پارتیشن ها /usr, /var و /home</title>
+<body>
+
+<p>
+سرانجام اجازه دهید پارتیشن های <c>/usr, /var و /home</c> را ایجاد نماییم. مانند پیشتر <c>n</c> را تایپ نمایید تا یک پارتیشن جدید ایجاد نمایید، پس از آن <c>4</c> را تایپ نمایید تا پارتیشن سوم باشد، در نمونه ما <path>/dev/sda4</path> . هنگامیکه درباره  اولین سیلندر آن پرسش نمود، اینتر را فشار دهید. هنگامیکه درباره آخرین سیلندر آن پرسش نمود <c>+2048M</c> را وارد نمایید تا یک پارتیشن ۲ گیگابایتی در اندازه ایجاد نمایید. همین گام‌ها را برای <path>sda5</path> و <path>sda6</path> تکرار نمایید، با اندازه‌هائی که مایل هستید. هنگامیکه انجام دادید، باید چیزی شبیه به این ببینید:
+</p>
+
+<pre caption="Listing complete partition table">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda (Sun disk label): 64 heads, 32 sectors, 8635 cylinders
+Units = cylinders of 2048 * 512 bytes
+
+   Device Flag    Start       End    Blocks   Id  System
+/dev/sda1             0       488    499712   83  Linux native
+/dev/sda2           488       976    499712   82  Linux swap
+/dev/sda3             0      8635   8842240    5  Whole disk
+/dev/sda4           976      1953   1000448   83  Linux native
+/dev/sda5          1953      2144    195584   83  Linux native
+/dev/sda6          2144      8635   6646784   83  Linux native
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>ذخیره سازی و خروج</title>
+<body>
+
+<p>
+برای ذخیره سازی لایه‌بندی پارتیشن و خروج از <c>fdisk</c>، حرف <c>w</c> را تایپ نمایید:
+</p>
+
+<pre caption="Save and exit fdisk">
+Command (m for help): <i>w</i>
+</pre>
+
+<p>
+اکنون که پارتیشن شما ایجاد گردید، می توانید با <uri link="#filesystems">ایجاد کردن فایل سیستم ها</uri> ادامه دهید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="filesystems">
+<title>ایجاد کردن فایل‌سیستم‌ها</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+اکنون که پارتیشن هایتان ایجاد شدند، زمان آن است که filesystem هائی بروی آنها قرار دهیم. اگر نظری درباره انتخاب filesystem خاصی ندارید و با آنچه ما به عنوان پیش فرض در این کتاب راهنما استفاده می کنیم راحت هستید، با <uri  link="#filesystems-apply">بکاربستن یک filesystem بروی یک پارتیشن</uri> ادامه دهید. درغیر اینصورت یادگیری درباره انواع filesystem های موجود را بخوانید ...
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<include href="hb-install-filesystems.xml"/>
+</subsection>
+
+<subsection id="filesystems-apply">
+<title>بکاربستن یک filesystem بروی یک پارتیشن</title>
+<body>
+
+<p>
+برای ایجاد یک فایل سیستمی بروی یک پارتیشن یا حجم، ابزارهائی برای هر فایل سیستمی وجود دارد:
+</p>
+
+<table>
+<tr>
+  <th>Filesystem</th>
+  <th>Creation Command</th>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mkfs.ext2</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
+</tr>
+</table>
+
+<p>
+برای مثال، برای داشتن ext2 بروی پارتیشن ریشه (در مثال ما <path>/dev/sda1</path> ) و ext3 بروی پارتیشن‌های <path>/usr</path>, <path>/var</path>, و <path>/home</path> (چنانکه در مثال ما آمد <path>/dev/sda4</path>, <path>5</path> و <path>6</path>)، شما لازم دارید اینکار را انجام دهید:
+</p>
+
+<pre caption="Applying a filesystem on a partition">
+# <i>mkfs.ext2 /dev/sda1</i>
+# <i>mkfs.ext3 /dev/sda4</i>
+# <i>mkfs.ext3 /dev/sda5</i>
+# <i>mkfs.ext3 /dev/sda6</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>فعال نمودن پارتیشن سواپ</title>
+<body>
+
+<p>
+دستور <c>mkswap</c> دستوری برای دادن ارزش آغازین به پارتیشن های سواپ است:
+</p>
+
+<pre caption="Creating a Swap signature">
+# <i>mkswap /dev/sda2</i>
+</pre>
+
+<p>
+برای فعال نمودن پارتیشن سواپ، از دستور <c>swapon</c> استفاده نمایید:
+</p>
+
+<pre caption="Activating the swap partition">
+# <i>swapon /dev/sda2</i>
+</pre>
+
+<p>
+با دستوراتی که در بالا ذکر شد سواپ را ایجاد و فعال نمایید.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>مانت کردن</title>
+<body>
+
+<p>
+اکنون که پارتیشن های شما ارزش آغازین گرفتند و فایل سیستم ها در آنها جای گیر شدند، زمان مانت نمودند آن پارتیشن ها رسیده است. از دستور <c>mount</c> استفاده نمایید. فراموش ننمایید که دایرکتوری های لازم برای مانت نمودن هر پارتیشنی که ایجاد نمودید را بوجود بیاورید. به عنوان یک نمونه:
+</p>
+
+<pre caption="Mounting partitions">
+# <i>mount /dev/sda1 /mnt/gentoo</i>
+# <i>mkdir /mnt/gentoo/usr</i>
+# <i>mount /dev/sda4 /mnt/gentoo/usr</i>
+# <i>mkdir /mnt/gentoo/var</i>
+# <i>mount /dev/sda5 /mnt/gentoo/var</i>
+# <i>mkdir /mnt/gentoo/home</i>
+# <i>mount /dev/sda6 /mnt/gentoo/home</i>
+</pre>
+
+<note>
+اگر می خواهید <path>/tmp</path> شما در پارتیشنی مجزا قرار گیرد، مطمئن شوید پس از مانت نمودن آن پرمیژن آنرا تغییر دهید: <c>chmod 1777 /mnt/gentoo/tmp</c>. این دستور همچنین برای <path>/var/tmp</path> هم صادق است.
+</note>
+
+<p>
+همچنین ما نیاز داریم تا فایل سیستم proc (یک واسط مجازی با کرنل) را نیز در <path>/proc</path> مانت نماییم. اما اول نیازداریم تا فایل های خودمان را در پارتیشن ها قرار دهیم.
+</p>
+
+<p>
+با <uri link="?part=1&amp;chap=5">نصب کردن فایل های نصب جنتو</uri> ادامه دهید.
+</p>
+
+</body>
+</section>
+</sections>
+
