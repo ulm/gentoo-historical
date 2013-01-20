@@ -1,0 +1,555 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-x86+amd64-bootloader.xml,v 1.1 2013/01/20 17:09:40 swift Exp $ -->
+
+<sections>
+
+<version>12</version>
+<date>2012-09-11</date>
+
+<section>
+<title>تصمیم به انتخابتان</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+اکنون که کرنل شما پیکربندی و کامپایل شد و فایل های ضروری پیکربندی دستگاه با دقت پر شدند، زمان آن فرا رسیده که برنامه ائی نصب نماییم که کرنل شما را هنگامیکه دستگاه را راه می اندازید روشن نماید. به چنین برنامه هائی <e>راه‌انداز دستگاه</e> گفته می شود.
+</p>
+
+</body>
+<body test="contains('AMD64 x86', func:keyval('arch'))">
+<p>
+برای <keyval id="arch"/>، لینوکس جنتو <uri link="#grub">GRUB</uri> و <uri link="#lilo">LILO</uri> را فراهم آورده. 
+</p>
+
+</body>
+<body>
+<p>
+اما قبل از اینکه ما راه انداز دستگاه را نصب نماییم، شما را درباره چگونگی پیکربندی فریم بافر (البته با فرض اینکه شما آنرا می خواهید) آگاه می نماییم. به کمک فریم بافر می توانید خط فرمان لینوکس را با خصوصیات (محدود) گرافیکی (مانند یک تصویر راه انداز زیبا که جنتو فراهم آورده) اجرا نمایید. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>انتخابی: فریم‌بافر</title>
+<body>
+
+<p>
+اگر کرنل خودتان را با پشتیبانی از فریم بافر پیکربندی نموده باشید (یا از پیکربندی کرنل پیش فرض <c>genkernel</c> استفاده نموده باشید)، می توانید آنرا با اضافه نمودن یک اعلان <c>video</c> در فایل پیکربندی راه انداز دستگاه فعال نمایید. 
+</p>
+
+<p>
+قبل از همه، لازم دارید تا دستگاه فریم بافر خودتان را بشناسید. باید از <c>uvesafb</c> به عنوان <e>VESA driver</e> استفاده نمایید.
+</p>
+
+<p>
+اعلان <c>video</c> نمایش کنترل های فریم بافر. این لازم دارد که درایور فریم بافر در پی اعلان های کنترلی که می خواهید فعال شوند گرفته شود. همه متغییر ها در <path>/usr/src/linux/Documentation/fb/uvesafb.txt</path> فهرست شده اند. غالب انتخاب های استفاده شده به این صورت هستند: 
+</p>
+
+<table>
+<tr>
+  <th>Control</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti>ywrap</ti>
+  <ti>
+    Assume that the graphical card can wrap around its memory (i.e. continue at
+    the beginning when it has approached the end)
+  </ti>
+</tr>
+<tr>
+  <ti>mtrr:<c>n</c></ti>
+  <ti>
+    Setup MTRR registers. <c>n</c> can be:<br/>
+    0 - disabled<br/>
+    1 - uncachable<br/>
+    2 - write-back<br/>
+    3 - write-combining<br/>
+    4 - write-through
+  </ti>
+</tr>
+<tr>
+  <ti><c>mode</c></ti>
+  <ti>
+    Set up the resolution, color depth and refresh rate. For instance,
+    <c>1024x768-32@85</c> for a resolution of 1024x768, 32 bit color depth and a
+    refresh rate of 85 Hz.
+  </ti>
+</tr>
+</table>
+
+<p>
+نتیجه می تواند چیزی شبیه به <c>video=uvesafb:mtrr:3,ywrap,1024x768-32@85</c> باشد. این تنظیمات را رونوشت بردارید. بزودی به آن نیاز پیدا خواهید نمود. 
+</p>
+
+<p test="func:keyval('arch')='IA64'">
+اکنون، شما باید <uri link="#elilo">راه‌انداز دستگاه elilo</uri> را نصب نمائید.
+</p>
+
+<p test="not(func:keyval('arch')='IA64')">
+اکنون با نصب کردن <uri link="#grub">GRUB</uri> یا <uri link="#lilo">LILO</uri> ادامه دهید. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="grub" test="contains('AMD64 x86',func:keyval('arch'))">
+<title>پیش فرض: استفاده کردن از گراب</title>
+<subsection>
+<title>درک اصطلاحات فنی گراب</title>
+<body>
+
+<p>
+مهمترین بخش درک نمودن گراب راحت بودن با چگونگی اشاره گراب به درایوهای دیسک سخت و پارتیشن هاست. پاتیشن لینوکس <path>/dev/sda1</path> شما در گراب چیزی شبیه <path>(hd0,0)</path> خوانده می شود. به کروشه های اطراف <path>(hd0,0)</path> توجه نمایید. آنها از الزامات هستند. 
+</p>
+
+<p>
+درایوهای سخت بجای شمارش از a از صفر شمرده می شوند و پارتیشن ها بجای شمارش از یک از صفر شمارش می شوند. دقت داشته باشید که در دستگاه های hd، فقط دیسک های سخت شمارش می شوند، نه دستگاه های apti-ide مانند پخش کننده لوح فشرده و رایترها. همچنین ساختار مشابهی برای درایوهای SCSI استفاده می شود. (بطور عادی آنها عدد بالاتری نسبت به درایوهای IDE می گیرند بغییر از مواقعی که BIOS پیکربندی شده است تا از دستگاه SCSI راه اندازی شود.) هنگامیکه از BIOS می خواهید تا از روی دیسک سخت متفاوتی (برای مثال پرایمری اسلاو تان) راه اندازی شود، <e>که</e> دیسک سخت به نظر <path>hd0</path> می آید.
+</p>
+
+<p>
+با فرض اینکه شما یک درایو سخت بروی <path>/dev/sda</path> و دوتای دیگر در <path>/dev/sdb</path> و <path>/dev/sdc</path> دارید، <path>/dev/sdb7</path> به <path>(hd1,6)</path> ترجمه می شود. این ممکن است به نظر پیچیده بیاید و واقعا هم پیچیده است، اما چنانکه خواهیم دید، گراب مکانیسم جدول تکمیلی ارائه میدهد که در مواقعی که تعداد زیادی درایو سخت و پارتیشن دارید بسیار کار آمد است و خطا در نمایه عددی گراب را کم می نماید. 
+</p>
+
+<p>
+چنانکه احساس کردید، اینک زمان نصب گراب است. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>نصب کردن گراب</title>
+<body>
+
+<p>
+برای نصب گراب ابتدا اجازه دهید آنرا emerge نماییم: 
+</p>
+
+<impo test="func:keyval('arch')='AMD64'">
+اگر از یک <uri link="?part=1&amp;chap=6#doc_chap2">پروفایل</uri> non-multilib استفاده می نمایید، <b>نباید</b> <c>grub</c> را امرژ نمایید، بجای آن باید <c>grub-static</c> را امرژ کنید. اگر نقشه دارید از یک پروفایل non-multilib استفاده نمایید <e>و</e> IA-32 emulation را در کرنل‌تان <b>disabled</b> نموده اید، باید از <c>lilo</c> استفاده نمایید.
+</impo>
+
+<pre caption="Installing GRUB">
+# <i>emerge grub</i>
+</pre>
+
+<p>
+هرچند گراب اکنون نصب گردیده اما هنوز ما نیاز داریم تا یک فایل پیکربندی برای آن بنویسیم و گراب را در MBR خودمان قرار دهیم تا گراب بطور خودکار کرنل جدیدا ساخته شده شما را راه اندازی نماید. فایل <path>/boot/grub/grub.conf</path> را با <c>nano</c> ایجاد نمایید (یا اگر قابل اجراست، هر ویرایشگر متن دیگری):
+</p>
+
+<pre caption="Creating /boot/grub/grub.conf">
+# <i>nano -w /boot/grub/grub.conf</i>
+</pre>
+
+<p>
+اکنون می رویم تا یک <path>grub.conf</path> بنویسیم. مطمئن شوید که از نام فایل تصویر کرنل <e>خودتان</e> و، اگر موجود است، نام فایل تصویر initrd مختص به <e>خودتان</e> استفاده نمایید. 
+</p>
+
+<note>
+گراب طراحی دستگاه ها را به BIOS ارجاع می دهد. اگر شما تنظیمات BIOS خود را تغییر دهید، ممکن است نام و نشان دستگاه ها نیز تغییر نماید. برای مثال، اگر شما سفارش دهنده راه انداز دستگاه خود را تغییر دهید، ممکن است لازم باشد تا پیکربندی گراب خودتان را نیز تغییر دهید.
+</note>
+
+<note>
+اگر فایل سیستم ریشه شما JFS است، از آنجا که JFS نیاز دارد تا قبل از مانت کردن log قابلیت خواندنی-نوشتنی بگیرد شما <e>باید</e> یک " ro " به خط <c>kernel</c> اضافه نمایید.
+</note>
+
+<pre caption="Example grub.conf">
+<comment># Which listing to boot as default. 0 is the first, 1 the second etc.</comment>
+default 0
+<comment># How many seconds to wait before the default listing is booted.</comment>
+timeout 30
+<comment># Nice, fat splash-image to spice things up :)
+# Comment out if you don't have a graphics card installed</comment>
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+
+title Gentoo Linux <keyval id="kernel-version"/>
+<comment># Partition where the kernel image (or operating system) is located</comment>
+root (hd0,0)
+kernel /boot/<keyval id="kernel-name"/> root=/dev/sda3
+
+title Gentoo Linux <keyval id="kernel-version"/> (rescue)
+<comment># Partition where the kernel image (or operating system) is located</comment>
+root (hd0,0)
+kernel /boot/<keyval id="kernel-name"/> root=/dev/sda3 init=/bin/bb
+
+<comment># The next four lines are only if you dualboot with a Windows system.</comment>
+<comment># In this case, Windows is hosted on /dev/sda6.</comment>
+title Windows XP
+rootnoverify (hd0,5)
+makeactive
+chainloader +1
+</pre>
+
+<p>
+اگر، هنگام ساخت کرنل لینوکس، انتخاب نموده اید که یک initramfs به درون بوت وارد شود، بنابراین لازم دارید تا پیکربندی را با ارجاع به آن فایل initramfs تغییر دهید و به initramfs بگویید دستگاه ریشه واقعی شما در کجا قرار گرفته:
+</p>
+
+<pre caption="GRUB snippet for initramfs-enabled kernel builds">
+title Gentoo Linux <keyval id="kernel-version"/>
+root (hd0,0)
+kernel /boot/<keyval id="kernel-version"/> <i>real_</i>root=/dev/sda3
+<i>initrd /boot/<keyval id="genkernel-initrd"/></i>
+</pre>
+
+<p>
+اگر از نمایه پارتیشن متفاوت و\یا تصویر کرنل متفاوتی استفاده می نمایید، فقط به آن اشاره نمایید. هرچند، مطمئن شوید که هر چیزی که یک دستگاه گراب دنبال می نماید (مثلا یک <path>(hd0,0)</path> ) به نقطه مانت اشاره می کند نه ریشه. به بیان بهتر، <path>(hd0,0)/grub/splash.xpm.gz</path> در واقعیت زمانیکه <path>(hd0,0)</path> نقطه مانت <path>/boot</path> است در <path>/boot/grub/splash.xpm.gz</path> خواهد بود. 
+</p>
+
+<p>
+در کنار آن اگر شما نمایه پارتیشن بندی متفاوتی انتخاب نموده اید و <path>/boot</path> را در پارتیشن جداگانه ائی نصب ننموده اید، پیشوند پارتیشن <path>/boot</path> استفاده شده در کد مثال بالا واقعا ضروری است. اگر شما نقشه پارتیشن بندی پیشنهادی ما را تعقیب می نمایید، پیشوند <path>/boot</path> ضروری نیست، اما یک پیوندک <path>boot</path> آنرا بکار می اندازد. بطور خلاصه، مثال بالا وابسته به اینکه شما یک پارتیشن مجزای <path>/boot</path> دارید یا خیر باید کار کند. 
+</p>
+
+<p>
+اگر می خواهید انتخاب های بیشتری را به کرنل واگذار نمایید، بسادگی آنها را به انتهای خط کرنل اضافه نمایید. در حال حاضر ما یک انتخاب ( <c>real_root=/dev/sda3</c> یا <c>root=/dev/sda3</c> ) به آن ارجاع داده ایم، اما شما می توانید انتخاب های دیگری را هم بخوبی به آن ارجاع دهید، مثلا اعلان video برای فریم بافر چنانچه پیشتر توضیح داده شد. 
+</p>
+
+<p>
+اگر پیکربندی راه انداز دستگاه شما شامل یک پارامتر real_root است، برای تنظیم انتخاب های مانت فایل سیستم از پارامتر real_rootflags استفاده نمایید.
+
+</p>
+
+<p>
+اگر از یک کرنل ۲.۶.۷ یا بالاتر استفاده می نمایید و بخاطر اینکه BIOS نمی تواند دیسک سخت های بزرگ را راه اندازی نماید، دیسک سختتان را پل بسته اید لازم دارید تا <c>sda=stroke</c> را نیز اضافه نمایید. نحو sda را با دستگاهی که در این انتخاب مورد نیاز است جایگزین نمایید. 
+</p>
+
+<p>
+کاربران <c>genkernel</c> باید بدانند که کرنل آنها از همان انتخاب هائی استفاده می نماید که در لوح فشرده نصب استفاده شده بود. برای مثال، اگر شما دستگاه SCSI دارید، باید <c>doscsi</c> را به انتخاب های کرنل اضافه نمایید. 
+</p>
+
+<p>
+اکنون فایل <path>grub.conf</path> را ذخیره نموده و خارج شوید. هنوز نیاز دارید تا گراب را در MBR (نگهدارنده ارشد راه انداز) نصب نمایید تا هنگامیکه دستگاه تان را راه اندازی می نمایید گراب بطور خودکار اجرا گردد.
+</p>
+
+<p>
+گسترش دهندگان گراب پیشنهاد می نمایند که از <c>grub-install</c> استفاده نمایید. هرچند اگر به هر دلیلی <c>grub-install</c> بخوبی کار نکرد هنوز گزینه نصب دستی گراب را خواهید داشت. 
+</p>
+
+<p>
+با <uri link="#grub-install-auto">پیش فرض: نصب کردن گراب با استفاده از برنامه خودران نصب گراب</uri> یا <uri link="#grub-install-manual">جایگزین: نصب کردن گراب با استفاده از ساختارهای دستی</uri> ادامه دهید. 
+</p>
+
+</body>
+</subsection>
+<subsection id="grub-install-auto">
+<title>پیش فرض: نصب کردن گراب با استفاده از برنامه خودران نصب گراب</title>
+<body>
+
+<p>
+برای نصب کردن گراب نیاز دارید تا از توانمندی دستور <c>grub-install</c> استفاده نمایید. اگرچه، از آنجا که ما در پشت یک محیط chroot قرار داریم <c>grub-install</c> از داخل خط فرمان کار نمی کند. نیاز داریم تا <path>/etc/mtab</path> را که شامل فهرستی از همه فایل سیستم هائی که باید مانت شوند است را ایجاد نماییم. متاسفانه راه ساده ائی برای انجام دادن آن وجود دارد - کپی نمودن <path>/proc/mounts</path> به <path>/etc/mtab</path>، و حذف خط <c>rootfs</c> اگر یک پارتیشن مجزای راه انداز ندارید. دستور زیر در هر دو مورد کار خواهد نمود: 
+</p>
+
+<pre caption="Creating /etc/mtab">
+# <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
+</pre>
+
+<p>
+اکنون می توانیم گراب را با استفاده از <c>grub-install</c> نصب نماییم:
+
+</p>
+
+<pre caption="Running grub-install">
+# <i>grub-install --no-floppy /dev/sda</i>
+</pre>
+
+<p>
+اگر سئوالات بیشتری درباره گراب دارید، لطفا به کنکاش در <uri link="http://www.gnu.org/software/grub/grub-faq.html">سئوالات متداول گراب</uri> یا <uri
+link="http://grub.enbug.org/GrubLegacy">ویکی گراب</uri> بپردازید و یا <c>info
+grub</c> را در ترمینال خودتان مطالعه بفرمایید. 
+</p>
+
+<p>
+با <uri link="#reboot">راه اندازی مجدد دستگاه</uri> ادامه دهید. 
+</p>
+
+</body>
+</subsection>
+<subsection id="grub-install-manual">
+<title>جایگزین: نصب کردن گراب با استفاده از ساختارهای دستی</title>
+<body>
+
+<p>
+برای شروع پیکربندی گراب، تایپ نمایید <c>grub</c> .در خط فرمان با یک <path>grub&gt;</path> روبرو خواهید شد. اکنون لازم است تا دستورات درست را برای نصب نگهدارنده راه انداز گراب در دیسک سخت خودتان تایپ نمایید. 
+</p>
+
+<pre caption="Starting the GRUB shell">
+# <i>grub --no-floppy</i>
+</pre>
+
+<note>
+اگر دستگاه شما درایور فلاپی خوان ندارد، انتخاب <c>--no-floppy</c> را به دستور بالا اضافه نمایید تا از جستجوی گراب به دنبال (چیزی که وجود ندارد) جلوگیری نمایید. 
+</note>
+
+<p>
+در پیکربندی مورد مثال می خواهیم گراب نصب نماییم تا بتواند اطلاعات را از پارتیشن <path><keyval id="/boot"/></path> بخواند، و همچنین گراب را بروی MBR درایو سخت (نگهدارنده راه انداز ارشد) نصب نماییم تا هنگامی که دستگاه را روشن می نماییم اولین چیزی که می بینیم خط فرمان گراب باشد. البته اگر شما پیکربندی مثال را در حین نصب دنبال نمی نمایید، مطابق با نیازتان دستورات را تغییر دهید. 
+</p>
+
+<p>
+جدول مکانیسم تکمیلی گراب می تواند درون گراب استفاده شود. برای مثال، اگر <c>root (</c> را تایپ نمایید و دگمه TAB را فشار دهید، فهرستی از دستگاه ها (مانند <path>hd0</path> را مشاهده خواهید نمود). اگر تایپ نمایید <c>root (hd0,</c> و دگمه TAB را فشار دهید، فهرستی از پارتیشن های موجود قابل انتخاب را خواهید دید (مانند <path>hd0,0</path>). 
+</p>
+
+<p>
+با تکمیل سازی دگمه tab، تنظیم کردن گراب نباید خیلی سخت باشد. اکنون برویم به پیکربندی گراب برسیم، می توانیم؟ :-) 
+</p>
+
+<pre caption="Installing GRUB in the MBR">
+grub&gt; <i>root (hd0,0)</i>    <comment>(Specify where your /boot partition resides)</comment>
+grub&gt; <i>setup (hd0)</i>     <comment>(Install GRUB in the MBR)</comment>
+grub&gt; <i>quit</i>            <comment>(Exit the GRUB shell)</comment>
+</pre>
+
+<note>
+اگر می خواهید گراب را بجای نصب در MBR در پارتیشن خودش نصب نمایید، باید به دستور <c>setup</c> اعلام نمایید تا در پارتیشن مورد نظر قرار گیرد. برای مثال، اگر می خواهید گراب در <path>/dev/sda3</path> نصب گردد، پس دستور به صورت <c>setup (hd0,2)</c> تغییر خواهد نمود، هرچند تعداد کمی از کاربران چنین کاری را انجام می دهند.
+</note>
+
+<p>
+اگر سئوالات بیشتری درباره گراب دارید، لطفا به کنکاش در <uri link="http://www.gnu.org/software/grub/grub-faq.html">سئوالات متداول گراب</uri> یا <uri link="http://grub.enbug.org/GrubLegacy">ویکی گراب</uri> بپردازید و یا <c>info grub</c> را در ترمینال خودتان مطالعه بفرمایید. 
+</p>
+
+<p>
+با <uri link="#reboot">راه‌اندازی مجدد دستگاه</uri> ادامه دهید 
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="lilo" test="contains('AMD64 x86', func:keyval('arch'))">
+<title>جایگزین: استفاده کردن از لیلو</title>
+<subsection>
+<title>نصب کردن لیلو</title>
+<body>
+
+<p>
+لیلو، مخفف راه انداز لینوکس به انگلیسی، پایگاه راه اندازی آزموده شده و درست لینوکس است. هرچند تعدادی از خصوصیات گراب را ندارد (که دلیل آن است که چرا گراب محبوبیت بیشتری دارد). دلیل اینکه چرا لیلو هنوز استفاده می شود این است که برخی مردم لیلو را می شناسند و هنوز می خواهند که به آن بچسبند. به هر حال جنتو هر دو آنها را پشتیبانی می نماید، و شما این امکان را دارید که لیلو را انتخاب نمایید.
+</p>
+
+<p>
+نصب نمودن لیلو ساده است; فقط آنرا <c>emerge</c> نمایید. 
+</p>
+
+<pre caption="Installing LILO">
+# <i>emerge lilo</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>پیکربندی نمودن لیلو</title>
+<body>
+
+<p>
+برای پیکربندی نمودن لیلو، شما باید <path>/etc/lilo.conf</path> ایجاد نمایید. ویرایشگر مطلوب خودتان را روشن نمایید (در این کتاب راهنما ما از <c>nano</c> استفاده می نماییم) و فایل را ایجاد نمایید. 
+</p>
+
+<pre caption="Creating /etc/lilo.conf">
+# <i>nano -w /etc/lilo.conf</i>
+</pre>
+
+<p> 
+چند بخش قبلتر ما از شما خواستیم نام تصویر کرنل خود را بخاطر بسپارید. در مثال بعدی <path>lilo.conf</path> ما از نمایه پارتیشن بندی مورد مثال خودمان استفاده می نماییم. 
+</p>
+
+<p>
+مطمئن شوید از نام فایل تصویر کرنل <e>خودتان</e> استفاده می نمایید، همچنین اگر وجود دارد، از نام فایل initrd مربوط به <e>خودتان</e> نیز استفاده نمایید. 
+</p>
+
+<note>
+اگر فایل سیستم ریشه شما JFS است، از آنجا که JFS نیاز دارد تا قبل از مانت کردن log قابلیت خواندنی-نوشتنی بگیرد شما <e>باید</e> یک <c>append="ro"</c> به خط kernel اضافه نمایید.
+</note>
+
+<pre caption="Example /etc/lilo.conf">
+boot=/dev/sda             <comment># Install LILO in the MBR</comment>
+prompt                    <comment># Give the user the chance to select another section</comment>
+timeout=50                <comment># Wait 5 (five) seconds before booting the default section</comment>
+default=gentoo            <comment># When the timeout has passed, boot the "gentoo" section</comment>
+
+image=/boot/<keyval id="kernel-name"/>
+  label=gentoo            <comment># Name we give to this section</comment>
+  read-only               <comment># Start with a read-only root. Do not alter!</comment>
+  root=/dev/sda3          <comment># Location of the root filesystem</comment>
+
+image=/boot/<keyval id="kernel-name"/>
+  label=gentoo.rescue     <comment># Name we give to this section</comment>
+  read-only               <comment># Start with a read-only root. Do not alter!</comment>
+  root=/dev/sda3          <comment># Location of the root filesystem</comment>
+  append="init=/bin/bb"   <comment># Launch the Gentoo static rescue shell</comment>
+
+<comment># The next two lines are only if you dualboot with a Windows system.</comment>
+<comment># In this case, Windows is hosted on /dev/sda6.</comment>
+other=/dev/sda6
+  label=windows
+</pre>
+
+<note>
+اگر از یک نمایه پارتیشن و/یا تصویر کرنل دیگر استفاده می نمایید، مطابق با نیازتان تغییرات اعمال نمایید. 
+</note>
+
+<p>
+اگر، هنگام ساخت کرنل لینوکس، انتخاب نموده اید که یک initramfs به درون بوت وارد شود، بنابراین لازم دارید تا پیکربندی را با ارجاع به آن فایل initramfs تغییر دهید و به initramfs بگویید دستگاه ریشه واقعی شما در کجا قرار گرفته: 
+</p>
+
+<pre caption="LILO snippet for initramfs-enabled kernel builds">
+image=/boot/<keyval id="kernel-name"/>
+  label=gentoo
+  read-only
+  <i>append="real_root=/dev/sda3"</i>
+  <i>initrd=/boot/<keyval id="genkernel-initrd" /></i>
+</pre>
+
+<p>
+اگر نیاز دارید تا انتخاب هائی به کرنل اضافه نمایید، یک اعلان <c>append</c> به بخش اضافه نمایید. به عنوان یک مثال ما اعلان <c>video</c> را برای ایجاد امکان فریم بافر اضافه می نماییم: 
+</p>
+
+<pre caption="Using append to add kernel options">
+image=/boot/<keyval id="kernel-name"/>
+  label=gentoo
+  read-only
+  root=/dev/sda3
+  <i>append="video=uvesafb:mtrr,ywrap,1024x768-32@85"</i>
+</pre>
+
+<p>
+اگر از یک کرنل ۲.۶.۷ یا بالاتر استفاده می نمایید و بخاطر اینکه BIOS نمی تواند دیسک سخت های بزرگ را راه اندازی نماید، دیسک سختتان را پل بسته اید لازم دارید تا <c>sda=stroke</c> را نیز اضافه نمایید. نحو sda را با دستگاهی که در این انتخاب مورد نیاز است جایگزین نمایید. 
+</p>
+
+<p>
+کاربران <c>genkernel</c> باید بدانند که کرنل آنها از همان انتخاب هائی استفاده می نماید که در لوح فشرده نصب استفاده شده بود. برای مثال، اگر شما دستگاه SCSI دارید، باید <c>doscsi</c> را به انتخاب های کرنل اضافه نمایید.
+</p>
+
+<p>
+اکنون فایل را ذخیره نموده و خارج شوید. برای اتمام، لازم است تا <c>/sbin/lilo</c> را اجرا نمایید تا لیلو بتواند <path>/etc/lilo.conf</path> را برای سیستم شما بکار ببندد (مثلا خودش را در دیسک نصب نماید). در خاطر بسپارید که باید هر بار که کرنل جدیدی نصب می نمایید یا تغییراتی در فهرست انتخاب اعمال می نمایید <c>/sbin/lilo</c> را مجددا اجرا نمایید. 
+</p>
+
+<pre caption="Finishing the LILO installation">
+# <i>/sbin/lilo</i>
+</pre>
+
+<p>
+اگر سئوالات بیشتری درباره لیلو دارید، لطفا به کنکاش در <uri link="http://en.wikipedia.org/wiki/LILO_(boot_loader)">صفحه ویکی‌پدیا</uri> خودش بپردازید. 
+</p>
+
+<p>
+اکنون می توانید با <uri link="#reboot">راه‌اندازی مجدد دستگاه</uri> ادامه دهید. 
+
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="elilo" test="func:keyval('arch')='IA64'">
+<title>پیش‌فرض نصب کردن elilo</title>
+<body>
+
+<p>
+روی سکوی IA64، به راه‌انداز دستگاه <c>elilo</c> گفته می شود. ممکن است ابتدا بخواهید آنرا بروی ماشین‌تان امرژ نمایید.
+</p>
+
+<pre caption="Installing elilo">
+# <i>emerge elilo</i>
+</pre>
+
+<p>
+می توانید فایل پیکربندی را در <path>/etc/elilo.conf</path> بیابید و فایل نمونه در دایرکتوری مستندات نمونه <path>/usr/share/doc/elilo-&lt;ver&gt;/</path>. اینجا هم نمونه دیگری آورده شده:
+</p>
+
+<pre caption="/etc/elilo.conf example">
+boot=/dev/sda1
+delay=30
+timeout=50
+default=Gentoo
+append="console=ttyS0,9600"
+prompt
+
+image=/vmlinuz
+	label=Gentoo
+	root=/dev/sda2
+	read-only
+
+image=/vmlinuz.old
+	label=Gentoo.old
+	root=/dev/sda2
+	read-only
+</pre>
+
+<p>
+خط <c>boot</c> به elilo موقعیت پارتیشن راه‌انداز را می‌گوید (در این مورد، <path>/dev/sda1</path>). خط <c>delay</c> زمان <sup>دهمین</sup> ثانیه پیش از راه‌اندازی پیش‌فرض را در حالت غیر‌کنش‌گر تنظیم می‌نماید. خط <c>timeout</c> شبیه خط delay اما بطور واکنش‌گر است. خط <c>default</c> کرنل پیش‌فرض ورودی را تنظیم می‌نماید (که در زیر تعریف گردیده). خط <c>append</c> گزینه‌های بیشتری را به خط دستور کرنل می‌افزاید. <c>prompt</c> رفتار پیش‌فرض کنش‌گر elilo را تنظیم می نماید.
+</p>
+
+<p>
+بخش‌هائی که با <c>image</c> شروع می‌شوند تصویر راه‌انداز متفاوتی دارند. هر تصویر یک <c>label</c> زیبا، یک فایل‌سیستم <c>root</c> ، و فقط یک فایل سیستم ریشه مانت شده بطور <c>read-only</c> دارد.
+</p>
+
+<p>
+اگر، در هنگام ساختن کرنل لینوکس، انتخاب نمایید که یک initramfs به راه‌انداز وارد نمایید، پس نیاز دارید تا پیکربندی را با ارجاع به این initramfs تغییر داده و به initramfs بگویید دستگاه واقعی ریشه شما کجاست در:
+</p>
+
+<pre caption="ELILO snippet for initramfs-enabled kernel-builds">
+image=/vmlinuz
+	label=Gentoo
+	<i>initrd=/<keyval id="genkernel-initrd"/></i>
+	<i>append = "initrd=<keyval id="genkernel-initrd"/> real_root=/dev/sda2 console=ttyS0,9600"</i>
+	read-only
+</pre>
+
+<p>
+هنگامیکه پیکربندی انجام شد، فقط <c>elilo --efiboot</c> را اجرا نمایید. گزینه <c>--efiboot</c> یک ورودی به فهرست انتخاب برای لینوکس جنتو در راه‌انداز EFI می‌افزاید.
+</p>
+
+<pre caption="Applying the elilo configuration">
+# <i>elilo --efiboot</i>
+</pre>
+
+<p>
+اکنون می توانید با <uri link="#reboot">راه‌اندازی مجدد دستگاه</uri> ادامه دهید. 
+</p>
+
+</body>
+</section>
+
+<section id="reboot">
+<title>راه اندازی مجدد دستگاه</title>
+<subsection>
+<body>
+
+<p>
+از محیط chroot خارج شوید و همه پارتیشن های مانت شده را از حالت مانت خارج نمایید. سپس آن دستور جادوئی که در انتظارش بودید را تایپ نمایید: <c>reboot</c> نمودن. 
+
+</p>
+
+<pre caption="Unmounting all partitions and rebooting" test="func:keyval('arch')='IA64'">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount -l /mnt/gentoo/dev{/pts,/shm,}</i>
+cdimage ~# <i>umount -l /mnt/gentoo{/boot,/sys,/proc,}</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<pre caption="Unmounting all partitions and rebooting" test="not(func:keyval('arch')='IA64')">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount -l /mnt/gentoo/dev{/shm,/pts,}</i>
+cdimage ~# <i>umount -l /mnt/gentoo{/boot,/proc,}</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<p>
+البته فراموش ننمایید که لوح فشرده با قابلیت راه اندازی را از لوح خوان خارج نمایید، در غیر اینصورت لوح فشرده مجددا بجای دستگاه جدید جنتوی شما راه اندازی خواهد گردید. 
+</p>
+
+<p test="func:keyval('arch')='IA64'">
+هنگامیکه دستگاه را راه اندازی مجدد نمودید باید گزینه فهرست انتخاب جنتو لینوکس در مدیریت راه‌انداز EFI ببینید که جنتو را راه‌اندازی نماید. 
+</p>
+
+<p>
+هنگامی که نصب جنتو را با ریبوت نمودن بپایان بردید، با <uri link="?part=1&amp;chap=11">بپایان رساندن نصب جنتوی شما</uri> کار را به پایان ببرید. 
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>

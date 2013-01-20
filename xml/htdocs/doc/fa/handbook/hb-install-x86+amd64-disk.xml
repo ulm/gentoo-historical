@@ -1,0 +1,684 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-install-x86+amd64-disk.xml,v 1.1 2013/01/20 17:09:40 swift Exp $ -->
+
+<sections>
+
+<abstract>
+برای اینکه قادر به نصب جنتو باشید، باید پارتیشن های ضروری را ایجاد نمایید. این فصل چگونگی پاتیشن بندی یک دیسک برای استفاده بعدی را تشریح می کند.
+</abstract>
+
+<version>13</version>
+<date>2012-10-06</date>
+
+<section>
+<title>مقدمه ائی بر شیوه قالب بندی</title>
+
+<subsection>
+<include href="hb-install-blockdevices.xml"/>
+</subsection>
+
+<subsection>
+<title>پارتیشن ها</title>
+<body>
+
+<p> 
+هرچند در تئوری امکان‌پذیر است که از همه دیسک برای اسکان دستگاه لینوکس استفاده نمود، در عمل تقریبا هرگز چنین چیزی اتفاق نمی‌افتد. در دستگاههای بلوک‌بندی همه دیسک به دستگاههای کوچکتر و قابل مدیریت‌تر شکسته می شود. بروی دستگاه‌های <keyval id="arch"/> این، <e>پارتیشن‌ها</e> نامیده می شود.
+</p>
+
+<p>
+پارتیشن‌ها به سه نوع تقسیم‌بندی می‌شوند: <e>primary</e>, <e>extended</e> و <e>logical</e>. 
+</p>
+
+<p>
+یک پارتیشن <e>primary</e> پارتیشنی است که اطلاعاتش را در MBR (ثبت کننده راه‌انداز اصلی) نگاهداری می نماید. بدلیل اینکه MBR بسیار کوچک است (۵۱۲ بیت) فقط چهار پارتیشن primary را می تواند تعریف نماید ( برای مثال <path>/dev/sda1</path> تا <path>/dev/sda4</path> ). 
+</p>
+
+<p>
+یک پارتیشن <e>extended</e> یک پارتیشن ویژه مقدماتی است ( به این معنی که پارتیشن‌های extended باید یکی از چهار پارتیشن ممکن primary باشند) که شامل بیشتر پارتیشن‌ها است. چنین پارتیشنی بطور پیشفرض وجود ندارد، اما از آنجا که چهار پارتیشن هم بسیار کم است، این مطلب حیاتی است که نمای قالب‌بندی بدون از دست دادن سازگاری قبلی خود توسعه پیدا نماید.
+</p>
+
+<p> 
+یک پارتیشن <e>logical</e> پارتیشنی است در داخل یک پارتیشن extended. تعریف آنها در MBR قرار نمی گیرد، اما در داخل پارتیشن های extended اعلان می‌شوند. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>ذخیره سازی پیشرفته</title>
+<body>
+
+<p>
+لوح‌های فشرده نصب <keyval id="arch"/> برای LVM2 پشتیبانی فراهم می نمایند. LVM2 برای پارتیشن‌بندی شما، انعطاف بیشتری به ارمغان می آورد. در حین ساختارهای نصب، ما بروی پارتیشن‌های معمولی تمرکز می‌نماییم، اما هنوز این نکته خوبی است که بدانید که LVM2 هم بخوبی پشتیبانی می‌شود. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>طراحی نمایه پارتیشن بندی</title>
+<subsection>
+<title>نمایه پارتیشن بندی پیش فرض</title>
+<body>
+
+<p>
+اگر علاقمند به طراحی نمایه پارتیشن‌بندی برای دستگاه خودتان نیستید، می‌توانید از نمایه پارتیشن‌بندی که ما در امتداد این کتاب استفاده می‌نماییم، استفاده نمایید: 
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Filesystem</th>
+  <th>Size</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>ext2</ti>
+  <ti>32M</ti>
+  <ti>Boot partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>(swap)</ti>
+  <ti>512M</ti>
+  <ti>Swap partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ext3</ti>
+  <ti>Rest of the disk</ti>
+  <ti>Root partition</ti>
+</tr>
+</table>
+
+<p>
+اگر علاقمندید که بدانید یک پارتیشن می‌تواند تا به چه اندازه بزرگ باشد، یا اینکه به چه تعداد پارتیشن نیازمندید، به خواندن ادامه دهید. در غیر اینصورت با خواندن <uri link="#fdisk">استفاده کردن از fdisk برای پارتیشن‌بندی دیسک شما</uri> یا <uri link="#parted">استفاده کردن از parted برای پارتیشن‌بندی دیسک‌تان</uri> دیسک خود را پارتیشن‌بندی نمایید (هر دو ابزارهای پارتیشن‌بندی هستند، <c>fdisk</c> مشهور و پایدار، و <c>parted</c> کمی جدیدتر اما با پشتیبانی پارتیشن‌های بزرگتر از ۲ترابایت) 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>چه مقدار و چه اندازه بزرگ؟</title>
+<body>
+
+<p>
+شماره پارتیشن ها بشدت به محیط شما وابسته است. برای مثال، اگر تعداد زیادی کاربر دارید، به احتمال زیاد شما باید <path>/home</path> خود را برای بالا بردن امنیت و راحت‌تر نمودن گرفتن پشتیبان جدا نمایید. اگر جنتو را به عنوان یک mailserver نصب می‌نمایید، باید <path>/var</path> خود را جدا نمایید چراکه mailها در <path>/var</path> نگهداری می‌شوند. یک انتخاب مناسب فایل سیستمی، کارائی شما را بالا خواهد برد. Gameservers یک <path>/opt</path> مجزا خواهند داشت چراکه بیشتر سرورهای بازی در آنجا نصب خواهند شد. علت مشابه <path>/home</path> است: امنیت و پشتیبانگیری. مطمئنا شما می‌خواهید <path>/usr</path> را بزرگتر بگیرید: نه فقط بخاطر اینکه غالب برنامه‌ها در آن نگهداری می شوند، شاخه‌های پرتیج به تنهائی ۵۰۰ مگابایت را خواهند گرفت بجز کدمنبع‌های بسیاری که در آن نگهداری خواهد شد. 
+</p>
+
+<p>
+چنانکه می‌توانید ببینید، اینکار بشدت به اینکه شما می‌خواهید به چه چیزی برسید، وابسته است. پارتیشن‌ها یا ولوم‌های مجزا این مزیت‌ها را خواهند داشت: 
+</p>
+
+<ul>
+<li>
+  می‌توانید فایل سیستم کاراتری برای هر پارتیشن یا ولوم انتخاب نمایید
+
+</li>
+<li>
+  اگر یک ابزار مرده به نوشتن فایل‌ها بروی یک پارتیشن یا ولوم ادامه داد، کل سیستم شما خارج از استفاده نخواهد شد. 
+
+</li>
+<li>
+  اگر لازم باشد، بررسی فایل‌های سیستمی زمان کمتری خواهد برد، چنانکه بررسی چندگانه می‌تواند بطور همزمان اعمال گردد (همچنین این مزیت شامل دیسک‌های چندگانه با پارتیشن‌های چندگانه نیز می گردد) 
+
+</li>
+<li>
+  امنیت می تواند با مانت نمودن برخی پارتیشن‌ها بصورت فقط-خواندنی، nosuid (چشم‌پوشی از setuid ) و noexec (چشم‌پوشی از خوداجرائی) و غیره، بالاتر برود. 
+
+</li>
+</ul>
+
+<p>
+هرچند، تعدد پارتیشن‌ها ایراداتی هم دارد. اگر بخوبی پیکربندی نشود، شما دستگاهی خواهید داشت با مقدار زیادی فضای آزاد در یک پارتیشن و کمبود فضا در پارتیشن دیگر. اشکال دیگر پارتیشن های مجزا، خصوصا برای مانت پوینت های مهمی همچون <path>/usr</path> یا <path>/var</path> اغلب لازم است تا مدیر دستگاه آنها را قبل از راه اندازی کدهای راه انداز، راه اندازی نماید. به هر حال همیشه این موارد رخ نمی دهند و نتایج شما ممکن است متفاوت باشند. 
+</p>
+
+<p>
+همچنین محدودیتی ۱۵ پارتیشنی برای SCSI و SATA تا زمانی که از برچسب GPT استفاده نمایید، وجود دارد. 
+</p>
+
+<p>
+یک مثال برای پارتیشن بندی، که ما برای یک دیسک ۲۰ گیگابایتی نشان می دهیم، برای یک لپتاپ استفاده می شود (شامل وب سرور، مایل سرور، گنوم، ... ): 
+</p>
+
+<pre caption="Filesystem usage example">
+$ <i>df -h</i>
+Filesystem    Type    Size  Used Avail Use% Mounted on
+/dev/sda5     ext3    509M  132M  351M  28% /
+/dev/sda2     ext3    5.0G  3.0G  1.8G  63% /home
+/dev/sda7     ext3    7.9G  6.2G  1.3G  83% /usr
+/dev/sda8     ext3   1011M  483M  477M  51% /opt
+/dev/sda9     ext3    2.0G  607M  1.3G  32% /var
+/dev/sda1     ext2     51M   17M   31M  36% /boot
+/dev/sda6     swap    516M   12M  504M   2% &lt;not mounted&gt;
+<comment>(Unpartitioned space for future usage: 2 GB)</comment>
+</pre>
+
+<p>
+دایرکتوری <path>/usr</path> بیشترین فضا را (۸۳٪) در اینجا اشغال نموده، اما بمجرد اینکه همه نرم افزارها نصب گردیدند، <path>/usr</path> قابلیت وسعت یافتن بیشتر را ندارد. اگرچه اختصاص دادن مقداری کمی از گیگابایت های فضا برای <path>/var</path> ممکن است افراطی به نظر برسد، بخاطر داشته باشید که پورتیج این دایرکتوری را بطور پیش فرض برای کامپایل کردن بسته ها استفاده می نماید. اگر می خواهید <path>/var</path> را بصورت معقولانه تری نگهداری نمایید، مثلا ۱ گیگابایت، نیاز دارید تا متغیر <c>PORTAGE_TMPDIR</c> خودتان را در <path>/etc/portage/make.conf</path> برای اعلام فضای آزاد لازم برای کامپایل نمودن بسته های بسیار بزرگتر مانند OpenOffice تغییر دهید. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="fdisk">
+<title>استفاده کردن از fdisk برای پارتیشن بندی نمودن دیسکتان</title>
+<subsection>
+<body>
+
+<impo>
+اگر محیط شما با پارتیشن هائی بزرگتر از ۲ترابایت سروکار دارند، لطفا از ساختارهای <uri link="#parted">استفاده کردن از parted برای پارتیشن‌بندی دیسک شما</uri> بجای این بخش استفاده نمایید. <c>fdisk</c> قادر به کار با پارتیشن های بزرگ نیست. 
+</impo>
+
+<p>
+بخش متعاقب شرح می دهد چگونه با استفاده از <c>fdisk</c> مانند مثال پارتیشن بندی نماییم. پارتیشن بندی مثال پیشتر اشاره گردید: 
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Boot partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Swap partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Root partition</ti>
+</tr>
+</table>
+
+<p>
+پارتیشن بندی را مطابق با اولویت های خودتان تغییر دهید. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>چشم انداز پارتیشن بندی در جریان</title>
+<body>
+
+<p>
+نرم افزار <c>fdisk</c> ابزاری معروف و قدرتمند برای شکافتن دیسک شما به پارتیشن ها است. نرم افزار <c>fdisk</c> را بروی دیسک خودتان (در مثال ما از <path>/dev/sda</path> استفاده می نماییم) روشن نمایید: 
+</p>
+
+<pre caption="Starting fdisk">
+# <i>fdisk /dev/sda</i>
+</pre>
+
+<p>
+بمجرد راه اندازی <c>fdisk</c> ، با خط فرمانی که شبیه به این است روبرو می شوید: 
+</p>
+
+<pre caption="fdisk prompt">
+Command (m for help): 
+</pre>
+
+<p>
+برای بنمایش درامدن پیکربندی فعلی دیسکتان <c>p</c> را تایپ نمایید: 
+</p>
+
+<pre caption="An example partition configuration">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 240 heads, 63 sectors, 2184 cylinders
+Units = cylinders of 15120 * 512 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/sda1   *         1        14    105808+  83  Linux
+/dev/sda2            15        49    264600   82  Linux swap
+/dev/sda3            50        70    158760   83  Linux
+/dev/sda4            71      2184  15981840    5  Extended
+/dev/sda5            71       209   1050808+  83  Linux
+/dev/sda6           210       348   1050808+  83  Linux
+/dev/sda7           349       626   2101648+  83  Linux
+/dev/sda8           627       904   2101648+  83  Linux
+/dev/sda9           905      2184   9676768+  83  Linux
+
+Command (m for help): 
+</pre>
+
+<p> 
+این دیسک بخصوص برای میزبانی هفت لینوکس پیکربندی گردیده (هرکدام با واژه متناظر <c>"Linux"</c> در مقابلش فهرست گردیده) و یک پارتیشن سواپ هم بخوبی تدارک دیده شده (با واژه متناظر <c>"Linux swap"</c> در مقابلش فهرست گردیده). 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>پاک کردن همه پارتیشن ها</title>
+<body>
+
+<p>
+در ابتدا همه پارتیشن های موجود بروی دیسک را پاک می نماییم. <c>d</c> را برای حذف کردن یک پارتیشن تایپ نمایید. برای مثال برای پاک نمودن پارتیشن <path>/dev/sda1</path> موجود: 
+</p>
+
+<pre caption="Deleting a partition">
+Command (m for help): <i>d</i>
+Partition number (1-4): <i>1</i>
+</pre>
+
+<p>
+پارتیشن برای پاک شدن فهرست می شود. اکنون اگر <c>p</c> را تایپ نمایید آنرا دیگر مشاهده نخواهید نمود، اما پارتیشن تا هنگامی که تغییراتتان را ذخیره ننمایید پاک نخواهد شد.اگر اشتباهی کردید و خواستید تغییرات اعمال نگردند، حرف <c>q</c> را فورا تایپ نمایید و کلید اینتر را فشار دهید و پارتیشن شما پاک نخواهد شد. 
+</p>
+
+<p>
+اکنون، فرض می نماییم می خواهید همه پارتیشن های موجود بروی دیسک را پاک نمایید، حرف <c>p</c> را تایپ نمایید تا یک پارنیشن را برای حذف انتخاب نمایید و سپس با تایپ حرف <c>d</c> و عدد پارتیشن آنرا پاک نمایید. در نهایت با جدول پارتیشن هائی که هیچ چیز در آن نیست کار به اتمام خواهد رسید: 
+</p>
+
+<pre caption="An empty partition table">
+Disk /dev/sda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+Device Boot    Start       End    Blocks   Id  System
+
+Command (m for help):
+</pre>
+
+<p>
+اکنون که جدولبندی پارتیشن موجود در حافظه خالی گردیده، آماده ایم تا پارتیشن ها را ایجاد نماییم. ما از نمایه پیش فرض پارتیشن بندی که پیشتر توضیح داده شد، استفاده می نماییم. البته، اگر نمایه پارتیشن بندی مشابه با آنرا نمی خواهید از ساختار دقیق این متن استفاده ننمایید! 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>ایجاد پارتیشن راه اندازی</title>
+<body>
+
+<p>
+ابتدا یک پارتیشن راه اندازی کوچک ایجاد می نماییم. برای ایجاد یک پارتیشن جدید <c>n</c> را تایپ نمایید، سپس <c>p</c> را برای انتخاب یک پارتیشن primary، و پس از آن <c>1</c> برای انتخاب اولین پارتیشن primary. هنگامیکه خط فرمان برای اولین سیلندر پرسید، اینتر را فشار دهید. هنگامیکه خط فرمان برای سیلندر انتهائی پرسید، برای ایجاد یک پارتیشن با اندازه ۳۲مگابایتی <c>+32M</c> را تایپ نمایید و پرچم راه انداز شدن را برای آن تنظیم نمایید: 
+</p>
+
+<pre caption="Creating the boot partition">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+First cylinder (1-3876, default 1): <comment>(Hit Enter)</comment>
+Using default value 1
+Last cylinder or +size or +sizeM or +sizeK (1-3876, default 3876): <i>+32M</i>
+</pre>
+
+<p>
+اکنون هنگامیکه <c>p</c> را تایپ می نمایید، باید پارتیشن ایجاد شده را ببینید: 
+</p>
+
+<pre caption="Created boot partition">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/sda1             1        14    105808+  83  Linux
+</pre>
+
+<p>
+می خواهیم این پارتیشن راه انداز دستگاه باشد. حرف <c>a</c> را برای کنترل راه انداز بودن تایپ نمایید و <c>1</c> را انتخاب کنید. اکنون اگر مجددا <c>p</c> را تایپ نمایید، متوجه یک <path>*</path> در ستون <c>"Boot"</c> می شوید. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>ایجاد پارتیشن سواپ</title>
+<body>
+
+<p>
+اجازه دهید اکنون پارتیشن سواپ را ایجاد نماییم. برای انجام این کار، ابتدا برای ایجاد یک پارتیشن جدید <c>n</c> را تایپ نمایید، سپس <c>p</c> را تا به fdisk بگویید می خواهید دومین پارتیشن primary را ایجاد نمایید. سپس 2 را تایپ نمایید تا دومین پارتیشن primary در /dev/sda2 ایجاد شود، هنگامیکه خط فرمان درباره اولین سیلندر این پارتیشن پرسید، اینتر را فشار دهید. هنگامیکه خط فرمان درباره سیلندر انتهائی این پارتیشن پرسید، <c>+512M</c> را برای ایجاد یک پارتیشن به اندازه ۵۱۲مگابایت تایپ نمایید. بعد از آنکه این کار را انجام دادید، برای تنظیم نوع پارتیشن <c>t</c> را تایپ نمایید و <c>2</c> را برای انتخاب پارتیشنی که ایجاد نمودید و سپس <c>82</c> را برای تنظیم گونه پارتیشن به عنوان <c>"Linux Swap"</c> تایپ نمایید. پس از بپایان بردن این مراحل، تایپ <c>p</c> باید یک جدول پارتیشن بندی مانند زیر به شما نشان دهد: 
+</p>
+
+<pre caption="Partition listing after creating a swap partition">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/sda1   *         1        14    105808+  83  Linux
+/dev/sda2            15        81    506520   82  Linux swap
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>ایجاد پارتیشن ریشه</title>
+<body>
+
+<p>
+نهایتا، اجازه دهید پارتیشن ریشه را ایجاد نماییم. برای انجام این کار، <c>n</c> را برای ایجاد یک پارتیشن جدید تایپ کنید، سپس <c>p</c> را تا به fdisk بگویید که می خواهید یک پارتیشن primary ایجاد نمایید. سپس <c>3</c> را تایپ نمایید تا سومین پارتیشن primary را در <path>/dev/sda3</path> ایجاد نمایید. هنگامیکه خط فرمان درباره اولین سیلندر این پارتیشن پرسید، اینتر را فشار دهید. هنگامیکه خط فرمان از سیلندر آخرین این پارتیشن پرسید، اینتر را فشار دهید تا پارتیشنی ایجاد نمایید که باقیمانده فضای دیسک شما را در بر بگیرد. بعد از اتمام این مراحل، تایپ <c>p</c> باید جدول پارتیشن بندی مانند زیر را به شما نشان دهد: 
+</p>
+
+<pre caption="Partition listing after creating the root partition">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 30.0 GB, 30005821440 bytes
+240 heads, 63 sectors/track, 3876 cylinders
+Units = cylinders of 15120 * 512 = 7741440 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/sda1   *         1        14    105808+  83  Linux
+/dev/sda2            15        81    506520   82  Linux swap
+/dev/sda3            82      3876  28690200   83  Linux
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>ذخیره لایه سازی پارتیشن ها</title>
+<body>
+
+<p>
+برای ذخیره لایه سازی پارتیشن ها و خروج از <c>fdisk</c> حرف <c>w</c> را تایپ نمایید. 
+</p>
+
+<pre caption="Save and exit fdisk">
+Command (m for help): <i>w</i>
+</pre>
+
+<p>
+اکنون که پارتیشن های شما ایجاد گردیدند، با <uri link="#filesystems">ایجاد فایل سیستم ها</uri> ادامه دهید. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="parted">
+<title>استفاده کردن از parted برای پارتیشن بندی دیسک شما</title>
+<subsection>
+<body>
+
+<p>
+در این بخش ما شما را در جریان ایجاد پارتیشن های نمونه که پیشتر ساختار آن ذکر شد، راهنمائی می نماییم. بی شباهت به بخش قبلی، ما روش استفاده از برنامه <c>parted</c> را بجای آن شرح می دهیم. هر دو برنامه <c>parted</c> و <c>fdisk</c> توابع مشابهی را ارائه می دهند، بنابر این اگر شما در حال حاضر دستگاهتان را با استفاده از <c>fdisk</c> پارتیشن بندی نموده اید، می توانید از این بخش پرش نموده و با <uri link="#filesystems">ایجاد فایل سیستم ها</uri> ادامه دهید. 
+</p>
+
+<p>
+لایه بندی نمونه ائی که ما استفاده می نماییم در جدول زیر نمایش داده شده: 
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Boot partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Swap partition</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Root partition</ti>
+</tr>
+</table>
+
+<p>
+لایه بندی پارتیشن خود را مطابق با اولویت های خودتان تغییر دهید. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>مشاهده لایه بندی پارتیشن های موجود</title>
+<body>
+
+<p>
+برنامه <c>parted</c> مقداری از برنامه <c>fdisk</c> جدیدتر است. این برنامه یک واسط کاربری ساده برای پارتیشن بندی دیسک های شما ارائه می دهد و از دیسک های خیلی بزرگ (بیشتر از ۲ترابایت) پشتیبانی می نماید. برنامه <c>parted</c> را بروی دیسک (در مثال ما از <path>/dev/sda</path> استفاده می کنیم) روشن نمایید:
+</p>
+
+<pre caption="Starting parted">
+# <i>parted /dev/sda</i>
+GNU Parted 2.3
+Using /dev/vda
+Welcome to GNU Parted! Type 'help' to view a list of commands.
+</pre>
+
+<p>
+برای اینکه همه حالت های قابل پشتیبانی توسط <c>parted</c> را دریابید، <c>help</c> را تایپ نمایید و دگمه اینتر را فشار دهید. فعلا فقط با درخواست <c>parted</c> برای نمایش همه پارتیشن های مورد استفاده در دیسک ادامه می دهیم. دستور <c>print</c> نیز می تواند برای آن استفاده گردد. 
+</p>
+
+<pre caption="An example partition configuration shown by parted">
+(parted) <i>print</i>
+Model: SCSI Block Device
+Disk /dev/sda: 21.5GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+
+Number  Start   End     Size    Type     File system     Flags
+ 1      512B    2148MB  2148MB  primary  ext4
+ 2      2148MB  3222MB  1074MB  primary  linux-swap(v1)
+ 3      3222MB  21.5GB  18.3GB  primary                  lvm
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>انتخابی: تنظیم کردن برچسب جی پی تی</title>
+<body>
+
+<p>
+غالب دیسک های موجود بروی x86/amd64 از یک برچسب <e>msdos</e> استفاده می نمایند. هرچند اگر نقشه دارید تا پارتیشن های بزرگ ایجاد نمایید (بزرگتر از ۲ترابایت)، باید برای دیسک خود از برچسب <e>gpt</e> استفاده نمایید ( <e>GUID Partition Type</e> ) با استفاده از <c>parted</c> این کار می تواند بوسیله <c>mklabel gpt</c> انجام گردد:
+</p>
+
+<warn>
+تغییر نوع پارتیشن همه پارتیشن های موجود بروی دیسک شما را پاک خواهد نمود. همه اطلاعات روی دیسک از بین خواهند رفت. 
+</warn>
+
+<pre caption="Setting the GPT label">
+(parted) <i>mklabel gpt</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>پاک کردن همه پارتیشن ها</title>
+<body>
+
+<p>
+اگر اینکار هنوز انجام نشده (مثلا در حین استفاده از <c>mklabel</c> ، یا به این خاطر که دیسک کاملا فرمت نشده و جدید است)، ابتدا باید همه پارتیشن های روی دیسک را پاک نماییم. تایپ نمایید <c>rm &lt;number&gt;</c> در شرایطی که بجای &lt;number&gt; عدد پارتیشنی جایگزین شود که می خواهید پاک شود.
+</p>
+
+<pre caption="Removing a partition from the disk">
+(parted) <i>rm 2</i>
+</pre>
+
+<p>
+همین کار را برای همه پارتیشن های دیگری که به آنها نیاز ندارید، انجام دهید. هرچند، مطمئن شوید که اشتباهی نمی نمایید، چراکه <c>parted</c> تغییرات را فورا اعمال می نماید (برخلاف <c>fdisk</c> که آنها را نمایش می داد و به کاربر این امکان را می داد که قبل از ذخیره سازی یا خروج از <c>fdisk</c> این تغییرات را بازگرداند). 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>ایجاد کردن پارتیشن ها</title>
+<body>
+
+<p>
+اکنون اجازه دهید پارتیشن هائی را که پیشتر اشاره نمودیم را ایجاد نماییم. ایجاد پارتیشن با <c>parted</c> کار سختی نیست - همه آنچه لازم است انجام دهیم مطلع نمودن <c>parted</c> از اطلاعات زیر است: 
+</p>
+
+<ul>
+  <li>
+نوع پارتیشنی که استفاده می نماییم. این گزینه معمولا <e>primary</e> است. در این مورد بیش از ۴ پارتیشن نمی توانید انتخاب نمایید (با برچسب پارتیشن <e>msdos</e>). در غیر اینصورت نیاز دارید تا چهارمین پارتیشن خود را که در انتهای دیسک قرار می گیرد را <e>extended</e> انتخاب نمایید و پارتیشن های <e>logical</e> را در آن ایجاد نمایید. اگر از یک برچسب پارتیشن <e>gpt</e> استفاده می نمایید، هیچ محدودیتی برای تعداد پارتیشن های primary خود ندارید.
+  </li>
+  <li>
+نوع فایل سیستمی که استفاده می گردد. برنامه <c>parted</c> از غالب فایل های سیستمی پشتیبانی می نماید و می داند که آنها چه نوع ID برای استفاده از این پارتیشن نیاز دارند. این بدان معنی <e>نیست</e> که <c>parted</c> فایل سیستمی بروی پارتیشن ایجاد می نماید (می توانید با دستور <c>mkpartfs</c> آنرا انجام دهید، اما ما از دستور رایج <c>mkfs.*</c> استفاده خواهیم نمود). ID پارتیشن معمولا بوسیله ابزارهای خود شناس برای اینکه دریابند با قسمتی از یک پارتیشن چکار نمایند، استفاده می شوند. 
+  </li>
+  <li>
+    محل شروع یک پارتیشن (که می تواند در مگابایت یا گیگابایت بیان شود)
+  </li>
+  <li>
+    محل انتهای یک پارتیشن ( که می تواند در مگابایت یا گیگابایت بیان شود) 
+  </li>
+</ul>
+
+<p>
+یکی از فواید <c>parted</c> این است که چنانکه در مثال بعد می بینید، می توانید بسادگی فقط با استفاده از اندازه پارتیشن میزان دقیق آغاز و پایان موقعیت آنرا پیدا نمایید. 
+</p>
+
+<pre caption="Creating the partitions">
+<comment># Create a 32 mbyte /boot partition</comment>
+(parted) <i>mkpart primary ext2 0 32mb</i>
+Warning: The resulting partition is not properly aligned for best performance.
+Ignore/Cancel? <i>i</i>
+
+<comment># Create a 512 mbyte swap partition</comment>
+(parted) <i>mkpart primary linux-swap 32mb 542mb</i>
+
+<comment># Create a partition that spans the remaining disk.
+# -1s (minus one s) means the end of the disk</comment>
+(parted) <i>mkpart primary ext4 542mb -1s</i>
+Warning: You requested a partition from 542MB to 21.5GB.
+The closest location we can manage is 542MB to 21.5GB.
+Is this still acceptable to you?
+Yes/No? <i>y</i>
+</pre>
+
+<p>
+اکنون می توانید از لایه بندی پارتیشن <c>print</c> بگیرید تا بررسی نمایید که همه چیز در حد انتظارات باشد. هنگامیکه راضی شدید، از دستور <c>quit</c> برای خروج از <c>parted</c> استفاده نمایید. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="filesystems">
+<title>ایجاد کردن فایل سیستم ها</title>
+<subsection>
+<title>مقدمه</title>
+<body>
+
+<p>
+اکنون که پارتیشن هایتان ایجاد شدند، زمان آن است که filesystem هائی بروی آنها قرار دهیم. اگر نظری درباره انتخاب filesystem خاصی ندارید و با آنچه ما به عنوان پیش فرض در این کتاب راهنما استفاده می کنیم راحت هستید، با <uri  link="#filesystems-apply">بکاربستن یک filesystem بروی یک پارتیشن</uri> ادامه دهید. درغیر اینصورت یادگیری درباره انواع filesystem های موجود را بخوانید ... 
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<include href="hb-install-filesystems.xml"/>
+</subsection>
+
+<subsection id="filesystems-apply">
+<title>بکاربستن یک filesystem بروی یک پارتیشن</title>
+<body>
+
+<p>
+برای ایجاد یک فایل سیستمی بروی یک پارتیشن یا حجم، ابزارهائی برای هر فایل سیستمی وجود دارد: 
+</p>
+
+<table>
+<tr>
+  <th>Filesystem</th>
+  <th>Creation Command</th>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mkfs.ext2</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkreiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+
+<p>
+برای مثال، برای داشتن ext2 بروی پارتیشن راه انداز (در مثال ما /dev/sda1 ) و ext3 (در مثال ما /dev/sda3 ) بروی پارتیشن ریشه (چنانکه در مثال ما آمد)، شما لازم دارید اینکار را انجام دهید: 
+</p>
+
+<pre caption="Applying a filesystem on a partition">
+# <i>mkfs.ext2 /dev/sda1</i>
+# <i>mkfs.ext3 /dev/sda3</i>
+</pre>
+
+<p>
+اکنون فایل های سیستمی بروی پارتیشن های جدیدی که ایجاد نمودید (یا حجم محلی) سوار شد. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>فعال نمودن پارتیشن سواپ</title>
+<body>
+
+<p>
+دستور <c>mkswap</c> دستوری برای دادن ارزش آغازین به پارتیشن های سواپ است: 
+</p>
+
+<pre caption="Creating a Swap signature">
+# <i>mkswap /dev/sda2</i>
+</pre>
+
+<p>
+برای فعال نمودن پارتیشن سواپ، از دستور <c>swapon</c> استفاده نمایید: 
+</p>
+
+<pre caption="Activating the swap partition">
+# <i>swapon /dev/sda2</i>
+</pre>
+
+<p>
+با دستوراتی که در بالا ذکر شد سواپ را ایجاد و فعال نمایید. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>مانت کردن</title>
+<body>
+
+<p>
+اکنون که پارتیشن های شما ارزش آغازین گرفتند و فایل سیستم ها در آنها جای گیر شدند، زمان مانت نمودند آن پارتیشن ها رسیده است. از دستور <c>mount</c> استفاده نمایید. فراموش ننمایید که دایرکتوری های لازم برای مانت نمودن هر پارتیشنی که ایجاد نمودید را بوجود بیاورید. به عنوان یک مثال ما پارتیشن های راه انداز و ریشه را مانت می نماییم: 
+</p>
+
+<pre caption="Mounting partitions">
+# <i>mount /dev/sda3 /mnt/gentoo</i>
+# <i>mkdir /mnt/gentoo/boot</i>
+# <i>mount /dev/sda1 /mnt/gentoo/boot</i>
+</pre>
+
+<note>
+اگر می خواهید <path>/tmp</path> شما در پارتیشنی مجزا قرار گیرد، مطمئن شوید پس از مانت نمودن آن پرمیژن آنرا تغییر دهید: <c>chmod 1777 /mnt/gentoo/tmp</c>. این دستور همچنین برای <path>/var/tmp</path> هم صادق است. 
+</note>
+
+<p>
+همچنین ما نیاز داریم تا فایل سیستم proc (یک واسط مجازی با کرنل) را نیز در <path>/proc</path> مانت نماییم. اما اول نیازداریم تا فایل های خودمان را در پارتیشن ها قرار دهیم. 
+</p>
+
+<p>
+با <uri link="?part=1&amp;chap=5">نصب کردن فایل های نصب جنتو</uri> ادامه دهید. 
+</p>
+
+</body>
+</section>
+</sections>
