@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-net-advanced.xml,v 1.1 2013/01/20 17:23:29 swift Exp $ -->
+
+<sections>
+
+<abstract>
+اینجا ما درباره چگونگی کارکرد پیکربندی می آموزیم - شما قبل از اینکه ما درباره شبکه ماژولار یادبگیریم، نیاز به دانستن آن دارید.
+</abstract>
+
+<version>11</version>
+<date>2011-08-19</date>
+
+<section>
+<title>پیکربندی پیشرفته</title>
+<body>
+
+<p>
+متغییر <c>config_eth0</c> قلب یک پیکربندی رابط کاربری است.این یک فهرست ساختار سطح بالا برای پیکربندی رابط کاربری است ( در این مورد <c>eth0</c>). هر دستور در فهرست ساختار پیاپی انجام می‌شود. اگر کمینه یکی از دستورها کار نماید، رابط‌کاربری درست شمرده می‌شود.
+</p>
+
+<p>
+در اینجا فهرستی از ساختارهای درون‌ساز وجود دارد.
+</p>
+
+<table>
+<tr>
+  <th>Command</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><c>null</c></ti>
+  <ti>Do nothing</ti>
+</tr>
+<tr>
+  <ti><c>noop</c></ti>
+  <ti>
+    If the interface is up and there is an address then abort configuration
+    successfully
+  </ti>
+</tr>
+<tr>
+  <ti>an IPv4 or IPv6 address</ti>
+  <ti>Add the address to the interface</ti>
+</tr>
+<tr>
+  <ti>
+    <c>dhcp</c>, <c>adsl</c> or <c>apipa</c> (or a custom command from a 3rd
+    party module)
+  </ti>
+  <ti>
+    Run the module which provides the command. For example <c>dhcp</c> will run
+    a module that provides DHCP which can be one of either <c>dhcpcd</c>,
+    <c>dhclient</c> or <c>pump</c>.
+  </ti>
+</tr>
+</table>
+
+<p>
+اگر یک دستور اشکال پیدا نمود، می‌توانید یک دستور برگشت برای آن مشخص نمایید. دستور برگشت باید با ساختار پیکربندی کنونی همخوان باشد.
+</p>
+
+<p>
+می توانید این دستورها را به هم پیوند دهید. اینجا چند نمونه دنیای راستین وجود دارد.
+</p>
+
+<pre caption="Configuration examples">
+<comment># Adding three IPv4 addresses</comment>
+config_eth0="192.168.0.2/24
+192.168.0.3/24
+192.168.0.4/24"
+
+<comment># Adding an IPv4 address and two IPv6 addresses</comment>
+config_eth0="192.168.0.2/24
+4321:0:1:2:3:4:567:89ab
+4321:0:1:2:3:4:567:89ac"
+
+<comment># Keep our kernel assigned address, unless the interface goes
+# down so assign another via DHCP. If DHCP fails then add a
+# static address determined by APIPA</comment>
+config_eth0="noop
+dhcp"
+fallback_eth0="null
+apipa"
+</pre>
+
+<note>
+هنگامی که از ماژول <c>ifconfig</c> استفاده می‌نمایید و بیش از یک آدرس به آن می افزایید، نام مستعار رابط کاربری برای هر آدرس بیشتر ایجاد می‌گردد. به این ترتیب با دو نمونه بالا رابط کاربری <c>eth0</c> ، <c>eth0:1</c> و <c>eth0:2</c> را خواهید گرفت. با این رابط‌های کاربری کار مشخصی نمی‌توانید انجام دهید تا هنگامی‌که کرنل و دیگر برنامه‌ها <c>eth0:1</c> و <c>eth0:2</c> را به عنوان <c>eth0</c> تلقی می‌نمایند.
+</note>
+
+<impo>
+درخواست برگشت بسیار مهم است! اگر گزینه <c>null</c> را مشخص ننماییم دستور <c>apipa</c> فقط هنگامی اجرا خواهد شد که دستور <c>noop</c> اشکال بیابد.
+</impo>
+
+<note>
+<uri link="?part=4&amp;chap=3#apipa">APIPA</uri> and <uri
+link="?part=4&amp;chap=3#dhcp">DHCP</uri> are discussed later.
+</note>
+
+</body>
+</section>
+<section>
+<title>وابستگی‌های شبکه</title>
+<body>
+
+<p>
+کدهای Init در <path>/etc/init.d</path> می‌توانند به یک رابط‌کاربری شبکه ویژه یا تنها به شبکه وابسته باشند. همه رابط‌های کاربری شبکه در دستگاه init جنتو چیزی را که به آن <e>net</e> گفته می‌شود را فراهم می‌آورند. 
+</p>
+
+<p>
+اگر در <path>/etc/rc.conf</path> گزینه <c>rc_depend_strict="YES"</c> تنظیم است، همه رابط‌های کاربری که شبکه فراهم می‌آورند باید پیش از وابستگی‌های شبکه پویا شوند. به زبان دیگر، اگر یک <path>net.eth0</path> و <path>net.eth1</path> دارید و یک کد init به <c>"net"</c> وابسته است، باید هر دو آنها پویا شوند.
+</p>
+
+<p>
+در سوی دیگر، اگر <c>rc_depend_strict="NO"</c> تنظیم گردیده، وابستگی شبکه به شکل برطرف‌شده نشانگر خورده با این هدف که کمینه یک رابط‌کاربری شبکه روشن می‌باشد.
+</p>
+
+<p>
+ولی درباره <path>net.br0</path> که بروی <path>net.eth0</path> و <path>net.eth1</path> وابسته باشد چه؟ <path>net.eth1</path> ممکن است یک بیسیم یا دستگاه PPP که پیش از آنکه به bridge افزوده گردد لازم است پیکربندی شود، باشد. از آنجا که <path>/etc/init.d/net.br0</path> پیوند نمادینی به <path>net.lo</path> است، این کار نمی‌تواند انجام گردد.
+</p>
+
+<p>
+پاسخ تعریف نمودن تنظیم‌های یک <c>rc_need_</c> در <path>/etc/conf.d/net</path> است.
+</p>
+
+<pre caption="net.br0 dependency in /etc/conf.d/net">
+rc_need_br0="net.eth0 net.eth1"
+</pre>
+
+<p>
+تنها همین، هرچند کافی نیست. کدهای init شبکه‌سازی جنتو از وابستگی مجازی که به آن <e>net</e> گفته می‌شود استفاده می‌نمایند تا دستگاه را هنگامیکه شبکه برپا است، آگاه نماید. آشکارا، در نمونه بالا، شبکه تنها هنگامی به‌شکل هستی‌دار نشان می‌خورد که <path>net.br0</path> برپا باشد، نه هنگامی‌که دیگران برپا هستند. بنابر این لازم است تا به آن در <path>/etc/conf.d/net</path> این‌را بگوییم:
+</p>
+
+<pre caption="Updating virtual dependencies and provisions for networking">
+rc_net_lo_provide="!net"
+rc_net_eth0_provide="!net"
+rc_net_eth1_provide="!net"
+</pre>
+
+<p>
+برای گفتگو‌های بیشتر درباره وابستگی‌ها، بخش <uri link="?part=2&amp;chap=4#doc_chap4">نوشتن کدهای init</uri> را در کتاب‌راهنمای‌جنتو کنکاش نمایید. داده‌های بیشتر درباره <path>/etc/rc.conf</path> در فایل همراه آن موجود است.
+</p>
+
+</body>
+</section>
+
+<section id="variable_name">
+<title>نام‌ها و ارزش‌های متغییر</title>
+<body>
+
+<p>
+نام‌های متغییر نا‌ایستا هستند. در حالت عادی آنها ساختار موجود در <c>variable_${interface|mac|essid|apmac}</c> را پیگیری می‌نمایند. برای نمونه، متغییر <c>dhcpcd_eth0</c> مقدار برای گزینه‌های dhcpcd برای eth0 را نگاه می‌دارد و <c>dhcpcd_essid</c> مقدار برای گزینه‌های dhcpcd در هنگامیکه هر رابط‌کاربری با <c>ESSID "essid"</c> ارتباط می‌یابد را نگهداری می‌نماید.
+</p>
+
+<p>
+هرچند، قانون سریع و سختی وجود ندارد نام‌‌های حالت رابط کاربری باید به شکل ethx باشد. بدرستی، بسیاری از رابط‌کاربری‌های بیسیم نامی مانند wlanx یا rax بخوبی ethx دارند. همچنین، برخی کاربران رابط‌کاربری‌هائی تعریف می‌نمایند مانند bridgeها که می‌توانند نام‌هائی مانند foo داشته‌باشند. برای اینکه زندگی را بیشتر زیبا کنیم، نقطه‌های دسترسی بیسیم می توانند نام‌هائی با نشانک‌هایی بجز الف‌با و عددها داشته باشند - این مهم است چراکه می‌توانید پیکربندی پارامترهای شبکه را بوسیله ESSID انجام دهید.
+</p>
+
+<p>
+سمت پایین همه این‌ها آن است که جنتو برای شبکه سازی از متغییرهای bash استفاده می‌نماید - و bash نمی‌تواند از چیزی بجز الف‌با و عددهای انگلیسی استفاده نماید. برای چیره شدن بر این دشواری ما هر نشانکی را که انگلیسی نباشد را با یک نشانک <c>_</c> تغییر می دهیم.
+</p>
+
+<p>
+دیگر سوی پایین bash درون‌مایه‌های متغییرها است - برخی نشانک‌ها نیاز دارند رد شوند. این می‌تواند با قرار دادن نشانک <c>\</c> در برابر نشانکی که لازم به پرش دارد بدست آید. فهرست برابر نشانک‌ها لازم است تا به این شکل تغییر یابند: <c>"</c>, <c>'</c> و  <c>\</c>.
+</p>
+
+<p>
+در این نمونه ما از ESSID بیسیم که می‌تواند دورنمایه بزرگی از نشانک‌ها را داشته باشد استفاده می‌نماییم. ما باید از ESSID به شکل <c>My "\ NET</c> استفاده نماییم:
+</p>
+
+<pre caption="variable name example">
+<comment>(This does work, but the domain is invalid)</comment>
+dns_domain_My____NET="My \"\\ NET"
+
+<comment>(The above sets the dns domain to My "\ NET when a wireless card
+connects to an AP whose ESSID is My "\ NET)</comment>
+</pre>
+
+</body>
+</section>
+</sections>
