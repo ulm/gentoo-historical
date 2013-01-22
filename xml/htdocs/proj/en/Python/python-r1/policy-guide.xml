@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/policy-guide.xml,v 1.7 2013/01/14 14:07:10 mgorny Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/policy-guide.xml,v 1.8 2013/01/22 17:45:21 mgorny Exp $ -->
 
 <guide lang="en">
 <title>python-r1 Policy Guide</title>
@@ -328,6 +328,129 @@
 				documenting the change and the reasoning for it. This will help
 				other maintainers avoid mistakes and yield better testing
 				of the ebuild when next bumped.
+			</p>
+		</body>
+	</section>
+</chapter>
+
+<chapter id="Development_tips">
+	<title>Development tips</title>
+
+	<section id="dt_Running_tests_in_Python_packages">
+		<title>Running tests in Python packages</title>
+
+		<body>
+			<p>
+				If a Python package provides tests suitable for automated
+				testing, the ebuild shall run those tests
+				in the <c>python_test()</c> (or <c>src_test()</c>) phase.
+			</p>
+
+			<p>
+				There are a number of common solutions for running tests —
+				including built-in <c>unittest</c> module,
+				<c>dev-python/nose</c>, <c>dev-python/pytest</c>. Often
+				the solutions are compatible with one another, enough to be able
+				to run a test suite designed for one of the other tools.
+			</p>
+
+			<p>
+				There are two common rules when choosing the test runner:
+			</p>
+
+			<ol>
+				<li>
+					the test runner shall introduce the least possible number
+					of dependencies,
+				</li>
+
+				<li>
+					the test runner chosen by upstream ought be preferred.
+				</li>
+			</ol>
+
+			<p>
+				When in doubt, it is often useful to review the package's test
+				modules for imports. If a package belonging to a test suite
+				is imported, the runner for that test suite shall be used.
+				The common test suites are listed in the following table:
+			</p>
+
+			<table>
+				<tr>
+					<th>Gentoo package</th>
+					<th>Python package (module)</th>
+					<th>Test runner (executable)</th>
+				</tr>
+
+				<tr>
+					<ti><c>dev-python/logilab-common</c></ti>
+					<ti><c>logilab.common.test</c></ti>
+					<ti><c>pytest</c></ti>
+				</tr>
+
+				<tr>
+					<ti><c>dev-python/nose</c></ti>
+					<ti><c>nose</c></ti>
+					<ti><c>nosetests</c></ti>
+				</tr>
+
+				<tr>
+					<ti><c>dev-python/pytest</c></ti>
+					<ti><c>pytest</c> or <c>py</c></ti>
+					<ti><c>py.test</c></ti>
+				</tr>
+
+				<tr>
+					<ti>(built-in)</ti>
+					<ti><c>unittest</c></ti>
+					<ti><c>${PYTHON} -m unittest discover</c> (since Python
+						2.7/3.2)</ti>
+				</tr>
+
+				<tr>
+					<ti><c>dev-python/unittest2</c></ti>
+					<ti><c>unittest2</c></ti>
+					<ti><c>unit2.py discover</c></ti>
+				</tr>
+			</table>
+
+			<p>
+				If the package defines the <c>test</c> command
+				for <c>setup.py</c> and uses one of the fore-mentioned test
+				suites, the best solution is the one requiring the least
+				effort or smallest number of dependencies.
+			</p>
+
+			<p>
+				There are a number of packages which require the <c>unittest2</c>
+				module only in versions of Python 2 older than 2.7 and Python 3
+				older than 3.2. Those packages shall depend
+				on <c>virtual/python-unittest2</c>.
+			</p>
+
+			<p>
+				If a particular package requires <c>unittest2</c> for Python 2.7+
+				and 3.2+ only for setuptools discovery module, it is preferred
+				to depend on the virtual package along with a <c>python_test()</c>
+				function similar to the following snippet:
+			</p>
+
+			<pre caption='Test discovery using unittest and unittest2'>
+<ident>DEPEND</ident>="test? ( virtual/python-unittest2[<var>${PYTHON_USEDEP}</var>] )"
+
+python_test() {
+	<keyword>local</keyword> <ident>runner</ident>=( <var>"${PYTHON}"</var> -m unittest )
+	<keyword>if</keyword> [[ <var>${EPYTHON}</var> == python2.[56] || <var>${EPYTHON}</var> == python3.1 ]]; <keyword>then</keyword>
+		<ident>runner</ident>=( unit2.py )
+	<keyword>fi</keyword>
+
+	<var>"${runner[@]}"</var> discover <comment># ...</comment>
+}
+</pre>
+
+			<p>
+				The tests need to die on failure.
 			</p>
 		</body>
 	</section>
