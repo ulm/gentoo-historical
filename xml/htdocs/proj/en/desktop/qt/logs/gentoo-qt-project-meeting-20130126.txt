@@ -1,0 +1,550 @@
+Gentoo Qt project meeting 2013-01-26
+Timestamps are UTC+8
+
+[17:00:24] <yngwin> !herd qt
+[17:00:24] <willikins> (qt) hwoarang, kensington, pesa, wired, yngwin
+[17:00:37] <yngwin> meeting agenda at https://wiki.gentoo.org/wiki/Project:Qt/Meeting/2013-01
+[17:00:48] <yngwin> i've just updated it, so reload as necessary
+[17:01:23] <yngwin> who is here?
+[17:01:25] -*- yngwin 
+[17:01:57] <yngwin> kensington told us he wouldnt be able to make it
+[17:02:10] -*- pesa here
+[17:02:46] -*- pesa just fixed bug 401025
+[17:02:47] <willikins> pesa: https://bugs.gentoo.org/401025 "x11-libs/qt-core installs pkgconfig file with {moc,uic,rcc}_location pointing to build dir"; Gentoo Linux, Ebuilds; RESO, FIXE; theodor:qt
+[17:02:52] <yngwin> nice
+[17:03:00] <pesa> finally :)
+[17:03:10] <yngwin> yeah, i see we just got down from 80 to 79 open bugs
+[17:03:40] <yngwin> wired: here?
+[17:05:52] <yngwin> well, we know hwoarang is on his way, so let's get started
+[17:06:02] <yngwin> pesa: can you fill us in on the qt5 progress?
+[17:06:06] <pesa> yessir
+[17:06:45] <pesa> not much work has been done in the past month, mostly because I've been very busy in RL
+[17:07:16] <pesa> a few bugs were fixed, I added an ebuild for printsupport module
+[17:07:24] -*- hwoarang here
+[17:07:45] <pesa> (I think qtbase is complete now)
+[17:07:50] <yngwin> OK
+[17:08:05] <yngwin> so interested users can install this now?
+[17:08:49] <pesa> there are a few more known bugs, I have an idea on how to fix almost all of them
+[17:08:57] <pesa> *almost*
+[17:09:08] <pesa> there's one that is potentially a huge pita
+[17:09:24] <pesa> bug 451456
+[17:09:25] <willikins> pesa: https://bugs.gentoo.org/451456 "[qt overlay] Qt5 packages try to link against already installed versions during recompilation"; Gentoo Linux, Library; UNCO; eugene.shalygin:qt
+[17:09:41] <hwoarang> ohboy
+[17:09:51] <pesa> not sure how to fix it yet
+[17:10:21] <pesa> I actually alreay knew that could be an issue
+[17:10:40] <yngwin> i see
+[17:10:47] <hwoarang> we did not have similar problems with Qt4?\
+[17:10:57] <pesa> but when I tried fixing it for qtbase I broke all other modules, and when I fixed other modules I broke qtbase
+[17:11:00] <pesa> :/
+[17:11:24] <yngwin> query upstream?
+[17:11:25] <pesa> similar yes, but with modularization things have actually got worse in a sense
+[17:11:30] <pesa> done that already
+[17:11:43] <pesa> they are not interested in splitting qtbase further
+[17:12:08] <pesa> (which would help us a lot)
+[17:12:33] <pesa> so basically their supported version is: qtbase broken, other modules work
+[17:12:40] <yngwin> but upstream qtbase modules should be installable seperately, right?
+[17:12:51] <pesa> nope
+[17:13:05] <pesa> i.e. not from a clean builddir
+[17:13:13] <yngwin> they only support monolithic qtbase then
+[17:13:18] <pesa> yep
+[17:13:25] <yngwin> thats a bummer
+[17:13:27] <pesa> they split at the repo level
+[17:13:49] <pesa> then you could have more fine grained deps, but you must build and install at the repo level
+[17:14:03] <pesa> of course that's a no-go for us
+[17:14:34] <pesa> I just need more time to find another solution
+[17:14:37] <yngwin> a monolithic qtbase would make maintenance easier, i guess
+[17:14:54] <pesa> let's not talk about that
+[17:14:57] <yngwin> :)
+[17:14:58] <pesa> doesn't make sense
+[17:15:13] <yngwin> ok, so we need to solve this on our own
+[17:15:18] <pesa> yep
+[17:15:31] <pesa> btw should I open a tracker bug for qt5?
+[17:15:38] <yngwin> probably a good thing
+[17:15:43] <pesa> indeed
+[17:16:21] <pesa> another blocker is app handling
+[17:16:29] <pesa> e.g. linguist, designer, ...
+[17:17:00] <yngwin> is there a problem there, or just someone needs to make the ebuilds?
+[17:17:21] <pesa> not a problem, but making ebuilds is not enough either
+[17:17:27] <pesa> let me explain
+[17:17:31] <yngwin> please
+[17:17:48] <pesa> apps are not supposed to be co-installed (qt4 vs qt5 versions)
+[17:18:21] <pesa> therefore upstream suggests installing only one version, either qt4 or qt5
+[17:18:40] <pesa> we could do this by having SLOT=4 and SLOT=5 block each other
+[17:18:58] <pesa> then users can choose which one they want
+[17:19:05] <yngwin> sensible
+[17:19:18] <pesa> all of this obv requires splitting those apps in separate ebuilds
+[17:19:33] <pesa> because we're not going to have qt-gui:4 block qt-gui:5
+[17:20:04] <pesa> this is why I reopened bug 328689
+[17:20:05] <willikins> pesa: https://bugs.gentoo.org/328689 "x11-libs/qt-gui: split ebuild for development tools (designer, linguist)"; Gentoo Linux, Ebuilds; CONF; jonelf:qt
+[17:20:18] <hwoarang> hmm
+[17:20:21] <hwoarang> tricky
+[17:20:30] <pesa> not really actually
+[17:20:38] <hwoarang> it's not hard though
+[17:20:39] <pesa> easier than it looks
+[17:20:56] <hwoarang> yes
+[17:21:20] <yngwin> could we make them parallel-installable with linguist-qt{4,5} or sth like that?
+[17:21:29] <hwoarang> we could
+[17:21:37] <pesa> I guess
+[17:21:46] <yngwin> or linguist{,-qt4} imo
+[17:21:59] <pesa> if you want to live with a non-standard binary name
+[17:22:29] -*- hwoarang use eselect !
+[17:22:37] -*- hwoarang hides
+[17:23:09] <yngwin> are any other distros tackling this already?
+[17:23:19] <pesa> well yes but...we're talking about several apps/modules here...
+[17:23:28] <pesa> I dunno tbh
+[17:23:52] <pesa> but I think they will follow upstream
+[17:24:00] <yngwin> most likely
+[17:24:12] <pesa> (of course we can keep SLOT=5 masked for months too)
+[17:24:50] <yngwin> i think we should start with splitting them out, and having slots block each other, we can always tackle parallel slots later
+[17:25:11] <pesa> and we're talking about apps for developers here, so not for the casual user
+[17:25:15] <yngwin> indeed
+[17:25:20] <pesa> absolutely
+[17:25:34] <pesa> sounds good
+[17:26:21] <yngwin> any other qt5 issues we need to discuss?
+[17:26:35] <pesa> not really
+[17:26:42] <pesa> oh well, one note about qt-webkit
+[17:27:09] <yngwin> yes?
+[17:27:33] <pesa> it has tons of automagic deps, I know, I just haven't had the time to fix them yet
+[17:28:22] <pesa> so if anyone wants to help, please do so :)
+[17:28:23] <yngwin> yeah, we need to recruit some help, it's on my todo list :)
+[17:28:37] <pesa> awesome
+[17:28:51] <yngwin> so then 2. Qt category move
+[17:29:32] <yngwin> we had some commotion on the dev ml, but in the end it's up to us
+[17:29:59] <pesa> I reject qt-base
+[17:30:05] <hwoarang> I dont remember why we need to change it to be honest
+[17:30:07] <yngwin> absolutely
+[17:30:07] <pesa> already told you why
+[17:30:28] <pesa> idem for qt-libs, we will also have apps there
+[17:30:29] <yngwin> hwoarang: because we want to split out apps that dont belong in a *libs* cat
+[17:30:45] <hwoarang> i see
+[17:30:46] <pesa> and because it's easier to mass commit
+[17:30:57] <pesa> especially for this I'd say
+[17:30:59] <hwoarang> i proposed qt-framework
+[17:31:03] <hwoarang> seems to cover both
+[17:31:03] <yngwin> anyway, we have some support for our original proposal (qt/core etc)
+[17:31:10] <pesa> qt-framework works for me
+[17:31:25] <yngwin> but we'd also make some enemies (flameeyes most notably)
+[17:31:34] <hwoarang> and yes, I also want to keep the qt prefix
+[17:31:40] <pesa> yngwin: well I'd just drop that idea, there is some strong opposition
+[17:31:46] <hwoarang> emerge code dbus webkit is just confusing
+[17:31:50] <pesa> and I can see their reasons
+[17:31:54] <yngwin> dev-qt/qt-core seems to be acceptable
+[17:32:22] <pesa> anything involving x11 is plain wrong
+[17:32:22] <hwoarang> dev-* is usually for dev utils and tools
+[17:32:28] <yngwin> hwoarang: but emerge qt/dbus qt/webkit is just as easy as emerge qt-dbus qt-wenkit
+[17:32:44] <pesa> so I'm fine with either qt-framework or dev-qt
+[17:32:51] <hwoarang> yngwin: yes but people dislike the one-word categories
+[17:32:56] <yngwin> dev-* is also for languages and related libraries
+[17:33:07] <yngwin> hwoarang: i know, they are so resitant to change
+[17:33:14] <hwoarang> i dont like it either :)
+[17:33:22] <yngwin> it's logical and most concise
+[17:33:28] <hwoarang> i like the current naming scheme for modules
+[17:33:38] <yngwin> but yeah, a harder sell
+[17:33:49] <pesa> yeah the qt/core vs qt-core arguments makes a lot of sense but meh...
+[17:33:59] <hwoarang> are we also moving Qt4?
+[17:34:07] <pesa> they just rejected the whole one-word-cat idea
+[17:34:14] <pesa> hwoarang: nope
+[17:34:21] <hwoarang> cool
+[17:34:30] <yngwin> pesa: some people support it, but they are not as vocal
+[17:34:36] <yngwin> hwoarang: lets come back to that later
+[17:35:07] <pesa> hwoarang: cool?
+[17:35:25] <yngwin> let's settle on a name for our category first
+[17:35:31] <pesa> yeah
+[17:35:33] <hwoarang> sure
+[17:35:41] <yngwin> simply qt is rejected?
+[17:35:47] <pesa> yes
+[17:36:16] <yngwin> then: dev-qt or qt-framwork or sth else?
+[17:36:41] <pesa> I'm fine with either dev-qt or qt-framework, I'll let you choose :)
+[17:37:05] <hwoarang> so am I
+[17:37:22] <yngwin> i prefer dev-qt then
+[17:37:42] <hwoarang> ok
+[17:37:51] <yngwin> it seems to most appropriate existing top level cat
+[17:37:54] <pesa> sure
+[17:38:10] <pesa> so let's propose that to -dev
+[17:38:22] <yngwin> ok, then next: keep qt- prefix? or make it qt*? or drop it?
+[17:38:30] <pesa> secondary issue: qtcore or qt-core?
+[17:38:43] <hwoarang> +1 for keeping it
+[17:38:56] <yngwin> i prefer sticking as closely as possible to upstream naming
+[17:39:00] <pesa> qtcore would be equal to upstream naming
+[17:39:17] <pesa> actually qtdeclarative qt3d qtlocation qtsvg ecc...
+[17:39:25] <pesa> and then qtbase
+[17:39:34] <yngwin> but we split qtbase
+[17:39:38] <pesa> the modules are QtCore QtXml Qt3D etc...
+[17:39:47] <yngwin> or we could do qtbase-core, qtbase-gui etc
+[17:40:30] <pesa> well no, modules could be moved between repos in future releases
+[17:40:35] <yngwin> ah ok
+[17:40:41] <pesa> I don't want to rename packages
+[17:40:43] <yngwin> so qtcore, qtgui, qt3d etc
+[17:40:48] <hwoarang> ok
+[17:40:49] <pesa> yeah
+[17:41:20] <yngwin> then, some suggested we also move qca and qwt to the new category
+[17:41:25] <pesa> but I'm fine with qt-* too (i.e. status quo)
+[17:41:39] <pesa> we should draw a line somewhere
+[17:41:54] <pesa> and btw there's no qca for qt5 yet
+[17:41:56] <yngwin> yeah
+[17:41:57] <pesa> afaik
+[17:42:15] <yngwin> i'm hesitant about moving other libs too
+[17:42:21] <pesa> me too
+[17:42:31] <pesa> I'd say just put stuff from qt-project
+[17:42:40] <pesa> i.e. creator would be included
+[17:43:13] <yngwin> qtsingleapplication?
+[17:43:19] <pesa> and it makes sense because they started distributing it together with qt5
+[17:43:27] <pesa> yes, it's an addon
+[17:43:32] <yngwin> ok
+[17:43:44] <pesa> also snowshoe or whatever it's called
+[17:43:51] <yngwin> but what if there are 3rd party addons?
+[17:43:54] <pesa> qt-components
+[17:44:05] <pesa> then no
+[17:44:30] <pesa> under this light, qt-framework would be a better fit maybe...mmmm
+[17:44:44] <pesa> dev-qt sounds more generic
+[17:44:57] <yngwin> we can specify it in the category metadata file
+[17:45:21] <hwoarang> dev-qt should just include the upstream modules
+[17:45:22] <pesa> ah yes definitely
+[17:45:33] <hwoarang> 3rd party stuff should go to other cats like they do for years
+[17:45:37] <pesa> hwoarang: ok so we all agree on that
+[17:45:38] <hwoarang> thats my opinion
+[17:45:41] <yngwin> so qt-creator is now part of qt5?
+[17:45:45] <pesa> yep
+[17:45:53] <yngwin> alright, that's clear then
+[17:46:01] <yngwin> now, what about qt4?
+[17:46:12] <pesa> heh
+[17:46:20] <yngwin> if we make our own qt category, imo we should move qt4 there too
+[17:46:42] <pesa> and I agree but it's a f...ing huge amount of work
+[17:46:58] <yngwin> i know, but it'll stick around for a couple of years more
+[17:47:17] <pesa> 4-5y probably :)
+[17:47:24] <yngwin> and x11-libs/qt-core vs dev-qt/qtcore is comfusing :)
+[17:47:30] <pesa> true
+[17:47:50] <pesa> and where should we put the newly splitted designer?
+[17:47:55] <yngwin> so its better to move qt4 
+[17:48:04] <pesa> so yes it's definiteyl better
+[17:48:08] <yngwin> dev-qt/qtdesigner
+[17:48:14] <yngwin> :4 and :5
+[17:48:23] <pesa> just designer :)
+[17:48:30] <pesa> that's upstream name
+[17:48:52] <yngwin> alright
+[17:48:53] <hwoarang> hmm
+[17:49:10] <hwoarang> ok
+[17:49:24] <pesa> fixing revdeps will be long and painful, you know right?
+[17:49:32] <hwoarang> long?
+[17:49:44] <hwoarang> no it should be done at the same time :)
+[17:49:48] <pesa> well yes cvs is slow
+[17:49:53] <yngwin> this is where git would be soooo nice
+[17:50:31] <hwoarang> will it be another qt4 release?
+[17:50:35] <yngwin> but yeah, i guess we'll announce when we want to make the move, and recruit some help
+[17:50:40] <pesa> yes
+[17:50:59] <hwoarang> so are the live ebuilds in sync with the portage ones?
+[17:51:06] <hwoarang> cause we need to move these two
+[17:51:07] <pesa> yes
+[17:51:08] <hwoarang> *too
+[17:51:10] <yngwin> maybe ssuominen and ago can help with mass-committing
+[17:51:13] <hwoarang> ok thanks
+[17:51:22] <pesa> yngwin: yeah
+[17:51:38] <yngwin> we just divide the categories amongst the volunteers
+[17:51:56] <hwoarang> i wonder how many rdeps are there
+[17:51:57] <yngwin> make q huge qt fest *\o/*
+[17:51:59] <pesa> I volunteer for none :)
+[17:52:05] <hwoarang> anyway it should not be hard to script it
+[17:52:33] <yngwin> !rdep qt-core
+[17:52:35] <willikins> yngwin: Too many packages have reverse RDEPEND on x11-libs/qt-core, go to http://qa-reports.gentoo.org/output/genrdeps/rindex/x11-libs/qt-core instead.
+[17:52:35] <pesa> the change itself should be fast, I'm worried about cvs :/
+[17:52:48] <pesa> i.e. committing after sedding
+[17:52:52] <hwoarang> cvs is not an issue
+[17:52:57] <hwoarang> can handle such commmnits
+[17:53:01] <hwoarang> kde do it all the time
+[17:53:25] <pesa> and for how much time will the tree stay half-broken?
+[17:53:27] <yngwin> maybe we should do a news item for the users too?
+[17:53:38] <pesa> we should probably ask infra to suspend mirroring
+[17:53:43] <yngwin> pesa: shouldnt be more than a few hours
+[17:53:49] <hwoarang> yes
+[17:53:54] <pesa> yngwin: that's enought to hit users
+[17:54:04] <yngwin> thats why i ask about news item
+[17:54:18] <pesa> ok
+[17:54:31] <pesa> easier to just suspend cvs -> rsync imho
+[17:54:35] <hwoarang> yes
+[17:54:36] <yngwin> we can bring this up on dev ml, see what other devs and infra think
+[17:54:49] <hwoarang> yngwin: news item is not necessary
+[17:54:59] <hwoarang> this is not a big change for their configs
+[17:55:29] <hwoarang> we did suspend mirroring in the past
+[17:55:35] <hwoarang> for mass stabilizations
+[17:55:36] <pesa> yep
+[17:55:38] <hwoarang> we can do it again
+[17:56:30] <pesa> ok let's move on?
+[17:56:44] <yngwin> anything else we need to keep in mind wrt the move?
+[17:57:47] <pesa> rough timeframe and planning?
+[17:58:00] <hwoarang> 2 weeks
+[17:58:07] <pesa> O_O
+[17:58:20] <hwoarang> i can do it the weekend after fosdem :)
+[17:58:27] <yngwin> when is fosdem?
+[17:58:27] <pesa> wait
+[17:58:35] <hwoarang> yngwin: 2-3 feb
+[17:58:38] <hwoarang> next weekend
+[17:59:11] <yngwin> well, i'll ask for volunteers on dev ml, and see when they are available
+[17:59:22] <yngwin> fosdem might not be the right time
+[17:59:27] <hwoarang> yngwin: i can do it myself
+[17:59:36] <hwoarang> yngwin: i said, the weekend *after* fosdem :)
+[17:59:44] <hwoarang> that would be 9-10 feb
+[17:59:47] <yngwin> yes
+[18:00:01] <hwoarang> too soon?
+[18:00:02] <yngwin> i'm thinking maybe we can get it done sooner
+[18:00:04] <pesa> ok, keep in mind 22-24 Feb there's SCALE
+[18:00:16] <pesa> even sooner? wow :)
+[18:00:31] <hwoarang> yngwin: we need to discuss it again on the ML
+[18:00:37] <pesa> uhm right
+[18:00:39] <yngwin> whats there to discuss?
+[18:00:42] <pesa> 1 week for that
+[18:00:42] <hwoarang> do some pointless arguing and then get it done
+[18:00:53] <pesa> final ack on the category name
+[18:00:54] <hwoarang> yngwin: you know how this work :)
+[18:01:07] <yngwin> this works like this: we commit
+[18:01:10] <pesa> or at least announce it and wait ~1 week
+[18:01:11] <hwoarang> :p
+[18:01:14] <pesa> LOL
+[18:01:17] <hwoarang> yes
+[18:01:29] <yngwin> we already had a long discussion
+[18:01:47] <yngwin> the only thing is the practical details of the move for qt4
+[18:02:57] <hwoarang> yngwin: let me find  out how many packages are to be fixed
+[18:03:09] <hwoarang> then I can see if I can do it myself or ask Samuli to help etc
+[18:03:16] <yngwin> dont forget eclasses
+[18:03:22] <hwoarang> yes
+[18:03:30] <pesa> err what about overlays?
+[18:03:33] <yngwin> most kde packages probably inherit qt deps through the eclasses
+[18:03:50] <yngwin> pesa: thats why we announce a detailed plan and time
+[18:03:54] <pesa> I think we need to announce the change with enough room for overlays to adapt
+[18:03:55] <hwoarang> pesa: we can't support them :)
+[18:04:06] <pesa> yngwin: yeah indeed
+[18:04:12] <hwoarang> pesa: that would be the talk on gentoo-dev
+[18:04:12] <yngwin> it should be easier for overlays
+[18:04:19] <hwoarang> we also need to write down the mappings
+[18:04:22] <hwoarang> from all to new names
+[18:04:24] <pesa> ok sounds good to me
+[18:04:34] <hwoarang> because I don't remember them :)
+[18:04:37] <pesa> yep
+[18:04:40] <hwoarang> s/all/old
+[18:04:42] <yngwin> hwoarang: that will be in the profiles pkgmove files
+[18:04:44] <pesa> and how do you create a new cat?
+[18:05:06] <yngwin> pesa: you commit it with a metadata.xml inside
+[18:05:12] <hwoarang> yngwin: yes but I dont know the new names 100%
+[18:05:15] <pesa> just create the metadata.xml and add it to profiles/categories?
+[18:05:15] <yngwin> and add it to profiles
+[18:05:20] <yngwin> yup
+[18:05:22] <hwoarang> yes
+[18:05:30] <yngwin> hwoarang: i'll start lining things up
+[18:05:33] <pesa> good
+[18:06:00] <yngwin> i can put things in qt overlay Documents or on the wiki
+[18:06:56] <pesa> wiki
+[18:07:19] <pesa> I need to have my access restored btw :/
+[18:07:23] <yngwin> it's easier to put plain text files (sets etc) in the overlay
+[18:07:44] <yngwin> pesa: just send an email to a3li
+[18:07:44] <pesa> oh those, oh yes then
+[18:07:53] <pesa> yngwin: I'm laaaaaaaaaaazy
+[18:08:01] <yngwin> i know its a pain, but he wouldnt budge
+[18:08:15] <pesa> sure, will do
+[18:08:20] <yngwin> we kinda had a row
+[18:08:53] <yngwin> anyway, i will start working on the details and let you guys know
+[18:09:24] <yngwin> but its probably good to give advance warning to ppl, so targeting the feb 9/10 weekend seems sensible
+[18:09:44] <pesa> yeah
+[18:09:58] <hwoarang> good
+[18:10:37] <yngwin> hwoarang: and you will figure out the number of affected files in the tree?
+[18:11:28] <hwoarang> yes
+[18:11:32] <yngwin> ok
+[18:11:37] <yngwin> then lets move on
+[18:12:02] <yngwin> 3. Remaining TODO items from last time
+[18:12:02] <yngwin> See Project:Qt/Meeting/2012-12
+[18:12:12] <pesa> uhm
+[18:12:13] <pesa> wait
+[18:12:17] <yngwin> yes?
+[18:12:31] <pesa> this would be a good idea to rename qt-assistant -> qt-help too
+[18:12:40] <pesa> since the library is actually called QtHelp
+[18:12:45] <yngwin> ok
+[18:12:54] <yngwin> and assistant is the app we will split off
+[18:13:00] <pesa> yep
+[18:13:12] <pesa> so it's also consistent with qt5
+[18:13:29] <yngwin> so x11-libs/qt-assistant -> dev-qt/qthelp
+[18:13:34] <yngwin> any other renames?
+[18:13:39] <pesa> right
+[18:14:17] <pesa> I don't think so
+[18:14:26] <pesa> oh
+[18:14:31] <yngwin> what about qt3support? x11-libs/qt-qt3support -> dev-qt/qt3support ?
+[18:14:33] <pesa> qtqt3support looks really ugly
+[18:14:52] <pesa> yeah dev-qt/qt3support and that's it
+[18:15:03] <yngwin> ok
+[18:15:12] <pesa> I hope we don't rely on $PN for anything
+[18:15:19] <pesa> will check
+[18:15:25] <yngwin> we'll find out :D
+[18:15:32] <pesa> heh :P
+[18:15:46] <yngwin> i'm sure something unexpected will break
+[18:15:59] <yngwin> so it'll be good if a few of us are around that weekend
+[18:16:24] <pesa> should we move qt-mobility too?
+[18:16:48] <pesa> it's technically from qt-project as well
+[18:17:00] <yngwin> yes then
+[18:17:06] <pesa> ok
+[18:17:18] <yngwin> hm, the problem with that weekend is that it will be chinese new year on feb 10
+[18:17:20] <pesa> and qt-meta?
+[18:17:38] <pesa> oh
+[18:18:21] <yngwin> well, we can discuss the timing later
+[18:18:37] <yngwin> yes, let's move qt-meta too
+[18:18:48] <pesa> becomes qtmeta or stays qt-meta?
+[18:19:02] <yngwin> stay qt-meta
+[18:19:30] <pesa> agreed
+[18:19:38] <pesa> let's move on
+[18:19:45] <yngwin> todo items
+[18:20:16] <yngwin> TODO package the toolwrapper (pesa)
+[18:20:20] -*- pesa grabs more beer
+[18:20:48] <pesa> mmm I don't think toolwrapper had any official releases yet
+[18:21:05] <pesa> there are some snapshots somewhere
+[18:21:05] <yngwin> ok, that can wait, i suppose
+[18:21:12] <pesa> but it's still todo anyway
+[18:21:22] <pesa> yes
+[18:21:23] <yngwin> TODO yngwin: qt4-r2.eclass translation handling move to l10n.eclass (low priority, will do after Jan 19)
+[18:21:45] <yngwin> still low prio, sometime within the next 4 weeks
+[18:22:22] <yngwin> 444262: avidemux - mask the package, but keep both 2.5 and 2.6 in tree - TODO hwoarang
+[18:22:28] <yngwin> done yngwin
+[18:22:49] <yngwin> i got an email from a user who is interested in picking up maintainership
+[18:23:08] <yngwin> i havent answered yet, but i will explain about proxy-maint and recruitment options
+[18:23:40] <pesa> cool
+[18:23:46] <yngwin> 347707: photivo - can we get a snapshot into official tree? yes - TODO hwoarang
+[18:24:00] <hwoarang> i didn't?
+[18:24:05] <pesa> lol
+[18:24:11] <hwoarang> ah i did
+[18:24:13] <yngwin> will you?
+[18:24:18] <hwoarang> its there
+[18:24:22] <pesa> you ought to
+[18:24:24] <hwoarang> 0_pre2012100
+[18:24:30] <yngwin> ok
+[18:24:32] <pesa> good
+[18:24:41] <yngwin> 442414: app-editors/focuswriter - who wants to add an elog? - TODO yngwin
+[18:24:59] <yngwin> still todo, hope to do within a week
+[18:25:14] <yngwin> 410911: net-im/psi-0.15 version bump - this is already long overdue, who wants to work with proxy-maintainers to get this done? - TODO yngwin/pesa
+[18:25:18] <yngwin> same i guess
+[18:25:28] <pesa> meh very low priority for me
+[18:25:35] <pesa> I'm focused on qt5
+[18:25:41] <yngwin> yeah, you should be
+[18:25:45] <yngwin> i'll take this one
+[18:25:49] <pesa> :)
+[18:26:24] <yngwin> 269110: new ebuild app-text/coolreader3 - in qt overlay now, see if it's ready to add release ebuild - TODO yngwin
+[18:26:38] <yngwin> i think it's ready, but it doesnt use system font rendering
+[18:27:06] <yngwin> so it's a bit weird
+[18:27:42] <yngwin> i'll have another look at the alternatives, and see if we really need to add this
+[18:28:12] <yngwin> 440584: x11-libs/qt-gui: some elog messages should only be shown when upgrading from an old enough package - TODO yngwin (low priority)
+[18:28:26] <yngwin> here we could maybe implement the new readme eclass
+[18:29:00] <pesa> I haven't been paying attention to that stuff
+[18:29:11] <yngwin> i'm not sure if it's 100% ready
+[18:29:20] <yngwin> but once it is, we should use that widely
+[18:29:46] <pesa> is it some sort of "try to save the ass of users who don't fscking read elog/ewarn/...?"
+[18:29:50] <yngwin> i'll look at it, and we'll come back to this
+[18:30:12] <yngwin> the thing is elog has too much noise, so ppl stop paying attention
+[18:30:22] <pesa> bullshit
+[18:30:27] <yngwin> we should bring the signal to noise ratio up
+[18:30:31] <dilfridge> pesa: nah, it's mainly "do not bore me with the same configuration instructions on every upgrade"
+[18:30:42] <pesa> I mean, I agree, but it's not really a valid reason
+[18:30:57] <dilfridge> instead keep configuration instructions in a pre-defined file, and keep elog for important messages
+[18:30:58] <pesa> it takes half a second to go through a bunch of elog lines
+[18:31:09] <yngwin> well, imo we need a better system
+[18:31:17] <yngwin> and this is an improvement
+[18:31:27] <dilfridge> pesa: you are obviously updating too often :)
+[18:31:36] <pesa> dilfridge: I am :P
+[18:31:49] <yngwin> anyway, i dont want to discuss this in detail now
+[18:31:55] <pesa> indeed
+[18:32:13] <pesa> do as you wish there, I don't care
+[18:32:16] <yngwin> teh most important TODO is the announcement that we want help
+[18:32:34] <yngwin> i will do send you guys my draft later this weekend
+[18:32:58] <pesa> btw I think we could just remove the qt-gui msg altogether
+[18:33:25] <pesa> I mean...who cares? users shouldn't be fiddling with the graphicssystem
+[18:33:46] <yngwin> thats another discussion
+[18:34:27] <yngwin> but there's also the gtk thing
+[18:34:53] <pesa> screw gtk
+[18:34:58] <pesa> :P
+[18:35:00] <yngwin> but i'd like to move on to the next point on out agenda
+[18:35:04] <pesa> sure
+[18:35:12] <pesa> go ahead sorry
+[18:35:17] <yngwin> open bugs, see http://tiny.cc/qtbugs
+[18:35:30] <pesa> a ton of them
+[18:35:48] <yngwin> well, which ones do we need to discuss?
+[18:36:06] <pesa> bug 440584
+[18:36:08] <willikins> pesa: https://bugs.gentoo.org/440584 "x11-libs/qt-gui-4.8.x: some elog messages should only be shown when upgrading from an old enough package."; Gentoo Linux, Applications; CONF; poletti.marco:qt
+[18:36:40] <pesa> should we poke upstream?
+[18:36:48] <pesa> they look clueless btw
+[18:36:52] <yngwin> about what?
+[18:37:00] <pesa> oh crap
+[18:37:06] <pesa> wrong bug #
+[18:37:16] <pesa> bug 424751
+[18:37:17] <willikins> pesa: https://bugs.gentoo.org/424751 "net-p2p/qbittorrent fails with parallel make: fatal error: ui_propertieswidget.h: No such file or directory"; Gentoo Linux, Applications; CONF; wonko:hwoarang
+[18:37:19] <pesa> this one :)
+[18:37:31] <hwoarang> oh well
+[18:38:18] <hwoarang> poking them will not make it go away. they have absolutely no idea whats goin on
+[18:38:21] <hwoarang> and neither do it )
+[18:38:25] <hwoarang> *do i :)
+[18:38:53] <pesa> mmm
+[18:39:21] <pesa> ok let's pretend it doesn't exist
+[18:39:22] <yngwin> feel free to find out what is going on
+[18:40:01] <hwoarang> :p
+[18:40:14] <hwoarang> it's possiblet that new versions fixed it :)
+[18:40:21] <pesa> bug 448830
+[18:40:21] <hwoarang> if there was a real problem
+[18:40:22] <willikins> pesa: https://bugs.gentoo.org/448830 "x11-libs/qt-openvg-4.8.4 - qpaintengine_vg.cpp:3212:5: error: narrowing conversion of ‘d->QVGPaintEnginePrivate::opacity’ from ‘qreal’ to ‘VGfloat’ inside { }"; Gentoo Linux, Library; UNCO; capsel:qt
+[18:40:28] <pesa> there seem to be an old patch around
+[18:41:22] <pesa> apply it?
+[18:42:02] <yngwin> ok with me
+[18:42:33] <pesa> it's qt-openvg...not critical
+[18:42:38] <yngwin> indeed
+[18:42:42] <pesa> even if it breaks
+[18:42:45] <yngwin> just do it
+[18:42:49] <pesa> ok
+[18:42:51] <yngwin> bug 433944
+[18:42:53] <willikins> yngwin: https://bugs.gentoo.org/433944 "dev-python/PyQt4 does not install phonon-module"; Gentoo Linux, KDE; UNCO; alpine.art.de:qt
+[18:43:05] <yngwin> upstream does not want to fix
+[18:43:13] <pesa> which upstream?
+[18:43:18] <yngwin> PyQt4
+[18:43:20] <pesa> afaiu it's a kde phonon bug
+[18:43:23] <yngwin> yes
+[18:43:29] <yngwin> so upstream it to kde?
+[18:43:46] <pesa> so pqyt4 maintainer doesn't want any workarounds
+[18:43:49] <yngwin> or wontfix? or be nice and apply the patch?
+[18:44:48] <pesa> mmm
+[18:44:58] <pesa> I think we already apply a similar fix
+[18:45:14] <yngwin> hwoarang?
+[18:45:30] <hwoarang> hmm
+[18:45:42] <yngwin> most of our users will be using kde's phonon
+[18:45:43] <hwoarang> WONTFIX id say
+[18:46:06] <pesa> I think we should fix it on our side
+[18:46:20] <yngwin> it's a very simple patch
+[18:46:34] <hwoarang> well
+[18:46:37] <pesa> altough phil is being very short-sighted here... qt5 will drop phonon so...
+[18:46:52] <pesa> s/will/did/
+[18:47:01] <pesa> :P
+[18:47:07] <hwoarang> ok i don't mind
+[18:47:21] <pesa> but this is about phonon-9999 right?
+[18:47:22] <yngwin> ok, lets apply it on our side then
+[18:47:43] <yngwin> i assume its for all versions
+[18:47:59] <yngwin> oh i see
+[18:48:27] <pesa> no, see comment #2
+[18:48:31] <yngwin> yeah
+[18:48:40] <pesa> we can wait a bit more... -9999 users can deal with it for the time being
+[18:48:54] <yngwin> well, that may have made it into later releases?
+[18:49:14] <pesa> later than what?
+[18:49:23] <pesa> 4.6.0 is the latest
+[18:49:36] <yngwin> ok, in that case
+[18:49:57] <yngwin> no need for us to really do anything
+[18:50:07] <pesa> yeah not yet
+[18:51:00] <pesa> bug 450818 is nasty
+[18:51:01] <willikins> pesa: https://bugs.gentoo.org/450818 "x11-libs/qt-core-4.8.4: QDeclarativeVMEMetaObject::metaCall SIGSEGV when called from QMetaObject::metaCall"; Gentoo Linux, KDE; CONF; david.narvaez:qt
+[18:51:30] <pesa> but there isn't a complete patch yet afaiu
+[18:51:39] <pesa> and upstream hasn't commented
+[18:53:17] <yngwin> so ...
+[18:53:51] <hwoarang> guys, I need to go now.... I will read the rest when I am back :)
+[18:54:03] <yngwin> ok
+[18:54:07] <pesa> yngwin: so wait I guess
+[18:54:12] <pesa> hwoarang: k, cya
+[18:54:15] <yngwin> yes
+[18:55:41] <pesa> ok nothing else from me I believe
+[18:55:45] <yngwin> pesa: since we're the only ones here now, let's try to wrap this up
+[18:55:54] <pesa> :)
+[18:56:12] <yngwin> anything else
+[18:56:13] <yngwin> ?
+[18:56:24] <pesa> since there are no major/urgent issues in other packages, I think we can concentrate on the new category
+[18:56:29] <yngwin> ok
+[18:56:33] <pesa> for the next weeks
+[18:56:45] <yngwin> and after that i'll urge everyone to have a good look at the buglist :)
+[18:56:58] <pesa> yeah
+[18:57:22] <yngwin> ok, thanks hwoarang and pesa
+[18:57:28] <pesa> thank you!
