@@ -1,0 +1,234 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/articles/making-the-distro-p2.xml,v 1.1 2013/01/27 10:08:14 r0bertz Exp $ -->
+<!-- English CVS version: 1.5 -->
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide disclaimer="articles">
+<title>Gentoo的前世今生，第二部</title>
+
+<author title="Author">
+  <mail link="drobbins@gentoo.org">Daniel Robbins</mail>
+</author>
+<author title="Translator">
+  <mail link="linuxfans.linky@gmail.com">范华</mail>
+</author>
+
+<abstract>
+在先前的文章中，Daniel Robbins告诉了我们他是如何成为一个Stampede Linux的开发者，又是为了什么事而离开Stampede并开始制作他自己的名为Enoch的这样一个发行版的故事。接下来所要为你讲述的是Enoch开发团队在发现一个很少有人知晓的、异常快速的编译器之后所发生的一些不可思议的事件。
+</abstract>
+
+<!-- The original version of this article was first published on IBM 
+developerWorks， and is property of Westtech Information Services. This 
+document is an updated version of the original article， and contains
+various improvements made by the Gentoo Linux Documentation team -->
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>1.2</version>
+<date>2013-01-27</date>
+
+<chapter>
+<title>从Enoch到Gentoo，伴随着一点挫折和团队的磨合</title>
+<section>
+<title>Enoch踏出的第一步</title>
+<body>
+
+<p>
+我在先前的文章<uri link="/doc/zh_cn/articles/making-the-distro-p1.xml">前文</uri>中告诉了大家那段和Stampede开发团队在一起的曾经最低沉的日子和最后为什么离开的原因（就是想离那些有低级政治目的的试图控制项目的那帮家伙远点）。因为这些爱管闲事的好事者的干涉，我才会觉得装配一个自己的Linux发行版比在那种恶劣条件下改进Stampede要简单的多。幸运的是，我离开Stampede时是带着满满当当的经验离开的，这些经验与我在Stampede的（或许可以称的上是大量的？）工作是分不开的。这些工作包括维护一些软件包也好、设计初始化脚本也好或是领导slpv6（下一代软件包管理系统）。
+</p>
+
+<p>
+我开始创建这个发行版，名叫Enoch。得益于它的完全自动化的包创建和升级系统，它将会是一个速度飞快的版本。我不得不承认之所以这套系统会如此自动化很大程度上是因为对于我这个光杆司令来说在那种重复性的而且可以自动化的事情上消耗时间是不能容忍的。并且因为我是完全从零开始来构建整个发行版（而不是以别的发行版比如Redhat为基础来构建衍生发行版），我辞去了我的工作，并且把我所有的能利用上的时间都花在了这件事情上。
+</p>
+
+<p>
+在最基本的Enoch系统启动和运行之后，我回到了irc.openprojects.net并开设了自己的#enoch频道。在那里我逐渐聚集起了10个开发人员组成的团队。在早期的那段时间里我们整天都聚集在IRC里，用业余时间制作我们的发行版。在大家齐心协力的hack下，在不断的发现和消除新的bug的过程中，Enoch每天都在变化着，不管是专业化的程度还是可用性都在变得越来越出色。
+</p>
+
+</body>
+</section>
+<section>
+<title>Enoch的第一块绊脚石 </title>
+<body>
+
+<p>
+不可避免的Enoch碰到了它的第一块绊脚石。在加入了Xfree86、glib、gtk＋之后，我决定把xmms（一个基于X11/gtk＋的 MP3/CD播放软件）弄进我的发行版，因为我们也该到了用音乐来庆祝一下的时候了！但是在安装好xmms之后启动它时……X死锁了！最初我觉得是自己使用的激进的编译器优化参数造成的（“-O6 -mpentiumpro”，如果你想知道的话）。第一个想到的解决办法就是用标准的编译器选项来编译，但是问题依然没有解决。我继续寻找解决方法。在接下来整整几个星期的开发时间我都用来追踪这个错误。直到有一天，我收到了一个叫Omegardan的Enoch使用者的电子邮件，他也同样碰到了xmms的这个死锁问题。
+</p>
+
+<p>
+交流了一段时间然后历经了N个小时的测试后我们发现死锁与POSIX线程有关。因为一些原因，pthread_mutex_trylock()函数没有返回它应该返回的值。作为一个Linux版本的创始者，这种类型的bug是我真的不愿意碰见的。我指望开发人员能能够释出完美的源代码以便我可以把精力放到提高Linux易用性上，而不是把时间花在修复别人源代码的bug上。当然很快我就发现这种希望仅仅只是一个美好的想法罢了，相同的错误有时还是会出现。
+</p>
+
+<p>
+在找到问题后，我们发现它不是xmms本身的问题，也不时gtk+或glib的问题，也不是因为Xfree86 3.3.5版本不够线程安全而导致死锁，而是令人惊异的存在于Linux的POSIX的线程实现本身，GNU C库（glibc）2.1.2版本的一部分。我很震惊的是在Linux如此核心的部分居然存在这样严重的bug（而且我们在Enoch中使用的glibc的版本是它的release版本，并不是什么prerelease版本或是CVS版本啊！）。
+</p>
+
+<p>
+那么怎么样才能解决这个问题呢？我们不可能马上就能拿出一个修补方案，但是在浏览了一堆glibc开发人员的邮件列表后，我偶然发现了还有一个人也碰到了相同的问题，然后在glibc开发人员在回复他的邮件里我们找到了那个附带的补丁，它为我们解决了那个线程问题。但我令我好奇的是为什么同样使用glibc 2.1.2的RedHat 6没有受这个bug的影响（当时RedHat 6的发布时间先于那个补丁的出现）。为了找到答案，我下载了RedHat里glibc的SRPM包（source RPM）想看一下他们使用的补丁。
+</p>
+
+<p>
+RedHat有他们自己的glibc补丁来解决pthread_mutex_trylock()函数的问题。显而易见的是他们也碰到了同样的问题，然后自己进行了修补。但是由于RedHat没有把这个补丁回馈到glibc的开发社区，其他人们就没有办法分享这个补丁。但是也可能是RedHat把这个修补方案回馈到了glibc的开发社区，然儿glibc的开发人员并没有接受这个修补方案。或者这个bug只会在特定版本的binutils和特定版本的编译器连用时才会触发，然而RedHat使用的binutils和编译器的版本并不是这两个特定的版本（虽然RedHat还是给出了这个补丁）。我猜测我们永远也不会知道究竟事情的真相是什么样的，但是我学会的一件事情是：RedHat的SRPM包里有很多定制的补丁和增强代码，而这些代码和补丁看来从来回到上游原始的开发人员那里。为此我要发一段牢骚。
+</p>
+
+</body>
+</section>
+<section>
+<title>牢骚</title>
+<body>
+
+<p>
+当你做一个Linux发行版的时候，把你修补每一个的bug的补丁发送到上游原始软件包的开发人员那里是一件相当重要的事情。在我看来，这是发行版的开发人员能够为Linux做贡献的诸多途径中的一个。我们这群人的工作就是把很多不同的程序和软件集合在一起，让它们工作起来就像是一个整体。所以我们要把我们在工作过程中做出来的补丁发送到上游，以使得其他的用户和发行版能从中受益。如果你只是把补丁留在你自己那里，这样做不会对任何人有什么帮助；相反人们将会为修复相同的问题浪费掉大量的时间。这种不顾别人的方式违背了整个开源世界的精神和宗旨，对Linux的发展也只是有害无益。或许我应该说这样的做法会惹恼我们所有的人。
+</p>
+
+<p>
+不幸的是一些发行版（啊咳）（RedHat）在向整个开源社区分享他们的成果上并不如其他一些版本（Debian）做得好。
+</p>
+
+</body>
+</section>
+<section>
+<title>编译器的艺术</title>
+<body>
+
+<p>
+在我们尝试解决glibc 线程问题的时候，我给Ulrich Drepper发了封email（他是Cygnus的一员并且在glibc的开发中举足轻重）。我在e-mail中提到了我们碰到的POSIX线程问题和我们在Enoch中使用了pgcc来优化性能。在他的回信中他这样提到（大意如此）：“包含在CodeFusion中的我们自己的编译器制作的可执行代码比其他的一些编译器比如pgcc编译出来的代码执行速度更快速。”显然我对测试测试Cygnus那帮家伙开发的神秘的“超级”编译器非常有兴趣。
+</p>
+
+<p>
+因此我申请拿到了一个Cygnus Codefusion 1.0的demo拷贝以便我可以对它的性能做一个测试。Omegadan和我对测试的结果很吃惊，和Ulrich所声称的表现相比，实际性能有过之而无不及。x86的后端提高了某些cpu密集型可执行文件的执行效率（比如bzip2）达到接近90%。几乎每一个程序都能从中获得至少10％的确确实实的性能提升，而我们所作的仅仅是换了一个编译器。Enoch的开机速度也因此获得了30％－40％的提升。性能提升的幅度超过了我们以前把编译器从gcc切换到pgcc时提高的幅度。显然，在体验过这个编译器之后，我们很希望把这个编译器包含在Enoch中。幸运的是CodeFusion CD中的包含的源代码遵循的是GPL，所以我们完全可以在Enoch中使用这个编译器……至少我们是这么认为的。
+</p>
+
+</body>
+</section>
+<section>
+<title>异常事件的发生</title>
+<body>
+
+<p>
+为了能在Enoch中使用这个编译器，我给Cygnus的市场部主管发了一封电子邮件，但是未如预期那样的收到“哦，拿去用好了，感谢使用我们的编译器！”这样的回复。相反我们收到的是一句虽然在技术上我们可以使用Cygnus的编译器，但是我们强烈建议不要在Enoch中使用该编译器或是包含它的源代码。接着在我的回复中我问了他们这样一个问题：“既然不愿意让别人使用它的源代码，为什么还在以GPL的许可条例来发布它的源代码？”作为一个猜测，我觉得他们事实上是不想以GPL的方式来发布他们的源代码的，但是由于这个编译器是源自egcs（以GPL方式发布的），他们除了以GPL方式发布之外别无选择。
+</p>
+
+<p>
+这是一个GPL如何阻止某个公司想使用开源的代码来生产私有产品的很好的例子。据我猜测Cygnus是担心我们使用这个编译器后将会打击到他们所包装的产品的销售，更加奇怪的是不管是他们的行销方案还是InfoWorld的预览中都没有提及包含在CodeFusion中的那个新的编译器。CodeFusion仅仅被标榜为一套集成开发环境而不是编译器。
+</p>
+
+<p>
+为了舒缓他们紧绷的神经，我提出我愿意为CodeFusion背书，在我们的Enoch主页上加上一个链接来刺激CodeFusion的销售。从我个人的观点来说，我不认为一个提速的Enoch会影响到CodeFusion的销售情况，因为它被宣称为IDE产品。但是我还在想方设法的令他们开心。ColdFusion的IDE组件是一个商业化的产品，我们并没有在Enoch中发布它的企图想法或者权利。
+</p>
+
+<p>
+我把这个（大方的）请求用电子邮件的方式发给了Cygnus，但是收到的确是另一个奇怪的回复。他们想得到我们关于“市场材料”方面的所有的权利（显然，这也包括了我们网站上的内容），真是太令人震惊了。Cyguns的营销团队似乎对Linux社区和GPL的运作一无所知，事到如今我只有决定无限期终止与Cygnus的联系。与此同时，我们为Enoch准备了两个版本，一个是内部的“提速”版，一个是公开的“非提速”版，把最终的决定留到将来去做。
+</p>
+
+<p>
+但是几个月之后，他们就把CodeFusion x86的后端集成到了gcc 2.95.2中。现在每一个人都可以从这个优秀的新后端中获益了，而不只是那些知道存在于CodeFusion CD中的“隐秘的GPL编译器”的人。但是我们决定还是使用gcc，而不是CodeFusion的编译器。除了gcc 2.95.2更加稳定之外，它可以让我们避开当时已经被RedHat花了一大笔钱买了下来的Cygnus。（注：为新生的Linux发行版带来我们都感觉到的速度上的巨大提升的是gcc 2.95.2版本的新x86后端，它也为FreeBSD 4.0带来了相对3.3.6版本的速度上的提升。你感觉到了不同没？）
+</p>
+
+</body>
+</section>
+<section>
+<title>肥皂盒</title>
+<body>
+
+<p>
+感谢这件事情和其他的一些经验，我对那些以获利为目的的开源软件公司有了很深的理解。成为一个以获利为目的的开源软件公司绝对不是什么坏事。生产私有的闭源软件也没有错，如果你喜欢这样做。但是一个开源软件公司以不支持GPL或者其他任何形式搅乱或是拒绝与外在的开源世界合作是没有任何意义的。这是一个有实践性质的并具有商业意义的观点。
+</p>
+
+<p>
+思想和代码的自由交换才是开源企业得以获利的根本，这点他们应该充分的认识到。与标准GPL实践行为背道而驰只会破坏这个他们发展与繁荣仅以依赖的环境。如果说开源的环境是你的事业生根发芽的土壤，那么你就应该保护这片土壤的纯净。 
+</p>
+
+<p>
+我也懂得保留一些代码上秘密来获得短期的财富是一个颇具诱惑性的东西。先进的代码和特别的技术提供给了人们一个在竞争中获得优势的绝好机会，由此可以获得销售业绩和利润的增长。但是当你的目的是成为一个产品的唯一提供者，这个产品应该是商业产品而不是开源产品。开源不允许独占性的享有任何软件的源代码。这就是开源的意义。
+</p>
+
+</body>
+</section>
+<section>
+<title>回到Enoch</title>
+<body>
+
+<p>
+现在，我要从自己的肥皂盒中出来并继续讲我的故事。 
+</p>
+
+<p>
+由于Enoch已经变得越来越出色，更名的计划也就这样列入了我们的议事日程当中，接着“Gentoo Linux”就诞生了。当时我们已经发布了几个版本的Enoch（现在叫Gentoo），并且在向Gentoo Linux的1.0版本努力前进中。大约也是这个时候，我决定帮我那台Celeron 300M（超频到450M并且十分稳定）的老电脑升级一下，新主板是一块崭新的Abit BP6（刚上市的双Celeron接口主板）。在卖掉了老主板后我把我的双Celeron 366的系统搭建了起来。接着又把Celeron 366超到了500Mhz，然后我就开始爽了。但是我注意到我的新机器不是非常稳定。
+</p>
+
+<p>
+显然我第一个反应就是把频率改回超频之前的366Mhz，但是随之而来却遇到了一个更奇怪的问题：不管CPU全速运转多少时间，系统都不会死锁；但是一旦空闲下来过一夜的话，系统有很大的可能就会完全死锁掉。是的，这是一个空闲bug——啊！在作了一些调查之后，我发现在这块主板上也有其他用户碰到了这个相同的问题。原因是BP6主板上的一个芯片（可能是PCI控制器）与标准规格有点不同或是不稳定，从而造成了Linux在空闲时候死锁。
+</p>
+
+<p>
+我很不开心，而且因为我没钱去采购另外的PC部件了，后果也很严重，Gentoo的开发被迫停止下来。我也开始对Linux越来越悲观了并决定转向FreeBSD。是的，的确是FreeBSD！我想这一部分在这里就告一段落吧，第三部再见：）
+</p>
+
+</body>
+</section>
+<section>
+<title>资源</title>
+<body>
+
+<ul>
+  <li>
+    我故事的开端是“Gentoo的前世今生”<uri
+    link="/doc/zh_cn/articles/making-the-distro-p1.xml">第一部</uri>， 结尾是
+    <uri link="/doc/zh_cn/articles/making-the-distro-p3.xml">第三部</uri>. 
+  </li>
+  <li>
+    请访问<uri link="http://www.gentoo.org/index.xml">Gentoo Linux网站</uri>获取更多这个发行版信息.
+  </li>
+  <li>
+    阅读FreeBSD的详细资料<uri link="http://www.freebsd.org/">FreeBSD</uri>.
+  </li>
+  <li>
+    攻读文章<uri link="http://www.gnu.org/copyleft/gpl.html">GPL</uri>.
+  </li>
+  <li>
+    看一下官方的<uri link="http://www.stampede.org/">Stampede站点</uri>.
+  </li>
+  <!--<li>
+  Hang out on <uri
+  link="http://irc.openprojects.net/">irc.openprojects.net</uri>.
+  </li>-->
+  <li>
+    请访问<uri link="http://www.xfree86.org/">Free X86项目</uri>.
+  </li>
+  <li>
+    查看<uri link="http://developer.gnome.org/doc/API/gtk/">GTK+参考文档</uri>.
+  </li>
+  <li>
+    查看<uri link="http://www.xmms.org/">XMultiMedia System</uri>， 一个基于X11/gtk+的MP3/CD播放器.
+  </li>
+  <li>
+    线程的相关资料请阅读亚利桑那大学的<uri link="http://www.math.arizona.edu/swig/pthreads/threads.html">POSIX线程教程</uri>.
+  </li>
+  <li>
+    最新的消息请参考<uri link="http://www.rpm.org/">RPM打包工具</uri>.
+  </li>
+  <li>
+    拜访下<uri link="http://www.debian.org/">Debian</uri>.
+  </li>
+  <li>
+    查看官方的<uri link="http://gcc.gnu.org/">GCC</uri>站点.
+  </li>
+</ul>
+
+</body>
+</section>
+<section>
+<title>关于作者</title>
+<body>
+
+<p>
+Daniel Robbins居住在美国新墨西哥洲中部大城Albuquerque。他是Gentoo Technologies Inc.的董事长兼CEO、Gentoo Progect的首席架构师，他还是MacMillan出版过的一些书的贡献作家，这些书有：Caldera OpenLinux Unleashed， SuSE Linux Unleashed和Samba Unleashed等等。在二年级的时候，自从迷上了Logo语言和Pac Man游戏后，渐渐Daniel融入了计算机的世界。这在某种程度上也解释了他后来为什么会成为SONY Electronic Publishing/Psygnosis的首席图形艺术家。Daniel喜欢和他的妻子Mary、他的小女儿Hadassah一起享受生活。你可以通过这个邮件地址联系到Daniel<mail link="drobbins@gentoo.org">drobbins@gentoo.org</mail>。
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>

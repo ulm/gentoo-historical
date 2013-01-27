@@ -1,0 +1,376 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/zh_cn/articles/l-posix2.xml,v 1.1 2013/01/27 10:08:13 r0bertz Exp $ -->
+<!-- English CVS version: 1.5 -->
+
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+
+<guide disclaimer="articles">
+<title>POSIX线程详解，第2部分</title>
+
+<author title="Author">
+  <mail link="drobbins@gentoo.org">Daniel Robbins</mail>
+</author>
+<author title="译者">
+  <mail link="jiang.adam@gmail.com">蒋超</mail>
+</author>
+
+<abstract>
+POSIX（Portable Operating System Interface）线程是提高代码的响应速度和性能的非常棒的方法。本文是这个三部曲系列文章的第二部分，Daniel Robbins将为你展示在线程化代码中如何使用mutex保护共享数据结构的完整性。
+</abstract>
+
+<!-- The original version of this article was published on IBM developerWorks,
+and is property of Westtech Information Services. This document is an updated
+version of the original article, and contains various improvements made by the
+Gentoo Linux Documentation team -->
+
+<version>1.2</version>
+<date>2013-01-27</date>
+
+<chapter>
+<title>那个小东西叫mutex</title>
+<section id="thread3c">
+<title>Mutex me!</title>
+<body>
+
+<p>
+在<uri link="/doc/en/articles/l-posix1.xml">上一篇文章</uri>，我曾提到会得到意想不到的结果的线程化代码。两个线程各自增加一个全局变量二十次。设想中这个变量应该得到最终值40，但事实上却得到了21。究竟怎么回事？之所以会得到这样的结果是因为这两个线程中的其中之一反复“取消掉”另一个线程的增加效果。下面让我们一起看一段使用<b>mutex</b>来解决这个问题的正确的代码：
+</p>
+
+<pre caption="thread3.c">
+#include &lt;pthread.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+
+int myglobal;
+pthread_mutex_t mymutex=PTHREAD_MUTEX_INITIALIZER;
+
+void *thread_function(void *arg) {
+  int i,j;
+  for ( i=0; i&lt;20; i++ ) {
+    pthread_mutex_lock(&amp;mymutex);
+    j=myglobal;
+    j=j+1;
+    printf(".");
+    fflush(stdout);
+   sleep(1);
+    myglobal=j;
+    pthread_mutex_unlock(&amp;mymutex);
+  }
+  return NULL;
+}
+
+int main(void) {
+
+  pthread_t mythread;
+  int i;
+
+  if ( pthread_create( &amp;mythread, NULL, thread_function, NULL) ) {
+    printf("error creating thread.");
+    bort();
+  }
+
+  for ( i=0; i&lt;20; i++) {
+    pthread_mutex_lock(&amp;mymutex);
+    myglobal=myglobal+1;
+    pthread_mutex_unlock(&amp;mymutex);
+    printf("o");
+    fflush(stdout);
+    sleep(1);
+  }
+
+  if ( pthread_join ( mythread, NULL ) ) {
+    printf("error joining thread.");
+    abort();
+  }
+
+  printf("\nmyglobal equals %d\n",myglobal);
+
+  exit(0);
+
+}
+</pre>
+
+</body>
+</section>
+<section>
+<title>详细解说</title>
+<body>
+
+<p>
+比较一下这些代码和<uri link="/doc/en/articles/l-posix1.xml">前文</uri>中的版本，你会发现这里使用了pthread_mutex_lock()和pthread_mutex_unlock()。这是两个调用为线程程序提供了必要的功能。也就是所谓的相互排斥（正如其名）的能力。即任意两个线程不能同时锁定同一个互斥锁。
+</p>
+
+<p>
+来看看mutex是如何做到这一点的。如果线程A试图锁定某个线程B已经锁定的mutex，线程A就会进入睡眠状态。当线程B解开这个mutex（通过pthread_mutex_unlock()调用），线程A才有可能锁定这个mutex（换句话说，它会锁定mutex并且从pthread_mutex_lock()调用返回）。同样的，如果线程C在线程A持有该mutex时试图锁定它，线程C也会被暂时得拖入睡眠状态。所有因对某个已经锁定的mutex调用pthread_mutex_locK()而进入睡眠状态的线程将会“排队”等待访问该mutex。
+</p>
+
+<p>
+pthread_mutex_lock()和pthread_mutex_unlock()通常用于保护数据结构。也就是，通过锁定和解锁来确保某一时刻只有一个线程访问某个数据结构。你可能已经意识到了，如果某个线程试图锁定某个未锁定的mutex，那么POSIX线程库会允许锁定，而不会将线程拖入睡眠状态。
+</p>
+
+<figure link="/images/docs/l-posix-mutex.gif" caption="为了让你觉得有趣一点，我弄了四个znurt来演示最新的pthread_mutex_lock()调用"/>
+
+<p>
+图中线程已经将mutex锁定从而获得对整个数据结构的访问能力而不用担心与其他线程同时纠缠在一起。该数据结构实际上直到mutex被解锁之前是“冻结”的。pthread_mutex_lock()和pthread_mutex_unlock()调用看上去正是包含其中的那段将要被修改该或者读取的共享数据处于“建设中”状态的标志。这些调用就是警告其他线程进入睡眠并且等待它解锁mutex。当然只有在调用pthread_mutex_lock()和pthread_mutex_unlock()将对某个特定数据结构的每个读和写保卫起来时这样说才是对的。
+</p>
+
+</body>
+</section>
+<section>
+<title>究竟为什么需要mutex呢？</title>
+<body>
+
+<p>
+听上去挺有趣，但是，究竟为什么我们要让线程去睡眠呢？毕竟，线程的主要优点不就是可以在大多数情况下独立工作并且在大多数情况下并行得工作吗？是的，这个完全正确。然而，每个正常的线程化程序都至少需要使用mutex。再次参考示例程序来理解一下为何如此。
+</p>
+
+<p>
+仔细看看thread_function()，你会发现mutex在循环开头被锁定而在结尾被解锁。示例程序中，mymutex是用来保护myglobal的值的。thread_function()中，累加代码会拷贝myglobal到一个本地变量，累加该本地变量，睡眠一秒钟，然后将本地变量拷贝回myglobal。如果没有mutex，如果主线程在thread_function()打盹的那一秒中累加myglobal，thread_function()会在被唤醒之后覆盖主线程累加过的值。使用mutex则可以保证不会发生这种情况。（为了排除你认为我故意增加一秒的延迟而导致错误结果的嫌疑。我需要指出，在写回本地变量的值进入myglobal之前thread_function()是否睡眠一秒根本无所谓。）新程序中使用mutext产生预期的结果：
+</p>
+
+<pre caption="使用mutex的程序输出结果">
+$ <i>./thread3</i>
+o..o..o.o..o..o.o.o.o.o..o..o..o.ooooooo
+myglobal equals 40
+</pre>
+
+<p>
+为了进一步探讨这个非常重要的概念，让我们看看给程序中增加的代码：
+</p>
+
+<pre caption="增加的代码">
+thread_function()中增加的代码： 
+   j=myglobal;
+    j=j+1;
+    printf(".");
+    fflush(stdout);
+    sleep(1);
+    myglobal=j;
+
+主线程增加的代码：
+    myglobal=myglobal+1;
+</pre>
+
+<p>
+如果这段代码是单线程程序，那么thread_function()代码应该可以如期执行。紧接着会执行主线程代码（或者其他方式）。没有使用mutex的线程化程序中，代码将会（而且，拜sleep()调用所赐，通常就是）按照如下顺序结束执行。
+</p>
+
+<pre caption="执行顺序">
+  thread_function()线程            主线程
+
+  j=myglobal;
+  j=j+1;
+  printf(".");
+  fflush(stdout);
+  sleep(1);                        myglobal=myglobal+1;
+  myglobal=j;
+</pre>
+
+<p>
+当代码以这个特定顺序执行时，主线程对myglobal的修改就会被覆盖。然后程序最终会以一个不正确的值结束。如果我们是在操作指针，那么程序可能因为段错误出错结束。需要注意的是thread_function()线程会按顺序执行所有指令。这并非thread_function()没有按照顺序执行。问题是实际上这里有另一个线程可以修改同时修改该同样的数据结构。
+</p>
+
+</body>
+</section>
+<section>
+<title>深入线程 一</title>
+<body>
+
+<p>
+在解释如何使用mutex之前，让我们来看一下线程的内部机制。第一个例子：
+</p>
+
+<p>
+假设有一个主线程创建三个新的线程：线程A、B和C。假设线程A最先被创建，接下来是B，最后是C。
+</p>
+
+<pre caption="线程的创建顺序">
+  pthread_create( &amp;thread_a, NULL, thread_function, NULL);
+  pthread_create( &amp;thread_b, NULL, thread_function, NULL);
+  pthread_create( &amp;thread_c, NULL, thread_function, NULL);
+</pre>
+
+<p>
+第一个pthread_create()调用结束后，可以假定线程A已经存在或者假定它已经结束并且停止执行了。第二个pthread_create()调用以后，对于主线程和线程B而言，可以假定线程A已经存在（或者已经结束）。
+</p>
+
+<p>
+然而，当第二个create()调用返回时，主线程不能假定究竟哪个（线程A和B）将会首先开始执行。虽然两个线程都存在，但是只有内核和线程库才能决定怎样分配给它们时间片。并没有什么写死的规则来说让谁先执行。目前，最有可能的是线程A将在线程B之前执行，但这一点却是无法保证的。对于多处理机程序来说更是如此。如果你假设线程A将实际上在线程B开始之前执行它的代码，并以这个假设来写程序的话，你只能保证这个程序在99%的情况下是正确的。或者，更坏的情况是，这个程序在你的机器上100%的情况都可以执行而在你客户的有四核处理器的服务器上却只有0%的正确率。
+</p>
+
+<p>
+从这个例子中我们还可以知道线程库可以保存每个独立线程的代码执行顺序。换句话说，那三个pthread_create()调用将事实上按照它们出现的顺序执行。站在主线程的观点上看，所有的代码都是按顺序执行的。有时我们可以以此来优化线程化程序的某些部分。例如，上例中，线程C可以假定线程A和B已经在运行了或者已经终止了。它不需要担心线程A和B尚且没有被创建的风险。你可以使用这个逻辑来优化你的线程化程序。
+</p>
+
+</body>
+</section>
+<section>
+<title>深入线程 二 Inside threads 2</title>
+<body>
+
+<p>
+OK，现在，另一个假想的例子。想象以下我们有一大堆线程来执行下面的代码：
+</p>
+
+<pre caption="需要执行的代码">
+  myglobal=myglobal+1;
+</pre>
+
+<p>
+我们是否需要在累加之前和之后锁定并且相应的解锁mutex？有些人可能回说“不需要”。说到底，编译器很可能将上面的赋值编译成为仅仅一条机器指令。而且，大家都知道单条指令不可能被从从中截断。而且硬件中断也会尊重这样的单条指令的原子性（译者注：原子性指不可打断的操作，拥有这种属性的操作要么执行完全成功，要么根本不会执行）。正因有这个趋势，所以程序中完全可以不使用pthread_mutex_lock()和pthread_mutex_unlock()调用。别这么做。
+</p>
+
+<p>
+难道我是个胆小如鼠的家伙么？不是的。首先，除非你亲自检查过机器代码，你不应该假定上面的赋值会被编译为单条指令。即使你插入了一些内嵌汇编代码来确保累加是原子的——这样做仍然会有问题。
+</p>
+
+<p>
+解释一下。使用内嵌的汇编操作码（译者注：opcode，汇编指令通常由opcode和operand两部分组成，opcode会指出需要做操作，而operand指出操作对象）通常在单处理器机器上可以工作的很好。每次累加操作都会“原子得”完成，而且很幸运你也会得到期待的结果。但是，对于多处理机机器却完全是另一回事。在多处理器机器上，会有两个单独的处理器几乎同时（或者正好就是同时）执行上面的赋值。还要注意，这个内存修修改得经过L1和L2缓存，最后才能到内存中去（SMP机器并不是简单的增加处理器；它还有用来仲裁控制访问内存的特殊硬件）。说到底，你更本无法确定究竟哪个CPU会取得写入主存的权限。为了写出结果可以预测的代码，你就得使用mutex。Mutex会插入“内存屏障”（译者注：memory barrier，这也是多线程编程中需要主义的重要问题，详情请查看Linux内核源码的Documentation/memory-barriers.txt），它会确保写入内存会按照线程锁定mutex的顺序执行。
+</p>
+
+<p>
+考虑某个按照32位大小的块更新主存的SMP体系结构。如果不通过使用mutext而累加一个64位的整型数据，最高4字节可能来自其中一个CPU而其他4字节可能来自另一个CPU。噗～！最烂的结果。采用烂技术可能会让你的程序在遇到蓝月亮的时候爆炸，也许就在深夜3点在一个重要客户的系统中。David R. Butenhof在他写的Programming with POSIX Thread（查看这边文章最后的<uri link="#resources">参考资料</uri>）中讨论了不使用mutex的替代方法。
+</p>
+
+</body>
+</section>
+<section>
+<title>多个mutex</title>
+<body>
+
+<p>
+如果你放入过多的mutex，你的代码将不会得到什么并行性，并且运行的比单线程方法还要慢。如果你放的太少了，代码会产生奇怪的令人尴尬的错误。幸好，取个适中的状态就好。首先，mutex是用来将对*共享数据*并行化的方法。不要对非共享数据使用它们，而且，假如程序的逻辑可以保证同时只有一个线程访问特定的数据结构的话，也不要使用mutex。
+</p>
+
+<p>
+其次，如果使用了共享数据，那就对读取和写入都使用mutex。用pthread_mutex_lock()和pthread_mutex_unlock()将读写代码包围起来，或者在程序的常量遭到破坏的时候使用它。学着用单线程的观点来检查代码并且切包程序中的每个单个线程对内存的操作都是一致和友好的。你可能需要花几个小时携带吗才能找到使用mutex的窍门，但是很快这就会成为自然而然的事情，不必<e>太</e>费力思考就能够使用mutex。
+</p>
+
+</body>
+</section>
+<section>
+<title>使用这些调用：初始化</title>
+<body>
+
+<p>
+OK，现在让我们来看看mutex的各种各样的用法。首先，我们从初始化着手。在<uri link="#thread3c">例thread3.c</uri>中，我们使用了静态初始化方法。即声明一个pthread_mutex_t变量并且给它赋值为PTHREAD_MUTEX_INITIALIZER：
+</p>
+
+<pre caption="初始化的例子">
+pthread_mutex_t mymutex=PTHREAD_MUTEX_INITIALIZER;
+</pre>
+
+<p>
+这中方法非常简单。但是，我们还是有办法动态得创建mutex。当代码使用malloc()申请新的mutex的时候，就可以使用这个动态方法。这种情况下，就不能使用静态初始化方法了，而应该使用pthread_mutex_init()：
+</p>
+
+<pre caption="创建mutex的动态方法 Dynamic way of creating mutex">
+int pthread_mutex_init( pthread_mutex_t *mymutex, const pthread_mutexattr_t*attr)
+</pre>
+
+<p>
+你可以看到，pthread_mutex_init接受一个为初始化mutex已经申请好的内存领域的指针作为参数。第二个参数，则是一个可选的pthread_mutexattr_t指针。这个数据结构可以用来指定不同的mutex属性。但是，通常并不需要指定这些属性，所以该参数通常被指定为NULL。
+</p>
+
+<p>
+每当你使用pthread_mutex_init()来初始化得到mutex，那么必须使用pthread_mutex_destroy()来销毁它。pthread_mutex_destroy()只需单独的指向pthread_mutex_t的指针作为参数，并且释放创建它是申请的所有资源。请注意，pthread_mutex_destroy()并不会释放用来存放pthread_mutex_t的内存。用free()函数释放这些内存的事情应该由你决定。还需要记住的一点是，不论是pthread_mutex_init()还是pthread_mutex_destroy()都在执行成功时放回0。
+</p>
+
+</body>
+</section>
+<section>
+<title>使用这些调用：锁定</title>
+<body>
+
+<pre caption="锁定的例子">
+pthread_mutex_lock(pthread_mutex_t *mutex)
+</pre>
+
+<p>
+pthread_mutex_lock()只需要指向mutex的指针来锁定该mutex。如果该mutex恰好已经被锁定了，那么调用者就会进入睡眠状态。函数返回时，调用者就会被唤醒（显而易见），并且调用者会立即持有该锁。这个调用会在执行成功是放回0或者在出错时返回非零的错误号码（译者注：errno）。
+</p>
+
+<pre caption="解锁的例子">
+pthread_mutex_unlock(pthread_mutex_t *mutex)
+</pre>
+
+<p>
+pthread_mutex_unlock()是作为pthread_mutex_lock()的好搭档它可以用来解锁某个该线程已经持有的mutex。你应该尽快并且安全得（为了提高性能）解锁之前锁定的mutex。还有，永远不要解锁你并不持有的锁（否则，pthread_mutex_unlock()调用会以EPERM返回值指示调用失败）。
+</p>
+
+<pre caption="尝试锁定的例子 Trying the lock example">
+pthread_mutex_trylock(pthread_mutex_t *mutex)
+</pre>
+
+<p>
+当线程在做其他事情时（因为当前mutex是锁定的）你又想锁定某个mutex的话，这个调用非常管用。调用pthread_mutex_trylock()即意味着你试图锁定该mutex。如果当前该mutex恰好没有锁定，你就可以得到该锁，并且函数返回0。但是，如果mutex恰好已经锁定，这个调用也不会阻塞。而事实上，他会返回非零的EBUSY错误代码。接着，你可以继续做自己的事稍候在试着锁定一下。
+</p>
+
+</body>
+</section>
+<section>
+<title>等待条件</title>
+<body>
+
+<p>
+对线程程序来说，mutex是非常必要的工具，但是，这并不是说它可以做所有事情。例如，如果线程等待出现在共享数据中的一定条件时该怎么办？当然代码可以反复得锁定和解锁mutex来检查共享数据中值的变化。同时，它得很快的解锁mutex以便其他线程可以对共享数据做必要的修改。但这却是个糟糕的方法。因为，该线程得在可以接受的时间段内非常忙碌得循环检测数据的变化。
+</p>
+
+<p>
+你或许还可以让调用线程进入睡眠状态一小会儿，比方说每次检查间隔三秒钟，但这样的话你的线程代码就不会有好的响应了。你真正需要的是可以在线程等待某个尚未满足的条件时将其放入等待状态的方法。并且，一旦这个条件得以满足你还需要一个可以在该条件变为真的情况下将其唤醒的方法。如果可以这样做的话，线程代码将会非常高效，而且不会着占用宝贵的mutex。而这正是POSIX条件变量可以为你做的！
+</p>
+
+<p>
+POSIX条件变量正是下一篇文章的主题，到时，我回详细的向你展示如何使用它们。之后，你就拥有了所有创建成熟的线程程序所需的资源，这些资源可以用来模拟车间班组人员，组装流水线以及其他东西。总之，我要在下一篇文章中才谈到这些问题，而现在你已经对线程话程序渐渐熟悉了。我希望我能在下篇的极为塞进去一个相对比较成熟的线程化程序，并且我回说说如何等待某个条件，再见！
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter id="resources">
+<title>参考资料</title>
+<section>
+<body>
+
+<ul>
+  <li>阅读Daniel的POSIX thread详解的<uri link="l-posix3.xml">第3部分</uri>。</li>
+  <li>查看Sean Walton和KB7rfa合著的<uri link="http://metalab.unc.edu/pub/Linux/docs/faqs/Threads-FAQ/html/">Linux threads</uri>。</li>
+  <li>随时查看手册页（<c>man -k pthread</c>）。</li>
+  <li>看看<uri link="http://pauillac.inria.fr/~xleroy/linuxthreads/">The LinuxThreads Library</uri>。</li>
+  <li><uri link="http://www.users.itl.net.ua/~prool/proolix.html">Proolix</uri>是为i8086+所写的一个简单的兼容POSIX的操作系统，尚在开发之中。</li>
+  <li>看看David R. Butenhof的书<uri link="http://www.amazon.com/exec/obidos/ASIN/0201633922/o/qid=961544788/sr=8-1/ref=aps_sr_b_1_1/002-2882413-1227240">Programming with POSIX Threads</uri>，这本书中，除了其他事情，他还涵盖了不使用互斥锁的一个可能的排列方法。</li>
+  <li>看一下W. Richard Stevens的书<!-- FIXME not available out there,
+    commenting out and leaving finding it pleasure to readers<uri
+    link="http://devworks.krcinfo.com/WebForms/ProductDetails.aspx?ProductID=0139498761">-->"UNIX Network Programming"。</li>
+  <li>可以去<uri link="http://www.ibm.com/developerworks/linux/">developerWorks Linux zone</uri>找更多的面向Linux开发者的信息</li>
+  <li>通过参加<uri link="http://www.ibm.com/developerworks/blogs/">developerWorks blogs</uri>加入开发者社区。</li>
+  <!-- FIXME Ugly advertisement
+  15:25  <rane> is that ok to put such advertisment at gentoo.org?
+  15:26  * neysx would not copy them
+  15:27  <SwifT> I wouldn't keep it
+  <li>
+    Purchase <uri
+    link="http://devworks.krcinfo.com/WebForms/ProductList.aspx?Search=Category&id=300&parent=Linux">Linux
+    books at discounted prices</uri> in the Linux section of the
+    Developer Bookstore.
+  </li>
+  <li>
+    Order the no-charge SEK for Linux, a two-DVD set containing the latest IBM
+    trial software for Linux from DB2&registered;, Lotus&registered;,
+    Rational&registered;, Tivoli&registered;, and WebSphere&registered;.
+  </li>
+  <li>
+    Innovate your next Linux development project with <uri
+    link="http://www.ibm.com/developerworks/downloads/?S_TACT=105AGX03">IBM trial software
+    </uri>, available for download directly from developerWorks.
+  </li>
+  -->
+</ul>
+
+</body>
+</section>
+</chapter>
+
+</guide>
