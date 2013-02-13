@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.15 2013/01/30 11:30:21 mgorny Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/Python/python-r1/dev-guide.xml,v 1.16 2013/02/13 11:40:31 mgorny Exp $ -->
 
 <guide lang="en">
 <title>python-r1 Developer's Guide</title>
@@ -23,68 +23,11 @@
 <!-- See http://creativecommons.org/licenses/by-sa/3.0/ -->
 <license version="3.0"/>
 
-<version>12</version>
-<date>2013-01-30</date>
+<version>13</version>
+<date>2013-02-13</date>
 
 <chapter id="Introductory_info">
 	<title>Introductory information</title>
-
-	<section id="ii_Types_of_Python_packages">
-		<title>Types of Python packages</title>
-
-		<body>
-			<p>
-				The Python packages in Gentoo, that is packages either
-				installing Python modules or embedding the Python interpreter,
-				can be divided into three main groups:
-			</p>
-
-			<ol>
-				<li>
-					packages which are capable of being installed for multiple
-					selected Python implementations;
-				</li>
-
-				<li>
-					packages which are capable of being installed for a single
-					chosen Python implementation only;
-				</li>
-
-				<li>
-					packages being installed independently of Python
-					implementations.
-				</li>
-			</ol>
-
-			<p>
-				The first group is the most common one and comprises most
-				of the packages installing Python modules and/or scripts.
-				The installed files are either directed
-				to implementation-specific directories or renamed in order
-				to allow installing multiple copies, one for each enabled Python
-				implementation. This way, the packages can cleanly guarantee
-				that the particular packages can be used with any implementation
-				installed.
-			</p>
-
-			<p>
-				The second group consists of most of the packages embedding
-				the Python interpreter or installing Python bindings as a part
-				of a more general build system. The installed files can
-				be installed only once and only for one chosen Python
-				implementation. The package can't be used by any other
-				installed Python implementation.
-			</p>
-
-			<p>
-				The third group comprises mostly very specific packages which
-				do not fit the regular Python package model. This includes
-				packages which are installed externally and can be used
-				by multiple Python implementations,
-				such as <c>sys-apps/portage</c>.
-			</p>
-		</body>
-	</section>
 
 	<section id="ii_Purpose_of_the_eclasses">
 		<title>Purpose of the eclasses</title>
@@ -97,13 +40,13 @@
 			<ol>
 				<li><c>python-utils-r1</c>,</li>
 				<li><c>python-r1</c>,</li>
-				<li><c>distutils-r1</c>,</li>
 				<li><c>python-single-r1</c>,</li>
-				<li><c>python-any-r1</c>.</li>
+				<li><c>python-any-r1</c>,</li>
+				<li><c>distutils-r1</c>.</li>
 			</ol>
 
 			<p>
-				The <c>python‑utils‑r1</c> eclass is the most fundamental eclass
+				The <c>python‑utils‑r1</c> eclass is the utility eclass
 				in the suite. It does not export any phase functions nor set
 				any metadata. It does not require the package to fit
 				any specific model.
@@ -116,15 +59,6 @@
 				the implementation choice flags, dependency strings. It does
 				not, however, enforce any dependencies directly nor export phase
 				functions.
-			</p>
-
-			<p>
-				The <c>distutils‑r1</c> eclass extends python‑r1 with a set
-				of basic phase functions to build and install packages using
-				the distutils build system of the inbuilt Python module
-				<c>distutils</c>. It follows the common practices for build
-				system eclasses, including patching and installing
-				documentation.
 			</p>
 
 			<p>
@@ -146,57 +80,74 @@
 			</p>
 
 			<p>
+				The <c>distutils‑r1</c> eclass extends the suite with a set
+				of basic phase functions to build and install packages using
+				the distutils build system of the inbuilt Python module
+				<c>distutils</c>. It follows the common practices for build
+				system eclasses, including patching and installing
+				documentation.
+			</p>
+
+			<p>
 				The choice of eclass for your package could follow the following
 				algorithm:
 			</p>
 
 			<ol>
 				<li>
-					If the package supports being installed for multiple Python
-					implementations;
-
-					<ol>
-						<li>
-							and if the Python-related content uses the distutils build
-							system and is free of being conditional to a USE flag,
-							then use <c>distutils‑r1</c>;
-						</li>
-
-						<li>
-							and if the Python-related content is conditional
-							to a USE flag or the package uses non-distutils build
-							system, then use <c>python‑r1</c>.
-						</li>
-					</ol>
+					If the package uses the distutils build system,
+					then use <c>distutils‑r1</c>.
 				</li>
 
 				<li>
-					If the package can be installed for a single Python
-					implementation only and installs Python modules, scripts
+					If the package installs Python modules or scripts which can
+					be simultaneously installed for multiple Python
+					implementations, use <c>python‑r1</c>.
+				</li>
+
+				<li>
+					If the package installs Python modules or scripts which can
+					be installed for a single Python implementation only,
 					or embeds Python, then use <c>python‑single‑r1</c>.
 				</li>
 
 				<li>
-					If the package has a strictly build-time dependency on Python
-					or installs Python modules or scripts in a common variant
-					for multiple Python implementations,
+					If the package has a strictly build-time dependency on Python,
 					then use <c>python‑any‑r1</c>.
+				</li>
+			</ol>
+
+			<p>
+				A conversion from <c>python.eclass</c> can follow the following
+				algorithm:
+			</p>
+
+			<ol>
+				<li>
+					If the package inherits <c>distutils</c>, then use
+					<c>distutils‑r1</c>.
 				</li>
 
 				<li>
-					If the package has a specific or loose connection to Python
-					where no other eclass serves the intended purpose,
-					then consider using <c>python‑utils‑r1</c>.
+					If the package enables <c>SUPPORT_PYTHON_ABIS</c>, then use
+					<c>python‑r1</c>.
+				</li>
+
+				<li>
+					If the package has run-time dependency on Python,
+					then use <c>python‑single‑r1</c>.
+				</li>
+
+				<li>
+					If the package has only build-time dependency on Python,
+					then use <c>python‑any‑r1</c>.
 				</li>
 			</ol>
 
 			<note>
-				Please note that the <c>distutils‑r1</c> eclass inherits
-				<c>python‑r1</c> implicitly and all the eclasses inherit
-				<c>python‑utils‑r1</c>. <c>python‑r1</c>
-				and <c>python‑single‑r1</c> can not be used together. There is
-				therefore no need to ever inherit more than one eclass
-				from the suite.
+				Please note that you always inherit only the best match
+				of the fore-mentioned eclasses. Other relevant eclasses
+				are inherited implicitly.
 			</note>
 		</body>
 	</section>
