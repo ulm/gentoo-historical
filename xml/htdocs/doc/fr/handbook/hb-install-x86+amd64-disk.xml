@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-disk.xml,v 1.7 2009/01/15 11:38:07 titefleur Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-disk.xml,v 1.8 2013/02/23 19:48:23 swift Exp $ -->
 
 <sections>
 
@@ -13,10 +13,11 @@ Pour installer Gentoo, vous devez créer les partitions requises. Ce chapitre
 décrit comment préparer vos disques durs.
 </abstract>
 
-<version>6.2</version>
-<date>2009-01-09</date>
+<version>13</version>
+<date>2012-10-06</date>
 
 <section>
+
 <title>Introduction aux périphériques de bloc</title>
 <subsection>
 
@@ -68,7 +69,7 @@ partition étendue.
 
 <p>
 Les CD d'installation Gentoo pour <keyval id="arch"/> offrent le support des
-systèmes EVMS ou LVM2. Les systèmes LVM2 et EVMS permettent une plus grande
+systèmes LVM2. Les systèmes LVM2  permettent une plus grande
 flexibilité dans l'organisation des disques. Le reste de ce guide utilise des
 partitions normales, mais vous pouvez activer ces systèmes de stockage avancés
 si vous le désirez.
@@ -77,7 +78,10 @@ si vous le désirez.
 </body>
 </subsection>
 </section>
+
 <section>
+
+  
 <title>Concevoir un plan de partitionnement</title>
 <subsection>
 <title>Plan de partitionnement par défaut</title>
@@ -100,7 +104,7 @@ utilisons dans ce manuel&nbsp;:
   <ti><path>/dev/sda1</path></ti>
   <ti>ext2</ti>
   <ti>32M</ti>
-  <ti>Partition de démarrage</ti>
+  <ti>Partition d'amorçage</ti>
 </tr>
 <tr>
   <ti><path>/dev/sda2</path></ti>
@@ -112,7 +116,7 @@ utilisons dans ce manuel&nbsp;:
   <ti><path>/dev/sda3</path></ti>
   <ti>ext3</ti>
   <ti>Reste du disque</ti>
-  <ti>Partition principale</ti>
+  <ti>Partition racine</ti>
 </tr>
 </table>
 
@@ -120,7 +124,9 @@ utilisons dans ce manuel&nbsp;:
 Si vous souhaitez savoir la taille qu'une partition doit avoir, ou même
 de combien de partitions vous avez besoin, poursuivez la lecture de ce
 chapitre. Sinon, poursuivez avec le chapitre <uri link="#fdisk">Partitionner
-votre disque avec fdisk</uri>.
+votre disque avec fdisk</uri>  ou <uri link="#parted">Partitionner votre disque avec parted</uri>
+(ce sont tous les deux des outils de partitionnement, <c>fdisk</c> est très connu et stable,
+<c>parted</c> est un peu plus récent mais prend en charge des partitions de taille supérieure à 2TO).
 </p>
 
 </body>
@@ -131,18 +137,18 @@ votre disque avec fdisk</uri>.
 
 <p>
 Le nombre de partitions dépend beaucoup de votre environnement. Par exemple,
-si vous avez beaucoup d'utilisateurs, vous désirerez certainement avoir votre
-<path>/home</path> séparé afin d'améliorer la sécurité et de simplifier les
-sauvegardes. Si vous installez Gentoo comme serveur de courrier, votre
-<path>/var</path> devrait être séparé étant donné que tous les courriels sont
+si vous avez beaucoup d'utilisateurs, vous désirerez certainement avoir votre partition
+<path>/home</path> séparée afin d'améliorer la sécurité et de simplifier les
+sauvegardes. Si vous installez Gentoo comme serveur de courrier, votre partition
+<path>/var</path> devrait être séparée étant donné que tous les courriels sont
 stockés dans <path>/var</path>. Un bon choix de système de fichiers va vous
-permettre d'améliorer les performances. Les serveurs de jeu auront un
-<path>/opt</path> séparé étant donné que la plupart des serveurs de jeux sont
-installés à cet endroit. La raison est la même que pour
+permettre d'améliorer les performances. Les serveurs de jeux auront une partition 
+<path>/opt</path> séparée étant donné que la plupart des serveurs de jeux sont
+installés à cet endroit. La raison est la même que pour la partition
 <path>/home</path>&nbsp;: sécurité et sauvegarde. Vous devriez consacrer
 suffisamment de place au répertoire <path>/usr</path>, car il contient non
-seulement vos applications, mais aussi l'arbre Portage qui prend 500&nbsp;Mo à
-lui seul et les sources des programmes que vous allez installer.
+seulement vos applications, mais aussi l'arbre Portage (qui prend 500&nbsp;Mo à
+lui seul) et les sources des programmes que vous allez installer.
 </p>
 
 <p>
@@ -163,25 +169,28 @@ Séparer les partitions ou volumes procure les avantages suivants&nbsp;:
   Si nécessaire, les vérifications des systèmes de fichiers durent moins
   longtemps, vu que de multiples vérifications peuvent être faites en parallèle
   (quoique cet avantage est plus important avec plusieurs disques qu'avec
-  plusieurs
-  partitions).
+  plusieurs partitions).
 </li>
 <li>
   La sécurité peut être améliorée en montant certaines partitions ou volumes
-  en lecture seulement, en utilisant nosuid (les bits suid sont ignorés) et
-  noexec (les bits exécutables sont ignorés), etc.
+    en lecture seulement, en utilisant <e>nosuid</e> (les bits suid sont ignorés) et
+      <e>noexec</e> (les bits exécutables sont ignorés), etc.
 </li>
 </ul>
 
 <p>
-Cependant, de multiples partitions ont un gros désavantage&nbsp;: si elles ne
+Cependant, avoir de multiples partitions présente un gros désavantage&nbsp;: si elles ne
 sont pas configurées correctement, vous risquez d'obtenir un système avec
-beaucoup d'espace libre sur une partition et plus du tout sur une autre. Notez
-également qu'il y a une limite de 15 partitions par disque SCSI ou SATA.
+beaucoup d'espace libre sur une partition et plus du tout sur une autre. Un autre inconvénient est que des partitions séparées, en particulier
+  pour des points de montage importants tels que <path>/usr</path> ou <path>/var</path> - requièrent que l'utilisateur amorce avec un <e>initramfs</e> pour 
+ monter la partition avant que les scripts de démarrage ne soient lancés. Ce n'est pas toujours le cas cependant, ce qui fait que le résultat 
+  peut varier.
 </p>
-
 <p>
-Voici un exemple de partitionnement pour un disque de 20&nbsp;Go utilisé comme
+Notez que les disques SCSI et SATA sont limités à  15-partitions sauf si vous utilisez  des étquettes GPT.
+</p>
+<p>
+Voici un exemple de partitionnement pour un disque de 20&nbsp;Go utilisé sur un
 portable de démonstration (contenant un serveur web, un serveur de courrier,
 GNOME...)&nbsp;:
 </p>
@@ -206,18 +215,24 @@ stable. Pour <path>/var</path>, on pourrait croire que trop d'espace a été
 alloué. Cependant, Gentoo compile tous les programmes dans
 <path>/var/tmp/portage</path>. Si vous voulez allouer relativement peu d'espace
 pour <path>/var</path>, par exemple 2&nbsp;Go, vous devrez modifier la
-variable <c>PORTAGE_TMPDIR</c> pour qu'elle pointe vers une partition qui
-dispose d'espace suffisant pour compiler de très gros paquets tels que
+variable <c>PORTAGE_TMPDIR</c>  dans <path>/etc/portage/make.conf</path> pour qu'elle pointe vers une partition qui
+dispose d'un espace suffisant pour compiler de très gros paquets tels que
 OpenOffice.org.
 </p>
 
 </body>
 </subsection>
 </section>
+
 <section id="fdisk">
 <title>Partitionner votre disque avec fdisk</title>
 <subsection>
 <body>
+<impo>
+Si votre environnement met en œuvre des partitions plus grandes que 2 TB, suivez les instructions données par 
+<uri link="#parted">Partitionner votre disque avec parted</uri>. L'application <c>fdisk</c> ne sait pas gérer d'aussi grosses partitions.
+</impo>
+
 
 <p>
 Les parties suivantes expliquent comment créer le schéma de partition décrit
@@ -231,7 +246,7 @@ précédemment&nbsp;:
 </tr>
 <tr>
   <ti><path>/dev/sda1</path></ti>
-  <ti>Partition de démarrage</ti>
+  <ti>Partition d'amorçage</ti>
 </tr>
 <tr>
   <ti><path>/dev/sda2</path></ti>
@@ -249,6 +264,7 @@ Changez votre plan de partitionnement comme vous le souhaitez.
 
 </body>
 </subsection>
+
 <subsection>
 <title>Afficher le plan de partitionnement actuel</title>
 <body>
@@ -305,6 +321,7 @@ swap&nbsp;»).
 
 </body>
 </subsection>
+
 <subsection>
 <title>Supprimer toutes les partitions</title>
 <body>
@@ -323,8 +340,8 @@ Partition number (1-4): <i>1</i>
 <p>
 La partition a été programmée pour la suppression. Elle ne sera plus affichée
 si vous tapez <c>p</c>, mais elle ne sera pas supprimée tant que vos changements
-n'auront pas été sauvés. Si vous faites une erreur et souhaitez annuler sans
-sauver vos changements, tapez <c>q</c> immédiatement et appuyez sur Entrée,
+n'auront pas été sauvegardés. Si vous faites une erreur et souhaitez annuler sans
+sauvegarder vos changements, tapez <c>q</c> immédiatement et appuyez sur Entrée,
 vos partitions ne seront pas supprimées.
 </p>
 
@@ -348,13 +365,14 @@ Command (m for help):
 
 <p>
 Maintenant que la table de partitions en mémoire est vide, nous sommes prêts
-pour créer les partitions. Nous allons utiliser le plan de partitionnement par
-défaut comme dit précédemment. Bien sûr, ne suivez pas ces instructions à la
+à créer les partitions. Nous allons utiliser le plan de partitionnement par
+défaut vu précédemment. Bien sûr, ne suivez pas ces instructions à la
 lettre si vous n'utilisez pas le même plan de partitionnement&nbsp;!
 </p>
 
 </body>
 </subsection>
+
 <subsection>
 <title>Création de la partition de démarrage</title>
 <body>
@@ -399,12 +417,13 @@ Device Boot    Start       End    Blocks   Id  System
 <p>
 Nous devons rendre cette partition amorçable. Tapez <c>a</c> et sélectionnez
 <c>1</c> pour activer l'option amorçable (bootable flag) sur cette partition.
-Si vous tapez <c>p</c> à nouveau, vous constaterez qu'un <path>*</path>
+Si vous tapez <c>p</c> à nouveau, vous constaterez qu'une <path>*</path>
 (astérisque) est placé dans la colonne «&nbsp;Boot&nbsp;».
 </p>
 
 </body>
 </subsection>
+
 <subsection>
 <title>Création de la partition de mémoire virtuelle</title>
 <body>
@@ -437,6 +456,7 @@ Device Boot    Start       End    Blocks   Id  System
 
 </body>
 </subsection>
+
 <subsection>
 <title>Création de la partition principale</title>
 <body>
@@ -469,12 +489,13 @@ Device Boot    Start       End    Blocks   Id  System
 
 </body>
 </subsection>
+
 <subsection>
-<title>Sauver le plan de partitionnement</title>
+<title>Sauvegarder le plan de partitionnement</title>
 <body>
 
 <p>
-Pour sauver le plan de partitionnement et quitter <c>fdisk</c>, tapez <c>w</c>.
+Pour sauvegarder le plan de partitionnement et quitter <c>fdisk</c>, tapez <c>w</c>.
 </p>
 
 <pre caption="Sauver et quitter fdisk">
@@ -489,6 +510,209 @@ Maintenant que vos partitions sont créées, vous pouvez continuer avec
 </body>
 </subsection>
 </section>
+
+
+<section id="parted">
+<title>Partitionner votre disque avec parted</title>
+<subsection>
+<body>
+
+<p>
+Dans ce chapitre, nous allons vous guider pour la création des partitions correspondant à notre 
+ exemple mentionné plus haut. En alternative à la méthode précédente qui utilise <c>fdisk</c>, nous allons utiliser ici 
+ <c>parted</c>. Les outils <c>parted</c> and <c>fdisk</c> assurent la même fonction, c'est pourquoi, si vous avez déjà 
+ partitionné votre disque avec <c>fdisk</c>, vous pouvez passer directement à la section&nbsp;: <uri link="#filesystems">Création des systèmes de fichiers</uri>.
+</p>
+
+<p>
+Le plan de partitionnement que nous prenons pour exemple est présenté dans le tableau qui suit&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Partition d'amorçage</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Partition de mémoire virtuelle</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Partition racine (root) </ti>
+</tr>
+</table>
+
+<p>
+Adaptez ce plan de partitionnement à vos besoins.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Affichage du plan de partitionnement courant</title>
+<body>
+
+<p>
+L'application <c>parted</c> est en quelque sorte une variante moderne de 
+<c>fdisk</c>. Elle offre une interface plus simple pour partitionner vos disques et
+prend en charge des partitions de grande taille (plus de 2 TO). Lancez  <c>parted</c> pour votre disque (dans notre exemple, nous 
+utilisons <path>/dev/sda</path>):
+</p>
+
+<pre caption="Démarrage de parted">
+# <i>parted /dev/sda</i>
+GNU Parted 3.1
+Utilisation de /dev/sda
+Bievenue sur GNU Parted ! Tapez 'help' pour voir la liste des commandes.
+(parted)  
+</pre>
+
+<p>
+Pour découvrir toutes les options offertes par <c>parted</c>, tapez <c>help</c> et 
+  tapez <c>Entrée</c>. Pour le moment, continuez simplement en demandant à <c>parted</c> d'afficher 
+les partitions actuellement utilisées sur le disque choisi. La commande <c>print</c> peut être utilisée pour cela. 
+</p>
+
+<pre caption="Un exemple de plan de partitionnement affiché par parted">
+((parted) print                                                            
+Modèle: ATA Hitachi HDS72101 (scsi)
+Disque /dev/sda : 1000GB
+Taille des secteurs (logiques/physiques): 512B/512B
+Table de partitions : msdos
+Disk Flags: 
+
+Numéro  Début   Fin     Taille  Type      Système de fichiers  Fanions
+ 1      1049kB  106MB   105MB   primary   ntfs                 démarrage
+ 2      1080MB  1000GB  999GB   extended
+ 6      1080MB  14,0GB  12,9GB  logical   linux-swap(v1)
+ 7      14,0GB  224GB   210GB   logical   ext3
+ 8      224GB   374GB   150GB   logical   ext4
+ 5      524GB   1000GB  476GB   logical   ext4
+
+(parted)   
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Optionel: positionnement de l'étiquette GPT</title>
+<body>
+
+<p>
+La plupart des disques x86/amd64 sont préparé en utilisant une étiquette  <e>msdos</e>.
+Cependant, si vous envisagez d'utiliser de très grandes partitions (2&nbsp;TO et plus), vous devez employer 
+une étiquette <e>gpt</e> (le <e>type de partition GUID </e>) pour votre disque . Dans <c>parted</c>, vous pouvez le faire 
+avec <c>mklabel gpt</c>:
+</p>
+
+<warn>
+le changement de type de partition engendre la suppression de toutes les partitions du disque. Toutes les données de ce disque
+ seront donc perdues.
+</warn>
+
+<pre caption="Positionnement de l'étiquette GPT">
+(parted) <i>mklabel gpt</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Suppression de toutes les partitions</title>
+<body>
+
+<p>
+Si ce n'est pas encore fait (par exempe via l'opération  <c>mklabel</c> vue précédemment, ou parce que le disque
+a été formaté récemment), nous allons commencer par retirer toutes les partitions existantes du disque.
+Tapez  <c>rm &lt;numéro&gt;</c>
+où &lt;numéro&gt; est le numéro de la partition à supprimer. 
+</p>
+<pre caption="Suppression d'une partition du disque">
+(parted) <i>rm 2</i>
+</pre>
+
+<p>
+Faites la même chose pour les autres partitions dont vous n'avez pas besoin. Assurez-vous 
+  de ne faire aucune erreur. 
+</p>
+<warn> à l'inverse de <c>fdisk</c>, <c>parted</c> effectue les changement immédiatement ( ces changements <c>ne 
+    nécessitent pas</c> d'être sauvegardés et ne sont donc <c>plus réversibles</c>).
+</warn>
+
+</body>
+</subsection>
+<subsection>
+<title>Création des partitions</title>
+<body>
+
+<p>
+Maintenant, créons les partitions mentionnées plus haut. La création de partitions avec
+<c>parted</c> n'est pas très difficile - tout ce que nous devons faire, c'est informer <c>parted</c>
+des réglages suivants&nbsp;:
+</p>
+
+<ul>
+  <li>
+    Le <e>type de partition </e> à utiliser. Il s'agit ordinairement de <e>primaire</e> dans le cas où quatre partitions
+    vous suffisent (avec l'étiquette de type <e>msdos</e> ). Autrement, vous devez faire de votre quatrième partition
+    une partition <e>étendue </e> qui inclura le reste du disque, et créer des partitions  <e>logiques</e> à l'intérieur de cette
+    partition étendue. Si vous utilisez une étiquette de type  <e>gpt</e>, il n'y a plus de limitation sur le nombre de partitions
+    primaires.
+  </li>
+  <li>
+    Le  <e>type de système de fichiers</e> à utiliser. L'application <c>parted</c> 
+    prend en charge les systèmes de fichiers courants et sait de quel identifiant de partition
+    (ID) ils ont besoin. Ceci ne veut pas dire que  <c>parted</c> va créer un système de fichiers
+    sur la partition  (vous pouvez le faire avec la commande <c>mkpartfs</c>, mais nous utiliserons 
+    la commande standard  <c>mkfs.*</c> plus loin dans ce but.)
+    L'identifiant (ID) de partition est souvent utilisé par les outils d'auto-détection
+    pour savoir quoi faire de la partition. 
+  </li>
+  <li>
+    L'emplacement de départ de la partition (qui peut être exprimé en MO ou en GO)
+  </li>
+  <li>
+     L'emplacement de fin de la partition (qui peut être exprimé en MO ou en GO)
+  </li>
+</ul>
+
+<p>
+Un des avantages de <c>parted</c> , c'est que vous pouvez utiliser simplement les tailles de partition
+pour déterminer automatiquement les points de départ et de fin corrects, comme vous le verrez dans l'exemple suivant.
+</p>
+
+<pre caption="Création des partitions">
+<comment># Crée une partition de 32 MO /boot partition</comment>
+(parted) <i>mkpart primary ext2 0 32mb</i>
+Attention: la partition résultante n'est pas correctement alignée pour des performances optimales.
+Ignorer/Annuler? <i>i</i>
+
+<comment># Crée une partition de 512 MO swap partition</comment>
+(parted) <i>mkpart primary linux-swap 32mb 542mb</i>
+
+<comment># Crée une partition qui couvre le reste du disque.
+# -1s (signe moins) signifie "fin du disque" </comment>
+(parted) <i>mkpart primary ext4 542mb -1s</i>
+Attention: vous avez demandé la création d'une partition de  542&nbsp;MO à 21.5&nbsp;GO.
+L'emplacement le plus proche que vous pouvez gérer est de 542&nbsp;MO à 21.5&nbsp;GO.
+Cela est-il encore acceptable pour vous?
+Oui/Non? <i>y</i>
+</pre>
+
+<p>
+Vous pouvez maintenant  à nouveau <c>afficher</c> le plan de partitionnement pour vous assurer que 
+tout est conforme à vos attentes. Quand vous êtes satisfait, utilisez la commande <c>quitter</c> pour fermer
+l'application <c>parted</c>.
+</p>
+
+</body>
+</subsection>
+</section>
+
 
 <section id="filesystems">
 <title>Création des systèmes de fichiers</title>
@@ -512,6 +736,7 @@ sur les systèmes de fichiers disponibles.
 <include href="hb-install-filesystems.xml"/>
 
 </subsection>
+
 <subsection id="filesystems-apply">
 <title>Application d'un système de fichiers à une partition</title>
 <body>
@@ -528,11 +753,15 @@ système de fichiers fournit ses propres outils&nbsp;:
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext3 </c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4 </c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
@@ -555,8 +784,8 @@ dans notre exemple) en ext3, nous utiliserons&nbsp;:
 </p>
 
 <pre caption="Application d'un système de fichiers sur une partition">
-# <i>mke2fs /dev/sda1</i>
-# <i>mke2fs -j /dev/sda3</i>
+# <i>mkfs.ext2 /dev/sda1</i>
+# <i>mkfs.ext3 /dev/sda3</i>
 </pre>
 
 <p>
@@ -566,6 +795,7 @@ logiques) fraichement créées.
 
 </body>
 </subsection>
+
 <subsection>
 <title>Activation de la partition de mémoire virtuelle</title>
 <body>
@@ -593,7 +823,12 @@ Créez et activez la partition de mémoire virtuelle maintenant.
 
 </body>
 </subsection>
+
 </section>
+
+
+
+
 <section>
 <title>Monter les partitions</title>
 <body>
@@ -613,7 +848,7 @@ racine&nbsp;:
 </pre>
 
 <note>
-Si vous installez <path>/tmp</path> sur une partition séparée, n'oubliez pas de
+si vous installez <path>/tmp</path> sur une partition séparée, n'oubliez pas de
 définir les permissions nécessaires après avoir monté la partition. Utilisez la
 commande <c>chmod 1777 /mnt/gentoo/tmp</c>. La même remarque s'applique à
 <path>/var/tmp</path>.
