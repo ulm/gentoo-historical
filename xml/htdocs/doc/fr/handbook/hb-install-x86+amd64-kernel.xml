@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-kernel.xml,v 1.10 2008/07/06 19:38:48 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-kernel.xml,v 1.11 2013/02/23 19:58:28 swift Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Le noyau Linux est au cœur de toutes les distributions. Ce chapitre explique
 comment le configurer.
 </abstract>
 
-<version>6.4</version>
-<date>2008-06-21</date>
+<version>19</version>
+<date>2012-11-12</date>
 
 <section>
 <title>Fuseau horaire</title>
@@ -105,7 +105,7 @@ link="#genkernel">Alternative&nbsp;: utiliser genkernel</uri>.
 <body>
 
 <p>
-Configurer un noyau est parfois considéré comme la tâche la plus ardue que les
+Configurer un noyau manuellement est parfois considéré comme la tâche la plus ardue que les
 utilisateurs de Linux doivent accomplir. Rien n'est moins vrai... Après
 avoir configuré quelques noyaux, vous ne vous rappellerez même plus que c'était
 difficile ;)
@@ -151,7 +151,7 @@ additionnels).
 <p>
 Veuillez vérifier que tous les pilotes nécessaires au démarrage de votre système
 tels que le pilote de votre carte SCSI sont compilés en dur et non comme
-modules.
+modules, sinon le système ne démarrera pas.
 </p>
 
 </body>
@@ -169,15 +169,26 @@ pouvoir lancer des programmes 32&nbsp;bits. Gentoo installera un système
 multilib (calculs mixtes en 32&nbsp;bits et 64&nbsp;bits) par défaut, donc vous
 voudrez probablement cette option.
 </p>
-
-<pre caption="Choisir le bon type et les bonnes fonctionnalités de processeur">
+<note>
+si vous envisagez d'utiliser un profil non-multilib  (pour disposer d'un système  64-bits pur ), alors vous ne devez pas choisir 
+IA32 Emulation support. Cependant vous devez aussi suivre les 
+ <uri link="?part=1&amp;chap=6#doc_chap2_sect2">instructions</uri> pour commuter sur un profil 
+ <uri link="/doc/en/gentoo-amd64-faq.xml">non-multilib </uri>, et également choisir le  <uri
+link="?part=1&amp;chap=10#doc_chap2_sect2">chargeur de démarrage</uri> correct.
+</note>
+<pre caption="Selecting processor type and features">
 Processor type and features  --->
-   [ ] Intel MCE Features
-   [ ] AMD MCE Features
+   [ ] Machine Check / overheating reporting 
+   [ ]   Intel MCE Features
+   [ ]   AMD MCE Features
   Processor family (AMD-Opteron/Athlon64)  --->
-    ( ) AMD-Opteron/Athlon64
-    ( ) Intel EM64T
+    ( ) Opteron/Athlon64/Hammer/K8
+    ( ) Intel P4 / older Netburst based Xeon
+    ( ) Core 2/newer Xeon
+    ( ) Intel Atom
     ( ) Generic-x86-64
+Executable file formats / Emulations  --->
+   [*] IA32 Emulation
 </pre>
 
 </body>
@@ -195,26 +206,48 @@ Processor type and features ---&gt;
 
 </body>
 <body>
+ 
 
 <p>
-Allez à la section <c>File Systems</c> et activez le support nécessaire pour les
+Ensuite sélectionnez  <e>Maintenir un système de fichiers devtmpfs à monter sur /dev</e> de telle manière que  
+les fichiers de périphériques critiques soient déjà disponibles précocément dans le processus de démarrage.
+</p>
+
+<pre caption="Activer le support  devtmpfs ">
+Device Drivers ---&gt;
+  Generic Driver Options ---&gt;
+    [*] Maintain a devtmpfs filesystem to mount at /dev
+    [ ]   Automount devtmpfs at /dev, after the kernel mounted the rootfs
+</pre>
+
+<p>
+Ensuite allez à la section <c>File Systems</c> et activez le support nécessaire pour les
 systèmes de fichiers que vous utilisez. Ne les compilez <e>pas</e> sous forme de
 modules, sinon votre système Gentoo ne pourra pas monter vos partitions. Activez
 aussi <c>Virtual memory</c> et <c>/proc file system</c>.
 </p>
 
-<pre caption="Activer le support pour les systèmes de fichiers">
+<pre caption="Sélection des systèmes de fichiers requis">
 File systems ---&gt;
+<comment>(Sélectionner une option ou plus selon les besoins de votre système)</comment>
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; The Extended 4 (ext4) filesystem
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; XFS filesystem support
+  ...
   Pseudo Filesystems ---&gt;
     [*] /proc file system support
     [*] Virtual memory file system support (former shm fs)
 
-<comment>(Sélectionnez le(s) système(s) de fichiers dont vous avez besoin.)</comment>
-  &lt;*&gt; Reiserfs support
-  &lt;*&gt; Ext3 journalling file system support
-  &lt;*&gt; JFS filesystem support
-  &lt;*&gt; Second extended fs support
-  &lt;*&gt; XFS filesystem support
+<comment>(Activez le support des étiquettes de partition GPT si vous les avez utilisées précédemment)</comment>
+-*- Enable the block layer --->
+    ...
+    Partition Types --->
+    [*] Advanced partition selection
+      ...
+      [*] EFI GUID Partition support
 </pre>
 
 <p>
@@ -245,20 +278,23 @@ Ethernet.
 <p test="func:keyval('arch')='x86'">
 Si vous avez un microprocesseur Intel qui supporte la technologie
 HyperThreading™ ou si vous avez un système à plusieurs CPU, vous devriez activer
-«&nbsp;Symmetric multi-processing support&nbsp;». Notez que chaque cœur compte
-pour un processeur.
+«&nbsp;Symmetric multi-processing support&nbsp;». 
 </p>
 
 <p test="func:keyval('arch')='AMD64'">
 Si vous avez un système Opteron multiprocesseurs ou multicœur (AMD64 X2 par
 ex.), vous devriez activer «&nbsp;Symmetric multi-processing support&nbsp;».
-Notez que chaque cœur compte pour un processeur.
+
 </p>
 
 <pre caption="Activer le support pour SMP">
 Processor type and features  ---&gt;
   [*] Symmetric multi-processing support
 </pre>
+<note>
+notez que chaque cœur compte
+pour un processeur.
+</note>
 
 <p test="func:keyval('arch')='x86'">
 Si vous avez plus de 4&nbsp;Go de mémoire, vous devez activer «&nbsp;High
@@ -332,13 +368,14 @@ id="kernel-name"/></c> par le nom et la version de votre noyau.
 # <i>cp arch/<keyval id="arch-sub"/>/boot/bzImage /boot/<keyval id="kernel-name"/></i>
 </pre>
 
-<p>
-Maintenant, poursuivez votre lecture avec <uri link="#kernel_modules">Les
-modules du noyau</uri>.
-</p>
+
 
 </body>
 </subsection>
+<subsection>
+<include href="hb-install-initramfs.xml"/>
+</subsection>
+
 </section>
 <section id="genkernel">
 <title>Alternative&nbsp;: utiliser genkernel</title>
@@ -368,7 +405,7 @@ comme suit&nbsp;:
 <pre caption="Installer genkernel">
 # <i>emerge genkernel</i>
 </pre>
-
+<!--
 </body>
 <body test="func:keyval('arch')='x86'">
 
@@ -383,7 +420,7 @@ vers le répertoire qui sera utilisé par genkernel.
 
 </body>
 <body>
-
+  -->
 <p>
 Ensuite, compilez les sources du noyau en exécutant <c>genkernel all</c>.
 Puisque <c>genkernel</c> compile un noyau qui supporte presque n'importe quel
@@ -394,8 +431,8 @@ matériel, ne soyez pas surpris que la compilation demande un temps considérabl
 Veuillez noter que si votre partition de démarrage utilise un autre système de
 fichiers qu'ext2 ou ext3, vous devrez peut-être compiler le support pour ce
 système de fichiers dans le noyau (donc pas comme module) avec la commande
-<c>genkernel --menuconfig all</c>. Si vous utilisez EMVS2 ou LVM2, vous voudrez
-sans doute ajouter les options <c>--evms2</c> ou <c>--lvm2</c>.
+<c>genkernel --menuconfig all</c>. Si vous utilisez LVM2, vous voudrez
+sans doute ajouter l'option  <c>--lvm2</c>.
 </p>
 
 <pre caption="Exécuter genkernel">
@@ -404,8 +441,8 @@ sans doute ajouter les options <c>--evms2</c> ou <c>--lvm2</c>.
 
 <p>
 Lorsque <c>genkernel</c> aura fini son travail, un noyau, un ensemble complet de
-modules et un «&nbsp;initial root disk&nbsp;» (initrd) auront été créés. Le
-noyau et l'initrd seront utilisés plus tard lors de la configuration du chargeur
+  modules et un <e>disque virtuel initial </e> (initramfs) auront été créés. Le
+noyau et initrd seront utilisés plus tard lors de la configuration du chargeur
 de démarrage. Notez bien les noms du noyau et du initrd puisque vous devrez les
 spécifier lors de l'écriture du fichier de configuration du chargeur de
 démarrage. L'initrd sera démarré immédiatement après l'amorçage afin de réaliser
