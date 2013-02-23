@@ -4,17 +4,17 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-system.xml,v 1.65 2009/10/18 15:28:09 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-system.xml,v 1.66 2013/02/23 19:57:23 swift Exp $ -->
 
 <sections>
 
 <abstract>
-Maintenant que le fichier stage3 est extrait nous allons entrer dans le nouveau
-système et le configurer.
+Maintenant que le fichier stage3 est installé et configuré nous cherchons à disposer d'un système Gentoo de base. Ce chapitre
+explique comment le rendre opérationnel. 
 </abstract>
 
-<version>10.0</version>
-<date>2009.10-04</date>
+<version>24</version>
+<date>2013-01-20</date>
 
 <section>
 <title>Entrer dans le nouvel environnement (chroot)</title>
@@ -29,18 +29,19 @@ pour connaitre les différents serveurs à contacter. Vous pouvez consulter la
 liste de nos <uri link="/main/en/mirrors.xml">miroirs</uri> et en choisir
 quelques-uns proches de chez vous, car ils sont en général les plus rapides pour
 vous. Cependant, l'outil <c>mirrorselect</c> vous présente la même liste et vous
-permet de choisir plus facilement.
+permet de les choisir et de les enregistrer plus facilement.
 </p>
 
 <pre caption="Choisir des miroirs avec mirrorselect">
-# <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+# <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/portage/make.conf</i>
 </pre>
 
+<!--
 <warn>
 Ne sélectionnez pas de miroir IPv6, car les «&nbsp;stages&nbsp;» utilisés pour
 l'installation ne supportent pas IPv6.
 </warn>
-
+-->
 <p>
 Une autre variable importante de <path>make.conf</path> est SYNC qui indique à
 Portage le serveur à utiliser pour synchroniser votre arbre Portage (l'ensemble
@@ -50,13 +51,21 @@ des paquets). Au lieu de définir SYNC manuellement, vous pouvez aussi utiliser
 </p>
 
 <pre caption="Choisir un miroir pour RSYNC">
-# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/make.conf</i>
+# <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/portage/make.conf</i>
 </pre>
 
 <p>
 Après avoir utilisé <c>mirrorselect</c>, il est conseillé de vérifier le contenu
-de <path>/mnt/gentoo/etc/make.conf</path>.
+de <path>/mnt/gentoo/etc/portage/make.conf</path>.
 </p>
+
+<note>
+si vous désirez déclarer un serveur SYNC à la main dans <path>make.conf</path>, vous devriez
+consulter la <uri link="/main/en/mirrors-rsync.xml">liste des mirroirs de la communauté </uri> 
+pour trouver les mirroirs les plus proches de chez vous. Nous vous conseillons de choisir un 
+<e>pool</e>, comme <c>rsync.us.gentoo.org</c>, plutôt que de choisir un seul mirroir. 
+Ceci permet de répartir la charge et fournit une solution de repli quand un mirroir est hors service.
+</note>
 
 </body>
 </subsection>
@@ -79,24 +88,30 @@ votre réseau.
 
 </body>
 </subsection>
-<subsection test="not(func:keyval('arch')='IA64')">
-<title>Monter /proc et /dev</title>
+<subsection >
+<title>Monter les systèmes de fichiers requis (/proc et /dev)</title>
 <body>
-
 <p>
-Montez le système de fichiers <path>/proc</path> dans
-<path>/mnt/gentoo/proc</path> permet à l'installation d'utiliser les
-informations fournies par le noyau, même lorsqu'on se trouve dans
-l'environnement chroot ainsi que <path>/dev</path>.
+Dans un moment, nous allons changer la racine de Linux vers le nouvel 
+emplacement. Pour être sûr que le nouvel environment fonctionne correctement, 
+nous devons rendre certains fichiers disponibles.
+</p>
+<p>
+Montez le système de fichiers <path>/proc</path> sur
+<path>/mnt/gentoo/proc</path> pour permettre à l'installation d'utiliser les
+informations fournies par le noyau même lorsqu'on se trouve dans
+l'environnement chroot,  et montez-liez les systèmes de fichiers  <path>/dev</path> et <path>/sys</path>.
 </p>
 
 <pre caption="Monter /proc et /dev">
 # <i>mount -t proc none /mnt/gentoo/proc</i>
-# <i>mount -o bind /dev /mnt/gentoo/dev</i>
+# <i>mount --rbind /sys /mnt/gentoo/sys</i>
+# <i>mount --rbind /dev /mnt/gentoo/dev</i>
 </pre>
 
 </body>
 </subsection>
+<!-- 
 <subsection test="func:keyval('arch')='IA64'">
 <title>Monter /proc, /sys et /dev</title>
 <body>
@@ -115,25 +130,29 @@ chroot. Montez ensuite <path>/dev</path> et <path>/sys</path>.
 
 </body>
 </subsection>
+-->
 <subsection>
+
 <title>Entrer dans le nouvel environnement</title>
 <body>
 
 <p>
 Maintenant que toutes les partitions sont initialisées et que l'environnement
 de base est installé, il est temps d'entrer dans notre nouvel environnement
-d'installation. Cela signifie que l'on passe de l'environnement d'installation
+d'installation en changeant la racine de Linux (chrooting).
+Cela signifie que l'on passe de l'environnement d'installation
 actuel (CD d'installation ou autre environnement d'installation) à
 l'environnement de votre système (soit les partitions initialisées).
 </p>
 
 <p>
-L'entrée se fait en trois étapes. D'abord, on change la racine de <path>/</path>
-(sur l'environnement d'installation) en <path>/mnt/gentoo</path> (sur vos
-partitions) en utilisant <c>chroot</c>. Ensuite, on crée un nouvel environnement
+Le changement de racine se fait en trois étapes. D'abord, on déplace la racine  <path>/</path>
+depuis l'environnement d'installation vers  <path>/mnt/gentoo</path> sur vos
+partitions,  en utilisant <c>chroot</c>. Ensuite, on crée un nouvel environnement
 en utilisant <c>env-update</c> dont l'effet est essentiellement de créer les
 variables d'environnement. Finalement, ces variables sont chargées en mémoire en
-utilisant <c>source</c>.
+utilisant <c>source</c>. La dernière étape est de redéfinir l'invite de commande pour 
+nous aider à retenir que nous sommes dans un environnement dont la racine a changé.
 </p>
 
 <pre caption="Entrer dans le nouvel environnement">
@@ -150,19 +169,54 @@ Linux. Bien sûr, ce dernier est loin d'être complet. C'est pourquoi il reste
 encore quelques sections à ce guide d'installation&nbsp;:-)
 </p>
 
+<p>
+Si, à n'importe quel moment, vous avez besoin d'accéder au nouvel environnement depuis un autre terminal
+ou une autre console, tout ce que vous avez à faire et d'exécuter à nouveau les étapes précédentes.
+</p>
 </body>
 </subsection>
 </section>
 
-<section>
+<section id="installing_portage">
 <title>Configurer Portage</title>
+
 <subsection>
-<title>Mettre l'arbre de Portage à jour</title>
+<title>Décompresser un instantané de Portage</title>
 <body>
 
 <p>
-Vous devriez mettre votre arbre Portage à jour avec la commande <c>emerge
---sync</c>.
+Vous devez maintenant installer un instantané de Portage, c'est à dire, une collection
+de fichiers qui disent à Portage quel programmes vous pouvez installer, quels profils sont 
+disponibles, etc. Le contenu de cet instantané sera extrait vers le dossier <path>/usr/portage</path>.
+</p>
+
+<p>
+Nous recommandons d'utiliser la commande <c>emerge-webrsync</c>. Ceci ira chercher l'instantané de 
+Portage le plus récent (que la communauté Gentoo met à jour quotidiennement) depuis l'un de nos mirroirs et l'installera sur
+votre système.
+</p>
+
+<pre caption="Exécuter emerge-webrsync pour installer un instantané de Portage">
+# <i>mkdir /usr/portage</i>
+# <i>emerge-webrsync</i>
+</pre>
+
+</body>
+</subsection>
+
+
+
+
+
+
+<subsection>
+<title>Facultatif&nbsp;: mettre l'arbre de Portage à jour</title>
+<body>
+
+<p>
+Vous pouvez maintenant mettre votre arbre Portage à jour. <c>emerge
+--sync</c> utilise le protocole rsync pour mettre l'arbre de Portge à jour
+(celui que vous êtes allés chercher auparavant avec <c>emerge-webrsync</c>.)
 </p>
 
 <pre caption="Mise à jour de l'arbre de Portage">
@@ -175,14 +229,52 @@ temps&nbsp;:)</comment>
 
 <p>
 Si vous vous trouvez derrière un pare-feu qui bloque le trafic rsync, vous
-pouvez utiliser <c>emerge-webrsync</c> qui télécharge un instantané de l'arbre
+pouvez pour l'instant ignorer cette étape car vous avez déjà un arbre récent. 
+Par la suite, dans la même situation, utilisez <c>emerge-webrsync</c> qui télécharge un instantané de l'arbre
 Portage depuis un miroir et l'utilise pour mettre votre arbre à jour.
 </p>
 
 <p>
 Si vous recevez un avertissement vous suggérant de mettre Portage à jour parce
 qu'une nouvelle version est disponible, il est recommandé de le faire. Utilisez
-la commande <c>emerge --oneshot portage</c>.
+la commande <c>emerge --oneshot portage</c>. On peut aussi vous signaler de prendre 
+connaissance de certaines nouvelles. Plus sur ce point après.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Lecture des nouvelles </title>
+<body>
+
+<p>
+Lors de la synchronisation d'un arbre Portage, Portage peut attirer votre attention 
+sur les points suivants&nbsp;:
+</p>
+
+<pre caption="Portage vous informe que des nouvelles sont à lire">
+ * IMPORTANT: 2 news items need reading for repository 'gentoo'.
+ * Use eselect news to read news items.
+</pre>
+
+<p>
+Les nouvelles de Portage ont été créées pour permettre de communiquer des messages
+critiques aux utilisateurs via la synchronisation. Pour les lire, vous devez utiliser <c>eselect news</c>.
+Avec la sous-commande <c>read</c> vous pouvez lire toutes les nouvelles.
+Avec la sous-commande <c>list</c> vous pouvez en avoir une vue d'ensemble et avec 
+ <c>purge</c> vous pouvez les éliminer dès que vous les avez lues et que vous n'en avez
+ plus besoin.
+</p>
+
+<pre caption="Lecture des nouvelles de Portage">
+# <i>eselect news list</i>
+# <i>eselect news read</i>
+</pre>
+
+<p>
+Des informations détaillées sont disponibles sur le lecteur de nouvelles par le biais de sa page de manuel&nbsp;:
+<c>man news.eselect</c>.
 </p>
 
 </body>
@@ -224,10 +316,7 @@ Available profile symlink targets:
   [3]   <keyval id="profile"/>/server
 </pre>
 
-<p>
-Le profil par défaut utilise un noyau 2.6. Ce profil est recommandé, mais vous
-pouvez choisir un autre profil si vous le désirez.
-</p>
+
 
 <p>
 Les sous-profils <c>desktop</c> et <c>server</c> sont également disponibles
@@ -306,14 +395,14 @@ le support ssl dans les programmes qui le supportent. <e>-X</e> retirera le
 support pour le serveur X (remarquez le signe moins devant le mot-clé).
 <e>gnome gtk -kde -qt3 -qt4</e> compilera vos programmes avec le support pour
 GNOME (et GTK), mais sans le support pour KDE (ni Qt). Le résultat sera un
-système complètement réglé pour GNOME.
+système complètement optimisé pour GNOME.
 </p>
 
 <p>
 Les options par défaut pour <c>USE</c> se trouvent dans les fichiers
 <path>make.defaults</path> de votre profil. Vous trouverez ces fichiers
 <path>make.defaults</path> dans le répertoire sur lequel le lien
-<path>/etc/make.profile</path> pointe, ainsi que dans tous ses répertoires
+<path>/etc/portage/make.profile</path> pointe, ainsi que dans tous ses répertoires
 parents. Les options par défaut de <c>USE</c> sont donc la somme de toutes les
 options <c>USE</c> de ces fichiers. Vos modifications à
 <path>/etc/make.conf</path> sont jugées en fonction de ces options par
@@ -321,7 +410,7 @@ défaut. Si vous ajoutez quelque chose aux options <c>USE</c>, c'est ajouté
 à la liste par défaut. Si vous retirez quelque chose des options <c>USE</c>
 (en le précédant du signe moins), c'est retiré de la liste par défaut (en
 supposant que cela s'y trouvait). Ne modifiez <e>jamais</e> quoi que ce soit
-dans le répertoire <path>/etc/make.profile</path> car ces fichiers sont écrasés
+dans le répertoire <path>/etc/portage/make.profile</path> car ces fichiers sont écrasés
 lors des mises à jour de Portage&nbsp;!
 </p>
 
@@ -345,8 +434,8 @@ système basé sur KDE avec support pour ALSA, pour les DVD et pour la
 gravure de CD&nbsp;:
 </p>
 
-<pre caption="Ouverture de /etc/make.conf">
-# <i>nano -w /etc/make.conf</i>
+<pre caption="Ouverture de /etc/portage/make.conf">
+# <i>nano -w /etc/portage/make.conf</i>
 </pre>
 
 <pre caption="Options de USE">
@@ -355,7 +444,10 @@ USE="-gtk -gnome qt3 qt4 kde dvd alsa cdr"
 
 </body>
 </subsection>
-<subsection>
+
+  
+<!--
+  <subsection>
 <title>Facultatif: les «&nbsp;locales&nbsp;» de glibc</title>
 <body>
 
@@ -394,5 +486,8 @@ noyau</uri>.
 
 </body>
 </subsection>
+-->
+
 </section>
+
 </sections>
