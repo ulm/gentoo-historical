@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/gentoo-x86+raid+lvm2-quickinstall.xml,v 1.11 2012/04/18 18:30:17 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/de/gentoo-x86+raid+lvm2-quickinstall.xml,v 1.12 2013/02/23 18:11:39 keytoaster Exp $ -->
 
 <!-- English CVS Version: 1.24 -->
 
@@ -37,8 +37,8 @@ wenn er dieser Anleitung folgen möchte.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>15</version>
-<date>2010-01-26</date>
+<version>20</version>
+<date>2012-03-31</date>
 
 <chapter>
 <title>Einleitung</title>
@@ -192,7 +192,10 @@ livecd ~ # <i>fdisk /dev/sdb</i>
 </pre>
 
 <p>
-Dann erstellen Sie die RAID-Geräteknoten und Geräte:
+Dann erstellen Sie die RAID-Geräteknoten und Geräte. Bitte bedenken Sie, dass
+die <c>/boot</c> und <c>/</c> Mount-Punkte ein älteres Metadatenformat
+verwenden sollten, sofern Sie kein initramfs zum Booten verwenden. Verwenden Sie
+dazu das Flag <c>--metadata=0.90</c>:
 </p>
 
 <pre caption="Erstellen der Geräteknoten und Geräte">
@@ -200,9 +203,9 @@ livecd ~ # <i>mknod /dev/md1 b 9 1</i>
 livecd ~ # <i>mknod /dev/md3 b 9 3</i>
 livecd ~ # <i>mknod /dev/md4 b 9 4</i>
 
-livecd ~ # <i>mdadm --create /dev/md1 --level=1 --raid-devices=2 /dev/sda1 /dev/sdb1</i>
+livecd ~ # <i>mdadm --create /dev/md1 --level=1 --raid-devices=2 --metadata=0.90 /dev/sda1 /dev/sdb1</i>
 mdadm: array /dev/md1 started.
-livecd ~ # <i>mdadm --create /dev/md3 --level=1 --raid-devices=2 /dev/sda3 /dev/sdb3</i>
+livecd ~ # <i>mdadm --create /dev/md3 --level=1 --raid-devices=2 --metadata=0.90 /dev/sda3 /dev/sdb3</i>
 mdadm: array /dev/md3 started.
 livecd ~ # <i>mdadm --create /dev/md4 --level=0 --raid-devices=2 /dev/sda4 /dev/sdb4</i>
 mdadm: array /dev/md4 started.
@@ -219,6 +222,13 @@ md3 : active raid1 sdb3[1] sda3[0]
 md1 : active raid1 sdb1[1] sda1[0]
 88256 blocks [2/2] [UU]
 </pre>
+
+<p>
+Wenn Sie ein initramfs verwenden, dann ist dieses beim Booten für das
+Zusammensetzen der RAID-Arrays verantwortlich. Bei einem von genkernel
+erstelltem initramfs kann dies mit der Boot-Option <c>domdadm</c> veranlasst
+werden.
+</p>
 
 <p>
 Dann erstellen Sie die LVM2-Volumes in <path>/dev/md4</path>. Das folgende
@@ -440,6 +450,15 @@ livecd linux # <i>make modules_install</i>
 livecd linux # <i>cp arch/i386/boot/bzImage /boot/kernel</i>
 </pre>
 
+<p>
+Bauen Sie nun ein initramfs, mit dem System gebootet wird.
+</p>
+
+<pre caption="Bauen eines initramfs">
+# <i>emerge genkernel</i>
+# <i>genkernel --install --no-ramdisk-modules --lvm --mdadm initramfs</i>
+</pre>
+
 </body>
 </section>
 <section>
@@ -456,10 +475,9 @@ Sie neu:
 
 <pre caption="Neustart">
 livecd conf.d # <i>exit</i>
-livecd / # <i>umount /mnt/gentoo/usr/portage/distfiles /mnt/gentoo/usr/portage \
-/mnt/gentoo/usr /mnt/gentoo/var/tmp /mnt/gentoo/tmp /mnt/gentoo/var \
-/mnt/gentoo/opt /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo/home \
-/mnt/gentoo/boot /mnt/gentoo</i>
+livecd / # <i>umount -l /mnt/gentoo/usr{/portage/distfiles,/portage,}</i>
+livecd / # <i>umount -l /mnt/gentoo/dev{/pts,/shm,}</i>
+livecd / # <i>umount -l /mnt/gentoo{/usr,/var/tmp,/tmp,/var,/opt,/dev,/proc,/home,/boot,}</i>
 livecd / # <i>reboot</i>
 <comment>(Vergessen Sie nicht, die CD herauszunehmen)</comment>
 </pre>
