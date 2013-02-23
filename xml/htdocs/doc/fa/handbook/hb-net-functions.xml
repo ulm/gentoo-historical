@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fa/handbook/hb-net-functions.xml,v 1.1 2013/02/23 17:56:48 swift Exp $ -->
+
+<sections>
+
+<abstract>
+اگر اهل ماجرا‌جویی هستید، می‌توانید تابع‌های خودتان را به شبکه‌سازی بیافزایید.
+</abstract>
+
+<version>9</version>
+<date>2011-10-30</date>
+
+<section>
+<title>چنگک‌های تابع استاندارد</title>
+<body>
+
+<p>
+چهار تابع می‌توانند در <path>/etc/conf.d/net</path> تعریف گردند که آنها را هدایتگرهای احاطه کننده  <c>start</c>/<c>stop</c> فراخوانی می‌نمایند. تابع‌ها ابتدا با نام رابط کاربری‌شان فراخوانده می‌شوند بنابر این یک تابع می‌تواند چندین آداپتر را کنترل نماید. 
+</p>
+
+<p>
+مقدار برگشتی برای تابع‌های <c>preup()</c> و <c>predown()</c> باید ۰ (به معنی موفق) باشد تا نشان‌دهد پیکربندی یا خروج از پیکربندی می‌تواند ادامه بیابد. اگر <c>preup()</c> مقدار غیر صفری را بازگرداند، آنگاه رابط کاربر پیکربندی بی‌نتیجه می‌ماند. اگر <c>predown()</c> مقدار غیر صفری را بازگرداند، آنگاه رابط کاربری اجازه ادامه خارج سازی از پیکربندی را نخواهد داشت.
+</p>
+
+<p>
+اگر مقدارهای بازگشتی برای تابع‌های <c>postup()</c> و <c>postdown()</c> شکست بخورند، از آنجا که چیزی برای انجام دادن وجود ندارد، نادیده انگاشته می شوند.
+</p>
+
+<p>
+گزینه <c>${IFACE}</c> رابط کاربری را بگونه‌ایی تنظیم می‌نماید که بشکل بالا/پایین کار کند. گزینه <c>${IFVAR}</c> همان گزینه <c>${IFACE}</c> است که به نام متغییر مجاز برای bash تبدیل گردیده. 
+</p>
+
+<pre caption="pre/post up/down function examples in /etc/conf.d/net">
+preup() {
+  <comment># Test for link on the interface prior to bringing it up.  This
+  # only works on some network adapters and requires the ethtool
+  # package to be installed.</comment>
+  if ethtool ${IFACE} | grep -q 'Link detected: no'; then
+    ewarn "No link on ${IFACE}, aborting configuration"
+    return 1
+  fi
+
+  <comment># Remember to return 0 on success</comment>
+  return 0
+}
+
+predown() {
+  <comment># The default in the script is to test for NFS root and disallow
+  # downing interfaces in that case.  Note that if you specify a
+  # predown() function you will override that logic.  Here it is, in
+  # case you still want it...</comment>
+  if is_net_fs /; then
+    eerror "root filesystem is network mounted -- can't stop ${IFACE}"
+    return 1
+  fi
+
+  <comment># Remember to return 0 on success</comment>
+  return 0
+}
+
+postup() {
+  <comment># This function could be used, for example, to register with a
+  # dynamic DNS service.  Another possibility would be to
+  # send/receive mail once the interface is brought up.</comment>
+       return 0
+}
+
+postdown() {
+  <comment># This function is mostly here for completeness... I haven't
+  # thought of anything nifty to do with it yet ;-)</comment>
+  return 0
+}
+</pre>
+
+<note>
+برای اطلاعات بیشتر برای نوشتن تابع‌های خودتان، خواهشمندیم <path>/usr/share/doc/openrc-*/net.example.bz2</path> را بخوانید.
+</note>
+
+</body>
+</section>
+<section>
+<title>چنگک‌های تابع ابزارهای بیسیم</title>
+<body>
+
+<note>
+این با درخواست‌های WPA کار نخواهد نمود - اما متغییرهای <c>${ESSID}</c> و <c>${ESSIDVAR}</c> در تابع <c>postup()</c> وجود دارند.
+</note>
+
+<p>
+دو تابع می توانند در <path>/etc/conf.d/net</path> تعریف گردند که تابع‌های هم‌پیوند محیطی را فراخوانی می‌نمایند. تابع‌ها ابتدا با نام رابط کاربری فراخوانی می‌گردند بنابر این یک تابع می‌تواند چندین آداپتر را کنترل نماید.
+</p>
+
+<p>
+مقدار برگشتی برای تابع‌ <c>preassociate()</c> باید ۰ (به معنی موفق) باشد تا نشان‌دهد پیکربندی یا خروج از پیکربندی می‌تواند ادامه بیابد. اگر <c>preassociate()</c> مقدار غیر صفری را بازگرداند، آنگاه رابط کاربر پیکربندی بی‌نتیجه می‌ماند.
+</p>
+
+<p>
+اگر مقدارهای بازگشتی برای تابع‌ <c>postassociate()</c> شکست بخورد، از آنجا که چیزی برای انجام دادن وجود ندارد، نادیده انگاشته می شود.
+</p>
+
+<p>
+گزینه <c>${ESSID}</c> به ESSID دقیقی که AP شما به آن ارتباط پیدا کرده تنظیم می‌گردد. گزینه <c>${ESSIDVAR}</c> همان گزینه <c>${ESSID}</c> است که به نام متغییر مجاز برای bash تبدیل گردیده.
+</p>
+
+<pre caption="pre/post association functions in /etc/conf.d/net">
+preassociate() {
+  <comment># The below adds two configuration variables leap_user_ESSID
+  # and leap_pass_ESSID. When they are both configured for the ESSID
+  # being connected to then we run the CISCO LEAP script</comment>
+
+  local user pass
+  eval user=\"\$\{leap_user_${ESSIDVAR}\}\"
+  eval pass=\"\$\{leap_pass_${ESSIDVAR}\}\"
+
+  if [[ -n ${user} &amp;&amp; -n ${pass} ]]; then
+    if [[ ! -x /opt/cisco/bin/leapscript ]]; then
+      eend "For LEAP support, please emerge net-misc/cisco-aironet-client-utils"
+      return 1
+    fi
+    einfo "Waiting for LEAP Authentication on \"${ESSID//\\\\//}\""
+    if /opt/cisco/bin/leapscript ${user} ${pass} | grep -q 'Login incorrect'; then
+      ewarn "Login Failed for ${user}"
+      return 1
+    fi
+  fi
+
+  return 0
+}
+
+postassociate() {
+  <comment># This function is mostly here for completeness... I haven't
+  # thought of anything nifty to do with it yet ;-)</comment>
+
+  return 0
+}
+</pre>
+
+<note>
+گزینه‌های <c>${ESSID}</c> و <c>${ESSIDVAR}</c> در تابع‌های <c>predown()</c> و <c>postdown()</c> وجود ندارند.
+</note>
+
+<note>
+برای داده‌های بیشتر برای نوشتن تابع‌های خود، خواهشمندیم <path>/usr/share/doc/openrc-*/net.example.bz2</path> را بخوانید.
+</note>
+
+</body>
+</section>
+
+</sections>
