@@ -1,0 +1,284 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+
+<sections>
+
+<abstract>
+Au fil du temps, Portage évolue et mûrit. De nouvelles fonctionnalités  sont continuellement ajoutées dont beaucoup s'adressent à des utilisateurs plus avancés. Ce chapitre entre dans les détails de ces fonctionnalités spécifiques.
+</abstract>
+
+<version>5</version>
+<date>2012-10-06</date>
+
+<section>
+<title>Introduction</title>
+<body>
+
+<p>
+Pour la plupart des utilisateurs, l'information reçue jusqu'à présent est suffisante. Mais Portage est
+capable de bien plus. Bien que ces autres fonctionnalités s'adressent aux utilisateurs avancés ou
+à des problèmes très spécifiques, cela ne constitue cependant pas une excuse suffisante pour ne pas les documenter ici. 
+</p>
+
+<p>
+Bien entendu, de cette abondance de flexibilité jaillissent une multitude de cas potentiels.
+Il serait tout à fait impossible de les envisager tous dans ce document. Nous préférons plutôt nous 
+focaliser sur quelques cas génériques que vous pouvez adapter à votre besoin particulier. Si vous avez besoin de trucs et astuces encore plus spécifiques, vous pouvez peut-être les trouver sur le <uri
+link="https://wiki.gentoo.org">Wiki de Gentoo</uri>.
+</p>
+
+<p>
+Des informations sur la plupart, si ce n'est la totalité, de ces fonctionnalités additionnelles
+peuvent être facilement trouvées en se plongeant en profondeur dans les pages de manuel de Portage. 
+</p>
+
+<pre caption="lecture des pages de manuel de Portage ">
+$ <i>man portage</i>
+$ <i>man make.conf</i>
+</pre>
+
+<p>
+Pour terminer cette courte introduction, sachez que, sagissant de fonctionnalités avancées,
+si celles-ci sont mal utilisées, le débogage et la mise au point peuvent être très difficiles.
+Assurez-vous de mentionner que vous uilisez ces fonctionnalités si vous rapportez ce que vous
+croyez être un bogue.
+</p>
+
+</body>
+</section>
+
+<section>
+<title>Variables d'environnement par paquet</title>
+<subsection>
+<title>Utilisation de  /etc/portage/env</title>
+<body>
+
+<p>
+Par défaut, la compilation des paquets utilise les variables d'environnement définies dans
+<path>/etc/portage/make.conf</path>, comme <c>CFLAGS</c>, <c>MAKEOPTS</c>
+et autres. Dans certains cas, vous souhaitez peut-être fournir d'autres variables pour certains paquets particuliers. Pour le faire, Portage permet d'utiliser 
+<path>/etc/portage/env</path> et <path>/etc/portage/package.env</path>.
+</p>
+
+<p>
+Le fichier <path>/etc/portage/package.env</path> contient la liste des paquets 
+pour lesquels vous voulez utiliser des variables spécifiques ainsi que des identifiants 
+qui renseignent Portage sur les changements désirés. Portage recherche la variable correspondant au nom de l'identifiant, que vous avez choisi vous-même, dans  le fichier<path>/etc/portage/env/&lt;identifier&gt;</path>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Exemple: utilisation du débogage pour certains paquets</title>
+<body>
+
+<p>
+À titre d'exemple, nous validons le débogage pour le paquet <path>media-video/mplayer</path>.
+</p>
+
+<p>
+En premier lieu, nous définissons les variables de débogage dans un fichier appelé 
+<path>/etc/portage/env/debug-cflags</path>. Le nom est choisi arbitrairement, mais reflète la 
+raison du changement de variables pour faciliter la compréhension si nous y revenons beaucoup plus
+tard.
+</p>
+
+<pre caption="contenu de /etc/portage/env/debug-cflags">
+CFLAGS="-O2 -ggdb -pipe"
+FEATURES="${FEATURES} nostrip"
+</pre>
+
+<p>
+Ensuite, nous balisons le paquet <path>media-video/mplayer</path> pour qu'il utilise ce contenu&nbsp;:
+</p>
+
+<pre caption="contenu de /etc/portage/package.env">
+media-video/mplayer debug-cflags
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Intervenir dans le procesus de compilation</title>
+<subsection>
+<title>Utilisation de  /etc/portage/bashrc et des fichiers associés</title>
+<body>
+
+<p>
+Quand Portage travaille à partir d'ebuilds, il utilise un environnement bash dans lequel il appelle les différentes fonctions de la compilation (telles que  src_prepare, src_configure, pkg_postinst,
+etc.). Mais Portage vous permet de définir un environnement bash vous-même. 
+</p>
+
+<p>
+L'avantage d'utiliser votre propre environnement bash est que vous pouvez intervenir dans 
+le processus de compilation/installation (emerge) à chacune de ses étapes. Ceci peut être fait 
+pour chacune des compilations/installations (via <path>/etc/portage/bashrc</path>) ou en utilisant des environnements par paquet (via <path>/etc/portage/env</path> comme nous l'avons vu précédemment).
+</p>
+
+<p>
+Pour intervenir dans le processus, l'environnement bash peut se mettre à l'écoute des variables 
+<c>EBUILD_PHASE</c>, <c>CATEGORY</c> et également  des variables qui sont toujours disponibles pendant 
+le développement d'ebuilds (comme <c>P</c>, <c>PF</c>, ...). Selon la valeur de ces variables, il peut alors exécuter les étapes additionnelles que vous avez prévues. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Exemple: mise à jour de fichiers de base de données</title>
+<body>
+
+<p>
+Dans cet exemple, nous utilisons <path>/etc/portage/bashrc</path> pour appeler des applications  de 
+base de données pour nous assurer que leurs bases de données sont à jour par rapport au système.
+Les applications utilisées dans l'exemple sont  <c>aide</c> (un outil de détection d'intrusion) et <c>updatedb</c> (à utiliser avec <c>locate</c>), mais ce ne sont que des exemples. Ne prenez pas ceci pour un guide pour AIDE ;-)
+</p>
+
+<p>
+Afin d'utiliser <path>/etc/portage/bashrc</path> dans ce cas, nous devons "intervenir" dans les fonctions
+<c>postrm</c> (après retrait de fichiers) et <c>postinst</c> (après installation de fichiers) par ce que c'est le moment auquel les fichiers du système de fichiers ont été modifiés.
+</p>
+
+<pre caption="exemple de /etc/portage/bashrc">
+if [ "${EBUILD_PHASE}" == "postinst"] || [ "${EBUILD_PHASE}" == "postrm" ];
+then
+  echo ":: appel de  aide --update pour mettre à jour sa base de données";
+  aide --update;
+  echo "::  appel de  updatedb  pour mettre à jour sa base de données";
+  updatedb;
+fi
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Exécution de tâches après --sync</title>
+<subsection>
+<title>L'emplacement  /etc/portage/postsync.d </title>
+<body>
+
+<p>
+Jusqu'à maintenant,  nous avons parlé d'intervenir dans le processus des  ebuilds. 
+Néanmoins, Portage dispose l'une autre fonction importante&nbsp;: la mise à jour de l'arbre de Portage. 
+Afin d'exécuter des tâches après la mise à jour de l'arbre, placez un script dans
+<path>/etc/portage/postsync.d</path> et assurez-vous qu'il est exécutable.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Exemple: exécution de eix-update</title>
+<body>
+
+<p>
+Si vous n'utilisez pas  <c>eix-sync</c> pour mettre l'arbre à jour, vous pouvez toujours faire 
+en sorte que sa base de données soit mise à jour après l'exécution de <c>emerge --sync</c> (ou <c>emerge-webrsync</c>) en plaçant un lien symbolique vers <path>/usr/bin/eix</path> appelé <path>eix-update</path>
+dans le dossier <path>/etc/portage/postsync.d</path>.
+</p>
+
+<pre caption="exécution de  eix-update après une opèration de  synchronisation ">
+# <i>ln -s /usr/bin/eix /etc/portage/postsync.d/eix-update</i>
+</pre>
+
+<note>
+si vous utilisez un autre nom, vous devez à la place, placer un script qui appelle 
+<c>/usr/bin/eix-update</c>. Le code de <c>eix</c> regarde comment il a été appelé pour déterminer la fonction qu'il doit appeler. Si vous mettez un lien symbolique vers  <c>eix</c> qui ne s'appelle pas <c>eix-update</c>, 
+ça ne marchera pas..
+</note>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Redéfinition de paramètres de profil</title>
+<subsection>
+<title>L'emplacement /etc/portage/profile</title>
+<body>
+
+<p>
+Par défaut, Gentoo utilise les paramètres contenus dans le profil vers lequel pointe 
+<path>/etc/portage/make.profile</path> (un lien symbolique vers le bon dossier des profils). 
+Ces profils définissent aussi bien les paramètres spécifiques que ceux hérités d'autres profils (via leur fichier <path>parent</path>).
+</p>
+
+<p>
+En utilisant <path>/etc/portage/profile</path>, vous pouvez écraser des paramètres de profil comme  <path>packages</path> (quels sont les paquets qui sont considérés comme appartenant au système) , des options forcées de USE etc.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Exemple: ajout de  nfs-utils au système</title>
+<body>
+
+<p>
+Si vous utilisez des systèmes de fichiers basés sur NFS pour des systèmes de fichiers assez critiques,
+vous pouvez désirer avoir  <path>net-fs/nfs-utils</path> "protected" (protégé) en tant que paquet indispensable au système, ce qui fera que Portage vous alertera fortement en cas de tentative de suppression. 
+</p>
+
+<p>
+Pour le faire, nous ajoutons le paquet à
+<path>/etc/portage/profile/packages</path>, prefixé par une <c>*</c>:
+</p>
+
+<pre caption="contenu de /etc/portage/profile/packages">
+*net-fs/nfs-utils
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section>
+<title>Application de correctifs non standards </title>
+<subsection>
+<title>Utilisation de epatch_user</title>
+<body>
+
+<p>
+Pour gérer plusieur ebuilds de la même manière, les développeurs d'ebuids utilisent 
+<e>eclasses</e> (sortes de bibliothèques de  shell) qui définissent des fonctions d'usage courant.
+L'une de ces <e>eclasses</e> est  <path>eutils.eclass</path> qui contient une fonction intéressante appelée  <c>epatch_user</c>.
+</p>
+
+<p>
+La fonction <c>epatch_user</c> applique les correctifs de code source qui sont placés dans le premier 
+répertoire trouvé sous 
+<path>/etc/portage/patches/&lt;category&gt;/&lt;package&gt;[-&lt;version&gt;[-&lt;revision&gt;]]</path>. 
+Malheureusement, tous les ebuilds n'appellent pas automatiquement cette fonction, et donc, vous contenter
+de placer votre correctif à cet emplacement ne suffit pas toujours. 
+</p>
+
+<p>
+Heureusement, avec l'information dispensée plus haut, vous pouvez appeler cette fonction en intervenant dans le processus, par exemple, dans la phase <c>prepare</c> . La fonction peut être appelée autant de fois que vous le désirez - elle n'appliquera les correctifs qu'une seule fois. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Exemple: application de correctifs à  Firefox</title>
+<body>
+
+<p>
+Le paquet  <path>www-client/firefox</path> est l'un de ceux qui appellent déjà 
+<c>epatch_user</c> depuis l'ebuild, vous n'avez donc pas besoin de redéfinir quoi que ce soit.
+</p>
+
+<p>
+Si vous voulez appliquer un correctif à  firefox (par ce qu'un développeur vous a par exemple fourni un correctif et demandé de vérifier qu'il corrige un bogue que vous avez rapporté), placez le correctif dans 
+<path>/etc/portage/patches/www-client/firefox</path> (il est certainement mieux d'utiliser le nom complet , y compris la version, de manière à ce que le correctif n'interfère pas avec des versions ultérieures de firefox). 
+</p>
+
+</body>
+</subsection>
+</section>
+
+</sections>

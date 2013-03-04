@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-working-rcscripts.xml,v 1.16 2007/10/28 21:45:04 titefleur Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-working-rcscripts.xml,v 1.17 2013/03/04 19:47:19 swift Exp $ -->
 
 <sections>
 
@@ -14,8 +14,9 @@ autres, permet la gestion des dépendances et le support des services virtuels.
 Ce chapitre explique ces aspects et comment utiliser de tels scripts.
 </abstract>
 
-<version>1.25</version>
-<date>2007-10-11</date>
+<version>7</version>
+<date>2012-10-31</date>
+
 
 <section>
 <title>Les niveaux d'exécution</title>
@@ -32,10 +33,10 @@ statique.
 </p>
 
 <p>
-D'abord, votre chargeur de démarrage charge l'image du noyau que vous avez
-définie dans son fichier de configuration et ensuite, il exécute ce noyau. Ce
-dernier s'initialise, démarre les tâches spécifiques au noyau et lance le
-processus <c>init</c>.
+D'abord, votre chargeur de démarrage charge en ménoire l'image du noyau que vous avez
+définie dans son fichier de configuration. Ensuite, il demande au processeur d'exécuter ce noyau. Ce
+dernier initialise alors ses propres structures et tâches puis  lance le
+processus d'initialisation (<c>init</c>).
 </p>
 
 <p>
@@ -61,7 +62,7 @@ terminaux avec <c>login</c>.
 
 <p>
 En fait, <c>init</c> n'exécute pas les scripts du répertoire
-<path>/etc/init.d</path> n'importe comment. De plus, il n'exécute pas non plus
+<path>/etc/init.d</path> dans n'importe quel ordre. De plus, il n'exécute pas non plus
 tous les scripts, mais seulement ceux qui doivent l'être. Les scripts à
 exécuter sont définis dans <path>/etc/runlevels</path>.
 </p>
@@ -71,12 +72,12 @@ Le processus <c>init</c> exécute d'abord les scripts de
 <path>/etc/init.d</path> vers lesquels un lien symbolique existe dans
 <path>/etc/runlevels/boot</path>. Les scripts sont généralement exécutés par
 ordre alphabétique, mais certains contiennent des dépendances qui indiquent
-quels scripts doivent être exécutés en premier.
+que d'autres scripts doivent être exécutés avant eux.
 </p>
 
 <p>
 Quand tous les scripts liés dans <path>/etc/runlevels/boot</path> ont été
-exécutés, <c>init</c> poursuit avec ceux liés dans
+exécutés, <c>init</c> poursuit avec ceux vers lesquels un lien symbolique existe dans
 <path>/etc/runlevels/default</path>. Ici aussi, les scripts sont généralement
 exécutés par ordre alphabétique, sauf quand ils contiennent des informations
 sur des dépendances qui spécifient une séquence d'exécution particulière.
@@ -130,8 +131,7 @@ se trouve dans <path>/etc/runlevels</path>.
 
 <p>
 Ensuite, <c>init</c> lit son fichier de configuration pour savoir quel
-<e>runlevel</e> il doit exécuter (N.D.T.&nbsp;: un «&nbsp;runlevel&nbsp;», ou
-niveau d'exécution, correspond à l'état dans lequel il faut amener la machine).
+<e>runlevel</e> (voir cette notion plus-bas) il doit exécuter .
 La ligne suivante définit le niveau d'exécution&nbsp;:
 </p>
 
@@ -140,7 +140,7 @@ id:3:initdefault:
 </pre>
 
 <p>
-Dans ce cas (la majorité des utilisateurs de Gentoo sont dans ce cas), le
+Dans ce cas (qui est celui de la majorité des utilisateurs de Gentoo), le
 niveau d'exécution est le numéro 3. Avec ce numéro, <c>init</c> trouve ce qu'il
 doit exécuter pour lancer le niveau d'exécution&nbsp;3&nbsp;:
 </p>
@@ -185,14 +185,14 @@ c6:12345:respawn:/sbin/agetty 38400 tty6 linux
 <body>
 
 <p>
-Vous avez constaté que <c>init</c> numérote les niveaux d'exécution qu'il doit
+Vous avez constaté qu'<c>init</c> numérote les niveaux d'exécution qu'il doit
 activer. Un niveau d'exécution définit un état dans lequel votre système se
 trouve et contient les scripts nécessaires pour entrer dans ou quitter cet
 état.
 </p>
 
 <p>
-Dans Gentoo, sept niveaux d'exécution sont définis&nbsp;:trois internes et
+Dans Gentoo, sept niveaux d'exécution sont définis&nbsp;: trois internes et
 quatre définis par l'utilisateur. Les niveaux d'exécution internes sont
 <e>sysinit</e>, <e>shutdown</e> et <e>reboot</e> et sont utilisés
 respectivement pour initialiser, éteindre et redémarrer le système.
@@ -234,8 +234,8 @@ nécessaires éventuels), utilisez <c>start</c>, <c>stop</c> et <c>restart</c>.
 </pre>
 
 <note>
-Seuls les services qui ont <e>besoin</e> du service spécifié sont arrêtés ou
-redémarrés. Les services qui l'<e>utilisent</e> ne sont pas affectés.
+seuls les services qui ont <e>besoin</e> du service spécifié sont arrêtés ou
+redémarrés. Les autres services dépendants (ceux qui l'<e>utilisent</e>  mais n'en ont pas un besoin impérieux) ne sont pas affectés.
 </note>
 
 <p>
@@ -279,7 +279,7 @@ qui peuvent être utilisés sans être indispensables qui sont affichés.
 
 <p>
 De la même façon, vous pouvez afficher la liste des services qui ont besoin
-(<c>needsme</c>) ou qui utilisent (<c>usesme</c>) un service particulier&nbsp;:
+(<c>needsme</c>), ou qui peuvent simplement utiliser (<c>usesme</c>), un service particulier&nbsp;:
 </p>
 
 <pre caption="Afficher la liste des services qui ont besoin de Postfix">
@@ -369,14 +369,14 @@ d'exécution.
 
 <p>
 Les scripts d'initialisation peuvent être complexes. Il vaut donc mieux éviter
-que les utilisateurs ne doivent les modifier. Cela évite bien des problèmes.
+que les utilisateurs n'aient à les modifier directement; cela évite bien des problèmes.
 Cependant, les services ont parfois besoin d'être configurés ou de recevoir
 certaines options.
 </p>
 
 <p>
-Une autre raison pour séparer les scripts de leur configuration est que cela
-vous permet de mettre à jour les scripts sans que leur configuration ne soit
+Il importe donc de bien séparer les scripts de leur configuration car cela
+permet de mettre à jour les scripts sans que leur configuration ne soit
 perdue.
 </p>
 
@@ -401,7 +401,7 @@ APACHE2_OPTS="-D PHP5"
 
 <p>
 Un tel fichier de configuration ne contient <e>que</e> des définitions de
-variables (tout comme <path>/etc/make.conf</path>), ce qui permet de configurer
+variables (tout comme <path>/etc/portage/make.conf</path>), ce qui permet de configurer
 facilement un service. Cela permet aussi de fournir des explications sur ces
 options sous forme de commentaires.
 </p>
@@ -453,9 +453,6 @@ stop() {
   <comment>(Commandes à exécuter pour arrêter le service)</comment>
 }
 
-restart() {
-  <comment>(Commandes à exécuter pour redémarrer le service)</comment>
-}
 </pre>
 
 <p>
@@ -470,24 +467,52 @@ facultatives.
 <body>
 
 <p>
-Il existe deux types de dépendances&nbsp;: <c>use</c> et <c>need</c>. Comme
-mentionné précédemment, la dépendance <c>need</c> est plus stricte que
-<c>use</c>. Vous devez faire suivre le type de dépendance par le nom du service
-dont votre service dépend, ou par une dépendance <e>virtuelle</e>.
+
+Il y a deux paramètres de dépendances que vous pouvez définir, et qui influencent l'ordre d'exécution des scripts d'initialisation&nbsp;: <c>use</c> and <c>need</c>. 
+
+À coté de ces paramètres, il y a aussi deux autres paramètres pour influencer cet ordre d'exécution&nbsp;: 
+ <c>before</c> et <c>after</c>. Ces derniers ne créent pas de dépendance en eux-mêmes; il ne font pas échouer le script initial si le script mentionné n'est pas programmé pour démarrer ( où ne parvient pas à démarrer).
+</p>
+
+<ul>
+  <li>
+    Le paramètre <c>use</c> informe le système que le script utilise (<e>use-s</e>)
+    la fonctionnalité offerte par le script mentionné, mais n'en dépend pas directement. Un bon exemple serait 	   <c>use logger</c> or <c>use dns</c>. Si ces deux services sont disponibles, ils seront utilisés. Néanmoins, si aucun logger ou service DNS n'est disponible, le service continuera à fonctionner sans eux. Si ces services existent, ils seront démarrés avant le script qui les utilise ( <c>use-s</c>).
+  </li>
+  <li>
+    Le paramètre <c>need</c> implique une dépendance absolue. Il indique que le script
+<c>a besoin d'</c> (<c>need-s</c>) un autre script et ne démarrera pas avant que cet autre 
+script ne soit exécuté avec succès. Ainsi, si cet autre script  est redémarré, il en sera de même
+pour le script requérant.
+  </li>
+  <li>
+    Un script qui utilise le paramètre  <c>before</c> (avant) , est lancé <e>avant</e> le script
+auquel ce <c>before</c> fait référence, <e>si</e> ce dernier fait partie du niveau d'exécution. Ainsi, par exemple, un script <path>xdm</path> qui fait usage de <c>before alsasound</c> démarre avant le script <path>alsasound</path> , mais seulement si <path>alsasound</path> fait également partie du même niveau d'éxécution. Si ce n'est pas le cas, ce paramètre n'a aucune influence et  <path>xdm</path> est démarré quand le système d'initialisation le juge opportun.
+  </li>
+  <li>
+    De la même manière, un script qui utilise le paramètre <c>after</c> (après), est lancé <e>après</e> le script auquel ce   <c>after</c>  fait référence, <e>si</e> ce dernier fait partie du niveau d'exécution. Dans le cas contraire, ce paramètre n'a aucune influence et  ce script est démarré quand le système d'initialisation le juge opportun.
+  </li>
+</ul>
+
+<p>
+D'après ce qui précède, seul le paramètre <c>need</c> implique une <e>véritable</e> dépendance, en ce sens
+qu'il peut remettre en question, où pas, le démarrage du script. Les autres paramètres ne font qu'influer sur
+l'ordre de démarrage des scripts. 
 </p>
 
 <p>
-Une dépendance <e>virtuelle</e> est une dépendance qui peut être satisfaite par
-plusieurs services différents. Par exemple, votre service pourrait dépendre du
-système de journalisation qui peut être fourni par plusieurs services
-différents (metalogd, syslog-ng, sysklogd...) Étant donné que votre service ne
-peut pas dépendre de tous ces services (on ne peut installer qu'un seul système
-de journalisation), nous avons défini une seule dépendance virtuelle que chacun
-de ces services satisfait.
+Par ailleurs, si vous regardez attentivement beaucoup de scripts d'initialisation de Gentoo, 
+vous verrez que certains d'entre-eux indiquent des dépendances sur des choses qui ne sont pas des
+scripts d'initialisation. Ces choses sont appelées <e>services virtuels</e> (<e>virtuals</e>).
 </p>
 
 <p>
-Jetons un œil aux dépendances du service postfix.
+Une dépendance d'un service virtuel (<e>virtual</e>) est une dépendance qui se rapporte, non pas à un sevice unique, mais à un service disponible parmi un groupe de services plus ou moins équvalents et interchangeables. Votre script d'initialisation peut très bien dépendre d'un système de journalisation, mais il existe plusieurs tels systèmes disponibles (metalogd, syslog-ng,
+sysklogd, ...).  Comme vous ne pouvez exprimer le besoin (<c>need</c> ) de chacun d'entre-eux (aucun système raisonnable ne possède tous ces systèmes de journalisation installés et opérationnels), nous faisons en sorte que  ces services fournissent, <c>solidairement</c>, un service virtuel qui pourra être utilisé comme dépendance.
+</p>
+
+<p>
+Jetons un coup d'œil aux dépendances du service postfix.
 </p>
 
 <pre caption="Dépendances de Postfix">
@@ -528,16 +553,11 @@ Comme vous pouvez le voir, postfix&nbsp;:
 <body>
 
 <p>
-Dans certains cas, vous voudrez peut-être démarrer un service avant ou après un
-autre, pour autant que cet autre service soit disponible. Notez qu'il ne s'agit
-plus d'une dépendance, mais simplement d'une demande de lancement de services
-dans un ordre défini au sein d'un même niveau d'exécution. Pour définir une
-séquence d'exécution, utilisez les mots-clefs <c>before</c> ou <c>after</c>.
+Comme expliqué précédemment, vous pouvez dire au système d'initialisation dans quel ordre démarrer
+ (ou arrêter) les scripts. Cet ordonnancement est assuré par l'utilisation des paramètres de dépendance 
+<c>use </c> et <c>need</c>, mais aussi par celle des paramètres d'ordonnancement  <c>before</c> et <c>after</c>. Comme nous en avons déjà parlé, considérons maintenant un exemple de script d'initialisation, ici pour le service Portmap.
 </p>
 
-<p>
-Voyez, par exemple, le service portmap&nbsp;:
-</p>
 
 <pre caption="La fonction depend() du service Portmap">
 depend() {
@@ -582,15 +602,20 @@ depend() {
 En plus de la fonction <c>depend()</c>, vous devez définir la fonction
 <c>start()</c>  qui doit contenir les commandes nécessaires pour activer le
 service. Il est conseillé d'utiliser les fonctions <c>ebegin</c> et <c>eend</c>
-pour afficher des messages à l'écran et ainsi informer l'utilisateur que le
-service démarre.
+pour afficher des messages à l'écran et ainsi informer l'utilisateur de ce qu'il advient de 
+la tentative de démarrage d'un service.
 </p>
 
 <pre caption="Exemple de fonction start()">
 start() {
+  if [ "${RC_CMD}" = "restart" ];
+  then
+    <comment># Faire quelque chose dans le cas où un redémarrege nécessite plus qu'un simple arrêt, redémarrage. t</comment>
+  fi
+
   ebegin "Starting my_service"
-  start-stop-daemon --start --exec /chemin/vers/mon_service \
-  --pidfile /chemin/vers//mon_fichier_pid
+  start-stop-daemon --start --exec /path/to/my_service \
+    --pidfile /path/to/my_pidfile
   eend $?
 }
 </pre>
@@ -606,10 +631,13 @@ service soit extrêmement verbeux. En effet, utiliser <c>--quiet</c> peut
 cacher des informations de débogage utiles si le démarrage du service
 échoue.
 </p>
-
+<p>
+Un autre réglage notable utilisé dans l'exemple précédent est de vérifier le contenu de la variable  <c>RC_CMD</c>. Contrairement aux précédents scripts d'initialisation, le nouveau système 
+<c>openrc</c> ne prend pas en charge les fonctions  de redémarrage spécifique à un script. Au lieu de cela, le script doit vérifier le contenu de la variable <c>RC_CMD</c> pour savoir si une fonction  (qu'elle soit <c>start()</c> ou <c>stop()</c>) est appelée à l'intérieur d'un restart ou pas.
+</p>
 
 <note>
-Assurez-vous que <c>--exec</c> appelle effectivement un service et pas
+assurez-vous que <c>--exec</c> appelle effectivement un service et pas
 simplement un script shell qui lance des services (c'est ce que le script
 init est censé faire).
 </note>
@@ -623,16 +651,15 @@ scripts d'initialisation, localisés dans le répertoire
 
 
 <p>
-Vous pouvez aussi définir les fonctions facultatives <c>stop()</c> et
-<c>restart()</c> pour respectivement arrêter et relancer un service, mais
+Vous pouvez aussi définir la fonction facultative <c>stop()</c> pour arrêter 
+un service, mais
 Gentoo est capable de s'en passer si vous avez utilisé la commande
 <c>start-stop-daemon</c>.
 </p>
 
 
 <p>
-Bien que vous ne <e>devriez</e> pas créer de fonction <c>stop()</c>, en
-voici quand même un exemple&nbsp;:
+En voici quand même un exemple&nbsp;:
 </p>
 
 <pre caption="Exemple de fonction stop()">
@@ -663,7 +690,7 @@ start() {
 </pre>
 
 <p>
-Pour de plus amples informations, un excellent manuel est disponible pour la
+Pour de plus amples informations, une excellente page de manuel (man page)  est disponible pour la
 commande <c>start-stop-daemon</c>&nbsp;:
 </p>
 
@@ -672,24 +699,23 @@ $ <i>man start-stop-daemon</i>
 </pre>
 
 <p>
-Les scripts d'initialisation utilisent <c>bash</c>. Vous pouvez utiliser toutes
-les fonctionnalités de bash dans vos scripts.
+La syntaxe des scripts d'initialisation est basée sur le Shell POSIX. Vous pouvez donc utiliser toutes les fonctionnalités de  <c>bash</c> (ou compatibles sh) dans vos scripts.
 </p>
 
 </body>
 </subsection>
 <subsection>
-<title>Ajouter une option non prévue</title>
+<title>Ajouter une option personnalisée</title>
 <body>
 
 <p>
 Si vous voulez utiliser une option non prévue par nos scripts, vous devez
-l'ajouter à la variable <c>opts</c> et créer une fonction qui a le même nom. Par
+l'ajouter à la variable <c>extra_commands</c> et créer une fonction qui a le même nom que l'option. Par
 exemple, pour ajouter une option <c>restartdelay</c>&nbsp;:
 </p>
 
 <pre caption="Ajouter une option restartdelay">
-opts="${opts} restartdelay"
+extra_commands="restartdelay"
 
 restartdelay() {
   stop
@@ -698,6 +724,9 @@ restartdelay() {
 }
 </pre>
 
+<impo>
+la fonction  <c>restart()</c> ne peut pas être ré-écrite (overriden) dans openrc!
+</impo>
 </body>
 </subsection>
 <subsection>
@@ -718,7 +747,7 @@ initialisées dans cet ordre&nbsp;:
 </ul>
 
 <p>
-De plus, si votre script fournit un service virtuel (comme <c>net</c>),
+De plus, si votre script contribue à un service virtuel (comme <c>net</c>),
 le fichier de configuration correspondant (comme <path>/etc/conf.d/net</path>)
 sera également lu.
 </p>
@@ -735,7 +764,7 @@ sera également lu.
 <p>
 Les utilisateurs d'ordinateurs portables connaissent bien le problème&nbsp;:
 vous devez démarrer <c>net.eth0</c> à la maison, mais pas lorsque vous êtes en
-vadrouille puis que vous n'êtes alors plus connecté à votre réseau. Vous pouvez
+vadrouille puisque vous n'êtes alors plus connecté à votre réseau. Vous pouvez
 adapter le comportement de Gentoo.
 </p>
 
@@ -784,24 +813,25 @@ exemple, pour copier le niveau «&nbsp;default&nbsp;» sauf le script
 <p>
 Même si <c>net.eth0</c> a été retiré du niveau d'exécution offline, 
 <c>udev</c> va quand même essayer de démarrer les interfaces qu'il détecte
-et lancer les services associés. C'est pourquoi vous devez ajouter les 
-services réseaux que vous ne souhaitez pas voir démarrés au fichier
-<path>/etc/conf.d/rc</path> (cela est vrai pour tout autre service pouvant
-être lancé par udev)&nbsp;: 
+et lancer les services associés, une fonctionnalité appelée <e>démarrage à chaud</e>.
+Par défaut, Gentoo n'active pas le démarrage à chaud.
+</p>
+<p>
+Si vous voulez activer le démarrage à chaud, mais uniquement pour un choix de scripts,
+utilisez la variable <c>rc_hotplug</c> dans <path>/etc/rc.conf</path>:
 </p>
 
 <pre caption="Désactiver un service démarré par une interface dans
                /etc/conf.d/rc">
-RC_COLDPLUG="yes"
-<comment>(Ensuite, spécifiez les services que vous ne souhaitez pas voir
-          démarrés automatiquement)</comment>
-RC_PLUG_SERVICES="!net.eth0"
+<comment># Autoriser net.wlan comme les autres services, sauf ceux dont le nom commence par net. (y compris le point). 
+# démarrage à chaud autorisé</comment>
+rc_hotplug="net.wlan !net.*"
 </pre>
 
 <note>
-Vous trouverez plus d'informations sur les services démarrés par les 
+vous trouverez plus d'informations sur les services démarrés par les 
 interfaces en consultant les commentaires du fichier 
-<path>/etc/conf.d/rc</path>.
+ <path>/etc/rc.conf</path>.
 </note>
 
 <p>
@@ -829,8 +859,7 @@ du niveau <c>default</c>.
 <body>
 
 <p>
-Vous pouvez aussi remplacer le niveau d'exécution «&nbsp;boot&nbsp;» avec
-l'option <c>bootlevel</c> exactement de la même façon qu'avec <c>softlevel</c>.
+L'utilisation de l'option <c>bootlevel</c> est tout à fait analogue à celle de  <c>softlevel</c>. La seule différence ici, c'est que vous définissez un deuxième niveau d'exécution "boot" au lieu de définir un deuxième niveau d'exécution "défaut".
 </p>
 
 </body>

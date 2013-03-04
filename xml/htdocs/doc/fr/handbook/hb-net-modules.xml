@@ -7,7 +7,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-net-modules.xml,v 1.13 2009/02/23 18:25:35 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-net-modules.xml,v 1.14 2013/03/04 19:47:19 swift Exp $ -->
 
 <sections>
 
@@ -17,8 +17,8 @@ comment choisir votre client DHCP, mettre en place l'aggrégation de liens, les
 ponts réseaux, les VLAN et autres.
 </abstract>
 
-<version>8.4</version>
-<date>2009-02-12</date>
+<version>10</version>
+<date>2011-10-23</date>
 
 <section>
 <title>Les modules réseaux</title>
@@ -41,23 +41,23 @@ en préférez un en particulier.
 </p>
 
 <note>
-Tous les réglages mentionnés ci-dessous se trouvent dans
+tous les réglages mentionnés ci-dessous se trouvent dans
 <path>etc/conf.d/net</path> sauf mention contraire.
 </note>
 
 <pre caption="Choix des modules">
-<comment># On préfère iproute2 plutôt que ifconfig.</comment>
-modules=( "iproute2" )
+<comment># On préfère iconfig plutôt qu'iproute2 .</comment>
+modules="ifconfig"
 
 <comment># Vous pouvez également spécifier un module pour une interface particulière.</comment>
 <comment># Ici, on préfère utiliser pump plutôt que dhcpcd pour eth0.</comment>
-modules_eth0=( "pump" )
+modules_eth0="pump"
 
 <comment># Vous pouvez enfin spécifier quels modules *ne pas* charger.</comment>
 <comment># Par exemple, vous pouvez utiliser WPA Supplicant ou
 # linux-wlan-ng pour contrôler la configuration du sans fil mais vous voulez
 # toujours configurer le réseau en fonction de l'ESSID.</comment>
-modules=( "!iwconfig" )
+modules="!iwconfig"
 </pre>
 
 </body>
@@ -75,15 +75,16 @@ de ces deux outils pour pouvoir procéder à la configuration du réseau.
 
 <p>
 <c>ifconfig</c> est l'outil par défaut de Gentoo et est inclu dans le profil
-«&nbsp;system&nbsp;». <c>proute2</c> est un paquet bien plus puissant et plus
-flexible, mais n'est pas inclu par défaut.
+«&nbsp;system&nbsp;». <c>iproute2</c> est un paquet bien plus puissant et plus
+flexible, mais n'est pas inclus par défaut.
 </p>
 
-<pre caption="Installer iproute2">
+<pre caption="installer iproute2">
 # <i>emerge sys-apps/iproute2</i>
 
-<comment># Pour préférer iproute2 à ifconfig si les deux sont installés :</comment>
-modules=( "iproute2" )
+<comment># Pour préférer ifconfig à iproute2 si les deux sont installés 
+# comme openrc prefère utiliser iproute2 :</comment>
+modules="ifconfig"
 </pre>
 
 <p>
@@ -93,13 +94,13 @@ les deux modules. Par exemple, les deux extraits de code ci-dessous
 fonctionnent quel que soit le module utilisé.
 </p>
 
-<pre caption="Exemple avec ifconfig ou iproute2">
-config_eth0=( "192.168.0.2/24" )
-config_eth0=( "192.168.0.2 netmask 255.255.255.0" )
+<pre caption="exemples avec ifconfig ou iproute2">
+config_eth0="192.168.0.2/24"
+config_eth0="192.168.0.2 netmask 255.255.255.0"
 
 <comment># On peut aussi spécifier l'adresse de diffusion (broadcast) :</comment>
-config_eth0=( "192.168.0.2/24 brd 192.168.0.255" )
-config_eth0=( "192.168.0.2 netmask 255.255.255.0 broadcast 192.168.0.255" )
+config_eth0="192.168.0.2/24 brd 192.168.0.255"
+config_eth0="192.168.0.2 netmask 255.255.255.0 broadcast 192.168.0.255"
 </pre>
 
 </body>
@@ -197,11 +198,11 @@ module utilisé. Ainsi, voici la liste des commandes utilisables avec la variabl
   <li><c>nonis</c> : n'écrase pas le fichier <path>/etc/yp.conf</path>.</li>
 </ul>
 
-<pre caption="Exemple de configuration DHCP dans /etc/conf.d/net">
+<pre caption="exemple de configuration DHCP dans /etc/conf.d/net">
 <comment># Nécessaire seulement si plusieurs modules DHCP sont installés.</comment>
-modules=( "dhcpcd" )
+modules="dhcpcd"
 
-config_eth0=( "dhcp" )
+config_eth0="dhcp"
 dhcpcd_eth0="-t 10" <comment># On attend une réponse en 10 secondes maxi.</comment>
 dhcp_eth0="release nodns nontp nonis" <comment># On ne fait que récupérer une adresse.</comment>
 </pre>
@@ -219,64 +220,59 @@ DHCP par défaut donc vous n'avez plus besoin de le spécifier.
 <body>
 
 <p>
-Installons tout d'abord le logiciel pour gérer l'ADSL.
+Installez tout d'abord le logiciel pour gérer l'ADSL.
 </p>
 
-<pre caption="Installer le paquet ppp">
+<pre caption="installer le paquet ppp">
 # <i>emerge net-dialup/ppp</i>
 </pre>
 
-<note>
-Vous devez utiliser >=<c>baselayout-1.12.x</c> pour avoir le support de PPPoA.
-</note>
 
 <p>
 Ensuite, créez le script net PPP et le script net de l'interface Ethernet que
 doit utiliser PPP&nbsp;:
 </p>
 
-<pre caption="Créer les script net PPP et Ethernet">
+<pre caption="créer les script net PPP et Ethernet">
 # <i>ln -s /etc/init.d/net.lo /etc/init.d/net.ppp0</i>
 # <i>ln -s /etc/init.d/net.lo /etc/init.d/net.eth0</i>
 </pre>
 
 <p>
-Mettez bien RC_NET_STRICT_CHECKING="yes" dans le fichier
-<path>/etc/conf.d/rc</path>.
+Assurez-vous de définir <c>rc_depend_strict</c> à "YES" dans <path>/etc/rc.conf</path>.
 </p>
 
 <p>
-Nous devons maintenant éditer le fichier <path>/etc/conf.d/net</path>.
+Maintenant, éditez le fichier <path>/etc/conf.d/net</path>.
 </p>
 
-<pre caption="Une configuration simple de PPPoE">
-config_eth0=( null ) <comment>(Remplacez éventuellement eth0 par le nom correct.)</comment>
-config_ppp0=( "ppp" )
+<pre caption="une configuration de base  de PPPoE">
+config_eth0=null <comment>(Remplacez éventuellement eth0 par le nom correct.)</comment>
+config_ppp0="ppp"
 link_ppp0="eth0" <comment>(Ici aussi.)</comment>
-plugins_ppp0=( "pppoe" )
-username_ppp0='nom_utilisateur'
-password_ppp0='mot_de_passe'
-pppd_ppp0=(
-       "noauth"
-       "defaultroute"
-       "usepeerdns"
-       "holdoff 3"
-       "child-timeout 60"
-       "lcp-echo-interval 15"
-       "lcp-echo-failure 3"
-       noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp
-)
+plugins_ppp0="pppoe"
+username_ppp0='user'
+password_ppp0='password'
+pppd_ppp0="
+noauth
+defaultroute
+usepeerdns
+holdoff 3
+child-timeout 60
+lcp-echo-interval 15
+lcp-echo-failure 3
+noaccomp noccp nobsdcomp nodeflate nopcomp novj novjccomp"
 
-depend_ppp0() {
-    need net.eth0
-}
+rc_need_ppp0="net.eth0"
 </pre>
 
 <p>
-Vous pouvez également placer votre mot de passe dans <path>/etc/ppp/pap-secrets</path>.
+Vous pouvez également définir votre mot de passe dans <path>/etc/ppp/pap-secrets</path>.
 </p>
 
-<pre caption="Exemple de fichier /etc/ppp/pap-secrets">
+
+
+<pre caption="exemple de fichier /etc/ppp/pap-secrets">
 <comment># Le caractère « * » est important.</comment>
 "nom_utilisateur" * "mot_de_passe"
 </pre>
@@ -289,10 +285,11 @@ comment le configurer correctement.
 </p>
 
 <impo>
-Lisez attentivement la section sur l'ADSL et PPP dans le fichier
-<path>/etc/conf.d/net.example</path>. Elle contient des explications très
-détaillées sur les réglages à votre disposition pour configurer votre PPP.
+lisez attentivement la section sur l'ADSL et PPP dans
+<path>/usr/share/doc/openrc-0.8.3-r1/net.example.bz2</path>. I Elle contient des explications très
+détaillées sur les réglages à votre disposition pour configurer votre PPP. Bien-entendu, remplacez <c>0.8.3-r1</c> par la version de OpenRC installée sur votre système.
 </impo>
+
 
 </body>
 </section>
@@ -303,7 +300,7 @@ détaillées sur les réglages à votre disposition pour configurer votre PPP.
 
 <p>
 APIPA essaye de trouver une adresse libre dans l'intervalle
-169.254.0.0-169.254.255.255 en faisant un arping sur une adresse au hasard sur
+169.254.0.0-169.254.255.255 en faisant un requête arp sur une adresse au hasard sur
 l'interface. S'il n'y a pas de réponse, alors l'adresse est assignée à cette
 interface.
 </p>
@@ -319,13 +316,13 @@ Pour obtenir le support APIPA, installez <c>net-misc/iputils</c> ou
 <c>net-analyzer/arping</c>.
 </p>
 
-<pre caption="Configuration APIPA dans /etc/conf.d/net">
+<pre caption="configuration APIPA dans /etc/conf.d/net">
 <comment># Essaye d'abord DHCP puis APIPA, si cela ne marche pas.</comment>
-config_eth0=( "dhcp" )
-fallback_eth0=( "apipa" )
+config_eth0="dhcp"
+fallback_eth0="apipa"
 
 <comment># Utilise juste APIPA.</comment>
-config_eth0=( "apipa" )
+config_eth0="apipa"
 </pre>
 
 </body>
@@ -347,17 +344,15 @@ fusionner afin que vos applications ne voient qu'une seule interface qui
 utilise en réalité les deux cartes.
 </p>
 
-<pre caption="Configurer une agrégation de liens dans /etc/conf.d/net">
-<comment># Pour fusionner des interfaces ensemble :</comment>
+<pre caption="configurer une agrégation de liens dans /etc/conf.d/net">
+<comment># Pour agréger des interfaces ensemble :</comment>
 slaves_bond0="eth0 eth1 eth2"
 
 <comment># Vous pourriez vouloir ne pas assigner d'adresse à cette interface :</comment>
-config_bond0=( "null" )
+config_bond0="null"
 
-<comment># On dépend de la configuration des interfaces utilisées :</comment>
-depend_bond0() {
-    need net.eth0 net.eth1 net.eth2
-}
+<comment># Dépend de eth0, eth1 eth2 car elles peuvent demander une configuration supplémentaire.</comment>
+rc_need_bond0="net.eth0 net.eth1 net.eth2"
 </pre>
 
 </body>
@@ -374,34 +369,30 @@ Pour activer le support des ponts réseaux, installez
 
 <p>
 Le pontage de réseaux est utilisé pour connecter plusieurs réseaux ensemble. Par
-exemple, un serveur qui se connecte à Internet via un modem ADSL peut utiliser
-un pont réseau pour permettre aux machines connectées sur sa carte réseau sans
-fil d'accéder à Internet.
+exemple, vous pourriez avoir un serveur qui se connecte à Internet via un modem ADSL et une carte réseau sans fil pour accéder à Internet à travers le modem ADSL. Vous pourriez créer un pont pour connecter les deux réseaux ensemble.
 </p>
 
-<pre caption="Configuration d'un pont réseau dans /etc/conf.d/net">
+<pre caption="configuration d'un pont réseau dans /etc/conf.d/net">
 <comment># Configuration du pont (voir « man brctl » pour plus de détails) :</comment>
-brctl_br0=( "setfd 0" "sethello 0" "stp off" )
+brctl_br0="setfd 0" "sethello 0" "stp off"
 
 <comment># Ajout de ports au pont br0 :</comment>
 bridge_br0="eth0 eth1"
 
 <comment># Les ports doient être explicitement non configurés pour ne pas
 # lancer DHCP :</comment>
-config_eth0=( "null" )
-config_eth1=( "null" )
+config_eth0="null"
+config_eth1="null"
 
 <comment># On assigne enfin une adresse au pont. Nous aurions pu utiliser DHCP ici :</comment>
-config_br0=( "192.168.0.1/24" )
+config_br0="192.168.0.1/24"
 
-<comment># On dépend de la configuration des interfaces utilisées :</comment>
-depend_br0() {
-    need net.eth0 net.eth1
-}
+<comment># Dépend de eth0 et eth1  car elles peuvent demander une configuration supplémentaire.</comment>
+rc_need_br0="net.eth0 net.eth1"
 </pre>
 
 <impo>
-Pour la configuration de certains ponts, vous pourriez avoir besoin de consulter
+pour la configuration de certains ponts, vous pourriez avoir besoin de consulter
 la <uri link="?part=4&amp;chap=2#variable_name">documentation sur les noms des
 variables</uri>.
 </impo>
@@ -414,14 +405,12 @@ variables</uri>.
 <body>
 
 <p>
-Vous n'avez pas besoin d'installer quoi que ce soit pour changer l'adresse MAC
-de votre interface si vous utilisez <c>sys-apps/baselayout-1.11.14</c> ou une
-version plus récente.  En revanche, si vous utilisez une version de baselayout
-plus ancienne ou si vous voulez assigner une adresse aléatoire, vous devez
-installer <c>net-analyzer/macchanger</c>.
+Si vous en avez besoim, vous pouvez modifier l'adresse MAC de vos  interfaces via les fichiers 
+de configuration réseau aussi&nbsp;:
+
 </p>
 
-<pre caption="Exemples de modification d'adresse MAC">
+<pre caption="exemples de modification d'adresse MAC">
 <comment># Pour assigner une adresse MAC à une interface :</comment>
 mac_eth0="00:11:22:33:44:55"
 
@@ -453,7 +442,7 @@ Vous n'avez pas à installer quoi que ce soit pour créer des tunnels car l'outi
 de configuration d'interfaces réseaux peut s'en charger.
 </p>
 
-<pre caption="Configuration de tunnels dans /etc/conf.d/net">
+<pre caption="configuration de tunnels dans /etc/conf.d/net">
 <comment># Pour un tunnel GRE :</comment>
 iptunnel_vpn0="mode gre remote 207.170.82.1 key 0xffffffff ttl 255"
 
@@ -461,7 +450,7 @@ iptunnel_vpn0="mode gre remote 207.170.82.1 key 0xffffffff ttl 255"
 iptunnel_vpn0="mode ipip remote 207.170.82.2 ttl 255"
 
 <comment># Pour configurer l'interface du tunnel :</comment>
-config_vpn0=( "192.168.0.2 peer 192.168.1.1" )
+config_vpn0="192.168.0.2 peer 192.168.1.1"
 </pre>
 
 </body>
@@ -482,23 +471,23 @@ cas. Les membres d'un VLAN peuvent uniquement voir les autres membres du même
 VLAN, même s'ils sont physiquement sur le même réseau.
 </p>
 
-<pre caption="Configuration de VLAN dans /etc/conf.d/net">
+<pre caption="configuration de VLAN dans /etc/conf.d/net">
 <comment># Spécifiez les numéros des VLAN auxquels l'interface appartient.
 # Veuillez vous assurez que les identifiants des VLAN ne sont pas
 # complétés par des zéros.</comment>
 vlans_eth0="1 2"
 
 <comment># On configure ensuite le VLAN (voir « man vconfig » pour plus de détails) :</comment>
-vconfig_eth0=( "set_name_type VLAN_PLUS_VID_NO_PAD" )
-vconfig_vlan1=( "set_flag 1" "set_egress_map 2 6" )
+vconfig_eth0="set_name_type VLAN_PLUS_VID_NO_PAD"
+vconfig_vlan1="set_flag 1" "set_egress_map 2 6"
 
 <comment># Enfin, on configure les interfaces comme d'habitude :</comment>
-config_vlan1=( "172.16.3.1 netmask 255.255.254.0" )
-config_vlan2=( "172.16.2.1 netmask 255.255.254.0" )
+config_vlan1="172.16.3.1 netmask 255.255.254.0"
+config_vlan2="172.16.2.1 netmask 255.255.254.0"
 </pre>
 
 <impo>
-Pour la configuration de certains VLAN, vous pourriez avoir besoin de consulter
+pour la configuration de certains VLAN, vous pourriez avoir besoin de consulter
 la <uri link="?part=4&amp;chap=2#variable_name">documentation sur les noms des
 variables</uri>.
 </impo>
