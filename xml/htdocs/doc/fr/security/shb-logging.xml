@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding="UTF-8"?>
-<!-- $Id: shb-logging.xml,v 1.6 2008/07/06 23:05:25 cam Exp $ -->
+<!-- $Id: shb-logging.xml,v 1.7 2013/03/14 20:12:09 swift Exp $ -->
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <sections>
 
-<version>1.2</version>
-<date>2005-11-25</date>
+<version>1.3</version>
+<date>2010-04-02</date>
 
 <section>
 <title>Introduction</title>
@@ -14,7 +14,7 @@
 <p>
 Vous devriez augmenter le niveau de journalisation des événements pour obtenir
 plus d'avertissements ou de messages d'erreurs pouvant indiquer une attaque en
-cours ou ayant déjà porté fruits. Les attaquants scannent ou sondent
+cours ou ayant déjà porté ses fruits. Les attaquants scannent ou sondent
 généralement avant de commencer une attaque.
 </p>
 
@@ -217,13 +217,24 @@ Voici un fichier de configuration classique légèrement modifié&nbsp;:
 </p>
 
 <pre caption="/etc/syslog-ng/syslog-ng.conf">
-options { chain_hostnames(off); sync(0); };
+options {
+        chain_hostnames(no);
 
-# Endroit où lire le journal
-source src { unix-stream("/dev/log"); internal(); };
+        <comment># L'action par défaut de  syslog-ng est d'écrire une ligne STATS
+        # dans le fichier toutes les 10 minutes.  Après quelque temps c'est plutôt affreux.
+        # Passez le à toutes les 12 heures et vous aurez une mise à jour journalière sur 
+        # le nombre de messages que syslog-ng a manqué (0).</comment>
+        stats_freq(43200);
+};
+
+source src {
+    unix-stream("/dev/log" max-connections(256));
+    internal();
+};
+
 source kernsrc { file("/proc/kmsg"); };
 
-# Définir les destinations.
+<comment># Définir les destinations</comment>
 destination authlog { file("/var/log/auth.log"); };
 destination syslog { file("/var/log/syslog"); };
 destination cron { file("/var/log/cron.log"); };
@@ -244,11 +255,16 @@ destination newsnotice { file("/var/log/news/news.notice"); };
 destination debug { file("/var/log/debug"); };
 destination messages { file("/var/log/messages"); };
 destination console { usertty("root"); };
-destination console_all { file("/dev/tty12"); };
-destination mailprog { program("/usr/bin/email.sh"); };
-destination xconsole { pipe("/dev/xconsole"); };
 
-# Créer les filtres.
+<comment># Par défaut, les messages sont écrits sur tty12...</comment>
+destination console_all { file("/dev/tty12"); };
+
+<comment># ...si vous voulez utiliser /dev/console pour des programmes tels que xconsole
+# vous pouvez mettre en commentaire la ligne destination au dessus de ces réferences /dev/tty12
+# et décommenter la ligne en dessous.</comment>
+#destination console_all { file("/dev/console"); };
+
+<comment># Créer les filtres</comment>
 filter f_authpriv { facility(auth, authpriv); };
 filter f_syslog { not facility(authpriv, mail); };
 filter f_cron { facility(cron); };
@@ -259,7 +275,7 @@ filter f_mail { facility(mail); };
 filter f_user { facility(user); };
 filter f_debug { not facility(auth, authpriv, news, mail); };
 filter f_messages { level(info..warn)
-    and not facility(auth, authpriv, mail, news); };
+        and not facility(auth, authpriv, mail, news); };
 filter f_emergency { level(emerg); };
 
 filter f_info { level(info); };
@@ -267,10 +283,10 @@ filter f_notice { level(notice); };
 filter f_warn { level(warn); };
 filter f_crit { level(crit); };
 filter f_err { level(err); };
-filter f_failed { match("failed"); };
-filter f_denied { match("denied"); };
+filter f_failed { message("failed"); };
+filter f_denied { message("denied"); };
 
-# Connecter les filtres et les destinations.
+<comment># Connecter le filter à la destination</comment>
 log { source(src); filter(f_authpriv); destination(authlog); };
 log { source(src); filter(f_syslog); destination(syslog); };
 log { source(src); filter(f_cron); destination(cron); };
@@ -287,11 +303,8 @@ log { source(src); filter(f_debug); destination(debug); };
 log { source(src); filter(f_messages); destination(messages); };
 log { source(src); filter(f_emergency); destination(console); };
 
-# Envoyer par courrier les journaux ratés.
-log { source(src); filter(f_failed); filter(f_denied); destination(mailprog); };
-
-# Journal par défaut
-log { source(src); destination(console_all); };
+<comment>#Journal par défaut</comment>
+log { source(src); destination(console_all); }
 </pre>
 
 <p>
@@ -340,7 +353,7 @@ entrées ordinaires, et <path>logcheck.ignore</path>, qui correspond aux entrée
 </p>
 
 <warn>
-Ne laissez pas <path>logcheck.violations.ignore</path> vide. Logcheck utilise
+ne laissez pas <path>logcheck.violations.ignore</path> vide. Logcheck utilise
 <c>grep</c> pour l'analyse lexicale des journaux. Or, certaines versions de
 <c>grep</c> considèrent un fichier vide comme un joker. Toutes les violations
 seraient alors ignorées.
