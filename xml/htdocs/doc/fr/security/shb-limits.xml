@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Id: shb-limits.xml,v 1.7 2008/07/06 23:05:25 cam Exp $ -->
+<!-- $Id: shb-limits.xml,v 1.8 2013/03/17 19:30:38 swift Exp $ -->
 <!DOCTYPE sections SYSTEM "/dtd/book.dtd">
 
 <sections>
 
-<version>1.4</version>
-<date>2007-07-08</date>
+<version>3</version>
+<date>2011-11-15</date>
 
 <section id="limits_conf">
 <title>/etc/security/limits.conf</title>
@@ -39,7 +39,7 @@ fichiers core et <c>maxlogins</c>. Le reste est laissé à la valeur par défaut
 </p>
 
 <note>
-Le fichier <path>/etc/security/limits.conf</path> fait partie du paquet PAM et
+le fichier <path>/etc/security/limits.conf</path> fait partie du paquet PAM et
 ne sera utilisé que par les paquets dépendant de PAM.
 </note>
 
@@ -66,7 +66,7 @@ kn L10 C100000 U35
 Nous réglons ici les paramètres par défaut, mais également une valeur
 particulière pour l'utilisateur kn. Les limites font partie du paquet
 sys-apps/shadow. Il n'est pas nécessaire de mettre des limites dans ce fichier
-si vous avez activé <c>pam</c> dans votre <path>make.conf</path>.
+si vous avez activé <c>pam</c> dans votre <path>/etc/make.conf</path>.
 </p>
 
 </body>
@@ -75,22 +75,16 @@ si vous avez activé <c>pam</c> dans votre <path>make.conf</path>.
 <title>Quotas</title>
 <body>
 
-<warn>
-Assurez-vous que le système de fichiers avec lequel vous travaillez supporte
-les quotas. Pour utiliser les quotas avec ReiserFS, vous devez appliquer à votre
-noyau le correctif disponible sur le site de <uri
-link="ftp://ftp.namesys.com/pub/reiserfs-for-2.4/testing/quota-2.4.20">
-Namesys</uri>. Les outils de l'utilisateur sont disponibles sur le site du <uri
+<impo>
+assurez-vous que le système de fichiers avec lequel vous travaillez supporte
+les quotas. Les outils de l'utilisateur sont disponibles sur le site du <uri
 link="http://www.sf.net/projects/linuxquota/">Linux DiskQuota project</uri>.
-Bien que les quotas fonctionnent avec ReiserFS, vous éprouverez peut-être
-des problèmes lorsque vous essayerez de les utiliser&nbsp;; vous voilà donc
-averti&nbsp;!
-</warn>
+</impo>
 
 <p>
 Placer des quotas sur un système de fichiers restreint l'utilisation du disque
 sur la base de l'identité de l'utilisateur et de son groupe. Les quotas sont
-activés dans le noyau et ajoutés par la suite sur un point de montage dans
+activés dans le noyau et ajoutés par la suite à un point de montage dans
 <path>/etc/fstab</path>. L'option du noyau qui active ce paramètre se trouve
 dans la section <c>File systems->Quota support</c>. Appliquez l'option,
 recompilez votre noyau et redémarrez en utilisant votre nouveau noyau.
@@ -107,9 +101,9 @@ l'utilisation du disque, comme le montre l'exemple ci-dessous.
 /dev/sda1 /boot ext2 noauto,noatime 1 1
 /dev/sda2 none swap sw 0 0
 /dev/sda3 / reiserfs notail,noatime 0 0
-/dev/sda4 /tmp reiserfs notail,noatime,nodev,nosuid,noexec,usrquota,grpquota 0 0
-/dev/sda5 /var reiserfs notail,noatime,nodev,usrquota,grpquota 0 0
-/dev/sda6 /home reiserfs notail,noatime,nodev,nosuid,usrquota,grpquota 0 0
+/dev/sda4 /tmp ext3 noatime,nodev,nosuid,noexec,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv=1 0 0
+/dev/sda5 /var ext3 noatime,nodev,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv1 0 0
+/dev/sda6 /home ext3 noatime,nodev,nosuid,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv1 0 0
 /dev/sda7 /usr reiserfs notail,noatime,nodev,ro 0 0
 /dev/cdroms/cdrom0 /mnt/cdrom iso9660 noauto,ro 0 0
 proc /proc proc defaults 0 0
@@ -121,7 +115,7 @@ Vous devez ensuite créer les fichiers de quotas (<path>aquota.user</path> et
 activé les quotas, puis placer ces fichiers à la racine de ces partitions.
 </p>
 
-<pre caption="Création des fichiers de quota">
+<pre caption="création des fichiers de quota">
 # <i>touch /tmp/aquota.user</i>
 # <i>touch /tmp/aquota.group</i>
 # <i>chmod 600 /tmp/aquota.user</i>
@@ -131,8 +125,7 @@ activé les quotas, puis placer ces fichiers à la racine de ces partitions.
 <p>
 Cette étape est nécessaire pour chaque partition où les quotas sont actifs.
 Après avoir ajouté et configuré les fichiers de quotas, vous devez ajouter le
-script <c>quota</c> aux scripts d'initialisation pour appliquer les quotas
-après chaque démarrage.
+script <c>quota</c> aux scripts d'initialisation du niveau d'exécution de démarrage.
 </p>
 
 <impo>
@@ -143,17 +136,8 @@ D'autres systèmes de fichiers non listés dans ce document peuvent fonctionner
 fichiers pour savoir comment il gère les quotas.
 </impo>
 
-<pre caption="Lancer le script quota à chaque démarrage">
+<pre caption="lancer le script quota à chaque démarrage">
 # <i>rc-update add quota boot</i>
-</pre>
-
-<p>
-Configurez le système afin de vérifier les quotas une fois par semaine en
-ajoutant la ligne suivante dans <path>/etc/crontab</path>&nbsp;:
-</p>
-
-<pre caption="Ajouter la vérification des quotas au crontab">
-0 3 * * 0 /usr/sbin/quotacheck -avug.
 </pre>
 
 <p>
@@ -164,7 +148,7 @@ quotas de l'utilisateur kn. <c>edquota -g</c> vous permet de faire la même
 chose pour les groupes.
 </p>
 
-<pre caption="Mettre en place des quotas pour l'utilisateur kn">
+<pre caption="mettre en place des quotas pour l'utilisateur kn">
 Quotas pour l'utilisateur kn :
 /dev/sda4: blocks in use: 2594, limits (soft = 5000, hard = 6500)
          inodes in use: 356, limits (soft = 1000, hard = 1500)
@@ -195,12 +179,12 @@ qu'une question de temps. Nous recommandons également de définir la variable
 </body>
 </section>
 <section>
-<title>/etc/login.access</title>
+<title>/etc/security/access.conf</title>
 <body>
 
 <p>
-Le fichier <path>login.access</path> fait également partie du paquet
-sys-apps/shadow, qui vous donne accès à une table de contrôle des
+Le fichier <path>access.conf</path> fait également partie du paquet
+<c>sys-libs/pam</c>, qui vous donne accès à une table de contrôle des
 ouvertures de sessions. Cette table est utilisée pour décider qui a le droit ou
 pas d'ouvrir une session en fonction du nom d'utilisateur, du nom de groupe ou
 du nom d'hôte. Par défaut, tous les utilisateurs du système ont le droit
@@ -211,21 +195,21 @@ vous recommandons de configurer ce fichier de telle sorte que vous
 </p>
 
 <note>
-Ces paramètres ne s'appliquent pas à root.
+ces paramètres s'appliquent aussi à root.
 </note>
 
-<pre caption="/etc/login.access">
+<pre caption="/etc/security/access.conf">
 -:ALL EXCEPT wheel sync:console
 -:wheel:ALL EXCEPT LOCAL .gentoo.org
 </pre>
 
 <impo>
-Faites attention lorsque vous entrez ces options, car une erreur vous laissera
+faites attention lorsque vous entrez ces options, car une erreur vous laissera
 sans accès à la machine si vous n'avez pas d'accès root.
 </impo>
 
 <note>
-Ces paramètres n'affectent pas SSH car il n'utilise pas <c>/bin/login</c> par
+ces paramètres n'affectent pas SSH car il n'utilise pas <c>/bin/login</c> par
 défaut. Vous pouvez changer ce comportement en mettant <c>UseLogin yes</c> dans
 le fichier <path>/etc/ssh/sshd_config</path>.
 </note>
