@@ -4,46 +4,38 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-hppa-disk.xml,v 1.17 2008/07/06 23:05:25 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-hppa-disk.xml,v 1.18 2013/03/20 07:48:16 swift Exp $ -->
 
 <sections>
 
-<version>8.1</version>
-<date>2007-06-26</date>
+<version>14</version>
+<date>2013-02-23</date>
 
 <section>
 <title>Introduction aux périphériques de bloc</title>
+
 <subsection>
-<title>Les périphériques de bloc</title>
+<include href="hb-install-blockdevices.xml"/>
+</subsection>
+
+<subsection>
+<title>Partitions et tranches</title>
 <body>
 
 <p>
-Nous allons regarder de manière approfondie la question des disques sous Gentoo
-Linux et sous Linux en général, y compris les systèmes de fichiers de Linux,
-les partitions et les périphériques de bloc.  Ensuite, une fois que vous serez
-familiarisé avec les entrées et sorties des disques et des systèmes de
-fichiers, vous serez guidé pour réaliser la mise en place des partitions et des
-systèmes de fichiers pour votre installation de Gentoo Linux.
-</p>
-
-<p>
-Pour commencer, nous allons présenter les <e>périphériques de bloc</e>.  Le
-plus célèbre étant certainement celui qui représente le premier disque dur SCSI
-connu sous le nom <path>/dev/sda</path>.
-</p>
-
-<p>
-Les périphériques de bloc cités ci-dessus représentent une interface abstraite
-vers les disques. Les programmes utilisateur peuvent les utiliser pour
-interagir avec votre disque sans devoir se tracasser si vos périphériques sont
-IDE, SCSI ou autres.  Le programme peut simplement utiliser l'espace sur le
-disque comme un groupe de blocs continus de 512 octets accessibles
-aléatoirement.
+Bien qu'il soit théoriquement possible d'utiliser un disque complet pour
+héberger votre système Linux, ceci n'est pratiquement jamais fait. À la place,
+les périphériques de bloc sont divisés pour être plus petits et plus facilement
+gérables. Sur la plupart des systèmes ces subdivisions sont appelées
+<e>partitions</e>. D'autres architectures utilisent une technique similaire
+appelée <e>tranches</e> (ou slices en anglais).
 </p>
 
 </body>
 </subsection>
+
 </section>
+
 <section>
 <title>Concevoir un plan de partitionnement</title>
 <subsection>
@@ -95,10 +87,16 @@ Séparer les partitions ou volumes procure les avantages suivants&nbsp;:
 </ul>
 
 <p>
-Cependant, de multiples partitions ont un gros désavantage&nbsp;: si elles ne
+Cependant, avoir de multiples partitions présente un gros désavantage&nbsp;: si elles ne
 sont pas configurées correctement, vous risquez d'obtenir un système avec
-beaucoup d'espace libre sur une partition et plus du tout sur une autre.  Notez
-également qu'il y a une limite de 15 partitions par disque SCSI ou SATA.
+beaucoup d'espace libre sur une partition et plus du tout sur une autre. Un autre inconvénient est que des partitions séparées, en particulier
+  pour des points de montage importants tels que <path>/usr</path> ou <path>/var</path> - requièrent que l'utilisateur amorce avec un <e>initramfs</e> pour 
+ monter la partition avant que les scripts de démarrage ne soient lancés. Ce n'est pas toujours le cas cependant, ce qui fait que le résultat 
+  peut varier.
+</p>
+
+<p>
+Notez que les disques SCSI et SATA sont limités à  15-partitions sauf si vous utilisez  des étquettes GPT.
 </p>
 
 </body>
@@ -112,7 +110,7 @@ beaucoup d'espace libre sur une partition et plus du tout sur une autre.  Notez
 Utilisez <c>fdisk</c> pour créer les partitions que vous voulez&nbsp;:
 </p>
 
-<pre caption="Partitionnement du disque">
+<pre caption="partitionnement du disque">
 # <i>fdisk /dev/sda</i>
 </pre>
 
@@ -121,7 +119,7 @@ Les machines HPPA utilisent le format de partitions du DOS. Pour créer une
 nouvelle table de partitions DOS, tapez simplement <c>o</c>.
 </p>
 
-<pre caption="Créer une table de partitions">
+<pre caption="créer une table de partitions">
 # <i>fdisk /dev/sda</i>
 
 Command (m for help): <i>o</i>
@@ -136,18 +134,18 @@ boot).
 </p>
 
 <impo>
-Si vous ignorez ceci et que vous continuez sans partition spéciale PALO, votre
+si vous ignorez ceci et que vous continuez sans partition spéciale PALO, votre
 système n'appréciera pas et échouera au démarrage. De plus, si votre disque est
 plus grand que 2&nbsp;Go, assurez-vous que la partition de démarrage est dans les
 2 premiers Go de votre disque.  PALO est incapable de lire un noyau après la
 limite des 2&nbsp;Go.
 </impo>
 
-<pre caption="Exemple simple d'une table de partitions">
+<pre caption="exemple simple d'une table de partitions">
 # <i>cat /etc/fstab</i>
-/dev/sda2    /boot   ext3    noauto,noatime   1 1
+/dev/sda2    /boot   ext2    noauto,noatime   1 1
 /dev/sda3    none    swap    sw               0 0
-/dev/sda4    /       ext3    noatime          0 0
+/dev/sda4    /       ext4    noatime          0 0
 
 # <i>fdisk /dev/sda</i>
 
@@ -189,101 +187,10 @@ sur les systèmes de fichiers disponibles.
 </body>
 </subsection>
 <subsection>
-<title>Systèmes de fichiers&nbsp;?</title>
-<body>
-
-<p>
-De nombreux systèmes de fichiers sont disponibles. ext2, ext3, XFS et reiserfs
-sont considérés stables sur des machines HPPA. Les autres sont considérés
-très expérimentaux.
-</p>
-
-<table>
-<tr>
-  <th>Système de fichiers</th>
-  <th>Journalisé</th>
-  <th>Architectures</th>
-</tr>
-<tr>
-  <ti>ext2</ti>
-  <ti>non</ti>
-  <ti>Toutes les architectures</ti>
-</tr>
-<tr>
-  <ti>ext3</ti>
-  <ti>oui</ti>
-  <ti>Toutes les architectures</ti>
-</tr>
-<tr>
-  <ti>reiserfs</ti>
-  <ti>oui</ti>
-  <ti>x86, hppa, alpha, (mips), (pcc), (amd64)</ti>
-</tr>
-<tr>
-  <ti>xfs</ti>
-  <ti>oui</ti>
-  <ti>x86, alpha, (ppc)</ti> <!-- TODO when xfs is in mips-sources, add "(mips)" -->
-</tr>
-<tr>
-  <ti>jfs</ti>
-  <ti>oui</ti>
-  <ti>x86, alpha, (mips), (amd64)</ti>
-</tr>
-</table>
-
-<p>
-<b>ext2</b> est le système de fichiers original de Linux mais n'a pas de
-métadonnées journalisées, ce qui signifie que la routine de vérification du
-système de fichiers ext2 au démarrage peut prendre beaucoup de temps. À
-présent, vous avez le choix entre plusieurs systèmes de fichiers journalisés
-qui peuvent être vérifiés très rapidement et sont généralement préférés à leurs
-homologues non journalisés.  Les systèmes de fichiers journalisés évitent de
-devoir attendre longtemps quand vous démarrez votre système et que vos systèmes
-de fichiers sont dans un état instable.
-</p>
-
-<p>
-<b>ext3</b> est la version journalisée du système de fichiers ext2, qui fournit
-des métadonnées journalisées pour une récupération rapide en plus d'autres
-modes journalisés comme la journalisation de données complètes et ordonnées.
-Il utilise un index à base de HTree qui permet d'obtenir d'excellentes
-performances dans pratiquement toutes les situations. En résumé, ext3 est un
-très bon système de fichiers fiable.
-</p>
-
-<p>
-<b>ReiserFS</b> est un système de fichiers basé sur les B+tree qui a de très
-bonnes performances et qui surpasse ext2 et ext3 dans le cas de l'utilisation
-de petits fichiers (fichiers de moins de 4 ko), souvent avec un facteur allant
-de 10 à 15.  ReiserFS résiste aussi très bien à la montée en charge et a des
-métadonnées journalisées. ReiserFS est stable et peut être utilisé aussi bien
-dans un système de fichiers destiné à une utilisation générale et pour des cas
-extrêmes comme la création de grands systèmes de fichiers et l'utilisation de
-grands fichiers et répertoires qui contiennent des dizaines de milliers de
-fichiers.
-</p>
-
-<p>
-<b>XFS</b> est un système de fichiers avec des métadonnées journalisées qui
-possède un ensemble de fonctionnalités robustes et qui est optimisé pour la mise
-à l'échelle. Nous ne recommandons ce système de fichiers que pour des systèmes
-équipés d'unités de stockage SCSI haut de gamme ou connectés à des serveurs de
-stockage «&nbsp;Fibre Channel&nbsp;», et munis d'un onduleur. Puisque XFS utilise
-énormément le cache pour des données transitoires en mémoire vive, les programmes
-mal conçus (ceux qui ne prennent pas les précautions suffisantes quand ils
-écrivent les fichiers sur disque, et il y en a quelques uns) peuvent perdre
-beaucoup de données si le système s'interrompt de manière inattendue.
-</p>
-
-<p>
-<b>JFS</b> est un système de fichiers journalisé à hautes performances d'IBM.
-Il a été récemment déclaré prêt pour un usage en production, mais il n'y a pas
-encore suffisamment d'information pour commenter sa stabilité générale de
-manière positive ou négative.
-</p>
-
-</body>
+<include href="hb-install-filesystems.xml"/>
 </subsection>
+
+
 <subsection id="filesystems-apply">
 <title>Application d'un système de fichiers à une partition</title>
 <body>
@@ -300,11 +207,15 @@ système de fichiers fournit ses propres outils&nbsp;:
 </tr>
 <tr>
   <ti>ext2</ti>
-  <ti><c>mke2fs</c></ti>
+  <ti><c>mkfs.ext2</c></ti>
 </tr>
 <tr>
   <ti>ext3</ti>
-  <ti><c>mke2fs -j</c></ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
 </tr>
 <tr>
   <ti>reiserfs</ti>
@@ -322,13 +233,13 @@ système de fichiers fournit ses propres outils&nbsp;:
 
 <p>
 Par exemple, pour formater la partition de démarrage (<path>/dev/sda2</path>
-dans notre exemple) en ext2 et la partition principale (<path>/dev/sda4</path>
-dans notre exemple) en ext3, nous utiliserons&nbsp;:
+dans notre exemple) en ext2 et la partition principale (root) (<path>/dev/sda4</path>
+dans notre exemple) en ext4, nous utiliserons&nbsp;:
 </p>
 
-<pre caption="Application d'un système de fichiers sur une partition">
-# <i>mke2fs /dev/sda2</i>
-# <i>mke2fs -j /dev/sda4</i>
+<pre caption="application d'un système de fichiers sur une partition">
+# <i>mkfs.ext2 /dev/sda2</i>
+# <i>mkfs.ext4 /dev/sda4</i>
 </pre>
 
 <p>
@@ -347,7 +258,7 @@ fraichement créées.
 virtuelle&nbsp;:
 </p>
 
-<pre caption="Création d'une signature de mémoire virtuelle">
+<pre caption="création d'une signature de mémoire virtuelle">
 # <i>mkswap /dev/sda3</i>
 </pre>
 
@@ -355,7 +266,7 @@ virtuelle&nbsp;:
 Pour activer la partition de mémoire virtuelle, utilisez <c>swapon</c>&nbsp;:
 </p>
 
-<pre caption="Activation de la partition de mémoire virtuelle">
+<pre caption="activation de la partition de mémoire virtuelle">
 # <i>swapon /dev/sda3</i>
 </pre>
 
@@ -378,14 +289,14 @@ vous avez créées. Par exemple, pour monter les partitions de démarrage et
 racine&nbsp;:
 </p>
 
-<pre caption="Monter les partitions">
+<pre caption="monter les partitions">
 # <i>mount /dev/sda4 /mnt/gentoo</i>
 # <i>mkdir /mnt/gentoo/boot</i>
 # <i>mount /dev/sda2 /mnt/gentoo/boot</i>
 </pre>
 
 <note>
-Si vous installez <path>/tmp</path> sur une partition séparée, n'oubliez pas de
+si vous installez <path>/tmp</path> sur une partition séparée, n'oubliez pas de
 définir les permissions nécessaires après avoir monté la partition. Utilisez la
 commande <c>chmod 1777 /mnt/gentoo/tmp</c>. La même remarque s'applique à
 <path>/var/tmp</path>.
