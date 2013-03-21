@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/udev-guide.xml,v 1.30 2012/12/27 18:07:14 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/udev-guide.xml,v 1.31 2013/03/21 18:29:00 nimiux Exp $ -->
 
 <guide lang="es">
 <title>Guía udev en Gentoo</title>
@@ -41,8 +41,8 @@ sus necesidades.
 
 <license/>
 
-<version>12</version>
-<date>2012-12-25</date>
+<version>13</version>
+<date>2013-03-20</date>
 
 <chapter>
 <title>¿Qué es udev?</title>
@@ -116,7 +116,7 @@ la carga de ficheros de firmware particulares en la memoria del núcleo.
 
 <p>
 Udev está pensado para ser utilizado en combinación con núcleos 2.6
-y 3.X (como <c>gentoo-sources</c> con el perfil por defecto 10.0).
+y 3.X (como <c>gentoo-sources</c> con el perfil por defecto 13.0).
 Si está usando alguno de estos núcleos, no debería tener problemas,
 ya que el soporte necesario está incluido en todas las versiones
 estables de <c>sys-apps/baselayout</c>. Normalmente, udev debería
@@ -135,12 +135,19 @@ Al construir un núcleo, asegúrese de activar las siguientes opciones:
 <pre caption="Opciones requeridas en el núcleo">
 General Setup ---&gt;
   <comment>(Asegúrese de que las siguientes opciones *no* están instaladas)</comment>
-  [ ] enable deprecated sysfs features to support old userspace tools
+  [ ] Enable deprecated sysfs features to support old userspace tools
 
 File Systems ---&gt;
   [*] Inotify support for userspace
   Pseudo filesystems ---&gt;
     [*] Virtual memory file system support (former shm fs)
+
+Device Drivers ---&gt;
+  <comment>(Asegúrese de que las siguientes opciones *no* están habilitadas)</comment>
+  &lt; &gt; ATA/ATAPI/MFM/RLL support (DEPRECATED)
+  <comment>(Esto es *absolutamente* necesario para que /dev tenga entradas)</comment>
+  Generic Driver Options ---&gt;
+    [*] Maintain a devtmpfs filesystem to mount at /dev
 </pre>
 
 <p>
@@ -154,77 +161,6 @@ activa udev por defecto.
 
 <chapter>
 <title>Problemas conocidos</title>
-<section>
-<title>Nodos de dispositivos que faltan al arrancar</title>
-<body>
-
-<p>
-Si no logra arrancar por culpa de errores acerca de un
-<path>/dev/null</path> no encontrado, o porque falta la consola
-inicial, el problema es que faltan unos nodos de algunos dispositivos
-que deberían existir <e>antes</e> de montar <path>/dev</path> para
-luego sea manejado por udev. Esto es común en máquinas Gentoo que
-tienen instalaciones hechas con mucha antigüedad.
-</p>
-
-<p>
-Si tiene instalado <c>sys-apps/baselayout-1.8.12</c> o más reciente,
-este problema está paliado, ya que el proceso de arranque debe poder
-completarse. Sin embargo, para deshacerse de esas advertencias
-molestas, debe crear los nodos que falten tal como describimos más
-adelante.
-</p>
-
-<p>
-Para determinar qué nodos están presentes antes de montar el
-sistema de archivos <path>/dev</path>, ejecute las siguientes
-órdenes:
-</p>
-
-<pre caption="Listar los nodos de dispositivos disponibles al arrancar">
-# <i>mkdir test</i>
-# <i>mount --bind / test</i>
-# <i>cd test/dev</i>
-# <i>ls</i>
-</pre>
-
-<p>
-Los dispositivos necesarios para un arranque exitoso son
-<path>/dev/null</path> y <path>/dev/console</path>. Si no aparecen en
-el listado previo, debe crearlos manualmente. Escriba las siguientes
-órdenes dentro del directorio <path>test/dev/</path>:
-</p>
-
-<pre caption="Crear los archivos de nodos de dispositivos necesarios">
-# <i>mknod -m 660 console c 5 1</i>
-# <i>mknod -m 660 null c 1 3</i>
-</pre>
-
-<p>
-Al terminar, no se olvide de desmontar el directorio
-<path>test/</path>:
-</p>
-
-<pre caption="Desmontar el directorio test/">
-# <i>cd ../..</i>
-# <i>umount test</i>
-# <i>rmdir test</i>
-</pre>
-
-</body>
-</section>
-<section>
-<title>Udev y nvidia</title>
-<body>
-
-<p>
-Si usa el driver propietario de nvidia y el servidor X falla al
-iniciar en un sistema puramente udev, asegúrese de tener el módulo
-<c>nvidia</c> listado en <path>/etc/conf.d/modules</path>.
-</p>
-
-</body>
-</section>
 <section>
 <title>Nombramiento inconsistente entre DevFS y udev</title>
 <body>
@@ -267,69 +203,6 @@ del superusuario desde las consolas usando
 <path>/etc/securetty</path>. Tendrá que asegurarse que <c>tty1</c> y
 <c>vc/1</c> aparezcan listados en <path>/etc/securetty</path> para que
 el superusuario pueda ingresar usando la consola.
-</p>
-
-</body>
-</section>
-<section>
-<title>Renombrar dispositivos de bloque</title>
-<body>
-
-<p>
-Desde hace un par de años, udev (104 y subsiguientes) junto con
-el núcleo Linux (versions 2.6.19 y siguientes) podrían cambiar los
-nombres de los dispositivos de disco, debido a un cambio en la
-implementación de libata del núcleo. Un dispositivo CD-RW en
-<path>/dev/hdc</path> podría cambiar a <path>/dev/sr0</path>.
-Aunque normalmente esto no es un problema, podría causar dificultades
-para algunas aplicaciones que busquen los dispositivos en ubicaciones
-fijas. Por ejemplo, <c>media-sound/rip</c> espera encontrar los discos
-en <path>/dev/cdrom</path>, lo cual es un problema porque los núcleos
-nuevos, en conjunción con udev renombrarán este dispositivo a
-<path>/dev/cdrom1</path>.
-</p>
-
-<p>
-Para solucionar estos problemas, modifique el archivo
-<path>/etc/udev/rules.d/70-persistent-cd.rules</path> y asigne el
-nombre correcto al dispositivo.
-</p>
-
-<p>
-Para más información acerca de escribir reglas para udev, por favor
-lea la <uri link="http://www.reactivated.net/udevrules.php">guía</uri>
-de Daniel Drake.
-</p>
-
-</body>
-</section>
-<section>
-<title>Renombrar dispositivos de red</title>
-<body>
-
-<p>
-A veces enchufar y enchufar de nuevo un dispositivo de red (cómo una
-tarjeta WiFi USB) puede renombrar su dispositivo de red cada vez,
-incrementando el número en uno.
-</p>
-
-<p>
-Cuando esto ocurra, puede ver que se nombran <c>wlan0</c>,
-<c>wlan1</c>, <c>wlan2</c>, etc. Esto es porque udev esta añadiendo
-reglas adicionales a su fichero de reglas, en lugar de recargar las
-reglas existentes. Ya que udev ve su directorio de reglas a través de
-inotify, necesitará soporte para inotify en su fichero de
-configuración del núcleo:
-</p>
-
-<pre caption="Habilitando soporte para inotify en el núcleo">
-File systems ---&gt;
-    [*] Inotify file change notification support
-    [*]   Inotify support for userspace
-</pre>
-
-<p>
-Ahora udev conservará los nombres apropiados para sus dispositivos de red.
 </p>
 
 </body>
@@ -395,40 +268,17 @@ modules="<i>budget b2c2-flexcop-pci</i>"
 
 </body>
 </section>
-<section>
-<title>Otros problemas</title>
-<body>
-
-<p>
-El soporte para los dispositivos framebuffer (<path>/dev/fb/*</path>)
-viene con los núcleos a partir de la versión 2.6.6-rc2.
-</p>
-
-<p>
-Para núcleos más antiguos que la versión 2.6.4, debe explícitamente
-incluir el soporte para el sistema de ficherosk <path>/dev/pts</path>,
-aunque le recomendamos <e>seriamente</e> que cambie a un núcleo más
-reciente.
-</p>
-
-<pre caption="Activar el sistema de archivos /dev/pts">
-File systems ---&gt;
-  Pseudo filesystems ---&gt;
-    [*] /dev/pts file system for Unix98 PTYs
-</pre>
-
-</body>
-</section>
 </chapter>
 
 <chapter>
 <title>Recursos y reconocimientos</title>
 <section>
 <body>
+
 <p>
-La charla sobre udev en el Linux Symposium (Ottawa, Ontario Canadá -
-2003) dada por Greg Kroah-Hartman (IBM Corporation) proporcionó un
-sólido entendimiento acerca de la aplicación udev.
+<uri link="http://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames">
+Documentación para el uso de los nuevos nombres de interfaces de red
+</uri> (en inglés).
 </p>
 
 <p>
