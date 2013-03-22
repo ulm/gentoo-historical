@@ -1,0 +1,279 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-arm-bootloader.xml,v 1.1 2013/03/22 19:58:23 swift Exp $ -->
+
+<sections>
+
+<version>1</version>
+<date>2011-05-09</date>
+
+<section>
+<title>Делаем выбор</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+Теперь, когда ваше ядро сконфигурировано и скомпилировано, а нужные
+системные файлы правильно заполнены, пришло время установить программу,
+которая будет запускать ваше ядро при старте системы. Такая программа
+называется <e>начальным загрузчиком</e>.
+</p>
+
+<p>
+Для Linux/ARM существует несколько загрузчиков. Вы должны выбрать один из
+поддерживаемых загрузчиков, но не все. В зависимости от вашей машины, может
+получиться так, что у вас вообще не будет выбора!
+</p>
+
+<table>
+ <tr>
+  <th>Вид системы</th>
+  <th>Поддерживаемые начальные загрузчики</th>
+ </tr>
+ <tr>
+  <ti><uri link="http://www.netwinder.org/about.html">NetWinder</uri></ti>
+  <ti><uri link="#nettrom">NeTTrom</uri></ti>
+ </tr>
+ <tr>
+  <ti><uri link="http://en.wikipedia.org/wiki/NSLU2">NSLU2 (aka SLUG)</uri></ti>
+  <ti><uri link="#redboot">RedBoot</uri></ti>
+ </tr>
+ <tr>
+  <ti><uri link="http://www.giantshoulderinc.com/hardware.html">Loft</uri></ti>
+  <ti><uri link="#redboot">RedBoot</uri></ti>
+ </tr>
+</table>
+
+</body>
+</subsection>
+</section>
+<section id="nettrom">
+<title>NeTTrom</title>
+<subsection>
+<title>Обновляем NeTTrom</title>
+<body>
+
+<p>
+Начальный загрузчик NeTTrom это специальная прошивка, разработанная специально
+для машин NetWinder. Никакие другие системы не используют его, и, из-за его
+истории, вы больше не сможете скачать его исходный код. Однако в сети все еще 
+можно найти образы прошивок последнего релиза, так что первое, что вы можете
+захотеть сделать - это обновиться до последней версии 2.3.3. Данный раздел
+укажет вам направление, однако он не является заменой для полного
+<uri link="http://www.netwinder.org/howto/Firmware-HOWTO-3.html">HOWTO по обновлению прошивки</uri>.
+</p>
+
+<p>
+Чтобы прошить вашу прошивку, вам нужен последний релиз, утилиты для
+прошивки, а также поддержка в вашем ядре. Драйвер прошивки NetWinder
+называется <c>NetWinder flash support</c> и он находится в ядре
+в разделе <c>Character devices</c>.
+</p>
+
+<pre caption="Устанавливаем утилиты NeTTrom и NetWinder">
+# <i>emerge sys-boot/nettrom sys-block/nwutil</i>
+</pre>
+
+<warn>
+Если прошивка завершится неудачно, то вы не сможете восстановить свою
+систему программным путем. Удостоверьтесь, что вы приняли все меры
+предосторожности на случай сбоя питания, а также прочитали man страницу
+<c>flashwrite(8)</c>.
+</warn>
+
+<p>
+Теперь, когда у вас есть последняя прошивка, вы установили утилиты для
+прошивки, ваше ядро имеет нужную поддержку, и вы прочитали man страницу
+<c>flashwrite(8)</c>, давайте прошьем эту штуку!
+</p>
+
+<pre caption="Прошиваем NetWinder">
+<comment>(Сначала сделаем резервную копию существующей прошивки)</comment>
+# <i>dd if=/dev/nwflash of=/boot/nettrom.old bs=1</i>
+
+<comment>(Теперь запишем новую прошивку)</comment>
+# <i>flashwrite /boot/nettrom</i>
+
+<comment>(В конце концов проверим, что все сработало (замените BYTESIZE на настоящий размер nettrom в байтах))</comment>
+# <i>dd if=/dev/nwflash of=/boot/nettrom.new bs=1 count=BYTESIZE</i>
+# <i>cmp /boot/nettrom /boot/nettrom.new</i>
+</pre>
+
+<p>
+Если все пройдет хорошо, теперь вы сможете перезагрузиться, и ваше
+устройство не превратится в кирпич. Давайте теперь перейдем к настоящей
+загрузке ядра.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Используем NeTTrom</title>
+<body>
+
+<p>
+NeTTrom может загрузить ядро многими различными способами, поэтому мы расскажем
+про два самых частых способа: встраивание во флеш-память, а также загрузка с
+загрузочного раздела ext2.
+</p>
+
+<p>
+Встраивание ядра во флеш-память проходит очень просто с использованием утилиты
+<c>nwlilo</c>. Просто укажите путь до ядра, которое вы хотите внедрить, а
+также командную строку ядра (заметьте, что значение параметра <c>root=</c> 
+очень важно), и все!
+</p>
+
+<pre caption="Устанавливаем ядро во флеш-память">
+# <i>nwlilo /boot/zImage "root=/dev/sda2 video=cyber2000fb"</i>
+</pre>
+
+<p>
+Другой метод состоит в копировании ELF-файла vmlinuz на ваш загрузочный
+раздел ext2, после чего нужно сообщить NeTTrom, что это ядро нужно
+загрузить. Как только вы скопировали ваше ядро, перезагрузите
+ваш компьютер, так как конфигурировать NeTTrom можно только из-под
+самого NeTTrom. Прервите процесс автозагрузки, дважды нажав
+<c>*</c>, после чего нажмите Enter. В примере ниже мы предполагаем, что
+ваш загрузочный раздел ext2 находится на <path>/dev/sda1</path>,
+а ваш корневой раздел находится на <path>/dev/sda3</path>.
+</p>
+
+<pre caption="Конфигурация NeTTrom">
+NeTTrom> <i>load-defaults</i>
+NeTTrom> <i>setenv kernconfig fs</i>
+NeTTrom> <i>setenv kerndev /dev/sda1</i>
+NeTTrom> <i>setenv rootdev /dev/sda3</i>
+NeTTrom> <i>setenv kernfile /boot/vmlinux</i>
+NeTTrom> <i>setenv cmdappend [настройки командной строки ядра]</i>
+NeTTrom> <i>save-all</i>
+NeTTrom> <i>boot</i>
+</pre>
+
+<p>
+У компьютеров NetWinder иногда не работает DMA. Поэтому, если ваши
+диски работают с ошибками при включенном DMA, просто добавьте
+<c>ide=nodma</c> к строке <c>cmdappend</c>, приведенной выше.
+</p>
+
+<p>
+Если вы хотите увидеть полное описание команд и справочник 
+по NeTTrom, прочитайте 
+<uri link="http://www.netwinder.org/howto/Firmware-HOWTO.html">HOWTO
+по прошивке NetWinder (англ.)</uri>.
+</p>
+
+<p>
+Продолжайте чтение с раздела <uri link="#reboot">Перезагрузка системы</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="redboot">
+<title>RedBoot</title>
+<subsection>
+<title>Обновляем RedBoot</title>
+<body>
+
+<p>
+Прошивка <uri link="http://www.cygwin.com/redboot/">RedBoot</uri> 
+является достаточно популярной из-за простоты использования. Мы не
+будем описывать процесс обновления вашей прошивки, так как,
+просто-напросто, существует слишком много способов сделать
+ее не так, как нужно :). Если вы действительно хотите обновиться,
+посетите <uri link="http://www.cygwin.com/redboot/">
+Домашнюю страницу RedBoot (англ.)</uri>.
+</p>
+
+<p>
+Продолжайте чтение с раздела <uri link="#reboot">Перезагрузка системы</uri>.
+</p>
+
+</body>
+</subsection>
+<!-- TODO: write this
+<subsection>
+<title>Using RedBoot</title>
+<body>
+
+</body>
+</subsection>
+-->
+</section>
+<section id="uboot">
+<title>Das U-Boot</title>
+<subsection>
+<title>Обновляем Das U-Boot</title>
+<body>
+
+<p>
+Прошивка <uri link="http://u-boot.sourceforge.net/">Das U-Boot</uri>
+ценится за свою мощность и переносимость. Мы не
+будем описывать процесс обновления вашей прошивки, так как,
+просто-напросто, существует слишком много способов сделать
+ее не так, как нужно :). Если вы действительно хотите обновиться,
+посетите <uri link="http://u-boot.sourceforge.net/">
+Домашнюю страницу U-Boot (англ.)</uri>.
+</p>
+
+<p>
+Продолжайте чтение с раздела <uri link="#reboot">Перезагрузка системы</uri>.
+</p>
+
+</body>
+</subsection>
+<!-- TODO: write this
+<subsection>
+<title>Using Das U-Boot</title>
+<body>
+
+</body>
+</subsection>
+-->
+</section>
+<section id="reboot">
+<title>Перезагрузка системы</title>
+<subsection>
+<body>
+
+<p>
+Выйдите из изолированной среды и размонтируйте все смонтированные 
+разделы. Затем введите ту самую волшебную команду, которую вы 
+так заждались: <c>reboot</c>.
+</p>
+
+<pre caption="Размонтирование всех разделов и перезагрузка">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount -l /mnt/gentoo/dev{/shm,/pts,}</i>
+cdimage ~# <i>umount -l /mnt/gentoo{/boot,/proc,}</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<p>
+Естественно, не забудьте вынуть загрузочный компакт-диск, иначе 
+он загрузится сам вместо вашей новой системы Gentoo.
+</p>
+
+<p>
+Загрузив вновь установленную систему, переходите к 
+<uri link="?part=1&amp;chap=11">завершению установки Gentoo</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-date: 2011-05-09
+source-cvs-revision: 1.6
+translated-by:  Vladimir Romanov [blueboar2@gmail.com]
+-->
