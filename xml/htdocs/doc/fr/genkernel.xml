@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/genkernel.xml,v 1.14 2011/08/29 11:00:02 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/genkernel.xml,v 1.15 2013/03/22 20:05:29 swift Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<guide lang="fr" disclaimer="obsolete">
+<guide lang="fr">
 <title>Guide genkernel pour Gentoo Linux</title>
 
 <author title="Auteur">
@@ -23,6 +23,10 @@
   <mail link="cam@gentoo.org">Camille Huot</mail>
 </author>
 
+<author title="Traducteur">
+  <mail link="jaaf.forums@zoraldia.com">José Fournier</mail>
+</author>
+
 <abstract>
 Ce guide a pour but de constituer une documentation de référence
 concernant toutes les fonctions de genkernel.
@@ -30,8 +34,8 @@ concernant toutes les fonctions de genkernel.
 
 <license/>
 
-<version>1.6</version>
-<date>2008-06-22</date>
+<version>8</version>
+<date>2012-06-29</date>
 
 <chapter>
 <title>Introduction</title>
@@ -41,15 +45,11 @@ concernant toutes les fonctions de genkernel.
 
 <p>
 Destiné aux utilisateurs qui ne sont pas familiers avec la compilation de noyau,
-genkernel est un outil qui automatise cette procédure. Il vous aidera à créer
+genkernel est un outil qui automatise cette procédure. Il peut vous aider à créer
 une image de noyau telle que celles présentes sur les CD-ROM d'installation de
 Gentoo, conçues pour détecter automatiquement la configuration matérielle de
 votre système. Genkernel peut aussi être utilisé avec du matériel qui requiert
-une initialisation ou bien juste pour créer un noyau fonctionnel avant le
-premier démarrage de votre nouveau système. Puisque genkernel compile
-automatiquement vos modules de noyau, vous pouvez utiliser du matériel qui
-requiert que certains paramètres soient passés à certains modules pour
-fonctionner.
+une initialisation ou un noyau fonctionnel avant que  le système ne démarre.
 </p>
 
 </body>
@@ -82,12 +82,7 @@ compilation.
 <body>
 
 <p>
-Pour pouvoir utiliser genkernel, lancez la commande <c>emerge genkernel</c>. Si
-vous utilisez la <uri
-link="/doc/fr/handbook/2005.1/hb-install-about.xml#doc_chap2_sect1">plate-forme
-de référence Gentoo</uri> (GRP), n'oubliez pas d'utiliser l'option <c>-k</c>
-pour installer les paquets binaires. Comme les paquets GRP ont une version plus
-ancienne de genkernel, les options diffèreront. Dans tous les cas, il vous est
+Pour pouvoir utiliser genkernel, lancez la commande <c>emerge genkernel</c>. Il vous est
 recommandé de consulter <c>genkernel --help</c> pour savoir comment fonctionne
 la version de genkernel que vous venez d'installer.
 </p>
@@ -106,19 +101,19 @@ la version de genkernel que vous venez d'installer.
 Bien qu'il y ait plusieurs façons de lancer genkernel, la plus simple reste
 <c>genkernel all</c>. Une configuration générique qui marche correctement pour
 tous les systèmes sera alors utilisée. Comme mentionné précédemment, cette
-méthode n'est pas sans défaut. La plupart des modules compilés ne seront pas
+méthode n'est pas sans inconvénients. La plupart des modules compilés ne seront pas
 utilisés et la compilation prendra beaucoup de temps. L'illustration suivante
 montre une approche plus efficace, en passant certains paramètres à
 genkernel&nbsp;:
 </p>
 
-<pre caption="Exécuter genkernel (avec des options)">
+<pre caption="exécuter genkernel (avec des options)">
 # <i>genkernel --splash --no-install --no-clean --menuconfig all</i>
 </pre>
 
 <p>
 Cette opération indique à genkernel de créer un noyau avec un écran de
-démarrage en framebuffer (<c>--splash</c>) qui devra être installé à la main
+démarrage en tampon de trames (framebuffer) (<c>--splash</c>) qui devra être installé à la main
 (<c>--no-install</c>). Dans la phase préparatoire de compilation, genkernel
 n'effacera pas les objets déjà compilés (<c>--no-clean</c>). Enfin, un menu de
 configuration sera affiché, permettant à l'utilisateur de choisir quels modules
@@ -128,7 +123,7 @@ seront compilés (<c>--menuconfig</c>).
 <p>
 D'autres paramètres peuvent modifier le comportement de genkernel. Par exemple,
 remplacez <c>--no-install</c> par <c>--install</c> pour qu'il installe
-automatiquement le nouveau noyau dans <path>/boot</path>. En utilisant le
+automatiquement le nouveau noyau dans <path>/boot</path> et  <c>--symlink</c> pour qu'il crée les liens symboliques pour vous. En utilisant le
 paramètre <c>--mountboot</c>, la partition <path>/boot</path> sera monté par
 genkernel automatiquement, si nécessaire.
 </p>
@@ -145,10 +140,7 @@ son initialisation.
 </p>
 
 <p>
-Le reste du chapitre détaille les diverses fonctionnalités des nombreux
-paramètres et commandes de genkernel. Quelques-unes des options disponibles
-fonctionnent comme un interrupteur, on place <b><c>no-</c></b> devant pour
-désactiver l'option. L'effet produit dans ce cas est indiqué entre crochets [].
+Le reste du chapitre détaille le fonctionnement de diverses options, variables de configuration et actions disponibles pour genkernel. Pour une liste plus complète, reportez-vous aux pages de manuel de genkernel en entrant la commande <c>man genkernel</c> et aux commentaires dans le fichier <path>/etc/genkernel.conf</path>. Quelques unes des options possèdent des variantes qui accomplissent l'opération inverse. Les variantes inverses sont préfixées par  <b><c>no-</c></b>, et leur effet est placé entre crochets anguleux, [&nbsp;].
 </p>
 
 </body>
@@ -161,34 +153,33 @@ désactiver l'option. L'effet produit dans ce cas est indiqué entre crochets []
 Les options de configuration listées ci-dessous sont là pour vous aider à
 décider quelle fonctionnalité doit être activée ou pas dans le noyau, avant de
 le compiler. Vous pouvez même choisir si le fichier de configuration ainsi
-généré sera sauvegardé ou pas. Voici les options de configuration
-principales&nbsp;:
+généré sera sauvegardé ou pas. Voici les principales options de configuration&nbsp;:
 </p>
 
 <ul>
   <li>
-    <b>--<c>no-</c>menuconfig</b>&nbsp;: Ceci lance <e>[ou ne lance pas]</e>
+    <b>--<c>no-</c>menuconfig</b>&nbsp;: ceci lance <e>[ou ne lance pas]</e>
     la commande <c>make menuconfig</c> (ce qui démarre un outil de configuration
     en mode texte) avant de compiler votre noyau.
   </li>
   <li>
-    <b>--gconfig</b>&nbsp;: Sélectionne la version GTK+ de l'outil de
-    configuration du noyau. L'avantage de cette option est que la majorité des
+    <b>--gconfig</b>&nbsp;: fournit un outil de
+    configuration du noyau qui dépend des bibliothèques GTK+. L'avantage de cette option est que la majorité des
     utilisateurs trouvent cette interface plus claire et facile à utiliser pour
     configurer le noyau, puisqu'elle utilise le système X-Window. Son
     inconvénient est que vous <b>devez</b> avoir X-Window pour l'utiliser, cela
     ne marchera pas dans une console en ligne de commande.
   </li>
   <li>
-    <b>--xconfig</b>&nbsp;: Sélectionne la version Qt de l'outil de
-    configuration du noyau. L'avantage de cette option est que la majorité des
+    <b>--xconfig</b>&nbsp;: fournit un outil de
+    configuration du noyau qui dépend des bibliothèques Qt. L'avantage de cette option est que la majorité des
     utilisateurs trouvent cette interface plus claire et facile à utiliser pour
     configurer le noyau, puisqu'elle utilise le système X-Window. Son
     inconvénient est que vous <b>devez</b> avoir X-Window pour l'utiliser, cela
     ne marchera pas dans une console en ligne de commande.
   </li>
   <li>
-    <b>--<c>no-</c>save-config</b>&nbsp;: Sauve <e>[ou ne sauve pas]</e> la
+    <b>--<c>no-</c>save-config</b>&nbsp;: sauve <e>[ou ne sauve pas]</e> la
     configuration du noyau dans un fichier situé dans le répertoire
     <path>/etc/kernels</path> pour une future utilisation.
   </li>
@@ -207,30 +198,29 @@ compilation&nbsp;:
 
 <ul>
   <li>
-    <b>--kerneldir=<path>/chemin/des/sources</path></b>&nbsp;: Pour spécifier
-    l'endroit où se trouvent les sources du noyau, si ce n'est pas
-    <path>/usr/src/linux</path>.
+    <b>--kerneldir=<path>/chemin/des/sources</path></b>&nbsp;: pour spécifier
+    l'endroit où se trouvent les sources du noyau et ne pas utiliser l'emplacement par défaut
+    <path>/usr/src/linux</path>..
   </li>
   <li>
     <b>--kernel-config=<path>/chemin/vers/le/fichier/config</path></b>&nbsp;:
-    Pour spécifier un autre fichier de configuration que
-    <path>/chemin/des/sources/.config</path>.
+    pour spécifier l'endroit où se trouve le fichier de configuration et ne pas utiliser l'emplacement par défaut
+    <path>/chemin/des/sources/.config</path>..
   </li>
   <li>
-    <b>--module-prefix=<path>/chemin/des/modules</path></b>&nbsp;: Pour
-    spécifier un autre répertoire que <path>/lib/modules</path> pour y installer
-    les modules du noyau.
+    <b>--module-prefix=<path>/chemin/des/modules</path></b>&nbsp;: pour
+    spécifier où installer les modules du noyau et ne pas utiliser l'emplacement par défaut  <path>/lib/modules</path>.
   </li>
 </ul>
 
 <ul>
   <li>
-    <b>--<c>no-</c>clean</b>&nbsp;: Ceci lance <e>[ou ne lance pas]</e>
+    <b>--<c>no-</c>clean</b>&nbsp;: ceci lance <e>[ou ne lance pas]</e>
     <c>make clean</c> avant de compiler le noyau, ce qui efface toutes les
     dépendances et fichiers objets déjà présents.
   </li>
   <li>
-    <b>--<c>no-</c>mrproper</b>&nbsp;: Ceci lance <e>[ou ne lance pas]</e>
+    <b>--<c>no-</c>mrproper</b>&nbsp;: ceci lance <e>[ou ne lance pas]</e>
     <c>make mrproper</c> avant de compiler le noyau. Comme la commande <c>make
     clean</c>, <c>make mrproper</c> efface toutes les dépendances et fichiers
     objets de l'arborescence des sources du noyau, mais elle efface
@@ -242,7 +232,7 @@ compilation&nbsp;:
     <b>--oldconfig</b>&nbsp;: Lance la commande <c>make oldconfig</c>, qui
     essaira de collecter des informations de configuration pour votre
     architecture depuis un script générique situé dans
-    <path>/usr/share/genkernel</path>. De plus, si <c>--oldconfig</c> est
+    <path>/usr/share/genkernel</path>. Ce processus n'est pas interactif&nbsp;; aucune entrée de l'utilisateur n'est demandée. De plus, si <c>--oldconfig</c> est
     utilisé en même temps que <c>--clean</c>, cette dernière sera annulée, comme
     si on avait rajouté l'option <c>--no-clean</c>.
   </li>
@@ -250,7 +240,7 @@ compilation&nbsp;:
 
 <ul>
   <li>
-    <b>--callback="echo Hello"</b>&nbsp;: Cette routine effectue un appel à
+    <b>--callback="echo Hello"</b>&nbsp;: cette routine effectue un appel à
     l'argument spécifié (ici, <c>echo Hello</c>) après que le noyau et les
     modules correspondants aient été construits, mais avant de créer l'image
     initrd. C'est utile lorsque vous souhaitez installer des modules externes
@@ -261,18 +251,20 @@ compilation&nbsp;:
 
 <ul>
   <li>
-    <b>--<c>no-</c>install</b>&nbsp;: Lance <e>[ou ne lance pas]</e> la commande
+    <b>--<c>no-</c>install</b>&nbsp;: lance <e>[ou ne lance pas]</e> la commande
     <c>make install</c>, ce qui installe votre nouveau noyau, le fichier de
     configuration, l'image initrd et le <path>System.map</path> sur votre
-    partition monté de boot. Les modules compilés seront aussi installés.
+    partition montée de boot. Les modules compilés seront aussi installés.
   </li>
   <li>
-    <b>--<c>no-</c>initrdmodules</b>&nbsp;: Empêche la copie des modules dans
-    l'initrd généré par genkernel. Cette option en <c>no-</c> est une exception,
-    il n'existe pas d'option opposée.
+    <b>--no-ramdisk-modules</b>: empêche la copie des modules dans l'image de disque intitial (initrd) créée par genkernel.  Cette option fait exception à la règel du préfixe <c>no-</c>&nbsp;; l'ommission de ce préfixe revient à donner une option invalide à genkernel.
+    flag.
   </li>
   <li>
-    <b>--genzimage</b>&nbsp;: Crée l'image initrd avant l'image du noyau. (Cette
+    <b>--all-ramdisk-modules</b>: copie tous les modules disponibles dans l'image de disque initial (initrd) créée par genkernel.
+  </li>
+  <li>
+    <b>--genzimage</b>&nbsp;: crée l'image initrd avant l'image du noyau (cette
     bidouille ne s'applique actuellement qu'aux systèmes PPC Pegasos.)
   </li>
 </ul>
@@ -292,19 +284,19 @@ du noyau, quoiqu'à un niveau bien plus bas.
 
 <ul>
   <li>
-    <b>--kernel-cc=<c>unCertainCompilateur</c></b>&nbsp;: Ceci spécifie un
+    <b>--kernel-cc=<c>unCertainCompilateur</c></b>&nbsp;: ceci spécifie un
     compilateur qui sera utilisé pour construire votre noyau.
   </li>
   <li>
-    <b>--kernel-ld=<c>unCertainÉditeurDeLiens</c></b>&nbsp;: Ceci spécifie
+    <b>--kernel-ld=<c>unCertainÉditeurDeLiens</c></b>&nbsp;: ceci spécifie
     un éditeur de liens utilisé dans la construction de votre noyau.
   </li>
   <li>
-    <b>--kernel-as=<c>unCertainAssembleur</c></b>&nbsp;: Ceci spécifie un
+    <b>--kernel-as=<c>unCertainAssembleur</c></b>&nbsp;: ceci spécifie un
     assembleur qui sera utilisé pour construire votre noyau.
   </li>
   <li>
-    <b>--kernel-make=<c>unCertainMake</c></b>&nbsp;: Ceci spécifie un
+    <b>--kernel-make=<c>unCertainMake</c></b>&nbsp;: ceci spécifie un
     utilitaire <e>GNU make</e> alternatif qui sera utilisé pour la construction
     de votre noyau.
   </li>
@@ -312,19 +304,19 @@ du noyau, quoiqu'à un niveau bien plus bas.
 
 <ul>
   <li>
-    <b>--utils-cc=<c>unCertainCompilateur</c></b>&nbsp;: Ceci spécifie un
+    <b>--utils-cc=<c>unCertainCompilateur</c></b>&nbsp;: ceci spécifie un
     compilateur qui sera utilisé pour construire les outils annexes.
   </li>
   <li>
-    <b>--utils-ld=<c>unCertainÉditeurDeLiens</c></b>&nbsp;: Ceci spécifie
+    <b>--utils-ld=<c>unCertainÉditeurDeLiens</c></b>&nbsp;: ceci spécifie
     un éditeur de liens utilisé dans la construction des outils annexes.
   </li>
   <li>
-    <b>--utils-as=<c>unCertainAssembleur</c></b>&nbsp;: Ceci spécifie un
+    <b>--utils-as=<c>unCertainAssembleur</c></b>&nbsp;: ceci spécifie un
     assembleur qui sera utilisé pour construire les outils annexes.
   </li>
   <li>
-    <b>--utils-make=<c>unCertainMake</c></b>&nbsp;: Ceci spécifie un
+    <b>--utils-make=<c>unCertainMake</c></b>&nbsp;: ceci spécifie un
     utilitaire <e>GNU make</e> alternatif qui sera utilisé pour la construction
     des outils annexes.
   </li>
@@ -332,7 +324,7 @@ du noyau, quoiqu'à un niveau bien plus bas.
 
 <ul>
   <li>
-    <b>--makeopts=<c>-jX</c></b>&nbsp;: Spécifie le nombre de fils d'exécution
+    <b>--makeopts=<c>-jX</c></b>&nbsp;: spécifie le nombre de fils d'exécution
     concurrents que make peut utiliser pendant la compilation du noyau et des
     outils. La variable «&nbsp;<b>X</b>&nbsp;» est un nombre obtenu en ajoutant
     un (1) au nombre de processeurs du système. Pour un système monoprocesseur,
@@ -358,7 +350,7 @@ nombre d'informations reportées, ainsi que la présentation de celles-ci.
 
 <ul>
   <li>
-    <b>--debuglevel=<c>NiveauVerbosité</c></b>&nbsp;: Contrôle le niveau de
+    <b>--debuglevel=<c>NiveauVerbosité</c></b>&nbsp;: contrôle le niveau de
     verbosité des informations fournies par genkernel. La variable
     <c>NiveauVerbosité</c> doit être un nombre entier compris entre 0 et 5. Le
     niveau «&nbsp;0&nbsp;» représentant le minimum d'information, tandis qu'une
@@ -366,17 +358,16 @@ nombre d'informations reportées, ainsi que la présentation de celles-ci.
     déroulement des opérations.
   </li>
   <li>
-    <b>--debugfile=<path>/chemin/vers/fichier/de/log</path></b>&nbsp;: Ignore la
+    <b>--debugfile=<path>/chemin/vers/fichier/de/log</path></b>&nbsp;: ignore la
     valeur de <c>--debuglevel</c> et renvoie <b>toutes</b> les informations
     produites par genkernel vers le fichier spécifié, qui est
     <path>/var/log/genkernel.log</path> par défaut.
   </li>
   <li>
-    <b>--<c>no-</c>color</b>&nbsp;: Active <e>[ou désactive]</e> la sortie
+    <b>--<c>no-</c>color</b>&nbsp;: active <e>[ou désactive]</e> la sortie
     colorée des informations de débogage (celles reportées par genkernel).
   </li>
 </ul>
-
 </body>
 </section>
 <section>
@@ -391,7 +382,7 @@ sont nécessaires pour activer une fonctionnalité particulière.
 
 <ul>
   <li>
-    <b>--<c>no-</c>splash</b>&nbsp;: Ajoute <e>[ou n'ajoute pas]</e> le
+    <b>--<c>no-</c>splash</b>&nbsp;: ajoute <e>[ou n'ajoute pas]</e> le
     support du <uri link="http://fbsplash.berlios.de/wiki/doku.php">splash
     framebuffer</uri> (l'écran de démarrage) à l'initrd que construit
     genkernel. Pour écraser le thème par défaut utilisé par fbsplash, utilisez
@@ -399,7 +390,7 @@ sont nécessaires pour activer une fonctionnalité particulière.
     répertoires situés dans <path>/etc/splash</path>).
   </li>
   <li>
-    <b>--splash-res=<c>MaResolution</c></b>&nbsp;: Cette option vous permet
+    <b>--splash-res=<c>MaResolution</c></b>&nbsp;: cette option vous permet
     de sélectionner les résolutions supportées par l'initrd au démarrage. Elle
     est utile pour deux raisons&nbsp;: d'abord, vous pouvez choisir quelles
     résolutions sont supportées spécifiquement par votre système, ensuite, vous
@@ -410,43 +401,47 @@ sont nécessaires pour activer une fonctionnalité particulière.
     résolutions possibles.
   </li>
   <li>
-    <b>--do-keymap-auto</b>&nbsp;: Force la sélection du modèle de clavier lors
+    <b>--do-keymap-auto</b>&nbsp;: force la sélection du modèle de clavier lors
     du démarrage.
   </li>
   <li>
-    <b>--lvm2</b>&nbsp;: Inclut le support des volumes gérés par <uri
+    <b>--lvm2</b>&nbsp;: inclut le support des volumes gérés par <uri
     link="http://sources.redhat.com/lvm2/">LVM2</uri> grâce à des binaires
     <e>statiques</e>, s'ils sont disponibles. Les binaires (statiques) LVM2 en
-    question sont compilés le cas échéant. Assurez-vous d'avoir installé le
+    question sont compilés lorqu'ils manquent. Assurez-vous d'avoir installé le
     paquet lvm2 sur votre système avec <c>emerge lvm2</c> avant d'activer cette
     option et d'avoir lu le <uri link="/doc/fr/lvm2.xml">guide Gentoo
     LVM2</uri>.
   </li>
+  
   <li>
-    <b>--evms2</b>&nbsp;: Inclut le support des volumes gérés par <uri
-    link="http://evms.sourceforge.net/">EVMS2</uri>, si disponible. Assurez-vous
-    d'avoir installé le paquet evms sur votre système avec <c>USE=static emerge
-    evms2</c> avant d'utiliser cette option genkernel. <e>(L'absence de l'option
-    </e><c>USE=static</c><e> lors de l'installation du paquet empêchera la
-    compilation des binaires statiques nécessaires.)</e>
-  </li>
-  <li>
-    <b>--dmraid</b>&nbsp;: Inclut le support de <uri
+    <b>--dmraid</b>&nbsp;: inclut le support de <uri
     link="http://people.redhat.com/~heinzm/sw/dmraid/readme">DMRAID</uri>,
     l'outil qui crée des volumes RAID logiciels en utilisant le sous-système
     device-mapper du noyau. DMRAID découvre, active, désactive et affiche les
     propriétés des volumes RAID (ATARAID par exemple).
   </li>
   <li>
-    <b>--luks</b>&nbsp;: Inclut le support de <uri
+    <b>--luks</b>&nbsp;: inclut le support de <uri
     link="http://luks.endorphin.org/">Linux Unified Key Setup</uri> (LUKS).
     Cela vous permettra d'utiliser un périphérique chiffré par LUKS pour placer
     votre système de fichiers racine (/). Spécifiez alors au chargeur de
     démarrage le nom de ce périphérique via la variable crypt_root (real_root
     doit être le nom du périphérique une fois déchiffré).
   </li>
+   <li>
+    <b>--disklabel</b>: ajoute la prise en charge de  disk label (<e>étiquette de disque</e>) and UUID (<e>Identifiant Unique Universel</e>) à votre disque virtuel initial (initrd).
+  </li>
   <li>
-    <b>--linuxrc=<path>/chemin/vers/le/linuxrc</path></b>&nbsp;: Spécifie un
+    <b>--iscsi</b>: ajoute la prise en charge de  iSCSI à votre disque virtuel initial (initrd).
+  </li>
+  <li>
+    <b>--multipath</b>: ajoute la prise en charge de <uri
+    link="/doc/en/multipath.xml">Multipath</uri> à votre disque virtuel initial (initrd).
+  </li>
+
+  <li>
+    <b>--linuxrc=<path>/chemin/vers/le/linuxrc</path></b>&nbsp;: spécifie un script
     <e>linuxrc</e> créé par l'utilisateur qui sera appelé lors de la phase de
     démarrage du noyau, avant le démarrage du système. (Un script linuxrc par
     défaut devrait se trouver dans <path>/usr/share/genkernel/</path>.) Ce
@@ -454,18 +449,18 @@ sont nécessaires pour activer une fonctionnalité particulière.
     pilotes requis (sous forme de modules) par le système avant le démarrage.
   </li>
   <li>
-    <b>--cachedir=<path>/chemin/vers/autre/rep</path></b>&nbsp;: Remplace le
+    <b>--cachedir=<path>/chemin/vers/autre/rep</path></b>&nbsp;: remplace le
     chemin par défaut du cache utilisé pendant la compilation.
   </li>
   <li>
-    <b>--tempdir=<path>/chemin/vers/autre/rep</path></b>&nbsp;: Spécifie le
+    <b>--tempdir=<path>/chemin/vers/autre/rep</path></b>&nbsp;: spécifie le
     chemin du répertoire temporaire utilisé par genkernel lors de la compilation
     du noyau.
   </li>
   <li>
-    <b>--unionfs</b>&nbsp;: Inclut le support <uri
+    <b>--unionfs</b>&nbsp;: inclut la prise en charge de <uri
     link="http://www.fsl.cs.sunysb.edu/project-unionfs.html">Unification File
-    System</uri> dans l'initrd.
+    System</uri> dans votre disque virtuel initial (initrd).
   </li>
 </ul>
 
@@ -481,13 +476,13 @@ Les options suivantes n'ont pas pu être classées dans une autre catégorie&nbs
 
 <ul>
   <li>
-    <b>--mountboot</b>&nbsp;: Détecte si le répertoire <path>/boot</path> a
-    besoin d'être monté en lisant le <path>/etc/fstab</path>.
+    <b>--mountboot</b>&nbsp;: détecte si le répertoire <path>/boot</path> a
+    besoin d'être monté en lisant le <path>/etc/fstab</path> et en y prenant les instructions sur la manière de le monter.
   </li>
   <li>
-    <b>--kernname=<c>Nom</c></b>&nbsp;: Vous permet de nommer le noyau et
-    l'initrd qui seront copiés dans <path>/boot</path>, de sorte que les
-    fichiers produits soient kernel-<c>Nom</c>-version et
+    <b>--kernname=<c>Nom</c></b>&nbsp;: vous permet de nommer le noyau et
+   le disque virtuel initial (initrd).qui seront copiés dans <path>/boot</path>, de sorte que les
+    noms de fichier produits soient kernel-<c>Nom</c>-version et
     initramfs-<c>Nom</c>-version.
   </li>
 </ul>
@@ -504,16 +499,19 @@ actuellement supportées&nbsp;:
 </p>
 
 <ul>
-  <li><c>initrd</c>&nbsp;: Ne construit que l'initrd.</li>
-  <li><c>bzImage</c>&nbsp;: Ne construit que le noyau.</li>
-  <li><c>kernel</c>&nbsp;: Ne construit que le noyau et les modules.</li>
-  <li><c>all</c>&nbsp;: Construit l'initrd, le noyau et les modules.</li>
+  <li>
+    <c>all</c>: compile/construit toutes les étapes &mdash; le disque virtuel initial (initrd), l'image du noyau et les modules.
+  </li>
+  <li><c>bzImage</c>: ne compile/construit que l'image du noyau</li>
+  <li><c>kernel</c>: ne compile/construit que l'image du noyau et les modules</li>
+  <li><c>initramfs</c>: ne compile/construit que le disque virtuel initial(initramfs)</li>
+  <li><c>ramdisk</c>: ne compile/construit que le disque virtuel initial(initramfs)</li>
 </ul>
 
 <p>
-La dernière action, <c>all</c>, est recommandée car elle construit tout ce qui
+La première action, <c>all</c>, est recommandée car elle construit tout ce qui
 est nécessaire pour obtenir un noyau fonctionnel. Rappelez-vous, une
-<e>action</e> indique juste à genkernel ce qu'il faut <e>construire</e> et non
+<e>action</e> indique juste à genkernel ce qu'il faut <e>construire/compiler</e> et non
 pas ce qu'il faut <e>installer</e>.
 </p>
 
@@ -530,12 +528,8 @@ celui-ci&nbsp;:
 </p>
 
 <ol>
-  <li>
-    Ajoutez <c>root=/dev/ram0</c> et <c>init=/linuxrc</c> aux options du noyau.
-  </li>
-  <li>
-    Ajoutez <c>real_root=/dev/hda3</c>, par exemple, aux options du noyau, si
-    <path>/dev/hda3</path> est votre partition racine.
+ <li>
+	Ajoutez par exemple  <c>real_root=/dev/sda3</c>, aux paramètres transmis à l'image du 	noyau, si <path>/dev/sda3</path> contient votre partition root.
   </li>
   <li>
     Si vous utilisez splash, ajoutez une option telle que <c>vga=0x317</c>
@@ -543,7 +537,7 @@ celui-ci&nbsp;:
     <c>splash=silent</c>, selon la verbosité désirée.
   </li>
   <li>
-    Ajoutez l'instruction qui active l'utilisation d'une image initrd. Vous
+    Ajoutez l'instruction qui active l'utilisation d'une image de disque virtuel initial (initrd). Vous
     pouvez consulter le chapitre sur la <uri
     link="/doc/en/handbook/handbook-x86.xml?part=1&amp;chap=10">configuration du
     chargeur de démarrage</uri> du Manuel Gentoo pour plus de détails.
@@ -565,21 +559,21 @@ La quantité d'options disponibles peut être encombrante si vous les utilisez
 toutes en ligne de commande&nbsp;:
 </p>
 
-<pre caption="Exécution de genkernel (avec de nombreuses options)">
-# <i>genkernel --debuglevel=5 --no-color --no-mrproper --clean --splash \
---kerneldir=/chemin/vers/sources --install --menuconfig \
---kernel-config=/chemin/vers/config --save-config --mountboot all</i>
+<pre caption="exécution de genkernel (avec de nombreuses options)">
+# <i>genkernel --loglevel=5 --no-color --no-mrproper --clean --splash \
+--kerneldir=/path/to/alternate/kernel/sources --install --menuconfig \
+--kernel-config=/path/to/preferred/configfile --save-config --mountboot all</i>
 </pre>
 
 <p>
 Heureusement, on peut placer la plupart des paramètres les plus utilisés dans un
 fichier de configuration afin de pouvoir les régler ou les modifier plus
-facilement. Voici une liste des options les plus significatives&nbsp;:
+facilement&nbsp;: <path>/etc/genkernel.conf</path>. Voici une liste des options les plus significatives&nbsp;:
 </p>
 
 <ul>
   <li>
-    <b>MENUCONFIG=<c>[yes|no]</c></b>&nbsp;: Cette option est équivalente au
+    <b>MENUCONFIG=<c>[yes|no]</c></b>&nbsp;: cette option est équivalente au
     paramètre <c>--menuconfig</c> de genkernel, ce qui active l'utilisation de
     la commande <c>make menuconfig</c> pour lancer l'utilitaire de configuration
     du noyau en ligne de commande. Pour que l'utilitaire soit lancé
@@ -587,7 +581,7 @@ facilement. Voici une liste des options les plus significatives&nbsp;:
     «&nbsp;yes&nbsp;», sinon mettez «&nbsp;no&nbsp;».
   </li>
   <li>
-    <b>CLEAN=<c>[yes|no]</c></b>&nbsp;: Mettre «&nbsp;yes&nbsp;» pour cette
+    <b>CLEAN=<c>[yes|no]</c></b>&nbsp;: mettre «&nbsp;yes&nbsp;» pour cette
     variable équivaut à utiliser l'option <c>--clean</c> de genkernel et lance
     la commande <c>make clean</c> pour effacer tous les fichiers objets et les
     dépendances de l'arborescence du noyau. Mettre «&nbsp;no&nbsp;» pour cette
@@ -596,7 +590,7 @@ facilement. Voici une liste des options les plus significatives&nbsp;:
     <c>--no-mrproper</c>, qui désactive la commande <c>make mrproper</c>.
   </li>
   <li>
-    <b>MRPROPER=<c>[yes|no]</c></b>&nbsp;: Mettez la valeur «&nbsp;yes&nbsp;»
+    <b>MRPROPER=<c>[yes|no]</c></b>&nbsp;: mettez la valeur «&nbsp;yes&nbsp;»
     ici pour activer l'option <c>--mrproper</c> de genkernel et donc lancer la
     commande <c>make mrproper</c>, ce qui nettoie l'arborescence du noyau de
     tout fichier de configuration. Choisissez «&nbsp;no&nbsp;» pour provoquer
@@ -604,7 +598,7 @@ facilement. Voici une liste des options les plus significatives&nbsp;:
     pas <c>make mrproper</c>.
   </li>
   <li>
-    <b>MOUNTBOOT=<c>[yes|no]</c></b>&nbsp;: Mettre «&nbsp;yes&nbsp;» ici active
+    <b>MOUNTBOOT=<c>[yes|no]</c></b>&nbsp;: mettre «&nbsp;yes&nbsp;» ici active
     l'option <c>--mountboot</c> de genkernel, qui montera automatiquement (si
     nécessaire) le répertoire <path>/boot</path> lors de la compilation. Si
     votre répertoire <path>/boot</path> est sur une partition séparée, nous vous
@@ -612,7 +606,7 @@ facilement. Voici une liste des options les plus significatives&nbsp;:
     souvenir de faire.
   </li>
   <li>
-    <b>SAVE_CONFIG=<c>[yes|no]</c></b>&nbsp;: Après avoir configuré le noyau,
+    <b>SAVE_CONFIG=<c>[yes|no]</c></b>&nbsp;: après avoir configuré le noyau,
     les options choisies sont sauvées dans le fichier <path>.config</path> à la
     racine de l'arborescence du noyau. Ce fichier peut se faire écraser lors
     d'une recompilation de noyau ou lors d'un nettoyage. En mettant
@@ -621,25 +615,27 @@ facilement. Voici une liste des options les plus significatives&nbsp;:
     <path>/etc/kernels</path>.
   </li>
   <li>
-    <b>USECOLOR=<c>[yes|no]</c></b>&nbsp;: Mettez «&nbsp;yes&nbsp;» ici pour
+    <b>USECOLOR=<c>[yes|no]</c></b>&nbsp;: mettez «&nbsp;yes&nbsp;» ici pour
     activer l'option <c>--color</c> de genkernel qui provoque l'affichage coloré
     des messages de genkernel, lorsque nécessaire.
   </li>
   <li>
-    <b>DEBUGLEVEL=<c>[0|1|2|3|4|5]</c></b>&nbsp;: Cette option permet d'ajuster
+    <b>LOGLEVEL=<c>[0|1|2|3|4|5]</c></b>&nbsp;: cette option permet d'ajuster
     la verbosité des messages produits par genkernel. La valeur <c>0</c>
     supprimera complètement tous les messages de débogage tandis que <c>5</c>
     provoquera l'affichage de la totalité des informations disponibles.
   </li>
 </ul>
-
+<note>
+d'avantages d'options sont décrites dans  <path>/etc/genkernel.conf</path>.
+</note>
 <p>
 En réglant les options appropriées directement dans
 <path>/etc/genkernel.conf</path>, vous pouvez diviser par deux le nombre
 d'arguments à placer sur la ligne de commande de genkernel&nbsp;:
 </p>
 
-<pre caption="Lancer genkernel après avoir renseigné genkernel.conf">
+<pre caption="lancer genkernel après avoir renseigné genkernel.conf">
 # <i>genkernel --splash --kerneldir=/chemin/vers/sources \
 --kernel-config=/chemin/vers/config --install all</i>
 </pre>
@@ -661,7 +657,7 @@ leur réutilisation et leur modification future.
 <body>
 
 <p>
-L'outil genkernel peut fabriquer des images de noyaux et d'initrd qui permettent
+L'outil genkernel peut fabriquer des images de noyaux et de disque virtuel initial (initrd) qui permettent
 de démarrer sur le réseau (<e>netboot</e>). Avec un peu de chance, vous devriez
 pouvoir faire démarrer n'importe quel ordinateur récent par le réseau sur
 l'environnement fourni par le CD-ROM d'installation de Gentoo.
@@ -677,7 +673,7 @@ comme si le CD était présent en local.
 </body>
 </section>
 <section>
-<title>Construire un noyau et un initrd qui supportent le démarrage par le
+<title>Construire un noyau et un disque virtuel initial (initrd) qui supportent le démarrage par le
 réseau</title>
 <body>
 
@@ -687,7 +683,7 @@ suivantes lors de la configuration du noyau&nbsp;:
 </p>
 
 <warn>
-Le support du démarrage par le réseau avec genkernel est expérimental et peut
+le support du démarrage par le réseau avec genkernel est expérimental et peut
 contenir quelques bogues.
 </warn>
 
@@ -698,7 +694,7 @@ que modules. Pourtant, il est impératif ici (pour pouvoir démarrer avec) que c
 pilotes soient intégrés dans le noyau et <b>pas</b> en modules.
 </p>
 
-<pre caption="Configurer un noyau 2.6 en activant la carte réseau">
+<pre caption="configurer un noyau 2.6.x en activant la carte réseau">
 Device Drivers --->
    Networking Support --->
       Ethernet (10 or 100Mbit)  ---> 
@@ -715,7 +711,7 @@ par un serveur DHCP. Bien sûr, cela signifie que la ligne de commande d'appel d
 noyau sera la même pour toutes les machines.
 </p>
 
-<pre caption="Configurer un noyau 2.6 pour qu'il supporte le DHCP">
+<pre caption="configurer un noyau 2.6.x pour qu'il supporte le DHCP">
 Device Drivers --->
    Networking Support --->
       Networking options  
@@ -732,7 +728,7 @@ sources génériques de Linux, vous devrez appliquer les correctifs nécessaires
 bien installer les <c>gentoo-sources</c>.
 </p>
 
-<pre caption="Configurer le noyau pour gérer SquashFS">
+<pre caption="configurer le noyau pour gérer SquashFS">
 File systems---> 
    Miscellaneous filesystems --->
       [*] SquashFS 2.X - Squashed file system support
@@ -745,7 +741,7 @@ nécessaire que si la version de votre noyau ne correspond pas à la version de
 l'image située sur le CD-ROM d'installation.
 </p>
 
-<pre caption="Créer une archive qui contient les modules du noyau">
+<pre caption="créer une archive qui contient les modules du noyau">
 # <i>cd /</i>
 # <i> tar -cf /tmp/modules-X.Y.Z.tar.gz /lib/modules/X.Y.Z/</i>
 </pre>
@@ -755,7 +751,7 @@ Selon votre méthode de démarrage par le réseau, vous devrez exécuter certain
 des étapes suivantes&nbsp;:
 </p>
 
-<pre caption="Créer une image de démarrage">
+<pre caption="créer une image de démarrage">
 <comment>(Créer une image etherboot.)</comment>
 # <i>emerge mknbi</i>
 # <i>cd /boot</i>
@@ -794,7 +790,7 @@ votre archive <c>modules-X.Y.Z.tar.gz</c> dans le répertoire
 <path>/nfs/livecd/add</path>.
 </p>
 
-<pre caption="Préparation du partage NFS">
+<pre caption="préparation du partage NFS">
 <comment>(En supposant que /nfs/livecd soit un partage NFS.)</comment>
 # <i>mount /tmp/gentoo-livecd.iso /mnt/gentoo -o loop</i>
 # <i>cp -p /mnt/cdrom /nfs/livecd</i>
@@ -817,7 +813,7 @@ DHCP. Ces informations peuvent être configurées individuellement en utilisant
 l'adresse MAC pour identifier les machines&nbsp;:
 </p>
 
-<pre caption="Exemple de configuration dhcpd.conf">
+<pre caption="exemple de configuration dhcpd.conf">
 ...
 
 host netbootableMachine {
@@ -844,7 +840,7 @@ carte réseau et montera le CD-ROM d'installation via NFS. Voici quelques astuce
 pour certaines plates-formes&nbsp;:
 </p>
 
-<pre caption="Comment démarrer par le réseau">
+<pre caption="comment démarrer par le réseau">
 <comment># Etherboot : insérez le disque etherboot dans le lecteur et redémarrez.
 # La ligne de commande du noyau a été spécifiée lors de la construction de
 # l'image.</comment>
@@ -867,7 +863,57 @@ LABEL gentoo
 </body>
 </section>
 </chapter>
+<chapter>
+<title>Amorcer un disque virtuel initial de genkernel</title>
+<section>
+<title>Introduction</title>
+<body>
 
+<p>
+Si vous avez installé un disque virtuel initial (initramfs) avec genkernel, vous devriez assurément regarder les options diverses et variées de boot que vous pouvez (ou devez) définir dans la configuration de votre chargeur de démarrage. Les plus courantes sont citées ici pour référence.
+</p>
+
+</body>
+</section>
+<section>
+<title>Chargement de  LVM ou de software-RAID</title>
+<body>
+
+<p>
+Si votre système utilise  LVM ou software-RAID, vous avez sans aucun doute construit le disque virtuel initial (initramfs) en utilisant  les options  <c>--lvm</c> et <c>--mdadm</c>. Néanmoins, vous ne devriez pas oublier d'activer la prise en charge au moment du démarrage. Ceci peut être fait en utilisant les options  <c>dolvm</c> et<c> domdadm</c>.
+</p>
+
+<pre caption="activer la prise en charge de  LVM et/ou MDADM">
+<comment># Exemple pour  GRUB 1.x</comment>
+title Gentoo Linux
+root (hd0,0)
+kernel /vmlinuz root=/dev/md3 <i>dolvm domdadm</i>
+initrd /initramfs-genkernel-x86_64-3.4.3
+</pre>
+
+</body>
+</section>
+<section>
+<title>Démarrer dans le mode utilisateur unique (single-user)</title>
+<body>
+
+<p>
+If for some reason boot-up fails, you might be able to rescue your system by
+booting in the single-user mode. This will only load the really necessary
+services and then drop you to a rescue (root) shell.
+</p>
+
+<pre caption="démarrer dans le mode utilisateur unique">
+<comment># Exemple pour GRUB 1.x</comment>
+title Gentoo Linux
+root (hd0,0)
+kernel /vmlinuz root=/dev/md3 <i>init_opts=S</i>
+initrd /initramfs-genkernel-x86_64-3.4.3
+</pre>
+
+</body>
+</section>
+</chapter>
 <chapter>
 <title>Conclusion</title>
 <section>
