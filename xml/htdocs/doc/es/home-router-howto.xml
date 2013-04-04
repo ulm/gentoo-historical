@@ -14,6 +14,9 @@
 <author title="Traductor" >
   <mail link="chiguire@gentoo.org">John Christian Stoddart</mail>
 </author>
+<author title="Traductor">
+  <mail link="nimiux"/>
+</author>
 
 <abstract>
 Este documento detalla cómo convertir una vieja máquina con Gentoo en
@@ -23,8 +26,8 @@ un enrutador para conectar su red doméstica a Internet.
 <!-- The content of this document is released into the public domain -->
 <license/>
 
-<version>2</version>
-<date>2011-10-30</date>
+<version>3</version>
+<date>2013-04-03</date>
 
 <chapter>
 <title>Introducción</title>
@@ -220,24 +223,19 @@ no le he mentido y ¡espero que disponga de ella ahora! Abra en su editor
 preferido <path>/etc/ppp/pppoe.conf</path> y configúrelo.
 </p>
 
-<note>
-Para hacer que la siguiente configuración de net.eth1 funcione,
-necesita tener instalado en su sistema baselayout-1.12.9 o posterior.
-</note>
-
 <pre caption="Configurar eth1" >
 <comment>(Reemplace 'vla9h924' con su usuario y 'boogie' con su contraseña)</comment>
 
 # <i>nano /etc/conf.d/net</i>
-<comment>Indique a baselayout que utilice adsl sobre eth1 para ppp0:</comment>
-config_ppp0=( "ppp" )
+<comment>Indique a openrc que utilice adsl sobre eth1 para ppp0:</comment>
+config_ppp0="ppp"
 link_ppp0="eth1"
-plugins_ppp0=( "pppoe" )
-pppd_ppp0=(
-         "defaultroute"
-         "usepeerdns"
+plugins_ppp0="pppoe"
+pppd_ppp0="
+  defaultroute
+  usepeerdns
 <comment>Puede necesitar otras opciones, vea /usr/share/doc/openrc-*/net.example.bz2</comment>
-)
+"
 username_ppp0="vla9h924"
 password_ppp0="boogie"
 
@@ -282,13 +280,13 @@ IP, puerta de enlace y servidores DNS.
 <comment>Usuarios con IP dinámica:</comment>
 # <i>emerge dhcpcd</i>
 # <i>nano /etc/conf.d/net</i>
-<comment>Necesitará una línea similar a:</comment>
-config_eth1=( &quot;dhcp&quot; )
+<comment>Necesitará una entrada similar a:</comment>
+config_eth1="dhcp"
 <comment>Usuarios con IP estática:</comment>
 # <i>nano /etc/conf.d/net</i>
-<comment>Necesitará entradas tal que:</comment>
-config_eth1=( &quot;66.92.78.102 broadcast 66.92.78.255 netmask 255.255.255.0&quot; )
-routes_eth1=( &quot;default gw 66.92.78.1&quot; )
+<comment>Necesitará entradas como:</comment>
+config_eth1="66.92.78.102/24 brd 66.92.78.255"
+routes_eth1="default via 66.92.78.1"
 # <i>nano /etc/resolv.conf</i>
 <comment>Añada una línea por cada servidor DNS:</comment>
 nameserver 123.123.123.123
@@ -319,7 +317,7 @@ Este paso es pan comido comparado con el anterior.
 <pre caption="Configurar eth0" >
 # <i>nano /etc/conf.d/net</i>
 <comment>Añada una línea como la siguiente:</comment>
-config_eth0=( &quot;192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0&quot; )
+config_eth0="192.168.0.1/24 brd 192.168.0.255"
 # <i>rc-update add net.eth0 default</i>
 # <i>/etc/init.d/net.eth0 start</i>
 </pre>
@@ -367,7 +365,7 @@ opciones por defecto deberían funcionar bien.
 <pre caption="Configurar un servidor DHCP" >
 # <i>emerge dnsmasq</i>
 # <i>nano /etc/dnsmasq.conf</i>
-<comment>Añada esta línea para habilitar dhcp:</comment>
+<comment>Añada esta entrada para habilitar dhcp:</comment>
 dhcp-range=192.168.0.100,192.168.0.250,72h
 <comment>Restringir el uso de dnsmasq solo en la interface LAN</comment>
 interface=eth0
@@ -377,14 +375,14 @@ interface=eth0
 </pre>
 
 <p>
-¡Ahora su pequeño enrutador es un genuino servidor DHCP! ¡Enchufe esos
-ordenadores y mírelos funcionar! Con los sistemas Windows debe ir a
-las Propiedades TCP/IP y seleccionar las opciones 'Obtener una
-dirección IP automáticamente' y 'Obtener las direcciones de los
-servidores DNS automáticamente'. Algunas veces, los cambios no son
-instantáneos, por eso debe abrir un interfaz de comandos y ejecutar
-<c>ipconfig /release</c> e <c>ipconfig /renew</c>. Pero ya es
-suficiente de Windows, volvamos a nuestro pingüino favorito.
+¡Ahora su pequeño enrutador es un genuino servidor DHCP! ¡Enchufe
+esos ordenadores y observe cómo funcionan! Con los sistemas Windows
+debe ir a las Propiedades TCP/IP y seleccionar las opciones
+'Obtener una dirección IP automáticamente' y 'Obtener las direcciones
+de los servidores DNS automáticamente'. Algunas veces, los cambios
+no son instantáneos, por eso debe abrir un intérprete de comandos y
+ejecutar <c>ipconfig /release</c> e <c>ipconfig /renew</c>. Pero ya
+es suficiente con Windows, volvamos a nuestro pingüino favorito.
 </p>
 
 </body>
@@ -407,15 +405,15 @@ Wikipedia</uri>.
 </p>
 
 <p>
-Puesto que estamos utilizando dnsmasq para nuestro servidor DHCP, que incluye
-un servidor DNS, ¡no tendremos que hacer nada ahora!. Su pequeño enrutador ya
-proporciona DSN a sus clientes DHCP. Apuesto a que quisiéramos que todo fuese
-tan fácil ;).
+Puesto que estamos utilizando dnsmasq para nuestro servidor DHCP, que
+incluye un servidor DNS, ¡no tendremos que hacer nada ahora!. Su
+pequeño enrutador ya proporciona DSN a sus clientes DHCP. Apuesto a
+que quisiéramos que todo fuese tan fácil ;).
 </p>
 
 <p>
-Desde luego puede elegir cualquier otro servidor DNS si se encuentra más a
-gusto con él, pero la razón por la que dnsmasq es bueno es porque está
+Desde luego puede elegir cualquier otro servidor DNS si se encuentra más
+a gusto con él, pero la razón por la que dnsmasq es bueno es porque está
 diseñado para hacer exactamente aquello que queremos y nada más. Es un
 pequeño  servidor DNS que presta almacenamiento caché y retransmisión de
 peticiones DNS en redes locales. Aquí no estamos buscando proveer DNS para
@@ -462,7 +460,7 @@ iptables</c>.
 # <i>iptables -F</i>
 # <i>iptables -t nat -F</i>
 
-<comment>Configuración de las políticas por defecto para manejar el resto de tráfico
+<comment>Configuración de las directrices por defecto para manejar el resto de tráfico
 </comment>
 # <i>iptables -P INPUT ACCEPT</i>
 # <i>iptables -P OUTPUT ACCEPT</i>
@@ -498,7 +496,7 @@ iptables</c>.
 # <i>/etc/init.d/iptables save</i>
 # <i>rc-update add iptables default</i>
 # <i>nano /etc/sysctl.conf</i>
-<comment>Añada/descomente las líneas siguientes:</comment>
+<comment>Añada o elimine los comentarios de las siguientes líneas:</comment>
 net.ipv4.ip_forward = 1
 net.ipv4.conf.default.rp_filter = 1
 
@@ -568,7 +566,7 @@ local, puede omitir el puerto de destino. Mire la página iptables(8) para
 más información.
 </p>
 
-<pre caption="Ejecución de los comandos iptables">
+<pre caption="Ejecución de las órdenes iptables">
 <comment>Copie y pegue estos ejemplos ...</comment>
 # <i>export LAN=eth0</i>
 # <i>export WAN=eth1</i>
@@ -812,11 +810,12 @@ link="/doc/es/rsync.xml#local">guía rsync</uri> oficial.
 </note>
 
 <p>
-Puesto que cada máquina Gentoo necesita rsync, no es necesario instalarlo.
-Editaremos el fichero de configuración por defecto
-<path>/etc/rsyncd.conf</path>, descomentaremos la sección
-<c>[gentoo-portage]</c> y nos aseguraremos de añadir una opción
-<c>address</c>. Las otras opciones por defecto deberían funcionar bien.
+Puesto que cada máquina Gentoo necesita rsync, no es necesario
+instalarlo. Editaremos el fichero de configuración por defecto
+<path>/etc/rsyncd.conf</path>, eliminaremos los comentarios
+de la sección <c>[gentoo-portage]</c> y nos aseguraremos de
+añadir una opción <c>address</c>. Las otras opciones por defecto
+deberían funcionar bien.
 </p>
 
 <pre caption="Configuración del servidor rsync" >
@@ -882,7 +881,7 @@ conexión media hora.
 # <i>cd /etc</i>
 # <i>nano tcp.smtp</i>
 -->
-<comment>Añada una línea tal que esta en la sección permitir (allow):</comment>
+<comment>Añada una entrada como la siguiente para permitir (allow):</comment>
 192.168.0.:allow,RELAYCLIENT=&quot;&quot;
 <!--
 # <i>tcprules tcp.qmail-qmtp.cdb rules.tmp &lt; tcp.qmail-smtp</i>
@@ -1085,10 +1084,10 @@ fichero de configuración. También puede intentar ejecutar <c>dhcpd -d -f</c>
 <body>
 
 <p>
-Si experimenta errores intermitentes (como no poder acceder a determinadas
-páginas web mientras que otras se cargan bien), puede que tenga un problema de
-Path MTU Discovery. La manera rápida de verificarlo es ejecutar este comando
-iptables:
+Si experimenta errores intermitentes (como no poder acceder a
+determinadas páginas web mientras que otras se cargan bien),
+puede que tenga un problema de Path MTU Discovery. La manera
+rápida de verificarlo es ejecutar la siguiente orden iptables:
 </p>
 
 <pre caption="Burlando problemas MTU" >
@@ -1096,19 +1095,20 @@ iptables:
 </pre>
 
 <p>
-Lo que afectará a todas las conexiones nuevas, por tanto, actualice la página
-con la que está teniendo problemas para probarlo. En caso de que esto ayude, el
-valor estándar para una conexión Ethernet de 100Mbits es <c>1500</c>; este
-valor también se aplica a PPPoA. Para las conexiones PPPoE es de <c>1492</c>.
-Para más información, debería leer el capítulo 15 de
+Lo que afectará a todas las conexiones nuevas, por tanto,
+actualice la página con la que está teniendo problemas para
+probarlo. En caso de que esto ayude, el valor estándar para
+una conexión Ethernet de 100Mbits es <c>1500</c>; este
+valor también se aplica a PPPoA. Para las conexiones PPPoE es
+de <c>1492</c>. Para más información, debería leer el capítulo 15 de
 <uri link="http://lartc.org/howto/">Linux Advanced Routing &amp;
 Traffic Control HOWTO</uri> (en inglés).
 </p>
 
 <p>
-Si este comando no le funciona, tal vez quiera colocar la regla en la
+Si esta orden no le funciona, tal vez quiera colocar la regla en la
 tabla de procesamiento (mangle, en inglés). Solo agregue <c>-t
-mangle</c> al comando.
+mangle</c> a la orden.
 </p>
 
 </body>
