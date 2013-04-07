@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/gentoo-upgrading.xml,v 1.19 2013/02/10 19:42:56 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/gentoo-upgrading.xml,v 1.20 2013/04/07 12:04:33 nimiux Exp $ -->
 
 <guide lang="es">
 <title>Guía de actualización de Gentoo</title>
@@ -20,6 +20,9 @@
 <author title="Traductor">
   <mail link="enrique@barbeito.org">Enrique Barbeito García</mail>
 </author>
+<author title="Traductor">
+  <mail link="nimiux"/>
+</author>
 
 <abstract>
 Este documento explica cómo las nuevas versiones de Gentoo afectan a
@@ -30,8 +33,8 @@ instalaciones existentes.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>5</version>
-<date>2013-02-09</date>
+<version>6</version>
+<date>2013-04-06</date>
 
 <chapter>
 <title>Gentoo y las actualizaciones</title>
@@ -233,6 +236,31 @@ la siguiente orden:
 </pre>
 </body>
 </section>
+
+<section>
+<title>Actualizar desde sistemas (demasiado) antiguos</title>
+<body>
+
+<p>
+En ocasiones, los sistemas son tan antiguos que es complicado
+actualizarlos. En el camino para su actualización puede que
+se requieran versiones intermedias de software (como portage)
+que ya no existen, y por tanto podría necesitar una
+actualización del árbol de portage en pasos (por ejemplo
+actualizaciones incrementales del árbol con pasos de 3 o 4
+meses).
+</p>
+
+<p>
+Para actualizar estos sistemas, puede utilizar un stage3
+reciente. Las instrucciones para realizar esto se dan en la
+sección <uri link="#old_system">Actualizar sistemas
+anticuados</uri>.
+</p>
+
+</body>
+</section>
+
 </chapter>
 
 <chapter id="instructions">
@@ -734,6 +762,95 @@ Las instrucciones para esta actualización son bastante enrevesadas,
 puede encontrarlas <uri
 link="/doc/es/new-upgrade-to-gentoo-1.4.xml">aquí</uri>.
 </p>
+</body>
+</section>
+</chapter>
+
+<chapter id="old_system">
+<title>Actualizar sistemas anticuados</title>
+<section>
+<title>La idea de la actualización</title>
+<body>
+
+<p>
+La idea del enfoque de esta actualización es que vamos a crear
+un chroot de construcción intermedio en el que extraeremos
+un stage3 reciente. A continuación, utilizando las herramientas
+disponibles en el chroot del stage3, actualizaremos los
+paquetes del sistema.
+</p>
+
+</body>
+</section>
+<section>
+<title>Preparar el chroot de construcción intermedio</title>
+<body>
+
+<p>
+En primer lugar, creamos la localización del chroot de
+construcción intermedio, digamos <path>/mnt/build</path>,
+y extraeremos un archivo stage3 reciente en ella.
+</p>
+
+<pre caption="Preparar el chroot de construcción intermedio">
+# <i>mkdir /mnt/build</i>
+# <i>tar -xf -C /mnt/build /path/to/stage3-somearch-somedate.tar.bz2</i>
+# <i>mount --rbind /dev /mnt/build/dev</i>
+# <i>mount --rbind /proc /mnt/build/proc</i>
+# <i>mount --rbind /sys /mnt/build/sys</i>
+</pre>
+
+<p>
+A continuación, creamos un punto de montaje dentro de este
+entorno chroot en el cual montaremos (bind-mount) el entorno
+utilizado en ese momento (el antiguo).
+</p>
+
+<pre caption="Crear el punto de montaje host">
+# <i>mkdir /mnt/build/mnt/host</i>
+# <i>mount --rbind / /mnt/build/mnt/host</i>
+</pre>
+
+<p>
+Por tanto, ahora el sistema actual (el antiguo) se puede acceder
+también desde <path>/mnt/build/mnt/host</path>. Esto nos
+permitirá modificar el sistema antiguo y actualizar los
+paquetes incluso cuando estamos dentro del sistema enjaulado
+intermedio.
+</p>
+
+</body>
+</section>
+<section>
+<title>Hacer chroot y actualizar</title>
+<body>
+
+<p>
+Ahora hacemos chroot en la localización de construcción
+intermedia, y comenzaremos a actualizar paquetes vitales
+en el sistema actual hasta que podamos continuar
+actualizando el sistema antiguo desde él mismo (en lugar
+de hacerlo desde el sistema intermedio).
+</p>
+
+<pre caption="Hacer chroot y actualizar paquetes importantes">
+# <i>chroot /mnt/build</i>
+# <i>source /etc/profile</i>
+
+<comment># Ahora comenzamos a actualizar paquetes en el sistema vivo (antiguo)</comment>
+# <i>ROOT=/mnt/host emerge -1v portage</i>
+</pre>
+
+<p>
+Conserve esta sesión chroot abierta e intente actualizar
+el sistema antiguo. Cuando obtenga errores, puede utilizar
+el sistema chroot para actualizar paquete utilizando las
+herramientas de construcción disponibles en el entorno
+intermedio (las cuales incluyen glibc, gcc, etc. recientes)
+¡No olvide prefijar todas las órdenes <c>emerge</c> con
+<c>ROOT=/mnt/host</c> dentro del chroot!
+</p>
+
 </body>
 </section>
 </chapter>
