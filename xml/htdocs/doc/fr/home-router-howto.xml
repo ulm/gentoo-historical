@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
-<!-- $Id: home-router-howto.xml,v 1.29 2011/08/29 11:00:03 cam Exp $ -->
+<!-- $Id: home-router-howto.xml,v 1.30 2013/04/07 13:18:37 swift Exp $ -->
 
 <guide lang="fr">
 <title>Guide du routeur personnel</title>
@@ -14,7 +14,9 @@
 <author title="Traducteur">
   <mail link="nicolas@litchinko.fr">Nicolas Litchinko</mail>
 </author>
-
+<author title="Traducteur">
+  <mail link="jaaf.forums@zoraldia.com">José Fournier</mail>
+</author>
 <abstract>
 Ce document montre comment transformer une vieille machine Gentoo en un routeur
 destiné à connecter votre réseau personnel à Internet.
@@ -23,8 +25,8 @@ destiné à connecter votre réseau personnel à Internet.
 <!-- The content of this document is released into the public domain -->
 <license/>
 
-<version>1.40</version>
-<date>2009-09-18</date>
+<version>3</version>
+<date>2013-04-03</date>
 
 <chapter>
 <title>Introduction</title>
@@ -74,7 +76,7 @@ Ce guide utilise les conventions suivantes&nbsp;:
 </ul>
 
 <impo>
-Pour des raisons de sécurité, vous devriez désactiver tous les services qui ne
+pour des raisons de sécurité, vous devriez désactiver tous les services qui ne
 sont pas indispensables sur votre routeur jusqu'à ce que le pare-feu soit
 configuré et activé. Pour afficher les services actifs, lancez
 <c>rc-status</c>.
@@ -95,7 +97,7 @@ vos cartes sont activées, utilisez <c>ifconfig</c>. L'affichage sera sans doute
 un peu différent, mais l'important est que les deux cartes apparaissent.
 </p>
 
-<pre caption="Vérifier les cartes réseau">
+<pre caption="vérifier les cartes réseau">
 # <i>ifconfig -a</i>
 eth0      Link encap:Ethernet  HWaddr 00:60:F5:07:07:B8
           BROADCAST MULTICAST  MTU:1500  Metric:1
@@ -122,7 +124,7 @@ votre noyau pour ajouter les pilotes ad hoc.
 </p>
 
 <p>
-Vous devez aussi ajouter le support de iptables et du NAT (et la gestion du
+Vous devez aussi ajouter la prise en charge  de iptables et de NAT (et la gestion du
 trafic si vous le désirez). Les options du noyau requises ci-dessous utilisent
 la convention suivante&nbsp;:(*) nécessaire, (a) nécessaire uniquement pour
 l'adsl via PPPoE, (x) conseillée, (s) gestion du trafic. Peu importe si vous
@@ -131,7 +133,7 @@ chargés au moment où la fonctionnalité est utilisée. Le chargement des modul
 est laissé à la discrétion du lecteur.
 </p>
 
-<pre caption="Options réseau du noyau">
+<pre caption="options réseau du noyau">
 Networking options  ---&gt;
    [*] TCP/IP networking
       [*] IP: advanced router
@@ -171,7 +173,7 @@ Networking options  ---&gt;
 </pre>
 
 <note>
-Certaines options ou leur position peuvent être un peu différentes d'une
+certaines options ou leur position peuvent être un peu différentes d'une
 version du noyau à l'autre, mais vous devriez pourvoir les retrouver. Y compris
 parmi les noyaux 2.6, ces options ont tendance à être déplacées. Bonne
 chance&nbsp;!
@@ -212,24 +214,21 @@ Penguin</uri> (N.d.t. le manchot rugissant) ont maintenant été intégrés dans
 passes dans <path>/etc/conf.d/net</path>.
 </p>
 
-<note>
-Pour que le script net fonctionne, vous devez utiliser baselayout-1.12.9 ou une
-version plus récente.
-</note>
 
-<pre caption="Configurer eth1">
+
+<pre caption="configurer eth1">
 <comment>(Remplacez 'vla9h924' par le nom de l'utilisateur et</comment>
 <comment>'boogie' par le mot de passe à utiliser.)</comment>
 
 # <i>nano /etc/conf.d/net</i>
-<comment>(Indiquer au baselayout de configurer eth1 en ADSL pour ppp0.)</comment>
-config_ppp0=( "ppp" )
+<comment>(Indiquer à openrc de configurer eth1 en ADSL pour ppp0.)</comment>
+config_ppp0="ppp"
 link_ppp0="eth1"
-plugins_ppp0=( "pppoe" )
-pppd_ppp0=(
-        "defaultroute"
-        "usepeerdns"
-        <comment>(Lisez /etc/conf.d/net.example pour les autres possibilités.)</comment>
+plugins_ppp0="pppoe"
+pppd_ppp0="
+  defaultroute
+  usepeerdns
+        <comment>Lisez /usr/share/doc/openrc-*/net.example.bz2 pour les autres possibilités.</comment>
 )
 username_ppp0="vla9h924"
 password_ppp0="boogie"
@@ -240,19 +239,19 @@ password_ppp0="boogie"
 </pre>
 
 <warn>
-Quand votre interface ADSL sera activée, elle créera ppp0. Bien que votre carte
+quand votre interface ADSL sera activée, elle créera ppp0. Bien que votre carte
 réseau s'appelle eth1, l'adresse IP sera liée à ppp0. À partir de maintenant,
 vous devrez remplacer <c>eth1</c> par <c>ppp0</c> dans tous les exemples
 proposés.
 </warn>
 
 <warn>
-Changez les permissions du fichier /etc/conf.d/net afin que personne d'autre
+changez les permissions du fichier /etc/conf.d/net afin que personne d'autre
 que root ne puisse lire vos mots de passes.
 </warn>
 
 <warn>
-Pour les utilisateurs qui migrent depuis le paquet <c>rp-pppoe</c> ou pour ceux
+pour les utilisateurs qui migrent depuis le paquet <c>rp-pppoe</c> ou pour ceux
 qui ont des problèmes de connexion, voyez la section MTU dans le chapitre des
 résolutions de problèmes.
 </warn>
@@ -269,20 +268,20 @@ d'informations que pour une adresse dynamique, c'est-à-dire votre adresse IP et
 celles de votre passerelle et des serveurs DNS de votre FAI.
 </p>
 
-<pre caption="Configurer eth1">
+<pre caption="configurer eth1">
 <comment>(Adresse dynamique)</comment>
 # <i>emerge dhcpcd</i>
 # <i>nano /etc/conf.d/net</i>
 <comment>(Ajoutez une entrée telle que)</comment>
-config_eth1=( "dhcp" )
+config_eth1="dhcp"
 
 <comment>(Adresse statique)</comment>
 # <i>nano /etc/conf.d/net</i>
 <comment>(Ajoutez une entrée telle que)</comment>
-config_eth1=( "66.92.78.102 broadcast 66.92.78.255 netmask 255.255.255.0" )
-routes_eth1=( "default gw 66.92.78.1" )
+config_eth1="66.92.78.102 broadcast 66.92.78.255 netmask 255.255.255.0"
+routes_eth1="default via 66.92.78.1"
 # <i>nano /etc/resolv.conf</i>
-<comment>(Ajoutez une ligne par serveur DNS de votre FAI)</comment>
+<comment>Ajoutez une ligne par serveur DNS de votre FAI</comment>
 nameserver 123.123.123.123
 
 <comment>(Configuration commune)</comment>
@@ -308,10 +307,10 @@ Cela devrait suffire.
 Cette étape est du gâteau par rapport à la précédente.
 </p>
 
-<pre caption="Configurer eth0">
+<pre caption="configurer eth0">
 # <i>nano /etc/conf.d/net</i>
-<comment>(Ajoutez cette entrée)</comment>
-ifconfig_eth0=( "192.168.0.1 broadcast 192.168.0.255 netmask 255.255.255.0" )
+<comment>Ajoutez cette entrée</comment>
+config_eth0="192.168.0.1/24 brd 192.168.0.255"
 # <i>rc-update add net.eth0 default</i>
 # <i>/etc/init.d/net.eth0 start</i>
 </pre>
@@ -354,7 +353,7 @@ simplement les commentaires présents dans <path>/etc/dnsmasq.conf</path>. Les
 choix par défaut devraient tous parfaitement fonctionner.
 </p>
 
-<pre caption="Configurer DHCP">
+<pre caption="configurer DHCP">
 # <i>emerge dnsmasq</i>
 # <i>nano /etc/dnsmasq.conf</i>
 <comment>(Ajoutez la ligne suivante pour activer DHCP :)</comment>
@@ -432,12 +431,12 @@ plus à propos du <uri link="http://en.wikipedia.org/wiki/NAT">NAT</uri>.
 </p>
 
 <note>
-Commencez par vérifier que iptables est installé sur votre routeur. Il devrait
+commencez par vérifier que iptables est installé sur votre routeur. Il devrait
 avoir été installé automatiquement, mais mieux vaut vérifier. S'il n'est pas
 installé, lancez simplement <c>emerge iptables</c>.
 </note>
 
-<pre caption="Configurer iptables">
+<pre caption="configurer iptables">
 <comment>(Effacez les règles en cours)</comment>
 # <i>iptables -F</i>
 # <i>iptables -t nat -F</i>
@@ -546,7 +545,7 @@ pas obligé de la répéter dans la règle. Utilisez <c>man 8 iptables</c> pour
 plus d'informations.
 </p>
 
-<pre caption="Quelques exemples">
+<pre caption="quelques exemples">
 <comment>(Copiez et collez ces exemples...)</comment>
 # <i>export LAN=eth0</i>
 # <i>export WAN=eth1</i>
@@ -578,21 +577,21 @@ plus d'informations.
 <comment>(Redirection pour eDonkey/eMule)</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 4662 -i ${WAN} -j DNAT --to 192.168.0.55</i>
 
-<comment>(Support du « Game Cube Warp Pipe »)</comment>
+<comment>(Prise en charge du « Game Cube Warp Pipe »)</comment>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 4000 -i ${WAN} -j DNAT --to 192.168.0.56</i>
 
-<comment>(Support de « Playstation2 Online »)</comment>
+<comment>(Prise en charge  de « Playstation2 Online »)</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 10070:10080 -i ${WAN} -j DNAT --to 192.168.0.11</i>
 
-<comment>(Support de « Xbox Live »)</comment>
+<comment>(Prise en charge  de « Xbox Live »)</comment>
 # <i>iptables -t nat -A PREROUTING -p tcp --dport 3074 -i ${WAN} -j DNAT --to 192.168.0.69</i>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 3074 -i ${WAN} -j DNAT --to 192.168.0.69</i>
 # <i>iptables -t nat -A PREROUTING -p udp --dport 88 -i ${WAN} -j DNAT --to 192.168.0.69</i>
 </pre>
 
 <note>
-Si vous avez d'autres exemples courants ou intéressants, vous pouvez les
+si vous avez d'autres exemples courants ou intéressants, vous pouvez les
 proposer à l'<mail link="vapier@gentoo.org">auteur</mail> (en anglais).
 </note>
 
@@ -608,7 +607,7 @@ sont derrière votre routeur, vous devriez utiliser un service ident pour le
 routeur et les ordinateurs. Ce service est fourni par le paquet <c>midentd</c>.
 </p>
 
-<pre caption="Configurer ident">
+<pre caption="configurer ident">
 # <i>emerge midentd</i>
 # <i>rc-update add midentd default</i>
 # <i>/etc/init.d/midentd start</i>
@@ -622,82 +621,7 @@ l'auteur vous recommande <c>oidentd</c> et <c>fakeidentd</c>.
 </body>
 </section>
 
-<!--
-<section>
-<title>Gestion du trafic</title>
-<body>
 
-<p>
-Ce chapitre tente de simplifier l'article sur la <uri
-link="http://www.tldp.org/HOWTO/ADSL-Bandwidth-Management-HOWTO/">gestion de la
-bande passante</uri> publié sur TLDP et de l'adapter à Gentoo. N'hésitez pas à
-consulter l'original pour plus de détails.
-</p>
-
-<p>
-Nous allons installer ce que certains appellent «&nbsp;Packet Shaper&nbsp;»,
-«&nbsp;<uri link="http://en.wikipedia.org/wiki/Traffic_shaping">Traffic
-Shaping</uri>&nbsp;» ou «&nbsp;<uri
-link="http://en.wikipedia.org/wiki/QoS">Quality of Service</uri>&nbsp;». En
-d'autres mots, nous voulons définir des règles sur notre routeur pour ralentir
-certains types de connexions tels que l'envoi de courriels volumineux ou le
-téléchargement depuis des réseaux P2P au profit d'autres activités telles que
-la navigation sur Internet ou le jeu en ligne. Une différence de 30 secondes
-pendant un jeu en ligne est plus dérangeante que la même différence pendant le
-téléchargement d'un fichier.
-</p>
-
-<p>
-Commencez par vérifier que les options nécessaires ont été sélectionnée dans
-votre noyau. Le chapitre sur la <uri link="#doc_chap2">Configuration du
-noyau</uri> ci-dessus décrit les options en question. Ensuite, veuillez lancez
-la commande <c>emerge iptables iputils</c>, car vous aurez besoin des commande
-<c>iptables</c>, <c>ip</c> et <c>tc</c>.
-</p>
-
-<p>
-Avant de poursuivre, quelques explications théoriques s'imposent. Le système
-que nous allons installer est basé sur la classification de flux sur le réseau
-et sur l'attribution des priorités à ceux-ci. L'outil <c>itables</c> permet de
-classer les flux, <c>iputils</c> permet de définir les priorités entre ces flux
-et le noyau se charge du reste. Notez que vous pouvez exercer un contrôle
-strict sur le trafic originaire de votre réseau local, mais que vous très peu
-de contrôle sur le trafic entrant. N'oubliez pas que ces exemples sont destinés
-à vous mettre en appétit. Si vous voulez allez plus en profondeur, vous devriez
-consulter les documentations existantes sur le sujet. Dans cet exemple, nous
-utilisons un algorithme d'ordonnancement de paquets nommé «&nbsp;<uri
-link="http://luxik.cdi.cz/~devik/qos/htb/">Hierarchical Token Buckets
-(HTB)</uri>&nbsp;». Toujours là&nbsp;? Poursuivons.
-</p>
-
-<pre caption="Configuration">
-DEV=eth1 <comment>Carte réseau connectée à Internet</comment>
-RATE_OUT=100 <comment>Bande passante disponible en sortie (en kilo-octets).</comment>
-RATE_IN=1400 <comment>Bande passante disponible en entrée (en kilo-octets).</comment>
-
-<comment>Initialisons le système de priorités.</comment>
-<comment>La valeur 45 définit le niveau de classification moyen.</comment>
-ip link set dev ${DEV} qlen 30
-tc qdisc add dev ${DEV} root handle 1: htb default 45
-tc class add dev ${DEV} parent 1: classid 1:1 htb rate ${RATE_OUT}kbit
-</pre>
-
-<p>
-Nous avons ainsi initialisé le système qui permet de gérer les priorités entre
-nos flux. Nous avons créé une queue, indiqué au système d'applique l'algorithme
-HTB et défini la priorité moyenne à 45. Cette valeur est arbitraire tout comme
-les priorités que nous allons définir ci-dessous. Le système compare les
-valeurs pour déterminer les priorités. Par exemple, un flux avec une priorité
-de 10 passera avant un flux avec une priorité de 45.
-</p>
-
-<pre caption="Définition des niveaux de priorité">
-tc class add dev $DEV parent 1:1 classid 1:10 htb rate $rkbit ceil $tkbit prio $p
-tc qdisc add dev $DEV parent 1:10 handle 10: sfq
-</pre>
-</body>
-</section>
--->
 
 <section>
 <title>Serveur de temps</title>
@@ -721,7 +645,7 @@ est utilisé par toutes les autres machines locales. Commencez par faire
 <c>emerge ntp</c> sur votre routeur.
 </p>
 
-<pre caption="Configurer un serveur NTP">
+<pre caption="configurer un serveur NTP">
 # <i>nano /etc/conf.d/ntp-client</i>
 <comment>(Ajustez les paramètres si nécessaire,
 mais les valeurs par défaut devraient suffire)</comment>
@@ -743,7 +667,7 @@ mais les valeurs par défaut devraient suffire)</comment>
 </pre>
 
 <note>
-Vous devez autoriser les connexions entrantes et sortantes sur le port ntp
+vous devez autoriser les connexions entrantes et sortantes sur le port ntp
 (123/udp) sur le serveur. Les clients se contentent d'une connexion sortante
 vers votre serveur.
 </note>
@@ -753,7 +677,7 @@ Ensuite, exécutez <c>emerge ntp</c> sur les autres machines aussi, mais nous
 n'utiliserons que la partie client, ce qui est plus simple.
 </p>
 
-<pre caption="Configurer un client NTP">
+<pre caption="configurer un client NTP">
 # <i>nano /etc/conf.d/ntp-client</i>
 <comment>(Remplacez le nom de serveur 'pool.ntp.org' par
 '192.168.0.1' dans la variable NTPCLIENT_OPTS)</comment>
@@ -776,7 +700,7 @@ celle des serveurs rsync de Gentoo. C'est très simple à mettre en place.
 </p>
 
 <note>
-Pour un guide sur rsync beaucoup plus détaillé, veuillez vous référer au <uri
+pour un guide sur rsync beaucoup plus détaillé, veuillez vous référer au <uri
 link="/doc/fr/rsync.xml#local">guide rsync</uri> officiel.
 </note>
 
@@ -788,7 +712,7 @@ et assurez-vous que vous avez bien ajouté une option <c>address</c>. Tous les
 autres choix par défaut devraient convenir.
 </p>
 
-<pre caption="Configuration d'un serveur rsync">
+<pre caption="configurer un serveur rsync">
 pid file = /var/run/rsyncd.pid
 use chroot = yes
 read only = yes
@@ -805,7 +729,7 @@ Après cela, vous devez démarrer le service (de nouveau, les choix par défaut
 conviennent).
 </p>
 
-<pre caption="Démarrer le serveur rsync">
+<pre caption="démarrer le serveur rsync">
 # <i>/etc/init.d/rsyncd start</i>
 # <i>rc-update add rsyncd default</i>
 </pre>
@@ -815,7 +739,7 @@ La dernière chose à faire est de dire à vos clients de se synchroniser par
 rapport au routeur.
 </p>
 
-<pre caption="Les options de synchronisation des clients dans make.conf">
+<pre caption="les options de synchronisation des clients dans make.conf">
 SYNC="rsync://192.168.0.1/gentoo-portage"
 </pre>
 
@@ -838,7 +762,7 @@ l'émission de grosses pièces jointes ne bloquent pas votre accès à Internet
 pendant leur envoi.
 </p>
 
-<pre caption="Configurer un serveur SMTP">
+<pre caption="configurer un serveur SMTP">
 # <i>emerge netqmail</i>
 <comment>(Vérifiez que l'affichage de la commande `hostname` est correct)</comment>
 # <i>emerge --config netqmail</i>
@@ -902,7 +826,7 @@ pourquoi nous nous tournons vers un serveurs DHCP complet fourni par
 <uri link="http://www.isc.org/products/DHCP">ISC</uri>.
 </p>
 
-<pre caption="Configurer DHCP">
+<pre caption="configurer DHCP">
 # <i>emerge dhcp</i>
 # <i>nano /etc/dhcp/dhcpd.conf</i>
 <comment>(Ceci est un exemple de fichier de configuration)</comment>
@@ -1026,7 +950,7 @@ Lorsque vous démarrer le script init.d de dhcp pour la première fois, il est
 possible qu'il échoue mais ne vous donne aucune information utile.
 </p>
 
-<pre caption="Exemple d'échec de DHCP">
+<pre caption="exemple d'échec de DHCP">
 # <i>/etc/init.d/dhcp start</i>
  * Setting ownership on dhcp.leases ...          [ ok ]
  * Starting dhcpd ...                            [ !! ]
@@ -1056,7 +980,7 @@ d'autres pas, par exemple), il est possible que la valeur MTU soit incorrecte.
 La commande suivante permet de vérifier rapidement si c'est le cas&nbsp;:
 </p>
 
-<pre caption="Éviter les problèmes MTU">
+<pre caption="éviter les problèmes MTU">
 # <i>iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu</i>
 </pre>
 
