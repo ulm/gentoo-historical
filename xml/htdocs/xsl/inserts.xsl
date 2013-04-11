@@ -6,7 +6,7 @@
                 xmlns:str="http://exslt.org/strings"
                 extension-element-prefixes="func date str">
 
-<xsl:variable name="alllang" select="'|ar|bg|ca|cs|da|de|el|en|es|fi|fr|he|hu|id|it|ko|ja|lt|nl|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_cn|zh_tw|'"/>
+<xsl:variable name="alllang" select="'|ar|bg|ca|cs|da|de|el|en|es|fa|fi|fr|he|hu|id|it|ko|ja|lt|nl|pl|pt_br|ro|ru|sr|sv|tr|vi|zh_cn|zh_tw|'"/>
 
 <func:function name="func:gettext">
   <xsl:param name="str"/>
