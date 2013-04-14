@@ -1,0 +1,388 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-ia64-kernel.xml,v 1.1 2013/04/14 16:42:23 swift Exp $ -->
+
+<sections>
+
+<version>21</version>
+<date>2013-04-06</date>
+
+<section>
+<title>Installer les sources</title>
+<subsection>
+<title>Choisir un noyau</title>
+<body>
+
+<p>
+Le cœur autour duquel sont bâties toutes les distributions est le noyau (en
+anglais «&nbsp;kernel&nbsp;») Linux. Ce noyau est l'interface entre les
+programmes utilisateur et le matériel. Gentoo offre un choix de plusieurs noyaux
+à ses utilisateurs. Une liste complète, accompagnée de descriptions, est
+disponible dans le <uri link="/doc/fr/gentoo-kernel.xml">Guide du noyau Gentoo
+Linux</uri>.
+</p>
+
+<p>
+Pour les systèmes <keyval id="arch"/>, nous offrons, entre autres, les
+<c>gentoo-sources</c> (un noyau modifié par l'ajout de fonctionnalités
+supplémentaires.
+</p>
+
+<p>
+Choisissez les sources à utiliser pour votre noyau et installez-les avec
+<c>emerge</c>.
+</p>
+
+<pre caption="installer les sources d'un noyau">
+# <i>emerge gentoo-sources</i>
+</pre>
+
+<p>
+Si vous examinez le contenu de <path>/usr/src</path>, vous devriez voir un lien
+symbolique nommé <path>linux</path> qui pointe vers les sources de votre noyau.
+L'exemple suivant pointe vers <c>gentoo-sources-<keyval
+id="kernel-version"/></c>, mais vous aurez sans doute installé une autre
+version.
+</p>
+
+<pre caption="examiner le lien symbolique vers le noyau">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx   1 root   root     12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+<p>
+Il est maintenant temps de configurer et de compiler votre noyau. Vous pouvez
+utiliser <c>genkernel</c>. Cette commande construira un noyau générique tel que
+celui utilisé par le CD d'installation. Toutefois, nous expliquerons d'abord la
+configuration «&nbsp;manuelle&nbsp;», puisque c'est la meilleure façon
+d'optimiser votre environnement.
+</p>
+
+<p>
+Si vous souhaitez configurer manuellement votre noyau, poursuivez votre lecture
+avec <uri link="#manual">Par défaut&nbsp;: configuration manuelle</uri>. Si vous
+souhaitez utiliser <c>genkernel</c>, vous devriez plutôt lire <uri
+link="#genkernel">Alternative&nbsp;: utiliser genkernel</uri>.
+</p>
+
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>Par défaut&nbsp;: configuration manuelle</title>
+<subsection>
+<title>Introduction</title>
+<body>
+
+<p>
+Configurer un noyau manuellement est parfois considéré comme la tâche la plus ardue que les
+utilisateurs de Linux doivent accomplir. Rien n'est moins vrai... Après
+avoir configuré quelques noyaux, vous ne vous rappellerez même plus que c'était
+difficile ;)
+</p>
+
+<p>
+Toutefois, une chose est vraie&nbsp;: vous devez connaitre votre système pour
+configurer manuellement un noyau. La majeure partie des informations peut être
+obtenue en utilisant la commande <c>lspci</c> qui est dans le paquet pciutils
+(<c>emerge pciutils</c>). Vous pourrez désormais utiliser <c>lspci</c> depuis
+votre environnement en chroot. Vous pouvez ignorer les avertissements
+<e>pcilib</e> (comme par exemple&nbsp;: pcilib: cannot open
+/sys/bus/pci/devices) que vous obtiendrez avec <c>lspci</c>. Vous pouvez
+également exécuter <c>lspci</c> depuis un environnement <e>non chrooté</e>. Le
+résultat est le même. Vous pouvez également exécuter <c>lsmod</c> pour voir les
+modules du noyau utilisés par le CD-ROM d'installation (ce qui peut vous donner
+des indices sur les fonctionnalités nécessaires).
+</p>
+
+<p>
+Maintenant, allez dans le dossier des sources du noyau et exécutez <c>make
+menuconfig</c>. Cela ouvrira un menu de configuration basé sur ncurses.
+</p>
+
+<pre caption="lancer menuconfig">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Plusieurs sections d'options de configuration s'afficheront. Nous allons
+d'abord dresser la liste de certaines options que vous devez activer (sinon,
+Gentoo ne fonctionnera pas ou, du moins, pas sans quelques réglages
+additionnels).
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Activer les options requises</title>
+<body>
+
+
+<p>
+Veuillez vérifier que tous les pilotes nécessaires au démarrage de votre système
+tels que le pilote de votre carte SCSI sont compilés en dur et non comme
+modules, sinon le système ne démarrera pas.
+</p>
+
+<p>
+Vous devez maintenant choisir exactement le bon type de processeur. Si vous ignorez de quel type est votre système  IA64 , <c>DIG-compliant</c> est un bon choix par défaut. Si vous installez sur un système SGI, assurez-vous d'avoir sélectionné le type de système SGI, sinon votre noyau peut se verrouiller et refuser de démarrer. 
+</p>
+
+<pre caption="sélectionner le type correct de système">
+System type ---&gt;
+  <comment>(Changez en fonction de votre système)</comment>
+  <i>DIG-compliant</i>
+Processor type ---&gt;
+  <comment>(Changez en fonction de votre système)</comment>
+  <i>Itanium 2</i>
+</pre>
+
+<p>
+Ensuite choisissez <e>Maintain a devtmpfs file system to mount at /dev</e> de telle manière que vos fichiers de périphérique critiques soient montés précocément pendant la phase de démarrage. 
+</p>
+
+<pre caption="activer la prise en charge de devtmpfs">
+Device Drivers ---&gt;
+  Generic Driver Options ---&gt;
+    [*] Maintain a devtmpfs filesystem to mount at /dev
+    [ ]   Automount devtmpfs at /dev, after the kernel mounted the rootfs
+</pre>
+
+<p>
+Ensuite allez à la section <c>File Systems</c> et activez la prise en charge nécessaire pour les
+systèmes de fichiers que vous utilisez. Ne compilez <e>pas</e> le système de fichiers que vous utilisez pour la partititon racine sous forme de
+module, sinon votre système Gentoo ne pourra pas monter vos partitions. Activez
+aussi <c>Virtual memory</c> et <c>/proc file system</c>.
+</p>
+
+<pre caption="sélectionner les systèmes de fichiers requis">
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>(Sélectionner une option ou plus selon les besoins de votre système)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+
+<comment>(Assurez vous de valider la prise en charge de  VFAT pour la partition EFI)</comment>
+  DOS/FAT/NT Filesystems  ---&gt;
+    &lt;*&gt; VFAT (Windows-95) fs support
+
+<comment>(Activez le support des étiquettes de partition GPT si vous les avez utilisées précédemment)</comment>
+-*- Enable the block layer --->
+    ...
+    Partition Types --->
+    [*] Advanced partition selection
+      ...
+      [*] EFI GUID Partition support
+</pre>
+
+<p>
+Si vous utilisez PPPoE ou un modem classique pour vous connecter à Internet,
+vous aurez besoin des options  suivantes du noyau&nbsp;:
+</p>
+
+<pre caption="sélectionner les pilotes  PPPoE nécessaires">
+Device Drivers ---&gt;
+  Network device support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+Les deux options de compression ne vous feront pas de mal, mais ne sont pas
+absolument nécessaires. L'option <c>PPP over Ethernet</c> n'est pas obligatoire
+non plus, considérant qu'elle pourrait n'être utilisée que par <c>ppp</c>
+lorsque ce dernier est configuré pour utiliser PPPoE en mode noyau.
+</p>
+
+<p>
+Si vous en avez besoin, n'oubliez pas d'ajouter le support pour votre carte
+Ethernet.
+</p>
+
+<p>
+Si vous avez un système Opteron multiprocesseurs ou multicœur (AMD64 X2 par
+ex.), vous devriez activer «&nbsp;Symmetric multi-processing support&nbsp;».
+</p>
+
+<pre caption="activer la prise en charge de SMP">
+Processor type and features  ---&gt;
+  [*] Symmetric multi-processing support
+</pre>
+<note>
+notez que chaque cœur compte
+pour un processeur.
+</note>
+<p>
+Si vous utilisez des périphériques d'entrée USB (un clavier ou une souris par
+exemple), n'oubliez pas les options suivantes&nbsp;:
+</p>
+
+<pre caption="activer le support USB pour des périphériques d'entrée">
+Device Drivers ---&gt;
+  [*] HID Devices  ---&gt;
+    &lt;*&gt;   USB Human Interface Device (full HID) support
+</pre>
+
+<p>
+Lorsque vous aurez terminé la configuration de votre noyau, poursuivez avec la
+section <uri link="#compiling">Compilation et installation</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Compilation et installation</title>
+<body>
+
+<p>
+Maintenant que votre noyau est configuré, il est temps de le compiler et de
+l'installer. Quittez la configuration et lancez la compilation&nbsp;:
+</p>
+
+<pre caption="compiler le noyau">
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+When the kernel has finished compiling, copy the kernel image to <path>/</path>.
+Use whatever name you feel is appropriate for your kernel choice and remember it
+as you will need it later on when you configure your bootloader. Remember to
+replace <c>vmlinuz</c> with the name and version of your kernel.
+</p>
+
+<pre caption="installer the kernel">
+# <i>cp vmlinux.gz /boot/vmlinuz</i>
+</pre>
+
+</body>
+</subsection>
+<subsection id="initramfs">
+<title>(Facultatif) Construction d'un disque virtuel de démarrage (Initramfs)</title>
+<body>
+
+<p>
+Si vous utilisez un plan de partitionnement où des dossiers importants 
+(tels que <path>/usr</path> ou <path>/var</path>) sont sur des partitions séparées, vous devez définir un disque virtuel initial (initramfs) pour que ces partitions puissent être montée avant d'en avoir besoin.
+</p>
+
+<p>
+Sans cet <e>initramfs</e> le système risque de ne pas démarrer correctement car les outils nécessaires au montage des systèmes de fichiers ont besoin d'informations qui se trouvent sur ces systèmes de fichiers. Un <e>initramfs</e> va mettre à disposition ces fichiers dans une archive qui sera utilisée juste après le démarrage du noyau, mais avant que le contrôle ne soit transmis aux outils  <c>init</c>. Des scripts sur l'<e>initramfs</e> s'assurerons que les partitions sont montées correctement avant de laisser le système continuer le démarrage.
+</p>
+
+<p>
+Pour installer un disque virtuel de démarrage (initramfs), installez d'abord <c>genkernel</c> , et demandez-lui de créer ce disque virtuel pour vous.
+</p>
+
+<pre caption="construire/compiler un disque virtuel de démarrage (initramfs)">
+# <i>emerge genkernel</i>
+# <i>genkernel --bootdir=/. --no-mountboot --install initramfs</i>
+</pre>
+
+<p>
+Si vous avez besoin d'une prise en charge particulière dans l'initramfs telle que lvm ou raid, ajoutez les options appropriées au noyau.  Voyez <c>genkernel --help</c> pour plus d'informations, ou l'exemple qui suit qui active la prise en charge de LVM et du logiciel raid.
+(mdadm):
+</p>
+
+<pre caption="constuire/compiler un initramfs avec prise en charge de LVM et du logiciel raid">
+# <i>genkernel --bootdir=/. --no-mountboot --lvm --mdadm --install initramfs</i>
+</pre>
+ 
+<p>
+L'initramfs sera stocké sur <path>/</path>. Vous pouvez trouver le fichier en listant les fichiers qui commencent par <path>initramfs</path>&nbsp;:
+</p>
+
+<pre caption="vérifier le nom de l'initramfs">
+# <i>ls /initramfs*</i>
+</pre>
+
+<p>
+Maintenant continuez avec <uri link="#kernel_modules">Les modules du noyau</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="genkernel">
+<title>Alternative&nbsp;: utiliser genkernel</title>
+<body>
+
+<p>
+Si vous lisez cette section, vous avez choisi d'utiliser le script
+<c>genkernel</c> pour configurer votre noyau pour vous.
+</p>
+
+<p>
+Maintenant que l'arbre des sources de votre noyau est installé, il est temps de
+compiler ce noyau à l'aide du script <c>genkernel</c> qui construira
+automatiquement un noyau dont la configuration sera presque identique à celle du
+noyau du CD d'installation. Cela signifie que si vous utilisez <c>genkernel</c>
+pour construire votre noyau, votre système détectera généralement tout votre
+matériel au moment de l'amorçage, à la manière du CD d'installation. Puisque
+genkernel ne requiert aucune configuration manuelle, il s'agit d'une solution
+idéale pour l'utilisateur rebuté par l'idée de compiler son propre noyau.
+</p>
+
+<p>
+Maintenant, voyons comment utiliser genkernel. D'abord, installez genkernel
+comme suit&nbsp;:
+</p>
+
+<pre caption="installer genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+Ensuite, compilez les sources du noyau en exécutant <c>genkernel all</c>.
+Puisque <c>genkernel</c> compile un noyau qui supporte presque n'importe quel
+matériel, ne soyez pas surpris que la compilation demande un temps considérable.
+</p>
+
+<note>
+si vous utilisez LVM2, vous voudrez
+sans doute ajouter l'option  <c>--lvm2</c>.
+</note>
+
+<pre caption="exécuter genkernel">
+# <i>genkernel --bootdir=/. --no-mountboot all</i>
+</pre>
+
+<p>
+Lorsque <c>genkernel</c> aura fini son travail, un noyau, un ensemble complet de
+  modules et un <e>disque virtuel initial </e> (initramfs) auront été créés. Le
+noyau et initrd seront utilisés plus tard lors de la configuration du chargeur
+de démarrage. Notez bien les noms du noyau et du initrd puisque vous devrez les
+spécifier lors de l'écriture du fichier de configuration du chargeur de
+démarrage. L'initrd sera démarré immédiatement après l'amorçage afin de réaliser
+l'autodétection du matériel (tout comme pour le CD d'installation) avant que
+votre «&nbsp;véritable&nbsp;» système ne démarre.
+</p>
+
+<pre caption="Vérifier les noms de l'image du noyau et du fichier initrd">
+# <i>ls /kernel* /initramfs*</i>
+</pre>
+
+</body>
+</section>
+<section id="kernel_modules">
+<title>Les modules du noyau</title>
+
+<subsection>
+<include href="hb-install-kernelmodules.xml"/>
+</subsection>
+
+</section>
+</sections>

@@ -1,0 +1,538 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-ia64-disk.xml,v 1.1 2013/04/14 16:42:23 swift Exp $ -->
+
+<sections>
+
+<version>10</version>
+<date>2013-02-23</date>
+
+<section>
+<title>Introduction aux périphériques de bloc</title>
+
+<subsection>
+<include href="hb-install-blockdevices.xml"/>
+</subsection>
+
+<subsection>
+<title>Partitions</title>
+<body>
+
+<p>
+Bien qu'il soit théoriquement possible d'utiliser un disque complet pour
+héberger votre système Linux, ceci n'est pratiquement jamais fait. À la place,
+les périphériques de bloc sont divisés pour être plus petits et plus facilement
+gérables. Ces subdivisions sont appelées <e>partitions</e>.
+</p>
+<p>
+Les systèmes Itanium utilisent  l'<e>EFI</e>, ou Extensible Firmware Interface (pour Interface Microcodée Extensible), pour démarrer.  La table de partition que comprend l'EFI est appelée GPT, ou GUID Partition Table. Le programme qui sait lire ces tables est "Parted", c'est donc l'outil auquel nous aurons recours dans ce guide. De plus, EFI ne sait lire les sysèmes de fichiers FAT, c'est donc aussi le système de fichiers à utiliser pour la partition de démarrage, l'endroit où le noyau sera installé par <e>elilo</e>. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Solutions de stockage avancées</title>
+<body>
+
+<p>
+Les CD d'installation Gentoo pour <keyval id="arch"/> offrent le support des
+systèmes LVM2. Les systèmes LVM2  permettent une plus grande
+flexibilité dans l'organisation des disques. Le reste de ce guide utilise des
+partitions normales, mais vous pouvez activer ces systèmes de stockage avancés
+si vous le désirez.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Concevoir un plan de partitionnement</title>
+<subsection>
+<title>Plan de partitionnement par défaut</title>
+<body>
+
+<p>
+Si vous n'êtes pas intéressé par l'établissement d'un plan de partitionnement
+pour votre système, vous pouvez utiliser le plan de partitionnement que nous
+utilisons dans ce manuel&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Système de fichiers</th>
+  <th>Taille</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>vfat</ti>
+  <ti>32M</ti>
+  <ti>Partition EFI de démarrarge (/boot)</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>(swap)</ti>
+  <ti>512M</ti>
+  <ti>Partition de mémoire virtuelle</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>ext4</ti>
+  <ti>Rest of the disk</ti>
+  <ti>Partition racine (/)</ti>
+</tr>
+</table>
+
+
+
+<p>
+Si vous souhaitez savoir la taille qu'une partition doit avoir, ou même
+de combien de partitions vous avez besoin, poursuivez la lecture de ce
+chapitre. Sinon, poursuivez avec le chapitre   <uri link="#parted">Partitionner votre disque avec parted</uri>.
+</p>
+
+
+</body>
+</subsection>
+<subsection>
+<title>Combien et de quelle taille&nbsp;?</title>
+<body>
+
+<p>
+Le nombre de partitions dépend beaucoup de votre environnement. Par exemple,
+si vous avez beaucoup d'utilisateurs, vous désirerez certainement avoir votre partition
+<path>/home</path> séparée afin d'améliorer la sécurité et de simplifier les
+sauvegardes. Si vous installez Gentoo comme serveur de courrier, votre partition
+<path>/var</path> devrait être séparée étant donné que tous les courriels sont
+stockés dans <path>/var</path>. Un bon choix de système de fichiers va vous
+permettre d'améliorer les performances. Les serveurs de jeux auront une partition 
+<path>/opt</path> séparée étant donné que la plupart des serveurs de jeux sont
+installés à cet endroit. La raison est la même que pour la partition
+<path>/home</path>&nbsp;: sécurité et sauvegarde. Vous devriez consacrer
+suffisamment de place au répertoire <path>/usr</path>, car il contient non
+seulement vos applications, mais aussi l'arbre Portage (qui prend 500&nbsp;Mo à
+lui seul) et les sources des programmes que vous allez installer.
+</p>
+
+<p>
+Comme vous pouvez le voir, cela dépend beaucoup de ce que vous souhaitez faire.
+Séparer les partitions ou volumes procure les avantages suivants&nbsp;:
+</p>
+
+<ul>
+<li>
+  Vous pouvez choisir le système de fichiers le plus performant pour chaque
+  partition ou volume.
+</li>
+<li>
+  Votre système entier ne risque pas d'arriver à court d'espace disque libre si
+  un outil défectueux sature l'espace disque d'une partition ou d'un volume.
+</li>
+<li>
+  Si nécessaire, les vérifications des systèmes de fichiers durent moins
+  longtemps, vu que de multiples vérifications peuvent être faites en parallèle
+  (quoique cet avantage est plus important avec plusieurs disques qu'avec
+  plusieurs partitions).
+</li>
+<li>
+  La sécurité peut être améliorée en montant certaines partitions ou volumes
+    en lecture seulement, en utilisant <e>nosuid</e> (les bits suid sont ignorés) et
+      <e>noexec</e> (les bits exécutables sont ignorés), etc.
+</li>
+</ul>
+
+<p>
+Cependant, avoir de multiples partitions présente un gros désavantage&nbsp;: si elles ne
+sont pas configurées correctement, vous risquez d'obtenir un système avec
+beaucoup d'espace libre sur une partition et plus du tout sur une autre. Un autre inconvénient est que des partitions séparées, en particulier
+  pour des points de montage importants tels que <path>/usr</path> ou <path>/var</path> - requièrent que l'utilisateur amorce avec un <e>initramfs</e> pour 
+ monter la partition avant que les scripts de démarrage ne soient lancés. Ce n'est pas toujours le cas cependant, ce qui fait que le résultat 
+  peut varier.
+</p>
+
+<p>
+Notez que les disques SCSI et SATA sont limités à  15-partitions sauf si vous utilisez  des étquettes GPT.
+</p>
+
+<p>
+Voici un exemple de partitionnement pour un disque de 20&nbsp;Go utilisé sur un
+portable de démonstration (contenant un serveur web, un serveur de courrier,
+GNOME...)&nbsp;:
+</p>
+
+<pre caption="exemple d'utilisation de système de fichiers">
+$ <i>df -h</i>
+Filesystem    Type    Size  Used Avail Use% Mounted on
+/dev/sda5     ext4    509M  132M  351M  28% /
+/dev/sda2     ext4    5.0G  3.0G  1.8G  63% /home
+/dev/sda7     ext4    7.9G  6.2G  1.3G  83% /usr
+/dev/sda8     ext4   1011M  483M  477M  51% /opt
+/dev/sda9     ext4    2.0G  607M  1.3G  32% /var
+/dev/sda1     ext2     51M   17M   31M  36% /boot
+/dev/sda6     swap    516M   12M  504M   2% &lt;not mounted&gt;
+<comment>(Espace non partitionné pour utilisation future : 2 Go)</comment>
+</pre>
+
+<p>
+<path>/usr</path> est plutôt rempli ici (83&nbsp;% utilisés), mais une fois que
+tous les programmes sont installés, <path>/usr</path> a une taille relativement
+stable. Pour <path>/var</path>, on pourrait croire que trop d'espace a été
+alloué. Cependant, Gentoo compile tous les programmes dans
+<path>/var/tmp/portage</path>. Si vous voulez allouer relativement peu d'espace
+pour <path>/var</path>, par exemple 2&nbsp;Go, vous devrez modifier la
+variable <c>PORTAGE_TMPDIR</c>  dans <path>/etc/portage/make.conf</path> pour qu'elle pointe vers une partition qui
+dispose d'un espace suffisant pour compiler de très gros paquets tels que
+OpenOffice.org.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="parted">
+<title>Partitionner votre disque avec parted</title>
+<subsection>
+<body>
+
+<p>
+Dans ce chapitre, nous allons vous guider pour la création des partitions correspondant à notre 
+ exemple mentionné plus haut, à savoir&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+ <ti>Partition d'amorçage EFI</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Partition de mémoire virtuelle</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Partition racine (root) </ti>
+</tr>
+</table>
+
+<p>
+Adaptez ce plan de partitionnement à vos besoins.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Affichage du plan de partitionnement courant</title>
+<body>
+
+<p>
+<c>parted</c> est l'outil GNU de partitionnement.
+Lancez <c>parted</c> sur votre disque (dans cet exemple nous utilisons
+<path>/dev/sda</path>):
+</p>
+
+<pre caption="lancer parted">
+# <i>parted /dev/sda</i>
+</pre>
+
+<p>
+Une fois dans <c>parted</c>, vous serez accueilli par une invite de commande telle que celle-ci&nbsp;:
+</p>
+
+<pre caption="invite de commande de parted">
+GNU Parted 1.6.22
+Copyright (C) 1998 - 2005 Free Software Foundation, Inc.
+This program is free software, covered by the GNU General Public License.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+Using /dev/sda
+(parted)
+</pre>
+
+<p>
+Pour découvrir toutes les options offertes par <c>parted</c>, tapez <c>help</c> et 
+  tapez <c>Entrée</c>. Pour le moment, continuez simplement en demandant à <c>parted</c> d'afficher 
+les partitions actuellement utilisées sur le disque choisi. La commande <c>print</c> peut être utilisée pour cela. 
+</p>
+
+<pre caption="un exemple de plan de partitionnement affiché par parted">
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017    203.938  fat32                             boot
+2        203.938   4243.468  linux-swap
+3       4243.469  34724.281  ext4
+</pre>
+
+<p>
+Cette configuration est très similaire à celle que nous recommandions plus haut. Notez, sur la deuxième ligne que le table des partitions est du type GPT. Si ce type est différent, le système ia64 ne pourra amorcer du disque. Pour les besoins pédagogiques de ce guide, nous allons retirer les partitions et les recréer.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Suppression de toutes les partitions</title>
+<body>
+
+<note>
+contrairement à d'autres outils de partitionnement, comme fdisk, qui diffèrent l'engagement des modifications jusqu'à ce que vous donniez explicitement la commande d'écriture, les commandes de parted ont un effet immédiat. C'est pourquoi, dès que vous avez commencé à ajouter et à retirer des partitions, vous ne pouvez plus tout simplement abandonner et quitter sans rien modifier, les modifications ont déjà eu lieu.
+</note>
+
+<p>
+La manière le plus facile de retirer toutes les partitions et de redémarrer à zéro, ce qui garantit que nous utilisons le bon type de partitions, est de  créer une nouvelle table des partitions en utilisant la commande <c>mklabel</c> .  Après avoir entré cette commande, vous disposerez d'une table des partitions, GPT, vide.
+</p>
+
+<pre caption="créer une nouvelle table des partitions">
+(parted) <i>mklabel gpt</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+</pre>
+
+<p>
+Maintenant que la table des partitions est vide, vous pouvez y créer les partitions.
+Nous utiliserons le plan de partitionnement par défaut vu précédemment. Bien-sûr, vous n'êtes pas forcé de suivres ces instruction à la lettre si vous voulez un autre plan.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Création de la partition de démarrage  EFI</title>
+<body>
+
+<p>
+Commencez par créer une petite partition de démarrage  EFI qui, nous le rappelons, doit recevoir un syscème de fichiers FAT pour être lisible par microcode  <keyval id="arch"/>. Dans notre exemple, cette partition fait 32&nbsp;MO, ce qui est suffisant pour stockere les noyaux et la configuration du chargeur de démarrage <c>elilo</c>. Vous pouvez estimer la taille des noyau  <keyval id="arch"/> à environ 5&nbsp;MB, ce qui vous laisse de la place pour l'expérimentation. 
+</p>
+
+<pre caption="créer la partition de démarrage">
+(parted) <i>mkpart primary fat32 0 32</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017     32.000  fat32
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Création de la partition de mémoire virtuelle</title>
+<body>
+
+<p>
+Créez maintenant une partition de mémoire virtuelle. Ordinairement, sa taille devrait être deux fois la taille de la mémoire RAM du système. Dans les systèmes modernes qui disposent de beaucoup de mémoire, cela n'est plus nécessaire. Pour la plupart des stations de travail, une partition de mémoire virtuelle de 512&nbsp;MO est suffisante. Pour un serveur, vous devriez envisager plus pour anticiper sur les besoins du serveur.
+</p>
+
+<pre caption="créer la partition de mémoire virtuelle">
+(parted) <i>mkpart primary linux-swap 32 544</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017     32.000  fat32
+2         32.000    544.000
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Création de la partition racine</title>
+<body>
+
+<p>
+Pour finir, créez la partition racine (/). Dans notre exemple, elle couvre le reste du disque et est formatée en ext4, mais vous pouvez utiliser ext2, jfs, reiserfs ou xfs si vous le souhaitez. Le système de fichiers réel n'est pas créé à cette étape, mais la table des partitions contient seulement une indication sur le type des systèmes de fichiers qui seront hébergés sur chacune des partitions. .
+</p>
+
+<pre caption="créer la partition racine">
+(parted) <i>mkpart primary ext4 544 34732.890</i>
+(parted) <i>print</i>
+Disk geometry for /dev/sda: 0.000-34732.890 megabytes
+Disk label type: gpt
+Minor    Start       End     Filesystem  Name                  Flags
+1          0.017     32.000  fat32
+2         32.000    544.000
+3        544.000  34732.874
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Quitter parted</title>
+<body>
+
+<p>
+Pour quitter parted, saisissez <c>quit</c>.  Il n'est pas nécessaire de sauvegarder le plan de partitionnement car, nous l'avons déjà dit, parted a déjà fait le travail au fil de vos commandes. En quittant parted, rappelez-vous que vous devrez metter à jour votre fichier  <c>/etc/fstab</c>, comme nous le verrons plus loin dans ce guide.
+</p>
+
+<pre caption="quitter parted">
+(parted) <i>quit</i>
+Information: Don't forget to update /etc/fstab, if necessary.
+</pre>
+
+<p>
+Maintenant que vos partitions sont créées, continuez avec  <uri
+link="#filesystems">Création des systèmes de fichiers</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="filesystems">
+<title>Création des systèmes de fichiers</title>
+<subsection>
+<title>Introduction</title>
+<body>
+
+<p>
+Maintenant que vos partitions sont créées, il est temps d'y installer un
+système de fichiers. Si vous ne vous souciez pas de quel système de fichiers
+choisir et êtes satisfait de ceux que nous utilisons par défaut dans ce manuel,
+continuez avec <uri link="#filesystems-apply">Application d'un système de
+fichiers à une partition</uri>. Sinon, continuez à lire pour en apprendre plus
+sur les systèmes de fichiers disponibles.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<include href="hb-install-filesystems.xml"/>
+</subsection>
+
+<subsection id="filesystems-apply">
+<title>Application d'un système de fichiers à une partition</title>
+<body>
+
+<p>
+Pour créer un système de fichiers sur une partition ou un volume, chaque
+système de fichiers fournit ses propres outils&nbsp;:
+</p>
+
+<table>
+<tr>
+  <th>Filesystem</th>
+  <th>Creation Command</th>
+</tr>
+<tr>
+  <ti>vfat</ti>
+  <ti><c>mkdosfs</c></ti>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mkfs.ext2</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkreiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+<p>
+Par exemple, pour formater la partition de démarrage (<path>/dev/sda1</path>
+dans notre exemple) en vfat et la partition principale (<path>/dev/sda3</path>
+dans notre exemple) en ext4, nous utiliserons&nbsp;:
+</p>
+
+
+<pre caption="appliquer un système de fichiers à une partition">
+# <i>mkdosfs /dev/sda1</i>
+# <i>mkfs.ext4 /dev/sda3</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Activation de la partition de mémoire virtuelle</title>
+<body>
+
+<p>
+<c>mkswap</c> est la commande utilisée pour initialiser la partition de mémoire
+virtuelle&nbsp;:
+</p>
+<pre caption="créer une signature de mémoire virtuelle">
+# <i>mkswap /dev/sda2</i>
+</pre>
+
+<p>
+Pour activer la partition de mémoire virtuelle, utilisez <c>swapon</c>&nbsp;:
+</p>
+
+<pre caption="activer la partition de mémoire virtuelle">
+# <i>swapon /dev/sda2</i>
+</pre>
+
+<p>
+Créez et activez la partition de mémoire virtuelle maintenant.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Monter les partitions</title>
+<body>
+
+<p>
+Maintenant que nos partitions sont initialisées et contiennent un système de
+fichiers, il est temps de les monter avec la commande <c>mount</c>. N'oubliez
+pas de créer les points de montage nécessaires pour toutes les partitions que
+vous avez créées. Par exemple, pour monter les partitions de démarrage et
+racine&nbsp;:
+</p>
+
+<pre caption="monter la partition racine">
+# <i>mount /dev/sda3 /mnt/gentoo</i>
+</pre>
+
+<note>
+contrairement à d'autres architectures prises en charge par Gentoo, la partition  <path>/boot</path>
+n'est pas montée sur un système ia64. La raison en est que la partition de démarrage EFI est montée automatiquement et écrite par la commande  <c>elilo</c> à chaque fois que vous l'utilisez. À cause de celà, le dossier <path>/boot</path> reside sur le système de fichiers racine et c'est là que sont placés les noyaux auxquels votre configuration <c>elilo</c> fait référence.
+</note>
+
+<note>
+si vous installez <path>/tmp</path> sur une partition séparée, n'oubliez pas de
+définir les permissions nécessaires après avoir monté la partition. Utilisez la
+commande <c>chmod 1777 /mnt/gentoo/tmp</c>. La même remarque s'applique à
+<path>/var/tmp</path>.
+</note>
+<p>
+Nous devrons également monter le système de fichiers proc (une interface
+virtuelle avec le noyau) sur <path>/proc</path>, mais nous devons d'abord placer
+nos fichiers sur les partitions.
+</p>
+
+<p>
+Continuez avec <uri link="?part=1&amp;chap=5">Installer les fichiers
+d'installation de Gentoo</uri>.
+</p>
+
+</body>
+</section>
+</sections>
