@@ -1,0 +1,281 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-arm-kernel.xml,v 1.1 2013/04/14 16:39:11 swift Exp $ -->
+
+<sections>
+
+<version>1</version>
+<date>2013-03-16</date>
+
+<section>
+<title>Установка исходных кодов ядра</title>
+<subsection>
+<title>Выбор ядра</title>
+<body>
+
+<p>
+Ядро Linux — это то, вокруг чего формируются все дистрибутивы. Это слой между 
+пользовательскими программами и вашим оборудованием. Пользователи Gentoo могут 
+выбирать из нескольких типов ядра. Их полный список и описание находится в 
+<uri link="/doc/en/gentoo-kernel.xml">руководстве по выбору ядра Gentoo (англ.)</uri>.
+</p>
+
+<p>
+Для ARM-систем мы будем использовать <c>gentoo-sources</c> (содержит заплатки
+для дополнительных возможностей). 
+</p>
+
+<p>
+С помощью команды <c>emerge</c> установите его.
+</p>
+
+<pre caption="Установка исходных кодов ядра">
+# <i>emerge gentoo-sources</i>
+</pre>
+
+<p>
+Просмотрев содержимое каталога <path>/usr/src</path>, вы увидите символьную 
+ссылку <path>linux</path>, которая указывает на каталог с исходными кодами 
+ядра. В данном случае, установленный исходный код ядра указывает на 
+<c>gentoo-sources-<keyval id="kernel-version"/></c>. Имейте в виду, что 
+ваша версия может отличаться. 
+</p>
+
+<pre caption="Просмотр папки с исходными кодами ядра">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root   root    12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>По умолчанию: ручная настройка</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+Ручная настройка ядра считается одним из самых сложных вопросов для 
+пользователей Linux. Зато после настройки нескольких вариантов ядра вы 
+и не вспомните, что это когда-то было трудно ;) 
+</p>
+
+<p>
+Однако <e>есть</e> одна непреложная истина: запуская ручную настройку ядра, 
+следует знать состав аппаратуры своего компьютера. Большую часть информации 
+можно собрать, установив пакет pciutils (<c>emerge pciutils</c>), в который 
+входит <c>lspci</c>. <c>lspci</c> можно использовать, находясь в среде с 
+временным корневым каталогом. Можно не обращать внимания на предупреждения, 
+касающиеся <e>pcilib</e> (например: pcilib: cannot open /sys/bus/pci/devices 
+[pcilib: не могу открыть /sys/bus/pci/devices]), которые выводит на экран <c>lspci</c>. 
+Можно запустить <c>lspci</c> и <c>вне</c> временной среды установки. Результат 
+тот же. Вы также можете запустить <c>lsmod</c> для просмотра модулей ядра, 
+используемых установочным компакт-диском (это даст хорошую подсказку, какие 
+параметры включать). 
+</p>
+
+<p>
+Теперь войдите в каталог с исходными кодами ядра и введите команду <c>make menuconfig</c>. 
+Этой командой вы вызовете меню настройки, использующее ncurses. 
+</p>
+
+<pre caption="Вызов меню настройки">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Перед вами появятся несколько разделов настройки. Сначала перечислим пункты, 
+включение которых обязательно (иначе Gentoo не заработает, или для его работы 
+потребуются дополнительные ухищрения). 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Включение нужных пунктов</title>
+<body>
+
+<p>
+Так как каждая из встраиваемых систем имеет свои специфические особенности,
+мы рассмотрим известные конфигурации для некоторых систем. Если вашей машины
+нет в списке, вам нужно посетить сайт соответствующего сообщества, чтобы
+выяснить, как правильно сконфигурировать ваше ядро.
+</p>
+
+<p>
+Выберите вашу систему из списка, приведенного ниже, чтобы перейти к разделу
+конфигурации.
+</p>
+
+<ul>
+ <li><uri link="#netwinder">NetWinder</uri></li>
+</ul>
+
+</body>
+</subsection>
+</section>
+<section id="netwinder">
+<title>Опции конфигурации NetWinder</title>
+<body>
+
+<p>
+Помните, что поддержка EXT2 необходима для загрузочного раздела, так
+как это единственная файловая система, которую начальный загрузчик может
+надежно прочитать. Кроме нее, единственная файловая система, которая
+была протестирована это EXT3, но вы можете испытать свою удачу,
+и попробовать и другие ;).
+</p>
+
+<pre caption="Опции конфигурации NetWinder">
+<comment>Сначала сгенерируем конфигурацию по умолчанию</comment>
+# <i>make netwinder_defconfig</i>
+
+<comment>Необходимые опции</comment>
+System Type ---&gt;
+  ARM system type (FootBridge) ---&gt;
+    (X) FootBridge
+  Footbridge Implementations ---&gt;
+    [*] NetWinder
+
+Floating point emulation ---&gt;
+  [*] NWFPE math emulation
+
+File systems ---&gt;
+  [*] Second extended fs support
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+Device Drivers ---&gt;
+  ATA/ATAPI/MFM/RLL support ---&gt;
+    [*] ATA/ATAPI/MFM/RLL support
+    [*]   Enhanced IDE/MFM/RLL disk/cdrom/tape/floppy support
+    [*]     Include IDE/ATA-2 DISK support
+    ---     IDE chipset support/bugfixes
+    [*]     PCI IDE chipset support
+    [*]       Winbond SL82c105 support
+    [*]       Generic PCI bus-master DMA support
+
+  Network device support ---&gt;
+    [*] Network device support
+    Ethernet (10 or 100Mbit) ---&gt;
+      [*] Ethernet (10 or 100Mbit)
+      Tulip family network device support ---&gt;
+        [*] "Tulip" family network device support
+        [*]   DECchip Tulip (dc2114x) PCI support
+        [*]     Use PCI shared mem for NIC registers
+        [*]     Use NAPI RX polling
+      [*] EISA, VLB, PCI and on board controllers
+      [*]   PCI NE2000 and clones support
+
+  Character devices ---&gt;
+    Serial drivers ---&gt;
+      [*] 8250/16550 and compatible serial support
+      [*]   Console on 8250/16550 and compatible serial port
+      --- Non-8250 serial port support
+      [*] DC21285 serial port support
+      [*]   Console on DC21285 serial port
+    Watchdog Cards ---&gt;
+      [*] Watchdog Timer Support
+      [*]   NetWinder WB83C977 watchdog
+    [*] NetWinder thermometer support
+    [*] NetWinder Button
+    [*]   Reboot Using Button
+
+<comment>Рекомендуемые опции</comment>
+Kernel Features ---&gt;
+  [*] Preemptible Kernel
+  [*] Timer and CPU usage LEDs
+  [*]   CPU usage LED
+
+File systems ---&gt;
+  [*] Ext3 journalling file system support
+
+Device Drivers ---&gt;
+  Input device support ---&gt;
+    [*] Keyboards ---&gt;
+      [*] AT keyboard
+    [*] Mouse ---&gt;
+      [*] PS/2 mouse
+
+  Graphics support ---&gt;
+    [*] Support for frame buffer devices
+    [*]   Enable firmware EDID
+    [*]   CyberPro 2000/2010/5000 support
+    Logo configuration ---&gt;
+      [*] Bootup logo
+      [*]   Standard 224-color Linux logo
+
+  Sound ---&gt;
+    [*] Sound card support
+    Open Sound System ---&gt;
+      [*] Open Sound System
+      [*]   OSS sound modules
+      [*]     Yamaha FM synthesizer (YM3812/OPL-3) support
+      [*]     Netwinder WaveArtist
+
+<comment>Вам нужно включить это только для обновления вашей прошивки</comment>
+Device Drivers ---&gt;
+  Character devices ---&gt;
+      [*] NetWinder flash support
+</pre>
+
+<p>
+Закончив настройку ядра, приступайте к 
+<uri link="#compiling">компиляции и установке</uri>.
+</p>
+
+</body>
+</section>
+<section id="compiling">
+<title>Компиляция и установка</title>
+<body>
+
+<p>
+Теперь, когда ядро настроено, настало время его скомпилировать и установить. 
+Выйдите из настройки и запустите процесс компиляции: 
+</p>
+
+<pre caption="Компилируем ядро">
+# <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+По завершении компиляции, скопируйте образ ядра в каталог <path>/boot</path>. 
+Используйте любое имя, которое вам покажется подходящим для избранного ядра, и 
+запомните его, так как позже при настройке начального загрузчика оно потребуется. 
+Не забудьте заменить <c><keyval id="kernel-name"/></c> на имя и версию своего ядра. 
+</p>
+
+<pre caption="Установка ядра">
+# <i>cp vmlinux.gz /boot/<keyval id="kernel-name"/></i>
+</pre>
+
+<p>
+Теперь продолжайте с раздела <uri link="#kernel_modules">Модули ядра</uri>.
+</p>
+
+</body>
+</section>
+<section id="kernel_modules">
+<title>Модули ядра</title>
+
+<subsection>
+<include href="hb-install-kernelmodules.xml"/>
+</subsection>
+
+</section>
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-date: 2013-03-16
+source-cvs-revision: 1.16
+translated-by: Vladimir Romanov [blueboar2@gmail.com]
+-->
