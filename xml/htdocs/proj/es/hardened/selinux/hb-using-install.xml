@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-install.xml,v 1.20 2013/03/11 10:31:16 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-install.xml,v 1.21 2013/04/16 15:58:19 nimiux Exp $ -->
 
 <sections>
-<version>32</version>
-<date>2013-03-09</date>
+<version>33</version>
+<date>2013-04-16</date>
 
 <section>
 <title>Instalar Gentoo (Hardened)</title>
@@ -40,7 +40,7 @@ este capítulo, durante el proceso de instalación.
 <body>
 
 <p>
-Instale Gentoo Linux usando las instrucciones del
+Instale Gentoo Linux siguiendo las instrucciones del
 <uri link="/doc/es/handbook">manual de Gentoo</uri>. Recomendamos usar
 los ficheros tarball hardened de stage3 y el núcleo
 <c>hardened-sources</c> en lugar de los ficheros estándar, sin embargo,
@@ -60,7 +60,7 @@ de ficheros XFS es de 512 bytes. Debido a que el valor por defecto es
 </subsection>
 <!--
 <subsection>
-<title>Instalando la extensión (overlay) de desarrollo de Hardened</title>
+<title>Instalar la extensión (overlay) de desarrollo de Hardened</title>
 <body>
 
 <p>
@@ -102,9 +102,9 @@ libsemanage-2.1.6-r1 and sepolgen-1.1.5-r2
 <body>
 
 <p>
-Hasta la fecha, las utilidades de gestión de SELinux no son compatibles
-con Python 3 por lo que le recomendamos cambiar a Python 2 hasta que los
-paquetes sean actualizados y corregidos.
+Hasta la fecha, no todas las utilidades de gestión de SELinux son
+compatibles con Python 3 por lo que le recomendamos cambiar a
+Python 2 hasta que los paquetes sean actualizados y corregidos.
 </p>
 
 <pre caption="Cambiar a python 2">
@@ -121,7 +121,83 @@ Available Python interpreters:
 </body>
 </subsection>
 <subsection>
-<title>Ajustando los contextos del sistema de ficheros</title>
+<title>Elegir un tipo de directriz SELinux</title>
+<body>
+
+<p>
+Gentoo ofrece soporte a cuatro tipos de directriz en SELinux:
+<c>strict</c>, <c>targeted</c>, <c>mcs</c> y <c>mls</c>.
+</p>
+
+<p>
+La diferencia entre <c>strict</c> y <c>targeted</c> es debida
+al dominio <e>no confinado</e>. Cuando se carga la directriz,
+los procesos en su sistema que no están confinados específicamente
+en un módulo de directriz en particular formarán parte de los
+dominios no confinados cuyo propósito es permitir por defecto
+la mayoría de las actividades (en lugar de prohibirlas por
+defecto). Como resultado, los procesos que corren dentro de
+dominios no confinados no tienen restricciones aparte de
+aquéllas ya forzadas por la seguridad estándar de Linux.
+A pesar de que el hecho de trabajar sin dominios no confinados
+está considerado más seguro, también será un más complicado para
+el administrador tener la certeza de que el sistema funciona
+correctamente ya que no hay módulos de directriz para cada una
+de las aplicaciones "ahí fuera".
+</p>
+
+<p>
+Aparte de <c>targeted</c> y <c>strict</c>, puede optar por
+<c>mcs</c> para permitir la categorización de los dominios de
+los procesos. Esto es útil en sistemas gestionados por
+múltiples propietarios como servidores Web, equipos de
+virtualización, etc. en los que muchos procesos están
+corriendo, la mayoría de ellos en el mismo dominio de seguridad,
+pero en diferentes categorías. Observe, sin embargo, que para
+para poder utilizar el soporte de categorías adicionales, bien
+las propias aplicaciones (como el servidor Web o las herramientas
+de supervisión) necesitan configurar las categorías SELinux
+(por lo que deben ofrecer soporte a SELinux), bien se
+necesitará un guión para arrancar las instancias individuales
+en categorías diferentes. De lo contrario, <c>mcs</c> es
+simplemente lo mismo que <c>targeted</c> o <c>strict</c>.
+</p>
+
+<p>
+Para terminar, puede también elegir <c>mls</c> para
+diferenciar los dominios de seguridad a un nivel sensible.
+Sin embargo, MLS aún está considerado experimental en Gentoo
+y por lo tanto no lo recomendamos.
+</p>
+
+<p>
+En el caso de <c>mcs</c> o <c>mls</c>, necesitará utilizar el
+ajuste USE <c>unconfined</c> para habilitar o deshabilitar los
+dominios no confinados en estos tipos de directriz. El tipo
+<c>strict</c> (sin dominios no confinados) no ofrece este ajuste
+USE, y el tipo <c>targeted</c> (dominios no confinados) requiere
+que el ajuste USE esté habilitado.
+</p>
+
+<p>
+Cuando haya elegido los tipos de directriz, guárdelos también en
+su fichero <path>/etc/make.conf</path>. De esta forma, Portage
+instalará únicamente los módulos SELinux para ese tipo de directriz.
+Por defecto, los perfile SELinux habilitan <c>strict</c> y
+<c>targeted</c> (siendo <c>strict</c> el tipo activo por
+defecto).
+</p>
+
+<pre caption="Ajustar el tipo de directriz en make.conf">
+~# <i>nano /etc/make.conf</i>
+POLICY_TYPES="<i>strict</i>"
+</pre>
+
+</body>
+</subsection>
+<subsection>
+
+<title>Ajustar los contextos del sistema de ficheros</title>
 <body>
 
 <p>
@@ -163,7 +239,7 @@ tmpfs  /run   tmpfs  mode=0755,nosuid,nodev,rootcontext=system_u:object_r:var_ru
 </subsection>
 <!--
 <subsection>
-<title>Habilitando paquetes ~Arch</title>
+<title>Habilitar paquetes ~Arch</title>
 <body>
 
 <p>
@@ -607,52 +683,11 @@ En este fichero de configuración se pueden definir dos variables:
   </li>
   <li>
     <c>SELINUXTYPE</c> define el tipo de directriz SELinux que se debe
-    cargar. En Gentoo Hardened se recomienda el uso de <c>strict</c> para
-    los servidores y <c>targeted</c> para los equipos de sobremesa. El
-    tipo <c>mcs</c> no está soportado, <c>mls</c> está considerado
-    actualmente como experimental.
+    cargar. La mayor parte del desarrollo se realiza usando el tipo
+    <c>strict</c> (ya que ofrece confinamiento completo), aunque
+    también se ofrece soporte para los otros.
   </li>
 </ul>
-
-<p>
-La diferencia entre <c>strict</c> y <c>targeted</c> se basa en el
-dominio <e>no confinado</e>. Cuando se cargan los procesos en su sistema
-que no son específicamente confinados en un módulo de directrices, serán
-parte del dominio unconfined_t, cuyo propósito es permitir las actividades
-por defecto (en lugar de denegarlas por defecto). Como resultado, los
-procesos que corren dentro del dominio unconfined_t no tienen restricciones
-salvo aquéllas forzadas por las seguridad estándar de Linux. Aunque se
-considera más seguro trabajar sin el dominio unconfined_t, será más
-complicado para el administrador asegurarse de que el sistema funciona
-correctamente ya que no hay módulos de directrices para todas y cada una
-de las aplicaciones que están "por ahí fuera".
-</p>
-
-<p>
-Además de <c>targeted</c> y <c>strict</c>, puede optar por <c>mcs</c> para
-permitir la categorización de dominios de procesos. Esto es útil en
-sistemas multipropiedad como servidores web, servicios de virtualización,
-... en los que corren múltiples procesos, la mayoría de ellos en el mismo
-dominio de seguridad, pero en categorías diferentes.
-</p>
-
-<p>
-Por último, puede también seleccionar la directriz <c>mls</c> para
-diferenciar dominios de seguridad en un nivel de sensibilidad. Sin embargo,
-MLS está considerado actualmente como experimental en Gentoo y por lo tanto
-no se recomienda su utilización.
-</p>
-
-<p>
-Cuando haya decidido que tipo de directriz de SELinux va a utilizar,
-guárdelo en su fichero <path>/etc/make.conf</path>. De esta forma, Portage
-instalará únicamente los módulos de directrices para ese tipo de SELinux.
-</p>
-
-<pre caption="Ajustar el tipo de directriz en make.conf">
-~# <i>nano /etc/make.conf</i>
-POLICY_TYPES="<i>strict</i>"
-</pre>
 
 </body>
 </subsection>
@@ -715,7 +750,7 @@ si ha instalado <path>sec-policy/selinux-screen</path> después de
 darse cuenta de que tiene instalado <c>screen</c> en su sistema:
 </p>
 
-<pre caption="Etiquetando de nuevo los ficheros de un único paquete">
+<pre caption="Etiquetar de nuevo los ficheros de un único paquete">
 <comment>(Asegúrese de que no tiene sesiones de screen corriendo ya que los contextos de seguridad no serán adaptados)</comment>
 ~# <i>rlpkg -t screen</i>
 </pre>
@@ -803,7 +838,7 @@ pasos por el mundo SELinux.
 
 <p>
 Por defecto, las directrices de SELinux en Gentoo Hardened permiten
-al dominio sysadm_t el acceso a todos los sevicios. Sin embargo,
+al dominio sysadm_t el acceso a todos los servicios. Sin embargo,
 algunos de estos servicios tienen directrices que les permiten
 se asignados a usuarios individuales diferentes de root. Esto
 requiere que se conceda al usuario el rol <c>system_r</c> (lo
