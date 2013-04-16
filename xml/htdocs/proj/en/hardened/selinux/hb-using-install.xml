@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-install.xml,v 1.27 2013/03/09 13:59:13 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-install.xml,v 1.28 2013/04/16 09:38:44 swift Exp $ -->
 
 <sections>
-<version>32</version>
-<date>2013-03-09</date>
+<version>33</version>
+<date>2013-04-16</date>
 
 <section>
 <title>Installing Gentoo (Hardened)</title>
@@ -100,7 +100,7 @@ libsemanage-2.1.6-r1 and sepolgen-1.1.5-r2
 <body>
 
 <p>
-For now, the SELinux management utilities are not compatible with Python 3 so
+For now, the SELinux management utilities are not all compatible with Python 3 so
 we recommend to switch to Python 2 until the packages are updated and fixed.
 </p>
 
@@ -114,6 +114,70 @@ Available Python interpreters:
 ~# <i>eselect python set 1</i>
 ~# <i>source /etc/profile</i>
 </pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Choosing a SELinux policy type</title>
+<body>
+
+<p>
+Gentoo supports four policy types within SELinux: <c>strict</c>,
+<c>targeted</c>, <c>mcs</c> and <c>mls</c>.
+</p>
+
+<p>
+The differentiation between <c>strict</c> and <c>targeted</c> is based upon the
+<e>unconfined</e> domain. When loaded, the processes on your system that are not
+specifically confined within a particular policy module will be part of the
+unconfined domains whose purpose is to allow most activities by default (rather
+than deny by default). As a result, processes that run inside unconfined
+domains have no restrictions apart from those already enforced by standard Linux
+security. Although running without the unconfined domains is considered more
+secure, it will also be more challenging for the administrator to make sure the
+system still functions properly as there are no policy modules for each and
+every application "out there".
+</p>
+
+<p>
+Next to <c>targeted</c> and <c>strict</c>, you can opt for <c>mcs</c> to allow
+categorization of the process domains. This is useful on multi-tenant systems
+such as web servers, virtualization hosts, ... where multiple processes will be
+running, most of them in the same security domain, but in different categories.
+Note though that to take advantage of the additional category support, either
+the applications themselves (such as the web server or hypervisor tools) need to
+configure the SELinux categories (so they need to support SELinux) or you will
+need to script around to start the individual instances with separate
+categories. Otherwise, <c>mcs</c> is just the same as <c>targeted</c> or
+<c>strict</c>.
+</p>
+
+<p>
+Finally, you can also select <c>mls</c> to differentiate security domains on
+a sensitivity level. However, MLS is currently still considered experimental
+in Gentoo and as such not recommended.
+</p>
+
+<p>
+In case of <c>mcs</c> or <c>mls</c>, you will need to use the <c>unconfined</c>
+USE flag to enable or disable unconfined domains in these policy types. The
+<c>strict</c> (no unconfined domains) type does not honor the USE flag, and the
+<c>targeted</c> (unconfined domains) type requires the USE flag set.
+</p>
+
+<p>
+When you have made your choice between the SELinux policy types, save
+this in your <path>/etc/make.conf</path> file as well. That way, Portage will 
+only install the policy modules for that SELinux type. By default, the SELinux
+profiles enable <c>strict</c> and <c>targeted</c> (with <c>strict</c> being the
+default active type).
+</p>
+
+<pre caption="Setting the policy type in make.conf">
+~# <i>nano /etc/make.conf</i>
+POLICY_TYPES="<i>strict</i>"
+</pre>
+
 
 </body>
 </subsection>
@@ -575,49 +639,11 @@ Within this configuration file, two variables can be set:
     </ul>
   </li>
   <li>
-    <c>SELINUXTYPE</c> selects the SELinux policy type to load.
-    Gentoo Hardened recommends the use of <c>strict</c> for servers, and
-    <c>targeted</c> for desktops. The <c>mcs</c> type is supported, <c>mls</c>
-    is currently still considered experimental.
+    <c>SELINUXTYPE</c> selects the SELinux policy type to load. Most development
+    is done using the <c>strict</c> (as it provides full confinement) type,
+    although the others are supported as well.
   </li>
 </ul>
-
-<p>
-The differentiation between <c>strict</c> and <c>targeted</c> is based upon the
-<e>unconfined</e> domain. When loaded, the processes on your system that are not
-specifically confined within a particular policy module will be part of the
-unconfined_t domain whose purpose is to allow most activities by default (rather
-than deny by default). As a result, processes that run inside the unconfined_t
-domain have no restrictions apart from those already enforced by standard Linux
-security. Although running without the unconfined_t domain is considered more
-secure, it will also be more challenging for the administrator to make sure the
-system still functions properly as there are no policy modules for each and
-every application "out there".
-</p>
-
-<p>
-Next to <c>targeted</c> and <c>strict</c>, you can opt for <c>mcs</c> to allow
-categorization of the process domains. This is useful on multi-tenant systems
-such as web servers, virtualization hosts, ... where multiple processes will be
-running, most of them in the same security domain, but in different categories.
-</p>
-
-<p>
-Finally, you can also select <c>mls</c> to differentiate security domains on
-a sensitivity level. However, MLS is currently still considered experimental
-in Gentoo and as such not recommended.
-</p>
-
-<p>
-When you have made your choice between the SELinux policy types, save
-this in your <path>/etc/make.conf</path> file as well. That way, Portage will 
-only install the policy modules for that SELinux type.
-</p>
-
-<pre caption="Setting the policy type in make.conf">
-~# <i>nano /etc/make.conf</i>
-POLICY_TYPES="<i>strict</i>"
-</pre>
 
 </body>
 </subsection>
