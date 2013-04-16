@@ -4,10 +4,10 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-install.xml,v 1.28 2013/04/16 09:38:44 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-install.xml,v 1.29 2013/04/16 10:06:42 swift Exp $ -->
 
 <sections>
-<version>33</version>
+<version>34</version>
 <date>2013-04-16</date>
 
 <section>
@@ -706,6 +706,58 @@ correctly. For instance, if you have installed
 <pre caption="Relabeling the files for a single package">
 <comment>(Make sure no screen sessions are running as their security contexts will not be adapted)</comment>
 ~# <i>rlpkg -t screen</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Enable the selinux_gentoo service</title>
+<body>
+
+<p>
+Gentoo provides an init script called <path>selinux_gentoo</path> which restores
+the contexts of dynamically created files and devices or pseudo file systems 
+(<path>/dev</path> (optionally) and <path>/sys</path>) as those file systems
+cannot persist context changes across reboots.
+</p>
+
+<p>
+The init script also supports booting in permissive mode first (for instance if
+you have a custom initramfs that fails to work in enforcing mode) and switch to
+enforcing mode later.
+</p>
+
+<p>
+Enable the init script using <c>rc-update add selinux_gentoo boot</c> and update
+your boot loader configuration with the following boot options:
+</p>
+
+<ul>
+  <li>
+    <c>nosetenforce</c> if you boot with <c>enforcing=0</c> and do <e>not</e>
+    want the init script to switch back to enforcing mode (if configured in
+    <path>/etc/selinux/config</path>). If your <path>/etc/selinux/config</path>
+    file is configured to boot in permissive mode, this init script will not
+    change this behavior.
+  </li>
+  <li>
+    <c>norestorecon</c> if you do not want to restore the contexts of
+    <path>/dev</path>. 
+  </li>
+</ul>
+
+<pre caption="Example GRUB configuration">
+<comment># Boot in SELinux permissive and switch to enforcing later
+# Requires /etc/selinux/config to have SELINUX=enforcing</comment>
+title Gentoo Hardened/SELinux
+root (hd0,0)
+kernel /boot/kernel root=/dev/vg/root ... <i>enforcing=0</i> ...
+
+<comment># Boot in SELinux permissive and stay in permissive, even if
+# /etc/selinux:config has SELINUX=encorcing</comment>
+title Gentoo Hardened/SELinux
+root (hd0,0)
+kernel /boot/kernel root=/dev/vg/root ... <i>enforcing=0 nosetenforce</i> ...
 </pre>
 
 </body>
