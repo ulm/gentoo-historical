@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gnupg-user.xml,v 1.27 2011/08/29 11:00:03 cam Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gnupg-user.xml,v 1.28 2013/04/18 10:26:56 swift Exp $ -->
 
 <guide lang="fr">
 <title>Utiliser GnuPG sous Gentoo</title>
@@ -21,6 +21,9 @@
 <author title="Traducteur">
  <mail link="clement@varaldi.org">Clément Varaldi</mail>
 </author>
+<author title="Traducteur">
+ <mail link="jaaf.forums@zoraldia.com">José Fournier</mail>
+</author>
 
 <abstract>
 Ce guide vous apprendra les bases de l'utilisation de GnuPG, un utilitaire pour
@@ -31,8 +34,8 @@ sécuriser les communications.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>1.12</version>
-<date>2007-12-29</date>
+<version>5</version>
+<date>2013-01-20</date>
 
 <chapter>
 <title>Introduction</title>
@@ -44,7 +47,7 @@ sécuriser les communications.
 <p>
 Ce guide présume que vous êtes relativement familier avec la cryptographie à
 clé publique, le chiffrement et les signatures numériques. Si ce n'est pas le
-cas, sautez à la section <uri link="#doc_chap6">crytographie à clé
+cas, sautez à la section <uri link="#doc_chap7">crytographie à clé
 publique</uri> ou jetez un œil au <uri
 link="http://www.gnupg.org/documentation/guides.html">manuel GNU de la
 confidentialité</uri> chapitre 2, puis reprenez votre lecture ici.
@@ -53,7 +56,7 @@ confidentialité</uri> chapitre 2, puis reprenez votre lecture ici.
 <p>
 Ce guide vous apprendra comment installer GnuPG, comment créer votre paire de
 clés, comment ajouter des clés à votre trousseau, comment soumettre votre
-clé publique au serveur de clés et comment signer, chiffrer, vérifier ou
+clé publique à un serveur de clés et comment signer, chiffrer, vérifier ou
 déchiffrer les messages que vous envoyez ou recevez. Vous apprendrez aussi
 comment chiffrer des fichiers de votre système pour empêcher sa lecture par une
 autre personne.
@@ -67,7 +70,7 @@ autre personne.
 
 <p>
 Pour commencer, vous devez lancer <c>emerge gnupg</c>. De plus en plus
-d'applications supportent gpg de nos jours, vous pouvez ajouter <e>crypt</e>
+d'applications supportent gpg de nos jours, vous pouvez ajouter l'option <e>crypt</e>
 dans votre variable USE si vous le souhaitez. Si vous souhaitez utiliser gnupg
 avec un logiciel de messagerie, vous pouvez utiliser pine (<c>emerge
 pinepgp</c>), mutt (<c>emerge mutt</c>), Mozilla Thunderbird (<c>emerge
@@ -97,7 +100,7 @@ fois que vous la lancez, cette commande créera quelques répertoires. Lancez-la
 à nouveau pour créer les clés&nbsp;:
 </p>
 
-<pre caption="Création de la clé">
+<pre caption="processus de génération des clés">
 $ <i>gpg --gen-key</i>
 gpg (GnuPG) 1.0.7; Copyright (C) 2002 Free Software Foundation, Inc.
 This program comes with ABSOLUTELY NO WARRANTY.
@@ -105,19 +108,19 @@ This is free software, and you are welcome to redistribute it
 under certain conditions. See the file COPYING for details.
 
 Please select what kind of key you want:
-   (1) DSA and ElGamal (default)
-   (2) DSA (sign only)
-   (4) ElGamal (sign and encrypt)
-   (5) RSA (sign only)
+   (1) RSA and RSA (default)
+   (2) DSA and Elgamal
+   (3) DSA (sign only)
+   (4) RSA (sign only)
    Your selection? <i>1</i>
 </pre>
 
 <p>
 Vous avez ici la possibilité de choisir le type de clé que vous voulez
-utiliser. En général, les utilisateurs choisissent le défaut, DSA et ElGamal.
+utiliser. En général, les utilisateurs choisissent le couple  RSA - RSA (le cas par défaut).
 Ensuite, il faut choisir la taille de la clé. Sachez que plus elle est grande,
 mieux c'est. Néanmoins, n'utilisez pas une taille supérieure à 2048 avec une
-clé DSA/ElGamal, 1024 est largement suffisant pour une utilisation normale de
+clé DSA/ElGamal, 2048 est largement suffisant pour une utilisation normale de
 la messagerie.
 </p>
 
@@ -127,21 +130,18 @@ mieux c'est, mais la plupart des utilisateurs peuvent choisir une clé qui
 n'expire jamais ou bien dans deux ou trois ans.
 </p>
 
-<pre caption="Choisir la taille de la clé">
-DSA keypair will have 1024 bits.
-About to generate a new ELG-E keypair.
-              minimum keysize is  768 bits
-              default keysize is 1024 bits
-    highest suggested keysize is 2048 bits
-What keysize do you want? (1024) <i>2048</i>
-Requested keysize is 2048 bits      
+<pre caption="choisir la taille de la clé">
+RSA keypair will have 1024 bits.
+RSA keys may be between 1024 and 4096 bits long.
+    What keysize do you want? (2048) <i>2048</i>
+Requested keysize is 2048 bits       
 Please specify how long the key should be valid.
          0 = key does not expire
-      &lt;n&gt;  = key expires in n days
-      &lt;n&gt;w = key expires in n weeks
-      &lt;n&gt;m = key expires in n months
-      &lt;n&gt;y = key expires in n years
-Key is valid for? (0) <i>0</i>
+ &lt;n&gt;= key expires in n days
+ &lt;n&gt;w = key expires in n weeks
+ &lt;n&gt;m = key expires in n months
+ &lt;n&gt;y = key expires in n years
+ Key is valid for? (0) <i>0</i>
 Key does not expire at all
 </pre>
 
@@ -150,35 +150,33 @@ Vous devez maintenant entrer quelques informations personnelles. Si vous comptez
 distribuer votre clé publique, mettez votre adresse de messagerie réelle.
 </p>
 
-<pre caption="Renseignements personnels">
+<pre caption="documenter les renseignements personnels">
 Is this correct (y/n)? <i>y</i>
-                       
-You need a User-ID to identify your key; the software constructs the user id
-from Real Name, Comment and Email Address in this form:
-    "Heinrich Heine (Der Dichter) &lt;heinrichh@duesseldorf.de&gt;"
+                        
+GnuPG needs to construct a user ID to identify your key.
 
 Real name: <i>John Doe</i>
 Email address: <i>john@nowhere.someplace.flick</i>
 Comment: <i>The Real John Doe</i>
 You selected this USER-ID:
-    "John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;"
+"John Doe (The Real John Doe) &lt;john@nowhere.someplace.flick&gt;"
 
-Change (N)ame, (C)omment, (E)mail or (O)kay/(Q)uit? <i>O</i>
-You need a Passphrase to protect your secret key.   
+Change (N)ame, (C)omment, (E)mail or (O)kay/(Q)uit? <i>O</i> 
+You need a Passphrase to protect your secret key.    
 
-Enter passphrase:
+Enter passphrase: 
 </pre>
 
 <p>
-Entrez maintenant votre mot de passe deux fois. Utilisez de préférence un mot
+Entrez maintenant votre phrage de passe deux fois. Utilisez de préférence une phrase 
 de passe robuste. En effet, si quelqu'un réussissait à s'emparer de votre clé
-privée et à trouver votre mot de passe, il pourrait envoyer des messages signés
-à votre nom, de telle sorte que quiconque pensera que c'est vous qui l'avez
-envoyé.
+privée et à trouver votre phrase de passe, il pourrait envoyer des messages signés
+à votre nom, de telle sorte que quiconque penserait que c'est vous qui les avez
+envoyés.
 </p>
 
 <p>
-Ensuite, GnuPG vous génère votre clé. Vous pouvez déplacer la souris ou jouer
+Ensuite, GnuPG  génère votre clé. Vous pouvez déplacer la souris ou jouer
 un MP3 pour accélérer le processus de création de la clé, car cela aide la
 génération de valeurs aléatoires.
 </p>
@@ -191,16 +189,16 @@ génération de valeurs aléatoires.
 <body>
 
 <impo>
-Cette partie est très importante, faites-le <e>DE SUITE</e>.
+ceci est très important, faites-le <e>DE SUITE</e>.
 </impo>
 
 <p>
 Après avoir créé vos clés, vous devez créer un certificat de révocation.
 Il vous permettra d'annuler votre clé si quelque chose de fâcheux venait à se
-produire (une personne l'a volée, par exemple).
+produire (une personne l'aurait volée, par exemple).
 </p>
 
-<pre caption="Génération d'un certificat de révocation">
+<pre caption="générer un certificat de révocation">
 $ <i>gpg --list-keys</i>
 /home/humpback/.gnupg/pubring.gpg
 ---------------------------------
@@ -221,12 +219,10 @@ Please select the reason for the revocation:
 (Probably you want to select 1 here)
 Your decision? <i>1</i>
 Enter an optional description; end it with an empty line:
-&gt; <i>Someone cracked me and got my key and passphrase.</i>
-&gt; <i>On m'a piraté et volé ma clé avec son mot de passe.</i>
+&gt; <i>On m'a piraté et volé ma clé avec sa phrase de passe.</i>
 &gt;
 Reason for revocation: Key has been compromised
-Someone cracked me and got my key and passphrase.
-On m'a piraté et volé ma clé avec son mot de passe.
+On m'a piraté et volé ma clé avec sa phrase de passe.
 Is this okay? <i>y</i>
 
 You need a passphrase to unlock the secret key for
@@ -254,7 +250,7 @@ peut être utilisé pour annuler votre clé et la rendre inutilisable.
 </p>
 
 <note>
-Si vous voulez utiliser plusieurs adresses de messagerie avec cette clé, vous
+si vous voulez utiliser plusieurs adresses de messagerie avec cette clé, vous
 pouvez lancer <c>gpg --edit-key VOTRE_ID</c> et ensuite utiliser la commande
 <c>adduid</c>. GnuPG vous demandera alors un nom, une adresse et un commentaire
 pour ce deuxième ID.
@@ -290,7 +286,7 @@ l'empreinte, vous pourrez la valider.
 </p>
 
 <note>
-Faites très attention au moment de vérifier les clés, car c'est un des points
+faites très attention au moment de vérifier les clés, car c'est un des points
 faibles de la cryptographie à clé publique.
 </note>
 
@@ -303,7 +299,7 @@ cas particulier, la clé de Luis ne sera plus valide à partir du 2003-12-01,
 il m'est donc demandé si je veux que la signature expire à la même date.
 </p>
 
-<pre caption="Importation et signature d'une clé">
+<pre caption="importer et signer des clés">
 $ <i>gpg --import luis.asc</i>
 gpg: key 462405BB: public key imported
 gpg: Total number processed: 1
@@ -419,26 +415,27 @@ Nous allons maintenant chercher la clé de Gustavo Felisberto (votre serviteur)
 et l'ajouter au trousseau de John Doe.
 </p>
 
-<pre caption="Chercher une clé sur le serveur de clés">
+<pre caption="chercher une clé sur le serveur de clés">
 $ <i>gpg --keyserver subkeys.pgp.net --keyserver-options honor-http-proxy --search-keys humpback@felisberto.net</i>
 gpg: searching for "humpback@felisberto.net" from HKP server subkeys.pgp.net
 Keys 1-5 of 5 for "humpback@felisberto.net"
-(1) Gustavo Felisberto (apt-get install anarchy) &lt;humpback@felisberto.net&gt; 1024
-    created 2002-12-06, key B9F2D52A
-(2) Gustavo Felisberto &lt;humpback@altavista.net&gt; 1024
-    created 1999-08-03, key E97E0B46
-(3) Gustavo A.S.R. Felisberto &lt;humpback@altavista.net&gt; 1024
-    created 1998-12-10, key B59AB043
-(4) Gustavo Adolfo Silva Ribeiro Felisberto &lt;humpback@altavista.net&gt; 1024
-    created 1998-08-26, key 39EB133D
-(5) Gustavo Adolfo Silva Ribeiro Felisberto &lt;humpback@altavista.net&gt; 1024
-    created 1998-06-14, key AE02AF87
-    Enter number(s), N)ext, or Q)uit &gt;<i>1</i>
+(1)Gustavo Felisberto (apt-get install anarchy) &lt;humpback@felisberto.net&gt; 1024
+  created 2002-12-06, key B9F2D52A
+(2)Gustavo Felisberto &lt;humpback@altavista.net&gt; 1024
+  created 1999-08-03, key E97E0B46
+(3)Gustavo A.S.R. Felisberto &lt;humpback@altavista.net&gt; 1024
+  created 1998-12-10, key B59AB043
+(4)Gustavo Adolfo Silva Ribeiro Felisberto &lt;humpback@altavista.net&gt; 1024
+  created 1998-08-26, key 39EB133D
+(5)Gustavo Adolfo Silva Ribeiro Felisberto &lt;humpback@altavista.net&gt; 1024
+  created 1998-06-14, key AE02AF87
+  Enter number(s), N)ext, or Q)uit &gt;<i>1</i>
 gpg: requesting key B9F2D52A from HKP keyserver subkeys.pgp.net
 gpg: key B9F2D52A: public key imported
 gpg: Total number processed: 1
 gpg:               imported: 1
 </pre>
+
 
 <p>
 Comme vous pouvez le constater, j'ai publié plusieurs clés sur le serveur,
@@ -468,16 +465,16 @@ impliquerait) et les applications devaient réinventer la roue, encore et encore
 
 <p>
 Un agent GPG est une application à part entière utilisée par GPG pour mettre en
-cache le mot de passe de manière standard et sécurisée. Cela permet aux
+cache la phrase de passe de manière standard et sécurisée. Cela permet aux
 applications d'utiliser GPG de manière concurrente&nbsp;: si vous entrez votre
-mot de passe alors que vous utilisez déjà une application, la seconde pourra
+phrase de passe alors que vous utilisez déjà une application, la seconde pourra
 travailler avec le GPG sans devoir demander de nouveau le mot de passe pour
 libérer la clé, si l'agent GPG est configuré pour permettre cela, bien sûr.
 </p>
 
 <p>
 Gentoo fournit quelques programmes d'agent GPG. Le paquet
-<c>app-crypt/gnupg-1.9.*</c> peut être considéré comme l'application de
+<c>app-crypt/gnupg</c> peut être considéré comme l'application de
 référence et est utilisé dans ce document.
 </p>
 
@@ -488,27 +485,34 @@ référence et est utilisé dans ce document.
 <body>
 
 <p>
-Vous devez évidemment installer <c>gnupg-1.9.*</c> qui comprend 
+ <c>gnupg</c>comprend 
 <c>gpg-agent</c> ainsi que <c>pinentry</c>. <c>pinentry</c> est l'application
-d'aide utilisée par gpg-agent pour demander le mot de passe dans une fenêtre
+d'aide utilisée par gpg-agent pour demander la phrase de passe dans une fenêtre
 graphique. Elle est proposée avec trois possibilités&nbsp;: elle peut ouvrir
-une fenêtre en utilisant gtk+, Qt, ou un bibliothèque curses (selon le 
-paramètre USE utilisé lors de son installation).
+une fenêtre en utilisant gtk+, Qt, ou un bibliothèque curses (selon l'option de la variable USE utilisée lors de son installation dans <path>/etc/portage/make.conf</path>).
 </p>
 
-<pre caption="Installer gpg-agent et pinentry">
-# <i>emerge \>=gnupg-1.9.20 pinentry</i>
+
+<p>
+Si vous avez installé <c>pinentry</c> avec plus d'un type de fenêtre popup, vous pouvez choisir le type avec  <c>eselect-pinentry</c>:
+</p>
+
+<pre caption="choisir le type de fenêtre popup">
+# <i>eselect pinentry list</i>
+Available pinentry implementations:
+  [1]   pinentry-gtk-2 *
+  [2]   pinentry-curses
+  [3]   pinentry-qt4
+
+# <i>eselect pinentry set 1</i>
 </pre>
 
 <p>
-Il vous faut maintenant créer un fichier <path>~/.gnupg/gpg-agent.conf</path>
-et lui ajouter les lignes suivantes pour définir le temps d'expiration du mot
-de passe (par exemple 30 minutes) et l'application à appeler lorsque le mot de
-passe doit être tapé la première fois (par exemple, la version qt de pinentry).
+Créez maintenant un fichier  <path>~/.gnupg/gpg-agent.conf</path> et placez-y les lignes suivantes qui définissent le temps d'attente toléré pour saisir la phrase de passe (par exemple, 30 minutes) et l'application à appeler lorsque la phrase de passe ne peut être retrouvée la première fois (par exemple la version gtk+ de pinentry). 
 </p>
 
-<pre caption="Édition de ~/.gnupg/gpg-agent.conf">
-pinentry-program /usr/bin/pinentry-qt
+<pre caption="éditer ~/.gnupg/gpg-agent.conf">
+pinentry-program /usr/bin/pinentry-gtk-2
 no-grab
 default-cache-ttl 1800
 </pre>
@@ -534,15 +538,25 @@ Maintenant, votre système est (presque) prêt à l'utilisation de l'agent GPG.
 
 <p>
 Si vous utilisez KDE comme environnement graphique, éditez le fichier 
-<path>/usr/kde/3.x/env/agent-startup.sh</path> (pour l'ensemble du système ) ou
-<path>~/.kde/env/gpgagent.sh</path> (pour un utilisateur local) et ajoutez la
+<path>/etc/kde/startup/agent-startup.sh</path> (pour l'ensemble du système ) ou
+ <path>~/.kde4/env/gpg-agent.sh</path> (pour un utilisateur local) et ajoutez la
 commande suivante pour que KDE démarre automatiquement l'agent GPG&nbsp;:
 </p>
 
-<pre caption="KDE démarrera automatiquement l'agent GPG">
+<pre caption="faire en sorte que KDE démarre automatiquement l'agent GPG">
 eval "$(gpg-agent --daemon)"
 </pre>
+<p>
+En plus, décommenter ce qui suit dans 
+<path>/etc/kde/shutdown/agent-shutdown.sh</path> (ensemble du système) ou ajoutez-le à 
+<path>~/.kde4/shutdown/gpg-agent.sh</path> (lutilisateur local):
+</p>
 
+<pre caption="faire en sorte que  KDE aarête l'agent GPG">
+if [ -n "${GPG_AGENT_INFO}" ]; then
+  kill $(echo ${GPG_AGENT_INFO} | cut -d':' -f 2) &gt;/dev/null 2&gt;&amp;1
+fi
+</pre>
 <p>
 Si vous utilisez un environnement graphique différent, ajoutez la ligne citée
 précédemment dans votre fichier <path>~/.xinitrc</path> (si vous utilisez
@@ -571,7 +585,7 @@ Voici les trois commandes qui correspondent à ces actions&nbsp;: chiffrer,
 signer et chiffrer/signer.
 </p>
 
-<pre caption="Signer ou chiffrer un fichier">
+<pre caption="signer ou chiffrer un fichier">
 $ <i>gpg --output doc.gpg --encrypt --recipient lmpinto@dei.uc.pt doc_à_chiffrer</i>
 $ <i>gpg --output doc.gpg --sign --recipient lmpinto@dei.uc.pt doc_à_signer</i>
 $ <i>gpg --output doc.gpg --encrypt --sign --recipient lmpinto@dei.uc.pt doc_à_chiffrer_et_signer</i>
@@ -603,17 +617,17 @@ encrypted_doc.gpg</c>. Cela déchiffrera le fichier et vérifiera sa signature
 <body>
 
 <p>
-Il est aussi possible de chiffrer des fichiers en utilisant un mot de passe
-plutôt qu'une clef. En fait, le mot de passe lui-même va fonctionner comme une
-clef. Il sera utilisé comme <e>algorithme de chiffrement symétrique</e>. Vous
+Il est aussi possible de chiffrer des fichiers en utilisant une phrase de passe
+plutôt qu'une clef. En fait, la phrase de passe elle-même va fonctionner comme une
+clef. Elle sera utilisée comme <e>algorithme de chiffrement symétrique</e>. Vous
 pouvez chiffrer le fichier en utilisant l'argument <c>--symmetric</c> de
 <c>gpg</c>&nbsp;; le déchiffrage fonctionne de la même manière que ce que l'on a
 vu précédemment.
 </p>
 
-<pre caption="Chiffrage d'un fichier avec un mot de passe">
+<pre caption="chiffrer un fichier avec une phrase de passe">
 $ <i>gpg --output document.gpg --symmetric document</i>
-<comment>(GnuPG va réclamer un mot de passe et une vérification)</comment>
+<comment>(GnuPG va réclamer une phrase de passe et une vérification)</comment>
 </pre>
 
 </body>
@@ -751,7 +765,7 @@ importantes qui se trouvent dans Kgpg ou en ligne de commande.
 
 </body>
 </section>
-
+<!--
 <section>
 <title>Enigmail</title>
 <body>
@@ -777,12 +791,13 @@ commande, n'est-ce pas&nbsp;?).
 
 </body>
 </section>
+-->
 <section>
 <title>KMail</title>
 <body>
 
 <p>
-Si vous utilisez le paramètre USE <c>crypt</c>, KMail sera compilé avec le
+Si vous utilisez l'option <c>crypt</c> de la variable USE, KMail sera compilé avec le
 support gpg et sera capable de chiffrer et déchiffrer les courriers PGP
 automatiquement. Il pourra également chiffrer les courriers avec OpenPGP/MIME.
 Si vous voulez également pouvoir déchiffrer les courriers OpenPGP/MIME (ce qui
@@ -793,8 +808,7 @@ GPG</uri>).
 
 <p>
 Vous pouvez vérifier si KMail est correctement configuré en allant dans
-<c>Configurations</c>, <c>Configurer KMail</c>, <c>Sécurité</c>, <c>Crypto
-Plugins</c>. Vous devriez voir un élément GpgME-based dans la liste. S'il n'est
+<c>Configurations</c>, <c>Configurer KMail</c>, <c>Sécurité</c>, <c>Crypto Backends</c>. Vous devriez voir un élément GpgME-based dans la liste et être capable de cocher la case OpenPGP. S'il n'est
 pas grisé, cliquez sur <c>Rescan</c>. S'il n'est toujours pas grisé, KMail ne
 fonctionne pas correctement.
 </p>
@@ -857,7 +871,7 @@ d'entre eux, il m'a fait découvrir un monde nouveau.
 Et maintenant un peu de maths&nbsp;:
 </p>
 
-<pre caption="Concepts mathématiques">
+<pre caption="concepts mathématiques">
 Définitions :
 
 Un nombre premier est un nombre entier positif supérieur à 1 qui est divisible
