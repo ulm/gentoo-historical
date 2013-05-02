@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gentoo-x86+raid+lvm2-quickinstall.xml,v 1.15 2010/05/04 09:48:52 titefleur Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/gentoo-x86+raid+lvm2-quickinstall.xml,v 1.16 2013/05/02 17:47:19 swift Exp $ -->
 <!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
 
 <guide lang="fr">
@@ -27,11 +27,14 @@ LVM2</title>
 <author title="Traducteur">
   <mail link="titefleur"/>
 </author>
+<author title="Traducteur">
+  <mail link="jaaf.forums@zoraldia.com">José Fournier</mail>
+</author>
 
 <abstract>
 Le guide d'installation rapide présente le processus d'installation de Gentoo
 Linux de façon concise. Son objectif est de permettre aux utilisateurs
-d'effectuer une installation stage3 avec RAID logiciel et LVM2 en un rien de
+d'effectuer une installation à partir d'une archive d'étape 3 avec RAID logiciel et LVM2 en un rien de
 temps. Une expérience préalable avec l'installation de Gentoo est vivement
 recommandée pour suivre ce guide.
 </abstract>
@@ -40,8 +43,8 @@ recommandée pour suivre ce guide.
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 <license/>
 
-<version>15</version>
-<date>2010-01-26</date>
+<version>20</version>
+<date>2012-03-31</date>
 
 <chapter>
 <title>Introduction</title>
@@ -49,14 +52,13 @@ recommandée pour suivre ce guide.
 <body>
 
 <p>
-Ce guide contient toutes les commandes nécessaires à une installation d'un
-stage3 de Gentoo avec LVM2 et RAID logiciel. Ce guide s'adresse à des
+Ce guide contient toutes les commandes nécessaires à une installation de Gentoo à partir d'une archive d'étape 3 avec LVM2 et RAID géré par logiciel. Ce guide s'adresse à des
 utilisateurs expérimentés. Vous avez besoin d'une connexion à Internet pour
-télécharger le stage3 et l'instantané de Portage.
+télécharger l'archive d'étape 3 et l'instantané de Portage.
 </p>
 
 <impo>
-Les nouveaux utilisateurs devraient plutôt lire le <uri
+les nouveaux utilisateurs devraient plutôt lire le <uri
 link="/doc/fr/handbook/index.xml">Manuel</uri> qui donne un meilleur aperçu
 du processus d'installation. Le guide d'installation est destiné aux
 utilisateurs expérimentés qui ont juste besoin de suivre une liste de tâches.
@@ -72,16 +74,17 @@ disposez d'un contrôleur «&nbsp;matériel&nbsp;» sur votre carte mère, ce n'
 probablement <b>pas</b> un contrôleur matériel.
 </p>
 
-<pre caption="Caractéristiques de la machine de test">
+<pre caption="caractéristiques de la machine de test">
 <comment>(Les caractéristiques suivantes et les informations de chronométrage devraient
 vous aider à estimer le temps nécessaire pour terminer votre installation.)</comment>
 
+
 # <i>grep bogo /proc/cpuinfo</i>
- bogomips       : 3337.81
+bogomips       : 3337.81
 
 # <i>hdparm -tT /dev/sda /dev/sdb</i>
 /dev/sda:
- Timing cached reads:   1048 MB in  2.00 seconds = 524.00 MB/sec
+reads:   1048 MB in  2.00 seconds = 524.00 MB/sec
  Timing buffered disk reads:  152 MB in  3.01 seconds =  50.50 MB/sec
 
 /dev/sdb:
@@ -89,7 +92,7 @@ vous aider à estimer le temps nécessaire pour terminer votre installation.)</c
  Timing buffered disk reads:  152 MB in  3.01 seconds =  50.50 MB/sec
 
 # <i>grep MemTotal /proc/meminfo</i>
- MemTotal:       509248 kB
+MemTotal:       509248 kB
 </pre>
 
 </body>
@@ -109,7 +112,7 @@ vous aider à estimer le temps nécessaire pour terminer votre installation.)</c
 Chargez les modules pour le RAID logiciel et LVM2.
 </p>
 
-<pre caption="Charger les modules pour le RAID logiciel et LVM2">
+<pre caption="charger les modules pour le RAID logiciel et LVM2">
 livecd ~ # <i>modprobe raid0</i>
 livecd ~ # <i>modprobe raid1</i>
 <comment>(raid5, raid6 et raid10 sont également disponibles.)</comment>
@@ -121,7 +124,7 @@ livecd ~ # <i>modprobe dm-mod</i>
 Utilisez <c>fdisk</c> ou <c>cfdisk</c> pour créer vos partitions. Les noms des
 périphériques sont généralement <path>/dev/sda</path> et <path>/dev/sdb</path>
 pour des disques SATA ou SCSI, ou <path>/dev/hda</path> et <path>/dev/hdb</path>
-pour des disques IDE. Le schéma suivant est utilisé dans ce guide&nbsp;:
+pour des disques IDE. Le plan de partitionnement suivant est utilisé dans ce guide&nbsp;:
 </p>
 
 <table>
@@ -157,21 +160,21 @@ pour des disques IDE. Le schéma suivant est utilisé dans ce guide&nbsp;:
 </table>
 
 <impo>
-La partition depuis laquelle vous démarrez ne peut pas être du type striped.
+la partition depuis laquelle vous démarrez ne peut pas être du type striped.
 Elle ne peut donc pas être de type raid-5 ou raid-0.
 </impo>
 
 <note>
-D'une part, si vous souhaitez plus de stabilité, préférez l'utilisation du mode
+si, d'une part, si vous souhaitez plus de stabilité, préférez l'utilisation du mode
 raid-1 (ou même raid-5) pour vos partitions d'échange de façon à ce qu'un
 plantage du disque ne corrompe pas votre espace d'échange, ce qui évitera de
-planter les applications qui l'utilisent. D'autre part, si vous voulez plus de
+planter les applications qui l'utilisent. Si, d'autre part, vous voulez plus de
 performances, laissez simplement le noyau utiliser des partitions d'échange
 séparées comme il le fait par défaut en mode striping.
 </note>
 
 
-<pre caption="Créer les partitions">
+<pre caption="créer les partitions">
 livecd ~ # <i>fdisk /dev/sda</i>
 <comment>(Vérifiez que vous utilisez le type fd et que l'option d'amorçage est
 activée.)</comment>
@@ -194,22 +197,22 @@ livecd ~ # <i>fdisk /dev/sdb</i>
 </pre>
 
 <p>
-Ensuite, créez les nœuds des périphériques et les périphériques RAID&nbsp;:
+Ensuite, créez les nœuds de périphériques et les périphériques RAID. Ne perdez pas de vue que, si vous n'utilisez pas de disque virtuel de démarrage (initramfs) pour aider pendant le démarrage, les points de montage <c>/boot</c> et <c>/</c> ne devraient pas utiliser un format de metadata plus ancien que celui spécifié par l'option <c>--metadata=0.90</c>.
 </p>
 
-<pre caption="Créer les nœuds des périphériques et les périphériques">
+<pre caption="créer les nœuds des périphériques et les périphériques">
 livecd ~ # <i>mknod /dev/md1 b 9 1</i>
 livecd ~ # <i>mknod /dev/md3 b 9 3</i>
 livecd ~ # <i>mknod /dev/md4 b 9 4</i>
 
-livecd ~ # <i>mdadm --create /dev/md1 --level=1 --raid-devices=2 /dev/sda1 /dev/sdb1</i>
+livecd ~ # <i>mdadm --create /dev/md1 --level=1 --raid-devices=2 --metadata=0.90 /dev/sda1 /dev/sdb1</i>
 mdadm: array /dev/md1 started.
-livecd ~ # <i>mdadm --create /dev/md3 --level=1 --raid-devices=2 /dev/sda3 /dev/sdb3</i>
+livecd ~ # <i>mdadm --create /dev/md3 --level=1 --raid-devices=2 --metadata=0.90 /dev/sda3 /dev/sdb3</i>
 mdadm: array /dev/md3 started.
 livecd ~ # <i>mdadm --create /dev/md4 --level=0 --raid-devices=2 /dev/sda4 /dev/sdb4</i>
 mdadm: array /dev/md4 started.
 
-<comment>(Attendez que toutes les unités soient prêtes.)</comment>
+<comment>(Patientez jusqu'à ce que toutes les unités soient prêtes.)</comment>
 livecd ~ # <i>cat /proc/mdstat</i>
 Personalities : [raid0] [raid1]
 md4 : active raid0 sdb4[1] sda4[0]
@@ -221,7 +224,9 @@ md3 : active raid1 sdb3[1] sda3[0]
 md1 : active raid1 sdb1[1] sda1[0]
 88256 blocks [2/2] [UU]
 </pre>
-
+<p>
+Si vous utilisez un disque virtuel de démarrage (initramfs), ce dernier est en charge d'assembler les <e>arrays</e> RAID pendant le démarrage. Lors de l'utilisation d'un disque virtuel de démarrage produit par Genkernel, ceci peut être activé en utilisant l'option de démarrage <c>domdadm</c>.
+</p>
 <p>
 Ensuite, créez les volumes LVM2 dans <path>/dev/md4</path>. Le schéma suivant
 est utilisé comme <b>exemple</b>&nbsp;:
@@ -275,7 +280,7 @@ est utilisé comme <b>exemple</b>&nbsp;:
 </tr>
 </table>
 
-<pre caption="Créer les volumes LVM2">
+<pre caption="créer les volumes LVM2">
 livecd ~ # <i>vgscan</i>
   Reading all physical volumes.  This may take a while...
   No volume groups found
@@ -302,7 +307,7 @@ livecd ~ # <i>lvcreate -L4G -nvar vg</i>
 livecd ~ # <i>lvcreate -L6G -nvartmp vg</i>
 livecd ~ # <i>lvcreate -L2G -ntmp vg</i>
 
-<comment>(Afficher les groupes de volumes et le volumes logiques.)</comment>
+<comment>(Afficher les groupes de volumes et les volumes logiques.)</comment>
 livecd ~ # <i>vgs</i>
   VG   #PV #LV #SN Attr  VSize   VFree
   vg     1   8   0 wz--n 554.09G 514.09G
@@ -324,7 +329,7 @@ Utilisez <c>mke2fs</c>, <c>mke2fs -j</c>, <c>mkreiserfs</c>, <c>mkfs.xfs</c> et
 de mémoire virtuelle avec <c>mkswap</c> et <c>swapon</c>.
 </p>
 
-<pre caption="Créer le système de fichiers et activer la mémoire virtuelle">
+<pre caption="créer le système de fichiers et activer la mémoire virtuelle">
 <comment>(Le système de fichiers ext2 est suffisant pour la partition /boot.)</comment>
 livecd ~ # <i>mke2fs /dev/md1</i>
 
@@ -356,7 +361,7 @@ Montez les systèmes de fichiers fraîchement créés sur <path>/mnt/gentoo</pat
 Créez les répertoires pour les autres points de montage et montez-les.
 </p>
 
-<pre caption="Monter le système de fichiers">
+<pre caption="monter le système de fichiers">
 livecd ~ # <i>mount /dev/md3 /mnt/gentoo</i>
 livecd ~ # <i>cd /mnt/gentoo</i>
 livecd gentoo # <i>mkdir boot home usr opt var tmp</i>
@@ -392,7 +397,7 @@ puis copiez le fichier <path>arch/i386/boot/bzImage</path> dans
 <path>/boot</path>.
 </p>
 
-<pre caption="Installer les sources d'un noyau, le compiler et l'installer">
+<pre caption="installer les sources d'un noyau, le compiler et l'installer">
 livecd etc # <i>time emerge gentoo-sources</i>
 
 real  3m3.110s
@@ -402,7 +407,7 @@ livecd etc # <i>cd /usr/src/linux</i>
 livecd linux # <i>make menuconfig</i>
 
 <comment>(Configurez votre noyau comme d'habitude et assurez-vous que les modules raid et
-lvm dont vous avez besoin sont en dur, c'est-à-dire qu'ils ne sont <b>pas</b>
+lvm dont vous avez besoin sont compilés dans le noyau, c'est-à-dire qu'ils ne sont <b>pas</b>
 construits commes modules. Même recommandation pour les pilotes des disques et
 pour les systèmes de fichiers.)</comment>
 Multi-device support (RAID and LVM)  --->
@@ -435,6 +440,14 @@ livecd linux # <i>make modules_install</i>
 livecd linux # <i>cp arch/i386/boot/bzImage /boot/kernel</i>
 </pre>
 
+<p>
+Ensuite compilez un disque virtuel de démarrage avec lequel démarrer le système.
+</p>
+
+<pre caption="compiler un disque virtuel de démarrage (initramfs)">
+# <i>emerge genkernel</i>
+# <i>genkernel --install --no-ramdisk-modules --lvm --mdadm initramfs</i>
+</pre>
 </body>
 </section>
 <section>
@@ -445,16 +458,15 @@ livecd linux # <i>cp arch/i386/boot/bzImage /boot/kernel</i>
 <body>
 
 <p>
-Quittez l'environnement chroot, démontez tous les systèmes de fichiers et
+Quittez l'environnement <e>chrooté</e> (celui sur la nouvelle racine) , démontez tous les systèmes de fichiers et
 redémarrez.
 </p>
 
-<pre caption="Redémarrage">
+<pre caption="redémarrage">
 livecd conf.d # <i>exit</i>
-livecd / # <i>umount /mnt/gentoo/usr/portage/distfiles /mnt/gentoo/usr/portage \
-/mnt/gentoo/usr /mnt/gentoo/var/tmp /mnt/gentoo/tmp /mnt/gentoo/var \
-/mnt/gentoo/opt /mnt/gentoo/dev /mnt/gentoo/proc /mnt/gentoo/home \
-/mnt/gentoo/boot /mnt/gentoo</i>
+livecd / # <i>umount -l /mnt/gentoo/usr{/portage/distfiles,/portage,}</i>
+livecd / # <i>umount -l /mnt/gentoo/dev{/pts,/shm,}</i>
+livecd / # <i>umount -l /mnt/gentoo{/usr,/var/tmp,/tmp,/var,/opt,/dev,/proc,/home,/boot,}</i>
 livecd / # <i>reboot</i>
 <comment>(N'oubliez pas d'éjecter le CD.)</comment>
 </pre>

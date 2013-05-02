@@ -1,0 +1,242 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/grub2-migration.xml,v 1.1 2013/05/02 17:47:19 swift Exp $ -->
+
+<guide>
+<title>GRUB2 migration from GRUB Legacy</title>
+
+<author title="Author">
+  <mail link="cardoe"/>
+</author>
+<author title="Traducteur">
+  <mail link="jaaf.forums@zoraldia.com">José Fournier</mail>
+</author>
+
+<abstract>
+Le but de ce guide est de vous montrer comment passer en douceur de GRUB Legacy à GRUB2.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/3.0 -->
+<license/>
+
+<version>2</version>
+<date>2012-07-27</date>
+
+<chapter>
+<title>Notions de base</title>
+<section>
+<title>Qu'est-ce que Grub?</title>
+<body>
+
+<p>
+GRUB est des chargeurs de démarrage les plus couramment utilisés  sur des systèmes Linux non-embarqués. 
+Le rôle de Grub est de faciliter le chargement du noyau depuis votre disque vers la mémoire vive et de lancer son exécution.
+</p>
+
+</body>
+</section>
+<section>
+<title>Pourquoi migrer&nbsp;?</title>
+<body>
+
+<p>
+La première raison, c'est que GRUB n'est plus maintenu et qu'il n'est donc plus mis à jour. GRUB Legacy a été créé à une époque où les développeurs pouvaient s'appuyer sans risque sur des vérités qui n'en sont plus plus aujourd'hui. Par exemple, GRUB Legacy est incapable de démarrer depuis des disques dont la taille est supérieure à 2&nbsp;TO et s'appuie sur l'idée que les systèmes de fichiers les plus récents n'en viendront pas à remplacer <path>/boot</path>.
+</p>
+
+<p>
+GRUB2 cherche à être plus robuste, plus portable, plus puissant et est maintenu avec une base de code plus propre. GRUB2 prend en charge plus de configurations matérielles, plus de types de systèmes de fichiers et plus de plans de partitionnement de disques que son prédécesseur.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Migration vers GRUB2</title>
+<section>
+<body>
+
+<p>
+La migration vers  GRUB2 est assez directe&nbsp;: il sera mis en place par votre gestionnaire de paquets dans votre processus normal de mise à jour. S'il n'est pas mis en place automatiquement, vous pouvez toujours installer le paquet  <c>sys-boot/grub:2</c>.
+</p>
+
+</body>
+</section>
+<section id="boot_drive">
+<title>Disque de démarrage</title>
+<body>
+
+<p>
+La première chose importante à comprendre, c'est quel est votre disque de démarrage. Pour beaucoup de gens, c'est  <path>/dev/sda</path>. La façon la plus facile de le savoir, est de regarder la configuration de votre GRUB Legacy existant, en particulier le fichier <path>/boot/grub/grub.conf</path>. Un exemple est présenté ci-dessous.
+</p>
+
+<note>
+votre  partition <path>/boot</path> doit être montée pour voir ces fichiers. 
+Ce ne devrait pas être plus compliqué que <c>mount /boot</c> pour monter <path>/boot</path>.
+</note>
+
+<pre caption="/boot/grub/grub.conf">
+default 0
+timeout 30
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+
+title Gentoo Linux 3.2.12
+root (hd0,0)
+kernel /boot/kernel-3.2.12-gentoo root=/dev/sda3 quiet dolvm
+initrd /boot/initramfs-genkernel-x86_64-3.2.12-gentoo
+</pre>
+
+<p>
+La lecture du fichier ci-dessus vous apprend que  <c>(hd0)</c> est le disque de démarrage mais vous devez encore  rapporter ceci à un périphérique réel. Pour le savoir, il vous faut regarder le fichier 
+<path>/boot/grub/device.map</path>. Un exemple est présenté ci-dessous.
+</p>
+
+<pre caption="/boot/grub/device.map">
+(fd0) /dev/fd0
+(hd0) /dev/sda
+(hd1) /dev/sdb
+</pre>
+
+<p>
+Ce fichier vous apprend que  <path>/dev/sda</path> est le disque de démarrage.
+</p>
+	
+</body>
+</section>
+<section id="grub_install">
+<title>Installation et configuration de GRUB2</title>
+<body>
+
+<p>
+Ensuite, il faut installer et configurer GRUB2 sur votre partition  <path>/boot</path>
+sans retirer GRUB Legacy de votre <e>Master Boot Record (MBR)</e>. L'exemple qui suit utilise  <path>/dev/sda</path> que vous devez remplacer par votre propre disque de démarrage. La première étape installe les fichiers GRUB2 requis dans <path>/boot/grub2</path>, tandis que la deuxième étape analyse la présence de vos noyaux disponibles et génère un fichier de configuration approprié nommé <path>/boot/grub2/grub.cfg</path>.
+</p>
+
+<pre caption="installer et configurer GRUB2">
+# <i>grub2-install --grub-setup=/bin/true /dev/sda</i>
+Installation finished. No error reported.
+# <i>grub2-mkconfig -o /boot/grub2/grub.cfg</i>
+Generating grub.cfg ...
+Found linux image: /boot/kernel-3.2.12-gentoo
+Found initrd image: /boot/initramfs-genkernel-x86_64-3.2.12-gentoo
+done
+</pre>
+
+<note>
+GRUB2 ne reconnait que les noyaux et les disques virtuels de démarrage (initramfs) obéissant à des règles strictes de nommage. Un noyau doit être nommé soit  <c>kernel-${version}</c>,  soit <c>vmlinuz-${version}</c>
+alors qu'un disque virtuel de démarrage (initramfs) doit être nommé au choix, <c>initramfs-${version}</c>,
+<c>initramfs-genkernel-${version}</c>,
+<c>initramfs-genkernel-${arch}-${version}</c>,
+<c>initrd-${version}.img</c>, <c>initrd.img-${version}</c>,
+<c>initrd-${version}.gz</c>, ou <c>initrd-${version}</c>.
+Ce nom (incluant la ${version}), doit correspondre à un noyau, ou un disque initial,  disponible dans  <path>/boot</path>.
+</note>
+
+</body>
+</section>
+<section id="chainload">
+<title>Chargement en chaîne de  GRUB2 depuis GRUB Legacy pour tester la configuration</title>
+<body>
+
+<p>
+Comme une configuration défectueuse de GRUB peut conduire à un système incapable de démarrer, vous aimeriez tester votre configuration de GRUB2 avant de l'appliquer en permanence.
+Pour ce faire, vous devez charger GRUB2 en chaîne depuis GRUB Legacy en ajoutant une nouvelle section dans le fichier  <path>/boot/grub/grub.conf</path>. Un exemple est présenté ci-dessous.
+</p>
+
+<note>
+soyez conscient du fait que votre racine peut être autre chose que  <c>(hd0,0)</c> telle qu'utilisée dans l'exemple et assurez-vous de toujours utiliser la même valeur de racine partout.
+</note>
+
+<pre caption="/boot/grub/grub.conf">
+default 0
+timeout 30
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+
+<i>title GRUB2 Chainload
+root (hd0,0)
+kernel /boot/grub2/i386-pc/core.img
+boot</i>
+
+title Gentoo Linux 3.2.12
+root (hd0,0)
+kernel /boot/kernel-3.2.12-gentoo root=/dev/sda3 quiet dolvm
+initrd /boot/initramfs-genkernel-x86_64-3.2.12-gentoo
+</pre>
+
+<p>
+À ce stade, vous devriez redémarrer votre machine et sélectionner  <c>GRUB2 Chainload</c>
+du menu de  GRUB au début du démarrage. Un autre menu GRUB, se présentant avec un entête <e>GRUB 2.0.0</e> (ou plus récent) et affichant tous les noyaux disponibles pour le démarrage,   vous sera alors proposé. Si ceci venait à ne pas fonctionner, redémarrez votre système et choisissez votre option habituelle de démarrage au lieu de  <c>GRUB2
+Chainload</c>.
+</p>
+
+</body>
+</section>
+<section id="replacement">
+<title>Replacement et suppression de GRUB Legacy</title>
+<body>
+
+<p>
+Maintenant, si tout s'est bien passé, vous pouvez remplacer GRUB Legacy et le retirer de votre système.
+</p>
+
+<note>
+dans la mesure où vous avez redémarré votre système, vous devez probablement remonter  <path>/boot</path>. Pensez à bien utiliser votre propre disque de démarrage si ce n'est pas <path>/dev/sda</path>.
+</note>
+
+<pre caption="remplacer GRUB Legacy">
+# <i>grub2-install /dev/sda</i>
+Installation finished. No error reported.
+# <i>rm -rf /boot/grub/</i>
+</pre>
+
+<p>
+Maintenant, vous pouvez utiliser votre gestionnaire de paquets pour désinstaller 
+ <c>sys-boot/grub:0</c>.
+La migration est terminée.
+</p>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>Maintenance de  GRUB2</title>
+<section>
+<body>
+
+<p>
+À chaque fois que vous installerez un nouveau noyau, vous devrez effectuer l'étape qui suit pour que GRUB2 puisse reconnaître votre nouveau noyau.
+</p>
+
+<note>
+votre partition  <path>/boot</path> doit être montée pour ce qui suit.
+</note>
+
+<pre caption="installere un nouveau noyau">
+# <i>grub2-mkconfig -o /boot/grub2/grub.cfg</i>
+Generating grub.cfg ...
+Found linux image: /boot/kernel-3.3.8-gentoo
+Found initrd image: /boot/initramfs-genkernel-x86_64-3.3.8-gentoo
+Found linux image: /boot/kernel-3.2.12-gentoo
+Found initrd image: /boot/initramfs-genkernel-x86_64-3.2.12-gentoo
+done
+</pre>
+
+</body>
+</section>
+</chapter>
+
+<chapter>
+<title>FAQ / Problèmes connus / Remèdes</title>
+<section>
+<body>
+
+<p>
+Contenu à paraître.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
