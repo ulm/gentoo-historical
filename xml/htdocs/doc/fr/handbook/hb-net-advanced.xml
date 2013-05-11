@@ -7,7 +7,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-net-advanced.xml,v 1.12 2013/03/04 19:47:19 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-net-advanced.xml,v 1.13 2013/05/11 19:19:13 swift Exp $ -->
 
 <sections>
 
@@ -16,8 +16,8 @@ Nous apprendrons ici comment fonctionne la configuration du réseau. Vous devrez
 comprendre cette partie avant que nous attaquions les modules réseaux.
 </abstract>
 
-<version>11</version>
-<date>2011-08-19</date>
+<version>12</version>
+<date>2013-05-06</date>
 
 <section>
 <title>Configuration avancée</title>
@@ -243,5 +243,105 @@ dns_domain_Mon____r_zo="Mon \"\\ rézo"
 
 </body>
 </section>
+<section>
+<title>Nommage des interfaces réseau</title>
+<subsection>
+<title>Comment ça marche&nbsp;?</title>
+<body>
 
+<p>
+Les noms des interfaces réseau ne sont pas choisis arbitrairement&nbsp;: le noyau Linux et le gestionnaire de périphériques (la plupart des système utilisent udev comme gestionnaire de périphériques bien que d'autres existent) choisissent le nom de l'interface en fonction  de règles bien définies.
+</p>
+
+<p>
+Quand une interface est détectée sur un système, le noyau Linux rassemble les données nécessaires sur cette carte. Ceci inclut&nbsp;:
+</p>
+<ol>
+  <li>
+    le nom enregistré (sur l'interface elle-même) de la carte, qui sera par la suite noté comme étant le paramètre <c>ID_NET_NAME_ONBARD</c> &nbsp;;
+  </li>
+  <li>
+    le connecteur sur lequel la carte est enfichée qui sera par la suite noté comme  étant le paramètre  <c>ID_NET_NAME_SLOT</c>&nbsp;; 
+  </li>
+  <li>
+    le chemin via lequel la carte est accessible, qui sera par la suite noté comme  étant le paramètre  <c>ID_NET_NAME_PATH</c> &nbsp;;
+  </li>
+  <li>
+    l'adresse MAC (fournie par le fabricant) de la carte, qui sera par la suite noté comme  étant le paramètre
+    the <c>ID_NET_NAME_MAC</c> &nbsp;;
+  </li>
+</ol>
+
+<p>
+Sur la base de ces informations, le gestionnaire de périphériques décide du nom à attribuer à l'interface sur le système. Par défaut, il utilise le premier  By default, il utilise le premier des paramètres cités ci-dessus qu'il rencontre. Par exemple, s'il rencontre <c>ID_NET_NAME_ONBARD</c> et que ce dernier vaut  <c>eno1</c>, alors l'interface sera appelée eno1.
+</p>
+
+<p>
+Si vous connaissez le nom de votre interface, vous pouvez lire les paramètres associès avec la commande  <c>udevadm</c>:
+</p>
+
+<pre caption="lire les informations de la carte interface ">
+# <i>udevadm test-builtin net_id /sys/class/net/enp3s0 2>/dev/null</i>
+ID_NET_NAME_MAC=enxc80aa9429d76
+ID_OUI_FROM_DATABASE=Quanta Computer Inc.
+ID_NET_NAME_PATH=enp3s0
+</pre>
+
+<p> Comme le premier paramètre rencontrés des trois paramètres est 
+<c>ID_NET_NAME_PATH</c> , c'est cette valeur qui est utilisée comme nom de l'interface. Si aucun paramètre n'est trouvé, le système en revient aux noms fournis par le noyau (eth0, eth1, etc.)
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Utilisation du nommage traditionnel du noyau</title>
+<body>
+
+<p>
+Avant ce changement, les cartes interfaces réseau étaient nommées par le noyau Linux lui-même, selon l'ordre de chargement des pilotes (parmi d'autres, vraisemblablement plus obscures, raisons). Ce comportement peut toujours être activé en positionnant l'option de démarrage 
+<c>net.ifnames=0</c> dans le chargeur de démarrage.
+</p>
+
+<p>
+Une autre manière de désactiver ce comportement (et de revenir ainsi au nommage traditionnel par le noyau) est de créer une règle udev vide nommée 
+<path>80-net-name-slot.rules</path> qui écrasera alors la règle par défaut fournie (avec le même nom)&nbsp;; règle  qui prend en charge le nommage des interfaces réseau.
+</p>
+
+<pre caption="écraser le principe de nommage des interfaces réseau">
+# <i>ln -s /dev/null /etc/udev/rules.d/80-net-name-slot.rules</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Utilisation de vos propres noms</title>
+<body>
+
+<p>
+L'idée maîtresse à la base du changement du système de nommage  n'est pas de  semer la confusion dans l'esprit de l'utilisateur, mais de rendre les changements plus faciles. Supposons que vous ayez deux cartes d'interface appeléer eth0 et eth1. L'une est prévue pour l'accès au réseau par câble, tandis que l'autre est prévue pour un accès sans fil. Avec la prise en charge du nommage des interfaces, vous pouvez  les appeler lan0 (câblée) et wifi0 (sans fil) - c'est mieux de ne pas utiliser les noms habituels tels que eth* et wlan* car ceux-ci peuvent encore entrer en conflit avec les noms que vous proposerez.
+</p>
+
+<p>
+Tout ce que vous devez faire, c'est trouver les paramètres des cartes et utiliser cette information pour définir votre propre règle de nommage&nbsp;:
+</p>
+
+<pre caption="définir le nom lan0 pour l'interface courante eth0">
+# <i>udevadm test-builtin net_id /sys/class/net/eth0 2>/dev/null</i>
+ID_NET_NAME_MAC=enxc80aa9429d76
+ID_OUI_FROM_DATABASE=Quanta Computer Inc.
+
+# <i>vim /etc/udev/rules.d/70-net-name-use-custom.rules</i>
+<comment># La première utilise l'information MAC </comment>
+SUBSYSTEM=="net", ACTION=="add", ENV{ID_NET_NAME_MAC}=="enxc80aa9429d76", NAME="lan0"
+<comment># La seconde utilise l'information  ID_NET_NAME_PATH </comment>
+SUBSYSTEM=="net", ACTION=="add", ENV{ID_NET_NAME_PATH}=="enp3s0", NAME="wifi0"
+</pre>
+
+<p>
+Comme les règeles sont appelées avant la règle par défaut (elles sont en fait appelées par ordre alphabétique, ainsi 70 est appelée avant 80) les noms fournis par la règles seront utilisés à la place des noms fournis par défaut.
+</p>
+
+</body>
+</subsection>
+</section>
 </sections>
