@@ -1,0 +1,248 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE guide SYSTEM "/dtd/guide.dtd">
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux-policy.xml,v 1.1 2013/05/12 15:08:08 nimiux Exp $ -->
+
+<guide lang="es">
+<title>Directriz de desarrollo SELinux para Gentoo Hardened</title>
+
+<author title="Autor">
+  <mail link="sven.vermeulen@siphos.be">Sven Vermeulen</mail>
+</author>
+<author title="Traductor">
+  <mail link="nimiux"/>
+</author>
+
+<abstract>
+El desarrollo de un conjunto de reglas de seguridad se debe o se
+debería realizar siempre con un conjunto de reglas y principios
+en la cabeza. Este documento muestra la directriz utilizada por
+Gentoo Hardened para desarrollar de forma consistente sus reglas
+de directriz para la seguridad.
+</abstract>
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+<license/>
+
+<version>5</version>
+<date>2012-05-26</date>
+
+<chapter>
+<title>Principios</title>
+<section>
+<title>Razones</title>
+<body>
+
+<p>
+Las reglas de directriz de SELinux se utilizan para confinar
+aplicaciones, restringiendo potencialmente su utilización en un
+sistema. Las reglas se escriben para que las gestiona un administrador
+de la seguridad, alguien (o un grupo de personas) que tiene la
+última palabra en la decisión de cómo se debe comportar el sistema.
+Debido a la flexibilidad de las reglas de directriz de SELinux,
+se dispone de varias implementaciones. Se pueden tener reglas
+que permiten todo lo que hace una aplicación, o reglas que permiten
+únicamente lo que una aplicación necesita para funcionar
+correctamente, o algo entre medias. Puede confinar partes de
+una aplicación o confinar un grupo de aplicaciones. Puede permitir
+a todos los roles que ejecuten aplicaciones o solo a algunos.
+</p>
+
+<p>
+Resumiendo: las reglas de directriz de SELinux le permiten
+definir el acceso a la seguridad de la forma que desee, y esto
+está muy bien. Esto es exactamente lo que hace que SELinux sea
+muy interesante.
+</p>
+
+<p>
+El problema, sin embargo, es que una distribución como Gentoo
+Hardened ofrece un conjunto de reglas para un gran número de
+usuarios. Y así, se necesitan tomar determinadas decisiones
+acerca de cómo definir las reglas de directriz. Y para ayudar
+a los desarrolladores en la escritura de reglas de directriz,
+se deben seguir el mismo conjunto de principios y guías para
+ofrecer a los usuarios finales un conjunto integrado y
+consistente de directrices SELinux.
+</p>
+
+<p>
+Ese conjunto de principios y guías se pueden encontrar en
+este documento. Observe que están sujetos a cambios. Por ejemplo,
+si al equipo Gentoo Hardened se incorporan más recursos de
+desarrollo, se podrían alterar algunos de estos principios,
+cambiando por tanto la directriz.
+</p>
+
+</body>
+</section>
+<section>
+<title>Principios</title>
+<body>
+
+<p>
+Esta directriz se basa en los siguientes principios. Observe que
+los principios <e>no</e> implican que deban ser considerados
+obligatorios. Éstos nos guían en la definición de la directriz
+y en la gestión de problemas futuros.
+</p>
+
+<dl>
+  <dt>Trabajar tal cual</dt>
+  <dd>
+    Las aplicaciones confinadas deberían funcionar correctamente.
+    Los usuarios de Gentoo Hardened que se encuentre con que
+    la directriz está evitando que la aplicación funcione de
+    forma correcta, deberían poder considerar esto como una
+    incidencia en la definición de las reglas.
+  </dd>
+  <dt>Ocultar la complejidad</dt>
+  <dd>
+    La complejidad de las reglas de directriz de SELinux que
+    ofrece Gentoo Hardened deberían ocultarse a un usuario
+    o administrador normal. Esto incluye a las denegaciones
+    que son consideradas inofensivas o cosméticas.
+  </dd>
+  <dt>Mantener las cosas simples</dt>
+  <dd>
+    La simplicidad es mejor. Un conjunto de reglas, dominios,
+    tipos o roles que son fáciles de describir, son fáciles de
+    gestionar.
+  </dd>
+  <dt>Ser reacio a la confianza</dt>
+  <dd>
+    Las aplicaciones y los recursos que puedan verse influenciados
+    por actores en los que se tenga poca confianza se deben proteger
+    de forma individual. Y así, no se deben ejecutar en un dominio común.
+  </dd>
+  <dt>Menos privilegios</dt>
+  <dd>
+    Los privilegios de acceso se deben conceder solo cuando
+    se necesite disponer de ellos. Ni más, ni menos.
+  </dd>
+  <dt>Seguir al desarrollo original</dt>
+  <dd>
+    Cuando se confía en reglas externas (aquélla que ofrece la
+    directriz de referencia) tratamos de configurar esas reglas
+    para que se adapten a nuestras necesidades o, si se necesitan
+    mejoras, no aseguramos de que no interfieren con las reglas
+    del desarrollo original, ahora o en el futuro.
+  </dd>
+</dl>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Dominios SELinux</title>
+<section>
+<title>Dominios sin rol específico</title>
+<body>
+
+<p>
+El método de desarrollo de la directriz de referencia ofrece
+soporte la utilización de dominios específicos para un rol
+(por ejemplo, <e>staff_mozilla_t</e> en lugar de
+<e>user_mozilla_t</e>). Estos dominios se generan de forma
+automática en el momento que se asignan la plantilla o
+plantillas necesarias para los roles.
+</p>
+
+<p>
+Aunque este método ofrece una mayor flexibilidad (puede tener
+distintos controles de acceso para roles diferentes) y mayor
+segregación estricta de controles de acceso (no hay ninguna
+regla SELinux que permita potencialmente a un rol influir
+en los recursos dentro del dominio de otro rol, incluso
+cuando es usuario real es el mismo), es más difícil de
+gestionar. Además, su flexibilidad ya implica que el
+administrador de la seguridad del sistema personaliza
+la directriz de Gentoo Hardened.
+</p>
+
+<p>
+Debido a esto, Gentoo Hardened no creará por defecto
+dominios con roles específicos. Se pueden dar excepciones.
+Por ejemplo, el dominio <e>screen_t</e> utiliza implementaciones
+específicas para cada rol (<e>staff_screen_t</e>) ya que
+el dominio necesita transicionar de nuevo al dominio que lo
+ha llamado (<e>staff_t</e> hacia <e>staff_screen_t</e>
+el cual lanza un intérprete de comandos en el dominio
+<e>staff_t</e>).
+</p>
+
+</body>
+</section>
+<section>
+<title>No permitir denegaciones cosméticas</title>
+<body>
+
+<p>
+Cuando se escriben reglas SELinux, los desarrolladores
+implementarán los permisos de acceso necesarios para que
+una aplicación funcione correctamente en su sistema. Las
+reglas adicionales se añaden entonces basándose en las
+pruebas realizadas, los comentarios que se reciban y
+un análisis exhaustivo. Un desarrollador SELinux
+nunca implementará un permiso de acceso sin estar
+seguro de que lo necesita la aplicación para funcionar
+correctamente.
+</p>
+
+<p>
+En lugar de esto, si se obtiene una denegación pero parece
+cosmética, el desarrollador de SELinux en Gentoo Hardened
+utilizará sentencias <e>dontaudit</e>.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Roles SELinux</title>
+<section>
+<title>Únicamente hacer referencia a los roles sugeridos por la directriz</title>
+<body>
+
+<p>
+Gentoo Hardened no crea ni mantiene nuevos roles. Limitamos
+los roles a aquéllos que se ofrecen y mantienen en la
+directriz de referencia.
+</p>
+
+<p>
+Aunque es muy sencillo crear roles para funciones específicas
+en sus sistemas SELinux, es duro, en una directriz genérica, crear
+nuevos roles que se ajusten a las necesidades de la mayoría.
+Nosotros lo hemos asumido, si se presentan estos roles, entonces
+se gestionan y mantienen mediante la directriz de referencia.
+</p>
+
+</body>
+</section>
+</chapter>
+<chapter>
+<title>Paquetes SELinux</title>
+<section>
+<title>Nombrar los paquetes de directriz SELinux con el mismo nombre que sus módulos</title>
+<body>
+
+<p>
+Los paquetes de directriz de SELinux se debería llamar igual que
+el módulo que implementan (y no como el paquete Gentoo para el
+cual se implementa la directriz). El nombre debería utilizar
+la sintaxis <path>sec-policy/selinux-&lt;nombredelmodulo&gt;</path>.
+</p>
+
+<p>
+Al utilizar el nombre del módulo original, nos aseguramos de que
+no hay colisiones (ni con el nombre del paquete ni con nombres
+de ficheros durante la instalación) y que estamos siguiendo
+al desarrollo original de forma estricta. También se mantiene
+limpio el nombrado de los paquetes.
+</p>
+
+</body>
+</section>
+</chapter>
+</guide>
