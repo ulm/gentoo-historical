@@ -1922,10 +1922,10 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
           <input type="hidden" name="item_number" value="1000"/>
           <input type="hidden" name="image_url" value="/images/paypal.png"/>
           <input type="hidden" name="no_shipping" value="1"/>
-          <input type="hidden" name="return" value="http://www.gentoo.org"/>
-          <input type="hidden" name="cancel_return" value="http://www.gentoo.org"/>
+          <input type="hidden" name="return" value="https://www.gentoo.org"/>
+          <input type="hidden" name="cancel_return" value="https://www.gentoo.org"/>
 
-          <input type="image" src="http://images.paypal.com/images/x-click-but21.gif" name="submit" alt="Donate to Gentoo"/>
+          <input type="image" src="https://www.paypal.com/en_US/i/btn/x-click-but21.gif" name="submit" alt="Donate to Gentoo"/>
         </form>
       </td>
     </tr>
