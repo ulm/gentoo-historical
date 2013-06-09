@@ -714,7 +714,7 @@
     <xsl:if test="string-length($glang)=0 or $glang='en'">Y</xsl:if>
   </xsl:variable>
   <xsl:variable name="www">
-    <xsl:if test="$httphost!='www'">http://www.gentoo.org</xsl:if>
+    <xsl:if test="$httphost!='www'">//www.gentoo.org</xsl:if>
   </xsl:variable>
   <xsl:variable name="contact">
    <xsl:choose>
@@ -1778,7 +1778,7 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     <!-- Source images from www.gentoo.org when on another server to
          prevent missing images after an update -->
     <xsl:choose>
-      <xsl:when test="$httphost != 'www'">http://www.gentoo.org/</xsl:when>
+      <xsl:when test="$httphost != 'www'">//www.gentoo.org/</xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="$ROOT"/>
       </xsl:otherwise>
