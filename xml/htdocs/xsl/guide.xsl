@@ -488,7 +488,7 @@
             </xsl:choose>
             <xsl:value-of select="format-number(number(substring-before(substring-after(pubDate,' '),' ')),'00')"/>
            </xsl:variable>
-           <xsl:if test="$planet//item[substring(pubDate,1,16)=$pubDate  and  not(contains(link, 'http://www.gentoo.org/news'))]">
+           <xsl:if test="$planet//item[substring(pubDate,1,16)=$pubDate  and  not(contains(link, '//www.gentoo.org/news'))]">
              <newsitem date="{$postdate}" planet="{$pubDate}"/>
            </xsl:if>
          </xsl:if>
@@ -568,7 +568,7 @@
                 <xsl:variable name="blogentries" xmlns="">
                   <xsl:for-each select="./newsitem">
                    <xsl:variable name="pubDate" select="@planet"/>
-                    <xsl:for-each select="$planet//item[substring(pubDate,1,16)=$pubDate  and  not(contains(link, 'http://www.gentoo.org/news'))]">
+                    <xsl:for-each select="$planet//item[substring(pubDate,1,16)=$pubDate  and  not(contains(link, '//www.gentoo.org/news'))]">
                      <tr>
                       <xsl:choose>
                        <xsl:when test="contains(title,': ')">
@@ -956,6 +956,9 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
       <xsl:when test="starts-with(@link,'http://www.gentoo.org/')">
         <xsl:value-of select="concat($ROOT, substring-after(@link, 'http://www.gentoo.org/'))"/>
       </xsl:when>
+      <xsl:when test="starts-with(@link,'https://www.gentoo.org/')">
+        <xsl:value-of select="concat($ROOT, substring-after(@link, 'https://www.gentoo.org/'))"/>
+      </xsl:when>
       <xsl:when test="starts-with(@link,'/')">
         <xsl:value-of select="concat($ROOT, substring-after(@link, '/'))"/>
       </xsl:when>
@@ -1003,6 +1006,9 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
     <xsl:choose>
       <xsl:when test="starts-with(@link,'http://www.gentoo.org/')">
         <xsl:value-of select="concat($ROOT, substring-after(@link, 'http://www.gentoo.org/'))"/>
+      </xsl:when>
+      <xsl:when test="starts-with(@link,'https://www.gentoo.org/')">
+        <xsl:value-of select="concat($ROOT, substring-after(@link, 'https://www.gentoo.org/'))"/>
       </xsl:when>
       <xsl:when test="starts-with(@link,'/')">
         <xsl:value-of select="concat($ROOT, substring-after(@link, '/'))"/>
