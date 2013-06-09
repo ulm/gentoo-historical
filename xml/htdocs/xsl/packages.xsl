@@ -221,6 +221,7 @@
             </xsl:for-each>
             <tr>
               <th>View CVS Repository</th>
+			  <!--- TODO this is an ancient link, should be changed to sources.g.o -->
               <ti>
                 <uri link="http://www.gentoo.org/cgi-bin/viewcvs.cgi/{$name}/">
                   http://www.gentoo.org/cgi-bin/viewcvs.cgi/<xsl:value-of select="$name"/>/
