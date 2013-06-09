@@ -13,7 +13,7 @@
 
 <!-- Define root dir of GWNs as /news/[@LANG]/gwn/ -->
 <xsl:variable name="root" select="concat('/news/', $gwn/*[1]/@lang, '/gwn/')"/>
-<xsl:variable name="site" select="'http://www.gentoo.org'"/>
+<xsl:variable name="site" select="'https://www.gentoo.org'"/>
 
 <xsl:template match="/gwnfeed">
 <rss version="2.0">

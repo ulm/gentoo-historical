@@ -18,7 +18,7 @@
 
 <!-- Define root dir of GMNs as /news/[@LANG]/gmn/ -->
 <xsl:variable name="root" select="concat('/news/', $gmn/*[1]/@lang, '/gmn/')"/>
-<xsl:variable name="site" select="'http://www.gentoo.org'"/>
+<xsl:variable name="site" select="'https://www.gentoo.org'"/>
 
 <xsl:template match="/gmnfeed">
 <rss version="2.0">

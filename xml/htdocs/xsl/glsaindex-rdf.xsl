@@ -18,9 +18,9 @@
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns="http://purl.org/rss/1.0/">
 
-<channel rdf:about="http://www.gentoo.org/security/en/index.xml">
+<channel rdf:about="https://www.gentoo.org/security/en/index.xml">
   <title>Gentoo Linux Security Advisories</title>
-  <link>http://www.gentoo.org/security/en/glsa/index.xml</link>
+  <link>https://www.gentoo.org/security/en/glsa/index.xml</link>
   <description>
     This index is automatically generated from XML source. Please contact the
     Gentoo Linux Security Team (security@gentoo.org) for related inquiries.

@@ -15,7 +15,7 @@
 </xsl:template>
 
 <xsl:template match="/menu/group/item">
- <xsl:variable name="www"><xsl:if test="$httphost!='www'">http://www.gentoo.org</xsl:if></xsl:variable>
+ <xsl:variable name="www"><xsl:if test="$httphost!='www'">https://www.gentoo.org</xsl:if></xsl:variable>
 
  <xsl:variable name="href">
   <xsl:choose>
