@@ -299,11 +299,11 @@
   <link REL="shortcut icon" HREF="{concat($ROOT,'favicon.ico')}" TYPE="image/x-icon"/>
 
   <!-- Support for opensearch -->
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/forums-gentoo-org.xml" title="Gentoo Forums"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/archives-gentoo-org.xml" title="Gentoo List Archives"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/forums-gentoo-org.xml" title="Gentoo Forums"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/archives-gentoo-org.xml" title="Gentoo List Archives"/>
 
   <xsl:if test="/*[1][@redirect]">
     <!-- Immediate HTML refresh in case redirect is not supported -->
@@ -317,7 +317,7 @@
   </xsl:if>
 
   <xsl:if test="/mainpage/newsitems">
-    <link rel="alternate" type="application/rss+xml" title="Gentoo Linux News RDF" href="http://www.gentoo.org/rdf/en/gentoo-news.rdf" />
+    <link rel="alternate" type="application/rss+xml" title="Gentoo Linux News RDF" href="//www.gentoo.org/rdf/en/gentoo-news.rdf" />
   </xsl:if>
   <xsl:choose>
     <xsl:when test="/mainpage | /news">
@@ -353,7 +353,7 @@
 </xsl:if>
 
 <table border="0" width="100%" cellspacing="0" cellpadding="0">
-  <xsl:variable name="www"><xsl:if test="$httphost!='www'">http://www.gentoo.org</xsl:if></xsl:variable>
+  <xsl:variable name="www"><xsl:if test="$httphost!='www'">//www.gentoo.org</xsl:if></xsl:variable>
   <tr>
     <td valign="top" height="125" width="1%" bgcolor="#45347b">
     <a href="{concat($www,'/')}"><img border="0" src="{concat($ROOT,'images/gtop-www.jpg')}" alt="Gentoo Logo"/></a>
