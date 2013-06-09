@@ -126,7 +126,7 @@
     </xsl:when>
     <xsl:otherwise>
      <xsl:if test="count(exslt:node-set($doc-struct)//chapter)&gt;1">
-      <form name="contents" action="http://www.gentoo.org">
+      <form name="contents" action="//www.gentoo.org/">
         <b><xsl:value-of select="func:gettext('Content')"/></b>:
         <select name="url" size="1" OnChange="location.href=form.url.options[form.url.selectedIndex].value" style="font-family:sans-serif,Arial,Helvetica">
           <xsl:for-each select="exslt:node-set($doc-struct)//chapter">
@@ -167,11 +167,11 @@
   <link REL="shortcut icon" HREF="{concat($ROOT,'favicon.ico')}" TYPE="image/x-icon"/>
 
   <!-- Support for opensearch -->
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/forums-gentoo-org.xml" title="Gentoo Forums"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
-  <link rel="search" type="application/opensearchdescription+xml" href="http://www.gentoo.org/search/archives-gentoo-org.xml" title="Gentoo List Archives"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/www-gentoo-org.xml" title="Gentoo Website"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/forums-gentoo-org.xml" title="Gentoo Forums"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/bugs-gentoo-org.xml" title="Gentoo Bugzilla"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/packages-gentoo-org.xml" title="Gentoo Packages"/>
+  <link rel="search" type="application/opensearchdescription+xml" href="//www.gentoo.org/search/archives-gentoo-org.xml" title="Gentoo List Archives"/>
 
   <xsl:if test="//glsaindex or //glsa-latest">
     <link rel="alternate" type="application/rss+xml">
