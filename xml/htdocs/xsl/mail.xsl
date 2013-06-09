@@ -40,7 +40,7 @@
           <xsl:otherwise>
            <!-- No other choice than to hit www.g.o which could fail, *is slow* AND *disables caching* -->
            <xsl:call-template name="load-devs">
-            <xsl:with-param name="roll-call" select="document('http://www.gentoo.org/proj/en/devrel/roll-call/devlist.xml?mode=xml')"/>
+            <xsl:with-param name="roll-call" select="document('https://www.gentoo.org/proj/en/devrel/roll-call/devlist.xml?mode=xml')"/>
            </xsl:call-template>
           </xsl:otherwise>
         </xsl:choose>
