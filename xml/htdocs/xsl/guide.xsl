@@ -953,11 +953,8 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 
   <xsl:variable name="llink">
     <xsl:choose>
-      <xsl:when test="starts-with(@link,'http://www.gentoo.org/')">
-        <xsl:value-of select="concat($ROOT, substring-after(@link, 'http://www.gentoo.org/'))"/>
-      </xsl:when>
-      <xsl:when test="starts-with(@link,'https://www.gentoo.org/')">
-        <xsl:value-of select="concat($ROOT, substring-after(@link, 'https://www.gentoo.org/'))"/>
+      <xsl:when test="contains(@link,'//www.gentoo.org/')">
+        <xsl:value-of select="concat($ROOT, substring-after(@link, '//www.gentoo.org/'))"/>
       </xsl:when>
       <xsl:when test="starts-with(@link,'/')">
         <xsl:value-of select="concat($ROOT, substring-after(@link, '/'))"/>
@@ -1004,11 +1001,8 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
 <xsl:template match="fig">
   <xsl:variable name="llink">
     <xsl:choose>
-      <xsl:when test="starts-with(@link,'http://www.gentoo.org/')">
-        <xsl:value-of select="concat($ROOT, substring-after(@link, 'http://www.gentoo.org/'))"/>
-      </xsl:when>
-      <xsl:when test="starts-with(@link,'https://www.gentoo.org/')">
-        <xsl:value-of select="concat($ROOT, substring-after(@link, 'https://www.gentoo.org/'))"/>
+      <xsl:when test="contains(@link,'//www.gentoo.org/')">
+        <xsl:value-of select="concat($ROOT, substring-after(@link, '//www.gentoo.org/'))"/>
       </xsl:when>
       <xsl:when test="starts-with(@link,'/')">
         <xsl:value-of select="concat($ROOT, substring-after(@link, '/'))"/>
@@ -1349,31 +1343,31 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
           </xsl:choose>
         </xsl:variable>
 
-        <!-- Strip http://www.gentoo.org from links if running on www.g.o
+        <!-- Strip https?://www.gentoo.org from links if running on www.g.o
              Has no effect on actual www.g.o but helps when surfing on a local copy as long as httphost is set to www as well
-             Rewrite http://www.gentoo.org/cgi-bin/viewcvs/ to use sources.gentoo.org/
+             Rewrite https?://www.gentoo.org/cgi-bin/viewcvs/ to use sources.gentoo.org/
           -->
         <xsl:variable name="llink">
           <xsl:choose>
-            <xsl:when test="starts-with($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi')">
-				<xsl:value-of select="concat('http://sources.gentoo.org/viewcvs.py', substring-after($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi'))" />
-			</xsl:when>
+            <xsl:when test="contains($thelink, '//www.gentoo.org/cgi-bin/viewcvs.cgi')">
+                <xsl:value-of select="concat('//sources.gentoo.org/viewcvs.py', substring-after($thelink, '//www.gentoo.org/cgi-bin/viewcvs.cgi'))" />
+            </xsl:when>
             <xsl:when test="starts-with($thelink, '/cgi-bin/viewcvs.cgi')">
-				<xsl:value-of select="concat('http://sources.gentoo.org/viewcvs.py', substring-after($thelink, '/cgi-bin/viewcvs.cgi'))" />
-			</xsl:when>
-            <xsl:when test="$httphost='www' and starts-with($thelink, 'http://www.gentoo.org/')">
-				<xsl:value-of select="substring-after($thelink, 'http://www.gentoo.org')" />
-			</xsl:when>
+                <xsl:value-of select="concat('//sources.gentoo.org/viewcvs.py', substring-after($thelink, '/cgi-bin/viewcvs.cgi'))" />
+            </xsl:when>
+            <xsl:when test="$httphost='www' and contains($thelink, '//www.gentoo.org/')">
+                <xsl:value-of select="substring-after($thelink, '//www.gentoo.org')" />
+            </xsl:when>
             <xsl:when test="not($httphost='www' or $httphost='archives') and starts-with($thelink, '/') and not(starts-with($thelink, '/~'))">
-				<xsl:value-of select="concat('http://www.gentoo.org', $thelink)" />
-			</xsl:when>
+                <xsl:value-of select="concat('//www.gentoo.org', $thelink)" />
+            </xsl:when>
             <!-- Add catid to links to /doc/LL/index.xml -->
             <xsl:when test="$catid != '0' and starts-with($thelink, '/doc/') and (substring-after(substring-after($thelink, '/doc/'), '/')='' or substring-after(substring-after($thelink, '/doc/'), '/')='index.xml')">
-				<xsl:value-of select="concat($thelink, '?catid=', $catid)"/>
+                <xsl:value-of select="concat($thelink, '?catid=', $catid)"/>
             </xsl:when>
             <xsl:otherwise>
-				<xsl:value-of select="$thelink" />
-			</xsl:otherwise>
+                <xsl:value-of select="$thelink" />
+            </xsl:otherwise>
           </xsl:choose>
         </xsl:variable>
 
