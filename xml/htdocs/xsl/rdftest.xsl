@@ -31,7 +31,7 @@
       <rdf:Seq>
         <xsl:for-each select="document('/dyn/news-index.xml')/uris/uri[position()&lt;11]/text()">
           <rdf:li>
-            <xsl:attribute name="rdf:resource">http://www.gentoo.org<xsl:value-of select="." /></xsl:attribute>
+            <xsl:attribute name="rdf:resource">https://www.gentoo.org<xsl:value-of select="." /></xsl:attribute>
           </rdf:li>
         </xsl:for-each>
       </rdf:Seq>
@@ -42,9 +42,9 @@
   <xsl:variable name="da-news" select="document(.)"/>
   <xsl:if test="$da-news/news/title">
     <item>
-      <xsl:attribute name="rdf:about">http://www.gentoo.org<xsl:value-of select="." /></xsl:attribute>
+      <xsl:attribute name="rdf:about">https://www.gentoo.org<xsl:value-of select="." /></xsl:attribute>
       <title><xsl:value-of select="$da-news/news/title" /></title>
-      <link>http://www.gentoo.org<xsl:value-of select="." /></link>
+      <link>https://www.gentoo.org<xsl:value-of select="." /></link>
       <dc:subject><xsl:value-of select="$da-news/news/@category" /></dc:subject>
       <dc:creator><xsl:value-of select="$da-news/news/poster" /></dc:creator>
       <!-- <dc:date><xsl:value-of select="document(.)/news/date" /></dc:date> -->
@@ -81,7 +81,7 @@
   <xsl:value-of select="concat(' ', name(.))"/><xsl:text>=</xsl:text>
   <xsl:text>"</xsl:text>
   <xsl:choose>
-    <xsl:when test="name(.)='href' and starts-with(., '/')"><xsl:value-of select="concat('http://www.gentoo.org', .)"/></xsl:when>
+    <xsl:when test="name(.)='href' and starts-with(., '/')"><xsl:value-of select="concat('https://www.gentoo.org', .)"/></xsl:when>
     <xsl:otherwise><xsl:value-of select="."/></xsl:otherwise>
   </xsl:choose>
   <xsl:text>"</xsl:text>
