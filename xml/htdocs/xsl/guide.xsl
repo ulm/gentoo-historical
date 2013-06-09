@@ -1355,15 +1355,25 @@ Copyright 2001-<xsl:value-of select="substring(func:today(),1,4)"/> Gentoo Found
           -->
         <xsl:variable name="llink">
           <xsl:choose>
-            <xsl:when test="starts-with($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://sources.gentoo.org/viewcvs.py', substring-after($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi'))" /></xsl:when>
-            <xsl:when test="starts-with($thelink, '/cgi-bin/viewcvs.cgi')"><xsl:value-of select="concat('http://sources.gentoo.org/viewcvs.py', substring-after($thelink, '/cgi-bin/viewcvs.cgi'))" /></xsl:when>
-            <xsl:when test="$httphost='www' and starts-with($thelink, 'http://www.gentoo.org/')"><xsl:value-of select="substring-after($thelink, 'http://www.gentoo.org')" /></xsl:when>
-            <xsl:when test="not($httphost='www' or $httphost='archives') and starts-with($thelink, '/') and not(starts-with($thelink, '/~'))"><xsl:value-of select="concat('http://www.gentoo.org', $thelink)" /></xsl:when>
+            <xsl:when test="starts-with($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi')">
+				<xsl:value-of select="concat('http://sources.gentoo.org/viewcvs.py', substring-after($thelink, 'http://www.gentoo.org/cgi-bin/viewcvs.cgi'))" />
+			</xsl:when>
+            <xsl:when test="starts-with($thelink, '/cgi-bin/viewcvs.cgi')">
+				<xsl:value-of select="concat('http://sources.gentoo.org/viewcvs.py', substring-after($thelink, '/cgi-bin/viewcvs.cgi'))" />
+			</xsl:when>
+            <xsl:when test="$httphost='www' and starts-with($thelink, 'http://www.gentoo.org/')">
+				<xsl:value-of select="substring-after($thelink, 'http://www.gentoo.org')" />
+			</xsl:when>
+            <xsl:when test="not($httphost='www' or $httphost='archives') and starts-with($thelink, '/') and not(starts-with($thelink, '/~'))">
+				<xsl:value-of select="concat('http://www.gentoo.org', $thelink)" />
+			</xsl:when>
             <!-- Add catid to links to /doc/LL/index.xml -->
             <xsl:when test="$catid != '0' and starts-with($thelink, '/doc/') and (substring-after(substring-after($thelink, '/doc/'), '/')='' or substring-after(substring-after($thelink, '/doc/'), '/')='index.xml')">
-              <xsl:value-of select="concat($thelink, '?catid=', $catid)"/>
+				<xsl:value-of select="concat($thelink, '?catid=', $catid)"/>
             </xsl:when>
-            <xsl:otherwise><xsl:value-of select="$thelink" /></xsl:otherwise>
+            <xsl:otherwise>
+				<xsl:value-of select="$thelink" />
+			</xsl:otherwise>
           </xsl:choose>
         </xsl:variable>
 
