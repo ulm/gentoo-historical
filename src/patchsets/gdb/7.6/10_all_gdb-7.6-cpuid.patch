@@ -1,0 +1,522 @@
+From 315a19370d66e46d8a7a16bd71aa331c3622341e Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 19 Jun 2013 22:29:36 +0000
+Subject: [PATCH] gdb: clean up x86 cpuid implementations
+
+We've currently got 3 files doing open coded implementations of cpuid.
+Each has its own set of workarounds and varying levels of how well
+they're written and are generally hardcoded to specific cpuid functions.
+If you try to build the latest gdb as a PIE on an i386 system, the build
+will fail because one of them lacks PIC workarounds (wrt ebx).
+
+Specifically, we have:
+common/linux-btrace.c:
+	two copies of cpuid asm w/specific args, one has no workarounds
+	while the other implicitly does to avoid memcpy
+go32-nat.c:
+	two copies of cpuid asm w/specific args, one has workarounds to
+	avoid memcpy
+gdb/testsuite/gdb.arch/i386-cpuid.h:
+	one general cpuid asm w/many workarounds copied from older gcc
+
+Fortunately, that last header there is pretty damn good -- it handles
+lots of edge cases, the code is nice & tight (uses gcc asm operands
+rather than manual movs), and is already almost a general library type
+header.  It's also the basis of what is now the public cpuid.h that is
+shipped with gcc-4.3+.
+
+So what I've done is pull that test header out and into gdb/common/
+(not sure if there's a better place), synced to the version found in
+gcc-4.8.0, put a wrapper API around it, and then cut over all the
+existing call points to this new header.
+
+Since the func already has support for "is cpuid supported on this proc",
+it makes it trivial to push the i386/x86_64 ifdefs down into this wrapper
+API too.  Now it can be safely used for all targets and gcc will elide
+the unused code for us.
+
+I've verified the gdb.arch testsuite still passes, and this code compiles
+for an armv7a host as well as x86_64.  The go32-nat code has been left
+ifdef-ed out until someone can test & verify the new stuff works (and if
+it doesn't, figure out how to make the new code work).
+
+URL: https://bugs.gentoo.org/467806
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ gdb/ChangeLog                                      |  14 +++
+ gdb/Makefile.in                                    |   2 +-
+ gdb/common/i386-cpuid.h                            |  63 ++++++++++
+ .../i386-cpuid.h => common/i386-gcc-cpuid.h}       | 140 ++++++++++++++++-----
+ gdb/common/linux-btrace.c                          |  41 ++----
+ gdb/go32-nat.c                                     |  22 ++++
+ gdb/testsuite/ChangeLog                            |   8 ++
+ gdb/testsuite/gdb.arch/i386-avx.c                  |   2 +-
+ gdb/testsuite/gdb.arch/i386-avx.exp                |   2 +-
+ gdb/testsuite/gdb.arch/i386-sse.c                  |   5 +-
+ gdb/testsuite/gdb.arch/i386-sse.exp                |   2 +-
+ 11 files changed, 231 insertions(+), 70 deletions(-)
+ create mode 100644 gdb/common/i386-cpuid.h
+ rename gdb/{testsuite/gdb.arch/i386-cpuid.h => common/i386-gcc-cpuid.h} (59%)
+
+2013-06-19  Mike Frysinger  <vapier@gentoo.org>
+
+	* Makefile.in (HFILES_NO_SRCDIR): Add common/i386-cpuid.h and
+	common/i386-gcc-cpuid.h.
+	* common/i386-cpuid.h: New wrapper header around i386-gcc-cpuid.h.
+	* common/i386-gcc-cpuid.h: Rename from testsuite/gdb.arch/i386-cpuid.h.
+	Copy the latest version from upstream gcc.
+	* common/linux-btrace.c: Include i386-cpuid.h.
+	(intel_supports_btrace): Delete x86 ifdefs and replace inline asm with
+	call to i386_cpuid.
+	(cpu_supports_btrace): Likewise.
+	* go32-nat.c: Include i386-cpuid.h.
+	(go32_sysinfo): Add (disabled) calls to i386_cpuid with comments.
+
+diff --git a/gdb/Makefile.in b/gdb/Makefile.in
+index a6336a2..71058e5 100644
+--- a/gdb/Makefile.in
++++ b/gdb/Makefile.in
+@@ -850,7 +850,8 @@ common/common-utils.h common/xml-utils.h common/buffer.h common/ptid.h \
+ common/common-utils.h common/xml-utils.h common/buffer.h common/ptid.h \
+ common/format.h common/host-defs.h utils.h common/queue.h common/gdb_string.h \
+ common/linux-osdata.h gdb-dlfcn.h auto-load.h probe.h stap-probe.h \
+-gdb_bfd.h sparc-ravenscar-thread.h ppc-ravenscar-thread.h common/linux-btrace.h
++gdb_bfd.h sparc-ravenscar-thread.h ppc-ravenscar-thread.h common/linux-btrace.h \
++common/i386-cpuid.h common/i386-gcc-cpuid.h
+ 
+ # Header files that already have srcdir in them, or which are in objdir.
+ 
+diff --git a/gdb/common/i386-cpuid.h b/gdb/common/i386-cpuid.h
+new file mode 100644
+index 0000000..8bb28c5
+--- /dev/null
++++ b/gdb/common/i386-cpuid.h
+@@ -0,0 +1,63 @@
++/* C API for x86 cpuid insn.
++   Copyright (C) 2007-2013 Free Software Foundation, Inc.
++
++   This file is part of GDB.
++
++   This file is free software; you can redistribute it and/or modify it
++   under the terms of the GNU General Public License as published by the
++   Free Software Foundation; either version 3, or (at your option) any
++   later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
++
++#ifndef I386_CPUID_COMMON_H
++#define I386_CPUID_COMMON_H
++
++/* Always include the header for the cpu bit defines.  */
++#include "i386-gcc-cpuid.h"
++
++#if defined(__i386__) || defined(__x86_64__)
++
++/* Return cpuid data for requested cpuid level, as found in returned
++   eax, ebx, ecx and edx registers.  The function checks if cpuid is
++   supported and returns 1 for valid cpuid information or 0 for
++   unsupported cpuid level.  Pointers may be non-null.  */
++
++static __inline int
++i386_cpuid (unsigned int __level,
++	    unsigned int *__eax, unsigned int *__ebx,
++	    unsigned int *__ecx, unsigned int *__edx)
++{
++  unsigned int __scratch;
++
++  if (!__eax)
++    __eax = &__scratch;
++  if (!__ebx)
++    __ebx = &__scratch;
++  if (!__ecx)
++    __ecx = &__scratch;
++  if (!__edx)
++    __edx = &__scratch;
++
++  return __get_cpuid (__level, __eax, __ebx, __ecx, __edx);
++}
++
++#else
++
++static __inline int
++i386_cpuid (unsigned int __level,
++	    unsigned int *__eax, unsigned int *__ebx,
++	    unsigned int *__ecx, unsigned int *__edx)
++{
++  return 0;
++}
++
++#endif /* i386 && x86_64 */
++
++#endif /* I386_CPUID_COMMON_H */
+diff --git a/gdb/testsuite/gdb.arch/i386-cpuid.h b/gdb/common/i386-gcc-cpuid.h
+similarity index 59%
+rename from gdb/testsuite/gdb.arch/i386-cpuid.h
+rename to gdb/common/i386-gcc-cpuid.h
+index 084a083..e045ba8 100644
+--- a/gdb/testsuite/gdb.arch/i386-cpuid.h
++++ b/gdb/common/i386-gcc-cpuid.h
+@@ -1,6 +1,8 @@
+-/* Helper file for i386 platform.  Runtime check for MMX/SSE/SSE2/AVX
+- * support. Copied from gcc 4.4.
+- *
++/*
++ * Helper cpuid.h file copied from gcc-4.8.0.  Code in gdb should not
++ * include this directly, but pull in i386-cpuid.h and use that func.
++ */
++/*
+  * Copyright (C) 2007-2013 Free Software Foundation, Inc.
+  *
+  * This file is free software; you can redistribute it and/or modify it
+@@ -26,6 +28,7 @@
+ /* %ecx */
+ #define bit_SSE3	(1 << 0)
+ #define bit_PCLMUL	(1 << 1)
++#define bit_LZCNT	(1 << 5)
+ #define bit_SSSE3	(1 << 9)
+ #define bit_FMA		(1 << 12)
+ #define bit_CMPXCHG16B	(1 << 13)
+@@ -37,6 +40,8 @@
+ #define bit_XSAVE	(1 << 26)
+ #define bit_OSXSAVE	(1 << 27)
+ #define bit_AVX		(1 << 28)
++#define bit_F16C	(1 << 29)
++#define bit_RDRND	(1 << 30)
+ 
+ /* %edx */
+ #define bit_CMPXCHG8B	(1 << 8)
+@@ -51,49 +56,133 @@
+ #define bit_LAHF_LM	(1 << 0)
+ #define bit_ABM		(1 << 5)
+ #define bit_SSE4a	(1 << 6)
++#define bit_PRFCHW	(1 << 8)
+ #define bit_XOP         (1 << 11)
+ #define bit_LWP 	(1 << 15)
+ #define bit_FMA4        (1 << 16)
++#define bit_TBM         (1 << 21)
+ 
+ /* %edx */
++#define bit_MMXEXT	(1 << 22)
+ #define bit_LM		(1 << 29)
+ #define bit_3DNOWP	(1 << 30)
+ #define bit_3DNOW	(1 << 31)
+ 
++/* Extended Features (%eax == 7) */
++#define bit_FSGSBASE	(1 << 0)
++#define bit_BMI	(1 << 3)
++#define bit_HLE	(1 << 4)
++#define bit_AVX2	(1 << 5)
++#define bit_BMI2	(1 << 8)
++#define bit_RTM	(1 << 11)
++#define bit_RDSEED	(1 << 18)
++#define bit_ADX	(1 << 19)
++
++/* Extended State Enumeration Sub-leaf (%eax == 13, %ecx == 1) */
++#define bit_XSAVEOPT	(1 << 0)
++
++/* Signatures for different CPU implementations as returned in uses
++   of cpuid with level 0.  */
++#define signature_AMD_ebx	0x68747541
++#define signature_AMD_ecx	0x444d4163
++#define signature_AMD_edx	0x69746e65
++
++#define signature_CENTAUR_ebx	0x746e6543
++#define signature_CENTAUR_ecx	0x736c7561
++#define signature_CENTAUR_edx	0x48727561
++
++#define signature_CYRIX_ebx	0x69727943
++#define signature_CYRIX_ecx	0x64616574
++#define signature_CYRIX_edx	0x736e4978
++
++#define signature_INTEL_ebx	0x756e6547
++#define signature_INTEL_ecx	0x6c65746e
++#define signature_INTEL_edx	0x49656e69
++
++#define signature_TM1_ebx	0x6e617254
++#define signature_TM1_ecx	0x55504361
++#define signature_TM1_edx	0x74656d73
++
++#define signature_TM2_ebx	0x756e6547
++#define signature_TM2_ecx	0x3638784d
++#define signature_TM2_edx	0x54656e69
++
++#define signature_NSC_ebx	0x646f6547
++#define signature_NSC_ecx	0x43534e20
++#define signature_NSC_edx	0x79622065
++
++#define signature_NEXGEN_ebx	0x4778654e
++#define signature_NEXGEN_ecx	0x6e657669
++#define signature_NEXGEN_edx	0x72446e65
++
++#define signature_RISE_ebx	0x65736952
++#define signature_RISE_ecx	0x65736952
++#define signature_RISE_edx	0x65736952
++
++#define signature_SIS_ebx	0x20536953
++#define signature_SIS_ecx	0x20536953
++#define signature_SIS_edx	0x20536953
++
++#define signature_UMC_ebx	0x20434d55
++#define signature_UMC_ecx	0x20434d55
++#define signature_UMC_edx	0x20434d55
++
++#define signature_VIA_ebx	0x20414956
++#define signature_VIA_ecx	0x20414956
++#define signature_VIA_edx	0x20414956
++
++#define signature_VORTEX_ebx	0x74726f56
++#define signature_VORTEX_ecx	0x436f5320
++#define signature_VORTEX_edx	0x36387865
+ 
+ #if defined(__i386__) && defined(__PIC__)
+ /* %ebx may be the PIC register.  */
+ #if __GNUC__ >= 3
+ #define __cpuid(level, a, b, c, d)			\
+-  __asm__ ("xchg{l}\t{%%}ebx, %1\n\t"			\
++  __asm__ ("xchg{l}\t{%%}ebx, %k1\n\t"			\
+ 	   "cpuid\n\t"					\
+-	   "xchg{l}\t{%%}ebx, %1\n\t"			\
+-	   : "=a" (a), "=r" (b), "=c" (c), "=d" (d)	\
++	   "xchg{l}\t{%%}ebx, %k1\n\t"			\
++	   : "=a" (a), "=&r" (b), "=c" (c), "=d" (d)	\
+ 	   : "0" (level))
+ 
+ #define __cpuid_count(level, count, a, b, c, d)		\
+-  __asm__ ("xchg{l}\t{%%}ebx, %1\n\t"			\
++  __asm__ ("xchg{l}\t{%%}ebx, %k1\n\t"			\
+ 	   "cpuid\n\t"					\
+-	   "xchg{l}\t{%%}ebx, %1\n\t"			\
+-	   : "=a" (a), "=r" (b), "=c" (c), "=d" (d)	\
++	   "xchg{l}\t{%%}ebx, %k1\n\t"			\
++	   : "=a" (a), "=&r" (b), "=c" (c), "=d" (d)	\
+ 	   : "0" (level), "2" (count))
+ #else
+ /* Host GCCs older than 3.0 weren't supporting Intel asm syntax
+    nor alternatives in i386 code.  */
+ #define __cpuid(level, a, b, c, d)			\
+-  __asm__ ("xchgl\t%%ebx, %1\n\t"			\
++  __asm__ ("xchgl\t%%ebx, %k1\n\t"			\
+ 	   "cpuid\n\t"					\
+-	   "xchgl\t%%ebx, %1\n\t"			\
+-	   : "=a" (a), "=r" (b), "=c" (c), "=d" (d)	\
++	   "xchgl\t%%ebx, %k1\n\t"			\
++	   : "=a" (a), "=&r" (b), "=c" (c), "=d" (d)	\
+ 	   : "0" (level))
+ 
+ #define __cpuid_count(level, count, a, b, c, d)		\
+-  __asm__ ("xchgl\t%%ebx, %1\n\t"			\
++  __asm__ ("xchgl\t%%ebx, %k1\n\t"			\
+ 	   "cpuid\n\t"					\
+-	   "xchgl\t%%ebx, %1\n\t"			\
+-	   : "=a" (a), "=r" (b), "=c" (c), "=d" (d)	\
++	   "xchgl\t%%ebx, %k1\n\t"			\
++	   : "=a" (a), "=&r" (b), "=c" (c), "=d" (d)	\
+ 	   : "0" (level), "2" (count))
+ #endif
++#elif defined(__x86_64__) && (defined(__code_model_medium__) || defined(__code_model_large__)) && defined(__PIC__)
++/* %rbx may be the PIC register.  */
++#define __cpuid(level, a, b, c, d)			\
++  __asm__ ("xchg{q}\t{%%}rbx, %q1\n\t"			\
++	   "cpuid\n\t"					\
++	   "xchg{q}\t{%%}rbx, %q1\n\t"			\
++	   : "=a" (a), "=&r" (b), "=c" (c), "=d" (d)	\
++	   : "0" (level))
++
++#define __cpuid_count(level, count, a, b, c, d)		\
++  __asm__ ("xchg{q}\t{%%}rbx, %q1\n\t"			\
++	   "cpuid\n\t"					\
++	   "xchg{q}\t{%%}rbx, %q1\n\t"			\
++	   : "=a" (a), "=&r" (b), "=c" (c), "=d" (d)	\
++	   : "0" (level), "2" (count))
+ #else
+ #define __cpuid(level, a, b, c, d)			\
+   __asm__ ("cpuid\n\t"					\
+@@ -118,9 +207,9 @@ __get_cpuid_max (unsigned int __ext, unsigned int *__sig)
+ {
+   unsigned int __eax, __ebx, __ecx, __edx;
+ 
+-#ifndef __x86_64__
+-#if __GNUC__ >= 3
++#ifdef __i386__
+   /* See if we can use cpuid.  On AMD64 we always can.  */
++#if __GNUC__ >= 3
+   __asm__ ("pushf{l|d}\n\t"
+ 	   "pushf{l|d}\n\t"
+ 	   "pop{l}\t%0\n\t"
+@@ -181,20 +270,3 @@ __get_cpuid (unsigned int __level,
+   __cpuid (__level, *__eax, *__ebx, *__ecx, *__edx);
+   return 1;
+ }
+-
+-#ifndef NOINLINE
+-#define NOINLINE __attribute__ ((noinline))
+-#endif
+-
+-unsigned int i386_cpuid (void) NOINLINE;
+-
+-unsigned int NOINLINE
+-i386_cpuid (void)
+-{
+-  unsigned int eax, ebx, ecx, edx;
+-
+-  if (!__get_cpuid (1, &eax, &ebx, &ecx, &edx))
+-    return 0;
+-
+-  return edx;
+-}
+diff --git a/gdb/common/linux-btrace.c b/gdb/common/linux-btrace.c
+index 1f9a001..0ec13bb 100644
+--- a/gdb/common/linux-btrace.c
++++ b/gdb/common/linux-btrace.c
+@@ -31,6 +31,7 @@
+ #include "gdb_assert.h"
+ #include "regcache.h"
+ #include "gdbthread.h"
++#include "i386-cpuid.h"
+ 
+ #if HAVE_LINUX_PERF_EVENT_H
+ 
+@@ -339,13 +340,10 @@ kernel_supports_btrace (void)
+ static int
+ intel_supports_btrace (void)
+ {
+-#if defined __i386__ || defined __x86_64__
+     unsigned int cpuid, model, family;
+ 
+-    __asm__ __volatile__ ("movl   $1, %%eax;"
+-			  "cpuid;"
+-			  : "=a" (cpuid)
+-			  :: "%ebx", "%ecx", "%edx");
++    if (!i386_cpuid (1, &cpuid, NULL, NULL, NULL))
++      return 0;
+ 
+     family = (cpuid >> 8) & 0xf;
+     model = (cpuid >> 4) & 0xf;
+@@ -376,12 +374,6 @@ intel_supports_btrace (void)
+     }
+ 
+   return 1;
+-
+-#else /* !defined __i386__ && !defined __x86_64__ */
+-
+-  return 0;
+-
+-#endif /* !defined __i386__ && !defined __x86_64__ */
+ }
+ 
+ /* Check whether the cpu supports branch tracing.  */
+@@ -389,22 +381,15 @@ intel_supports_btrace (void)
+ static int
+ cpu_supports_btrace (void)
+ {
+-#if defined __i386__ || defined __x86_64__
++  unsigned int ebx, ecx, edx;
+   char vendor[13];
+ 
+-  __asm__ __volatile__ ("xorl   %%ebx, %%ebx;"
+-			"xorl   %%ecx, %%ecx;"
+-			"xorl   %%edx, %%edx;"
+-			"movl   $0,    %%eax;"
+-			"cpuid;"
+-			"movl   %%ebx,  %0;"
+-			"movl   %%edx,  %1;"
+-			"movl   %%ecx,  %2;"
+-			: "=m" (vendor[0]),
+-			  "=m" (vendor[4]),
+-			  "=m" (vendor[8])
+-			:
+-			: "%eax", "%ebx", "%ecx", "%edx");
++  if (!i386_cpuid (0, NULL, &ebx, &ecx, &edx))
++    return 0;
++
++  memcpy (&vendor[0], &ebx, 4);
++  memcpy (&vendor[4], &edx, 4);
++  memcpy (&vendor[8], &ecx, 4);
+   vendor[12] = '\0';
+ 
+   if (strcmp (vendor, "GenuineIntel") == 0)
+@@ -412,12 +397,6 @@ cpu_supports_btrace (void)
+ 
+   /* Don't know about others.  Let's assume they do.  */
+   return 1;
+-
+-#else /* !defined __i386__ && !defined __x86_64__ */
+-
+-  return 0;
+-
+-#endif /* !defined __i386__ && !defined __x86_64__ */
+ }
+ 
+ /* See linux-btrace.h.  */
+
+2013-06-19  Mike Frysinger  <vapier@gentoo.org>
+
+	* gdb.arch/i386-avx.c (have_avx): Change __get_cpuid call to i386_cpuid.
+	* gdb.arch/i386-avx.exp (additional_flags): Add -I${srcdir}/../common.
+	* gdb.arch/i386-cpuid.h: Moved to ../common/i386-gcc-cpuid.h.
+	* gdb.arch/i386-sse.c: Call new i386_cpuid function.
+	* gdb.arch/i386-see.exp (additional_flags): Add -I${srcdir}/../common.
+
+diff --git a/gdb/testsuite/gdb.arch/i386-avx.c b/gdb/testsuite/gdb.arch/i386-avx.c
+index bcfa18f..7fd1217 100644
+--- a/gdb/testsuite/gdb.arch/i386-avx.c
++++ b/gdb/testsuite/gdb.arch/i386-avx.c
+@@ -53,7 +53,7 @@ have_avx (void)
+ {
+   unsigned int eax, ebx, ecx, edx;
+ 
+-  if (!__get_cpuid (1, &eax, &ebx, &ecx, &edx))
++  if (!i386_cpuid (1, &eax, &ebx, &ecx, &edx))
+     return 0;
+ 
+   if ((ecx & (bit_AVX | bit_OSXSAVE)) == (bit_AVX | bit_OSXSAVE))
+diff --git a/gdb/testsuite/gdb.arch/i386-avx.exp b/gdb/testsuite/gdb.arch/i386-avx.exp
+index 964806c..bbbc6f4 100644
+--- a/gdb/testsuite/gdb.arch/i386-avx.exp
++++ b/gdb/testsuite/gdb.arch/i386-avx.exp
+@@ -34,7 +34,7 @@ if [get_compiler_info] {
+ 
+ set additional_flags ""
+ if [test_compiler_info gcc*] {
+-    set additional_flags "additional_flags=-mavx"
++    set additional_flags "additional_flags=-mavx -I${srcdir}/../common"
+ }
+ 
+ if { [gdb_compile "${srcdir}/${subdir}/${srcfile}" "${binfile}" executable [list debug $additional_flags]] != "" } {
+diff --git a/gdb/testsuite/gdb.arch/i386-sse.c b/gdb/testsuite/gdb.arch/i386-sse.c
+index d431527..8617c8a 100644
+--- a/gdb/testsuite/gdb.arch/i386-sse.c
++++ b/gdb/testsuite/gdb.arch/i386-sse.c
+@@ -51,7 +51,10 @@ v4sf_t data[] =
+ int
+ have_sse (void)
+ {
+-  int edx = i386_cpuid ();
++  int edx;
++
++  if (!i386_cpuid (1, NULL, NULL, NULL, &edx))
++    return 0;
+ 
+   if (edx & bit_SSE)
+     return 1;
+diff --git a/gdb/testsuite/gdb.arch/i386-sse.exp b/gdb/testsuite/gdb.arch/i386-sse.exp
+index 5923eca..c62a3a0 100644
+--- a/gdb/testsuite/gdb.arch/i386-sse.exp
++++ b/gdb/testsuite/gdb.arch/i386-sse.exp
+@@ -34,7 +34,7 @@ if [get_compiler_info] {
+ 
+ set additional_flags ""
+ if [test_compiler_info gcc*] {
+-    set additional_flags "additional_flags=-msse"
++    set additional_flags "additional_flags=-msse -I${srcdir}/../common"
+ }
+ 
+ if { [gdb_compile "${srcdir}/${subdir}/${srcfile}" "${binfile}" executable [list debug $additional_flags]] != "" } {
+-- 
+1.8.2.1
