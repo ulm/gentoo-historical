@@ -9,7 +9,7 @@
 <xsl:output encoding="UTF-8" method="xml" indent="no" doctype-system="/dtd/guide.dtd"/>
 
 <xsl:template match="/staffingNeeds">
-<guide>
+<guide disclaimer="obsolete" redirect="http://wiki.gentoo.org/wiki/Project:Gentoo/Staffing_Needs">
 <xsl:apply-templates/>
 </guide>
 </xsl:template>
