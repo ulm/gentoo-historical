@@ -176,9 +176,10 @@
    <title>Recruitment</title>
    <section><body><p>
    We are currently looking for users interested in helping the project with
-   the following jobs:
+   one or more jobs.</p>
+   <p>To learn more, visit the <uri link="http://wiki.gentoo.org/wiki/Project:Gentoo/Staffing_Needs">Staffing Needs</uri> page.
    </p></body></section>
-   <xsl:apply-templates select='job'/>
+   <!--<xsl:apply-templates select='job'/>-->
   </chapter>
 </xsl:template>
 
