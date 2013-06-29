@@ -1,0 +1,293 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-mips-kernel.xml,v 1.1 2013/06/29 17:10:14 blueboar Exp $ -->
+<sections>
+
+<abstract>
+Ядро Linux — сердце каждого дистрибутива. В этой главе описывается, 
+как его настроить.
+</abstract>
+
+<version>1</version>
+<date>2013-03-16</date>
+
+<section>
+<title>Установка исходных кодов ядра</title>
+<subsection>
+<title>Выбор ядра</title>
+<body>
+
+<p>
+Ядро Linux — это то, вокруг чего формируются все дистрибутивы. Это слой между 
+пользовательскими программами и вашим оборудованием. Пользователи Gentoo могут 
+выбирать из нескольких типов ядра. Их полный список и описание находится в 
+<uri link="/doc/en/gentoo-kernel.xml">руководстве по выбору ядра Gentoo (англ.)</uri>.
+</p>
+
+<p>
+Системы, основанные на MIPS могут использовать только одно ядро,
+<c>mips-sources</c>. Данный набор патчей отличается от тех, которые
+используются другими архитектурами и содержит множество патчей,
+специфичных для архитектуры MIPS.
+</p>
+
+<pre caption="Установка исходных кодов ядра">
+# <i>emerge mips-sources</i>
+</pre>
+
+<impo>
+На некоторых системах (Origin 200/2000, Indigo2 Impact (R10000), 
+Octane/Octane2 и O2) необходимо 64-битное ядро для загрузки. Для
+таких систем, вы должны выполнить <c>emerge kgcc64</c>, чтобы установить
+кросс-компилятор для построения 64-битных ядер.
+</impo>
+
+<pre caption="Устанавливаем kgcc64">
+# <i>emerge kgcc64</i>
+</pre>
+
+<p>
+Просмотрев содержимое каталога <path>/usr/src</path>, вы увидите символьную 
+ссылку <path>linux</path>, которая указывает на каталог с исходными кодами ядра. 
+В данном случае, установленный исходный код ядра указывает на 
+<c>mips-sources-<keyval id="kernel-version"/></c>. Имейте в виду, что ваша версия может отличаться. 
+</p>
+
+<pre caption="Просмотр папки с исходными кодами ядра">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+<p>
+Пришло время настроить и скомпилировать ваше ядро.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Компиляция и установка ядра</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+Ранее мы описывали ручную настройку исходных кодов ядра. Однако это стало
+непрактичным после того, как возрасло число поддерживаемых нами систем.
+Данный раздел описывает различные источники получения примерных конфигураций ядра.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Использование примерных конфигураций в исходных кодах ядра</title>
+<body>
+
+<p>
+Многие из поддерживаемых систем имеют примерные файлы .config, скрытые в
+исходных кодах ядра. Не все системы имеют конфигурацию распространяемую
+таким образом. Те, которые имеют, могут быть сконфигурированы командами,
+показанными в таблице ниже.
+</p>
+
+<table>
+<tr>
+  <th>Система</th>
+  <th>Команда конфигурации</th>
+</tr>
+<tr>
+  <ti>Cobalt Servers</ti>
+  <ti><c>make cobalt_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indy, Indigo2 (R4k), Challenge S</ti>
+  <ti><c>make ip22_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Origin 200/2000</ti>
+  <ti><c>make ip27_defconfig</c></ti>
+</tr>
+<tr>
+  <ti>Indigo2 Impact (R10k)</ti>
+  <ti>
+    <c>make ip28_defconfig</c>
+  </ti>
+</tr>
+<tr>
+  <ti>O2</ti>
+  <ti><c>make ip32_defconfig</c></ti>
+</tr>
+</table>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Использование конфигурации рабочего ядра с установочного диска</title>
+<body>
+
+<p>
+Все образы для установки Gentoo включают в себя конфигурацию ядра как часть
+образа. Конфигурация находится в <path>/proc/config.gz</path>. Во многих случаях
+данный файл можно использовать. Лучше, если ваши исходные коды ядра почти
+совпадают с ядром, которое в настоящее время работает. Чтобы распаковать
+данный файл, просто пропустите его через <c>zcat</c>, как показано ниже.
+</p>
+
+<pre caption="Распаковываем .config из /proc/config.gz">
+# <i>zcat /proc/config.gz > .config</i>
+</pre>
+
+<impo>
+Данная конфигурация ядра настроена для образа netboot. Поэтому она будет ожидать,
+что где-то рядом находится образ корневой файловой системы, либо как каталог
+для initramfs, либо устройство-петля для initrd. Когда вы запустите
+<c>make menuconfig</c> (ниже), не забудьте зайти в General Setup и выключить
+опции для initramfs.
+</impo>
+
+</body>
+</subsection>
+
+<subsection>
+<title>База данных совместимости оборудования</title>
+<body>
+
+<p>
+Чтобы помочь пользователям найти рабочие настройки, была создана база данных
+совместимости оборудования. Данная база данных описывает поддержку различных
+MIPS-устройств, и позволяет пользователям делиться конфигурациями ядра,
+которые точно работают. Адрес данного сайта
+<uri>http://stuartl.longlandclan.hopto.org/gentoo/mips</uri>.
+</p>
+
+<p>
+Если вы сочтете данный сервис полезным, вы можете поделиться своими мыслями
+и файлами .config, чтобы другие могли выиграть от вашего опыта. Однако
+следует отметить, что нет никакой гарантии, что какие-либо из файлов
+конфигурации, скачанные с данного сайта, вообще будут работать.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Изменяем конфигурацию под ваши запросы</title>
+<body>
+
+<p>
+Как только вы нашли конфигурацию, скачайте ее в каталог с вашим исходным
+кодом ядра, и переименуйте ее в <path>.config</path>. Далее вы можете
+запустить <c>make oldconfig</c> чтобы обновить конфигурацию, и получить
+возможность изменить ее до компиляции.
+</p>
+
+<pre caption="Конфигурация ядра">
+# <i>cd /usr/src/linux</i>
+# <i>cp /path/to/example-config .config</i>
+# <i>make oldconfig</i>
+<comment>(Просто нажмите ENTER на каждую подсказку, чтобы выбрать опцию</comment>
+<comment>по умолчанию... мы изменим их позже)</comment>
+# <i>make menuconfig</i>
+</pre>
+
+<impo>
+В разделе Kernel Hacking есть опция, названная "Are You Using A Cross Compiler?". 
+Она сообщает ядру, что нужно добавить "<c>mips-linux-</c>" (либо
+<c>mipsel-linux</c> ... и т.д.) к командам  <c>gcc</c> и <c>as</c> при
+компиляции ядра. Это нужно выключить, даже если вы и правда делаете
+кросс-компиляцию. Вместо этого, если вам нужно вызвать кросс-компилятор,
+укажите префикс, используя переменную <c>CROSS_COMPILE</c>, как показано
+в следующем разделе.
+</impo>
+
+<impo>
+Существует известная ошибка с JFS и ALSA на системах Octane, когда ALSA не
+работает. Из-за недостаточной стабильности JFS на MIPS, рекомендуется пока
+не использовать JFS.
+</impo>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Компиляция и установка</title>
+<body>
+
+<p>
+Теперь ваше ядро сконфигурировано, нужно скомпилировать и установить его.
+Выйдите из конфигурации и начните процесс компиляции:
+</p>
+
+<note>
+На 64-битных машинах вам нужно указать
+<c>CROSS_COMPILE=mips64-unknown-linux-gnu-</c> (или <c>mips64el-...</c> на системе
+little-endian) для использования 64-битного компилятора.
+</note>
+
+<pre caption="Компиляция ядра">
+<comment>(Обычная компиляция)</comment>
+# <i>make vmlinux modules modules_install</i>
+
+<comment>(Кросс-компиляция на целевой системе)</comment>
+<comment>(Измените как вам нужно mips64-unknown-linux-gnu-)</comment>
+# <i>make vmlinux modules modules_install CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+
+<comment>(При компиляции на другой системе, например, x86, используйте)</comment>
+<comment>(следующие команды для компиляции ядра и установки модулей в)</comment>
+<comment>(отдельный каталог, который потом можно передать на целевую систему)</comment>
+# <i>make vmlinux modules CROSS_COMPILE=mips64-unknown-linux-gnu-</i>
+# <i>make modules_install INSTALL_MOD_PATH=/somewhere</i>
+</pre>
+
+<impo>
+При компиляции 64-битного ядра для Indy, Indigo2 (R4k), Challenge S и O2,
+используйте цель <c>vmlinux.32</c> вместо <c>vmlinux</c>. В противном случае
+ваша система не сможет загрузиться. Это для того, чтобы обойти PROM, который
+не понимает формат ELF64.
+</impo>
+
+<pre caption="Используем цель vmlinux.32">
+# <i>make vmlinux.32</i>
+<comment>(Данная команда создаст vmlinux.32 - который будет вашим конечным ядром)</comment>
+</pre>
+
+<p>
+Когда компиляция ядра закончится, скопируйте образ ядра в <path>/boot</path>.
+</p>
+
+<note>
+На серверах Cobalt, начальный загрузкик ожидвкт увидеть запакованный образ
+ядра. Помните выполнить <c>gzip -9</c> для образа, прежде чем положить
+его в <path>/boot</path>.
+</note>
+
+<pre caption="Установка ядра">
+# <i>cp vmlinux /boot/kernel-<keyval id="kernel-version"/></i>
+
+<comment>(Сервера Cobalt - сжатие образа ядра)</comment>
+# <i>gzip -9v /boot/kernel-<keyval id="kernel-version"/></i>
+</pre>
+
+</body>
+</subsection>
+</section>
+<section id="kernel_modules">
+<title>Модули ядра</title>
+
+<subsection>
+<include href="hb-install-kernelmodules.xml"/>
+</subsection>
+
+</section>
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-date: 2013-03-16
+source-cvs-revision: 1.34
+moved-by: Vladimir Romanov [blueboar2@gmail.com]
+-->
