@@ -4,10 +4,10 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/3.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-changes.xml,v 1.12 2013/07/07 16:14:25 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/hardened/selinux/hb-using-changes.xml,v 1.13 2013/07/07 17:53:16 swift Exp $ -->
 
 <sections>
-<version>12</version>
+<version>13</version>
 <date>2013-07-07</date>
 
 
@@ -260,12 +260,60 @@ local policy and load it in memory.
 <section>
 <title>Overview of Changes for ~Arch Users</title>
 <subsection>
-<title>None</title>
+<title>2013/07/07 - Introduced support for mcstrans</title>
 <body>
 
 <p>
-No differences for ~arch only for now
+When the SELinux policy is MLS-enabled (so it is MCS or MLS), then we have the
+option of managing categories. Categories allow us to "tag" resources and make
+sure that only processes that have the right category set assigned to them can
+read/manipulate the resources.
 </p>
+
+<p>
+For SELinux, categories are numbers, starting from <c>c0</c> (category zero) to
+whatever maximum is used in the policy:
+</p>
+
+<pre caption="Checking the maximum number of categories">
+$ <i>seinfo | grep Categories</i>
+  Sensitivities:      1   Categories:       1024
+</pre>
+
+<p>
+For most administrators/humans though, this is not that efficient. To support
+more human readable formats, SELinux supports category translations (and even
+sensitivity translations). Inside a configuration file
+(<path>setrans.conf</path> in the main configuration directory, like
+<path>/etc/selinux/mcs</path>) administrators can enter common sensitivity sets
+and ranges. The <c>chcat</c> tool can then be used to list those:
+</p>
+
+<pre caption="Listing translated sensitivity ranges">
+# <i>chcat -L</i>
+s0                             SystemLow
+s0-s0:c0.c1023                 SystemLow-SystemHigh
+s0:c0.c1023                    SystemHigh
+</pre>
+
+<p>
+To enable these translations, create the proper translation file (of which you
+can find numerous examples in <path>/usr/share/doc/policycoreutils-*/mcstrans</path>)
+and then start the <c>mcstransd</c> service.
+</p>
+
+<pre caption="Starting the mcstransd service">
+# <i>rc-service mcstransd start</i>
+</pre>
+
+<p>
+That's it - if we now look at contexts, we will see the translated ranges:
+</p>
+
+<pre caption="Listing contexts to see translated ranges">
+# <i>ls -lZ seusers</i>
+-rw-r--r--. root root system_u:object_r:selinux_config_t:SystemLow seusers
+</pre>
 
 </body>
 </subsection>
