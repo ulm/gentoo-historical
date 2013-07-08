@@ -13,15 +13,18 @@
                 extension-element-prefixes="exslt func dyn str" >
 
 <xsl:output encoding="UTF-8" method="text" indent="no" />
-<xsl:preserve-space elements="li p pre" />
+<xsl:preserve-space elements="pre" />
+<!-- <xsl:preserve-space elements="li p pre" /> -->
 
 <xsl:template match="guide"><xsl:apply-templates />
+<xsl:if test="//guide/author[not(@title='script generated')]">
 == Acknowledgements ==
 
 We would like to thank the following authors and editors for their contributions to this guide:
 <xsl:for-each select="//guide/author">
 * <xsl:value-of select="mail" />
 </xsl:for-each>
+</xsl:if>
 
 [[Category:Server and Security]]
 </xsl:template>
@@ -32,7 +35,9 @@ We would like to thank the following authors and editors for their contributions
 
 <xsl:template match="chapter">
 
-== <xsl:value-of select="title" /> ==
+== <xsl:value-of select="title" /> ==<xsl:text>
+
+</xsl:text>
 <xsl:apply-templates />
 </xsl:template>
 
@@ -40,18 +45,47 @@ We would like to thank the following authors and editors for their contributions
 <xsl:if test="preceding-sibling::section"><xsl:text>
 </xsl:text>
 </xsl:if>
+<xsl:if test="title">
 === <xsl:value-of select="title" /> ===
+</xsl:if>
 
 <xsl:apply-templates />
 </xsl:template>
 
-<xsl:template match="p">
-<xsl:apply-templates /><xsl:text>
+<xsl:template match="body"><xsl:apply-templates /></xsl:template>
+
+<!-- 
+  i is for in-pre commands, we cannot support that easily as we have no
+  knowledge of what needs to be RootCmd, UserCmd, what is output, etc.
+-->
+<xsl:template match="i"><xsl:apply-templates /></xsl:template>
+
+<xsl:template match="mail"><xsl:choose><xsl:when test="link">{{Mail|<xsl:value-of select="@link" />|<xsl:value-of select="text()" />}}</xsl:when><xsl:otherwise>{{Mail|<xsl:value-of select="text()" />}}</xsl:otherwise></xsl:choose></xsl:template>
+
+<xsl:template match="p"><xsl:apply-templates /><xsl:text> 
 
 </xsl:text>
 </xsl:template>
 
-<xsl:template match="uri"><xsl:choose><xsl:when test="starts-with(@link, 'http')">[<xsl:value-of select="@link" /><xsl:text> </xsl:text><xsl:value-of select="text()" />]</xsl:when><xsl:otherwise> [[INTERNAL <xsl:value-of select="@link" />]] </xsl:otherwise></xsl:choose></xsl:template>
+<xsl:template match="br" />
+<xsl:template match="license" />
+
+<!-- 
+     var is formatting in pre, difficult to handle this
+-->
+<xsl:template match="var"><xsl:apply-templates /></xsl:template>
+
+<!--
+     stmt is formatting in pre, difficult to handle this
+-->
+<xsl:template match="stmt"><xsl:apply-templates /></xsl:template>
+
+<!--
+     const is formatting in pre, difficult to handle this
+-->
+<xsl:template match="const"><xsl:apply-templates /></xsl:template>
+
+<xsl:template match="uri"><xsl:text> </xsl:text><xsl:choose><xsl:when test="starts-with(@link, 'http')">[<xsl:value-of select="@link" /><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="not(starts-with(@link, '#'))">[http://www.gentoo.org/<xsl:value-of select="@link"/><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when></xsl:choose><xsl:text> </xsl:text></xsl:template>
 
 <xsl:template match="e"> ''<xsl:apply-templates />'' </xsl:template>
 
@@ -159,9 +193,7 @@ We would like to thank the following authors and editors for their contributions
 <xsl:template match="text()">
 <xsl:choose>
 <xsl:when test="ancestor::pre"><xsl:value-of select="." /></xsl:when>
-<xsl:otherwise>
-<xsl:value-of select="normalize-space()" />
-</xsl:otherwise>
+<xsl:otherwise><xsl:value-of select="normalize-space()" /></xsl:otherwise>
 </xsl:choose>
 </xsl:template>
 
