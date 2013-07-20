@@ -22,7 +22,7 @@
 
 We would like to thank the following authors and editors for their contributions to this guide:
 <xsl:for-each select="//guide/author">
-* <xsl:value-of select="mail" />
+* <xsl:choose><xsl:when test="mail/text()"><xsl:value-of select="mail" /></xsl:when><xsl:otherwise><xsl:value-of select="mail/@link" /></xsl:otherwise></xsl:choose>
 </xsl:for-each>
 </xsl:if>
 
@@ -34,11 +34,12 @@ We would like to thank the following authors and editors for their contributions
 <xsl:template match="abstract" />
 
 <xsl:template match="chapter">
-
+<!-- Ignore developers and subprojects as these will be provided by the wiki itself. -->
+<xsl:if test="not(title='Developers') and not(title='Subprojects')">
 == <xsl:value-of select="title" /> ==<xsl:text>
-
 </xsl:text>
 <xsl:apply-templates />
+</xsl:if>
 </xsl:template>
 
 <xsl:template match="section">
@@ -60,7 +61,7 @@ We would like to thank the following authors and editors for their contributions
 -->
 <xsl:template match="i"><xsl:apply-templates /></xsl:template>
 
-<xsl:template match="mail"><xsl:choose><xsl:when test="link">{{Mail|<xsl:value-of select="@link" />|<xsl:value-of select="text()" />}}</xsl:when><xsl:otherwise>{{Mail|<xsl:value-of select="text()" />}}</xsl:otherwise></xsl:choose></xsl:template>
+<xsl:template match="mail"><xsl:text> </xsl:text><xsl:choose><xsl:when test="link">{{Mail|<xsl:value-of select="@link" />|<xsl:value-of select="normalize-space()" />}}</xsl:when><xsl:otherwise>{{Mail|<xsl:value-of select="normalize-space()" />}}</xsl:otherwise></xsl:choose></xsl:template>
 
 <xsl:template match="p"><xsl:apply-templates /><xsl:text> 
 
@@ -89,8 +90,8 @@ We would like to thank the following authors and editors for their contributions
 
 <xsl:template match="e"> ''<xsl:apply-templates />'' </xsl:template>
 
-<xsl:template match="ul">
-<xsl:apply-templates /><xsl:text>
+<xsl:template match="ul"><xsl:text>
+</xsl:text><xsl:apply-templates /><xsl:text>
 </xsl:text>
 </xsl:template>
 
@@ -98,7 +99,7 @@ We would like to thank the following authors and editors for their contributions
 <xsl:apply-templates /></xsl:template>
 
 <xsl:template match="li">
-<xsl:choose><xsl:when test="name(..)='ul'">* <xsl:apply-templates /></xsl:when><xsl:when test="name(..)='ol'"># <xsl:apply-templates /></xsl:when><xsl:otherwise>OH NOES HERE IT GOES!</xsl:otherwise></xsl:choose><xsl:text>
+<xsl:choose><xsl:when test="name(..)='ul'"><xsl:for-each select="ancestor::ul|ancestor::ol">*</xsl:for-each><xsl:text> </xsl:text><xsl:apply-templates /></xsl:when><xsl:when test="name(..)='ol'"><xsl:for-each select="ancestor::ol|ancestor::ul">#</xsl:for-each><xsl:text> </xsl:text><xsl:apply-templates /></xsl:when><xsl:otherwise>OH NOES HERE IT GOES!</xsl:otherwise></xsl:choose><xsl:text>
 </xsl:text>
 </xsl:template>
 
@@ -112,27 +113,13 @@ We would like to thank the following authors and editors for their contributions
 
 <xsl:template match="version" />
 
-<xsl:template match="c"> '''<xsl:apply-templates />''' </xsl:template>
+<xsl:template match="c"> &lt;code&gt;<xsl:apply-templates />&lt;/code&gt; </xsl:template>
 
 <xsl:template match="pre"><xsl:text>
 </xsl:text>
-<xsl:choose>
-<xsl:when test="starts-with(normalize-space(), '~$') or starts-with(normalize-space(), '$')">
-{{Cmd|INTERNAL commandhere|output=&lt;pre&gt;
-<xsl:apply-templates />&lt;/pre&gt;
+{{GenericCmd|&lt;pre&gt;<xsl:apply-templates />&lt;/pre&gt;
 }}
-</xsl:when>
-<xsl:when test="starts-with(normalize-space(), '~#') or starts-with(normalize-space(), '#')">
-{{RootCmd|INTERNAL commandhere|output=&lt;pre&gt;
-<xsl:apply-templates />&lt;/pre&gt;
-}}
-</xsl:when>
-<xsl:otherwise>
-{{GenericCmd|&lt;pre&gt;
-<xsl:apply-templates />&lt;/pre&gt;
-}}
-</xsl:otherwise>
-</xsl:choose><xsl:text>
+<xsl:text>
 </xsl:text>
 </xsl:template>
 
@@ -140,7 +127,7 @@ We would like to thank the following authors and editors for their contributions
 
 <xsl:template match="path"> {{Path|<xsl:apply-templates />}} </xsl:template>
 
-<xsl:template match="b">'''<xsl:apply-templates />'''</xsl:template>
+<xsl:template match="b"><xsl:text> </xsl:text>'''<xsl:apply-templates />'''<xsl:text> </xsl:text></xsl:template>
 
 <xsl:template match="warn">
 {{Warning|<xsl:apply-templates />}}
