@@ -22,7 +22,7 @@
 
 We would like to thank the following authors and editors for their contributions to this guide:
 <xsl:for-each select="//guide/author">
-* <xsl:choose><xsl:when test="mail/text()"><xsl:value-of select="mail" /></xsl:when><xsl:otherwise><xsl:value-of select="mail/@link" /></xsl:otherwise></xsl:choose>
+* <xsl:choose><xsl:when test="mail/text()"><xsl:value-of select="mail" /></xsl:when><xsl:when test="mail"><xsl:value-of select="mail/@link" /></xsl:when><xsl:otherwise><xsl:value-of select="normalize-space()" /></xsl:otherwise></xsl:choose>
 </xsl:for-each>
 </xsl:if>
 
