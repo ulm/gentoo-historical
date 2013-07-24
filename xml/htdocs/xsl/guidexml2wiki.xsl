@@ -16,7 +16,8 @@
 <xsl:preserve-space elements="pre" />
 <!-- <xsl:preserve-space elements="li p pre" /> -->
 
-<xsl:template match="guide"><xsl:apply-templates />
+<xsl:template match="guide"><xsl:value-of select="normalize-space(abstract)" />
+<xsl:apply-templates />
 <xsl:if test="//guide/author[not(@title='script generated')]">
 == Acknowledgements ==
 
@@ -86,7 +87,7 @@ We would like to thank the following authors and editors for their contributions
 -->
 <xsl:template match="const"><xsl:apply-templates /></xsl:template>
 
-<xsl:template match="uri"><xsl:text> </xsl:text><xsl:choose><xsl:when test="starts-with(@link, 'http')">[<xsl:value-of select="@link" /><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="not(starts-with(@link, '#'))">[http://www.gentoo.org/<xsl:value-of select="@link"/><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when></xsl:choose><xsl:text> </xsl:text></xsl:template>
+<xsl:template match="uri"><xsl:text> </xsl:text><xsl:choose><xsl:when test="starts-with(@link, 'http')">[<xsl:value-of select="@link" /><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="not(starts-with(@link, '#'))">[http://www.gentoo.org/<xsl:value-of select="@link"/><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="starts-with(@link, '#')">[[<xsl:value-of select="@link" />]]</xsl:when></xsl:choose><xsl:text> </xsl:text></xsl:template>
 
 <xsl:template match="e"> ''<xsl:apply-templates />'' </xsl:template>
 
