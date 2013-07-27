@@ -38,6 +38,7 @@ We would like to thank the following authors and editors for their contributions
 <!-- Ignore developers and subprojects as these will be provided by the wiki itself. -->
 <xsl:if test="not(title='Developers') and not(title='Subprojects')">
 == <xsl:value-of select="title" /> ==<xsl:text>
+
 </xsl:text>
 <xsl:apply-templates />
 </xsl:if>
@@ -48,7 +49,9 @@ We would like to thank the following authors and editors for their contributions
 </xsl:text>
 </xsl:if>
 <xsl:if test="title">
-=== <xsl:value-of select="title" /> ===
+=== <xsl:value-of select="title" /> ===<xsl:text>
+
+</xsl:text>
 </xsl:if>
 
 <xsl:apply-templates />
@@ -62,7 +65,7 @@ We would like to thank the following authors and editors for their contributions
 -->
 <xsl:template match="i"><xsl:apply-templates /></xsl:template>
 
-<xsl:template match="mail"><xsl:text> </xsl:text><xsl:choose><xsl:when test="link">{{Mail|<xsl:value-of select="@link" />|<xsl:value-of select="normalize-space()" />}}</xsl:when><xsl:otherwise>{{Mail|<xsl:value-of select="normalize-space()" />}}</xsl:otherwise></xsl:choose></xsl:template>
+<xsl:template match="mail"><xsl:if test="string-length(preceding-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if><xsl:choose><xsl:when test="link">{{Mail|<xsl:value-of select="@link" />|<xsl:value-of select="normalize-space()" />}}</xsl:when><xsl:otherwise>{{Mail|<xsl:value-of select="normalize-space()" />}}</xsl:otherwise></xsl:choose></xsl:template>
 
 <xsl:template match="p"><xsl:apply-templates /><xsl:text> 
 
@@ -87,7 +90,7 @@ We would like to thank the following authors and editors for their contributions
 -->
 <xsl:template match="const"><xsl:apply-templates /></xsl:template>
 
-<xsl:template match="uri"><xsl:text> </xsl:text><xsl:choose><xsl:when test="starts-with(@link, 'http')">[<xsl:value-of select="@link" /><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="not(starts-with(@link, '#'))">[http://www.gentoo.org/<xsl:value-of select="@link"/><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="starts-with(@link, '#')">[[<xsl:value-of select="@link" />]]</xsl:when></xsl:choose><xsl:text> </xsl:text></xsl:template>
+<xsl:template match="uri"><xsl:if test="string-length(preceding-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if><xsl:choose><xsl:when test="starts-with(@link, 'http')">[<xsl:value-of select="@link" /><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="not(starts-with(@link, '#'))">[http://www.gentoo.org/<xsl:value-of select="@link"/><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="starts-with(@link, '#')">[[<xsl:value-of select="@link" />]]</xsl:when></xsl:choose><xsl:if test="string-length(following-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if></xsl:template>
 
 <xsl:template match="e"> ''<xsl:apply-templates />'' </xsl:template>
 
@@ -114,7 +117,7 @@ We would like to thank the following authors and editors for their contributions
 
 <xsl:template match="version" />
 
-<xsl:template match="c"> &lt;code&gt;<xsl:apply-templates />&lt;/code&gt; </xsl:template>
+<xsl:template match="c"><xsl:if test="string-length(preceding-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if>&lt;code&gt;<xsl:apply-templates />&lt;/code&gt;<xsl:if test="string-length(following-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if></xsl:template>
 
 <xsl:template match="pre"><xsl:text>
 </xsl:text>
@@ -128,7 +131,7 @@ We would like to thank the following authors and editors for their contributions
 
 <xsl:template match="path"> {{Path|<xsl:apply-templates />}} </xsl:template>
 
-<xsl:template match="b"><xsl:text> </xsl:text>'''<xsl:apply-templates />'''<xsl:text> </xsl:text></xsl:template>
+<xsl:template match="b"><xsl:if test="string-length(preceding-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if>'''<xsl:apply-templates />'''<xsl:if test="string-length(following-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if></xsl:template>
 
 <xsl:template match="warn">
 {{Warning|<xsl:apply-templates />}}
