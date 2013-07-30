@@ -1,0 +1,189 @@
+Gentoo Qt project meeting 2013-07-27
+Timestamps are UTC+4
+
+[10:02:47] <Pinkbyte>	so, let's start. Who's there? :-)
+[10:03:01] <yngwin>	present
+[10:03:10] *	pesa o/
+[10:03:14] <zlogene>	here
+[10:03:53] <pesa>	agenda?
+[10:04:05] <yngwin>	https://wiki.gentoo.org/wiki/Project:Qt/Meeting/2013-07
+[10:04:19] <pesa>	thanks
+[10:04:58] <Pinkbyte>	ok, we have some quorum here. After previous meeting this looks very nice ;-)
+[10:05:23] <Pinkbyte>	First of all, ALL HEIL ZLOGENE^W^W^W errr, i mean, welcome, yeah
+[10:05:32] <yngwin>	:)
+[10:06:07] <pesa>	welcome zlogene :D
+[10:06:35] <zlogene>	thank you very much, guys :D
+[10:06:49] <yngwin>	good to see new blood
+[10:06:55] <wired>	I am here
+[10:07:00] <wired>	suprizingly
+[10:07:07] <yngwin>	good morning wired
+[10:07:13] <Pinkbyte>	wired, good
+[10:07:19] <pesa>	hey wired
+[10:07:29] <pesa>	good to have you here
+[10:07:30] <wired>	well, not exactly good morning, haven't slept yet
+[10:07:35] <wired>	lol
+[10:07:36] <yngwin>	oh wow
+[10:07:52] <jcallen>	I'm here (kinda, it's 2am)
+[10:08:29] <pesa>	record attendance
+[10:08:31] <Pinkbyte>	jcallen, KDE guys are always welcome on our meetings
+[10:08:55] <jcallen>	at one point, I was listed as a member of the qt team
+[10:09:07] <pesa>	true
+[10:09:39] <pesa>	and you're still on the qt alias
+[10:09:40] <wired>	zlogene: welcome to the team mate :)
+[10:12:11] <Pinkbyte>	ok, guys. Let's do business. How's Qt5 going?
+[10:15:07] <pesa>	well 5.1.0 has a minor ABI break, so I'd rather wait for 5.1.1
+[10:15:08] <Pinkbyte>	pesa, ^^
+[10:15:25] <pesa>	the BIC change was unintentional of course
+[10:15:58] <Pinkbyte>	ok. What's about our "favourite" blocker - bug #451456
+[10:15:59] <willikins>	Pinkbyte: https://bugs.gentoo.org/451456 "[qt overlay] Qt5 packages try to link against already installed versions during recompilation"; Gentoo Linux, Library; UNCO; eugene.shalygin:qt
+[10:16:05] <pesa>	apart from that, we still need to move qt4 binaries
+[10:16:13] <pesa>	and decide something wrt autotests
+[10:16:56] <Pinkbyte>	pesa, can you explain about binaries move? I did not dig into bugs and agenda does not have a link on origins of that decision
+[10:17:00] <pesa>	about that bug, if anyone has suggestions on how to fix it nicely, let me know
+[10:17:37] <pesa>	Pinkbyte: most qt5 binaries will collide with qt4 ones
+[10:17:51] <pesa>	e.g. qmake, moc, etc...
+[10:18:24] <pesa>	so upstream now suggests putting them in a "private" location and using qtchooser
+[10:18:45] <pesa>	qtchooser installs symlinks in /usr/bin for all binaries
+[10:19:08] <pesa>	it's basically like python-exec
+[10:19:35] <wired>	so we should put qt5 in /usr/lib/qt5/bin and create symlinks as well?
+[10:19:57] <wired>	or does qt5 do that already?
+[10:20:08] <Pinkbyte>	we should create some 'eselect-qt', huh?
+[10:20:11] <pesa>	qt5 binaries are already installed there (because I didn't have to maintain backward compat)
+[10:20:28] <pesa>	but to move qt4 ones... it won't be trivial
+[10:20:59] <pesa>	Pinkbyte: dunno... maybe, maybe not
+[10:21:27] <pesa>	whether the *default* qt version can be chosen by the user is to be decided
+[10:22:17] <wired>	the way i see it, we move the binaries, then whenever a qt4 app is merged, we make sure the symlinks point to qt4/
+[10:22:27] <wired>	that way we don't have to mess with anything outside dev-qt/
+[10:23:00] <pesa>	and how do you ensure that without messing with anything outside dev-qt/ ?
+[10:23:30] <Pinkbyte>	wired, packages, that did not call qmake directly will not suffer about this if we get things done in eclass properly, i think
+[10:23:39] <pesa>	Pinkbyte: correct
+[10:23:53] <pesa>	our eclasses MUST use the full path to qmake
+[10:24:02] <pesa>	that's the easy part
+[10:25:04] <wired>	Pinkbyte: yeah, that's even simpler actually, I was thinking that if we use eselect for example to adjust the symlinks at the beginning of the build we can handle even ebuilds that for some reason use commands that don't go through our eclass
+[10:25:19] <jcallen>	wired: so what happens when you build 2 packages at once
+[10:25:35] <pesa>	oh and btw, binaries in /usr/bin will point to /usr/bin/qtchooser, qtchooser will choose at runtime which version to use
+[10:25:40] <jcallen>	one using qt4, the other using qt5? :)
+[10:25:58] <Pinkbyte>	definitely - 'a shit happens'. Sorry, can not resist :-)
+[10:26:05] <pesa>	jcallen is right
+[10:26:10] <pesa>	we can't do that
+[10:26:28] <yngwin>	so we need packages to always build using the full path
+[10:26:36] <pesa>	(what if the user is developing his app with a different version?)
+[10:26:46] <pesa>	(at the same time)
+[10:27:15] <pesa>	yngwin: yes, OR use qtchooser command line switches
+[10:28:02] <pesa>	IIRC you can do something like "qmake -qt4" and it'll use the qt4 version no matter which default is selected
+[10:28:33] <wired>	I'm still missing sth
+[10:30:09] <yngwin>	but do we have packages (kde? i dunno) that use qt binaries without using our eclass?
+[10:30:39] <pesa>	yngwin: yes, unless proven otherwise
+[10:30:49] <Pinkbyte>	yngwin, maybe some tricky packages, that builds different GUIs(i mean GTK, Qt, Tk, etc...)
+[10:31:09] <pesa>	or packages using moc but not qmake
+[10:31:18] <pesa>	or uic but not qmake
+[10:31:27] <Pinkbyte>	they do not have to use our eclass directly. They can even have other build systems(autotools, cmake, etc), so qmake is useless in those cases
+[10:31:46] <yngwin>	iirc kde uses moc
+[10:31:56] <pesa>	and cmake
+[10:32:47] <yngwin>	so we should offer eclass functions that lets them use the right version
+[10:32:56] <pesa>	I don't even know how cmake looks for qmake and friends
+[10:33:31] <pesa>	yngwin: yes, in qmake-utils.eclass IMO
+[10:35:20] <wired>	this shouldn't be necessary if qtchooser does the right thing (tm) tho, right?
+[10:35:33] <pesa>	define "the right thing"
+[10:35:48] <pesa>	I'm not sure what you mean
+[10:35:48] <Pinkbyte>	wired, yeah, if we do not use things in parallel. But we can not predict that
+[10:36:27] <pesa>	Pinkbyte: uh..not even in that case... how can qtchooser know what version you want?
+[10:36:36] <Pinkbyte>	true
+[10:37:59] <pesa>	one way to simplify this mess (for us) would be *not* allowing users to change the default qt version
+[10:38:31] <pesa>	or better, saying that changing it is unsupported and things will break
+[10:39:35] <pesa>	this way we can start with a default == qt4, and things should transparently work for qt5-unaware packages
+[10:40:16] <Pinkbyte>	yeah, probably that would be more simple way
+[10:40:31] <pesa>	other ideas?
+[10:41:18] <Pinkbyte>	so, to clarify, in your case 'eselect-qt' is not needed, right. Cause we have default implementation, and switching with qtchooser is highly discouraged for users, right?
+[10:41:52] <pesa>	that's correct
+[10:43:19] <Pinkbyte>	ok, i think we should stand for this now. Cause we must, first of all support backward compatibility with old Qt4 packages. When Qt5 enabled packages will grow(and we will switch default implementation), then we will decide what's better - to treeclean them after breakage(if upstream is dead), or to fix them
+[10:43:33] <wired>	will there really be a reason for us to ever change the default implementation in this case?
+[10:43:45] <pesa>	wired: in the future, yes
+[10:43:58] <Pinkbyte>	wired, some day, qt4 will be buried
+[10:44:10] <wired>	and qt5 will stay in /usr/lib/qt5/bin
+[10:44:11] <wired>	so what
+[10:44:15] <Pinkbyte>	as qt3 before(did not know how it was handled, though)
+[10:44:25] <wired>	then we'll have a cleaner path for qt6 :p
+[10:45:10] <Pinkbyte>	wired, if i understand things right, it is for manually builded packages
+[10:45:15] <pesa>	qt6 will be cleaner because qt5 already is in its own path
+[10:45:28] <Pinkbyte>	i mean - qmake/make, typed by users itself. Without portage
+[10:45:56] <Pinkbyte>	i mean - default implementation is for this. To many 'i mean's from me makes me sick :-/
+[10:46:01] <pesa>	well the goal is having the version user-switchable I think
+[10:47:01] <pesa>	but we'll see what happens in the next years ;)
+[10:47:04] <Pinkbyte>	ok, guys. Let's move on
+[10:47:10] <wired>	Pinkbyte: yeah, true, but when the time comes and we treeclean qt4 we can just add new symlinks for qt5 in /usr/bin. Im not sure if we need qtchooser at all if we don't plan to support changing the implementation now
+[10:47:34] <Pinkbyte>	what's about tests mess?
+[10:48:09] <Pinkbyte>	decision with has_version seems reasonable to me
+[10:48:12] <pesa>	wired: qtchooser is needed because the users/developers are being told to run "qmake -qt5", which needs qtchooser in order to work
+[10:48:18] <wired>	ah
+[10:48:20] <wired>	k then
+[10:48:27] <pesa>	it's a documentation problem 
+[10:48:40] <pesa>	and upstream wants it like this
+[10:49:26] <pesa>	Pinkbyte: see https://bugs.gentoo.org/show_bug.cgi?id=457182#c8 please
+[10:49:51] <pesa>	I've summarized the 3 possibilities there
+[10:50:20] <Pinkbyte>	pesa, 3 seems a bit ugly for me
+[10:50:50] <Pinkbyte>	2 looks fine(has_version proposal) and 1 can be hard, yeah
+[10:50:54] <Pinkbyte>	so i vote for 2
+[10:51:13] <pesa>	3 could give inconsistent results, yes, but it's not ugly per se
+[10:51:59] <Pinkbyte>	pesa, 3 could lead to untrivial bugs, that is hard to caught
+[10:52:05] <pesa>	yep
+[10:52:18] <pesa>	1 means having qtcore not covered with tests
+[10:52:26] <pesa>	which I'd rather avoid
+[10:52:36] <yngwin>	2 seems the most workable
+[10:53:18] <wired>	++
+[10:53:36] <zlogene>	+
+[10:53:56] <pesa>	good, let's go with 2 then
+[10:56:40] <Pinkbyte>	Ok, let's go to previous TODOs
+[10:57:06] <Pinkbyte>	as of goldendict, i have proven myself as a big slacker - i had not do anything about it yet
+[10:57:08] <Pinkbyte>	my bad
+[10:58:20] <wired>	welcome to the club :P
+[10:59:52] <Pinkbyte>	yngwin, what's about wiki pages transition?
+[11:00:03] <yngwin>	same
+[11:00:32] <Pinkbyte>	definitely - club of slackers ;-)
+[11:00:40] <yngwin>	!devaway yngwin
+[11:00:41] <willikins>	yngwin:  limited availability; please feel free to maintain "my" packages @ 2013/07/26 14:05Z
+[11:01:19] <Pinkbyte>	oh, did not know that you are in devaway, sorry
+[11:01:29] <yngwin>	it's not high priority, but I'll get around to it eventually
+[11:02:02] <Pinkbyte>	pesa, what do you think about bug #464690?
+[11:02:04] <willikins>	Pinkbyte: https://bugs.gentoo.org/464690 "=net-im/qutim-0.3.1 fails to connect"; Gentoo Linux, Applications; CONF; ago:qt
+[11:02:14] <Pinkbyte>	something strange happens there, as i understand
+[11:03:08] <pesa>	yeah
+[11:03:24] <pesa>	iirc the runpath is missing some pieces
+[11:03:59] <pesa>	need to dig into the buildsystem and see why this happens
+[11:04:36] <pesa>	but everything else comes before that bug, and I dont even use that package so...
+[11:05:50] <pesa>	(FYI my time available for gentoo will be severely limited until late october)
+[11:06:21] <Pinkbyte>	Ok, maybe try to handle this myself
+[11:06:51] <Pinkbyte>	So, is there something else, that we should discuss?
+[11:07:17] <pesa>	I'd like to raise a question: do we still want to support qtphonon? can't we just drop it and switch everything to media-libs/phonon only?
+[11:09:18] <Pinkbyte>	pesa, good question. Will all of dependant packages switch cleanly?
+[11:09:36] <Pinkbyte>	or it is what to be discovered?
+[11:09:36] <yngwin>	iirc pyqt4 needs a hack
+[11:09:54] <pesa>	Pinkbyte: afaik yes
+[11:10:12] <pesa>	yngwin: not a hack, just a small patch to tell configure where to find the headers
+[11:10:19] <yngwin>	ok
+[11:10:24] <yngwin>	what about pyside?
+[11:10:29] <pesa>	same I guess
+[11:11:08] <pesa>	pyqt4 upstream says m-l/phonon is not supported but I don't care
+[11:11:29] <pesa>	I don't think any distro is using qtphonon nowadays
+[11:12:11] <yngwin>	it seems pyside supports both without problem
+[11:12:13] <pesa>	and qt5 dropped the phonon module
+[11:12:17] <Pinkbyte>	bug #475786 too
+[11:12:18] <willikins>	Pinkbyte: https://bugs.gentoo.org/475786 "dev-python/pyside detects dev-qt/qtphonon but not media-libs/phonon"; Gentoo Linux, Development; UNCO; sherpya:qt
+[11:13:14] <yngwin>	yeah, i think we can drop qtphonon
+[11:14:36] <pesa>	good
+[11:14:39] <pesa>	anyone against?
+[11:16:05] <Pinkbyte>	i can try to run check in chroot to discover if something needs to be fixed before
+[11:16:30] <Pinkbyte>	but i am for it, if it is deprecated - it needs to be killed with fire
+[11:16:43] <wired>	++
+[11:16:45] <pesa>	yes please, that would be very helpful
+[11:16:51] <pesa>	Pinkbyte: ^
+[11:17:19] <pesa>	anyway this is not a priority yet
+[11:18:08] <Pinkbyte>	pesa, ok
+[11:18:15] <Pinkbyte>	anything else?
+[11:19:45] <yngwin>	seems not
+[11:20:51] <Pinkbyte>	ok, meeting is over. Thank you guys. I will post links on summary and logs as usual
+[11:20:57] <wired>	thanks
+[11:21:15] <pesa>	ty
+[11:21:19] <wired>	c u ppl (time to get some sleep) :)
+[11:21:25] <yngwin>	cu
+[11:21:27] <pesa>	hehe
