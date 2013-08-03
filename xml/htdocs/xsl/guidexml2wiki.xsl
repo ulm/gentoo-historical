@@ -53,8 +53,22 @@ We would like to thank the following authors and editors for their contributions
 
 </xsl:text>
 </xsl:if>
+<xsl:choose>
+<xsl:when test="include">
+<xsl:variable name="doc" select="include/@href" />
+<xsl:for-each select="document($doc)/included/section">
+<xsl:if test="title">
+=== <xsl:value-of select="title" /> ===<xsl:text>
 
+</xsl:text>
+</xsl:if>
 <xsl:apply-templates />
+</xsl:for-each>
+</xsl:when>
+<xsl:otherwise>
+<xsl:apply-templates />
+</xsl:otherwise>
+</xsl:choose>
 </xsl:template>
 
 <xsl:template match="body"><xsl:apply-templates /></xsl:template>
