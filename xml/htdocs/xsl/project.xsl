@@ -8,7 +8,13 @@
 
 <xsl:template match="/project">
 <xsl:processing-instruction name="xml-stylesheet">type="text/xsl" href="/xsl/guide.xsl"</xsl:processing-instruction>
-<guide  link="index.xml" type="project">
+<guide link="index.xml" type="project">
+<xsl:if test="@redirect">
+<xsl:attribute name="redirect"><xsl:value-of select="@redirect" /></xsl:attribute>
+</xsl:if>
+<xsl:if test="@disclaimer">
+<xsl:attribute name="disclaimer"><xsl:value-of select="@disclaimer" /></xsl:attribute>
+</xsl:if>
 <title>
 <xsl:choose>
   <xsl:when test="longname"><xsl:value-of select="longname"/></xsl:when>
