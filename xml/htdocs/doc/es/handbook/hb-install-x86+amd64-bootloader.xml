@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-x86+amd64-bootloader.xml,v 1.25 2013/08/15 11:45:32 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-x86+amd64-bootloader.xml,v 1.26 2013/08/27 10:02:27 nimiux Exp $ -->
 
 <sections>
 
-<version>13</version>
+<version>14</version>
 <date>2013-08-15</date>
 
 <section>
@@ -29,8 +29,16 @@ el sistema. Este programa es conocido como <e>gestor de arranque</e>.
 <body test="contains('AMD64 x86', func:keyval('arch'))">
 <p>
 Para <keyval id="arch"/>, Gentoo dispone de <uri
-link="#grub">GRUB</uri> y <uri link="#lilo">LILO</uri>.
+link="#grub">GRUB</uri>, <uri link="#grub2">GRUB2</uri> y
+<uri link="#lilo">LILO</uri>.
 </p>
+
+<note>
+Puede que GRUB2 no sea estable en el momento en el que esté leyendo esto.
+Sin embargo, se espera que la estabilización se produzca pronto por lo
+que, de forma temporal, documentamos GRUB y GRUB2 y eliminaremos
+las instrucciones para GRUB una vez estabilicemos GRUB2.
+</note>
 
 </body>
 
@@ -119,8 +127,9 @@ elilo</uri>.
 </p>
 
 <p test="func:keyval('arch')='IA64'">
-Ahora continúe con la instalación de <uri link="#grub">GRUB</uri>
-<e>o</e> <uri link="#lilo">LILO</uri>.
+Ahora continúe con la instalación de <uri link="#grub">GRUB</uri>,
+<uri link="#grub2">GRUB2</uri> <e>o</e>
+<uri link="#lilo">LILO</uri>.
 </p>
 
 </body>
@@ -128,7 +137,28 @@ Ahora continúe con la instalación de <uri link="#grub">GRUB</uri>
 </section>
 
 <section id="grub" test="contains('AMD64 x86',func:keyval('arch'))">
-<title>Predeterminado: Usar GRUB</title>
+<title>Predeterminado: Usar GRUB Heredado</title>
+<subsection>
+<title>¿Qué implica "Heredado"?</title>
+<body>
+
+<p>
+GRUB se ha rediseñado y se ha lanzado una nueva versión llamada GRUB2.
+El nuevo código base de GRUB2 difiere bastante del GRUB actual, por lo
+que esta versión de GRUB se llama por el momento "GRUB Heredado".
+</p>
+
+<p>
+Recomendamos comenzar con GRUB2 tan pronto como esté disponible. La
+migración de GRUB a GRUB2 está <uri link="/doc/es/grub2-migration.xml">
+descrita en línea</uri>. La instrucciones en esta sección están
+relacionadas con "GRUB Heredado" y se eliminarán del manual una vez
+se haya estabilizado <uri link="#grub2">GRUB2</uri>.
+</p>
+
+</body>
+</subsection>
+
 <subsection>
 <title>Comprender la terminología de GRUB</title>
 <body>
@@ -348,7 +378,7 @@ la información relativa a todos los sistemas de archivos
 montados. Afortunadamente hay una manera sencilla de realizar esto,
 simplemente copie <path>/proc/mounts</path> a <path>/etc/mtab</path>,
 excluyendo la línea <c>rootfs</c> si no ha creado una partición
-separada para boot. La siguiente orden fucionará en ambos casos:
+separada para boot. La siguiente orden funcionará en ambos casos:
 </p>
 
 <pre caption="Crear /etc/mtab">
@@ -434,7 +464,7 @@ particiones disponibles para elegir (como pueda ser
 </p>
 
 <p>
-Medianta el uso de este mecanismo para completar por tabulación,
+Mediante el uso de este mecanismo para completar por tabulación,
 configurar GRUB no debería resultar tan duro. Ahora vamos a por ello,
 ¡Configuremos GRUB!.
 </p>
@@ -623,6 +653,98 @@ wikipedia</uri>.
 <p>
 Ahora puede continuar con <uri link="#reboot">Reiniciar el
 Sistema</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section id="grub2" test="contains('AMD64 x86', func:keyval('arch'))">
+<title>Alternativa: Utilizar GRUB2</title>
+<subsection>
+<title>Instalar GRUB2</title>
+<body>
+
+<p>
+GRUB2 se ofrece a través del paquete <c>sys-boot/grub</c>. Para poner
+en marcha GRUB2, utilice la notación <e>SLOT</e> (ranura) para indicarle
+a Portage que debe instalar GRUB2. Las ranuras (SLOTs) son una
+característica de Gentoo Linux por la que múltiples versiones del
+mismo paquete se pueden desplegar de forma simultánea en un sistema.
+En nuestro caso, esto significa que GRUB Heredado y GRUB2 se
+pueden instalar en un sistema (hablando de software) a la vez.
+</p>
+
+<note>
+Puede que GRUB2 todavía esté marcado como ~<keyval id="arch" />. Si
+esto es así, puede esperar y utilizar
+<uri link="#grub">GRUB Heredado</uri> o desenmascarar el paquete.
+Esto se explica en
+<uri link="handbook-amd64.xml?part=3&amp;chap=3#doc_chap2">
+Mezclar Estable con Pruebas</uri>. Una vez se haya estabilizado GRUB2,
+el operador de ranuras (SLOT) ya no es necesario.
+</note>
+
+<pre caption="Instalar GRUB2">
+# <i>emerge grub:2</i>
+</pre>
+
+<p>
+El software GRUB2 ahora está instalado en el sistema, sin embargo, todavía
+no está activado.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Configurar GRUB2</title>
+<body>
+
+<p>
+En primer lugar, instalaremos los ficheros necesarios de GRUB2 en
+<path>/boot/grub2</path>. Asumiremos que el primer disco (el que
+se utiliza para iniciar el sistema) es <path>/dev/sda</path>, la
+siguiente orden hará esto por nosotros:
+</p>
+
+<pre caption="Instalar los ficheros de GRUB2 en /boot/grub2">
+# <i>grub2-install /dev/sda</i>
+</pre>
+
+<p>
+A continuación, generamos la configuración de GRUB2 basada en la
+configuración de usuario especificada en el fichero
+<path>/etc/default/grub</path> y los guiones en
+<path>/etc/grub.d</path>. En la mayoría de los casos, no se
+necesita ninguna configuración por parte del usuario ya que
+GRUB2 detectará de forma automática el núcleo que se debe iniciar
+(el que tenga el número de versión más alto disponible en
+<path>/boot</path>) y qué sistema de ficheros tiene el directorio
+raíz.
+</p>
+
+<p>
+Para generar la configuración final de GRUB2, ejecute la orden
+<c>grub2-mkconfig</c>:
+</p>
+
+<pre caption="Generar la configuración de GRUB2">
+# <i>grub2-mkconfig -o /boot/grub2/grub.cfg</i>
+Generating grub.cfg ...
+Found linux image: /boot/<keyval id="kernel-name" />
+Found initrd image: /boot/<keyval id="genkernel-initrd" />
+done
+</pre>
+
+<p>
+La salida de la orden <e>debe</e> mencionar al menos que se
+ha encontrado una imagen Linux, ya que éstas son necesarias
+para iniciar el sistema. Si utiliza initramfs o <c>genkernel</c>
+para construir su núcleo, se debería detectar igualmente
+la imagen initrd correcta. Si no es así, vaya a
+<path>/boot</path> y compruebe el contenido con la orden
+<c>ls</c>. Si los ficheros no están, vuelva a las instrucciones
+de configuración e instalación del núcleo.
 </p>
 
 </body>
