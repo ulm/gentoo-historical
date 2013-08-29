@@ -141,7 +141,7 @@ We would like to thank the following authors and editors for their contributions
 </xsl:text>
 </xsl:template>
 
-<xsl:template match="comment">## <xsl:apply-templates /></xsl:template>
+<xsl:template match="comment"><xsl:apply-templates /></xsl:template>
 
 <xsl:template match="path"> {{Path|<xsl:apply-templates />}} </xsl:template>
 
