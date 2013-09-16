@@ -5,13 +5,13 @@
 <!-- Текст этого документа распространяется на условиях лицензии CC-BY-SA -->
 <!-- См. http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-x86+amd64-bootloader.xml,v 1.1 2013/01/20 15:47:40 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-x86+amd64-bootloader.xml,v 1.2 2013/09/16 16:35:08 blueboar Exp $ -->
 
 
 <sections>
 
-<version>3</version>
-<date>2012-09-11</date>
+<version>4</version>
+<date>2013-08-15</date>
 
 <section>
 <title>Выбор загрузчика</title>
@@ -30,8 +30,15 @@
 <body test="contains('AMD64 x86', func:keyval('arch'))">
 <p>
 Для архитектуры <keyval id="arch"/> в Gentoo Linux есть загрузчики <uri 
-link="#grub">GRUB</uri> и <uri link="#lilo">LILO</uri>. 
+link="#grub">GRUB</uri>, <uri link="#grub2">GRUB2</uri> и  <uri link="#lilo">LILO</uri>.
 </p>
+
+<note>
+На момент прочтения вами данного текста GRUB2 может быть еще не стабильным. Однако
+стабилизация данного пакета произойдет очень скоро, поэтому временно мы отражаем
+в документации как GRUB, так и GRUB2, и удалим информацию о GRUB после того,
+как GRUB2 будет считаться стабильным.
+</note>
 
 </body>
 <body>
@@ -111,15 +118,36 @@ link="#grub">GRUB</uri> и <uri link="#lilo">LILO</uri>.
 </p>
 
 <p test="not(func:keyval('arch')='IA64')">
-Перейдем к установке <uri link="#grub">GRUB</uri> <e>или</e> <uri
-link="#lilo">LILO</uri>.
+Перейдем к установке <uri link="#grub">GRUB</uri>, <uri link="#grub2">GRUB2</uri>
+<e>или</e> <uri link="#lilo">LILO</uri>.
 </p>
 
 </body>
 </subsection>
 </section>
 <section id="grub" test="contains('AMD64 x86',func:keyval('arch'))">
-<title>По умолчанию: использование GRUB</title>
+<title>По умолчанию: использование GRUB Legacy</title>
+
+<subsection>
+<title>Что такое Legacy?</title>
+<body>
+
+<p>
+GRUB был переработан, и теперь существует новая версия, называемая GRUB2. Новый
+код GRUB2 очень отличается от GRUB, и именно поэтому версия GRUB теперь называется
+Legacy (наследием).
+</p>
+
+<p>
+Мы рекомендуем вам начать использовать GRUB2 так скоро, как сможете. Миграция с
+GRUB на GRUB2 <uri link="/doc/en/grub2-migration.xml">описана онлайн</uri>. 
+В данном разделе даны инструкции, относящиеся к устревшему GRUB, и они будут
+удалены из данной книги после того, как <uri link="#grub2">GRUB2</uri> будет признан стабильным.
+</p>
+
+</body>
+</subsection>
+
 <subsection>
 <title>Введение в терминологию GRUB</title>
 <body>
@@ -332,6 +360,17 @@ link="#grub-install-manual">альтернатива: установка GRUB в
 
 <pre caption="Создание /etc/mtab">
 # <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
+</pre>
+
+<p>
+При использовании дисков virtio Linux, нам нужно сказать grub, где нужно
+искать диски, так как в противном случае команда <c>grub-install</c> не
+сможет выполниться. Это делается путем добавления описания устройства
+в файл <path>device.map</path>:
+</p>
+
+<pre caption="Добавляем диск virtio к таблице устройств">
+# <i>echo "(hd0) /dev/vda" >> /boot/grub/device.map</i>
 </pre>
 
 <p>
@@ -578,6 +617,87 @@ image=/boot/<keyval id="kernel-name"/>
 </subsection>
 </section>
 
+<section id="grub2" test="contains('AMD64 x86', func:keyval('arch'))">
+<title>Альтернатива: Используем GRUB2</title>
+<subsection>
+<title>Установка GRUB2</title>
+<body>
+
+<p>
+GRUB2 находится в пакете <c>sys-boot/grub</c>. Для выбора GRUB2 используйте
+<e>слотовую</e> нотацию для того, чтобы сообщить Portage о том, что нужно
+установить GRUB2. Слоты это возможность Gentoo Linux, позволяющая одновременно
+иметь в системе несколько версий одного и того же пакета. В нашем случае, это
+означает, что на системе может одновременно быть установлен GRUB2 и
+GRUB.
+</p>
+
+<note>
+GRUB2 все еще может быть обозначен как ~<keyval id="arch" />. Если это и
+в самом деле так, вы можете либо подождать, и использовать
+<uri link="#grub">GRUB Legacy</uri>, либо размаскировать пакет. Это
+объясняется в главе 
+<uri link="handbook-amd64.xml?part=3&amp;chap=3#doc_chap2">одновременное использование стабильной и тестовой ветвей</uri>. 
+Как только GRUB2 будет стабильным, слот также можно будет не указывать.
+</note>
+
+<pre caption="Устанавливаем GRUB2">
+# <i>emerge grub:2</i>
+</pre>
+
+<p>
+Программа GRUB2 теперь установлена на вашей системе, но еще не активирована.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Конфигурирование GRUB2</title>
+<body>
+
+<p>
+Прежде всего, давайте установим необходимые файлы GRUB2 в <path>/boot/grub2</path>.
+Если предположить, что первый диск (тот, откуда система загружается),
+называется <path>/dev/sda</path>, то следующая команда сделает это за нас:
+</p>
+
+<pre caption="Устанавливаем файлы GRUB2 в /boot/grub2">
+# <i>grub2-install /dev/sda</i>
+</pre>
+
+<p>
+Далее, мы можем сгенерировать конфигурацию GRUB2 на основании конфигурации из файла
+<path>/etc/default/grub</path> и скриптов <path>/etc/grub.d</path>. В большинстве
+случаев, пользователю не нужно выполнять никакую конфигурацию, так как GRUB2 автоматически
+определит ядро для загрузки (ядро самой высокой версии, которое находится в
+<path>/boot</path>), а также то, какая файловая система является корневой.
+</p>
+
+<p>
+Для генерации финальной конфигурации GRUB2, выполните команду <c>grub2-mkconfig</c>:
+</p>
+
+<pre caption="Генерируем конфигурацию GRUB2">
+# <i>grub2-mkconfig -o /boot/grub2/grub.cfg</i>
+Generating grub.cfg ...
+Found linux image: /boot/<keyval id="kernel-name" />
+Found initrd image: /boot/<keyval id="genkernel-initrd" />
+done
+</pre>
+
+<p>
+В выводе команды <e>должно</e> быть указано, что найдено хотя бы одно ядро Linux
+так как оно нужно для загрузки системы. Если вы используете initramfs, либо
+использовали <c>genkernel</c> для компиляции ядра, также должен определиться
+правильный образ initrd. Если этого не произошло, перейдите в <path>/boot</path>
+и проверьте его содержимое с помощью команды <c>ls</c>. Если файлы и в самом деле
+отсутствуют, вернитесь к инструкциям по конфигурации и установке ядра.
+</p>
+
+</body>
+</subsection>
+</section>
+
 <section id="elilo" test="func:keyval('arch')='IA64'">
 <title>По умолчанию: Установка elilo</title>
 <body>
@@ -716,8 +836,8 @@ link="?part=1&amp;chap=11">завершению установки Gentoo</uri>.
 
 <!-- *$Localization:
 target-language: Russian
-target-date: 2012-09-11
-source-cvs-revision: 1.28
+target-date: 2013-08-15
+source-cvs-revision: 1.30
 translated-by: Vasiliy Golubev [vas@nightmail.ru]
 edited-by: Sergey Kuleshov
 edited-by: Alexey Chumakov [achumakov@gentoo.org]
