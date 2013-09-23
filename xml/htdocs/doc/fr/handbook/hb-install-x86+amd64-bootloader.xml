@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-bootloader.xml,v 1.9 2013/03/04 19:47:19 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-bootloader.xml,v 1.10 2013/09/23 06:11:42 jaaf Exp $ -->
 
 <sections>
 
@@ -14,8 +14,8 @@ différemment. Ce chapitre explique les différents choix qui s'offrent à vous 
 décrit comment configurer le chargeur que vous aurez sélectionné.
 </abstract>
 
-<version>12</version>
-<date>2012-09-11</date>
+<version>15</version>
+<date>2013-09-19</date>
 
 <section>
 <title>Faites votre choix</title>
@@ -35,10 +35,13 @@ Un tel programme est appelé un <e>chargeur de démarrage</e>
 <body test="contains('AMD64 x86', func:keyval('arch'))">
 
 <p>
-Pour l'architecture <keyval id="arch"/>, vous avez le choix entre <uri
-link="#grub">GRUB</uri> et <uri link="#lilo">LILO</uri>.
+Pour l'architecture <keyval id="arch"/>, vous avez le choix entre<uri
+link="#grub">GRUB</uri>, <uri link="#grub2">GRUB2</uri> et
+<uri link="#lilo">LILO</uri>.
 </p>
-
+<note>
+il se pourait que GRUB2 ne soit pas encore stabilisé au moment où vous lirez ceci. Néanmoins, la stabilisation est attendue très prochainement, c'est pourquoi nous documentons GRUB et GRUB2 et retirerons ce qui concerne GRUB après stabilisation. 
+</note>
 
 </body>
 <body>
@@ -119,14 +122,31 @@ Maintenant vous devriez installer <uri link="#elilo">le chargeur de démarrage e
 </p>
 
 <p test="not(func:keyval('arch')='IA64')">
-Now continue by installing <uri link="#grub">GRUB</uri> <e>ou</e> <uri
+Maintenant continuez en installant <uri link="#grub">GRUB</uri>, <uri
+link="#grub2">GRUB2</uri> <e>ou</e> <uri
 link="#lilo">LILO</uri>.
 </p>
 </body>
 </subsection>
 </section>
 <section id="grub" test="contains('AMD64 x86',func:keyval('arch'))">
-<title>Par défaut&nbsp;: GRUB</title>
+<title>Default: Utiliser GRUB Legacy</title>
+<subsection>
+<title>Qu'est-ce que Legacy?</title>
+<body>
+
+<p>
+GRUB a été retravaillé et une nouvelle version appelée GRUB2 est désormais disponible. Le code de GRUB2 est très différent de celui de GRUB, c'est pourquoi la version précédente de GRUB est maintenant appelée  "GRUB Legacy" (« GRUB patrimoniale » en français).
+</p>
+
+<p>
+Nous recommandons de démarrer avec GRUB2 dès que cette version est disponible. La  migration de
+GRUB à GRUB2  est documentée   <uri link="/doc/en/grub2-migration.xml"> en ligne</uri> Les instructions de cette section se rapporte à "GRUB Legacy" disparaîtront du manuel dès la stabilisation  <uri>
+link="#grub2">GRUB2</uri>.
+</p>
+
+</body>
+</subsection>
 <subsection>
 <title>Comprendre le vocabulaire de GRUB</title>
 <body>
@@ -180,7 +200,7 @@ IA-32 Emulation
   dans le noyau, vous devriez utiliser <c>Lilo</c>
 </impo>
 
-<pre caption="Installer GRUB">
+<pre caption="installer GRUB">
 # <i>emerge grub</i>
 </pre>
 
@@ -191,7 +211,7 @@ secteur de démarrage (MBR) du système. Créez le fichier
 <path>/boot/grub/grub.conf</path>&nbsp;:
 </p>
 
-<pre caption="Création de /boot/grub/grub.conf">
+<pre caption="création de /boot/grub/grub.conf">
 # <i>nano -w /boot/grub/grub.conf</i>
 </pre>
 
@@ -215,7 +235,7 @@ Si vous avez utilisé le système de fichiers JFS, vous <e>devez</e> ajouter
 journal avant que le système de fichiers ne soit monté en lecture/écriture.
 </note>
 
-<pre caption="Exemple de grub.conf">
+<pre caption="exemple de grub.conf">
 <comment># Entrée par défaut, 0 est la première, 1 la deuxième, etc.</comment>
 default 0
 <comment># Délai en secondes avant de lancer l'entrée par défaut</comment>
@@ -248,7 +268,7 @@ Si lors de la compilation du noyau, vous avez choisi d'inclure un disque virtuel
  physique root&nbsp;:
 </p>
 
-<pre caption="Extrait de GRUB  pour une compilation incluant un initramfs">
+<pre caption="extrait de GRUB  pour une compilation incluant un initramfs">
 title Gentoo Linux <keyval id="kernel-version"/>
 root (hd0,0)
 kernel /boot/<keyval id="kernel-version"/> <i>real_</i>root=/dev/sda3
@@ -349,15 +369,22 @@ n'avez pas de partition <path>/boot</path> séparée). La commande suivante
 fonctionne avec ou sans partition <path>/boot</path> séparée&nbsp;:
 </p>
 
-<pre caption="Créer /etc/mtab">
+<pre caption="créer /etc/mtab">
 # <i>grep -v rootfs /proc/mounts &gt; /etc/mtab</i>
 </pre>
+<p>
+Si vous utilisez des disques Linux virtio , vous devez dire à Grub où trouver les disques sinon la commande 
+ <c>grub-install</c> échouera. Ceci se fait en ajoutant la définition du périphérique au fichier  <path>device.map</path> :
+</p>
 
+<pre caption="ajouter le disque virtio à la carte des périphériques">
+# <i>echo "(hd0)	/dev/vda" >> /boot/grub/device.map</i>
+</pre>
 <p>
 Ensuite, vous pouvez lancer le script <c>grub-install</c>&nbsp;:
 </p>
 
-<pre caption="Exécuter grub-install">
+<pre caption="exécuter grub-install">
 # <i>grub-install --no-floppy /dev/sda</i>
 </pre>
 
@@ -384,7 +411,7 @@ Pour configurer GRUB, tapez <c>grub</c>. Vous recevrez l'invite GRUB
 bonnes commandes pour installer le secteur de démarrage sur votre disque dur.
 </p>
 
-<pre caption="Lancer le shell GRUB">
+<pre caption="lancer le shell GRUB">
 # <i>grub --no-floppy</i>
 </pre>
 
@@ -417,7 +444,7 @@ Grâce à ce système, installer GRUB devient relativement facile.
 Allons-y, installons GRUB.
 </p>
 
-<pre caption="Installer GRUB sur le MBR">
+<pre caption="installer GRUB sur le MBR">
 grub&gt; <i>root (hd0,0)</i>    <comment>(Indique où se trouve la partition /boot.)</comment>
 grub&gt; <i>setup (hd0)</i>     <comment>(Écrit GRUB dans le MBR.)</comment>
 grub&gt; <i>quit</i>            <comment>(Quitte le shell GRUB.)</comment>
@@ -475,7 +502,7 @@ apparemment choisi LILO.
 Installer LILO est enfantin&nbsp;; utilisez <c>emerge</c>.
 </p>
 
-<pre caption="Installer LILO">
+<pre caption="installer LILO">
 # <i>emerge lilo</i>
 </pre>
 
@@ -491,7 +518,7 @@ Lancez votre éditeur préféré (notre exemple utilise <c>nano</c>) et créez l
 fichier.
 </p>
 
-<pre caption="Créer /etc/lilo.conf">
+<pre caption="créer /etc/lilo.conf">
 # <i>nano -w /etc/lilo.conf</i>
 </pre>
 
@@ -522,7 +549,7 @@ si vous avez utilisé le système de fichiers JFS, vous <e>devez</e> ajouter une
 journal avant que le système de fichiers ne soit monté en lecture/écriture.
 </note>
 
-<pre caption="Exemple de /etc/lilo.conf">
+<pre caption="exemple de /etc/lilo.conf">
 boot=/dev/sda             <comment># Installe LILO dans le MBR</comment>
 prompt                    <comment># Donne à l'utilisateur la possibilité de choisir une autre section</comment>
 timeout=50                <comment># Attendre 5 (cing) secondes avant de démarrer la section par défaut</comment>
@@ -556,7 +583,7 @@ Si lors de la compilation du noyau, vous avez choisi d'inclure un disque virtuel
  physique root&nbsp;:
 </p>
 
-<pre caption="Extrait de LILO pour un noyau compilé avec initramfs activé">
+<pre caption="extrait de LILO pour un noyau compilé avec initramfs activé">
 image=/boot/<keyval id="kernel-name"/>
   label=gentoo
   read-only
@@ -571,7 +598,7 @@ Si vous devez passer d'autres options à votre noyau, ajoutez une commande
 <c>video</c> pour activer le framebuffer, faites&nbsp;:
 </p>
 
-<pre caption="Utiliser append pour passer une option au noyau">
+<pre caption="utiliser append pour passer une option au noyau">
 image=/boot/<keyval id="kernel-name"/>
   label=gentoo
   read-only
@@ -600,7 +627,7 @@ disque). Notez que vous devrez exécuter <c>/sbin/lilo</c> chaque fois que vous
 installez un noyau ou faites des changement dans le menu.
 </p>
 
-<pre caption="Terminer l'installation de LILO">
+<pre caption="terminer l'installation de LILO">
 # <i>/sbin/lilo</i>
 </pre>
 
@@ -617,6 +644,74 @@ Poursuivez avec <uri link="#reboot">Redémarrage du système</uri>.
 </body>
 </subsection>
 </section>
+<section id="grub2" test="contains('AMD64 x86', func:keyval('arch'))">
+<title>Alternative: Utiliser GRUB2</title>
+<subsection>
+<title>Installer GRUB2</title>
+<body>
+
+<p>
+GRUB2 est fourni par le paquet <c>sys-boot/grub</c> . Pour déployer  GRUB2, utilisez la notation 
+<e>SLOT</e> pour dire à  Portage d'installer GRUB2. Les SLOTs sont une fonctionnalité de  Gentoo Linux qui permet de déployer plusieur versions du même paquet simultanément sur un système. Dans notre cas, cela signifie que  GRUB Legacy et GRUB2
+peuvent être installés sur un système  en même temps.
+</p>
+
+<note>
+il se pourrait que GRUB2 soit marqué  ~<keyval id="arch" />. Si c'est le cas, soit vous attendez et utilisez  <uri link="#grub">GRUB Legacy</uri>, soit vous démasquez le paquet. Ceci est expliqué dans <uri
+link="handbook-amd64.xml?part=3&amp;chap=3#doc_chap2">Mixing Stable with
+Testing</uri>. Dès que  GRUB2 sera stabilisé, l'opérateur SLOT aussi ne sera plus nécessaire. 
+</note>
+
+<pre caption="installer GRUB2">
+# <i>emerge grub:2</i>
+</pre>
+
+<p>
+Le programme GRUB2 est maintenant installé sur le système, mais pas encor activé.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Configurer GRUB2</title>
+<body>
+
+<p>
+Tout d'abord, installons les fichiers  GRUB2 nécessaires dans  <path>/boot/grub</path>.
+En supposant que le premier disque (celui à partir duquel le système démarre ) est
+<path>/dev/sda</path>, la commande suivante le fera pour nous :
+</p>
+
+<pre caption="installer les fichiers  GRUB2 dans /boot/grub">
+# <i>grub2-install /dev/sda</i>
+</pre>
+
+<p>
+Ensuite, nous pouvons générer la configuration de  GRUB2 qui sera basée sur la  configuration spécifiée dans le fichier <path>/etc/default/grub</path> et dans les scripts
+<path>/etc/grub.d</path> . Dans la majorité des cas, aucune configuration par l'utilisateur n'est nécessaire car GRUB2 détectera automatiquement quel noyau démarrer   (le plus haut disponible dans <path>/boot</path>) et le système de fichiers racine.
+</p>
+
+<p>
+Pour générer la configuration  GRUB2 finale, exécutez la commande  <c>grub2-mkconfig</c> :
+</p>
+
+<pre caption="générer la configuration de GRUB2 ">
+# <i>grub2-mkconfig -o /boot/grub/grub.cfg</i>
+Generating grub.cfg ...
+Found linux image: /boot/<keyval id="kernel-name" />
+Found initrd image: /boot/<keyval id="genkernel-initrd" />
+done
+</pre>
+
+<p>
+La sortie de la commande  <e>must</e> doit mentionner qu'au moins une image Linux a été trouvée, car c'est indispensable pour démarrer. Si vous utilisez un système de fichiers virtuel de démarrage (initramfs), ou si vous avez utilisé 
+<c>genkernel</c> pour compiler le noyau, l'image  initrd correcte devrait être détectée elle aussi.  Si ce n'est pas le cas, allez dans   <path>/boot</path> et vérifiez le contenu en utilisant la commande <c>ls</c>. Si les fichiers sont réellement manquants, retournez à la configuration du noyau et aux instructions d'installation. 
+</p>
+
+</body>
+</subsection>
+</section>
+
 <section id="elilo" test="func:keyval('arch')='IA64'">
 <title>Défaut&nbsp;: Installer elilo</title>
 <body>
@@ -626,7 +721,7 @@ Sur plate-forme IA64, le chargeur de démarrage s'appelle elilo. Installez-le
 d'abord sur la machine.
 </p>
 
-<pre caption="Installer elilo">
+<pre caption="installer elilo">
 # <i>emerge elilo</i>
 </pre>
 
@@ -637,7 +732,7 @@ exemple de fichier dans le répertoire
 configuration&nbsp;:
 </p>
 
-<pre caption="Exemple de fichier elilo.conf">
+<pre caption="exemple de fichier elilo.conf">
 boot=/dev/sda1
 delay=30
 timeout=50
@@ -679,7 +774,7 @@ Si lors de la compilation du noyau, vous avez choisi d'inclure un disque virtuel
  physique root&nbsp;:
 </p>
 
-<pre caption="Extrait ELILO pour un noyau compilé avec initramfs activé">
+<pre caption="extrait ELILO pour un noyau compilé avec initramfs activé">
 image=/vmlinuz
 	label=Gentoo
 	<i>initrd=/<keyval id="genkernel-initrd"/></i>
@@ -713,7 +808,7 @@ Sortez de l'environnement «&nbsp;chroot&nbsp;» et démontez toutes les partiti
 montées. Ensuite, tapez la commande magique tant attendue&nbsp;: <c>reboot</c>.
 </p>
 
-<pre caption="Sortie du « chroot », démontage des partitions et redémarrage"
+<pre caption="sortie du « chroot », démontage des partitions et redémarrage"
 test="func:keyval('arch')='IA64'">
 # <i>exit</i>
 cdimage ~# <i>cd</i>
@@ -722,7 +817,7 @@ cdimage ~# <i>umount -l /mnt/gentoo{/boot,/sys,/proc,}</i>
 cdimage ~# <i>reboot</i>
 </pre>
 
-<pre caption="Sortie du « chroot », démontage des partitions et redémarrage"
+<pre caption="sortie du « chroot », démontage des partitions et redémarrage"
 test="not(func:keyval('arch')='IA64')">
 # <i>exit</i>
 cdimage ~# <i>cd</i>
