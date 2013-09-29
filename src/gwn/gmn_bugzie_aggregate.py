@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from pygooglechart import *
 data = open('breport')
 
@@ -14,21 +16,28 @@ opdata = []
 j = 0
 for i in data:
 	values = i.strip('\n').split(':')
+	# j == 0 -> New, Closed, Not Fixed, Duplicates, Total
 	if j == 0:
+		# Dates
 		dfrom = values[0]
 		dnext = values[1]
-	elif j > 0 and j <= 5:
+	elif j > 0 and j <= 4:
+		# Populate list of New, Closed, Not Fixed and Duplicates Bugs
 		budata.append(int(values[1]))
 		bukeys.append(values[0] + ' (' + str(budata[-1]) + ')')
-	elif j > 5 and j <= 9:
+	elif j > 4 and j <= 8:
+		# Total bugs
 		butota.append(int(values[1]))
-	elif j > 9 and j <= 18:
+	elif j > 8 and j <= 17:
+		# Bugs per team
 		cldata.append(int(values[1]))
 		clkraw.append(values[0]);
 		clkeys.append(values[0] + ' (' + str(cldata[-1]) + ')')
-	elif j == 19:
+	elif j == 18:
+		# Bugs for others
 		clothers = int(values[1])
-	elif j <= 28:
+	elif j <= 27:
+		# Bugs for others
 		opdata.append(int(values[1]))
 		opkraw.append(values[0])
 		opkeys.append(values[0] + ' (' + str(opdata[-1]) + ')')

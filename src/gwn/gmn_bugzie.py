@@ -107,7 +107,6 @@ closed_nofix_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=RESOL
 duplicate_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=RESOLVED&bug_status=CLOSED&chfield=bug_status&resolution=DUPLICATE&ctype=csv&chfieldfrom=%s&chfieldto=%s" % (date_from, date_to), header)
 opened_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&chfield=[Bug+creation]&ctype=csv&chfieldfrom=%s&chfieldto=%s" % (date_from, date_to), header)
 new_report = get_page("bugs.gentoo.org", "/buglist.cgi?chfield=[Bug+creation]&chfieldfrom=%s&chfieldto=%s&ctype=csv" % (date_from, date_to), header)
-reopened_report = get_page("bugs.gentoo.org", "/buglist.cgi?bug_status=REOPENED&chfield=bug_status&chfieldfrom=%s&chfieldto=%s&ctype=csv" % (date_from, date_to), header)
 total_opened_report = get_page("bugs.gentoo.org", "/report.cgi?x_axis_field=bug_status&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&format=table&action=wrap&ctype=csv", header)
 severities_report = get_page("bugs.gentoo.org", "/report.cgi?x_axis_field=bug_status&y_axis_field=bug_severity&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&bug_severity=blocker&bug_severity=critical&bug_severity=major&format=table&action=wrap&ctype=csv", header)
 
@@ -119,7 +118,6 @@ groups_that_opened_most = group_results(opened_report, "\"assigned_to\"", ["\"as
 #5.  For bug counts, just counting the lines that were returned is sufficient
 new_bug_count = len(new_report.split("\n")) - 1
 closed_bug_count = len(closed_report.split("\n")) - 1
-reopened_bug_count = len(reopened_report.split("\n")) - 1
 duplicate_bug_count = len(duplicate_report.split("\n")) - 1
 closed_nofix_bug_count = len(closed_nofix_report.split("\n")) - 1
 
@@ -141,7 +139,6 @@ for i in range(0, len(groups_that_opened_most) - 1):
 print "%s:%s" % (date_from_display, date_to_display)
 print "New:%d" % new_bug_count
 print "Closed:%d" % closed_bug_count
-print "Reopened:%d" % reopened_bug_count
 print "Not fixed:%d" % closed_nofix_bug_count
 print "Duplicates:%d" % duplicate_bug_count
 print "Total:%d" % total_open_bug_count
