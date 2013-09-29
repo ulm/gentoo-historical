@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import httplib, string, time, sys, os
+import urllib2
 
 def strip(x):
         '''Removes quotation marks
@@ -10,7 +11,7 @@ def strip(x):
                         x=x[1:]
                 if x[-1]=='\"':
                         x=x[0:-1]
-       
+
         return x
 
 def get_page(site, uri, header):
@@ -18,14 +19,10 @@ def get_page(site, uri, header):
            and a dictionary of header values, returns the
            requested resource.  Will return an empty string
            if something goes wrong.'''
-        conn = httplib.HTTPConnection(site)
-        conn.request("GET",uri,'',header)
-        response = conn.getresponse()
-        if response.status == 200:
-                page = response.read()
-        else:
-                page = ""
-        return page
+	conn = urllib2.Request("https://"+site+uri, None, header)
+	response = urllib2.urlopen(conn)
+	page = response.read()
+	return page
 
 def group_results(result, group_by, details):
     '''Given a column to group by, will accumulate a count
@@ -40,11 +37,11 @@ def group_results(result, group_by, details):
        the result more like 'select group_by, count(*), [column for column in details]
        from bugzilla group by group_by, [column for column in details]'.'''
 
-       
+
     lines = result.split("\n")
 
     field_names = string.split(lines[0],',')
-    
+
     by_group = {}
     detailDict = {}
     for line in lines[1:]:
@@ -53,7 +50,7 @@ def group_results(result, group_by, details):
         #capture the first result for each unique group_by
         if (by_group[b[group_by]] == 1):
         	detailDict[b[group_by]] = b
-        	
+
 
     count_by_group = [[bug_count, group] for group, bug_count in by_group.items()]
     count_by_group.sort()
@@ -65,9 +62,9 @@ def sum_results(result):
     '''Given a CSV generated from reports.cgi will return a dictionary
        with the sum for each row. The grand total will also be added
        to the 'Total' entry.'''
-    
+
     lines = result.split("\n")
-    
+
     result_dict = {}
     total = 0
 
@@ -77,7 +74,7 @@ def sum_results(result):
         total += summed
         result_dict[split_list[0]] = summed
     result_dict['Total'] = total
-    
+
     return result_dict
 
 # get dates from command line, else use now (time.time())
@@ -153,11 +150,13 @@ print "Critical:%d" % severities.get('"critical"',0)
 print "Major:%d" % severities.get('"major"',0)
 
 cleft = 0
+#8. Closed Bugs
 for i in range(0,9):
 	print "%s:%d" % (strip(groups_that_closed_most[i][2][0]), groups_that_closed_most[i][1])
 	cleft += groups_that_closed_most[i][1]
 print "Others:%d" % (total_closed - cleft)
 
+#9. Open Bugs
 oleft = 0
 for i in range(0,9):
 	print "%s:%d" % (strip(groups_that_opened_most[i][2][0]), groups_that_opened_most[i][1])
