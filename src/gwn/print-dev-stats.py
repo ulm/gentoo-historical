@@ -1,8 +1,15 @@
 # Get devaway.xml from http://www.gentoo.org/dyn/devaway/devaway.xml?passthru=1
 import xml.dom.minidom
+import urllib2
+import os
 
-dom = xml.dom.minidom.parse('/home/anant/gentoo/gentoo/xml/htdocs/proj/en/devrel/roll-call/userinfo.xml')
-aom = xml.dom.minidom.parse('devaway.xml')
+dev_rollcall = "/home/hwoarang/development/gentoo-cvs/gentoo/xml/htdocs/proj/en/devrel/roll-call/userinfo.xml"
+
+devaway = open('devaway.txt', 'w')
+devaway.write(urllib2.urlopen("http://www.gentoo.org/dyn/devaway/devaway.xml?passthru=1").read())
+devaway.close()
+dom = xml.dom.minidom.parse(dev_rollcall)
+aom = xml.dom.minidom.parse("devaway.txt")
 
 dev = dom.getElementsByTagName('user')
 tot = len(dev)
@@ -16,3 +23,5 @@ for d in dev:
 		cnt += 1
 
 print tot, cnt, awa
+
+os.remove("devaway.txt")
