@@ -136,7 +136,7 @@ for i in range(0, len(groups_that_opened_most) - 1):
 
 #7.  We have every value we need, now build the report
 
-print "%s:%s" % (date_from_display, date_to_display)
+print "Bugzilla statistics from %s to %s\n" % (date_from_display, date_to_display)
 print "New:%d" % new_bug_count
 print "Closed:%d" % closed_bug_count
 print "Not fixed:%d" % closed_nofix_bug_count
@@ -147,13 +147,16 @@ print "Critical:%d" % severities.get('"critical"',0)
 print "Major:%d" % severities.get('"major"',0)
 
 cleft = 0
+print "\nTeam Statistics\n"
 #8. Closed Bugs
+print "==Closed Bugs==\n"
 for i in range(0,9):
 	print "%s:%d" % (strip(groups_that_closed_most[i][2][0]), groups_that_closed_most[i][1])
 	cleft += groups_that_closed_most[i][1]
 print "Others:%d" % (total_closed - cleft)
 
 #9. Open Bugs
+print "\n\n==Open Bugs==\n"
 oleft = 0
 for i in range(0,9):
 	print "%s:%d" % (strip(groups_that_opened_most[i][2][0]), groups_that_opened_most[i][1])
