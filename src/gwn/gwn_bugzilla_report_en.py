@@ -1,6 +1,7 @@
-#!/usr/bin/python2.4
+#!/usr/bin/env python
 
 import httplib, string, time, sys, os
+import urllib2
 
 def strip(x):
         '''Removes quotation marks
@@ -18,14 +19,10 @@ def get_page(site, uri, header):
            and a dictionary of header values, returns the
            requested resource.  Will return an empty string
            if something goes wrong.'''
-        conn = httplib.HTTPConnection(site)
-        conn.request("GET",uri,'',header)
-        response = conn.getresponse()
-        if response.status == 200:
-                page = response.read()
-        else:
-                page = ""
-        return page
+	conn = urllib2.Request("https://"+site+uri, None, header)
+	response = urllib2.urlopen(conn)
+	page = response.read()
+	return page
 
 def group_results(result, group_by, details):
     '''Given a column to group by, will accumulate a count
@@ -133,87 +130,60 @@ severities = sum_results(severities_report)
 
 #7.  We have every value we need, now build the report
 
-print """<chapter>
-<title>Bugzilla</title>
+print """
+<h1>Bugzilla</h1>
 
-<section>
-<title>Summary</title>
-<body>
+<h2>Summary</h2>
 
-<ul>
-<li><uri link="#bugs-stats">Statistics</uri></li>
-<li><uri link="#bugs-closed">Closed bug ranking</uri></li>
-<li><uri link="#bugs-new">New bug rankings</uri></li>
-</ul>
+<ol>
+<li><a href="#bugs-stats">Statistics</a></li>
+<li><a href="#bugs-closed">Closed bug ranking</a></li>
+<li><a href="#bugs-new">New bug rankings</a></li>
+</ol>
 
-</body>
-</section>
+<h2>Statistics</h2>
+<a name="bugs-stats></a>
 
-<section id="bugs-stats">
-<title>Statistics</title>
-<body>
-
-<p>
 The Gentoo community uses Bugzilla (<uri
 link="http://bugs.gentoo.org">bugs.gentoo.org</uri>) to record and track
 bugs, notifications, suggestions and other interactions with the
 development team.  Between %s
 and %s, activity on the site has resulted in:
-</p>
 
-<ul>
+<ol>
 <li>%d new bugs during this period</li>
 <li>%d bugs closed or resolved during this period</li>
 <li>%d previously closed bugs were reopened this period</li>
 <li>%d closed as NEEDINFO/WONTFIX/CANTFIX/INVALID/UPSTREAM during this period</li>
 <li>%d bugs marked as duplicates during this period</li>
-</ul>
+</ol>
 
-<p>
 Of the %d currently open bugs: %d are labeled 'blocker', %d are labeled
 'critical', and %d are labeled 'major'.
-</p>
 
-</body>
-</section>
+<h2>Closed bug rankings</h2>
+<a name="bugs-closed"></a>
 
-<section id="bugs-closed">
-<title>Closed bug rankings</title>
-<body>
-
-<p>
 The developers and teams who have closed the most bugs during this period are:
-</p>
 
-<ul>""" % (date_from_display, date_to_display, new_bug_count, closed_bug_count, reopened_bug_count, closed_nofix_bug_count, duplicate_bug_count, total_open_bug_count, severities.get('"blocker"',0), severities.get('"critical"',0), severities.get('"major"',0))
+<ol>""" % (date_from_display, date_to_display, new_bug_count, closed_bug_count, reopened_bug_count, closed_nofix_bug_count, duplicate_bug_count, total_open_bug_count, severities.get('"blocker"',0), severities.get('"critical"',0), severities.get('"major"',0))
 
 for i in range(0,8):
     print"""<li><mail link=%s>%s</mail>, with %d
-<uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=RESOLVED&amp;bug_status=CLOSED&amp;chfield=bug_status&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;resolution=FIXED&amp;assigned_to=%s">closed bugs</uri>
+<a href="http://bugs.gentoo.org/buglist.cgi?bug_status=RESOLVED&amp;bug_status=CLOSED&amp;chfield=bug_status&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;resolution=FIXED&amp;assigned_to=%s">closed bugs</a>
 </li>""" % (groups_that_closed_most[i][0], strip(groups_that_closed_most[i][2][0]), groups_that_closed_most[i][1], date_from, date_to, strip(groups_that_closed_most[i][0]))
-print """</ul>
+print """</ol>
 
-</body>
-</section>
+<h2>New bug rankings</h2>
+<a href="bugs-new"></a>
 
-<section id="bugs-new">
-<title>New bug rankings</title>
-<body>
-
-<p>
 The developers and teams who have been assigned the most new bugs during this
 period are:
-</p>
 
-<ul>"""
+<ol>"""
 for i in range(0,8):
     print"""<li><mail link=%s>%s</mail>, with %d
-<uri link="http://bugs.gentoo.org/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;chfield=assigned_to&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;assigned_to=%s">new bugs</uri>
+<a href="http://bugs.gentoo.org/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;chfield=assigned_to&amp;chfieldfrom=%s&amp;chfieldto=%s&amp;assigned_to=%s">new bugs</a>
 </li>""" % (groups_that_opened_most[i][0], strip(groups_that_opened_most[i][2][0]), groups_that_opened_most[i][1], date_from, date_to, strip(groups_that_opened_most[i][0]))
-print """</ul>
-
-</body>
-</section>
-
-</chapter>
+print """</ol>
 """
