@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Get devaway.xml from http://www.gentoo.org/dyn/devaway/devaway.xml?passthru=1
 import xml.dom.minidom
 import urllib2
@@ -22,6 +24,10 @@ for d in dev:
 	if not ret:
 		cnt += 1
 
-print tot, cnt, awa
+print """
+Total develpers: %s
+Active Developers: %s
+Inactive Developers: %s
+""" % (tot, cnt, awa)
 
 os.remove("devaway.txt")
