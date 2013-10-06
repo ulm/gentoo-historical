@@ -26,8 +26,8 @@ for d in dev:
 
 print """
 <h2>Summary</h2>
-Gentoo is made up of %s active developers, of which %s are currently away.
-Gentoo has recruited a total of %s developers since its inception.
+Gentoo is made up of <strong>%s</strong> active developers, of which <strong>%s</strong> are currently away.
+Gentoo has recruited a total of <strong>%s</strong> developers since its inception.
 """ % (cnt, awa, tot)
 
 os.remove("devaway.txt")
