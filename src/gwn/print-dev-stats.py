@@ -25,9 +25,9 @@ for d in dev:
 		cnt += 1
 
 print """
-Total develpers: %s
-Active Developers: %s
-Inactive Developers: %s
-""" % (tot, cnt, awa)
+<h2>Summary</h2>
+Gentoo is made up of %s active developers, of which %s are currently away.
+Gentoo has recruited a total of %s developers since its inception.
+""" % (cnt, awa, tot)
 
 os.remove("devaway.txt")
