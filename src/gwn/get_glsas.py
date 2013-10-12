@@ -1,120 +1,99 @@
 #!/usr/bin/python
-# you need dev-python/pyxml for this to work
 
-from xml.dom.ext.reader.Sax2 import FromXmlStream
-from urllib2 import urlopen
-from tempfile import mkstemp
-import sys, re, os
+import urllib2
+from bs4 import BeautifulSoup
+import sys, re, os, time
 
-RDF_PAGE = "http://www.gentoo.org/rdf/en/glsa-index.rdf?num=100"
-RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-DTD_PREFIX = "http://www.gentoo.org"
-GLSA_LINK = "http://www.gentoo.org/security/en/glsa/"
-GLSA_LINK2 = "http://security.gentoo.org/glsa/"
+foundone = 0
+glsa_list = []
+package_list = []
+description_list = []
+bug_list = []
 
-no_glsas = """<chapter>
-<title>Gentoo Security</title>
-<section>
-<body>
+def getglsas(table):
+	global foundone, glsa_list, package_list, description_list, bug_list
+	rows = table.findAll('tr')
+	for tr in rows:
+		cols = tr.findAll('td')
+		passt = 0
+		glsanum = ''
+		package = ''
+		description = ''
+		bugnum = ''
+		for td in cols:
+			if passt == 0:
+				if td.a:
+					# Fetch GLSA id and reconstruct the href
+					glsanum = str(td.a).split()
+					if str(date_from) in str(glsanum[2]):
+						foundone = 1
+						glsanum = glsanum[0] + " " + \
+						glsanum[1] + glsanum[2] + glsanum[3]
+						glsa_list.append(glsanum)
+					else:
+						return
+					passt += 1
+				else:
+					# Ignore table headers
+					passt = 0
 
-<p>
-Gentoo Security is on hiatus this week due to no GLSAs being released.
-</p>
+			elif passt == 1:
+				# Ignore severity
+				passt += 1
 
-</body>
-</section>
+			elif passt == 2:
+				# Fetch package name and construct href
+				package = str(td.string).strip()
+				package = "<a href=\"http://packages.gentoo.org/package/%s\">%s</a>" % (package, package)
+				package_list.append(package)
+				passt += 1
 
-</chapter>"""
+			elif passt == 3:
+				# Fetch description
+				description = str(td.string).strip()
+				description_list.append(description)
+				passt += 1
 
-doctype_re = re.compile("<!DOCTYPE guide SYSTEM \"(.*)\">")
-doctype_new = "<!DOCTYPE guide SYSTEM \"" + DTD_PREFIX + "%s\">\n"
-glsa_re = re.compile(GLSA_LINK + "glsa-(.*).xml");
-glsa_re2 = re.compile(GLSA_LINK2 + "glsa-(.*).xml");
-glsa2gwn = "./glsa2gwn.py"
-
-def get_last_glsa_id(last_gwn):
-	if last_gwn.startswith("http://"):
-		fd = urlopen(last_gwn)
-	else:
-		fd = open(last_gwn)
-	tmp = open(mkstemp()[1], 'r+')
-	matched = False
-
-	# need to do this otherwise we get an 'unknown url type' error from urllib2
-	# when it encounters the relative link to the dtd
-	for line in fd:
-		if not matched:
-			matches = doctype_re.match(line)
-
-			if matches:
-				tmp.write(doctype_new % matches.group(1))
-				matched = True
-			else:
-				tmp.write(line)
-		else:
-			tmp.write(line)
-
-	tmp.flush()
-	tmp.seek(0)
-
-	dom = FromXmlStream(tmp)
-	last_glsa_id = "0"
-
-	for node in dom.getElementsByTagName("uri"):
-		uri = node.getAttribute("link")
-
-		if uri.startswith(GLSA_LINK):
-			new_id = glsa_re.match(uri).group(1)
-			if new_id > last_glsa_id:
-				last_glsa_id = new_id
-
-	return last_glsa_id
-
-def get_glsa_list(last_id):
-	ret = []
-	fd = urlopen(RDF_PAGE)
-	dom = FromXmlStream(fd)
-
-	for node in dom.getElementsByTagNameNS(RDF_NS, "li"):
-		uri = node.getAttributeNS(RDF_NS, "resource")
-		id = glsa_re2.match(uri).group(1)
-
-		if id > last_id:
-			ret.append(uri + "?passthru=1")
-		else:
-			break
-
-	ret.reverse()
-	return ret
-
+			elif passt == 4:
+				# Fetch Bug number and recontruct the href
+				if td.a:
+					bugnum = str(td.a).split()
+					bugnum = bugnum[0] + " " + \
+					bugnum[1] + bugnum[2] + bugnum[3]
+					bug_list.append(bugnum)
+				passt = 0
 if __name__ == '__main__':
-	if len(sys.argv) < 2 or len(sys.argv) > 3:
-		print "Usage: " + os.path.basename(sys.argv[0]) +  " <last-gwn> [glsa2gwn.py]"
-		print "if the last-gwn is a URI remember to add '?passthru=1' to the end"
-		print "if the location of glsa2gwn.py is not specified it defaults to " + glsa2gwn
-		sys.exit(1)
+	# get dates from command line, else use now (time.time())
+	starttime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
+	endtime = time.gmtime(time.time() + (60 * 60 * 24 * 31))
+	# Format the string to what we expect
+	date_to = time.strftime("%Y%m", endtime)
+	date_from = time.strftime("%Y%m", starttime)
+	glsas =	urllib2.urlopen("http://www.gentoo.org/security/en/glsa/index.xml?passthrough=1").read()
+	soup = BeautifulSoup(glsas)
+	table = soup.findAll('table')
+	# There is probably a better way to fetch the table with the GLSAs
+	table = table[2]
+	print "Looking for GLSAs from %s to %s\n\n" % (date_from, date_to)
+	getglsas(table)
+
+	if foundone:
+		print "\n\nFound %s GLSAs\n" % len(glsa_list)
+
+	print "Copy and paste the following text to the GMN Security section\n\n"
+
+	if not foundone:
+		print "No GLSAs have been released this month! You are safe :)"
 	else:
-		if len(sys.argv) == 3:
-			glsa2gwn = sys.argv[2]
-
-		last_id = get_last_glsa_id(sys.argv[1])
-
-		# if last_id == 0 then there haven't been any new GLSAs since the last GWN
-		if last_id != "0":
-			glsas = get_glsa_list(last_id)
-
-			if len(glsas) > 0:
-				print "<chapter>\n<title>Gentoo security</title>\n"
-
-				# if we don't flush here then the previous print statement doesn't
-				# make it when redirecting the output to a file
-				sys.stdout.flush()
-
-				glsas.insert(0, glsa2gwn)
-				os.spawnv(os.P_WAIT, glsa2gwn, glsas)
-
-				print "</chapter>\n"
-			else:
-				print no_glsas
-		else:
-			print no_glsas
+		print "The following <a title=\"GLSAs\" " + \
+		"href=\"http://www.gentoo.org/security/en/glsa/index.xml\">GLSAs</a> " + \
+		"have been released by the <a title=\"Security Team\" " + \
+		"href=\"http://wiki.gentoo.org/wiki/Project:Security\">Security Team" + \
+		"</a>"
+		print "[table tablesorter=\"1\" id=\"glsas\"]"
+		print "GLSA, Package, Description, Bug"
+		for x in range(0,len(glsa_list)):
+			print glsa_list[x] + ", " + package_list[x] + \
+			", " + description_list[x] + ", " + bug_list[x]
+		print "[/table]"
+	sys.exit(0)
