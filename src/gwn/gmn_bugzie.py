@@ -136,14 +136,11 @@ for i in range(0, len(groups_that_opened_most) - 1):
 
 #7.  We have every value we need, now build the report
 
-print """
-
-The Gentoo community uses Bugzilla (bugs.gentoo.org) to record and
-track bugs, notifications, suggestions and other interactions with the
-development team. The following tables and charts summarize the
-activity on Bugzilla between %s and %s. Not fixed means bugs that were
-resolved as NEEDINFO, WONTFIX, CANTFIX, INVALID or UPSTREAM.
-""" % (date_from_display, date_to_display)
+print "The Gentoo community uses <a href=\"https://bugs.gentoo.org\">Bugzilla</a> to record and " + \
+"track bugs, notifications, suggestions and other interactions with the " + \
+"development team. The following tables and charts summarize the " + \
+"activity on Bugzilla between %s and %s. Not fixed means bugs that were " % (date_from_display, date_to_display) + \
+"resolved as NEEDINFO, WONTFIX, CANTFIX, INVALID or UPSTREAM. "
 
 print "[table]"
 print "Bug Activity, Number"
@@ -159,7 +156,8 @@ print "[/table]"
 
 cleft = 0
 #8. Closed Bugs
-print "\nThe following teams/developers closed the most bugs during this month :)\n"
+print "\n<h2>Closed bug ranking</h2>\n"
+print "The developers and teams who have closed the most bugs during this period are as follows.\n"
 print "[table]"
 print "Rank, Team/Developer, Bug Count"
 for i in range(0,9):
@@ -171,7 +169,8 @@ print "[/table]"
 #9. Open Bugs
 #print "\n\n==Open Bugs==\n"
 oleft = 0
-print "\nThe following teams/developers have the most unresolved bugs :(\n"
+print "\n<h2>Assigned bug ranking</h2>\n"
+print "The developers and teams who have been assigned the most bugs during this period are as follows.\n"
 print "[table]"
 print "Rank, Team/Developer/, Bug Count"
 for i in range(0,9):
