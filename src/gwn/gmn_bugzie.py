@@ -163,7 +163,7 @@ print "Rank, Team/Developer, Bug Count"
 for i in range(0,9):
 	print "%d, %s, %d" % (i+1, strip(groups_that_closed_most[i][2][0]), int(groups_that_closed_most[i][1]))
 	cleft += groups_that_closed_most[i][1]
-print "10, Others:, %s" % (total_closed - cleft)
+print "10, Others, %s" % (total_closed - cleft)
 print "[/table]"
 
 #9. Open Bugs
@@ -176,5 +176,5 @@ print "Rank, Team/Developer/, Bug Count"
 for i in range(0,9):
 	print "%d, %s, %s" % (i+1, strip(groups_that_opened_most[i][2][0]), str(groups_that_opened_most[i][1]))
 	oleft += groups_that_opened_most[i][1]
-print "10, Others:, %s" % (total_opened - oleft)
+print "10, Others, %s" % (total_opened - oleft)
 print "[/table]"
