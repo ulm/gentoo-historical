@@ -59,10 +59,11 @@ with open("pkgstats.txt") as f:
 f.close()
 os.remove("pkgstats.txt")
 
-print "[table]"
-print "Architectures, Categories, Packages, Ebuilds"
-print gen_stats_num[0] + ", " + gen_stats_num[1] + ", " + \
-	gen_stats_num[2] + ", " + gen_stats_num[3]
+print "[table th=\"0\"]"
+print "Architectures, " + gen_stats_num[0]
+print "Categories, "  + gen_stats_num[1]
+print "Packages, " + gen_stats_num[2]
+print "Ebuilds, " + gen_stats_num[3]
 print "[/table]\n"
 
 print "[table]"
