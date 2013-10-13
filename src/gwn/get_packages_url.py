@@ -91,7 +91,10 @@ print "\n== Chart URL == \n"
 base = 'http://chart.apis.google.com/chart?cht=bhs&chs=800x350&chd=t:'
 tail = '&chco=45347B,6A5C95&chbh=15&chxt=x,y&chxr=0,0,12250&chdl=Stable|Testing'
 labx = '&chxl=0:1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|'
-laby = '1:|x86-fbsd|x86|sparc-fbsd|sparc|sh|s390|ppc64|ppc|mips|m68k|ia64|hppa|arm|amd6-fbsd|amd64|alpha'
+laby = '1:'
+
+for x in reversed(range(0, len(arch))):
+	laby = laby + "|" + arch[x]
 
 final = base + string1 + '|' + string2 + tail + labx + laby
 print final
