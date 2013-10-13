@@ -59,6 +59,8 @@ with open("pkgstats.txt") as f:
 f.close()
 os.remove("pkgstats.txt")
 
+print "This section summarizes the current state of the portage tree.\n"
+
 print "[table th=\"0\"]"
 print "Architectures, " + gen_stats_num[0]
 print "Categories, "  + gen_stats_num[1]
