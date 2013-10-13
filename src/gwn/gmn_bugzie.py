@@ -136,29 +136,46 @@ for i in range(0, len(groups_that_opened_most) - 1):
 
 #7.  We have every value we need, now build the report
 
-print "Bugzilla statistics from %s to %s\n" % (date_from_display, date_to_display)
-print "New:%d" % new_bug_count
-print "Closed:%d" % closed_bug_count
-print "Not fixed:%d" % closed_nofix_bug_count
-print "Duplicates:%d" % duplicate_bug_count
-print "Total:%d" % total_open_bug_count
-print "Blocker:%d" % severities.get('"blocker"',0)
-print "Critical:%d" % severities.get('"critical"',0)
-print "Major:%d" % severities.get('"major"',0)
+print """
+
+The Gentoo community uses Bugzilla (bugs.gentoo.org) to record and
+track bugs, notifications, suggestions and other interactions with the
+development team. The following tables and charts summarize the
+activity on Bugzilla between %s and %s. Not fixed means bugs that were
+resolved as NEEDINFO, WONTFIX, CANTFIX, INVALID or UPSTREAM.
+""" % (date_from_display, date_to_display)
+
+print "[table]"
+print "Bug Activity, Number"
+print "New, %d" % new_bug_count
+print "Closed, %d" % closed_bug_count
+print "Not fixed, %d" % closed_nofix_bug_count
+print "Duplicates, %d" % duplicate_bug_count
+print "Total, %d" % total_open_bug_count
+print "Blocker, %d" % severities.get('"blocker"',0)
+print "Critical, %d" % severities.get('"critical"',0)
+print "Major, %d" % severities.get('"major"',0)
+print "[/table]"
 
 cleft = 0
-print "\nTeam Statistics\n"
 #8. Closed Bugs
-print "==Closed Bugs==\n"
+print "\nThe following teams/developers closed the most bugs during this month :)\n"
+print "[table]"
+print "Rank, Team/Developer, Bug Count"
 for i in range(0,9):
-	print "%s:%d" % (strip(groups_that_closed_most[i][2][0]), groups_that_closed_most[i][1])
+	print "%d, %s, %d" % (i+1, strip(groups_that_closed_most[i][2][0]), int(groups_that_closed_most[i][1]))
 	cleft += groups_that_closed_most[i][1]
-print "Others:%d" % (total_closed - cleft)
+print "10, Others:, %s" % (total_closed - cleft)
+print "[/table]"
 
 #9. Open Bugs
-print "\n\n==Open Bugs==\n"
+#print "\n\n==Open Bugs==\n"
 oleft = 0
+print "\nThe following teams/developers have the most unresolved bugs :(\n"
+print "[table]"
+print "Rank, Team/Developer/, Bug Count"
 for i in range(0,9):
-	print "%s:%d" % (strip(groups_that_opened_most[i][2][0]), groups_that_opened_most[i][1])
+	print "%d, %s, %s" % (i+1, strip(groups_that_opened_most[i][2][0]), str(groups_that_opened_most[i][1]))
 	oleft += groups_that_opened_most[i][1]
-print "Others:%d" % (total_opened - oleft)
+print "10, Others:, %s" % (total_opened - oleft)
+print "[/table]"
