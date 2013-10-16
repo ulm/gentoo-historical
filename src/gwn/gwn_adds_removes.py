@@ -54,21 +54,27 @@ def developers():
 def write(data, devs):
 
 	sections = {'added': 'Addition', 'removed': 'Removal'}
-	for datafile in data:
-		for s in sections:
+	for s in sections:
+		if s == 'added':
+			print "<h2>Additions</h2>"
+			print "[table]"
+			print "Package, Developer, Date"
+		else:
+			print "<h2>Removals</h2>"
+			print "[table]"
+			print "Package, Developer, Date"
+		for datafile in data:
 			for pkg in datafile[s]:
 				ldata = (PACKAGE_LINK % pkg[0], '/'.join(pkg[0]))
-				if s == 'added':
-					what = "added"
-				else:
-					what = "removed"
+				if s == 'removeld':
 					ldata = (ATTIC_LINK % pkg[0], '/'.join(pkg[0]))
 				#who = (devs[pkg[1]].encode(OUTPUT_CHARSET), pkg[1])
 				who = devs[pkg[1]]
 				when = pkg[2].strftime('%d %b %Y')
 				# You should copy this to the raw html code in the
 				# blog post
-				print '<a href="%s">%s</a> %s by %s on %s' % (ldata[0], ldata[1], what, who,when)
+				print '<a href="%s">%s</a>, %s, %s' % (ldata[0], ldata[1], who, when)
+		print "[/table]"
 
 if __name__ == '__main__':
 	data = []
