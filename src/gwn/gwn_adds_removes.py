@@ -10,7 +10,7 @@ OUTPUT_CHARSET = 'utf-8'
 def parse(logfile):
 
 	# Read the log file
-
+	cur = []
 	pkgs = {'added': [], 'removed': []}
 	log = open(logfile)
 	for i in log:
@@ -34,7 +34,6 @@ def parse(logfile):
 			dev = pkg[2]
 			dt = datetime(*(time.strptime(pkg[3], '%Y-%m-%d %H:%M:%S')[0:6]))
 			pkgs[op][idx] = (cp, dev, dt)
-
 	return pkgs
 
 def developers():
@@ -55,25 +54,28 @@ def developers():
 def write(data, devs):
 
 	sections = {'added': 'Addition', 'removed': 'Removal'}
-	for s in sections:
-		for pkg in data[s]:
-			ldata = (PACKAGE_LINK % pkg[0], '/'.join(pkg[0]))
-			if s == 'added':
-				what = "added"
-			else:
-				what = "removed"
-				ldata = (ATTIC_LINK % pkg[0], '/'.join(pkg[0]))
-			#who = (devs[pkg[1]].encode(OUTPUT_CHARSET), pkg[1])
-			who = devs[pkg[1]]
-			when = pkg[2].strftime('%d %b %Y')
-			# You should copy this to the raw html code in the
-			# blog post
-			print '<a href="%s">%s</a> %s by %s on %s' % (ldata[0], ldata[1], what, who,when)
+	for datafile in data:
+		for s in sections:
+			for pkg in datafile[s]:
+				ldata = (PACKAGE_LINK % pkg[0], '/'.join(pkg[0]))
+				if s == 'added':
+					what = "added"
+				else:
+					what = "removed"
+					ldata = (ATTIC_LINK % pkg[0], '/'.join(pkg[0]))
+				#who = (devs[pkg[1]].encode(OUTPUT_CHARSET), pkg[1])
+				who = devs[pkg[1]]
+				when = pkg[2].strftime('%d %b %Y')
+				# You should copy this to the raw html code in the
+				# blog post
+				print '<a href="%s">%s</a> %s by %s on %s' % (ldata[0], ldata[1], what, who,when)
 
 if __name__ == '__main__':
-	if len(sys.argv) != 2:
-		print 'Usage: gwn_adds_removes.py <log-file>'
+	data = []
+	if len(sys.argv) < 2:
+		print 'Usage: gwn_adds_removes.py <log-files>'
 	else:
-		data = parse(sys.argv[1])
 		devs = developers()
+		for i in range(0, len(sys.argv)-1):
+			data.append(parse(sys.argv[i+1]))
 		write(data, devs)
