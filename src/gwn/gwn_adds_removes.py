@@ -52,11 +52,6 @@ def developers():
 
 
 def write(data, devs):
-	starttime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
-	endtime = time.gmtime(time.time() + (60 * 60 * 24 * 31))
-	# Format the string to what we expect
-	date_to = time.strftime("%Y%m", endtime)
-	date_from = time.strftime("%Y%m", starttime)
 	sections = {'added': 'Addition', 'removed': 'Removal'}
 	for s in sections:
 		if s == 'added':
@@ -88,9 +83,25 @@ def write(data, devs):
 if __name__ == '__main__':
 	data = []
 	if len(sys.argv) < 2:
-		print 'Usage: gwn_adds_removes.py <log-files>'
+		print 'Usage: gwn_adds_removes.py -p <log-files>'
 	else:
+		if sys.argv[1] == "-p":
+			# Results for previous month!
+			starttime = time.gmtime(time.time() - (60 * 60 * 24 * 31))
+			endtime = time.gmtime(time.time() + (60 * 60 * 24 * 1))
+			# Format the string to what we expect
+			date_to = time.strftime("%Y%m", endtime)
+			date_from = time.strftime("%Y%m", starttime)
+			argrange = 1
+		else:
+			starttime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
+			endtime = time.gmtime(time.time() + (60 * 60 * 24 * 31))
+			# Format the string to what we expect
+			date_to = time.strftime("%Y%m", endtime)
+			date_from = time.strftime("%Y%m", starttime)
+			argrange = 0
+
 		devs = developers()
-		for i in range(0, len(sys.argv)-1):
+		for i in range(argrange, len(sys.argv)-1):
 			data.append(parse(sys.argv[i+1]))
 		write(data, devs)
