@@ -52,7 +52,11 @@ def developers():
 
 
 def write(data, devs):
-
+	starttime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
+	endtime = time.gmtime(time.time() + (60 * 60 * 24 * 31))
+	# Format the string to what we expect
+	date_to = time.strftime("%Y%m", endtime)
+	date_from = time.strftime("%Y%m", starttime)
 	sections = {'added': 'Addition', 'removed': 'Removal'}
 	for s in sections:
 		if s == 'added':
@@ -70,10 +74,15 @@ def write(data, devs):
 					ldata = (ATTIC_LINK % pkg[0], '/'.join(pkg[0]))
 				#who = (devs[pkg[1]].encode(OUTPUT_CHARSET), pkg[1])
 				who = devs[pkg[1]]
+				# clean date format so we can compare it with
+				# date_to/date_from
+				when_cmp = pkg[2].strftime('%Y%m')
+				# date format suitable for GMN posts
 				when = pkg[2].strftime('%d %b %Y')
 				# You should copy this to the raw html code in the
 				# blog post
-				print '<a href="%s">%s</a>, %s, %s' % (ldata[0], ldata[1], who, when)
+				if when_cmp >=date_from and when_cmp < date_to:
+					print '<a href="%s">%s</a>, %s, %s' % (ldata[0], ldata[1], who, when)
 		print "[/table]"
 
 if __name__ == '__main__':
