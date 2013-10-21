@@ -1,0 +1,350 @@
+Timestamps are missing due to failure in IRC client
+
+<Pinkbyte> !herd qt
+<willikins> Pinkbyte: (qt) kensington, pesa, pinkbyte, wired, yngwin, zlogene
+<Pinkbyte> So, who is there? :-)
+* kensington waves
+<yngwin> present
+* pesa here
+* johu is here as well
+<Pinkbyte> Good. So, let's begin then
+<Pinkbyte> pesa, i see you changed inclusion target for Qt 5.x to 5.2? Can you explain this?
+<pesa> sure
+<pesa> 5.2 is due before the end of the year, and it's the version kde frameworks 5 is targeting
+<pesa> investing more time in 5.1 seems like a waste of time to me
+<kensington> are some of the blocking issues expected to be fixed upstream in 5.2, or do we still need to worry about them?
+<pesa> by the time 5.1 could be ready for inclusion, 5.2 will be out (or almost)
+<Pinkbyte> sounds reasonable
+<pesa> 5.2 has some improvements to the configure script, and drops qtjsbackend
+<pesa> other than that I think the issues are still present
+<yngwin> ok, when can we expect a beta?
+<pesa> end of october IIRC
+<yngwin> ah, soon
+<pesa> tomorrow actually
+<pesa> according to http://qt-project.org/wiki/Qt-5.2-release
+<yngwin> lets work on that then, and see if we can those ebuilds ready, so we're on track when 5.2 final gets released
+<pesa> agreed
+<Pinkbyte> i see lot of request(both from users and developers) about inclusion of Qt 5 in main tree.
+<yngwin> yeah they are increasing
+<kensington> ebuilds do not currently meet qa standards
+<pesa> I undersand, but including it now would be more of a pain than a gain
+<Pinkbyte> so, in the times when qt5 is pending for inclusion, should we add still masked qt5 USE-flag to packages who can built with it?
+<yngwin> so what needs to be done to get them up to standards?
+<kensington> bugs such as linking to existing libraries is a serious blocker
+<pesa> ^ yep
+<Pinkbyte> i mean, do this usual practice, even before inclusion itself
+<johu> the missing packages is a huge blocker for me...
+<kensington> there are already existing packages with qt5 USE flag in the tree
+<kensington> johu: having packages in the tree is no good if they don't work
+<pesa> if the flag is masked, I dont see a problem
+<johu> kensington: yes i know
+<yngwin> it is
+<Pinkbyte> well, it should be carefully testing in cases when both Qt 5 and Qt 4 installed
+<pesa> johu: can't you depend on ebuilds from another overlay?
+<Pinkbyte> cause i saw some nasty bugs, related to this context
+<okias> ready, sorry for late :)
+<johu> but linguist/tools are mandatory before tree inclusion
+<pesa> hey okias
+<okias> Hello guys :)
+<johu> pesa: we are already adding qt5 deps yes
+<kensington> yeah, and for packages that are compatible for both, having support is needed before qt5 enters the tree, to prevent automagics
+<Pinkbyte> pesa, johu, if we are talking about main tree, it is not good to depend on some overlay :-). If we are talking about kde overlay - i see no problem here.
+<pesa> johu: oh are you talking about missing ebuilds in the overlay then? ok I'll try to package the missing ones
+<kensington> Pinkbyte: that is why the flag is masked
+<Pinkbyte> kensington, yep
+<johu> pesa, Pinkbyte: yes correct
+<pesa> Pinkbyte: talkinga about kde overlay I guess
+<yngwin> i would suggest to get 5.2_rc ebuilds into the official tree, but hardmasked, so package maintainers can test
+<Pinkbyte> yngwin, i vote for this!
+<okias> yngwin: +1
+<pesa> let's see what the status is in a month from now
+<Pinkbyte> we can talk to flameeyes to do a tinderbox run for it :-)
+<yngwin> i will try to make some time in the next few weeks to do some testing etc
+<pesa> thanks
+<yngwin> now that i have a new dev box :)
+<kensington> I agree with pesa, we need to be careful putting it in the tree even masked
+<pesa> yngwin: awesome
+<okias> anyway, what about packages which going check "if qt5 use qt5, else qt4", with --enable-qt? 
+<yngwin> lets make sure we have bugs that block the tracker for all issues
+<johu> +1
+<kensington> okias: I think we previously decided packages that support both should have qt4 and qt5 USE flag with REQUIRED_USE to enforce one being selected
+<pesa> okias: we need separate qt4 and qt5 useflags
+<okias> kensington: pesa: for example https://bugs.gentoo.org/show_bug.cgi?id=488640
+<Pinkbyte> pesa, not only separate flags - we should patch buildsystem to explicitly link with selected Qt implementation
+<okias> I totally agree about qt4 qt5 flags, but it wont compile for qt4, if it going to found qt5 libs
+<kensington> Pinkbyte: that's a given
+<Pinkbyte> e.g if we have USE="qt4 -qt5" and installed Qt 5
+<pesa> indeed
+<johu> okias: !dev-qt/qtgui:5 what a pain for users
+<pesa> so far I've seen *tons* of upstream failures
+<pesa> in configure and friends
+<Pinkbyte> so, lot's of testing needed
+<kensington> Pinkbyte: most upstreams that support both of course provide a configure option
+<yngwin> yeah some build systems may need patching
+<pesa> they do a mess using some tools from qt4 and some tools from qt5
+<okias> johu: yes, that's terrible
+<okias> johu: but, I didn't found better solution
+<okias> except patching configure.ac
+<yngwin> patching is the obvious answer
+<pesa> fix the damn configure
+<pesa> it's horribly broken anyway
+<pesa> how can they blindly use /usr/bin/moc regardless of the version?
+<yngwin> anyway, are there any specific issues we should tackle asap?
+<okias> vlc and wireshark use same schmatics as I noticed
+<pesa> they should query qmake or use cmake and get the proper paths to the various tools
+<yngwin> i'm thinking qtwebkit standalone ebuild
+<kensington> yngwin: the big one is bug #451456
+<willikins> kensington: https://bugs.gentoo.org/451456 "[qt overlay] Qt5 packages (dev-qt/qt*:5) try to link against already installed versions during recompilation"; Gentoo Linux, Library; CONF; eugene.shalygin:qt
+<yngwin> yes
+<pesa> kensington: yep
+<pesa> does anyone know how to reliably reproduce it?
+<xhochy_> pesa: webkit widgets use flag
+<pesa> a way that doesnt involve qtwebkit
+<pesa> :)
+<xhochy_> hehe
+<okias> well, not sure, maybe
+<pesa> or my laptop will die soon
+<okias> because I recompiled qt 5.1.1 and had installed 5.1.0, and now qtwebkit (last package) fail with some weird linking 
+<kensington> when upgrading to a version with an ABI break possibl
+<okias> which is maybe caused by miscompiled some part qtlibs
+<Pinkbyte> pesa, what's about moving qt binaries in apropriate folders(both for qt4 and qt5)? Some progress?
+<pesa> Pinkbyte: nope
+<pesa> kensington: err can you give me an example?
+<kensington> isn't qt5 stuff already in its odnw dir?
+<pesa> kensington: yes it is, qt4 is not though
+<kensington> pesa: I don't have anything specific, just trying to remember
+<kensington> I saw a good feature request about putting symlinks (eg. qmake5) in $PATH
+<pesa> kensington: public ABI is never broken during qt5 lifecycle, so it must be some private lib ABI
+<kensington> pesa: ah, that would make more sense
+<pesa> kensington: upstream feature request?
+<kensington> pesa: nah, a gentoo user
+<pesa> mmm
+<kensington> might make sense upstream (but they don't care about slotting?)
+<pesa> we shall have a look at what other distros do
+<yngwin> is there any distro already shipping qt5?
+<xhochy_> debian-based stuff uses qtchooser for that
+<pesa> ah good question!
+<kensington> xhochy_: is that like eselect?
+<xhochy_> kensington: yeah
+<pesa> xhochy_: yeah thats a given, we'll use it too
+<xhochy_> sadly it breaks a lot :(
+<pesa> oh does it?
+<xhochy_> esp. for qt4only project if you have qt5 selected
+<pesa> ah I see
+<xhochy_> something like "Invalid Qt4 version: 5.0.1" is a common problem with users trying to compile stuff
+<pesa> can we force qt4 as default initially?
+<pesa> i.e. until packages are fixed
+<kensington> I don't think eselect should affect ebuilds at all
+<kensington> pesa: sane build systems will not detect qt5 by default
+<pesa> kensington: agreed, sadly some packages use hardcoded paths
+<xhochy_> The default Qt4-CMakeModule fails with the above message when using qt5 in qtchooser
+<pesa> and I'm not sure if upstreams are supporting qtchooser (i.e. running qmake -qt5 for instance)
+<kensington> I haven't heard/seen any issues about qt5 being used for a qt4 package so far, but I am sure a tinderbox run will uncover something
+<okias> anyway, vlc and wireshark look like OK with qt5.1.1. Just broken logic in configure
+<kensington> xhochy_: ebuilds will be built using USE flags, not any eselected qt version
+<yngwin> apparently Arch already ships qt5: https://www.archlinux.org/packages/?sort=&q=qt5&maintainer=&flagged=
+<pesa> xhochy_: ok, what if we *force* qtchooser to use qt4 by default?
+<xhochy_> pesa: that should work, but I suspect a lot of packages failing when switched to qt5 in qtchoose
+<pesa> ok, thats not a problem from our POV
+<pesa> not for now at least
+<xhochy_> hehe :)
+<pesa> let me explain
+<pesa> we introduce qtchooser defaulting to qt4 and it cannot be switched by users to qt5
+<pesa> existing qt4 packages will/should continue to work
+<pesa> we gradually fix packages supporting qt5
+<pesa> then we unmask qt5 use flag
+<pesa> finally we can re-enable user-switching of qt versions thru qtchooser
+<pesa> sounds good?
+<johu> unmasking of the use flag can only be done after stabilization, just for the record
+<pesa> good point
+<kensington> can't we stable mask it?
+<yngwin> we can
+<pesa> we can use use.stable.mask or whatever
+<xhochy_> pesa: but we need fix some qt4only packages too, as a lot depend on using just moc in the PATH
+<yngwin> btw, arch takes the easy way out (for now): qt5 conflicts with qt, so you cant install them both at the same time
+<kensington> xhochy_: are there particular packages you ran into this problem with so far?
+<pesa> yngwin: :|
+<pesa> xhochy_: tinderbox will help
+<pesa> xhochy_: and those issues must be fixed only before the last step anyway
+<pesa> i.e. they dont block qt5 addition to the tree
+<xhochy_> http://packages.ubuntu.com/raring/qt5-default <-- ubuntu ships both using qtchooser
+<xhochy_> kensington: havn't seen the problem yet on Gentoo, but you should be able to reprocue it using any CMake-based Qt project: Switch in the project to Qt4 but let qt-chooser point to qt5
+<kensington> xhochy_: that situation will not affect gentoo, for cmake we will pass the appropriate flag and qtchooser will have no effect on the ebuild
+<xhochy_> kensington: it will have, as Qt4-CMake uses moc from the path
+<kensington> oh hm
+<Pinkbyte> ok, so to conclude - what's our next steps? Will we move Qt4 binaries in separate folder(and if yes - how?)?
+<pesa> right
+<pesa> Pinkbyte: yes we have to
+<pesa> for now I think a qtchooser hardcoded to use qt4 should work fine
+<pesa> anyone sees any issues with that?
+<pesa> xhochy_: I guess we need to patch qt4 cmake macros then
+<Pinkbyte> for saving backward compatibility it's the best option for now
+<pesa> yes
+<pesa> if anyone has better ideas please speak up
+<pesa> this migration wont be easy
+<pesa> ok let's move on 
+<okias> ok with it. May I start about lrelease? and qt5-utils?
+<pesa> implementation details ;) let's talk later about those please
+<okias> okey
+<Pinkbyte> So, have we done with 1 paragraph of agenda?
+<Pinkbyte> or anybody has something to add?
+<yngwin> it would be helpful if we keep details on the wiki page, so we all know what the plans are, and what we can do to help out
+<Pinkbyte> Ok. Let's move on, guys.
+<pesa> absolutely
+<Pinkbyte> pesa, so, would not you mind to create a draft? :-)
+<Pinkbyte> as you are most informed person amongst us
+<pesa> hehe sure
+<Pinkbyte> Ok then. What's about Qt 4.8.5 stabilization?
+<pesa> do it?
+<pesa> rename c++0x to c++11 ?
+<johu> its just a renaming?
+<Pinkbyte> pesa, yep, it should be done first, IMO
+<kensington> ++
+<pesa> (before stabilization so people wont complain about rebuild if they use -N)
+<Pinkbyte> johu, yep, there is no more c++0x, but final standart is c++11
+<yngwin> indeed
+<pesa> johu: yes
+<johu> or does it implies breakage
+<johu> ok thanks
+<pesa> it implies checking revdeps
+<johu> then do it 
+<pesa> and adapting USE deps
+<yngwin> ok, so is there a bug for that?
+<yngwin> i think i saw one
+<pesa> FTR I used c++0x as USE flag name because that's what upstream uses in qt4
+<johu> yngwin: yes its referenced in the stable bug
+<kensington> bug #488160
+<willikins> kensington: https://bugs.gentoo.org/488160 "dev-qt/*: please replace USE=c++0x with USE=c++11"; Gentoo Linux, Library; CONF; mgorny:qt
+<yngwin> good
+<johu> when do you think to be ready with this task?
+<pesa> few days
+<pesa> maybe even today
+<yngwin> do we have any revdeps referencing that useflag?
+<johu> sounds wonderfull
+<pesa> yngwin: dunno, just grep the thing
+<yngwin> sure
+<kensington> that's interesting, I don't see any packages with the new flag
+<yngwin> ah, the other suggestion was if we could just drop the useflag
+<pesa> qt5 :)
+<pesa> yngwin: and do what?
+<pesa> always enable?
+<yngwin> detect if the active gcc supports it, and then enable it?
+<pesa> mmm
+<pesa> can you leave a comment in the bug about this please?
+<yngwin> can you think of any reason not to enable it?
+<pesa> I need to check something in the configure script
+<yngwin> ok
+<pesa> main issue is that taking control away from users has always resulted in someone complaining
+<yngwin> done
+<pesa> advanced users usually
+<Pinkbyte> and we have bug #410325
+<pesa> ah
+<willikins> Pinkbyte: https://bugs.gentoo.org/410325 "=dev-qt/qtgui-4.8.1[c++0x] fails to build on arm"; Gentoo Linux, Library; UNCO; dpolukarov:qt
+<Pinkbyte> which i am checking just right now
+<pesa> Pinkbyte: thanks
+<pesa> I'm thinking that advanced users could always disable c++11 via their CXXFLAGS
+<pesa> and gcc 4.6 which has good enough c++11 support is stable everywhere afaics
+<pesa> everywhere except sparc
+<pesa> ok lets proceed with the agenda
+<Pinkbyte> pesa, qmake-utils. What's about it?
+<pesa> we should send the new eclass for review
+<pesa> and finally commit it
+<kensington> ++
+<Pinkbyte> true. I think about 2 messages - one with qmake-utils itself and second(later) with some resolution for bug #479744)
+<willikins> Pinkbyte: https://bugs.gentoo.org/479744 "qt4-r2.eclass: split into qmake-utils.eclass"; Gentoo Linux, Eclasses and Profiles; IN_P; hasufell:qt
+<pesa> what do you mean?
+<Pinkbyte> pesa, i mean - first we introduce qmake-utils to tree
+<Pinkbyte> and second - splitting eqmake4 from qt4-r2 into it
+<pesa> I'm confused, qmake-utils already has eqmake4
+<kensington> I think he means about changing qt4-r2 to use the new qmake-utils
+<pesa> oh like inheriting it
+<Pinkbyte> yep, sorry for confusion
+<pesa> mmm yes sure why not
+<kensington> it should be a trivial change in any case
+<pesa> the only issue I see with that is that eqmake5 will be exposed to qt4-r2 consumers
+<Pinkbyte> pesa, i think that this is minor issue
+<pesa> yeah
+<kensington> if anyone uses that we can ridicule them :p
+<pesa> :D
+<pesa> who wants to do this? (posting RFC to ML)
+* pesa hides
+<Pinkbyte> pesa, it's a cheating!
+<Pinkbyte> :-)
+<Pinkbyte> I can do this. Eclasses should be taken from our overlay, right?
+<pesa> correct
+<pesa> thanks
+<Pinkbyte> Ok. Our past TODO's
+<Pinkbyte> i have beaten goldendict(at last!), so - YAHOO! :-)
+<kensington> ++
+<pesa> w00t
+<Pinkbyte> anybody tried to poke qutim - bug #464690 ?
+<willikins> Pinkbyte: https://bugs.gentoo.org/464690 "=net-im/qutim-0.3.1 fails to connect"; Gentoo Linux, Applications; CONF; ago:qt
+<pesa> nope
+<yngwin> apparently not
+<Pinkbyte> that's sad
+<kensington> I didn't see much activity upstream
+<pesa> as I probably already said, I'm focusing on qt (4 & 5) and very few other selected packages, so don't count on me for fixing bugs in "minor" packages (minor for me at least)
+<pesa> and we have tons of other bugs, why are we focusing on qutim specifically?
+<Pinkbyte> dunno, i do not remember who was added this to agenda
+<Pinkbyte> maybe i will look it once more time.
+<kensington> no reason, it was added to the agenda a long time ago, and just keeps getting carried forwward
+<pesa> exactly
+<kensington> since no action was taken
+<Pinkbyte> yngwin, how's going migration of wiki pages?
+<Pinkbyte> should we remove it(i mean, qutim bug) from next agenda?
+<pesa> I think so
+<pesa> it's "just" a bug like many others in our bugzilla
+<yngwin> Pinkbyte: not
+<pesa> and needs to be fixed obviously, but no need to discuss about it
+<yngwin> as in: i have so many other things to do, and this is near the bottom of my list
+<kensington> what items are still pendign?
+<yngwin> kensington: asking me?
+* pesa afk for a few minutes, sorry
+<kensington> yngwin: yeah
+<yngwin> old meeting summaries
+<Pinkbyte> paragraph 5 - qtphonon/phonon thingie
+<kensington> oh, from gitorious
+<yngwin> yup
+<Pinkbyte> i have stuck with resolving it :-(
+<yngwin> anything specific?
+<Pinkbyte> just dunno how to resolve bug #475786
+<willikins> Pinkbyte: https://bugs.gentoo.org/475786 "dev-python/pyside detects dev-qt/qtphonon but not media-libs/phonon"; Gentoo Linux, Development; CONF; sherpya:qt
+<yngwin> upstream?
+<Pinkbyte> yngwin, honesly - dunno.
+<xhochy_> did you test with latest head? phonon changed lately a lot of his cmake stuff
+<xhochy_> phonon-head :)
+<Pinkbyte> xhochy_, yes, but troble is in pyside's buildsystem
+<yngwin> so what do you want to do? lets not drag this out
+<Pinkbyte> yngwin, dunno. I have tried with no luck. Somebody should go deeper
+<Pinkbyte> pesa, are you back?
+<yngwin> at this point i dont think pyside is worth that much trouble
+<yngwin> lets get qt5 in tree
+<yngwin> this issue should probably be referred upstream, or see what other distros do
+<Pinkbyte> Ok.  Is there something that we should additionally discuss?
+<yngwin> i just want to repeat what i said on ML, that i will soon look into making lxde-qt git ebuilds to replace the razor-qt ones
+<yngwin> i'm not sure if anyone else is interested in that
+<yngwin> i guess i should take this to the lxde team
+<kensington> yngwin: I saw that, it looks very interesting
+<Pinkbyte> yngwin, it's good, but i am personally not interested in lxde, sorry.
+<yngwin> is anyone interested in keeping this under qt co-maintainership?
+<Pinkbyte> But i had plans for trying razor-qt, so maybe i will try merged version
+<pesa> back
+<kensington> yngwin: it makes sense
+<Pinkbyte> pesa, phonon problem. I have tried to resolve it and failed :-(
+<pesa> uhm
+<pesa> I can look into pyside
+<pesa> but it's low priority atm
+<pesa> qt5 is more important
+<Pinkbyte> sure
+<pesa> phonon can stay like it is now, deprecating qtphonon is a "nice to have" imho, but should not drain manpower from other more important tasks
+<okias> that's spirit :/ https://bugs.gentoo.org/show_bug.cgi?id=488640
+<Pinkbyte> pesa, have something to discuss additionally?
+<Pinkbyte> okias, Jeroen does a vast amount of work for wireshark - it's his choice
+<kensington> it's also a typical response for him
+<pesa> Pinkbyte: I believe not
+<Pinkbyte> okias, your resolution is not correct and he is not interested in doing it proper now, so - WONTFIX
+<yngwin> reopen when qt5 is in tree
+<pesa> yep
+<Pinkbyte> Thank you guys, meeting is over.
+<pesa> thank you all
+<yngwin> feel free to submit a wireshark ebuild with qt5 support to the qt overlay
