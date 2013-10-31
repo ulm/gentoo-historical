@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from pygooglechart import *
+import time
 data = open('breport')
 
 butota = []
@@ -17,6 +18,10 @@ j = 1
 ontable = 0
 onheaders = 0
 ontext = 0
+endtime = time.gmtime(time.time() - (60 * 60 * 24 * 5))
+# Format the string to what we expect
+date_to = time.strftime("%Y-%m", endtime)
+
 for i in data:
 	if not i.startswith("[table]") and ontable == 0:
 		continue
@@ -69,7 +74,7 @@ activity = PieChart2D(500, 300)
 activity.set_colours(['45347B'])
 activity.add_data(budata)
 activity.set_pie_labels(bukeys)
-activity.download('activity.png')
+activity.download('gmn-activity-%s.png' % date_to)
 
 clmax = max(cldata)
 clnor = map(lambda x: (x / float(clmax)) * 100, cldata)
@@ -80,7 +85,7 @@ closed.add_data(clnor)
 clkeys.reverse()
 closed.set_axis_labels(Axis.LEFT, clkeys)
 closed.set_axis_labels(Axis.BOTTOM, map(str, range(0, int(round(max(cldata))) + 10, 10)))
-closed.download('closed.png')
+closed.download('gmn-closed-%s.png' % date_to)
 
 opmax = max(opdata)
 opnor = map(lambda x: (x / float(opmax)) * 100, opdata)
@@ -91,7 +96,7 @@ opened.add_data(opnor)
 opkeys.reverse()
 opened.set_axis_labels(Axis.LEFT, opkeys)
 opened.set_axis_labels(Axis.BOTTOM, map(str, range(0, int(round(max(opdata))) + 10, 10)))
-opened.download('opened.png')
+opened.download('gmn-opened-%s.png' % date_to)
 
 clkeys.reverse()
 opkeys.reverse()
