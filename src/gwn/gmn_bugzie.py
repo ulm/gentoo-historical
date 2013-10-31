@@ -138,7 +138,10 @@ for i in range(0, len(groups_that_opened_most) - 1):
 
 print "The Gentoo community uses <a href=\"https://bugs.gentoo.org\">Bugzilla</a> to record and " + \
 "track bugs, notifications, suggestions and other interactions with the " + \
-"development team. The following tables and charts summarize the " + \
+"development team."
+
+print "<h2>Activity</h2>"
+print"The following tables and charts summarize the " + \
 "activity on Bugzilla between %s and %s. Not fixed means bugs that were " % (date_from_display, date_to_display) + \
 "resolved as NEEDINFO, WONTFIX, CANTFIX, INVALID or UPSTREAM. "
 
