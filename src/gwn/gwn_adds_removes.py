@@ -65,7 +65,7 @@ def write(data, devs):
 		for datafile in data:
 			for pkg in datafile[s]:
 				ldata = (PACKAGE_LINK % pkg[0], '/'.join(pkg[0]))
-				if s == 'removeld':
+				if s == 'removed':
 					ldata = (ATTIC_LINK % pkg[0], '/'.join(pkg[0]))
 				#who = (devs[pkg[1]].encode(OUTPUT_CHARSET), pkg[1])
 				who = devs[pkg[1]]
