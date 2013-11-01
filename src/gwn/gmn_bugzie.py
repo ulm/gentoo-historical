@@ -175,7 +175,7 @@ oleft = 0
 print "\n<h2>Assigned bug ranking</h2>\n"
 print "The developers and teams who have been assigned the most bugs during this period are as follows.\n"
 print "[table]"
-print "Rank, Team/Developer/, Bug Count"
+print "Rank, Team/Developer, Bug Count"
 for i in range(0,9):
 	print "%d, %s, %s" % (i+1, strip(groups_that_opened_most[i][2][0]), str(groups_that_opened_most[i][1]))
 	oleft += groups_that_opened_most[i][1]
