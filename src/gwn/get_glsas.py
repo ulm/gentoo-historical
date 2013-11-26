@@ -82,6 +82,7 @@ if __name__ == '__main__':
 
 	print "Copy and paste the following text to the GMN Security section\n\n"
 
+	print "<h1>Security</h1>"
 	if not foundone:
 		print "No GLSAs have been released this month! You are safe :)"
 	else:
