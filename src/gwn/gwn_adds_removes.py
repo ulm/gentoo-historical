@@ -53,6 +53,7 @@ def developers():
 
 def write(data, devs):
 	sections = {'added': 'Addition', 'removed': 'Removal'}
+	print "<h1>Package Removals/Additions</h1>"
 	for s in sections:
 		if s == 'added':
 			print "<h2>Additions</h2>"
