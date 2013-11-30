@@ -136,6 +136,8 @@ for i in range(0, len(groups_that_opened_most) - 1):
 
 #7.  We have every value we need, now build the report
 
+print "<h1>Bugzilla</h1>"
+
 print "The Gentoo community uses <a href=\"https://bugs.gentoo.org\">Bugzilla</a> to record and " + \
 "track bugs, notifications, suggestions and other interactions with the " + \
 "development team."
