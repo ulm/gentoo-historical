@@ -144,7 +144,7 @@ print "The Gentoo community uses <a href=\"https://bugs.gentoo.org\">Bugzilla</a
 
 print "<h2>Activity</h2>"
 print"The following tables and charts summarize the " + \
-"activity on Bugzilla between %s and %s. Not fixed means bugs that were " % (date_from_display, date_to_display) + \
+"activity on Bugzilla between <strong>%s</strong> and <strong>%s</strong>. Not fixed means bugs that were " % (date_from_display, date_to_display) + \
 "resolved as NEEDINFO, WONTFIX, CANTFIX, INVALID or UPSTREAM. "
 
 print "[table]"
