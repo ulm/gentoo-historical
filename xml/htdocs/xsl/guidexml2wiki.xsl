@@ -104,7 +104,7 @@ We would like to thank the following authors and editors for their contributions
 -->
 <xsl:template match="const"><xsl:apply-templates /></xsl:template>
 
-<xsl:template match="uri"><xsl:if test="string-length(preceding-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if><xsl:choose><xsl:when test="starts-with(@link, 'http')">[<xsl:value-of select="@link" /><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="not(starts-with(@link, '#'))">[http://www.gentoo.org/<xsl:value-of select="@link"/><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="starts-with(@link, '#')">[[<xsl:value-of select="@link" />]]</xsl:when></xsl:choose><xsl:if test="string-length(following-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if></xsl:template>
+<xsl:template match="uri"><xsl:if test="string-length(preceding-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if><xsl:choose><xsl:when test="starts-with(@link, 'http')">[<xsl:value-of select="@link" /><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="not(@link)">[<xsl:value-of select="normalize-space(text())" /><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="not(starts-with(@link, '#'))">[http://www.gentoo.org/<xsl:value-of select="@link"/><xsl:text> </xsl:text><xsl:value-of select="normalize-space(text())" />]</xsl:when><xsl:when test="starts-with(@link, '#')">[[<xsl:value-of select="@link" />]]</xsl:when></xsl:choose><xsl:if test="string-length(following-sibling::text()) &gt; 1"><xsl:text> </xsl:text></xsl:if></xsl:template>
 
 <xsl:template match="e"> ''<xsl:apply-templates />'' </xsl:template>
 
