@@ -1,0 +1,52 @@
+From 467f08afd234738fa51fac4262c1eb950e679c47 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 3 Sep 2013 02:33:11 -0400
+Subject: [PATCH] gdb: btrace: fix build errors on older glibc builds
+
+It is possible to have a build of glibc where SYS_perf_event_open is not
+defined (because when the glibc was compiled, the syscall did not exist),
+but have newer kernel headers installed so that linux/perf_event.h is
+available.  In this setup, you get a build failure:
+
+./common/linux-btrace.c: In function 'kernel_supports_btrace':
+./common/linux-btrace.c:316:23: error: 'SYS_perf_event_open' undeclared (first use in this function)
+
+Update the ifdef check to also see if the syscall is available.
+
+URL: https://bugs.gentoo.org/473522
+Reported-by: William Throwe <wtt6@cornell.edu>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+
+gdb/:
+2013-09-12  Mike Frysinger  <vapier@gentoo.org>
+
+	* common/linux-btrace.c: Move sys/syscall.h out of the
+	HAVE_LINUX_PERF_EVENT_H check and wrap it in HAVE_SYS_SYSCALL_H.
+	Also check for SYS_perf_event_open before attempting to buid.
+
+---
+ gdb/common/linux-btrace.c  | 7 +++++--
+
+diff --git a/gdb/common/linux-btrace.c b/gdb/common/linux-btrace.c
+index b874c84..7e20745 100644
+--- a/gdb/common/linux-btrace.c
++++ b/gdb/common/linux-btrace.c
+@@ -33,13 +33,16 @@
+ #include "gdb_wait.h"
+ #include "i386-cpuid.h"
+ 
+-#if HAVE_LINUX_PERF_EVENT_H
++#ifdef HAVE_SYS_SYSCALL_H
++#include <sys/syscall.h>
++#endif
++
++#if HAVE_LINUX_PERF_EVENT_H && defined(SYS_perf_event_open)
+ 
+ #include <errno.h>
+ #include <string.h>
+ #include <stdint.h>
+ #include <unistd.h>
+-#include <sys/syscall.h>
+ #include <sys/mman.h>
+ #include <sys/user.h>
+ #include <sys/ptrace.h>
