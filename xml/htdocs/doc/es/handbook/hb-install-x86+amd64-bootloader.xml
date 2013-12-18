@@ -4,11 +4,11 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-x86+amd64-bootloader.xml,v 1.30 2013/12/18 20:26:41 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/es/handbook/hb-install-x86+amd64-bootloader.xml,v 1.31 2013/12/18 21:11:08 nimiux Exp $ -->
 
 <sections>
 
-<version>18</version>
+<version>19</version>
 <date>2013-12-17</date>
 
 <section>
@@ -136,8 +136,260 @@ Ahora continúe con la instalación de <uri link="#grub">GRUB</uri>,
 </subsection>
 </section>
 
+<section id="grub2" test="contains('AMD64 x86', func:keyval('arch'))">
+<title>Predeterminado: Utilizar GRUB2</title>
+<subsection>
+<title>Instalar GRUB2</title>
+<body>
+
+<p>
+GRUB2 se ofrece a través del paquete <c>sys-boot/grub</c>. Para poner
+en marcha GRUB2, utilice la notación <e>SLOT</e> (ranura) para indicarle
+a Portage que debe instalar GRUB2. Las ranuras (SLOTs) son una
+característica de Gentoo Linux por la que múltiples versiones del
+mismo paquete se pueden desplegar de forma simultánea en un sistema.
+En nuestro caso, esto significa que GRUB Heredado y GRUB2 se
+pueden instalar en un sistema (hablando de software) a la vez.
+</p>
+
+<note>
+Puede que GRUB2 todavía esté marcado como ~<keyval id="arch" />. Si
+esto es así, puede esperar y utilizar
+<uri link="#grub">GRUB Heredado</uri> o desenmascarar el paquete.
+Esto se explica en
+<uri link="handbook-amd64.xml?part=3&amp;chap=3#doc_chap2">
+Mezclar Estable con Pruebas</uri>. Una vez se haya estabilizado GRUB2,
+el operador de ranuras (SLOT) ya no es necesario.
+</note>
+
+<pre caption="Instalar GRUB2">
+# <i>emerge sys-boot/grub:2</i>
+</pre>
+
+<p>
+El software GRUB2 ahora está instalado en el sistema, sin embargo, todavía
+no está activado.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Configurar GRUB2</title>
+<body>
+
+<p>
+En primer lugar, instalaremos los ficheros necesarios de GRUB2 en
+<path>/boot/grub</path>. Asumiremos que el primer disco (el que
+se utiliza para iniciar el sistema) es <path>/dev/sda</path>, la
+siguiente orden hará esto por nosotros:
+</p>
+
+<pre caption="Instalar los ficheros de GRUB2 en /boot/grub">
+# <i>grub2-install /dev/sda</i>
+</pre>
+
+<p>
+A continuación, generamos la configuración de GRUB2 basada en la
+configuración de usuario especificada en el fichero
+<path>/etc/default/grub</path> y los guiones en
+<path>/etc/grub.d</path>. En la mayoría de los casos, no se
+necesita ninguna configuración por parte del usuario ya que
+GRUB2 detectará de forma automática el núcleo que se debe iniciar
+(el que tenga el número de versión más alto disponible en
+<path>/boot</path>) y qué sistema de ficheros tiene el directorio
+raíz.
+</p>
+
+<p>
+Para generar la configuración final de GRUB2, ejecute la orden
+<c>grub2-mkconfig</c>:
+</p>
+
+<pre caption="Generar la configuración de GRUB2">
+# <i>grub2-mkconfig -o /boot/grub/grub.cfg</i>
+Generating grub.cfg ...
+Found linux image: /boot/<keyval id="kernel-name" />
+Found initrd image: /boot/<keyval id="genkernel-initrd" />
+done
+</pre>
+
+<p>
+La salida de la orden <e>debe</e> mencionar al menos que se
+ha encontrado una imagen Linux, ya que éstas son necesarias
+para iniciar el sistema. Si utiliza initramfs o <c>genkernel</c>
+para construir su núcleo, se debería detectar igualmente
+la imagen initrd correcta. Si no es así, vaya a
+<path>/boot</path> y compruebe el contenido con la orden
+<c>ls</c>. Si los ficheros no están, vuelva a las instrucciones
+de configuración e instalación del núcleo.
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section id="lilo" test="contains('AMD64 x86', func:keyval('arch'))">
+<title>Alternativa: Utilizar LILO</title>
+<subsection>
+<title>Instalar LILO</title>
+<body>
+
+<p>
+LILO, representa LInuxLOader, y es el caballito de batalla probado y
+comprobado de los gestores de inicio de Linux. Sin embargo, carece de
+algunas características de GRUB (razón por la cual GRUB actualmente
+está ganando popularidad). La razón por la cual LILO sigue en uso es
+que en algunos sistemas, GRUB no funciona mientras que LILO sí. Por
+supuesto también se usa porque hay muchos que lo conocen y prefieren
+seguir con este gestor. De cualquier manera, Gentoo soporta ambos
+gestores y por lo visto, ha elegido usar LILO.
+</p>
+
+<p>
+Instalar LILO es fácil, sencillamente use <c>emerge</c>.
+</p>
+
+<pre caption = "Instalar LILO">
+# <i>emerge lilo</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Configurar LILO</title>
+<body>
+
+<p>
+Para configurar LILO, debe crear el archivo
+<path>/etc/lilo.conf</path>. Use su editor de textos preferido (en el
+manual usamos <c>nano</c> para ser consistentes) y creemos este
+archivo.
+</p>
+
+<pre caption = "Crear /etc/lilo.conf">
+# <i>nano -w /etc/lilo.conf</i>
+</pre>
+
+<p>
+Algunas secciones atrás, le pedimos que se acordara del nombre de la
+imagen del núcleo creado. En el siguiente ejemplo de
+<path>lilo.conf</path> haremos uso del esquema ejemplo de
+particionamiento.
+</p>
+
+<p>
+Asegúrese de utilizar el nombre de <e>su</e> archivo de imagen del
+núcleo y, si es necesario, el nombre de <e>su</e> imagen initrd.
+</p>
+
+<note>
+Si su sistema de ficheros para root es JFS, <e>deberá</e> añadir la
+línea <c>append="ro"</c> después de cada elemento de arranque, ya que
+JFS necesita leer su log antes de permitir montajes de
+lectura-escritura.
+</note>
+
+<pre caption = "Ejemplo de /etc/lilo.conf">
+boot=/dev/sda            <comment># Instalar LILO en el MBR</comment>
+prompt                     <comment># Darle al usuario una oportunidad de seleccionar otra opción</comment>
+timeout=50                <comment># Esperar 5 (cinco) segundos antes de arrancar la opción por defecto</comment>
+default=gentoo          <comment># Al transcurrir el plazo de espera, arrancar la opción "gentoo"</comment>
+
+ image=/boot/<keyval id="kernel-name"/>
+ label=gentoo            <comment># El nombre de la sección</comment>
+ read-only               <comment># Comience con la raíz solo lectura. ¡No modifique!</comment>
+ root=/dev/sda3          <comment># Ubicación del sistema raíz de archivos</comment>
+
+ image=/boot/<keyval id="kernel-name"/>
+ label=gentoo.rescue     <comment># El nombre de la sección</comment>
+ read-only               <comment># Comience con la raíz solo lectura. ¡No modifique!</comment>
+ root=/dev/sda3          <comment># Ubicación del sistema raíz de archivos</comment>
+ append="init=/bin/bb"   <comment># Lanzar el intérprete de comandos estático de rescate de Gentoo</comment>
+
+<comment># La siguientes dos líneas solo corresponden si hace arranque dual con un sistema Windows.</comment>
+<comment># En este caso, Windows se encuentra en /dev/sda6.</comment>
+other=/dev/sda6
+  label=windows
+</pre>
+
+<note>
+Si usa un esquema de particionamiento o imagen de núcleo distinta,
+haga los ajustes correspondientes.
+</note>
+
+<p>
+Cuando construya el núcleo Linux, si opta por incluir un initramfs desde el
+cual iniciar, entonces tendrá que cambiar la configuración haciendo
+referencia a este fichero initramfs e indicándole donde se encuentra su
+sistema de ficheros raíz en:
+</p>
+
+<pre caption="Fragmento de LILO para construcciones de núcleo con initramfs habilitado">
+image=/boot/<keyval id="kernel-name"/>
+  label=gentoo
+  read-only
+  <i>append="real_root=/dev/sda3"</i>
+  <i>initrd=/boot/<keyval id="genkernel-initrd" /></i>
+</pre>
+
+<p>
+Si hace falta pasar alguna opción adicional al núcleo, incluya un
+enunciado <c>append</c> a la sección. A modo de ejemplo, agregamos un
+enunciado <c>video</c> para activar framebuffer:
+</p>
+
+<pre caption = "Utilizar append para agregar opciones al núcleo">
+ image=/boot/<keyval id="kernel-name"/>
+ label=gentoo
+ read-only
+ root=/dev/sda3
+<i>append="video=uvesafb:mtrr,ywrap,1024x768-32@85"</i>
+</pre>
+
+<p>
+Si está utilizando un núcleo 2.6.7 o superior y ha puenteado su disco
+duro porque la BIOS no puede manejar discos duros grandes, necesitará
+añadir <c>sda=stroke</c>.
+</p>
+
+<p>
+Usuarios de <c>genkernel</c> deben saber que sus núcleos usan las
+mismas opciones de arranque que el CD de instalación. Por ejemplo, si
+tiene dispositivos SCSI, debe agregar <c>doscsi</c> como opción del
+núcleo.
+</p>
+
+
+<p>
+Ahora, salve el archivo y salga del editor. Para terminar, debe
+ejecutar la orden <c>/sbin/lilo</c> para poder aplicar
+<path>/etc/lilo.conf</path> a su sistema (que se instale en el disco).
+Acuérdese de que debe volver a ejecutar <c>/sbin/lilo</c> cada vez que
+instale un nuevo núcleo o haga cambios en el menú.
+</p>
+
+<pre caption = "Terminar la instalación de LILO">
+# <i>/sbin/lilo</i>
+</pre>
+
+<p>
+Si tiene más preguntar con respecto a LILO, por favor, consulte su
+<uri link="http://es.wikipedia.org/wiki/Lilo_%28Linux%29">página en la
+wikipedia</uri>.
+</p>
+
+<p>
+Ahora puede continuar con <uri link="#reboot">Reiniciar el
+Sistema</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+
 <section id="grub" test="contains('AMD64 x86',func:keyval('arch'))">
-<title>Predeterminado: Usar GRUB Heredado</title>
+<title>Opcional: Usar GRUB Heredado</title>
 <subsection>
 <title>¿Qué implica "Heredado"?</title>
 <body>
@@ -500,258 +752,6 @@ Continúe con <uri link="#reboot">Reiniciar el sistema</uri>.
 </subsection>
 </section>
 
-<section id="lilo" test="contains('AMD64 x86', func:keyval('arch'))">
-<title>Alternativa: Utilizar LILO</title>
-<subsection>
-<title>Instalar LILO</title>
-<body>
-
-<p>
-LILO, representa LInuxLOader, y es el caballito de batalla probado y
-comprobado de los gestores de inicio de Linux. Sin embargo, carece de
-algunas características de GRUB (razón por la cual GRUB actualmente
-está ganando popularidad). La razón por la cual LILO sigue en uso es
-que en algunos sistemas, GRUB no funciona mientras que LILO sí. Por
-supuesto también se usa porque hay muchos que lo conocen y prefieren
-seguir con este gestor. De cualquier manera, Gentoo soporta ambos
-gestores y por lo visto, ha elegido usar LILO.
-</p>
-
-<p>
-Instalar LILO es fácil, sencillamente use <c>emerge</c>.
-</p>
-
-<pre caption = "Instalar LILO">
-# <i>emerge lilo</i>
-</pre>
-
-</body>
-</subsection>
-
-<subsection>
-<title>Configurar LILO</title>
-<body>
-
-<p>
-Para configurar LILO, debe crear el archivo
-<path>/etc/lilo.conf</path>. Use su editor de textos preferido (en el
-manual usamos <c>nano</c> para ser consistentes) y creemos este
-archivo.
-</p>
-
-<pre caption = "Crear /etc/lilo.conf">
-# <i>nano -w /etc/lilo.conf</i>
-</pre>
-
-<p>
-Algunas secciones atrás, le pedimos que se acordara del nombre de la
-imagen del núcleo creado. En el siguiente ejemplo de
-<path>lilo.conf</path> haremos uso del esquema ejemplo de
-particionamiento.
-</p>
-
-<p>
-Asegúrese de utilizar el nombre de <e>su</e> archivo de imagen del
-núcleo y, si es necesario, el nombre de <e>su</e> imagen initrd.
-</p>
-
-<note>
-Si su sistema de ficheros para root es JFS, <e>deberá</e> añadir la
-línea <c>append="ro"</c> después de cada elemento de arranque, ya que
-JFS necesita leer su log antes de permitir montajes de
-lectura-escritura.
-</note>
-
-<pre caption = "Ejemplo de /etc/lilo.conf">
-boot=/dev/sda            <comment># Instalar LILO en el MBR</comment>
-prompt                     <comment># Darle al usuario una oportunidad de seleccionar otra opción</comment>
-timeout=50                <comment># Esperar 5 (cinco) segundos antes de arrancar la opción por defecto</comment>
-default=gentoo          <comment># Al transcurrir el plazo de espera, arrancar la opción "gentoo"</comment>
-
- image=/boot/<keyval id="kernel-name"/>
- label=gentoo            <comment># El nombre de la sección</comment>
- read-only               <comment># Comience con la raíz solo lectura. ¡No modifique!</comment>
- root=/dev/sda3          <comment># Ubicación del sistema raíz de archivos</comment>
-
- image=/boot/<keyval id="kernel-name"/>
- label=gentoo.rescue     <comment># El nombre de la sección</comment>
- read-only               <comment># Comience con la raíz solo lectura. ¡No modifique!</comment>
- root=/dev/sda3          <comment># Ubicación del sistema raíz de archivos</comment>
- append="init=/bin/bb"   <comment># Lanzar el intérprete de comandos estático de rescate de Gentoo</comment>
-
-<comment># La siguientes dos líneas solo corresponden si hace arranque dual con un sistema Windows.</comment>
-<comment># En este caso, Windows se encuentra en /dev/sda6.</comment>
-other=/dev/sda6
-  label=windows
-</pre>
-
-<note>
-Si usa un esquema de particionamiento o imagen de núcleo distinta,
-haga los ajustes correspondientes.
-</note>
-
-<p>
-Cuando construya el núcleo Linux, si opta por incluir un initramfs desde el
-cual iniciar, entonces tendrá que cambiar la configuración haciendo
-referencia a este fichero initramfs e indicándole donde se encuentra su
-sistema de ficheros raíz en:
-</p>
-
-<pre caption="Fragmento de LILO para construcciones de núcleo con initramfs habilitado">
-image=/boot/<keyval id="kernel-name"/>
-  label=gentoo
-  read-only
-  <i>append="real_root=/dev/sda3"</i>
-  <i>initrd=/boot/<keyval id="genkernel-initrd" /></i>
-</pre>
-
-<p>
-Si hace falta pasar alguna opción adicional al núcleo, incluya un
-enunciado <c>append</c> a la sección. A modo de ejemplo, agregamos un
-enunciado <c>video</c> para activar framebuffer:
-</p>
-
-<pre caption = "Utilizar append para agregar opciones al núcleo">
- image=/boot/<keyval id="kernel-name"/>
- label=gentoo
- read-only
- root=/dev/sda3
-<i>append="video=uvesafb:mtrr,ywrap,1024x768-32@85"</i>
-</pre>
-
-<p>
-Si está utilizando un núcleo 2.6.7 o superior y ha puenteado su disco
-duro porque la BIOS no puede manejar discos duros grandes, necesitará
-añadir <c>sda=stroke</c>.
-</p>
-
-<p>
-Usuarios de <c>genkernel</c> deben saber que sus núcleos usan las
-mismas opciones de arranque que el CD de instalación. Por ejemplo, si
-tiene dispositivos SCSI, debe agregar <c>doscsi</c> como opción del
-núcleo.
-</p>
-
-
-<p>
-Ahora, salve el archivo y salga del editor. Para terminar, debe
-ejecutar la orden <c>/sbin/lilo</c> para poder aplicar
-<path>/etc/lilo.conf</path> a su sistema (que se instale en el disco).
-Acuérdese de que debe volver a ejecutar <c>/sbin/lilo</c> cada vez que
-instale un nuevo núcleo o haga cambios en el menú.
-</p>
-
-<pre caption = "Terminar la instalación de LILO">
-# <i>/sbin/lilo</i>
-</pre>
-
-<p>
-Si tiene más preguntar con respecto a LILO, por favor, consulte su
-<uri link="http://es.wikipedia.org/wiki/Lilo_%28Linux%29">página en la
-wikipedia</uri>.
-</p>
-
-<p>
-Ahora puede continuar con <uri link="#reboot">Reiniciar el
-Sistema</uri>.
-</p>
-
-</body>
-</subsection>
-</section>
-
-<section id="grub2" test="contains('AMD64 x86', func:keyval('arch'))">
-<title>Alternativa: Utilizar GRUB2</title>
-<subsection>
-<title>Instalar GRUB2</title>
-<body>
-
-<p>
-GRUB2 se ofrece a través del paquete <c>sys-boot/grub</c>. Para poner
-en marcha GRUB2, utilice la notación <e>SLOT</e> (ranura) para indicarle
-a Portage que debe instalar GRUB2. Las ranuras (SLOTs) son una
-característica de Gentoo Linux por la que múltiples versiones del
-mismo paquete se pueden desplegar de forma simultánea en un sistema.
-En nuestro caso, esto significa que GRUB Heredado y GRUB2 se
-pueden instalar en un sistema (hablando de software) a la vez.
-</p>
-
-<note>
-Puede que GRUB2 todavía esté marcado como ~<keyval id="arch" />. Si
-esto es así, puede esperar y utilizar
-<uri link="#grub">GRUB Heredado</uri> o desenmascarar el paquete.
-Esto se explica en
-<uri link="handbook-amd64.xml?part=3&amp;chap=3#doc_chap2">
-Mezclar Estable con Pruebas</uri>. Una vez se haya estabilizado GRUB2,
-el operador de ranuras (SLOT) ya no es necesario.
-</note>
-
-<pre caption="Instalar GRUB2">
-# <i>emerge sys-boot/grub:2</i>
-</pre>
-
-<p>
-El software GRUB2 ahora está instalado en el sistema, sin embargo, todavía
-no está activado.
-</p>
-
-</body>
-</subsection>
-<subsection>
-<title>Configurar GRUB2</title>
-<body>
-
-<p>
-En primer lugar, instalaremos los ficheros necesarios de GRUB2 en
-<path>/boot/grub</path>. Asumiremos que el primer disco (el que
-se utiliza para iniciar el sistema) es <path>/dev/sda</path>, la
-siguiente orden hará esto por nosotros:
-</p>
-
-<pre caption="Instalar los ficheros de GRUB2 en /boot/grub">
-# <i>grub2-install /dev/sda</i>
-</pre>
-
-<p>
-A continuación, generamos la configuración de GRUB2 basada en la
-configuración de usuario especificada en el fichero
-<path>/etc/default/grub</path> y los guiones en
-<path>/etc/grub.d</path>. En la mayoría de los casos, no se
-necesita ninguna configuración por parte del usuario ya que
-GRUB2 detectará de forma automática el núcleo que se debe iniciar
-(el que tenga el número de versión más alto disponible en
-<path>/boot</path>) y qué sistema de ficheros tiene el directorio
-raíz.
-</p>
-
-<p>
-Para generar la configuración final de GRUB2, ejecute la orden
-<c>grub2-mkconfig</c>:
-</p>
-
-<pre caption="Generar la configuración de GRUB2">
-# <i>grub2-mkconfig -o /boot/grub/grub.cfg</i>
-Generating grub.cfg ...
-Found linux image: /boot/<keyval id="kernel-name" />
-Found initrd image: /boot/<keyval id="genkernel-initrd" />
-done
-</pre>
-
-<p>
-La salida de la orden <e>debe</e> mencionar al menos que se
-ha encontrado una imagen Linux, ya que éstas son necesarias
-para iniciar el sistema. Si utiliza initramfs o <c>genkernel</c>
-para construir su núcleo, se debería detectar igualmente
-la imagen initrd correcta. Si no es así, vaya a
-<path>/boot</path> y compruebe el contenido con la orden
-<c>ls</c>. Si los ficheros no están, vuelva a las instrucciones
-de configuración e instalación del núcleo.
-</p>
-
-</body>
-</subsection>
-</section>
-
 <section id="elilo" test="func:keyval('arch')='IA64'">
 <title>Predeterminado: instalar elilo</title>
 <body>
@@ -892,3 +892,6 @@ Gentoo</uri>.
 </subsection>
 </section>
 </sections>
+
+
+
