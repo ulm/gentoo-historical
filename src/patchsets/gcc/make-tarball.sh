@@ -5,16 +5,17 @@ if [[ $# -ne 1 ]] ; then
 	exit 1
 fi
 
+ver=${1%/}
 for ebuild in \
-	$1 \
-	/usr/local/src/gentoo-x86/sys-devel/gcc/gcc-$1.ebuild \
-	/usr/portage/sys-devel/gcc/gcc-$1.ebuild \
+	${ver} \
+	/usr/local/src/gentoo-x86/sys-devel/gcc/gcc-${ver}.ebuild \
+	/usr/portage/sys-devel/gcc/gcc-${ver}.ebuild \
 	""
 do
 	[[ -f ${ebuild} ]] && break
 done
 if [[ -z ${ebuild} ]] ; then
-	echo "!!! gcc ebuild '$1' does not exist"
+	echo "!!! gcc ebuild '${ver}' does not exist"
 	exit 1
 fi
 
