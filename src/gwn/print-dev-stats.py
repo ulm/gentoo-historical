@@ -25,6 +25,7 @@ for d in dev:
 		cnt += 1
 
 print """
+<h1>Gentoo Developer Moves</h1>
 <h2>Summary</h2>
 Gentoo is made up of <strong>%s</strong> active developers, of which <strong>%s</strong> are currently away.
 Gentoo has recruited a total of <strong>%s</strong> developers since its inception.
