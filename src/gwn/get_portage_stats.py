@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-import os
+import os, time
+
+endtime = time.gmtime(time.time())
+datefor = time.strftime("%Y/%m", endtime)
+dateimg = time.strftime("%Y-%m", endtime)
 
 arch = [
 'alpha',
@@ -59,6 +63,7 @@ with open("pkgstats.txt") as f:
 f.close()
 os.remove("pkgstats.txt")
 
+print "<h1>Portage</h1>"
 print "This section summarizes the current state of the portage tree.\n"
 
 print "[table th=\"0\"]"
@@ -88,9 +93,15 @@ for i in range(0, len(svals)):
 	if i != len(svals) - 1:
 		string1 += ','
 		string2 += ','
+
+print """<p style="text-align: center"><img class=" wp-image-216 aligncenter"
+style="line-height: 24px" alt="gmn-portage-stats-2013-11"
+src="http://blogs.gentoo.org/news/files/%s/gmn-portage-stats-%s.png"
+width="800" height="350" /></p>
+""" % (datefor, dateimg)
 #print string1
 #print string2
-print "\n== Chart URL == \n"
+print "\n== Chart URL == (save it as \"gmn-portage-stats-%s.png\")\n\n" %dateimg
 base = 'http://chart.apis.google.com/chart?cht=bhs&chs=800x350&chd=t:'
 tail = '&chco=45347B,6A5C95&chbh=15&chxt=x,y&chxr=0,0,12250&chdl=Stable|Testing'
 labx = '&chxl=0:1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|'
