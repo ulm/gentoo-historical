@@ -4,7 +4,7 @@
 <!-- Текст этого документа распространяется на условиях лицензии CC-BY-SA -->
 <!-- См. http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-system.xml,v 1.22 2013/09/29 16:29:09 blueboar Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-system.xml,v 1.23 2013/12/31 06:57:18 blueboar Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@
 базовая система Gentoo. Здесь описывается, как этого достичь. 
 </abstract>
 
-<version>13</version>
-<date>2013-09-23</date>
+<version>14</version>
+<date>2013-12-29</date>
 
 <section>
 <title>Изменение корневого каталога</title>
@@ -105,7 +105,7 @@ link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать о
 </p>
 
 <pre caption="Монтирование /proc и /dev">
-# <i>mount -t proc none /mnt/gentoo/proc</i>
+# <i>mount -t proc proc /mnt/gentoo/proc</i>
 # <i>mount --rbind /sys /mnt/gentoo/sys</i>
 # <i>mount --rbind /dev /mnt/gentoo/dev</i>
 </pre>
@@ -176,6 +176,16 @@ link="/main/ru/mirrors.xml">список зеркал</uri> и выбрать о
 <pre caption="Запускаем emerge-webrsync для установки образа Portage">
 # <i>emerge-webrsync</i>
 </pre>
+
+<p>
+Начиная с этого момента, Portage может отмечать, что рекомендует
+произвести некоторые обновления. Это из-за того, что у некоторых
+системных пакетов, которые вы установили из файла stage3 могут
+появиться более новые версии, и теперь Portage узнала о них, так
+как вы установили новый снимок дерева Portage. Пока вы можете спокойно
+игнорировать такие сообщения, и обновить свою систему уже после
+того, как закончите установку Gentoo.
+</p>
 
 </body>
 </subsection>
@@ -413,7 +423,7 @@ USE="-gtk -gnome qt4 kde dvd alsa cdr"
 </subsection>
 </section>
 
-<section>
+<section test="contains('AMD64 arm PPC PPC64 x86', func:keyval('arch'))">
 <title>Необязательно: Использование systemd</title>
 <body>
 
@@ -440,34 +450,145 @@ OpenRC в качестве системы инициализации по умо
 <body>
 
 <p>
-В конце, вы должны выбрать часовой пояс (time zone), 
-чтобы система знала, где вы находитесь. Найдите 
-нужный пояс в <path>/usr/share/zoneinfo</path>, затем 
-скопируйте его в <path>/etc/localtime</path>.
-Постарайтесь, пожалуйста, избегать использования часовых поясов 
-<path>/usr/share/zoneinfo/Etc/GMT*</path>, т. к. 
-их названия не соответствуют ожидаемым поясам. 
-Например, <path>GMT-8</path> фактически является поясом GMT+8.
+В конце, вы должны выбрать часовой пояс (time zone), чтобы система знала, 
+где вы находитесь. Найдите нужный пояс в <path>/usr/share/zoneinfo</path>, 
+затем запишите его в файл <path>/etc/timezone</path>.
 </p>
 
 <pre caption="Установка часового пояса">
 # <i>ls /usr/share/zoneinfo</i>
 <comment>(допустим, вы хотите использовать Europe/Brussels)</comment>
-# <i>cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime</i>
-<comment>(Далее, установим часовой пояс)</comment>
 # <i>echo "Europe/Brussels" &gt; /etc/timezone</i>
+</pre>
+
+<p>
+Постарайтесь, пожалуйста, избегать использования часовых поясов <path>/usr/share/zoneinfo/Etc/GMT*</path>, т. к. 
+их названия не соответствуют ожидаемым поясам. Например, <path>GMT-8</path> фактически является поясом GMT+8.
+</p>
+
+<p>
+Далее, переконфигурируйте пакет timezone-data, который обновит за нас файл
+<path>/etc/localtime</path>, основываясь на <path>/etc/timezone</path>.
+Файл <path>/etc/localtime</path> используется библиотекой C для
+получения информации о часовом поясе.
+</p>
+
+<pre caption="Переконфигурируем timezone-data">
+# <i>emerge --config sys-libs/timezone-data</i>
 </pre>
 
 </body>
 </section>
 
+<section>
+<title>Конфигурация локалей</title>
+<body>
+
+<p>
+Наверняка вы будете использовать только одну, или, может быть, две локали на вашей 
+системе. Вы можете определить локали, которые вам нужны в <path>/etc/locale.gen</path>.
+</p>
+
+<pre caption="Открываем /etc/locale.gen">
+# <i>nano -w /etc/locale.gen</i>
+</pre>
+
+<p>
+Следующие локали являются примером, когда надо получить как Английский (Соединенные Штаты), 
+так и Немецкий (Германия) языки с соответствующими форматами символов (вроде UTF-8).
+</p>
+
+<pre caption="Определяем ваши локали">
+en_US ISO-8859-1
+en_US.UTF-8 UTF-8
+de_DE ISO-8859-1
+de_DE@euro ISO-8859-15
+</pre>
+
+<note>
+Вы можете выбрать желаемые локали из списка, запустив команду <c>locale -a</c>.
+</note>
+
+<warn>
+Мы настоятельно рекомендуем вам использовать хотя бы одну локаль UTF-8,
+так как некоторые приложения могут ее требовать.
+</warn>
+
+<p>
+Следующий шаг состоит в запуске <c>locale-gen</c>. Эта программа сгенерирует все локали, 
+которые вы определилил в файле <path>/etc/locale.gen</path>.
+</p>
+
+<pre caption="Запускаем locale-gen">
+# locale-gen
+</pre>
+
+<p>
+Вы можете проверить, что ваши выбранные локали создались, запустив <c>locale -a</c>.
+</p>
+
+<p>
+Как только данная команда будет выполнена, у вас есть возможность установить
+общесистемные настройки локали. С помощью <c>eselect locale list</c>, отображаются
+существующие цели:
+</p>
+
+<pre caption="Отображение существующих настроек LANG">
+# <i>eselect locale list</i>
+Available targets for the LANG variable:
+  [1] C
+  [2] POSIX
+  [3] en_US
+  [4] en_US.iso88591
+  [5] en_US.utf8
+  [6] de_DE
+  [7] de_DE.iso88591
+  [8] de_DE.iso885915
+  [9] de_DE.utf8
+  [ ] (free form)
+</pre>
+
+<p>
+Нужную локаль можно установить с помощью <c>eselect locale set &lt;значение&gt;</c>
+</p>
+
+<pre caption="Установка переменной LANG">
+# <i>eselect locale set 9</i>
+</pre>
+
+<p>
+Можно выполнить все это вручную, создав или исправив файл <path>/etc/env.d/02locale</path>:
+</p>
+
+<pre caption="Устанавливаем системную локаль по умолчанию в /etc/env.d/02locale">
+LANG="de_DE.UTF-8"
+LC_COLLATE="C"
+</pre>
+
+<p>
+Не забудьте перезагрузить ваше окружение:
+</p>
+
+<pre caption="Перезагружаем окружение оболочки">
+<i># env-update &amp;&amp; source /etc/profile</i>
+</pre>
+
+<p>
+У нас есть полное <uri link="https://wiki.gentoo.org/wiki/Localization/HOWTO">Руководство по Локализации</uri>
+для помощи вам в данном процессе. Вы также можете прочитать наше детальное
+<uri link="https://wiki.gentoo.org/wiki/UTF-8/ru">Руководство по UTF-8</uri> для более
+специфической информации по включению UTF-8 на вашей системе.
+</p>
+
+</body>
+</section>
 
 </sections>
 
 <!-- *$Localization:
 target-language: Russian
-target-date: 2013-09-23
-source-cvs-revision: 1.137
+target-date: 2013-12-29
+source-cvs-revision: 1.144
 translated-by: Vasiliy Golubev [vas@nightmail.ru]
 edited-by: Azamat H. Hackimov
 edited-by: Alexey Chumakov [achumakov@gentoo.org]
