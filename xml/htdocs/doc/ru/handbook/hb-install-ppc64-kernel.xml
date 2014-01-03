@@ -1,0 +1,232 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-ppc64-kernel.xml,v 1.1 2014/01/03 10:30:07 blueboar Exp $ -->
+
+<sections>
+
+<abstract>
+Ядро Linux — сердце каждого дистрибутива. В этой главе описывается, 
+как его настроить.
+</abstract>
+
+<version>1</version>
+<date>2013-12-17</date>
+
+<section>
+<title>Установка исходных кодов ядра</title>
+<subsection>
+<title>Выбор ядра</title>
+<body>
+
+<p>
+Ядро Linux — это то, вокруг чего формируются все дистрибутивы. Это слой между 
+пользовательскими программами и вашим оборудованием. Пользователи Gentoo могут 
+выбирать из нескольких типов ядра. Их полный список и описание находится в 
+<uri link="https://wiki.gentoo.org/wiki/Kernel/Overview">руководстве по выбору ядра Gentoo (англ.)</uri>.
+</p>
+
+<p>
+Для систем <keyval id="arch"/> есть такое ядро, <c>как gentoo-sources</c> 
+(ядро с заплатками для дополнительных возможностей). 
+</p>
+
+<p>
+С помощью команды <c>emerge</c> выберите и установите ядро.
+</p>
+
+<pre caption="Установка исходных кодов ядра">
+# <i>emerge gentoo-sources</i>
+</pre>
+
+<p>
+Просмотрев содержимое каталога <path>/usr/src</path>, вы увидите символьную ссылку 
+<path>linux</path>, которая указывает на каталог с исходными кодами ядра. В данном 
+случае, установленный исходный код ядра указывает на 
+<c>gentoo-sources-<keyval id="kernel-version"/></c>. Имейте в виду, что ваша версия 
+может отличаться.
+</p>
+
+<pre caption="Просмотр папки с исходными кодами ядра">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx   1 root   root      12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+<p>
+Теперь настало время настройки и компиляции ядра. Можно использовать сценарий 
+<c>genkernel</c>, который сформирует стандартное ядро, аналогичное используемому 
+на установочном компакт-диске, но он в данный момент не полностью
+работоспособен на PPC64.
+</p>
+
+<p>
+Продолжайте читать главу <uri link="#manual">ручная настройка</uri>. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>Ручная настройка</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+
+
+Ручная настройка ядра считается одним из самых сложных вопросов для пользователей 
+Linux. Зато после настройки нескольких вариантов ядра вы и не вспомните, что это 
+когда-то было трудно ;) 
+</p>
+
+<p>
+Однако <e>есть</e> одна непреложная истина: запуская ручную настройку ядра, 
+следует знать состав аппаратуры своего компьютера. Большую часть информации 
+можно собрать, установив пакет pciutils (<e>emerge pciutils</e>), в который 
+входит <c>lspci</c>. <c>lspci</c> можно использовать, находясь в среде с временным 
+корневым каталогом. Можно не обращать внимания на предупреждения, касающиеся 
+<e>pcilib</e> (например: pcilib: cannot open /sys/bus/pci/devices 
+[pcilib: не могу открыть /sys/bus/pci/devices]), которые выводит на экран <c>lspci</c>. 
+Можно запустить <c>lspci</c> и <e>вне</e> временной среды установки. 
+Результат тот же. Вы также можете запустить <c>lsmod</c> для просмотра модулей ядра, 
+используемых установочным компакт-диском (это даст хорошую подсказку, 
+какие параметры включать). 
+</p>
+
+<pre caption="Вызов меню настройки">
+# <i>cd /usr/src/linux</i>
+<comment>Важно: В случае, если вы находитесь в 32-битной пользовательской среде,
+вы должны отредактировать Makefile самого высшего уровня в /usr/src/linux,
+и изменить опцию CROSS_COMPILE на CROSS_COMPILE ?= powerpc64-unknown-linux-gnu-. 
+Вы должны это сделать до того, как выполните команду make menuconfig,
+либо это может привести к проблемам компиляции ядра.</comment>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Перед вами появятся несколько разделов настройки. Сначала перечислим пункты, 
+включение которых обязательно (иначе Gentoo не заработает, или для его работы 
+потребуются дополнительные ухищрения). 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Включение нужных пунктов</title>
+<body>
+
+<p>
+Сначала войдите в <c>File Systems</c> и выберите поддержку всех нужных файловых систем. 
+<e>Не</e> компилируйте поддержку файловой системы, которую имеет ваш корневой раздел 
+как модуль, иначе система Gentoo не сможет смонтировать ваш раздел. Также выберите 
+<c>Virtual memory</c>, <c>/proc file system</c> и <c>/dev/pts file system for Unix98 PTYs</c>:
+</p>
+
+<pre caption="Выбор необходимых файловых систем">
+File systems ---&gt;
+  [*] Virtual memory file system support (former shm fs)
+  [*] /proc file system support
+  [*] /dev/pts file system for Unix98 PTYs
+
+<comment>(Выберите одну или более опций, в зависимости от вашей системы)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<note>
+Вы найдете некоторые из вышеозначенных опций в <c>Pseudo filesystems</c>,
+которые являются частью <c>File systems</c>.
+</note>
+
+<p>
+Если вы используете PPPoE или коммутируемого соединения для соединения с 
+Интернетом, потребуется включить в ядре следующие функции (они находятся
+в <c>Networking support</c>, находящейся в <c>Device Drivers</c>):
+</p>
+
+<pre caption="Выбор нужных драйверов PPPoE">
+Network device support ---&gt;
+  &lt;*&gt; PPP (point-to-point protocol) support
+  &lt;*&gt;   PPP support for async serial ports
+  &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+Два параметра сжатия данных не являются обязательными, но и не повредят. 
+То же относится и к параметру <c>PPP over Ethernet</c> который нужен только для 
+<c>ppp</c>, для поддержки PPPoE в режиме ядра. 
+</p>
+
+<p>
+При необходимости, не забудьте включить в ядре поддержку своей сетевой платы. 
+</p>
+
+<p>
+Далее выберите <e>Maintain a devtmpfs file system to mount at /dev</e>, чтобы
+критические файлы устройств уже существовали в процессе загрузки.
+</p>
+
+<pre caption="Включаем поддержку devtmpfs">
+Device Drivers ---&gt;
+  Generic Driver Options ---&gt;
+    [*] Maintain a devtmpfs filesystem to mount at /dev
+    [ ]   Automount devtmpfs at /dev, after the kernel mounted the rootfs
+</pre>
+
+<p>
+Закончив настройку ядра, приступайте к <uri link="#compiling">компиляции и установке</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Компиляция и установка</title>
+<body>
+
+<p>
+Теперь, когда ядро настроено, настало время его скомпилировать и установить. 
+Выйдите из настройки и запустите процесс компиляции: 
+</p>
+
+<pre caption="Компилируем ядро">
+(Apple/IBM)  # <i>make &amp;&amp; make modules_install</i>
+</pre>
+
+<p>
+По завершении компиляции, скопируйте образ ядра в каталог <path>/boot</path>.
+</p>
+
+<pre caption="Установка ядра">
+(Apple/IBM)  # <i>cp vmlinux /boot/<keyval id="kernel-name"/></i>
+</pre>
+
+<p>
+Теперь продолжайте с раздела <uri link="#kernel_modules">Модули Ядра</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="kernel_modules">
+<title>Модули ядра</title>
+
+<subsection>
+<include href="hb-install-kernelmodules.xml"/>
+</subsection>
+
+</section>
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-date: 2013-12-17
+source-cvs-revision 1.42
+transferred-by:  Romanov Vladimir [blueboar2@gmail.com]
+-->
