@@ -1,0 +1,342 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-ppc64-bootloader.xml,v 1.1 2014/01/03 11:58:36 blueboar Exp $ -->
+
+<sections>
+
+<abstract>
+Существует несколько начальных загрузчиков. Каждый из них конфигурируется
+по своему. В данной главе мы опишем все ваши возможности и проведем
+вас через процесс конфигурирования того начального загрузчика, который вам
+необходим.
+</abstract>
+
+<version>1</version>
+<date>2011-05-09</date>
+
+<section>
+<title>Делаем выбор</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+Теперь, когда ядро настроено и собрано, а нужные конфигурационные файлы 
+заполнены как надо, пришло время установить программу, которая будет 
+запускать ваше ядро при старте системы. Такого рода программа называется <e>загрузчиком</e>.
+</p>
+
+<p>
+На Linux/PPC64 у нас есть только yaBoot в качестве начального загрузчика,
+пока grub2 не будет закончен.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="yaboot">
+<title>Используем yaBoot</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<impo>
+Если вы используете 64-битное пользовательское окружение, вам нужно использовать
+пакет <c>yaboot-static</c>, так как yaboot не может быть скомпилирован как
+64-битное приложение. 32-битные пользовательские окружения должны использовать
+обычный пакет <c>yaboot</c>.
+</impo>
+
+<p>
+Существует два способа конфигурации yaBoot для вашей системы. Вы можете использовать
+новый и улучшенный <c>yabootconfig</c>, включенный в <path>yaboot-1.3.8-r1</path>
+и более поздние версии, чтобы автоматически настроить yaboot. Если, по какой-то причине,
+вы не хотите запускать <c>yabootconfig</c> для автоматической настройки
+<path>/etc/yaboot.conf</path>, либо вы устанавливаете Gentoo на G5 (на которой
+<c>yabootconfig</c> не всегда работает), вы можете просто отредактировать
+примерный файл, который уже установлен на вашей системе.
+</p>
+
+<impo>
+yabootconfig/ybin не будут работать на IBM. Вам нужно устанавливать yaboot другим
+способом: <uri link="#yaboot-ibm">Используем yaboot на IBM</uri>
+</impo>
+
+<note>
+Если ваша корневая файловая система использует файловую систему JFS, добавьте
+<c>ro</c> как параметр ядра. JFS должна иметь возможность переиграть свой
+лог в режиме только для чтения, прежде чем будет смонтирована для чтения-записи.
+</note>
+
+<ul>
+  <li><uri link="#yabootconfig">По умолчанию: Используем yabootconfig</uri></li>
+  <li>
+    <uri link="#manual_yaboot">Альтернатива: Ручная конфигурация yaBoot</uri>
+  </li>
+</ul>
+
+</body>
+</subsection>
+<subsection id="yabootconfig">
+<title>По умолчанию: Используем yabootconfig</title>
+<body>
+
+<p>
+<c>yabootconfig</c> автоматически определить разделы на вашем компьютере,
+и настроит двойные или тройные комбинации с Linux, Mac OS и Mac OS X.
+</p>
+
+<p>
+Для использования <c>yabootconfig</c> ваш жесткий диск должен иметь
+раздел для начальной загрузки, и файл <path>/etc/fstab</path> должен быть
+сконфигурирован под ваши разделы Linux. И то, и другое должно быть уже
+сделано в шагах, которые были описаны выше. Сначала удостоверьтесь,
+что у вас установлена последняя версия yaboot, запустив команду
+<c>emerge --update yaboot-static</c>. Это важно, так как последняя
+версия может быть в Portage, но она может быть еще не включена в
+файлы стадии.
+</p>
+
+<pre caption = "Устанавливаем yaboot-static">
+<comment>(Для 64-битных пользователей)</comment>
+# <i>emerge --update yaboot-static</i>
+
+<comment>(Для 32-битных пользователей)</comment>
+# <i>emerge yaboot</i>
+</pre>
+
+<p>
+Теперь запустите <c>yabootconfig</c>. Программа запустится и проверит
+положение раздела начальной загрузки. Нажмите <c>Y</c>, если она
+выдаст правильные данные. Если нет, дважды проверьте <path>/etc/fstab</path>.
+Затем yabootconfig просканирует настройку вашей системы, создаст
+<path>/etc/yaboot.conf</path> и запустит <c>mkofboot</c> для вас.
+<c>mkofboot</c> используется для форматирования раздела начальной
+загрузки и установки на него файла с конфигурацией yaboot.
+</p>
+
+<p>
+Вы можете захотеть проверить содержимое <path>/etc/yaboot.conf</path>. Если
+вы сделали изменения в файл <path>/etc/yaboot.conf</path> (например, установили
+операционную систему по умолчанию), выполните команду <c>ybin -v</c>,
+чтобы изменения применились к разделу начальной загрузки.
+</p>
+
+<p>
+Теперь продолжайте с главы <uri link="#reboot">Перезагрузка системы</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection id="manual_yaboot">
+<title>Альтернатива: Ручная конфигурация yaBoot</title>
+<body>
+
+<p>
+Сначала удостоверьтесь, что у вас установлена последняя версия <c>yaboot-static</c>:
+</p>
+
+<pre caption = "Установка yaboot">
+<comment>(Для 64-битных пользователей)</comment>
+# <i>emerge --update yaboot-static</i>
+
+<comment>(Для 32-битных пользователей)</comment>
+# <i>emerge yaboot</i>
+</pre>
+
+<p>
+Ниже вы увидите законченный файл <path>yaboot.conf</path>. Меняйте его
+по своему желанию.
+</p>
+
+<pre caption = "/etc/yaboot.conf">
+<comment>## /etc/yaboot.conf
+##
+## введите "man yaboot.conf" для более детальной информации. Не делайте
+## изменений, пока не прочитаете ее!!
+## также смотри /usr/share/doc/yaboot/examples для примерных конфигураций
+##
+## Для двойной загрузки добавьте что-то из нижеследующего:
+## bsd=/dev/sdaX, macos=/dev/sdaY, macosx=/dev/sdaZ
+
+## наш раздел начальной загрузки:</comment>
+
+boot=/dev/sda2
+
+<comment>## ofboot это путь Open Firmware для определения раздела начальной загрузки.
+## Если он не определен, yaboot не работает на G5 и некоторых G4 (если только
+## вы не передали нужные аргументы программе mkofboot/ybin).
+## hd:X означает /dev/sdaX.</comment>
+
+ofboot=hd:2
+
+<comment>## hd для Open Firmware это то же самое, что и sda</comment>
+device=hd:
+
+delay=5
+defaultos=macosx
+timeout=30
+install=/usr/lib/yaboot/yaboot
+magicboot=/usr/lib/yaboot/ofboot
+
+<comment>#################
+## Данный раздел можно повторять несколько раз, если у вас более чем одно
+## ядро или набор опций загрузки. Замените <keyval id="kernel-name"/> на название вашего ядра.
+#################</comment>
+image=/boot/<keyval id="kernel-name"/>
+  label=Linux
+  root=/dev/sda3
+  partition=3
+  read-only
+
+macos=hd:13
+macosx=hd:12
+enablecdboot
+enableofboot
+</pre>
+
+<p>
+Как только <path>yaboot.conf</path> настроен так, как вы хотите, запустите
+<c>mkofboot -v</c> для установки настроек на раздел начальной загрузки.
+<e>Не забудьте это!</e> Согласитесь, когда <c>mkofboot</c> спросит вас,
+создать ли новую файловую систему.
+</p>
+
+<p>
+Если все пройдет хорошо, и у вас такие же опции, что и в примере выше, то после
+следующей перезагрузки у вас будет простое загрузочное меню из пяти пунктов.
+Если вы после этого обновите свою конфигурацию yaboot, вам нужно запустить
+команду <c>ybin -v</c> для обновления раздела начальной загрузки.
+Команда <c>mkofboot</c> применяется только для начальной настройки.
+</p>
+
+<p>
+Для более детальной информации о yaboot, посмотрите информацию на сайте
+<uri link="http://penguinppc.org/projects/yaboot">проекта yaboot</uri>. А пока
+продолжайте установку с главы <uri link="#reboot">Перезагрузка системы</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="yaboot-ibm">
+<title>Используем yaboot на IBM</title>
+<body>
+
+<p>
+На компьютерах IBM вы не можете запускать <c>yabootconfig</c> или <c>ybin</c>.
+Вы должны выполнить следующие шаги:
+</p>
+
+<ul>
+  <li>Установить yaboot-static</li>
+  <li>
+    Запустить <c>dd if=/usr/lib/yaboot/yaboot.chrp of=/dev/sdXX</c> (замените XX
+    на ваш диск и раздел для раздела PReP; в нашем примере он был <path>/dev/sda1</path>)
+  </li>
+  <li>
+    Далее создайте свой файл <path>yaboot.conf</path> и положите его в <path>/etc</path>. 
+    (Посмотрите в пример выше, в man-страницу yaboot.conf, либо посмотрите на нижеприведенный
+    пример <path>yaboot.conf</path>)
+  </li>
+  <li>
+    Предполагая, что ваше загрузочное устройство в OF указывает на тот жесткий
+    диск, на котором находится ваш загрузочный раздел prep, все будет просто
+    работать, в противном случае, во время IPL, зайдите в меню мультизагрузки
+    и установите загрузочное устройство - оно должно быть тем устройством, на
+    котором находится ваш загрузочный раздел prep.
+  </li>
+  <li>Вот и все!</li>
+</ul>
+
+<pre caption="yaboot.conf для компьютеров IBM">
+device=disk:
+partition=2
+root=/dev/sda2
+default=linux
+timeout=50
+
+image=/boot/<keyval id="kernel-name"/>
+    label=linux
+    append="console=ttyS0,9600"
+    read-only
+</pre>
+
+<p>
+Для компьютеров POWER4, POWER5, и компьютеров, основанных на blade,
+где раздел диска PReP и раздел диска, содержащий ваше ядро находятся
+на одном и том же физическом диске, вы можете использовать более простой
+<path>yaboot.conf</path>. Следующего должно хватить:
+</p>
+
+<pre caption="yaboot.conf для компьютеров PReP">
+default = linux
+timeout = 100
+image=/boot/<keyval id="kernel-name"/>
+        label=linux
+        read-only
+        root = /dev/sda2
+        append="root=/dev/sda2"
+</pre>
+
+<p>
+Для проверки того, что yaboot был скопирован на раздел PReP:
+</p>
+
+<pre caption="Проверка того, что yaboot установлен на PReP">
+# <i>dd if=/dev/sda1 count=10 | grep ELF</i>
+Binary file (standard input) matches
+10+0 records in
+10+0 records out
+</pre>
+
+<p>
+То, что совпадение было найдено говорит о том, что yaboot был корректно установлен.
+</p>
+
+</body>
+</section>
+<section id="reboot">
+<title>Перезагрузка системы</title>
+<subsection>
+<body>
+
+<p>
+Выйдите из изолированной среды и размонтируйте все смонтированные разделы. 
+Затем введите ту самую волшебную команду, которую вы так заждались: <c>reboot</c>. 
+</p>
+
+<pre caption="Выходим из среды, размонтирование всех разделов и перезагрузка">
+# <i>exit</i>
+~# <i>cd</i>
+~# <i>umount -l /mnt/gentoo/dev{/shm,/pts,}</i>
+~# <i>umount -l /mnt/gentoo{/boot,/proc,}</i>
+~# <i>reboot</i>
+</pre>
+
+<p>
+Естественно, не забудьте вынуть загрузочный компакт-диск, иначе он загрузится 
+сам вместо вашей новой системы Gentoo. 
+</p>
+
+<p>
+Загрузив вновь установленную систему, переходите к 
+<uri link="?part=1&amp;chap=11">завершению установки Gentoo</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-date: 2011-05-09
+source-cvs-revision 1.31
+transferred-by:  Romanov Vladimir [blueboar2@gmail.com]
+-->
