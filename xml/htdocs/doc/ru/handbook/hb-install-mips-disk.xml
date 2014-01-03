@@ -1,0 +1,664 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-mips-disk.xml,v 1.1 2014/01/03 09:24:32 blueboar Exp $ -->
+
+<sections>
+
+<abstract>
+Чтобы иметь возможность установки Gentoo, вы должны создать необходимые 
+разделы. Данная глава описывает, как разбить диск для последующего использования. 
+</abstract>
+
+<version>1</version>
+<date>2013-02-23</date>
+
+<section>
+<title>Введение в блочные устройства</title>
+
+<subsection>
+<include href="hb-install-blockdevices.xml"/>
+</subsection>
+
+<subsection>
+<title>Разделы</title>
+<body>
+
+<p>
+Хотя теоретически для размещения системы Linux диск можно использовать целиком, 
+так почти никогда не делают на практике. Вместо этого большое физическое блочное 
+устройство разбивают на меньшие блочные устройства, более удобные для обращения. 
+Они называются <e>разделами</e>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Разработка схемы разбиения диска</title>
+<subsection>
+<title>Схема разбиения по умолчанию?</title>
+<body>
+
+<p>
+Количество разделов очень сильно зависит от назначения системы. Например, если 
+у вас много пользователей, вам, скорее всего, захочется отделить <path>/home</path>
+для повышения безопасности и упрощения резервного копирования. Если вы устанавливаете 
+Gentoo в роли почтового сервера, следует отделить <path>/var</path>, т.к. вся почта 
+хранится там. Затем, правильно выбрав файловую систему, вы добьетесь максимальной 
+производительности. Для игровых серверов потребуется отдельный раздел <path>/opt</path>, 
+так как большинство программ для их работы устанавливается туда. Причины выделения те же, 
+что и для <path>/home</path>: безопасность и резервное копирование. Определенно 
+не помешает побольше места для <path>/usr</path>: не только потому, что там хранится 
+большинство приложений, а еще из-за того, что лишь дерево Portage, не считая 
+размещенных в нем архивов с исходными кодами, занимает около 500 МБ. 
+</p>
+
+<p>
+Как видите, все зависит от ваших целей. Наличие отдельных разделов или томов 
+имеет следующие плюсы: 
+</p>
+
+<ul>
+<li>
+  для каждого раздела или тома можно выбрать наиболее подходящую файловую систему 
+</li>
+<li>
+  свободное место во всей системе не кончится «вдруг» из-за того, что одна-единственная 
+  сбойная программа постоянно записывает файлы в раздел или том 
+</li>
+<li>
+  необходимая проверка файловых систем будет занимать меньше времени, т.к. проверка 
+  разных разделов может выполняться параллельно (еще больший выигрыш времени дает 
+  использование нескольких физических дисков) 
+</li>
+<li>
+  можно повысить безопасность системы, монтируя часть разделов в режиме read-only 
+  (только для чтения), nosuid (игнорируется бит setuid), noexec (игнорируется бит исполнения) и т.д. 
+</li>
+</ul>
+
+<p>
+Однако у множества разделов также есть недостатки. Если они не сконфигурированы 
+правильно, у вас будет система с огромным количеством свободного места на одном 
+разделе и отсутствием его на другой. Другой проблемой является то, что отдельные 
+разделы, особенно для важных точек монтирования, например <path>/usr</path> или 
+<path>/var</path>, часто требуют загрузки некоторого кода в ОЗУ, чтобы смонтировать 
+разделы прежде чем запустятся другие загрузочные скрипты. Это не всегда является 
+проблемой, так что результаты могут быть разные. 
+</p>
+
+<p>
+Также существует лимит в 15 разделов для SCSI и SATA.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Используем fdisk на MIPS для разбивки вашего диска</title>
+<subsection>
+<title>Компьютеры SGI: Создаем метку диска SGI</title>
+<body>
+
+<p>
+Все диски на системах SGI требуют <e>Метку диска SGI</e>, которая выполняет
+функцию, похожую на метки диска Sun или MS-DOS - она сохраняет информацию
+о разделах на диске. Создание новой метки диска SGI приведет к созданию
+двух специальных разделов на диске:
+</p>
+
+<ul>
+  <li>
+    <e>Заголовок тома SGI</e> (9й раздел): Данный раздел важен. Именно
+    здесь будет находиться начальный загрузчик, а в некоторых случаях тут
+    также будут находиться образы ядра.
+  </li>
+  <li>
+    <e>Том SGI</e> (11й раздел): Данный раздел выполняет похожие функции, что
+    и третий раздел Sun, "целый диск". Данный раздел описывает целый диск, и его
+    не нужно трогать. Он не выполняет никаких специальных функций, кроме того,
+    что он помогает PROM каким-то недокументированным образом (либо каким-то
+    образом используется IRIX).
+  </li>
+</ul>
+
+<warn>
+Заголовок тома SGI <e>должен</e> начинаться с цилиндра 0. Невозможность это
+сделать приведет к тому, что вы не сможете загрузиться с диска.
+</warn>
+
+<p>
+Следующая запись является примером работы с <c>fdisk</c>. Прочитайте и
+адаптируйте ее под ваши нужды...
+</p>
+
+<pre caption="Создаем метку диска SGI">
+# <i>fdisk /dev/sda</i>
+
+Command (m for help): <i>x</i>
+
+Expert command (m for help): <i>m</i>
+Command action
+   b   move beginning of data in a partition
+   c   change number of cylinders
+   d   print the raw data in the partition table
+   e   list extended partitions
+   f   fix partition order
+   g   create an IRIX (SGI) partition table
+   h   change number of heads
+   m   print this menu
+   p   print the partition table
+   q   quit without saving changes
+   r   return to main menu
+   s   change number of sectors/track
+   v   verify the partition table
+   w   write table to disk and exit
+
+Expert command (m for help): <i>g</i>
+Building a new SGI disklabel. Changes will remain in memory only,
+until you decide to write them. After that, of course, the previous
+content will be irrecoverably lost.
+
+Expert command (m for help): <i>r</i>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/sda (SGI disk label): 64 heads, 32 sectors, 17482 cylinders
+Units = cylinders of 2048 * 512 bytes
+
+----- partitions -----
+Pt#     Device  Info     Start       End   Sectors  Id  System
+ 9:  /dev/sda1               0         4     10240   0  SGI volhdr
+11:  /dev/sda2               0     17481  35803136   6  SGI volume
+----- Bootinfo -----
+Bootfile: /unix
+----- Directory Entries -----
+
+Command (m for help):
+</pre>
+
+<note>
+Если ваш диск уже имеет существующую метку диска SGI, то fdisk не разрешит
+создание новой метки. С этим можно работать двумя способами. Один из них - 
+создание метки диска Sun или MS-DOS, запись изменений на диске, и запуск
+fdisk снова. Второй способ - перезаписать таблицу разделов нулевыми данными
+с помощью следующей команды: <c>dd if=/dev/zero of=/dev/sda bs=512 count=1</c>.
+</note>
+</body>
+</subsection>
+
+<subsection>
+<title>Делаем заголовок тома SGI нужного размера</title>
+<body>
+
+<impo>
+Данный шаг часто необходим из-за ошибки в <c>fdisk</c>. По каким-то причинам,
+заголовок тома не создается правильно, так как он начинается и заканчивается
+в цилиндре 0. Это не дает возможности создать несколько разделов. Чтобы
+справиться с этой проблемой... читайте дальше.
+</impo>
+
+<p>
+Теперь, когда создана метка диска SGI, можно определять разделы. В вышеприведенном
+примере два раздела для вас уже определено. Эти специальные разделы, определенные
+выше обычно не должны изменяться. Однако для установки Gentoo нам нужен
+начальный загрузчик, и, возможно, несколько образов ядра (в зависимости от
+типа системы), которые будут находиться прямо в заголовке тома. Сам
+заголовок тома может содержать до <e>восьми</e> образов любого размера, при
+условии, что каждый образ имеет имя из восьми символов.
+</p>
+
+<p>
+Процесс увеличения размера заголовка тома не является очевидным, существует
+небольшой трюк. Нельзя просто удалить, и заново добавить заголовок тома
+из-за неправильного поведения fdisk. В примере, приведенном ниже, мы
+создадим заголовок тома в 50Мб вместе с разделом /boot размеров 50 Мб.
+Разметка вашего диска может немного отличаться, информация ниже
+приведена только для иллюстративных целей.
+</p>
+
+<pre caption="Правильно изменяем размер заголовка тома SGI">
+Command (m for help): <i>n</i>
+Partition number (1-16): <i>1</i>
+First cylinder (5-8682, default 5): <i>51</i>
+ Last cylinder (51-8682, default 8682): <i>101</i>
+
+<comment>(Заметьте, что fdisk разрешает разделу #1 быть созданным начиная минимум с    )
+(цилиндра 5? Если бы вы попытались удалить и пересоздать заголовок тома SGI   )
+(таким способом, то именно эту ошибку вы бы и обнаружили. В нашем примере     )
+(мы хотим раздел /boot в 50Мб, поэтому мы начинаем с цилиндра 51 (помните,    )
+(заголовок тома должен начинаться с цилиндра 0), и устанавливаем его конечный )
+(цилиндр в 101, что будет примерно 50Мб (плюс-минус 1-5 мегабайт)             )</comment>
+
+Command (m for help): <i>d</i>
+Partition number (1-16): <i>9</i>
+
+<comment>(Удаляем раздел #9 (заголовок тома SGI))</comment>
+
+Command (m for help): <i>n</i>
+Partition number (1-16): <i>9</i>
+First cylinder (0-50, default 0): <i>0</i>
+ Last cylinder (0-50, default 50): <i>50</i>
+
+<comment>(Пересоздаем раздел #9, сразу же перед разделом #1)</comment>
+</pre>
+
+<p>
+Если вы не уверены, как использовать <c>fdisk</c>, посмотрите ниже в
+инструкции по разбивке на компьютерах Cobalt. Концепции точно те же самые --
+просто помните, что нужно оставить раздел заголовка тома и раздел
+"полный диск" нетронутым.
+</p>
+
+<p>
+Как только это сделано, вы спокойно можете создать оставшиеся разделы, как
+вы считаете нужным. После того как все ваши разделы созданы, удостоверьтесь,
+что вы установили ID вашего раздела подкачки в <c>82</c>, что означает
+Linux Swap. По умолчанию он установлен в <c>83</c>, Linux Native.
+</p>
+
+<p>
+Теперь, когда вы создали ваши разделы, вы можете продолжать с раздела
+<uri link="#filesystems">Создание файловых систем</uri>.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Компьютеры Cobalt: Разбиваем ваш жесткий диск</title>
+<body>
+
+<p>
+На компьютерах Cobalt, BOOTROM ожидает увидеть MS-DOS MBR, поэтому разбивка
+жесткого диска относительно прямолинейна -- вообще, она выполняется так же,
+как выполнялась бы для компьютера Intel x86. <e>Однако</e> существуют
+некоторые вещи, которые нужно помнить.
+</p>
+
+<ul>
+  <li>
+    Прошивка Cobalt ожидае, что <path>/dev/sda1</path> будет разделом Linux,
+    отформатированным в <e>EXT2 Revision 0</e>. <e>Разделы EXT2 Revision 1
+    НЕ БУДУТ РАБОТАТЬ!</e> (Cobalt BOOTROM понимает только EXT2r0)
+  </li>
+  <li>
+    Раздел, про который сказано выше должен содержать сжатый gzip образ ELF,
+    <path>vmlinux.gz</path> в корне данного раздела, который будет загружен
+    как ядро.
+  </li>
+</ul>
+
+<p>
+По этой причине я рекомендую создать раздел <path>/boot</path> размером
+в 20Мб, отформатированный в EXT2r0, на который вы можете установить
+CoLo и ваши ядра. Это позволит вам запустить более современную файловую
+систему (EXT3 или ReiserFS) на вашем корневом разделе.
+</p>
+
+<p>
+Я буду предполагать, что вы создали <path>/dev/sda1</path>, чтобы позднее
+смонтировать его в раздел <path>/boot</path>. Если вы хотите сделать его
+смонтированным на <path>/</path>, вам нужно помнить про требования PROM.
+</p>
+
+<p>
+Итак, продолжаем... чтобы создать разделы, вам нужно набрать <c>fdisk /dev/sda</c>
+в командной строке. Главные команды, которые вы должны знать следующие:
+</p>
+
+<ul>
+  <li>
+    <c>o</c>: Удалить старую таблицу разделов и начать с пустой таблицы
+    разделов MS-DOS.
+  </li>
+  <li>
+    <c>n</c>: Новый раздел.
+  </li>
+  <li>
+    <c>t</c>: Изменить тип раздела.
+    <ul>
+      <li>Используйте тип <c>82</c> для Linux Swap, <c>83</c> для Linux FS</li>
+    </ul>
+  </li>
+  <li>
+    <c>d</c>: Удалить раздел.
+  </li>
+  <li>
+    <c>p</c>: Отобразить (напечатать) таблицу разделов.
+  </li>
+  <li>
+    <c>q</c>: Выйти, не изменяя таблицу разделов.
+  </li>
+  <li>
+    <c>w</c>: Выйти и записать измененную таблицу разделов.
+  </li>
+</ul>
+
+<pre caption="Разбивка диска">
+# <i>fdisk /dev/sda</i>
+
+The number of cylinders for this disk is set to 19870.
+There is nothing wrong with that, but this is larger than 1024,
+and could in certain setups cause problems with:
+1) software that runs at boot time (e.g., old versions of LILO)
+2) booting and partitioning software from other OSs
+   (e.g., DOS FDISK, OS/2 FDISK)
+
+<comment>(Начнем с очистки существующих разделов)</comment>
+Command (m for help): <i>o</i>
+
+Building a new DOS disklabel. Changes will remain in memory only,
+until you decide to write them. After that, of course, the previous
+content won't be recoverable.
+
+The number of cylinders for this disk is set to 19870.
+There is nothing wrong with that, but this is larger than 1024,
+and could in certain setups cause problems with:
+1) software that runs at boot time (e.g., old versions of LILO)
+2) booting and partitioning software from other OSs
+   (e.g., DOS FDISK, OS/2 FDISK)
+Warning: invalid flag 0x0000 of partition table 4 will be corrected by w(rite)
+
+<comment>(Теперь вы можете проверить, что таблица разделов пуста с помощью команды 'p')</comment>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+
+<comment>(Создаем раздел /boot)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   e   extended
+   p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+
+<comment>(Просто нажимаем ENTER, чтобы согласиться со значением по умолчанию)</comment>
+
+First cylinder (1-19870, default 1):
+Last cylinder or +size or +sizeM or +sizeK (1-19870, default 19870): <i>+20M</i>
+
+<comment>(нажимаем 'p' снова, чтобы просмотреть новый раздел)</comment>
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1          40       20128+  83  Linux
+
+<comment>(Остальное я предпочитаю помещать в расширенный раздел, создадим его)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   e   extended
+   p   primary partition (1-4)
+<i>e</i>
+Partition number (1-4): <i>2</i>
+
+<comment>(Опять же, умолчания нам подходят, нажимаем ENTER.)</comment>
+
+First cylinder (41-19870, default 41):
+Using default value 41
+
+<comment>(Мы хотим использовать весь диск, так что просто нажимаем ENTER снова)</comment>
+Last cylinder or +size or +sizeM or +sizeK (41-19870, default 19870):
+Using default value 19870
+
+<comment>(Теперь раздел / -- я использую отдельные разделы для /usr, /var,
+итд... поэтому / может быть маленьким. Измените его так, как вам необходимо.)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   l   logical (5 or over)
+   p   primary partition (1-4)
+<i>l</i>
+First cylinder (41-19870, default 41):<i>&lt;Press ENTER&gt;</i>
+Using default value 41
+Last cylinder or +size or +sizeM or +sizeK (41-19870, default 19870): <i>+500M</i>
+
+<comment>(... выполните то же самое для любых других разделов ...)</comment>
+
+<comment>(Последним, но не менее важным является пространство подкачки. Я рекомендую
+хотя бы 250Мб пространства подкачки, но лучше 1Гб)</comment>
+
+Command (m for help): <i>n</i>
+Command action
+   l   logical (5 or over)
+   p   primary partition (1-4)
+<i>l</i>
+First cylinder (17294-19870, default 17294): <i>&lt;Press ENTER&gt;</i>
+Using default value 17294
+Last cylinder or +size or +sizeM or +sizeK (1011-19870, default 19870): <i>&lt;Press ENTER&gt;</i>
+Using default value 19870
+
+<comment>(Теперь, если мы проверим нашу таблицу разделов, все должно быть идеально,
+за исключением одной вещи...)</comment>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+Device Boot      Start         End      Blocks      ID  System
+/dev/sda1               1          21       10552+  83  Linux
+/dev/sda2              22       19870    10003896    5  Extended
+/dev/sda5              22        1037      512032+  83  Linux
+/dev/sda6            1038        5101     2048224+  83  Linux
+/dev/sda7            5102        9165     2048224+  83  Linux
+/dev/sda8            9166       13229     2048224+  83  Linux
+/dev/sda9           13230       17293     2048224+  83  Linux
+/dev/sda10          17294       19870     1298776+  83  Linux
+
+<comment>(Заметили, что #10, наше пространство подкачки все еще имеет тип 83?)</comment>
+
+Command (m for help): <i>t</i>
+Partition number (1-10): <i>10</i>
+Hex code (type L to list codes): <i>82</i>
+Changed system type of partition 10 to 82 (Linux swap)
+
+<comment>(Это должно исправить эту проблему... просто чтобы проверить...)</comment>
+
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 10.2 GB, 10254827520 bytes
+16 heads, 63 sectors/track, 19870 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+
+Device Boot      Start         End      Blocks      ID  System
+/dev/sda1               1          21       10552+  83  Linux
+/dev/sda2              22       19870    10003896    5  Extended
+/dev/sda5              22        1037      512032+  83  Linux
+/dev/sda6            1038        5101     2048224+  83  Linux
+/dev/sda7            5102        9165     2048224+  83  Linux
+/dev/sda8            9166       13229     2048224+  83  Linux
+/dev/sda9           13230       17293     2048224+  83  Linux
+/dev/sda10          17294       19870     1298776+  82  Linux Swap
+
+<comment>(Теперь мы записываем новую таблицу разделов.)</comment>
+
+Command (m for help): <i>w</i>
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+#
+</pre>
+
+<p>
+И это все, что нужно сделать. Теперь вы можете проследовать к следующей главе: 
+<uri link="#filesystems">Создание файловых систем</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+
+<section id="filesystems">
+<title>Создание файловых систем</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+Разделы созданы, настало время разместить на них файловые системы. Если вам 
+безразлично, какую файловую систему использовать, и вы вполне довольны той, 
+что мы предлагаем в книге по умолчанию, переходите к 
+<uri link="#filesystems-apply">размещению файловой системы в разделе</uri>. 
+Если нет, читайте дальше, чтобы разузнать о существующих файловых системах... 
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<include href="hb-install-filesystems.xml"/>
+</subsection>
+
+<subsection id="filesystems-apply">
+<title>Размещение файловой системы в разделе</title>
+<body>
+
+<p>
+Для создания в разделе или томе файловой системы каждого типа существуют специальные средства: 
+</p>
+
+<table>
+<tr>
+  <th>Файловая система</th>
+  <th>Команда создания</th>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mkfs.ext2</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkfs.reiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+
+<p>
+Например, чтобы у загрузочного раздела (<path>/dev/sda1</path> в наших примерах) 
+была файловая система ext2, а у корневого раздела (<path>/dev/sda3</path> 
+в наших примерах) — ext4, требуется выполнить: 
+</p>
+
+<pre caption="Создание файловых систем разделов">
+# <i>mkfs.ext2 /dev/sda1</i>
+# <i>mkfs.ext4 /dev/sda3</i>
+</pre>
+
+<p>
+Теперь самостоятельно создайте файловые системы на своих только что созданных
+разделах (либо логических томах).
+</p>
+
+<warn>
+Если вы устанавливаете на сервер Cobalt, помните, что <path>/dev/sda1</path>
+ДОЛЖЕН БЫТЬ типа <e>EXT2 revision 0</e>. Все остальное (например, 
+EXT2 revision 1, EXT3, ReiserFS, XFS, JFS или что-то еще) <e>НЕ БУДЕТ РАБОТАТЬ!</e>
+Вы можете отформатировать раздел, используя команду <c>mkfs.ext2 -r 0 /dev/sda1</c>.
+</warn>
+
+</body>
+</subsection>
+<subsection>
+<title>Подключение раздела подкачки</title>
+<body>
+
+<p>
+<c>mkswap</c> — команда, используемая для инициализации разделов подкачки: 
+</p>
+
+<pre caption="Создание идентификатора раздела подкачки">
+# <i>mkswap /dev/sda2</i>
+</pre>
+
+<p>
+Для подключения раздела подкачки воспользуйтесь <c>swapon</c>:
+</p>
+
+<pre caption="Подключение раздела подкачки">
+# <i>swapon /dev/sda2</i>
+</pre>
+
+<p>
+Теперь командами, приведенными выше, создайте и подключите раздел 
+подкачки в своей системе. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Монтирование</title>
+<body>
+
+<p>
+Теперь, когда разделы созданы, а файловые системы размещены, настало время 
+смонтировать эти разделы. Используйте команду mount. Не забудьте создать 
+для каждого раздела соответствующие каталоги монтирования. Например, смонтируем 
+корневой и загрузочный разделы: 
+</p>
+
+<pre caption="Монтирование разделов">
+# <i>mount /dev/sda3 /mnt/gentoo</i>
+# <i>mkdir /mnt/gentoo/boot</i>
+# <i>mount /dev/sda1 /mnt/gentoo/boot</i>
+</pre>
+
+<note>
+ Если вы хотите разместить каталог <path>/tmp</path> в отдельном разделе, не 
+ забудьте изменить права доступа к этому каталогу после монтирования: 
+ <c>chmod 1777 /mnt/gentoo/tmp</c>. Это также относится к <path>/var/tmp</path>. 
+</note>
+
+<p>
+Еще нам потребуется смонтировать файловую систему proc (виртуальный интерфейс ядра) 
+в каталог <path>/proc</path>. Но сначала надо поместить в разделы нужные файлы. 
+</p>
+
+<p>
+Переходите к <uri link="?part=1&amp;chap=5">установке установочных файлов Gentoo</uri>.
+</p>
+
+</body>
+</section>
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-date: 2013-02-23
+source-cvs-revision: 1.33
+moved-by: Vladimir Romanov [blueboar2@gmail.com]
+-->
