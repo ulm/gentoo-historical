@@ -1,0 +1,607 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-mips-bootloader.xml,v 1.1 2014/01/03 05:52:51 blueboar Exp $ -->
+
+<sections>
+
+<abstract>
+Как компьютеры Silicon Graphics, так и сервера Cobalt требуют использования
+начального загрузчика для загрузки ядра. Данный раздел описывает настройку
+arcboot/arcload (для компьютеров SGI) и colo для серверов Cobalt.
+</abstract>
+
+<version>1</version>
+<date>2011-05-09</date>
+
+<section id="sgi">
+<title>Компьютеры Silicon Graphics -- Настройка arcload</title>
+<subsection>
+<title>Который?</title>
+<body>
+
+<p>
+На компьютерах SGI мы используем начальный загрузчик <c>arcload</c>. Ранее мы
+также предлагали <c>arcboot</c>, однако он был официально обозначен как
+устаревший в пользу <c>arcload</c>.
+</p>
+
+<note>
+Имена файлов в заголовке тома SGI ограничены восемью символами, и в одном
+заголовке тома не может быть более 16 файлов.
+</note>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Установка arcload</title>
+<body>
+
+<p>
+<c>arcload</c> был написан для компьютеров, которые требуют 64-битное ядро,
+и, поэтому, не могут использовать <c>arcboot</c> (который не может быть
+просто скомпилирован как 64-битный файл). Кроме того, он правильно работает
+с различными трудностями, возникающими, когда ядро загружается прямо из
+заголовка тома. Итак, теперь вы знаете, что это такое, и мы можем продолжить
+установку.
+</p>
+
+<pre caption="Устанавливаем arcload и dvhtool">
+# <i>emerge arcload dvhtool</i>
+</pre>
+
+<p>
+Как только это будет выполнено, вы увидите файл <c>arcload</c> в
+<path>/usr/lib/arcload</path>. Теперь, существуют два файла:
+</p>
+
+<ul>
+  <li>
+    <c>sashARCS</c>: 32-битный файл для систем Indy, Indigo2 (R4k), Challenge S и O2
+  </li>
+  <li>
+    <c>sash64</c>: 64-битный файл для систем Octane/Octane2, Origin 200/2000 и Indigo2 Impact
+  </li>
+</ul>
+
+<p>
+Используйте <c>dvhtool</c> для установки нужного для вашей системы файла в 
+заголовок тома:
+</p>
+
+<pre caption="Помещаем arcload в заголовок тома">
+<comment>(Для тех, у кого Indy/Indigo2/Challenge S/O2)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sashARCS sashARCS</i>
+
+<comment>(Для тех, у кого Indigo2 Impact/Octane/Octane2/Origin 200/Origin 2000)</comment>
+# <i>dvhtool --unix-to-vh /usr/lib/arcload/sash64 sash64</i>
+</pre>
+
+<note>
+Вам не обязательно использовать имя <c>sashARCS</c> или <c>sash64</c>, 
+если только вы не устанавливаете в заголовок тома загрузочного CD. Для
+нормальной загрузки с жесткого диска вы можете назвать их как-нибудь
+по другому, если вы хотите.
+</note>
+
+<p>
+Теперь просто используйте <c>dvhtool</c> для проверки того, что файлы
+записаны в заголовок тома.
+</p>
+
+<pre caption="Проверяем, что arcload действительно записан в заголовок тома">
+# <i>dvhtool --print-volume-directory</i>
+----- directory entries -----
+Entry #0, name "sash64", start 4, bytes 55859
+#
+</pre>
+
+<p>
+Теперь, файл <c>arc.cf</c> имеет синтаксис, похожий на C. Для более детального
+рассмотрения по поводу того, как его конфигурировать, смотри
+<uri link="http://www.linux-mips.org/wiki/Arcload">страницу arcload на Linux/MIPS Wiki</uri>.
+Если коротко, то вам нужно определить некоторое число опций, которые вы включаете
+либо выключаете при загрузке с использованием переменной <c>OSLoadFilename</c>.
+</p>
+
+<pre caption="Пример arc.cf">
+<comment># Конфигурация ARCLoad</comment>
+
+<comment># Некоторые настройки по умолчанию...</comment>
+append  "root=/dev/sda3";
+append  "ro";
+append  "console=ttyS0,9600";
+
+<comment># Главная часть. Если хотите, можете изменить название ip28.</comment>
+ip28 {
+        <comment># Определение ядра "working"</comment>
+        <comment># Выберите его, установив OSLoadFilename="ip28(working)"</comment>
+        working {
+                description     "SGI Indigo2 Impact R10000\n\r";
+                image system    "/working";
+        }
+
+        <comment># Определение ядра "new"</comment>
+        <comment># Выберите его, установив OSLoadFilename="ip28(new)"</comment>
+        new {
+                description     "SGI Indigo2 Impact R10000 - Testing Kernel\n\r";
+                image system    "/new";
+        }
+
+        <comment># Для отладки ядра</comment>
+        <comment># Выберите, установив OSLoadFilename="ip28(working,debug)"</comment>
+        <comment># либо OSLoadFilename="ip28(new,debug)"</comment>
+        debug {
+                description     "Debug console";
+                append          "init=/bin/bash";
+        }
+}
+</pre>
+
+<p>
+Начиная с <c>arcload-0.5</c>, файл <path>arc.cf</path> и ядра могут располагаться
+либо в заголовке тома, либо в разделе. Если вы хотите использовать эту новую
+возможность, вы можете, вместо этого, разместить файлы в вашем разделе
+<path>/boot</path> (либо <path>/</path>, если у вас нет отдельного
+загрузочного раздела). <c>arcload</c> использует код драйверов для файловых
+систем из популярного начального загрузчика <c>grub</c>, и, поэтому,
+поддерживает такое же количество файловых систем.
+</p>
+
+<pre caption="Размещаем arc.cf и ядро в заголовке тома">
+# <i>dvhtool --unix-to-vh arc.cf arc.cf</i>
+# <i>dvhtool --unix-to-vh /usr/src/linux/vmlinux new</i>
+</pre>
+
+<p>
+После того, как это сделано, все, что осталось - это установить некоторые опции
+в PROM. Смотри раздел <uri link="#reboot">Перезагружаем систему</uri>.
+</p>
+
+</body>
+</subsection>
+
+</section>
+
+<section id="cobalt">
+<title>Cobalt MicroServers -- Настраиваем CoLo</title>
+<subsection>
+<title>Установка CoLo</title>
+<body>
+
+<p>
+На серверах Cobalt установлена прошивка, которая умеет гораздо меньше.
+BOOTROM серверов Cobalt гораздо примитивнее, чем SGI PROM, и имеет
+большое число серьезных ограничений.
+</p>
+
+<ul>
+  <li>
+    Существует ограничение в 675Кб (приблизительно) на размер ядра. Текущий
+    размер Linux 2.4 делает практически невозможным ядро такого размера. Linux
+    2.6 вообще даже не обсуждается.
+  </li>
+  <li>
+    64-битные ядра не поддерживаются стандартной прошивкой (хотя они и так
+    только тестируются на компьютерах Cobalt в данное время)
+  </li>
+  <li>
+    Возможности оболочки можно назвать только "базовыми", и то с натяжкой.
+  </li>
+</ul>
+
+<p>
+Для обхода данных ограничений была разработана альтернативная прошивка,
+называемая <uri link="http://www.colonel-panic.org/cobalt-mips/">CoLo</uri> (Cobalt Loader).
+Это образ BOOTROM, который может быть либо прошит в микросхему внутри
+сервера Cobalt, либо загружен с помощью уже существующей прошивки.
+</p>
+
+<note>
+Данное описание расскажет вам, как настроить CoLo так, чтобы он загружался
+стандартной прошивкой. Это единственный способ, который является по настоящему
+безопасным, и именно таким способом рекомендуется устанавливать CoLo.
+</note>
+
+<warn>
+Однако если вы хотите, вы можете записать его в сервер и полностью заменить
+стандартную прошивку -- однако тогда вы сами будете разбираться с проблемами,
+если они возникнут. Если что-то пойдет не так, вам будет нужно физически
+удалить BOOTROM и перепрограммировать ее обратно на стандартную прошивку.
+Если вы не уверены, как это сделать, то <e>НЕ</e> прошивайте ваш компьютер.
+Мы не несем ответственности за то, что может случиться, если вы проигнорируете
+этот совет.
+</warn>
+
+<p>
+Итак, предупреждения закончились, и мы приступаем к установке CoLo.
+Сначала просто установим пакет.
+</p>
+
+<pre caption="Устанавливаем colo">
+# <i>emerge colo</i>
+</pre>
+
+<p>
+После установки (я надеюсь вы прочитали эти сообщения ;-) вы можете заглянуть
+в <path>/usr/lib/colo</path> и найти там два файла - <path>colo-chain.elf</path>: 
+"ядро" для прошивки для загрузки и <path>colo-rom-image.bin</path>: 
+образ ROM для прошивки в BOOTROM. Мы начнем с того, что смонтируем /boot,
+и перенесем сжатую копию <path>colo-chain.elf</path> в <path>/boot</path>,
+туда, где система ожидает его увидеть.
+</p>
+
+<pre caption="Помещаем CoLo в нужное место">
+# <i>gzip -9vc /usr/lib/colo/colo-chain.elf &gt; /boot/vmlinux.gz</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Конфигурируем CoLo</title>
+
+<body>
+
+<p>
+Теперь, когда система загрузится в первый раз, она загрузит CoLo, который покажет
+меню на заднем LCD. Первая опция (запускающаяся по умолчанию после примерно
+пяти секунд) - это загрузка с жесткого диска. Система попытается смонтировать
+первый раздел Linux, который найдет, а запустить скрипт <path>default.colo</path>. 
+Синтаксис данного файла полностью описан в документации CoLo
+(посмотрите <path>/usr/share/doc/colo-X.YY/README.shell.gz</path> -- где X.YY
+это номер установленной версии). Он очень простой.
+</p>
+
+<note>
+Просто подсказка: при установке ядер, я обычно создаю два образа ядра - 
+<path>kernel.gz.working</path> -- точно работающее ядро, и
+<path>kernel.gz.new</path> -- ядро, которое было только что скомпилировано.
+Вы можете либо использовать символические ссылки, чтобы указывать на текущие
+"новые" и "рабочие" ядра, либо просто переименовывать образы ядра.
+</note>
+
+<pre caption="default.colo по умолчанию">
+<comment>#:CoLo:#</comment>
+mount hda1
+load /kernel.gz.working
+execute root=/dev/sda3 ro console=ttyS0,115200
+</pre>
+
+<note>
+CoLo откажется загружать скрипт, который не начинается со строки <c>#:CoLo:#</c>.
+Думайте об этом как об эквиваленте строки <c>#!/bin/sh</c> в скриптах командной оболочки.
+</note>
+
+<p>
+Также возможно задать вопрос, например, какую конфигурацию ядра вы хотите
+загружать с выбором ответа по умолчанию после таймаута. Данная конфигурация
+как раз это и делает - спрашивает пользователя, какое ядро он хочет
+использовать, и запускает выбранный образ. <path>vmlinux.gz.new</path> и 
+<path>vmlinux.gz.working</path> могут быть образами ядра, либо просто
+символическими ссылками, указывающими на образы ядра на данном диске.
+Аргумент <c>50</c> к <c>select</c> определяет, что нужно запустить первую
+опцию ("Working") после 50/10 секунд.
+</p>
+
+<pre caption="Конфигурация, основанная на меню">
+<comment>#:CoLo:#</comment>
+
+lcd "Mounting hda1"
+mount hda1
+select "Which Kernel?" 50 Working New
+
+goto {menu-option}
+var image-name vmlinux.gz.working
+goto 3f
+@var image-name vmlinux.gz.working
+goto 2f
+@var image-name vmlinux.gz.new
+
+@lcd "Loading Linux" {image-name}
+load /{image-name}
+lcd "Booting..."
+execute root=/dev/sda5 ro console=ttyS0,115200
+boot
+</pre>
+
+<p>
+Для более детальной информации смотри документацию в <path>/usr/share/doc/colo-VERSION</path>
+</p>
+
+</body>
+
+</subsection>
+</section>
+
+<section>
+<title>Настройка последовательной консоли</title>
+
+<subsection>
+<body>
+
+<p>
+Итак, установка Linux (какая есть на текущий момент) нормально загрузится,
+но она предполагает, что вы будете выполнять вход в систему на физическом
+терминале. На компьютерах Cobalt это очень плохо, так как нет такой вещи,
+как физический терминал.
+</p>
+
+<note>
+Те богачи, у которых есть поддержка видеокарты, могут пропустить данный
+раздел, если хотят.
+</note>
+
+<p>
+Сначала достаньте редактор, и откройте <path>/etc/inittab</path>. Где-то
+внизу файла вы увидите что-то, похожее на это:
+</p>
+
+<pre caption="Конфигурация inittab">
+<comment># SERIAL CONSOLE</comment>
+<comment>#c0:12345:respawn:/sbin/agetty 9600 ttyS0 vt102</comment>
+
+<comment># TERMINALS</comment>
+c1:12345:respawn:/sbin/agetty 38400 tty1 linux
+c2:12345:respawn:/sbin/agetty 38400 tty2 linux
+c3:12345:respawn:/sbin/agetty 38400 tty3 linux
+c4:12345:respawn:/sbin/agetty 38400 tty4 linux
+c5:12345:respawn:/sbin/agetty 38400 tty5 linux
+c6:12345:respawn:/sbin/agetty 38400 tty6 linux
+
+<comment># What to do at the "Three Finger Salute".</comment>
+ca:12345:ctrlaltdel:/sbin/shutdown -r now
+</pre>
+
+<p>
+Сначала, раскомментируйте строку <c>c0</c>. По умолчанию, она настроена
+на использование скорости терминала в 9600 бод. На серверах Cobalt
+вы можете захотеть поменять эту скорость на 115200, чтобы она совпала
+со скоростью, задаваемой BOOT ROM. Так данный раздел выглядит на моем 
+компьютере. На машинах без мониторов (например, серверах Cobalt),
+я бы также рекомендовал закомментировать обычные строки с терминалами
+(от <c>c1</c> до <c>c6</c>), так как они будут смущать нас, когда не
+смогут открыть <path>/dev/ttyX</path>.
+</p>
+
+<pre caption="Выдержка-пример из inittab">
+<comment># SERIAL CONSOLE</comment>
+c0:12345:respawn:/sbin/agetty 115200 ttyS0 vt102
+
+<comment># TERMINALS -- These are useless on a headless qube</comment>
+<comment>#c1:12345:respawn:/sbin/agetty 38400 tty1 linux</comment>
+<comment>#c2:12345:respawn:/sbin/agetty 38400 tty2 linux</comment>
+<comment>#c3:12345:respawn:/sbin/agetty 38400 tty3 linux</comment>
+<comment>#c4:12345:respawn:/sbin/agetty 38400 tty4 linux</comment>
+<comment>#c5:12345:respawn:/sbin/agetty 38400 tty5 linux</comment>
+<comment>#c6:12345:respawn:/sbin/agetty 38400 tty6 linux</comment>
+</pre>
+
+<p>
+И последнее... нам нужно сказать системе, что последовательному порту можно
+доверять как безопасному терминалу. Файл, в котором нужно сделать изменения
+это <path>/etc/securetty</path>. В нем содержится список терминалов, которым
+система доверяет. Мы просто добавим еще две строки, разрешив входить по
+последовательному терминалу пользователю <c>root</c>.
+</p>
+
+<pre caption="Разрешим входить root по последовательному терминату">
+<comment>(/dev/ttyS0 -- обычное имя для первого последовательного порта)</comment>
+# <i>echo 'ttyS0' >> /etc/securetty</i>
+
+<comment>(В последнее время Linux также называет его /dev/tts/0 -- так что его тоже добавим)</comment>
+# <i>echo 'tts/0' >> /etc/securetty</i>
+</pre>
+
+</body>
+</subsection>
+</section>
+
+<section id="reboot">
+<title>Перезагружаем систему</title>
+<subsection>
+<body>
+
+<p>
+Выйдите из chroot-окружения, и размонтируйте все смонтированные разделы.
+Затем введите одну магическую команду, которой вы все так давно ждали: <c>reboot</c>.
+</p>
+
+<pre caption="Выходим из chroot, размонтируем все разделы и перезагружаемся">
+# <i>exit</i>
+cdimage ~# <i>cd</i>
+cdimage ~# <i>umount -l /mnt/gentoo/dev{/shm,/pts,}</i>
+cdimage ~# <i>umount -l /mnt/gentoo{/boot,/proc,}</i>
+cdimage ~# <i>reboot</i>
+</pre>
+
+<note>
+<e>Пользователям Cobalt:</e> Остаток данного раздела описывает настройки SGI PROM,
+так, чтобы он загружал <c>arcload</c>, и загрузал Linux.
+Это неприменимо к настройкам серверов Cobalt. Вообще, вся ваша работа уже закончена,
+для первой загрузки не нужно больше ничего конфигурировать, и вы можете начинать
+читать следующий раздел: 
+<uri link="?part=1&amp;chap=11">Завершение установки Gentoo</uri>
+</note>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Меняем SGI PROM</title>
+<subsection>
+<title>Устанавливаем общие настройки PROM</title>
+<body>
+
+<p>
+Теперь, когда вы установили начальный загрузчик, вы готовы к перезагрузке компьютера.
+</p>
+
+<pre caption="Перезагрузка">
+<comment>(Выходим из окружения chroot)</comment>
+# <i>exit</i>
+
+<comment>(Размонтируем устройства)</comment>
+cdimage ~# <i>umount -l /mnt/gentoo/dev{/shm,/pts,}</i>
+cdimage ~# <i>umount -l /mnt/gentoo{/boot,/proc,}</i>
+
+<comment>(Перезагружаемся)</comment>
+# <i>reboot</i>
+</pre>
+
+<p>
+После перезагрузки, зайдите в <e>System Maintenance Menu</e> и выберите
+<e>Enter Command Monitor</e> (<c>5</c>), примерно так же, как вы делали при 
+загрузке компьютера по сети).
+</p>
+
+<pre caption="Конфигурация PROM для загрузки Gentoo">
+1) Start System
+2) Install System Software
+3) Run Diagnostics
+4) Recover System
+5) Enter Command Monitor
+
+Option? <i>5</i>
+Command Monitor. Type "exit" to return to the menu.
+
+<comment>(Настроим некоторые опции для arcload)</comment>
+
+<comment>(Укажем положение заголовка тома)</comment>
+&gt;&gt; <i>setenv SystemPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
+
+<comment>(Автоматическая загрузка Gentoo)</comment>
+&gt;&gt; <i>setenv AutoLoad Yes</i>
+
+<comment>(Установка часового пояса)</comment>
+&gt;&gt; <i>setenv TimeZone EST5EDT</i>
+
+<comment>(Используем последовательную консоль - те, у кого есть графический адаптер)
+(должны использовать "g" вместо "d1" (один))</comment>
+&gt;&gt; <i>setenv console d1</i>
+
+<comment>(Устанавливаем скорость последовательной консоли. Это необязательно, так как 9600 это  )
+(значение по умолчанию, но можно повысить скорость до 38400, если это необходимо  )</comment>
+&gt;&gt; <i>setenv dbaud 9600</i>
+</pre>
+
+<p>
+Теперь ваши следующие настройки зависят от того, как вы загружаете систему.
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Настройки для прямой загрузки из заголовка тома</title>
+<body>
+
+<p>
+Мы описываем это здесь для полноты картины. Рекомендуется вместо этого посмотреть
+в установку <c>arcload</c>.
+</p>
+
+<note>
+Это работает только на Indy, Indigo2 (R4k) и Challenge S.
+</note>
+
+<pre caption="Настройки PROM для загрузки из заголовка тома">
+<comment>(&lt;root device&gt; = загрузочный раздел Gentoo, например /dev/sda3)</comment>
+&gt;&gt; <i>setenv OSLoadPartition &lt;root device&gt;</i>
+
+<comment>(Для получения списка существующих ядер, наберите "ls")</comment>
+&gt;&gt; <i>setenv OSLoader &lt;имя ядра&gt;</i>
+&gt;&gt; <i>setenv OSLoadFilename &lt;имя ядра&gt;</i>
+
+<comment>(Определение параметров ядра, которые необходимо передать)</comment>
+&gt;&gt; <i>setenv OSLoadOptions &lt;параметры ядра&gt;</i>
+</pre>
+
+<p>
+Если вы хотите попробовть ядро без необходимости устанавливать параметры ядра,
+вы можете использовать команду PROM <c>boot -f</c>;
+</p>
+
+<pre caption="Загрузка без изменения переменных окружения">
+<comment>(Загружаем ядро "new" с дополнительными опциями)</comment>
+# <i>boot -f new root=/dev/sda3 ro</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Настройки для arcload</title>
+<body>
+
+<p>
+<c>arcload</c> использует опцию <c>OSLoadFilename</c> для определения того, какие
+опции нужно установить из файла <path>arc.cf</path>. Файл конфигурации, на самом деле,
+является скриптом, где блоки самого высокого уровня определяют образы загрузки для
+различных систем, а внутри них, некоторые необязательные настройки. Поэтому,
+установка <c>OSLoadFilename=mysys(serial)</c> загружает настройки для блока <c>mysys</c>,
+а затем переопределяет их в части <c>serial</c>.
+</p>
+
+<p>
+В файле-примере выше у нас есть один определенный блок, <c>ip28</c> с
+существующими опциями <c>working</c>, <c>new</c> и <c>debug</c>. Мы
+определим наши переменные PROM следующим образом:
+</p>
+
+<pre caption="Настройки PROM для использования arcload">
+<comment>(Быберите версию arcload в качестве начального загрузчика:- sash64 или sashARCS)</comment>
+&gt;&gt; <i>setenv OSLoader sash64</i>
+
+<comment>(Используем образ ядра "working", определенный в разделе "ip28" файла arc.cf)</comment>
+&gt;&gt; <i>setenv OSLoadFilename ip28(working)</i>
+</pre>
+
+<p>
+Начиная с <c>arcload-0.5</c>, файлы не обязательно нужно помещать в заголовок тома --
+они могут быть вместо этого помещены в раздел. Чтобы сказать <c>arcload</c>, где
+нужно искать файл конфигурации и ядра, нужно установить переменную PROM
+<c>OSLoadPartition</c>. Точное значение будет зависеть от того, где ваш диск находится
+на шине SCSI. Используйте переменную PROM <c>SystemPartition</c> как подсказку --
+вам нужно изменить только номер раздела.
+</p>
+
+<note>
+Разделы нумеруются, начиная с нуля, а не с единицы, как в случае с Linux.
+</note>
+
+<pre caption="Говорим arcload, где найти arc.cf">
+<comment>(Если выхотите загрузку из заголовка тома -- используйте раздел 8)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(8)</i>
+
+<comment>(В противном случае укажите раздел и тип файловой системы)</comment>
+&gt;&gt; <i>setenv OSLoadPartition scsi(0)disk(1)rdisk(0)partition(0)[ext2]</i>
+</pre>
+
+</body>
+</subsection>
+
+<subsection>
+<title>Все готово</title>
+<body>
+
+<p>
+Теперь вы готовы наслаждаться Gentoo! Загрузите вашу установку Gentoo и закончите
+ее, прочитав главу <uri link="?part=1&amp;chap=11">Завершение установки Gentoo</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-date: 2011-05-09
+source-cvs-revision: 1.23
+moved-by: Vladimir Romanov [blueboar2@gmail.com]
+-->
