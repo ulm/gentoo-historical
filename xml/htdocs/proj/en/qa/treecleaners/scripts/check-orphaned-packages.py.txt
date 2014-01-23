@@ -1,28 +1,45 @@
-#!/usr/bin/python
-from bs4 import BeautifulSoup
+#!/usr/bin/env python
 import portage
-import urllib2
+import re
+# For python2.6 compatibility
+try:
+	from urllib.request import urlopen
+except:
+	from urllib2 import urlopen
 
+# Compatibility with bs3 users
+try:
+	from bs4 import BeautifulSoup
+except:
+	from BeautifulSoup import BeautifulSoup
+
+# Make a list of orphaned packages by parsing xml with BeautifulSoup
 url = 'http://www.gentoo.org/proj/en/qa/treecleaners/maintainer-needed.xml'
 
-# Build a to remove set
-f = urllib2.urlopen(url)
-soup = BeautifulSoup(f.read())
-table = soup.find('table', {'class': 'ntable'})
-toremove = set(row.findChild('a').text for row in table.findChildren('tr')[1:])
-f.close()
+orphan_page = urlopen(url)
+soup = BeautifulSoup(orphan_page)
+orphan_page.close()
+table = soup.find('table', 'ntable')
+# compatibility for bs3 users
+try:
+	orphan_links = table.find_all('a', href=re.compile('https?://packages.gentoo.org'))
+except:
+	orphan_links = table.findAll('a', href=re.compile('https?://packages.gentoo.org'))
+orphans = set([a.text for a in orphan_links])
 
-# Build an installed set
+# Build a list of packages that are installed
 vartree = portage.db[portage.root]['vartree']
 installed = set(vartree.dbapi.cp_all())
 
-# Print installed, but to be removed
-packages = sorted(toremove.intersection(installed))
+# Print list of all orphans that are installed
+packages = sorted(orphans.intersection(installed))
+
+# Python 2.6 requires the '0' in between curly braces to work
 if packages:
-    print "The following %d installed package(s) need a maintainer" % len(packages)
+    print("The following {0} installed package(s) need a maintainer".format(len(packages)))
     for package in packages:
-        print "-", package
+        print("-{0}".format(str(package)))
     exit(1)
 else:
-    print "All installed packages have a maintainer :)"
+    print("All installed packages have a maintainer :)")
     exit(0)
