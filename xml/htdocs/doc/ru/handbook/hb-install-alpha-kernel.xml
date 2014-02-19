@@ -1,0 +1,339 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-alpha-kernel.xml,v 1.5 2014/02/19 13:38:40 blueboar Exp $ -->
+
+<sections>
+
+<version>1</version>
+<date>2013-12-17</date>
+
+<section>
+<title>Установка исходных кодов ядра</title>
+<subsection>
+<title>Выбор ядра</title>
+<body>
+
+<p>
+Ядро Linux — это то, вокруг чего формируются все дистрибутивы. Это слой между 
+пользовательскими программами и вашим оборудованием. Пользователи Gentoo могут 
+выбирать из нескольких типов ядра. Их полный список и описание находится в 
+<uri link="https://wiki.gentoo.org/wiki/Kernel/Overview">руководстве по выбору ядра Gentoo (англ.)</uri>.
+</p>
+
+<p>
+Для систем alpha есть такое ядро, как <c>gentoo-sources</c> (ядро версии 2.6
+по умолчанию).
+</p>
+
+<pre caption="Установка исходных кодов ядра">
+# <i>emerge gentoo-sources</i>
+</pre>
+
+<p>
+Просмотрев содержимое каталога <path>/usr/src</path>, вы увидите символьную 
+ссылку <path>linux</path>, которая указывает на каталог с исходными кодами 
+ядра. В данном случае, установленный исходный код ядра указывает на 
+<c>gentoo-sources-<keyval id="kernel-version"/></c>. Имейте в виду, что ваша 
+версия может отличаться. 
+</p>
+
+<pre caption="Просмотр папки с исходными кодами ядра">
+# <i>ls -l /usr/src/linux</i>
+lrwxrwxrwx    1 root     root           12 Oct 13 11:04 /usr/src/linux -&gt; linux-<keyval id="kernel-version"/>
+</pre>
+
+<p>
+Теперь настало время настройки и компиляции ядра. Можно использовать сценарий 
+<c>genkernel</c>, который сформирует стандартное ядро, аналогичное используемому 
+на установочном компакт-диске. Однако сначала мы расскажем о "ручной" настройке 
+ядра, так как это лучший из способов оптимизации системы. 
+</p>
+
+<p>
+Если вы собираетесь настроить ядро вручную, то переходите к разделу
+<uri link="#manual">по умолчанию: ручная настройка</uri>.
+Если вы хотите использовать <c>genkernel</c>, то читайте
+<uri link="#genkernel">альтернатива: использование genkernel</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="manual">
+<title>По умолчанию: ручная настройка</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+Ручная настройка ядра считается одним из самых сложных вопросов для пользователей 
+Linux. Зато после настройки нескольких вариантов ядра вы и не вспомните, что это 
+когда-то было трудно ;) 
+</p>
+
+<p>
+Однако <e>есть</e> одна непреложная истина: запуская ручную настройку ядра, 
+следует знать состав аппаратуры своего компьютера. Большую часть информации 
+можно собрать, установив пакет pciutils (<c>emerge pciutils</c>), в который 
+входит <c>lspci</c>. <c>lspci</c> можно использовать, находясь в среде с 
+временным корневым каталогом. Можно не обращать внимания на предупреждения, 
+касающиеся <e>pcilib</e> (например: pcilib: cannot open /sys/bus/pci/devices), 
+которые выводит на экран <c>lspci</c>. Можно запустить <c>lspci</c> и 
+<e>вне временной</e> среды установки. Результат тот же. Вы также можете 
+запустить <c>lsmod</c> для просмотра модулей ядра, используемых установочным 
+компакт-диском (это даст хорошую подсказку, какие параметры включать). 
+</p>
+
+<p>
+Теперь войдите в каталог с исходными кодами ядра и введите команду 
+<c>make menuconfig</c>. Этой командой вы вызовете меню настройки, использующее ncurses. 
+</p>
+
+<pre caption="Вызов меню настройки">
+# <i>cd /usr/src/linux</i>
+# <i>make menuconfig</i>
+</pre>
+
+<p>
+Перед вами появятся несколько разделов настройки. Сначала перечислим пункты, 
+включение которых обязательно (иначе Gentoo не заработает, или для его работы 
+потребуются дополнительные ухищрения). 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Включение нужных пунктов</title>
+<body>
+<p>
+Сначала войдите в <c>File Systems</c> и выберите поддержку всех нужных файловых 
+систем. <e>Не</e> компилируйте поддержку файловой системы, которую имеет ваш 
+корневой раздел как модуль, иначе система Gentoo не сможет смонтировать ваш раздел. 
+Также выберите <c>Virtual memory</c> и <c>/proc file system</c>.
+</p>
+
+<pre caption="Выбор необходимых файловых систем">
+File systems ---&gt;
+  Pseudo Filesystems ---&gt;
+    [*] /proc file system support
+    [*] Virtual memory file system support (former shm fs)
+
+<comment>(выберите одну или более опций, в зависимости от вашей системы)</comment>
+  &lt;*&gt; Reiserfs support
+  &lt;*&gt; Ext3 journalling file system support
+  &lt;*&gt; JFS filesystem support
+  &lt;*&gt; Second extended fs support
+  &lt;*&gt; XFS filesystem support
+</pre>
+
+<p>
+Если вы используете PPPoE или коммутируемого соединения для соединения с интернетом, 
+потребуется включить в ядре следующие функции: 
+</p>
+
+<pre caption="Выбор нужных драйверов PPPoE">
+Device Drivers ---&gt;
+  Network device support ---&gt;
+    &lt;*&gt; PPP (point-to-point protocol) support
+    &lt;*&gt;   PPP support for async serial ports
+    &lt;*&gt;   PPP support for sync tty ports
+</pre>
+
+<p>
+Два параметра сжатия данных не являются обязательными, но и не повредят. 
+То же относится и к параметру <c>PPP over Ethernet</c> который нужен только 
+для <c>ppp</c>, для поддержки PPPoE в режиме ядра. 
+</p>
+
+<p>
+При необходимости, не забудьте включить в ядре поддержку своей сетевой платы. 
+</p>
+
+<p>
+Следующие опции также рекомендуются:
+</p>
+
+<pre caption="Рекомендуемые опции для Alpha">
+General setup ---&gt;
+  &lt;*&gt; SRM environment through procfs
+  &lt;*&gt; Configure uac policy via sysctl
+
+Plug and Play configuration ---&gt;
+  &lt;*&gt; Plug and Play support
+  &lt;M&gt;   ISA Plug and Play support
+
+SCSI support ---&gt;
+  SCSI low-level drivers ---&gt;
+    &lt;*&gt; SYM53C8XX Version 2 SCSI support (NEW)
+    &lt;*&gt; Qlogic ISP SCSI support
+
+Network device support ---&gt;
+  Ethernet (10 or 100 Mbit) ---&gt;
+    &lt;M&gt; DECchip Tulip (dc21x4x) PCI support
+    &lt;M&gt; Generic DECchip &amp; DIGITAL EtherWORKS PCI/EISA
+    &lt;M&gt; EtherExpressPro/100 support (eepro100)
+    &lt;M&gt; EtherExpressPro/100 support (e100)
+  Ethernet (1000 Mbit) ---&gt;
+    &lt;M&gt; Alteon AceNIC
+      [*] Omit support for old Tigon I
+    &lt;M&gt; Broadcom Tigon3
+  [*] FDDI driver support
+  &lt;M&gt; Digital DEFEA and DEFPA
+  &lt;*&gt; PPP support
+    &lt;*&gt; PPP Deflate compression
+
+Character devices ---&gt;
+  [*] Support for console on serial port
+  [*] Direct Rendering Manager
+
+File systems ---&gt;
+  &lt;*&gt; Kernel automounter version 4 support
+  Network File Systems ---&gt;
+    &lt;*&gt; NFS
+      [*] NFSv3 client
+      &lt;*&gt; NFS server
+      [*] NFSv3 server
+  Partition Types ---&gt;
+    [*] Advanced partition selection
+    [*] Alpha OSF partition support
+  Native Language Support
+    &lt;*&gt; NLS ISO 8859-1
+
+Sound ---&gt;
+  &lt;M&gt; Sound card support
+    &lt;M&gt; OSS sound modules
+      [*] Verbose initialisation
+      [*] Persistent DMA buffers
+      &lt;M&gt; 100% Sound Blaster compatibles
+</pre>
+
+<p>
+Далее выберите <e>Maintain a devtmpfs file system to mount at /dev</e>, чтобы 
+критические файлы устройств уже существовали во время процесса загрузки. 
+</p>
+
+<pre caption="Включаем поддержку devtmpfs">
+Device Drivers ---&gt;
+  Generic Driver Options ---&gt;
+    [*] Maintain a devtmpfs filesystem to mount at /dev
+    [ ]   Automount devtmpfs at /dev, after the kernel mounted the rootfs
+</pre>
+
+<p>
+Закончив настройку ядра, приступайте к 
+<uri link="#compiling">компиляции и установке</uri>. 
+</p>
+
+</body>
+</subsection>
+<subsection id="compiling">
+<title>Компиляция и установка</title>
+<body>
+
+<p>
+Теперь, когда ядро настроено, настало время его скомпилировать и установить. 
+Выйдите из настройки и запустите процесс компиляции: 
+</p>
+
+<pre caption="Компилируем ядро">
+# <i>make &amp;&amp; make modules_install</i>
+# <i>make boot</i>
+</pre>
+
+<p>
+По завершении компиляции, скопируйте образ ядра в каталог <path>/boot</path>. 
+Новые ядра могут создавать файл <path>vmlinux</path> вместо <path>vmlinux.gz</path>.
+Помните это, когда копируете ваш образ ядра.
+</p>
+
+<pre caption="Установка ядра">
+# <i>cp arch/alpha/boot/vmlinux.gz /boot/</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<include href="hb-install-initramfs.xml"/>
+</subsection>
+
+</section>
+<section id="genkernel">
+<title>Альтернатива: использование genkernel</title>
+<body>
+
+<p>
+Если вы читаете эти строки, значит, вы собираетесь использовать наш 
+сценарий <c>genkernel</c> для настройки ядра за вас. 
+</p>
+
+<p>
+Теперь когда исходные коды ядра установлены, настало время скомпилировать 
+ядро, собрав его автоматически при помощи сценария <c>genkernel</c>. 
+<c>genkernel</c> выполняет настройку ядра практически так же, как 
+настраивается ядро на установочном компакт-диске. То есть система, ядро 
+которой собрано <c>genkernel</c>, как правило, будет выполнять определение 
+всех устройств при загрузке точно так же, как и установочный компакт-диск. 
+Поскольку genkernel не требует никакой ручной настройки ядра, это идеальное
+ решение для тех, кому неуютно от одной мысли, что придется компилировать ядро. 
+</p>
+
+<p>
+Рассмотрим, как использовать genkernel. Сначала установите его: 
+</p>
+
+<pre caption="Установка genkernel">
+# <i>emerge genkernel</i>
+</pre>
+
+<p>
+Теперь скомпилируйте исходный код ядра, запустив <c>genkernel all</c>. 
+Имейте в виду, что компиляция займет приличное время, поскольку 
+<c>genkernel</c> собирает ядро, поддерживающее практически любое оборудование. 
+</p>
+
+<p>
+Если в загрузочном разделе не используется файловая система ext2 или ext3, то 
+вам придется вручную настроить ядро, запустив <c>genkernel --menuconfig all</c>, 
+добавив поддержку используемой файловой системы <e>в</e> ядро (т.е. <e>не</e> модулем).
+</p>
+
+<pre caption="Запуск genkernel">
+# <i>genkernel all</i>
+</pre>
+
+<p>
+В итоге работы <c>genkernel</c> будет создано ядро, полный набор модулей и 
+<e>начальный RAM-диск</e> (initramfs). Ядро и initrd будут использоваться в 
+процессе настройки загрузчика системы, которая описана далее в руководстве. 
+Запишите имена ядра и начального корневого диска, так как они понадобятся 
+при составлении конфигурационного файла загрузчика. initrd запускается сразу 
+при начальной загрузке, выполняя автоматическое определение устройств 
+(точно так же, как при запуске установочного диска), до запуска "настоящей" системы. 
+</p>
+
+<pre caption="Уточнение названия созданного образа ядра и initrd">
+# <i>ls /boot/kernel* /boot/initramfs-*</i>
+</pre>
+
+</body>
+</section>
+<section id="kernel_modules">
+<title>Модули ядра</title>
+
+<subsection>
+<include href="hb-install-kernelmodules.xml"/>
+</subsection>
+
+</section>
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-date: 2013-12-17
+source-cvs-revision: 1.55
+translated-by: Vladimir Romanov [blueboar2@gmail.com]
+-->
