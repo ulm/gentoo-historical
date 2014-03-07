@@ -4,12 +4,12 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-install.xml,v 1.26 2013/12/20 14:19:25 nimiux Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/es/hardened/selinux/hb-using-install.xml,v 1.27 2014/03/07 10:45:52 nimiux Exp $ -->
 
 <sections>
 
-<version>38</version>
-<date>2013-12-20</date>
+<version>39</version>
+<date>2014-03-06</date>
 
 <section>
 <title>Instalar Gentoo (Hardened)</title>
@@ -555,7 +555,7 @@ la directriz.
 </body>
 </subsection>
 <subsection>
-<title>Instalar directrices y utilidades</title>
+<title>Instalar directrices y utilidades. Primera Parte</title>
 <body>
 
 <p>
@@ -571,56 +571,13 @@ se utiliza la opción <c>-1</c>.
 </pre>
 
 <p>
-Ahora deberá instalar el paquete de directriz de SELinux
-(<path>sec-policy/selinux-base-policy</path>). Este paquete contiene la
-directriz base de SELinux. Ya que Portage intentará etiquetar y recargar
-las directrices (debido a la instalación de
-<path>sys-apps/policycoreutils</path>), necesitaremos desactivar
-temporalmente el soporte de SELinux (ya que Portage no podrá etiquetar
-nada si todavía no lo comprende).
+A continuación instalamos el paquete <e>base</e> de la directriz SELinux.
+Este paquete ofrece el fichero de configuración que necesitaremos ajustar
+antes de construir el resto de paquetes SELinux.
 </p>
 
-<pre caption="Instalar los paquetes de directriz de SELinux">
-~# <i>FEATURES="-selinux" emerge selinux-base-policy</i>
-</pre>
-
-<p>
-A continuación, reconstruya aquellos paquetes afectados por el cambio
-de perfil que hicimos previamente usando una actualización estándar de
-"world" que tendrá en cuenta los cambios en los ajustes USE (ya que
-el nuevo perfil cambiará muchos ajustes USE por defecto, incluyendo el
-ajuste USE <c>selinux</c>). No olvide utilizar después
-<c>etc-update</c> o <c>dispatch-conf</c> ya que se necesitarán
-realizar algunos cambios a los ficheros de configuración.
-</p>
-
-<pre caption="Actualice su sistema Gentoo Linux">
-~# <i>emerge -uDN world</i>
-</pre>
-
-<p>
-Ahora, instale las herramientas adicionales de SELinux que necesitará en
-el futuro para depurar o ayudarle con su instalación de SELinux. Estos
-paquetes son opcionales, pero recomendamos su instalación.
-</p>
-
-<pre caption="Instalar paquetes adicionales de SELinux">
-~# <i>emerge setools sepolgen checkpolicy</i>
-</pre>
-
-<p>
-Para terminar, instale los módulos de directrices para aquellas utilidades
-en las que crea que va a necesitarlas. En un futuro no muy lejano, esta
-acción se realizará de forma automática (los paquetes tendrán una
-dependencia opcional producida por el ajustes USE selinux), pero hasta
-ese momento, necesitará hacer este trabajo manualmente.
-</p>
-
-<pre caption="Instalar los módulos de SELinux">
-~# <i>emerge --search selinux-</i>
-[...]
-<comment>(Seleccione los módulos que desea instalar)</comment>
-~# <i>emerge selinux-screen selinux-gnupg selinux-sudo selinux-ntp selinux-networkmanager ...</i>
+<pre caption="Instalar el paquete base de la directriz SELinux">
+~# <i>FEATURES="-selinux" emerge -1 selinux-base</i>
 </pre>
 
 </body>
@@ -630,8 +587,8 @@ ese momento, necesitará hacer este trabajo manualmente.
 <body>
 
 <p>
-Dentro de <path>/etc/selinux/config</path> puede definir cómo se va a
-configurar SELinux en el momento en que se inicie el sistema.
+Dentro de <path>/etc/selinux/config</path> puede ahora definir cómo se
+va a configurar SELinux en el momento en que se inicie el sistema.
 </p>
 
 <pre caption="Editar el fichero /etc/selinux/config">
@@ -689,6 +646,77 @@ En este fichero de configuración se pueden definir dos variables:
     también se ofrece soporte para los otros.
   </li>
 </ul>
+
+<p>
+Asegúrese ahora de que la variable <c>SELINUX</c> está definida como
+<c>permissive</c>. La cambiaremos a enforcing más tarde.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Instalar directrices y utilidades. Segunda Parte</title>
+<body>
+
+<p>
+Ahora podemos continuar con la instalación de las directrices de SELinux.
+Reconstruya el paquete <path>selinux-base</path> si cambió
+<c>SELINUXTYPE</c> a algo distinto a <c>strict</c> y a continuación
+instale las directrices principales de SELinux mediante el paquete
+<path>sec-policy/selinux-base-policy</path>. Este paquete contiene
+las directrices principales para poner su sistema en funcionamiento
+y usando SELinux. Debido a que Portage intentará etiquetar y recargar
+las directrices (desde la instalación de
+<path>sys-apps/policycoreutils</path>), necesitamos deshabilitar de nuevo
+tpoemporalmente el soporte de SELinux (ya que Portage no podría
+etiquetar nada debido a que todavía no lo comprende).
+</p>
+
+<pre caption="Instalar los paquetes de directriz SELinux">
+~# <i>FEATURES="-selinux" emerge -1 selinux-base</i>
+~# <i>FEATURES="-selinux" emerge selinux-base-policy</i>
+</pre>
+
+<p>
+A continuación, reconstruya aquellos paquetes afectados por el cambio
+que hicimos previamente usando una actualización estándar de "world" que
+tendrá en cuenta los cambios en los ajustes USE (ya que
+el nuevo perfil cambiará muchos ajustes USE por defecto, incluyendo el
+ajuste USE <c>selinux</c>). No olvide utilizar después
+<c>etc-update</c> o <c>dispatch-conf</c> ya que se necesitarán
+realizar algunos cambios a los ficheros de configuración.
+</p>
+
+<pre caption="Actualice su sistema Gentoo Linux">
+~# <i>emerge -uDN world</i>
+</pre>
+
+<p>
+Ahora, instale las herramientas adicionales de SELinux que necesitará en
+el futuro para depurar o ayudarle con su instalación de SELinux. Estos
+paquetes son opcionales, pero recomendamos su instalación.
+</p>
+
+<pre caption="Instalar paquetes adicionales de SELinux">
+~# <i>emerge setools sepolgen checkpolicy</i>
+</pre>
+
+<p>
+Para terminar, instale los módulos de directrices para aquellas utilidades
+en las que crea que va a necesitarlas. En un futuro no muy lejano, esta
+acción se realizará de forma automática (los paquetes tendrán una
+dependencia opcional producida por el ajustes USE selinux), pero hasta
+ese momento, necesitará hacer este trabajo manualmente.
+</p>
+
+<pre caption="Instalar los módulos SELinux">
+~# <i>emerge --search selinux-</i>
+[...]
+<comment>(Select the modules you want to install)</comment>
+<comment>(Seleccione los módulos que desea instalar)</comment>
+~# <i>emerge selinux-screen selinux-gnupg selinux-sudo selinux-ntp selinux-networkmanager ...</i>
+~# <i>emerge selinux-screen selinux-gnupg selinux-sudo selinux-ntp selinux-networkmanager ...</i>
+</pre>
 
 </body>
 </subsection>
