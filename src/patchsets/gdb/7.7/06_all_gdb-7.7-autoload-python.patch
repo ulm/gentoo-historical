@@ -1,0 +1,101 @@
+From 5b91e80ee94bc100df71fab5472f8adb2c9a88fd Mon Sep 17 00:00:00 2001
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+Date: Tue, 25 Feb 2014 18:32:32 +0100
+Subject: [PATCH] PR gdb/16626
+
+Fix auto-load 7.7 regression,
+the regression affects any loading from /usr/share/gdb/auto-load .
+
+5b2bf9471f1499bee578fcd60c05afe85794e280 is the first bad commit
+commit 5b2bf9471f1499bee578fcd60c05afe85794e280
+Author: Doug Evans <xdje42@gmail.com>
+Date:   Fri Nov 29 21:29:26 2013 -0800
+    Move .debug_gdb_script processing to auto-load.c.
+    Simplify handling of auto-loaded objfile scripts.
+
+Fedora 20 x86_64
+$ gdb -q /usr/lib64/libgobject-2.0.so
+Reading symbols from /usr/lib64/libglib-2.0.so.0.3800.2...Reading symbols from
+/usr/lib/debug/usr/lib64/libglib-2.0.so.0.3800.2.debug...done.
+done.
+(gdb) _
+
+Fedora Rawhide x86_64
+$ gdb -q /usr/lib64/libgobject-2.0.so
+Reading symbols from /usr/lib64/libglib-2.0.so...Reading symbols from
+/usr/lib/debug/usr/lib64/libglib-2.0.so.0.3990.0.debug...done.
+done.
+warning: File "/usr/lib64/libglib-2.0.so.0.3990.0-gdb.py" auto-loading has been declined by your `auto-load safe-path'
+set to "$debugdir:$datadir/auto-load:/usr/bin/mono-gdb.py".
+To enable execution of this file add
+        add-auto-load-safe-path /usr/lib64/libglib-2.0.so.0.3990.0-gdb.py
+line to your configuration file "/home/jkratoch/.gdbinit".
+To completely disable this security protection add
+        set auto-load safe-path /
+line to your configuration file "/home/jkratoch/.gdbinit".
+For more information about this security protection see the
+"Auto-loading safe path" section in the GDB manual.  E.g., run from the shell:
+        info "(gdb)Auto-loading safe path"
+(gdb) _
+
+That is it tries to load "forbidden"
+	/usr/lib64/libglib-2.0.so.0.3990.0-gdb.py
+but it should load instead
+	/usr/share/gdb/auto-load/usr/lib64/libglib-2.0.so.0.3990.0-gdb.py*
+Although that is also not exactly this way, there does not exist any
+	/usr/lib64/libglib-2.0.so.0.3990.0-gdb.py
+despite regressed GDB says so.
+
+gdb/
+2014-02-24  Jan Kratochvil  <jan.kratochvil@redhat.com>
+
+	PR gdb/16626
+	* auto-load.c (auto_load_objfile_script_1): Change filename to
+	debugfile.
+
+gdb/testsuite/
+2014-02-24  Jan Kratochvil  <jan.kratochvil@redhat.com>
+
+	PR gdb/16626
+	* gdb.base/auto-load-script: New file.
+	* gdb.base/auto-load.c: New file.
+	* gdb.base/auto-load.exp: New file.
+
+Message-ID: <20140223212400.GA8831@host2.jankratochvil.net>
+---
+ gdb/ChangeLog                           |  6 +++++
+ gdb/auto-load.c                         |  6 ++---
+ gdb/testsuite/ChangeLog                 |  7 ++++++
+ gdb/testsuite/gdb.base/auto-load-script | 17 ++++++++++++++
+ gdb/testsuite/gdb.base/auto-load.c      | 22 ++++++++++++++++++
+ gdb/testsuite/gdb.base/auto-load.exp    | 41 +++++++++++++++++++++++++++++++++
+ 6 files changed, 96 insertions(+), 3 deletions(-)
+ create mode 100644 gdb/testsuite/gdb.base/auto-load-script
+ create mode 100644 gdb/testsuite/gdb.base/auto-load.c
+ create mode 100644 gdb/testsuite/gdb.base/auto-load.exp
+
+diff --git a/gdb/auto-load.c b/gdb/auto-load.c
+index fd612b2..62a7de4 100644
+--- a/gdb/auto-load.c
++++ b/gdb/auto-load.c
+@@ -791,17 +791,17 @@ auto_load_objfile_script_1 (struct objfile *objfile, const char *realname,
+       make_cleanup_fclose (input);
+ 
+       is_safe
+-	= file_is_auto_load_safe (filename,
++	= file_is_auto_load_safe (debugfile,
+ 				  _("auto-load: Loading %s script \"%s\""
+ 				    " by extension for objfile \"%s\".\n"),
+-				  language->name, filename,
++				  language->name, debugfile,
+ 				  objfile_name (objfile));
+ 
+       /* Add this script to the hash table too so
+ 	 "info auto-load ${lang}-scripts" can print it.  */
+       pspace_info
+ 	= get_auto_load_pspace_data_for_loading (current_program_space);
+-      maybe_add_script (pspace_info, is_safe, filename, filename, language);
++      maybe_add_script (pspace_info, is_safe, debugfile, debugfile, language);
+ 
+       /* To preserve existing behaviour we don't check for whether the
+ 	 script was already in the table, and always load it.
