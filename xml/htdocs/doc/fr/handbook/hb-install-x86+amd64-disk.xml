@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-disk.xml,v 1.10 2013/04/12 18:24:17 swift Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-x86+amd64-disk.xml,v 1.11 2014/03/17 08:03:23 jaaf Exp $ -->
 
 <sections>
 
@@ -14,11 +14,11 @@ décrit comment préparer vos disques durs.
 </abstract>
 
 
-<version>16</version>
-<date>2013-04-11</date>
+<version>32</version>
+<date>2014-01-23</date>
 <section>
 
-<title>Introduction aux périphériques de bloc</title>
+<title>Introduction aux périphériques de blocs</title>
 <subsection>
 
 <include href="hb-install-blockdevices.xml"/>
@@ -32,37 +32,51 @@ décrit comment préparer vos disques durs.
 Bien qu'il soit théoriquement possible d'utiliser un disque complet pour
 héberger votre système Linux, ceci n'est pratiquement jamais fait. À la place,
 les périphériques de bloc sont divisés pour être plus petits et plus facilement
-gérables. Ces subdivisions sont appelées <e>partitions</e>.
+gérables. Sur les systèmes  <keyval id="arch"/> ces subdivisions sont appelées <e>partitions</e>. Il existe actuellement deux normes de partitionnement: MBR et GPT.
 </p>
-
 <p>
-Les partitions sont divisées en trois types&nbsp;: <e>primaire</e>,
-<e>étendue</e> et <e>logique</e>.
+La morme <e>MBR (Master Boot Record  - Enregistrement d'amorçage maître)</e> utilise des identifiants 32 bits pour les partitions, et prend en charge trois types de partitions : <e>primaire</e>, <e>étendue</e> et <e>logique</e>. Les informations des partitions primaires sont stockées dans le MBR lui-même - un tout petit espace (ordinairement 512 bytes) au tout début d'un disque. À cause de la petitesse de cet espace, seulement quatres partitions primaires sont prises en charge (par exemple <path>/dev/sda1</path> à <path>/dev/sda4</path>
 </p>
-
 <p>
-Une partition <e>primaire</e> est une partition dont l'information est stockée
-dans le MBR («&nbsp;master boot record&nbsp;», secteur d'amorçage principal).
-Comme un MBR est très petit (512 bytes), seules 4 partitions primaires peuvent y
-être définies (par exemple, de <path>/dev/sda1</path> à <path>/dev/sda4</path>).
+Pour prendre en charge un nombre plus important de partitions, l'une des partitions primaire peut être marquée comme étant une partition étendue. Ce type de partition peut contenir des partitions logique (une partition contenant des partitions).
 </p>
-
 <p>
-Une partition <e>étendue</e> est une partition primaire spéciale (ce qui
-signifie que la partition étendue doit être une des quatre partitions primaires
-possibles) qui contient d'autres partitions. Une telle partition n'existait pas
-à l'origine, mais étant donné que quatre partitions ne suffisaient plus, on a
-étendu le schéma de formatage sans perdre la compatibilité ascendante.
+Chacune des partitions est limitée à 2 TB (à cause des identifiants sur 32 bits). De plus, la configuratio MBR ne procure aucune sauvegarde du MBR, c'est pourquoi, si une application écrase le contenu du MBR, touts les informations sur les partitions sont perdues.
 </p>
-
 <p>
-Une partition <e>logique</e> est une partition contenue dans la partition
-étendue. Sa définition n'est pas placée dans le MBR, mais est déclarée dans la
-partition étendue.
+La norme <e>GPT (GUID Partition Table -Table des partitions GUID)</e> utilise des identifiants 64 bits pour les partitions. L'emplacement dans lequel sont rangés les informations sur les partitions est aussi beaucoup plus grand que 512 bytes, et il n'y a pas de limitation dans le nombre des partitions. De plus la taille des partitions est limitée à une valeur beaucoup plus élevée (plus de quelques ZB -oui zetabytes).
 </p>
-
+<p>
+Lorsque l'interface logiciel entre le système d'exploitation et le microcode est UEFI au lieu de BIOS, GPT est quasi obligatoire car des problèmes de compatibilité avec le MBR apparaissent.
+</p>
+<p>
+La GPT offre aussi l'avantage qu'il utilise une GPT de secours à la fin du disque, qui peut être utilisée pour récupérer suite à un endommagement de la GPT primaire en début de disque. La GPT possède également des sommes de vérifications CRC32 pour détecter les erreurs dans les entêtes et les tables de partitions.
+</p>
 </body>
 </subsection>
+<subsection id="gpt_or_mbr">
+<title> Alors, GPT ou MBR ? </title>
+<body>
+<p>
+À partir de la description précédente, on pourrait penser qu'utiliser GPT est toujours la meilleure approche. Il y a néanmoins quelques revers avec ça :
+</p>
+<p>
+L'utilisation de GPT avec un ordinateur basé sur BIOS est possible, mais vous ne pouvez alors plus avoir un démarrage alternatif sur le système d'exploitation Microsoft Windows. La raison en est que Microsoft Windows va démarrer en mode EFI s'il détecte un partitionnement GPT.
+</p>
+<p>
+Quelques BIOS ou EFI défectueux configurés pour démarrer dans le mode BIOS/CSM patrimonial peuvent également rencontrer des problèmes en démarrant sur des disques étiquetés GPT. Dans ce cas, vous devez pouvoir contourner le problème en ajoutant le drapeau boot/active sur la partition de  MBR protecteur, ce qui est réalisé avec <c>fdisk</c> (<c>parted</c> comprend les tables GPT et ne devrait pas montrer la partition de MBR protecteur):
+</p>
+<pre caption="activer le drapeau d'amorçage sur un MBR protecteur">
+# <i>fdisk /dev/sda</i>
+WARNING: GPT (GUID Partition Table) detected on '/dev/sda'! The util fdisk
+doesn't support GPT. Use GNU Parted.
+Command (m for help): <i>a</i>
+Partition number (1-4): <i>1</i>
+Command (m for help): <i>w</i>
+</pre>
+</body>
+</subsection>
+
 <subsection>
 <title>Solutions de stockage avancées</title>
 <body>
@@ -102,29 +116,35 @@ utilisons dans ce manuel&nbsp;:
 </tr>
 <tr>
   <ti><path>/dev/sda1</path></ti>
-  <ti>ext2</ti>
-  <ti>32M</ti>
-  <ti>Partition d'amorçage</ti>
+  <ti>(bootloader)</ti>
+  <ti>2M</ti>
+  <ti>Partition d'amorçage BIOS</ti>
 </tr>
 <tr>
   <ti><path>/dev/sda2</path></ti>
-  <ti>(swap)</ti>
-  <ti>512M</ti>
-  <ti>Partition de mémoire virtuelle</ti>
+  <ti>ext2</ti>
+  <ti>>128M </ti>
+  <ti>Partition d'amorçage</ti>
 </tr>
 <tr>
   <ti><path>/dev/sda3</path></ti>
-  <ti>ext3</ti>
-  <ti>Reste du disque</ti>
-  <ti>Partition racine</ti>
+  <ti>(swap)</ti>
+  <ti>512M ou plus</ti>
+  <ti>Partition de swap</ti>
+</tr>
+<tr>
+ <ti><path>/dev/sda4</path></ti>
+ <ti>ext4</ti>
+ <ti>Reste du disque</ti>
+ <ti>Partition racine</ti>
 </tr>
 </table>
 
 <p>
 Si vous souhaitez savoir la taille qu'une partition doit avoir, ou même
 de combien de partitions vous avez besoin, poursuivez la lecture de ce
-chapitre. Sinon, poursuivez avec le chapitre <uri link="#fdisk">Partitionner
-votre disque avec fdisk</uri>  ou <uri link="#parted">Partitionner votre disque avec parted</uri>
+chapitre. Sinon, poursuivez avec le chapitre <uri link="#parted">Default: partitionner
+votre disque avec parted</uri>  ou <uri link="#fdisk">Alternative: partitionner votre disque avecfdisk</uri>
 (ce sont tous les deux des outils de partitionnement, <c>fdisk</c> est très connu et stable,
 <c>parted</c> est un peu plus récent mais prend en charge des partitions de taille supérieure à 2TO).
 </p>
@@ -189,38 +209,230 @@ beaucoup d'espace libre sur une partition et plus du tout sur une autre. Un autr
 <p>
 Notez que les disques SCSI et SATA sont limités à  15-partitions sauf si vous utilisez  des étquettes GPT.
 </p>
+
+
+</body>
+</subsection>
+<subsection>
+<title>Que dire sur la partition d'échange (swap) ?</title>
+<body>
+
 <p>
-Voici un exemple de partitionnement pour un disque de 20&nbsp;Go utilisé sur un
-portable de démonstration (contenant un serveur web, un serveur de courrier,
-GNOME...)&nbsp;:
+Il n'y a pas de taille parfaite pour la partition d'échange. Le but de l'espace d'échange est de fournir de l'espace disque au noyau lorsque la mémoire interne (RAM) est sous pression. Un espace d'échange permet au noyau de déplacer des pages mémoires auxquelles un accès prochain est peu probable sur le disque (échange ou sortie de page), libérant ainsi de la mémoire. Bien sûr, si cette mémoire est soudainement requise, ces pages doivent être rappatriées en mémoire (entrée de page) ce qui demandera un certain temps (car les disques sont beaucoup plus lent que la mémoire interne).
 </p>
 
-<pre caption="Exemple d'utilisation de système de fichiers">
-$ <i>df -h</i>
-Système de fichier    Type    Taille Util  Libre Util% Monté sur
-/dev/sda5             ext4    509M   132M  351M  28%   /
-/dev/sda2             ext4    5.0G   3.0G  1.8G  63%   /home
-/dev/sda7             ext4    7.9G   6.2G  1.3G  83%   /usr
-/dev/sda8             ext4   1011M   483M  477M  51%   /opt
-/dev/sda9             ext4    2.0G   607M  1.3G  32%   /var
-/dev/sda1             ext2     51M   17M   31M   36%   /boot
-/dev/sda6             swap    516M   12M   504M   2%   &lt;non monté&gt;
-<comment>(Espace non partitionné pour utilisation future : 2 Go)</comment>
-</pre>
-
 <p>
-<path>/usr</path> est plutôt rempli ici (83&nbsp;% utilisés), mais une fois que
-tous les programmes sont installés, <path>/usr</path> a une taille relativement
-stable. Pour <path>/var</path>, on pourrait croire que trop d'espace a été
-alloué. Cependant, Gentoo compile tous les programmes dans
-<path>/var/tmp/portage</path>. Si vous voulez allouer relativement peu d'espace
-pour <path>/var</path>, par exemple 2&nbsp;Go, vous devrez modifier la
-variable <c>PORTAGE_TMPDIR</c>  dans <path>/etc/portage/make.conf</path> pour qu'elle pointe vers une partition qui
-dispose d'un espace suffisant pour compiler de très gros paquets tels que
-OpenOffice.org.
+Si vous n'envisagez pas de faire tourner des applications gourmandes en mémoire ou si vous disposez de beaucoup de mémoire, vous n'avez probablement pas besoin de beaucoup d'espace d'échange. Néanmoins, l'espace d'échange est aussi utilisé pour stocker toute la mémoire lors de l'hibernation. Si vous envisagez l'utilisation de l'hibernation, vous aurez besoin d'un espace d'échange plus grand, au moins la taille de votre mémoire vive . 
 </p>
 
 </body>
+</subsection>
+<subsection>
+<title>Qu'est que la partition de démarrage BIOS?</title>
+<body>
+<p>
+Une partition de démarrage BIOS est une toute petite partition (de 1 à 2 MB) dans laquelle les chargeurs de démarrage tels que GRUB peuvent placer des données additionnelles qui ne rentrent pas dans  l'espace alloué (quelques centaines d'octets dans le cas de MBR) et qu'ils ne peuvent placer ailleurs.
+</p>
+<p>
+De telles partitions ne sont pas toujours nécessaires, mais si on considère la faible consommation de place et les difficultés que vous auriez à documenter la pléthore de différences de partitionnement autrement, il est recommandé de la créer dans tous les cas.
+</p>
+<p>
+Pour être complets, nous pouvons dire que la partition d'amorçage BIOS est requise lorsque le plan de partitionnement est utilisé avec GRUB2, ou lorsque le plan de partitionnement du MBR est utilisé avec GRUB2 quand la première partition débute avant le premier MB du disque.
+</p>
+</body>
+</subsection>
+
+	
+</section>
+<section id="parted">
+<title>Defaut: utiliser parted pour partitionner votre disque</title>
+<subsection>
+<body>
+<p>
+Dans ce chapitre, nous vous guidons dans la création du plan de partitionnement évoqué plus haut dans les instructions. Nous le répétons pour commodité.
+</p>
+<table>
+<tr>
+  <th>Partition</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Partition d'amorçage BIOS</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Partition de d'amorçage</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Partition d'échange (swap)</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda4</path></ti>
+  <ti>Partition racine (Root)</ti>
+</tr>
+</table>
+<p>
+Modifiez ce plan de partitionnement selon vos besoin
+</p>
+</body>
+</subsection>
+<subsection>
+<title>Visualiser le plan de partitionnement courant</title>
+<body>
+<p>
+L'application  <c>parted</c> procure une interface simple pour partitionner votre disque et prend en charge des partitions de très grande taille (plus de 2 TB). Lancez <c>parted</c> sur votre disque (dans notre exemple, nous utilisons <path>/dev/sda</path>. Nous demanderons à <c>parted</c> d'utiliser l'alignement optimisé :
+ </p>
+<pre caption="lancer parted">
+# <i>parted -a optimal /dev/sda</i>
+GNU Parted 2.3
+Using /dev/vda
+Welcome to GNU Parted! Type 'help' to view a list of commands.
+</pre>
+<p>
+Alignement signifie que les partitions commencent sur des limites bien connues sur le disque, de manière à ce que les opérations sur le disque depuis le niveau du système d'exploitation (comme retrouver une page) utilisent le minimun d'opérations de disque. Des partitions mal alignées peuvent nécessiter que l'on recherche deux pages même si une seule est requise. 
+</p>
+<p>
+Pour connaître toutes les opérations prises en charge par <c>parted</c>, tapez <c>help</c> et faites <e>Entrée</e>.
+</p>
+</body>
+</subsection>
+<subsection>
+<title>Mettre l'étiquette GPT en place</title>
+<body>
+<p>
+Most disks on x86/amd64 are prepared using an <e>msdos</e> label. Using <c>parted</c>, we can put a GPT label on the disk using <c>mklabel gpt</c>:
+</p>
+<warn>
+Changing the partition type will remove all partitions from your disk. All data
+on the disk will be lost.
+</warn>
+<pre caption="Setting the GPT label">
+(parted) <i>mklabel gpt</i>
+</pre>
+<p>
+Si vous voulez que le disque utilise le plan de partitionnement du MBR, utilisez  <c>mklabel msdos</c>.
+</p>
+</body>
+</subsection>
+<subsection>
+<title>Removing all Partitions</title>
+<body>
+<p>
+Si cela n'est pas encore fait (par exemple via l'opération <c>mklabel</c> précédente, ou parce que le disque est fraîchement formaté), nous commencerons par retirer toutes les partitions existantes du disque. Tapez  <c>print</c> pour visualiser les partitions courantes et <c>rm &lt;number&gt;</c> où &lt;number&gt; est le numéro de la partition que vous voulez retirer.
+</p>
+<pre caption="Retirer une partition du disque">
+(parted) <i>rm 2</i>
+</pre>
+<p>
+Faites de même pour toutes les partitions dont vous n'avez plus besoin. Mais faites attention de ne pas faire d'erreur à ce stade, car <c>parted</c> applique les changements immédiatement (contrairement à <c>fdisk</c> qui planifie les tâches, permettant à l'utilisateur de "défaire" ses changements avant de sauvegarder ou de sortir de <c>fdisk</c>).
+</p>
+</body>
+</subsection>
+<subsection>
+<title>Créer les partitions</title>
+<body>
+<p>
+Maintenant créons les partitions mentionnées plus haut. La création d'une partition avec <c>parted</c>  n'est pas très difficile - tout ce que nous avons à faire est d'informer  <c>parted</c>
+sur les réglages suivants :
+</p>
+<ul>
+<li>
+Le  <e>type de partition </e> à utiliser. Il s'agit ordinairement de  <e>primaire</e>.
+Si vous utilisez l'étiquette de partition <e>msdos</e> , gardez à l'esprit que vous ne pouvez pas dépasser quatre partitions primaires. Si vous avez besoin de plus de quatre partitions, créez une partition  <e>étendue</e> et créez des partitions <e>logiques </e> dedans.
+</li>
+<li>
+The start location of a partition (which can be expressed in MB or GB)
+</li>
+<li>
+The end location of the partition (which can be expressed in MB or GB)
+</li>
+</ul>
+<p>
+First, we tell <c>parted</c> that the size unit we work with is megabytes
+(actually mebibytes, abbreviated as MiB which is the "standard" notation):
+</p>
+<pre caption="Using MiB units">
+(parted) <i>unit mib</i>
+</pre>
+<p>
+Now create a 2 MB partition that will be used by the GRUB bootloader later.
+We use the <c>mkpart</c> command for this, and inform <c>parted</c> to start
+from 1 MB and end at 3 MB (creating a partition of 2 MB in size).
+</p>
+<pre caption="Creating a 128 MB partition">
+(parted) <i>mkpart primary 1 3</i>
+(parted) <i>name 1 grub</i>
+(parted) <i>set 1 bios_grub on</i>
+(parted) <i>print</i>
+Model: Virtio Block Device (virtblk)
+Disk /dev/sda: 20480MiB
+Sector size (logical/physical): 512B/512B
+Partition Table: gpt
+Number   Start      End      Size     File system  Name   Flags
+1       1.00MiB    3.00MiB  2.00MiB               grub   bios_grub
+</pre>
+<p>
+Do the same for the boot partition (128 MB), swap partition (in the example,
+512 MB) and the root partition that spans the remaining disk (for which the
+end size is marked as <c>-1</c>, meaning the end of the disk minus one MB,
+which is the farthest a partition can go).
+</p>
+<pre caption="Creating other partitions">
+(parted) <i>mkpart primary 3 131</i>
+
+(parted) <i>name 2 boot</i>
+
+(parted) <i>mkpart primary 131 643</i>
+
+(parted) <i>name 3 swap</i>
+
+(parted) <i>mkpart primary 643 -1</i>
+
+(parted) <i>name 4 rootfs</i>
+
+</pre>
+
+<p>
+
+The end result looks like so:
+
+</p>
+<pre caption="Viewing the current partition layout">
+
+(parted) <i>print</i>
+
+Model: Virtio Block Device (virtblk)
+
+Disk /dev/sda: 20480MiB
+
+Sector size (logical/physical): 512B/512B
+
+Partition Table: gpt
+
+	 
+
+Number   Start      End      Size     File system  Name   Flags
+
+1       1.00MiB    3.00MiB  2.00MiB               grub   bios_grub
+
+2       3.00MiB    131MiB   128MiB                boot
+
+ 3       131MiB     643MiB   512MiB                swap
+
+ 4       643MiB     20479MiB 19836MiB              rootfs
+
+</pre>
+
+<p>
+
+When you are satisfied, use the <c>quit</c> command to exit <c>parted</c>.
+
+</p>
+
+</body>
+
 </subsection>
 </section>
 
@@ -381,8 +593,8 @@ lettre si vous n'utilisez pas le même plan de partitionnement&nbsp;!
 Nous allons commencer par créer la partition de démarrage. Tapez <c>n</c> pour
 créer une nouvelle partition, ensuite <c>p</c> pour choisir une partition
 primaire, suivi par <c>1</c> pour sélectionner la première partition primaire.
-Quand on vous demande le premier cylindre, tapez Entrée. Quand on vous demande
-le dernier cylindre, tapez <c>+32M</c> pour créer une partition de 32&nbsp;Mo&nbsp;:
+Quand on vous demande le premier secteur, assurez-vous qu'il démarre de <c>2048</c> (ce qui est requis pour le chargeur de démarrage) et tapez Entrée. Quand on vous demande
+le dernier secteur, tapez <c>+32M</c> pour créer une partition de 32&nbsp;Mo&nbsp;:
 </p>
 
 <pre caption="Création de la partition de démarrage">
@@ -392,9 +604,8 @@ Command action
   p   primary partition (1-4)
 <i>p</i>
 Partition number (1-4): <i>1</i>
-First cylinder (1-3876, default 1): <comment>(Appuyez sur Entrée)</comment>
-Using default value 1
-Last cylinder or +size or +sizeM or +sizeK (1-3876, default 3876): <i>+32M</i>
+First sector  (64-10486533532, default 64): <i>2048</i>
+Last sector, +sectors +size{M,K,G} (4096-10486533532, default 10486533532): <i>+32M</i>
 </pre>
 
 <p>
@@ -432,11 +643,20 @@ Si vous tapez <c>p</c> à nouveau, vous constaterez qu'une <path>*</path>
 <c>n</c> pour créer une nouvelle partition, puis <c>p</c> pour dire à fdisk que
 vous souhaitez une partition primaire. Ensuite, tapez <c>2</c> pour créer la
 deuxième partition primaire, <path>/dev/sda2</path> dans notre cas. Quand on
-vous demandera le premier cylindre, tapez Entrée. Quand on vous demandera le
-dernier cylindre, tapez <c>+512M</c> pour créer une partition de 512 Mo.
+vous demandera le premier secteur, tapez Entrée. Quand on vous demandera le
+dernier secteur, tapez <c>+512M</c> pour créer une partition de 512 Mo.
 Ensuite, tapez <c>t</c> pour choisir le type de partition, <c>2</c> pour
 sélectionner la partition que vous venez juste de créer puis tapez <c>82</c>
-pour choisir le type de partition «&nbsp;Linux swap&nbsp;». Après avoir terminé
+pour choisir le type de partition «&nbsp;Linux swap&nbsp;».
+</p>
+<p>
+Il n'y a pas de valeur parfaite pour la mémoire virtuelle. Le but de cette mémoire est de procurer de l'espace disque pour le noyau lorsque la mémoire interne (RAM) fait défaut. Un espace de mémoire virtuelle permet au noyau de déplacer des pages qui ne doivent apparemment pas être accédée de si tôt vers le disque (swap ou page-out), libérant ainsi de la mémoire pour satisfaire les nouveaux besoins. Ces pages doivent être replacées dans la mémoire (page-in), lorsque elles sont requises, ce qui peut prendre un peu de temps (l'accès aux disques est très long comparé à l'accès à la mémoire interne).
+</p>
+<p>
+Si vous n'allez pas utiliser des applications gourmandes en mémoire, ou si vous avez beaucoup de mémoire disponible, vous n'avez probablement pas besoin de beaucoud de mémoire virtuelle. Néanmoins, l'espace de mémoire virtuelle est aussi utilisé pour y placer tout le contenu de la mémoire en cas d'hibernation. Si vous envisagez d'utiliser l'hibernation, vous avez besoin d'un plus grand espace de mémoire virtuelle, souvent au moins autant que votre mémoire interne.
+</p>
+<p>
+ Après avoir terminé
 ces étapes, appuyer sur <c>p</c> devrait afficher une table de partitions qui
 ressemble à ceci&nbsp;:
 </p>
@@ -465,8 +685,8 @@ Pour finir, créons la partition principale. Pour ce faire, tapez <c>n</c> pour
 créer une nouvelle partition, puis <c>p</c> pour dire à fdisk que vous
 souhaitez une partition primaire. Ensuite, tapez <c>3</c> pour créer la
 troisième partition primaire, <path>/dev/sda3</path> dans notre cas. Quand on
-vous demande le premier cylindre, tapez Entrée. Quand on vous demande le
-dernier cylindre, tapez Entrée pour créer une partition qui prend le reste de
+vous demande le premier secteur, tapez Entrée. Quand on vous demande le
+dernier secteur, tapez Entrée pour créer une partition qui prend le reste de
 la place libre sur votre disque. Après avoir terminé ces étapes, taper
 <c>p</c> devrait afficher une table de partitions qui ressemble à ceci&nbsp;:
 </p>
