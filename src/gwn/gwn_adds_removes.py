@@ -7,8 +7,18 @@ PACKAGE_LINK = 'http://packages.gentoo.org/package/%s/%s'
 ATTIC_LINK = 'http://sources.gentoo.org/viewcvs.py/gentoo-x86/%s/%s/?hideattic=0'
 OUTPUT_CHARSET = 'utf-8'
 
-def parse(logfile):
+def remove_profile_line(logfile):
+	outfile = open(logfile, "r")
+	data = []
+	for line in outfile:
+		if not line.lstrip().startswith("profile"):
+			data.append(line)
+	outfile.close()
+	f = open(logfile, "w")
+	f.writelines(data)
+	f.close
 
+def parse(logfile):
 	# Read the log file
 	cur = []
 	pkgs = {'added': [], 'removed': []}
@@ -82,6 +92,8 @@ def write(data, devs):
 		print "[/table]"
 
 if __name__ == '__main__':
+	for i in range(0, len(sys.argv)-1):
+		remove_profile_line(sys.argv[i+1])
 	data = []
 	if len(sys.argv) < 2:
 		print 'Usage: gwn_adds_removes.py -p <log-files>'
