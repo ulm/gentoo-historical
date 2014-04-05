@@ -10,6 +10,7 @@ arch = [
 'amd64',
 'amd64-fbsd',
 'arm',
+'arm64',
 'hppa',
 'ia64',
 'm68k',
