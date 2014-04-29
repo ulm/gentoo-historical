@@ -80,6 +80,8 @@ def sum_results(result):
 # get dates from command line, else use now (time.time())
 starttime = time.gmtime(time.time() - (60 * 60 * 24 * 31))
 endtime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
+dateimg = time.strftime("%Y-%m",endtime)
+datefor = time.strftime("%Y/%m",endtime)
 
 if len(sys.argv) > 1:
   if len(sys.argv) >= 2:
@@ -147,6 +149,11 @@ print"The following tables and charts summarize the " + \
 "activity on Bugzilla between <strong>%s</strong> and <strong>%s</strong>. Not fixed means bugs that were " % (date_from_display, date_to_display) + \
 "resolved as NEEDINFO, WONTFIX, CANTFIX, INVALID or UPSTREAM. "
 
+print """<a
+href="http://blogs.gentoo.org/news/files/%s/gmn-activity-%s.png"><img
+class="size-full wp-image-219 aligncenter" alt="gmn-activity-%s"
+src="http://blogs.gentoo.org/news/files/%s/gmn-activity-%s.png"
+width="500" height="300" /></a>""" % (datefor,dateimg,dateimg,datefor,dateimg)
 print "[table]"
 print "Bug Activity, Number"
 print "New, %d" % new_bug_count
@@ -171,6 +178,11 @@ for i in range(0,9):
 print "10, Others, %s" % (total_closed - cleft)
 print "[/table]"
 
+print """<a
+href="http://blogs.gentoo.org/news/files/%s/gmn-closed-%s.png"><img
+class="aligncenter size-full wp-image-220" alt="gmn-closed-%s"
+src="http://blogs.gentoo.org/news/files/%s/gmn-closed-%s.png"
+width="500" height="250" /></a>""" % (datefor,dateimg,dateimg,datefor,dateimg)
 #9. Open Bugs
 #print "\n\n==Open Bugs==\n"
 oleft = 0
@@ -183,3 +195,8 @@ for i in range(0,9):
 	oleft += groups_that_opened_most[i][1]
 print "10, Others, %s" % (total_opened - oleft)
 print "[/table]"
+print """<a
+href="http://blogs.gentoo.org/news/files/%s/gmn-opened-%s.png"><img
+class="aligncenter size-full wp-image-220" alt="gmn-opened-%s"
+src="http://blogs.gentoo.org/news/files/%s/gmn-opened-%s.png" width="500"
+height="250" /></a> """ % (datefor,dateimg,dateimg,datefor,dateimg)
