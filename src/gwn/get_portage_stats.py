@@ -86,6 +86,8 @@ for i in range(0, len(arch)):
 	tvals.append(round(testing[i] / 123.81, 2))
 	tot.append(stable[i]+testing[i])
 
+max_arch=max(tot)
+
 string1 = ''
 string2 = ''
 for i in range(0, len(svals)):
@@ -96,15 +98,14 @@ for i in range(0, len(svals)):
 		string2 += ','
 
 print """<p style="text-align: center"><img class=" wp-image-216 aligncenter"
-style="line-height: 24px" alt="gmn-portage-stats-2013-11"
+style="line-height: 24px" alt="gmn-portage-stats-%s"
 src="http://blogs.gentoo.org/news/files/%s/gmn-portage-stats-%s.png"
 width="800" height="350" /></p>
-""" % (datefor, dateimg)
-#print string1
-#print string2
+""" % (dateimg, datefor, dateimg)
+
 print "\n== Chart URL == (save it as \"gmn-portage-stats-%s.png\")\n\n" %dateimg
 base = 'http://chart.apis.google.com/chart?cht=bhs&chs=800x350&chd=t:'
-tail = '&chco=45347B,6A5C95&chbh=15&chxt=x,y&chxr=0,0,12250&chdl=Stable|Testing'
+tail = '&chco=45347B,6A5C95&chbh=15&chxt=x,y&chxr=0,0,%s&chdl=Stable|Testing' % (max_arch)
 labx = '&chxl=0:1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|1000|'
 laby = '1:'
 
