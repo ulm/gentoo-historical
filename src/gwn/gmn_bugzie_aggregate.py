@@ -102,3 +102,7 @@ clkeys.reverse()
 opkeys.reverse()
 
 print "Done!"
+deletefile = raw_input("Remove the 'breport' file? [Y/n]: ")
+allno = ('n', 'N', 'NO', 'No', 'no')
+if deletefile not in allno:
+    os.remove('breport')
