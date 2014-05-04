@@ -169,7 +169,7 @@ print "[/table]"
 cleft = 0
 #8. Closed Bugs
 print "\n<h2>Closed bug ranking</h2>\n"
-print "The developers and teams who have closed the most bugs during this period are as follows.\n"
+print "The following table outlines the teams and developers with the most bugs resolved during this period"
 print "[table]"
 print "Rank, Team/Developer, Bug Count"
 for i in range(0,9):
