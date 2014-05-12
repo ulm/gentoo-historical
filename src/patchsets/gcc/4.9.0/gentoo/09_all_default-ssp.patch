@@ -1,8 +1,9 @@
-2013-12-31  Magnus Granberg  <zorry@gentoo.org>
+2014-04-27  Magnus Granberg  <zorry@gentoo.org>
 
 	Patch orig: Debian/Ubuntu
 	# 484714
-	We Add -fstack-protector as default
+	We Add -fstack-protector-strong as default and change
+	ssp-buffer-size
 
 --- a/configure.ac	2013-02-05 23:36:20.000000000 +0100
 +++ b/configure.ac	2013-12-30 22:22:47.241772166 +0100
@@ -51,19 +52,30 @@
  GOCFLAGS = $(CFLAGS)
  
  TFLAGS =
---- a/gcc/doc/invoke.texi 2009-12-21
-+++ b/gcc/doc/invoke.texi	2009-12-21
-@@ -8111,6 +8111,10 @@
- when a function is entered and then checked when the function exits.
- If a guard check fails, an error message is printed and the program exits.
+--- a/gcc/doc/invoke.texi	2014-04-14 17:07:07.000000000 +0200
++++ b/gcc/doc/invoke.texi	2014-04-24 01:59:21.230308265 +0200
+@@ -9239,6 +9251,11 @@ Like @option{-fstack-protector} but incl
+ be protected --- those that have local array definitions, or have
+ references to local frame addresses.
  
-+NOTE: In Gentoo Gcc 4.8.2 and later versions this option is enabled by default
-+for C, C++, ObjC, ObjC++, if none of @option{-fno-stack-protector},
-+@option{-nostdlib}, nor @option{-ffreestanding} are found.
++NOTE: In Gentoo GCC 4.9.0 and later versions this option is enabled by default
++for C, C++, ObjC, ObjC++, if neither @option{-fno-stack-protector}, 
++@option{-nostdlib}, @option{-ffreestanding}, @option{-fstack-protector}, 
++@option{-fstack-protector-strong}or @option{-fstack-protector-all}are found.
 +
- @item -fstack-protector-all
- @opindex fstack-protector-all
- Like @option{-fstack-protector} except that all functions are protected.
+ @item -fsection-anchors
+ @opindex fsection-anchors
+ Try to reduce the number of symbolic address calculations by using
+@@ -9461,6 +9465,9 @@
+ The minimum size of buffers (i.e.@: arrays) that receive stack smashing
+ protection when @option{-fstack-protection} is used.
+ 
++NOTE: In Gentoo this is change from "8" to "4", to increase
++the number of functions protected by the stack protector.
++
+ @item max-jump-thread-duplication-stmts
+ Maximum number of statements allowed in a block that needs to be
+ duplicated when threading jumps.
 --- a/gcc/cp/lang-specs.h
 +++ b/gcc/cp/lang-specs.h
 @@ -46,7 +46,7 @@ along with GCC; see the file COPYING3.  If not see
@@ -91,13 +103,15 @@
      %{!fsyntax-only:%(invoke_as)}}}}", 0, 0, 0},
 --- a/gcc/gcc.c
 +++ b/gcc/gcc.c
-@@ -651,6 +651,17 @@ proper position among the other output files.  */
+@@ -651,6 +651,19 @@ proper position among the other output files.  */
  #define LINK_GCC_C_SEQUENCE_SPEC "%G %L %G"
  #endif
  
 +#ifndef SSP_DEFAULT_SPEC
 +#if defined ( TARGET_LIBC_PROVIDES_SSP ) && defined ( EFAULT_SSP )
-+#define SSP_DEFAULT_SPEC "%{fno-stack-protector|fstack-protector-all|ffreestanding|nostdlib:;:-fstack-protector}"
++#define SSP_DEFAULT_SPEC "%{fno-stack-protector|fstack-protector| \
++  fstack-protector-strong|fstack-protector-all| \
++  ffreestanding|nostdlib:;:-fstack-protector-strong}"
 +/* Add -fno-stack-protector for the use of gcc-specs-ssp.  */
 +#define CC1_SSP_DEFAULT_SPEC "%{!fno-stack-protector:}"
 +#else
