@@ -1,0 +1,753 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sections SYSTEM "/dtd/book.dtd">
+
+<!-- The content of this document is licensed under the CC-BY-SA license -->
+<!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
+
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/ru/handbook/hb-install-alpha-disk.xml,v 1.1 2014/06/13 18:03:11 blueboar Exp $ -->
+
+<sections>
+
+<version>1</version>
+<date>2013-02-23</date>
+
+<section>
+<title>Общие сведения о блочных устройствах</title>
+
+<subsection>
+<include href="hb-install-blockdevices.xml"/>
+</subsection>
+
+<subsection>
+<title>Разделы</title>
+<body>
+
+<p>
+Хотя теоретически для размещения системы Linux диск можно использовать целиком, 
+так почти никогда не делают на практике. Вместо этого большое физическое блочное 
+устройство разбивают на меньшие блочные устройства, более удобные для обращения. 
+На системах Alpha они называются <e>разделами</e>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Разработка схемы разбиения диска</title>
+<subsection>
+<title>Схема разбиения по умолчанию</title>
+<body>
+
+<p>
+В качестве примера мы используем следующую схему разделов:
+</p>
+
+<table>
+<tr>
+  <th>Раздел</th>
+  <th>Описание</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Раздел подкачки</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Корневой раздел</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Полный диск (обязательно)</ti>
+</tr>
+</table>
+
+
+<p>
+Если вам интересно узнать, какого размера должны быть разделы, и сколько 
+разделов (или томов) вам вообще может потребоваться, читайте дальше. В 
+противном случае читайте раздел
+<uri link="#fdisk_SRM">использование fdisk для разбивки вашего диска (только SRM)</uri>,
+либо <uri link="#fdisk_ARC">использование fdisk для разбивки вашего диска (только ARC/AlphaBIOS)</uri>.
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Сколько и каких именно?</title>
+<body>
+
+<p>
+Количество разделов очень сильно зависит от назначения системы. Например, если 
+у вас много пользователей, вам, скорее всего, захочется отделить <path>/home</path> 
+для повышения безопасности и упрощения резервного копирования. Если вы 
+устанавливаете Gentoo в роли почтового сервера, следует отделить <path>/var</path>, 
+т.к. вся почта хранится там. Затем, правильно выбрав файловую систему, вы 
+добьетесь максимальной производительности. Для игровых серверов потребуется 
+отдельный раздел <path>/opt</path>, так как большинство программ для их работы 
+устанавливается туда. Причины выделения те же, что и для <path>/home</path>: 
+безопасность и резервное копирование. Определенно не помешает побольше места 
+для <path>/usr</path>: не только потому, что там хранится большинство приложений, 
+а еще из-за того, что лишь дерево Portage, не считая размещенных в нем архивов 
+с исходными кодами, занимает около 500 МБ. 
+</p>
+
+<p>
+Как видите, все зависит от ваших целей. Наличие отдельных разделов или томов 
+имеет следующие плюсы: 
+</p>
+
+<ul>
+<li>
+  Для каждого раздела или тома можно выбрать наиболее подходящую файловую систему 
+</li>
+<li>
+  Свободное место во всей системе не кончится «вдруг» из-за того, что 
+  одна-единственная сбойная программа постоянно записывает файлы в раздел или том 
+</li>
+<li>
+  Необходимая проверка файловых систем будет занимать меньше времени, т.к. проверка 
+  разных разделов может выполняться параллельно (еще больший выигрыш времени дает 
+  использование нескольких физических дисков) 
+</li>
+<li>
+  Можно повысить безопасность системы, монтируя часть разделов в режиме read-only 
+  (только для чтения), nosuid (игнорируется бит setuid), noexec (игнорируется 
+  бит исполнения) и т.д. 
+</li>
+</ul>
+
+<p>
+Однако у множества разделов также есть недостатки. Если они не сконфигурированы 
+правильно, у вас будет система с огромным количеством свободного места на одном 
+разделе и отсутствием его на другой. Другой проблемой является то, что отдельные 
+разделы, особенно для важных точек монтирования, например <path>/usr</path> или 
+<path>/var</path>, часто требуют загрузки некоторого кода в ОЗУ, чтобы смонтировать 
+разделы прежде чем запустятся другие загрузочные скрипты. Это не всегда является
+проблемой, так что результаты могут быть разные. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="fdisk_SRM">
+<title>Использование fdisk для разбивки вашего диска (только SRM)</title>
+<subsection>
+<body>
+
+<p>
+В данной главе, мы проведем вас через создание примерной компоновки разделов, 
+о которой мы говорили ранее в данной главе, а именно:
+</p>
+
+<table>
+<tr>
+  <th>Раздел</th>
+  <th>Описание</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Раздел подкачки</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Корневой раздел</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Полный диск (обязательно)</ti>
+</tr>
+</table>
+
+<p>
+Измените вашу компоновку разделов так, как вам необходимо. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Определение существующих дисков</title>
+<body>
+
+<p>
+Чтобы определить, какие диски у вас есть, используйте следующие команды:
+</p>
+
+<pre caption="Определение существующих дисков">
+# <i>dmesg | grep 'drive$'</i>        <comment>(Для дисков IDE)</comment>
+# <i>dmesg | grep 'scsi'</i>          <comment>(Для дисков SCSI)</comment>
+</pre>
+
+<p>
+Из вывода команды вы увидите, какие диски были найдены, а также их название
+в каталоге <path>/dev</path>. В дальнейшем мы будем предполагать, что
+у вас есть диск SCSI и он имеет имя <path>/dev/sda</path>.
+</p>
+
+<p>
+Теперь запускаем <c>fdisk</c>:
+</p>
+
+<pre caption="Запуск fdisk">
+# <i>fdisk /dev/sda</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Удаление всех разделов</title>
+<body>
+
+<p>
+Если ваш жесткий диск полностью чистый, вам нужно сначала создать метку
+диска BSD.
+</p>
+
+<pre caption="Создание метки диска BSD">
+Command (m for help): <i>b</i>
+/dev/sda contains no disklabel.
+Do you want to create a disklabel? (y/n) <i>y</i>
+<comment>Здесь будет куча информации, различной для каждого устройства</comment>
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  c:        1      5290*     5289*    unused        0     0
+</pre>
+
+<p>
+Сначала мы удалим все разделы <e>кроме</e> раздела 'c' (это требование
+при использовании метки диска BSD). Следующий пример показывает, как
+удалить раздел (удаляется раздел 'a'). Повторите данный процесс для
+удаления всех остальных разделов (опять же, кроме раздела 'c').
+</p>
+
+<p>
+Используйте <c>p</c> для просмотра сущетсвующих разделов. <c>d</c>
+используется для удаления раздела.
+</p>
+
+<pre caption="Удаление раздела">
+BSD disklabel command (m for help): <i>p</i>
+
+8 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  a:        1       235*      234*    4.2BSD     1024  8192    16
+  b:      235*      469*      234*      swap
+  c:        1      5290*     5289*    unused        0     0
+  d:      469*     2076*     1607*    unused        0     0
+  e:     2076*     3683*     1607*    unused        0     0
+  f:     3683*     5290*     1607*    unused        0     0
+  g:      469*     1749*     1280     4.2BSD     1024  8192    16
+  h:     1749*     5290*     3541*    unused        0     0
+
+BSD disklabel command (m for help): <i>d</i>
+Partition (a-h): <i>a</i>
+</pre>
+
+<p>
+После того, как вы удалили все разделы, список разделов должен показать
+что-нибудь, похожее на это:
+</p>
+
+<pre caption="Просмотр пустой схемы разделов">
+BSD disklabel command (m for help): <i>p</i>
+
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  c:        1      5290*     5289*    unused        0     0
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Создание раздела подкачки</title>
+<body>
+
+<p>
+На системах Alpha нам не нужен отдельный загрузочный раздел. Однако первый
+цилиндр не может использоваться, так как там будет храниться образ <c>aboot</c>.
+</p>
+
+<p>
+Мы создадим раздел подкачки, начиная с третьего цилиндра общим размером
+1 Гб. Используйте <c>n</c> для создания нового раздела. После создания
+раздела, мы изменим его тип на <c>1</c> (один), что означает <e>раздел
+подкачки</e>.
+</p>
+
+<pre caption="Создание раздела подкачки">
+BSD disklabel command (m for help): <i>n</i>
+Partition (a-p): <i>a</i>
+First cylinder (1-5290, default 1): <i>3</i>
+Last cylinder or +size or +sizeM or +sizeK (3-5290, default 5290): <i>+1024M</i>
+
+BSD disklabel command (m for help): <i>t</i>
+Partition (a-c): <i>a</i>
+Hex code (type L to list codes): <i>1</i>
+</pre>
+
+<p>
+После данных шагов вы должны увидеть список разделов, похожий на следующую картину:
+</p>
+
+<pre caption="Список разделов после создания раздела подкачки">
+BSD disklabel command (m for help): <i>p</i>
+
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  a:        3      1003      1001       swap
+  c:        1      5290*     5289*    unused        0     0
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Создание корневого раздела</title>
+<body>
+
+<p>
+Теперь мы создадим корневой раздел, начиная с первого цилиндра <e>после</e>
+раздела подкачки. Используйте команду <c>p</c> для того, чтобы узнать, где
+кончается раздел подкачки. В нашем случае это 1003, следовательно, корневой
+раздел начнется с 1004.
+</p>
+
+<p>
+Другой проблемой является то, что в программе <c>fdisk</c> есть ошибка.
+Програма думает, что количество цилиндров на один больше, чем цилиндров на
+самом деле есть. Другими словами, когда программа попросит у вас номер
+последнего цилиндра, уменьшите номер цилиндра (в данном примере: 5290) на один.
+</p>
+
+<p>
+Когда раздел создан, мы изменим его тип на <c>8</c> для <e>ext2</e>.
+</p>
+
+<pre caption="Создание корневого раздела">
+D disklabel command (m for help): <i>n</i>
+Partition (a-p): <i>b</i>
+First cylinder (1-5290, default 1): <i>1004</i>
+Last cylinder or +size or +sizeM or +sizeK (1004-5290, default 5290): <i>5289</i>
+
+BSD disklabel command (m for help): <i>t</i>
+Partition (a-c): <i>b</i>
+Hex code (type L to list codes): <i>8</i>
+</pre>
+
+<p>
+Ваша разбивка разделов должна быть похожа на эту:
+</p>
+
+<pre caption="Просмотр разбивки на разделы">
+BSD disklabel command (m for help): <i>p</i>
+
+3 partitions:
+#       start       end      size     fstype   [fsize bsize   cpg]
+  a:        3      1003      1001       swap
+  b:     1004      5289      4286       ext2
+  c:        1      5290*     5289*    unused        0     0
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Сохраняем разбиение на разделы и выходим</title>
+<body>
+
+<p>
+Выйдите из <c>fdisk</c> нажав <c>w</c>. Данное действие также приведет к
+сохранению вашего разбиения на разделы.
+</p>
+
+<pre caption="Сохраняем и выходим из fdisk">
+Command (m for help): <i>w</i>
+</pre>
+
+<p>
+Теперь, когда ваши разделы созданы, можете продолжать читать,
+начиная с раздела <uri link="#filesystems">создание файловых систем</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="fdisk_ARC">
+<title>Использование fdisk для разбивки вашего диска (только ARC/AlphaBIOS)</title>
+<subsection>
+<body>
+
+<p>
+Далее мы объясним, как разбить диск на такие разделы, о которых мы говорили 
+ранее в данной главе, а именно:
+</p>
+
+<table>
+<tr>
+  <th>Раздел</th>
+  <th>Описание</th>
+</tr>
+<tr>
+  <ti><path>/dev/sda1</path></ti>
+  <ti>Загрузочный раздел</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda2</path></ti>
+  <ti>Раздел подкачки</ti>
+</tr>
+<tr>
+  <ti><path>/dev/sda3</path></ti>
+  <ti>Корневой раздел</ti>
+</tr>
+</table>
+
+<p>
+Измените вашу компоновку разделов так, как вам необходимо. 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Определение существующих дисков</title>
+<body>
+
+<p>
+Чтобы определить, какие диски у вас есть, используйте следующие команды:
+</p>
+
+<pre caption="Определение существующих дисков">
+# <i>dmesg | grep 'drive$'</i>        <comment>(Для дисков IDE)</comment>
+# <i>dmesg | grep 'scsi'</i>          <comment>(Для дисков SCSI)</comment>
+</pre>
+
+<p>
+Из вывода команды вы увидите, какие диски были найдены, а также их название
+в каталоге <path>/dev</path>. В дальнейшем мы будем предполагать, что
+у вас есть диск SCSI и он имеет имя <path>/dev/sda</path>.
+</p>
+
+<p>
+Теперь запускаем <c>fdisk</c>:
+</p>
+
+<pre caption="Запуск fdisk">
+# <i>fdisk /dev/sda</i>
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Удаление всех разделов</title>
+<body>
+
+<p>
+Если ваш жесткий диск полностью чистый, вам нужно сначала создать метку
+диска DOS.
+</p>
+
+<pre caption="Создание метки диска DOS">
+Command (m for help): <i>o</i>
+Building a new DOS disklabel.
+</pre>
+
+<p>
+Мы начнем с удаления разделов. Следующий пример показывает, как
+удалить раздел (удаляется раздел 'a'). Повторите данный процесс для
+удаления всех остальных разделов.
+</p>
+
+<p>
+Используйте <c>p</c> для просмотра сущетсвующих разделов. <c>d</c>
+используется для удаления раздела.
+</p>
+
+<pre caption="Удаление раздела">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 9150 MB, 9150996480 bytes
+64 heads, 32 sectors/track, 8727 cylinders
+Units = cylinders of 2048 * 512 = 1048576 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1         478      489456   83  Linux
+/dev/sda2             479        8727     8446976    5  Extended
+/dev/sda5             479        1433      977904   83  Linux Swap
+/dev/sda6            1434        8727     7469040   83  Linux
+
+command (m for help): <i>d</i>
+Partition number (1-6): <i>1</i>
+</pre>
+
+
+</body>
+</subsection>
+<subsection>
+<title>Создание загрузочного раздела</title>
+<body>
+
+<p>
+На системах Alpha, использующих для загрузки MILO нам нужно создать маленький
+vfat загрузочный раздел.
+</p>
+
+<pre caption="Создаем загрузочный раздел">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>1</i>
+First cylinder (1-8727, default 1): <i>1</i>
+Last cylinder or +size or +sizeM or +sizeK (1-8727, default 8727): <i>+16M</i>
+
+Command (m for help): <i>t</i>
+Selected partition 1
+Hex code (type L to list codes): <i>6</i>
+Changed system type of partition 1 to 6 (FAT16)
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Создаем раздел подкачки</title>
+<body>
+
+<p>
+Мы создадим раздел подкачки общим объемом 1 Гб. Используйте <c>n</c> для
+создания нового раздела.
+</p>
+
+<pre caption="Создание раздела подкачки">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>2</i>
+First cylinder (17-8727, default 17): <i>17</i>
+Last cylinder or +size or +sizeM or +sizeK (17-8727, default 8727): <i>+1000M</i>
+
+Command (m for help): <i>t</i>
+Partition number (1-4): <i>2</i>
+Hex code (type L to list codes): <i>82</i>
+Changed system type of partition 2 to 82 (Linux swap)
+</pre>
+
+<p>
+После данных шагов вы должны иметь разбивку, похожую на следующую:
+</p>
+
+<pre caption="Список разделов после создания раздела подкачки">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 9150 MB, 9150996480 bytes
+64 heads, 32 sectors/track, 8727 cylinders
+Units = cylinders of 2048 * 512 = 1048576 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1          16       16368    6  FAT16
+/dev/sda2              17         971      977920   82  Linux swap
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Создание корневого раздела</title>
+<body>
+
+<p>
+Теперь мы создадим корневой раздел. Опять же, просто используйте команду <c>n</c>.
+</p>
+
+<pre caption="Создаем корневой раздел">
+Command (m for help): <i>n</i>
+Command action
+  e   extended
+  p   primary partition (1-4)
+<i>p</i>
+Partition number (1-4): <i>3</i>
+First cylinder (972-8727, default 972): <i>972</i>
+Last cylinder or +size or +sizeM or +sizeK (972-8727, default 8727): <i>8727</i>
+</pre>
+
+<p>
+После этих шагов вы должны увидеть разбивку, похожую на следующую:
+</p>
+
+<pre caption="Список разделов после создания корневого раздела">
+Command (m for help): <i>p</i>
+
+Disk /dev/sda: 9150 MB, 9150996480 bytes
+64 heads, 32 sectors/track, 8727 cylinders
+Units = cylinders of 2048 * 512 = 1048576 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1          16       16368    6  FAT16
+/dev/sda2              17         971      977920   82  Linux swap
+/dev/sda3             972        8727     7942144   83  Linux
+</pre>
+
+</body>
+</subsection>
+<subsection>
+<title>Сохраняем разбивку на разделы, и выходим</title>
+<body>
+
+<p>
+Выйдите из <c>fdisk</c> нажав <c>w</c>. После этого ваша разбивка
+на разделы будет записана.
+</p>
+
+<pre caption="Сохраняем и выходим из fdisk">
+Command (m for help): <i>w</i>
+</pre>
+
+<p>
+Теперь, когда ваши разделы созданы, можете продолжать читать,
+начиная с раздела <uri link="#filesystems">создание файловых систем</uri>.
+</p>
+
+</body>
+</subsection>
+</section>
+<section id="filesystems">
+<title>Создание файловых систем</title>
+<subsection>
+<title>Введение</title>
+<body>
+
+<p>
+Разделы созданы, настало время разместить на них файловые системы. Если вам 
+безразлично, какую файловую систему использовать, и вы вполне довольны той, что 
+мы предлагаем в данной книге по умолчанию, переходите к 
+<uri link="#filesystems-apply">размещению файловой системы в разделе</uri>. Если нет, 
+читайте дальше, чтобы разузнать о существующих файловых системах... 
+</p>
+
+</body>
+</subsection>
+
+<subsection>
+<include href="hb-install-filesystems.xml"/>
+</subsection>
+
+<subsection id="filesystems-apply">
+<title>Размещение файловой системы в разделе</title>
+<body>
+
+<p>
+Для создания в разделе или томе файловой системы каждого типа существуют 
+специальные средства: 
+</p>
+
+<table>
+<tr>
+  <th>Файловая система</th>
+  <th>Команда создания</th>
+</tr>
+<tr>
+  <ti>ext2</ti>
+  <ti><c>mkfs.ext2</c></ti>
+</tr>
+<tr>
+  <ti>ext3</ti>
+  <ti><c>mkfs.ext3</c></ti>
+</tr>
+<tr>
+  <ti>ext4</ti>
+  <ti><c>mkfs.ext4</c></ti>
+</tr>
+<tr>
+  <ti>reiserfs</ti>
+  <ti><c>mkfs.reiserfs</c></ti>
+</tr>
+<tr>
+  <ti>xfs</ti>
+  <ti><c>mkfs.xfs</c></ti>
+</tr>
+<tr>
+  <ti>jfs</ti>
+  <ti><c>mkfs.jfs</c></ti>
+</tr>
+</table>
+
+<p>
+Например, чтобы у корневого раздела (<path>/dev/sda2</path> в наших примерах) 
+была файловая система ext4, требуется выполнить: 
+</p>
+
+<pre caption="Применение файловой системы к разделу">
+# <i>mkfs.ext4 /dev/sda2</i>
+</pre>
+
+<p>
+Теперь самостоятельно создайте файловые системы на своих только что созданных 
+разделах (логических томах). 
+</p>
+
+</body>
+</subsection>
+<subsection>
+<title>Подключение раздела подкачки</title>
+<body>
+
+<p>
+<c>mkswap</c> команда, используемая для инициализации разделов подкачки: 
+</p>
+
+<pre caption="Создание идентификатора раздела подкачки">
+# <i>mkswap /dev/sda1</i>
+</pre>
+
+<p>
+Для подключения раздела подкачки воспользуйтесь <c>swapon</c>:
+</p>
+
+<pre caption="Подключение раздела подкачки">
+# <i>swapon /dev/sda1</i>
+</pre>
+
+<p>
+Теперь командами, приведенными выше, создайте и подключите раздел подкачки в своей системе. 
+</p>
+
+</body>
+</subsection>
+</section>
+<section>
+<title>Монтирование</title>
+<body>
+
+<p>
+Теперь, когда разделы созданы, а файловые системы размещены, настало время 
+смонтировать эти разделы. Используйте команду <c>mount</c>. Не забудьте создать 
+для каждого раздела соответствующие каталоги монтирования. Например, смонтируем 
+корневой раздел: 
+</p>
+
+<pre caption="Монтирование раздела">
+# <i>mount /dev/sda2 /mnt/gentoo</i>
+</pre>
+
+<note>
+Если вы хотите разместить каталог <path>/tmp</path> в отдельном разделе, не забудьте 
+изменить права доступа к этому каталогу после монтирования: <c>chmod 1777 /mnt/gentoo/tmp</c>. 
+Это также относится к <path>/var/tmp</path>. 
+</note>
+
+<p>
+Еще нам потребуется смонтировать файловую систему proc (виртуальный интерфейс ядра) в 
+каталог <path>/proc</path>. Но сначала надо поместить в разделы нужные файлы. 
+</p>
+
+<p>
+Переходите к <uri link="?part=1&amp;chap=5">установке установочных файлов Gentoo</uri>.
+</p>
+
+</body>
+</section>
+</sections>
+
+<!-- *$Localization:
+target-language: Russian
+target-date: 2013-02-23
+source-cvs-revision: 1.34
+translated-by: Vladimir Romanov [blueboar2@gmail.com]
+-->
