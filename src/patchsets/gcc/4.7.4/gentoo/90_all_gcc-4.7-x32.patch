@@ -649,18 +649,18 @@ then filtered out useless configure & ChangeLog files
 @@ -10389,14 +10482,18 @@ ix86_expand_prologue (void)
        if (r10_live && eax_live)
          {
- 	  t = choose_baseaddr (m->fs.sp_offset - allocate);
+ 	  t = gen_rtx_PLUS (Pmode, stack_pointer_rtx, eax);
 -	  emit_move_insn (r10, gen_frame_mem (Pmode, t));
 +	  emit_move_insn (gen_rtx_REG (word_mode, R10_REG),
 +			  gen_frame_mem (word_mode, t));
- 	  t = choose_baseaddr (m->fs.sp_offset - allocate - UNITS_PER_WORD);
+ 	  t = plus_constant (t, UNITS_PER_WORD);
 -	  emit_move_insn (eax, gen_frame_mem (Pmode, t));
 +	  emit_move_insn (gen_rtx_REG (word_mode, AX_REG),
 +			  gen_frame_mem (word_mode, t));
  	}
        else if (eax_live || r10_live)
  	{
- 	  t = choose_baseaddr (m->fs.sp_offset - allocate);
+ 	  t = gen_rtx_PLUS (Pmode, stack_pointer_rtx, eax);
 -	  emit_move_insn ((eax_live ? eax : r10), gen_frame_mem (Pmode, t));
 +	  emit_move_insn (gen_rtx_REG (word_mode,
 +				       (eax_live ? AX_REG : R10_REG)),
@@ -1145,15 +1145,14 @@ then filtered out useless configure & ChangeLog files
     (clobber (mem:BLK (scratch)))]
    ""
    "pop{<imodesuffix>}\t%0"
-@@ -3399,9 +3406,9 @@
- })
+@@ -3399,8 +3406,8 @@
  
  (define_insn "*zero_extendsidi2_rex64"
--  [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,o,?*Ym,?*y,?*Yi,*x")
-+  [(set (match_operand:DI 0 "nonimmediate_operand"	   "=r  ,o,?*Ym,?*y,?*Yi,*x")
+-  [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,o,?*Ym,?!*y,?*Yi,*x")
++  [(set (match_operand:DI 0 "nonimmediate_operand"	   "=r  ,o,?*Ym,?!*y,?*Yi,*x")
  	(zero_extend:DI
--	 (match_operand:SI 1 "nonimmediate_operand" "rm,0,r   ,m  ,r   ,m")))]
-+	 (match_operand:SI 1 "x86_64_zext_general_operand" "rmWz,0,r   ,m  ,r   ,m")))]
+-	 (match_operand:SI 1 "nonimmediate_operand" "rm,0,r   ,m   ,r   ,m")))]
++	 (match_operand:SI 1 "x86_64_zext_general_operand" "rmWz,0,r   ,m   ,r   ,m")))]
    "TARGET_64BIT"
    "@
     mov{l}\t{%1, %k0|%k0, %1}
@@ -1544,10 +1543,11 @@ then filtered out useless configure & ChangeLog files
  	(match_operand:DI 2 "register_operand" "a"))
 -   (set (match_operand:DI 0 "register_operand" "=D")
 -	(plus:DI (match_dup 1)
--		 (const_int 8)))]
+-		 (const_int 8)))
 +   (set (match_operand:P 0 "register_operand" "=D")
 +	(plus:P (match_dup 1)
-+		(const_int 8)))]
++		(const_int 8)))
+    (unspec [(const_int 0)] UNSPEC_STOS)]
    "TARGET_64BIT
     && !(fixed_regs[AX_REG] || fixed_regs[DI_REG])"
 -  "stosq"
@@ -1556,8 +1556,8 @@ then filtered out useless configure & ChangeLog files
     (set_attr "memory" "store")
     (set_attr "mode" "DI")])
 @@ -15936,7 +15951,7 @@
- 	(plus:P (match_dup 1)
- 		(const_int 4)))]
+ 		(const_int 4)))
+    (unspec [(const_int 0)] UNSPEC_STOS)]
    "!(fixed_regs[AX_REG] || fixed_regs[DI_REG])"
 -  "stos{l|d}"
 +  "%^stos{l|d}"
@@ -1565,8 +1565,8 @@ then filtered out useless configure & ChangeLog files
     (set_attr "memory" "store")
     (set_attr "mode" "SI")])
 @@ -15948,7 +15963,7 @@
- 	(plus:P (match_dup 1)
- 		(const_int 2)))]
+ 		(const_int 2)))
+    (unspec [(const_int 0)] UNSPEC_STOS)]
    "!(fixed_regs[AX_REG] || fixed_regs[DI_REG])"
 -  "stosw"
 +  "%^stosw"
@@ -1574,8 +1574,8 @@ then filtered out useless configure & ChangeLog files
     (set_attr "memory" "store")
     (set_attr "mode" "HI")])
 @@ -15960,7 +15975,7 @@
- 	(plus:P (match_dup 1)
- 		(const_int 1)))]
+ 		(const_int 1)))
+    (unspec [(const_int 0)] UNSPEC_STOS)]
    "!(fixed_regs[AX_REG] || fixed_regs[DI_REG])"
 -  "stosb"
 +  "%^stosb"
