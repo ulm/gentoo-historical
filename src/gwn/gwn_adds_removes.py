@@ -80,15 +80,11 @@ def write(data, devs):
 					ldata = (ATTIC_LINK % pkg[0], '/'.join(pkg[0]))
 				#who = (devs[pkg[1]].encode(OUTPUT_CHARSET), pkg[1])
 				who = devs[pkg[1]]
-				# clean date format so we can compare it with
-				# date_to/date_from
-				when_cmp = pkg[2].strftime('%Y%m')
 				# date format suitable for GMN posts
 				when = pkg[2].strftime('%d %b %Y')
 				# You should copy this to the raw html code in the
 				# blog post
-				if when_cmp >=date_from and when_cmp < date_to:
-					print '<a href="%s">%s</a>, %s, %s' % (ldata[0], ldata[1], who, when)
+				print '<a href="%s">%s</a>, %s, %s' % (ldata[0], ldata[1], who, when)
 		print "[/table]"
 
 if __name__ == '__main__':
@@ -96,25 +92,9 @@ if __name__ == '__main__':
 		remove_profile_line(sys.argv[i+1])
 	data = []
 	if len(sys.argv) < 2:
-		print 'Usage: gwn_adds_removes.py -p <log-files>'
+		print 'Usage: gwn_adds_removes.py <log-files>'
 	else:
-		if sys.argv[1] == "-p":
-			# Results for previous month!
-			starttime = time.gmtime(time.time() - (60 * 60 * 24 * 31))
-			endtime = time.gmtime(time.time() + (60 * 60 * 24 * 1))
-			# Format the string to what we expect
-			date_to = time.strftime("%Y%m", endtime)
-			date_from = time.strftime("%Y%m", starttime)
-			argrange = 1
-		else:
-			starttime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
-			endtime = time.gmtime(time.time() + (60 * 60 * 24 * 31))
-			# Format the string to what we expect
-			date_to = time.strftime("%Y%m", endtime)
-			date_from = time.strftime("%Y%m", starttime)
-			argrange = 0
-
-		devs = developers()
-		for i in range(argrange, len(sys.argv)-1):
+	        devs = developers()
+		for i in range(0, len(sys.argv)-1):
 			data.append(parse(sys.argv[i+1]))
 		write(data, devs)
