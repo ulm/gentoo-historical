@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/1.0 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-system.xml,v 1.70 2013/11/01 07:20:14 jaaf Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-system.xml,v 1.71 2014/08/08 07:36:26 jaaf Exp $ -->
 
 <sections>
 
@@ -13,13 +13,13 @@ Maintenant que le fichier stage3 est installé et configuré nous cherchons à d
 explique comment le rendre opérationnel. 
 </abstract>
 
-<version>29</version>
-<date>2013-09-23</date>
+<version>38</version>
+<date>2014-06-01</date>
 
 <section>
-<title>Entrer dans le nouvel environnement (chroot)</title>
+<title>Changement de racine (chrooting)</title>
 <subsection>
-<title>Facultatif&nbsp;: sélection des miroirs</title>
+<title>Facultatif : sélection des miroirs</title>
 <body>
 
 <p>
@@ -32,16 +32,10 @@ vous. Cependant, l'outil <c>mirrorselect</c> vous présente la même liste et vo
 permet de les choisir et de les enregistrer plus facilement.
 </p>
 
-<pre caption="choisir des miroirs avec mirrorselect">
+<pre caption="définir la variable GENTOO_MIRRORS avec mirrorselect">
 # <i>mirrorselect -i -o &gt;&gt; /mnt/gentoo/etc/portage/make.conf</i>
 </pre>
 
-<!--
-<warn>
-Ne sélectionnez pas de miroir IPv6, car les «&nbsp;stages&nbsp;» utilisés pour
-l'installation ne supportent pas IPv6.
-</warn>
--->
 <p>
 Une autre variable importante de <path>make.conf</path> est SYNC qui indique à
 Portage le serveur à utiliser pour synchroniser votre arbre Portage (l'ensemble
@@ -50,7 +44,7 @@ des paquets). Au lieu de définir SYNC manuellement, vous pouvez aussi utiliser
 <c>mirrorselect</c>.
 </p>
 
-<pre caption="choisir un miroir pour RSYNC">
+<pre caption="choisir un miroir pour RSYNC avec mirrorselect">
 # <i>mirrorselect -i -r -o &gt;&gt; /mnt/gentoo/etc/portage/make.conf</i>
 </pre>
 
@@ -100,7 +94,7 @@ nous devons rendre certains fichiers disponibles.
 Montez le système de fichiers <path>/proc</path> sur
 <path>/mnt/gentoo/proc</path> pour permettre à l'installation d'utiliser les
 informations fournies par le noyau même lorsqu'on se trouve dans
-l'environnement chroot,  et montez-liez les systèmes de fichiers  <path>/dev</path> et <path>/sys</path>.
+l'environnement sous la nouvelle racine,  et montez-liez les systèmes de fichiers  <path>/dev</path> et <path>/sys</path>.
 </p>
 
 <pre caption="monter /proc et /dev">
@@ -108,7 +102,11 @@ l'environnement chroot,  et montez-liez les systèmes de fichiers  <path>/dev</p
 # <i>mount --rbind /sys /mnt/gentoo/sys</i>
 # <i>mount --rbind /dev /mnt/gentoo/dev</i>
 </pre>
-
+<warn>
+Lorsque vous utilisez un médium d'installation non Gentoo, ceci peut ne pas suffire. Quelques distributions font de <path>/dev/shm</path> un lien symbolique vers  
+<path>/run/shm</path> qui, après le changement de racine, devient invalide. Faire de  
+<path>/dev/shm</path> une interface de montage de système de fichiers temporaire correct peut résoudre ce problème.
+</warn>
 </body>
 </subsection>
 
@@ -129,25 +127,19 @@ l'environnement de votre système (soit les partitions initialisées).
 <p>
 Le changement de racine se fait en trois étapes. D'abord, on déplace la racine  <path>/</path>
 depuis l'environnement d'installation vers  <path>/mnt/gentoo</path> sur vos
-partitions,  en utilisant <c>chroot</c>. Ensuite, on crée un nouvel environnement
-en utilisant <c>env-update</c> dont l'effet est essentiellement de créer les
-variables d'environnement. Finalement, ces variables sont chargées en mémoire en
-utilisant <c>source</c>. La dernière étape est de redéfinir l'invite de commande pour 
-nous aider à retenir que nous sommes dans un environnement dont la racine a changé.
+partitions,  en utilisant <c>chroot</c>. Puis nous rechargeons en mémoire quelques paramètres de configuration fournis par <path>/etc/profile</path> via la commande <c>source</c>. La dernière étape consiste à redéfinir l'invite de commande pour que nous nous rapellions que nous sommes dans un environnement après changement de racine.
 </p>
 
 <pre caption="entrer dans le nouvel environnement">
 # <i>chroot /mnt/gentoo /bin/bash</i>
-# <i>env-update</i>
- >> Regenerating /etc/ld.so.cache...
 # <i>source /etc/profile</i>
 # <i>export PS1="(chroot) $PS1"</i>
 </pre>
 
 <p>
-Félicitations&nbsp;! Vous êtes maintenant dans votre propre environnement Gentoo
+Félicitations ! Vous êtes maintenant dans votre propre environnement Gentoo
 Linux. Bien sûr, ce dernier est loin d'être complet. C'est pourquoi il reste
-encore quelques sections à ce guide d'installation&nbsp;:-)
+encore quelques sections à ce guide d'installation :-)
 </p>
 
 <p>
@@ -181,37 +173,41 @@ votre système.
 # <i>emerge-webrsync</i>
 </pre>
 
+<note>
+Durant cette opération, il se peut que  <c>emerge-webrsync</c> se plaigne d'un emplacement 
+<path>/usr/portage</path> manquant. Il faut s'y attendre et il n'y a rien à craindre de cela - l'outil va créer l'emplacement pour nous.  
+</note>
+
+<p>
+À partir de ce poin,  Portage peut indiquer que certaines mises à jours sont recommandées. C'est parce que certains paquets systèmes disposent d'une version plus récente que celle installées par l'archive d'étape 3 et que Portage en prend conscience parce qu'un nouvel instantané vient d'être installé. Vous pouvez ne pas en tenir compte pour le moment et ne faire la mise à jour qu'après la fin de l'installation. 
+</p>
+
 </body>
 </subsection>
 
 
 
-
-
-
 <subsection>
-<title>Facultatif&nbsp;: mettre l'arbre de Portage à jour</title>
+<title>Facultatif : mettre l'arbre de Portage à jour</title>
 <body>
 
 <p>
 Vous pouvez maintenant mettre votre arbre Portage à jour. <c>emerge
 --sync</c> utilise le protocole rsync pour mettre l'arbre de Portge à jour
-(celui que vous êtes allés chercher auparavant avec <c>emerge-webrsync</c>.)
+(celui que vous êtes allé chercher auparavant avec <c>emerge-webrsync</c>.)
 </p>
 
 <pre caption="mise à jour de l'arbre de Portage">
 # <i>emerge --sync</i>
-<comment>(Si vous utilisez un terminal lent comme certains framebuffers ou une
+<comment>(Si vous utilisez un terminal lent comme certains tampons de trames ou une
 connexion série, vous pouvez ajouter l'option --quiet pour gagner du
-temps&nbsp;:)</comment>
+temps :)</comment>
 # <i>emerge --sync --quiet</i>
 </pre>
 
 <p>
 Si vous vous trouvez derrière un pare-feu qui bloque le trafic rsync, vous
 pouvez pour l'instant ignorer cette étape car vous avez déjà un arbre récent. 
-Par la suite, dans la même situation, utilisez <c>emerge-webrsync</c> qui télécharge un instantané de l'arbre
-Portage depuis un miroir et l'utilise pour mettre votre arbre à jour.
 </p>
 
 <p>
@@ -230,7 +226,7 @@ connaissance de certaines nouvelles. Plus sur ce point après.
 
 <p>
 Lors de la synchronisation d'un arbre Portage, Portage peut attirer votre attention 
-sur les points suivants&nbsp;:
+sur les points suivants :
 </p>
 
 <pre caption="portage vous informe que des nouvelles sont à lire">
@@ -253,7 +249,7 @@ Avec la sous-commande <c>list</c> vous pouvez en avoir une vue d'ensemble et ave
 </pre>
 
 <p>
-Des informations détaillées sont disponibles sur le lecteur de nouvelles par le biais de sa page de manuel&nbsp;:
+Des informations détaillées sont disponibles sur le lecteur de nouvelles par le biais de sa page de manuel :
 <c>man news.eselect</c>.
 </p>
 
@@ -265,7 +261,7 @@ Des informations détaillées sont disponibles sur le lecteur de nouvelles par l
 <body>
 
 <p>
-Qu'est-ce qu'un profil&nbsp;?
+Qu'est-ce qu'un profil ?
 </p>
 
 <p>
@@ -284,7 +280,7 @@ changement de profil est nécessaire.
 </p>
 
 <p>
-Pour connaitre le profil que vous utilisez, lancez la commande suivante&nbsp;:
+Pour connaitre le profil que vous utilisez, lancez la commande suivante :
 </p>
 <note>
 La sortie de la commande ci-dessous est juste donnée à titre d'exemple. Elle peut évoluer dans le temps.
@@ -309,7 +305,7 @@ listera les profils disponibles.
 
 <p>
 Après avoir examiné les différents profils possibles pour votre architecture,
-vous pouvez en changer si vous le désirez&nbsp;:
+vous pouvez en changer si vous le désirez :
 </p>
 
 <pre caption="changer de profil">
@@ -317,8 +313,8 @@ vous pouvez en changer si vous le désirez&nbsp;:
 </pre>
 
 <p test="func:keyval('arch')='AMD64'">
-Si vous désirez un environnement entièrement 64&nbsp;bits, sans applications ni
-bibliothèques 32&nbsp;bits, vous devriez utiliser un profil non-multilib.
+Si vous désirez un environnement entièrement 64 bits, sans application ni
+bibliothèque 32 bits, vous devriez utiliser un profil non-multilib.
 </p>
 
 <pre test="func:keyval('arch')='AMD64'" caption="passer à un profil non
@@ -330,8 +326,8 @@ Available profile symlink targets:
   [3]   <keyval id="profile"/>/desktop/gnome
   [4]   <keyval id="profile"/>/desktop/kde
   [5]   <keyval id="profile"/>/no-multilib
-<comment>(Choisissez le profil «&nbsp;no-multilib&nbsp;»)</comment>
-# <i>eselect profile set 3</i>
+<comment>(Choisissez le profil « no-multilib »)</comment>
+# <i>eselect profile set 5</i>
 <comment>(Vérifiez que le changement a bien été appliqué)</comment>
 # <i>eselect profile list</i>
 Available profile symlink targets:
@@ -359,15 +355,15 @@ développement.
 <c>USE</c> est une des plus puissantes variables mises à la disposition des
 utilisateurs de Gentoo. Plusieurs programmes peuvent être compilés avec ou sans
 le support optionnel disponible pour certaines fonctionnalités. Par exemple,
-certains programmes peuvent être compilés avec un support pour GTK ou pour Qt.
-D'autres peuvent être compilés avec ou sans support pour SSL. Certains
-programmes peuvent même être compilés avec un support pour le
-«&nbsp;framebuffer&nbsp;» (svgalib) plutôt que pour X11 (serveur X).
+certains programmes peuvent être compilés avec la prise en charge de GTK ou de  Qt.
+D'autres peuvent être compilés avec ou sans prise en charge de SSL. Certains
+programmes peuvent même être compilés avec une prise en charge du tampon de trames
+« framebuffer » (svgalib) plutôt que de X11 (serveur X).
 </p>
 
 <p>
-La plupart des distributions compilent leurs paquets avec un support aussi
-complet que possible, augmentant ainsi la taille des programmes et le temps de
+La plupart des distributions compilent leurs paquets avec une prise en charge aussi
+complète que possible, augmentant ainsi la taille des programmes et le temps de
 chargement, sans mentionner le nombre énorme de dépendances qui en résulte.
 Avec Gentoo, vous pouvez définir les options à utiliser lors de la compilation
 d'un paquet. C'est ici que la variable <c>USE</c> entre en jeu.
@@ -376,31 +372,31 @@ d'un paquet. C'est ici que la variable <c>USE</c> entre en jeu.
 <p>
 La variable <c>USE</c> contient des mots-clés que vous choisissez et qui
 correspondent à des options de compilation. Par exemple, <e>ssl</e> compilera
-le support ssl dans les programmes qui le supportent. <e>-X</e> retirera le
-support pour le serveur X (remarquez le signe moins devant le mot-clé).
-<e>gnome gtk -kde -qt3 -qt4</e> compilera vos programmes avec le support pour
-GNOME (et GTK), mais sans le support pour KDE (ni Qt). Le résultat sera un
+la prise en charge de  ssl dans les programmes qui le supportent. <e>-X</e> retirera la
+prise en charge du serveur X (remarquez le signe moins devant le mot-clé).
+<e>gnome gtk -kde -qt3 -qt4</e> compilera vos programmes avec la prise en charge de 
+GNOME (et GTK), mais sans la prise en charge de  KDE (ni Qt). Le résultat sera un
 système complètement optimisé pour GNOME.
 </p>
 
 <p>
-Les options par défaut pour <c>USE</c> se trouvent dans les fichiers
+Les options par défaut de la variable <c>USE</c> se trouvent dans les fichiers
 <path>make.defaults</path> de votre profil. Vous trouverez ces fichiers
 <path>make.defaults</path> dans le répertoire sur lequel le lien
 <path>/etc/portage/make.profile</path> pointe, ainsi que dans tous ses répertoires
-parents. Les options par défaut de <c>USE</c> sont donc la somme de toutes les
-options <c>USE</c> de ces fichiers. Vos modifications à
-<path>/etc/make.conf</path> sont jugées en fonction de ces options par
-défaut. Si vous ajoutez quelque chose aux options <c>USE</c>, c'est ajouté
-à la liste par défaut. Si vous retirez quelque chose des options <c>USE</c>
+parents. Les options par défaut de la variable<c>USE</c> sont donc la somme de toutes les
+options de la variable <c>USE</c> de ces fichiers. Vos modifications à
+<path>/etc/portage/make.conf</path> sont jugées en fonction de ces options par
+défaut. Si vous ajoutez quelque chose aux options de la variable<c>USE</c>, c'est ajouté
+à la liste par défaut. Si vous retirez quelque chose des options de la variable <c>USE</c>
 (en le précédant du signe moins), c'est retiré de la liste par défaut (en
 supposant que cela s'y trouvait). Ne modifiez <e>jamais</e> quoi que ce soit
 dans le répertoire <path>/etc/portage/make.profile</path> car ces fichiers sont écrasés
-lors des mises à jour de Portage&nbsp;!
+lors des mises à jour de Portage !
 </p>
 
 <p>
-Une description complète de <c>USE</c> peut être consultée dans la seconde
+Une description complète de la variable <c>USE</c> peut être consultée dans la seconde
 partie du Manuel Gentoo, <uri link="?part=2&amp;chap=2">La variable USE</uri>.
 Une description complète des options disponibles se trouve dans le fichier
 <path>/usr/portage/profiles/use.desc</path> qui devrait déjà être sur votre
@@ -414,16 +410,16 @@ système.
 </pre>
 
 <p>
-L'exemple suivant montre les options de USE pour un
-système basé sur KDE avec support pour ALSA, pour les DVD et pour la
-gravure de CD&nbsp;:
+L'exemple suivant montre les options de la variable USE pour un
+système basé sur KDE avec prise en charge d'ALSA, pour les DVD et pour la
+gravure de CD :
 </p>
 
 <pre caption="ouverture de /etc/portage/make.conf">
 # <i>nano -w /etc/portage/make.conf</i>
 </pre>
 
-<pre caption="options de USE">
+<pre caption="options de la variable  USE">
 USE="-gtk -gnome  qt4 kde dvd alsa cdr"
 </pre>
 
@@ -431,7 +427,7 @@ USE="-gtk -gnome  qt4 kde dvd alsa cdr"
 </subsection>
 </section>
 
-<section>
+<section test="contains('AMD64 arm PPC PPC64 x86', func:keyval('arch'))">
 <title>Facultatif: en utilisant systemd</title>
 <body>
 
@@ -459,19 +455,129 @@ Le manuel de  Gentoo  peut être suivi en conservant cela à l'esprit.
 Vous devez maintenant choisir votre fuseau horaire afin que votre système sache
 où il se trouve. Cherchez votre fuseau horaire dans
 <path>/usr/share/zoneinfo</path>, puis copiez-le sur
-<path>/etc/localtime</path>. Évitez les zones du type
-<path>/usr/share/zoneinfo/Etc/GMT*</path>, car leur nom porte à confusion. En
-effet, <path>GMT-2</path> signifie en fait GMT+2.
+<path>/etc/localtime</path>. 
 </p>
 
 <pre caption="définir l'information relative au fuseau horaire">
 # <i>ls /usr/share/zoneinfo</i>
-<comment>(En supposant que vous utilisiez l'heure de Paris.)</comment>
-# <i>cp /usr/share/zoneinfo/Europe/Paris /etc/localtime</i>
+<comment>(En supposant que vous désiriez utiliser  Europe/Brussels)</comment>
+# <i>echo "Europe/Brussels" &gt; /etc/timezone</i>
+</pre>
+<p>
+Évitez les fuseaux du type <path>/usr/share/zoneinfo/Etc/GMT*</path> car leur nom prête à confusion. Par exemple,  <path>GMT-8</path> est en fait GMT+8.
+</p>
+
+<p>
+Ensuite, reconfigurez le paquet timezone-data, qui mettra à jour le fichier <path>/etc/localtime</path> pour nous, en se basant sur l'entrée  <path>/etc/timezone</path>. Le fichier <path>/etc/localtime</path> est utilisé par la bibliothèque système C pour déterminer dans quel fuseau horaire se trouve le système. 
+</p>
+
+<pre caption="reconfigurer les informations de fuseau horaire (timezone-data)">
+# <i>emerge --config sys-libs/timezone-data</i>
 </pre>
 
 </body>
 </section>
 
-</sections>
+<section>
+<title>Configurer les locales</title>
+<body>
 
+<p>
+YVous n'utiliserez probablement qu'une ou deux locales sur votre système. Vous devez spécifier les locales dont vous avez besoin dans  <path>/etc/locale.gen</path>.
+</p>
+
+<pre caption="Éditer /etc/locale.gen">
+# <i>nano -w /etc/locale.gen</i>
+</pre>
+
+<p>
+Les locales suivantes sont un exemple pour disposer à la fois de l'anglais (US) et de l'allemand.  avec les formats de caractères associés (tels qu'UTF-8). 
+</p>
+
+<pre caption="Spécifier les locales">
+en_US ISO-8859-1
+en_US.UTF-8 UTF-8
+de_DE ISO-8859-1
+de_DE@euro ISO-8859-15
+</pre>
+
+<note>
+Vous pouvez choisir les locales désirées dans la liste en exécutant la commande <c>locale -a</c>.
+</note>
+
+<warn>
+nous vous recommandons fortement d'utiliser au moins une locale UTF-8 car certaines applications l'exigent. 
+</warn>
+
+<p>
+L'étape suivante consiste à utiliser la commande <c>locale-gen</c>. Elle générera toutes les locales que vous avez spécifiées dans le fichier <path>/etc/locale.gen</path> .
+</p>
+
+<pre caption="exécuter locale-gen">
+# <i>locale-gen</i>
+</pre>
+
+<p>
+Vous pouvez vérifier que les locales que vous avez selectionnées sont disponible via la commande  <c>locale -a</c>.
+</p>
+
+<p>
+Une fois cela fait, vous avez la possibilité de définir les paramètres de locale valable pour tout le système.  Grâce à la commande <c>eselect locale list</c>, les cibles disponibles sont affichées.
+</p>
+
+<pre caption="afficher les paramètres de langue (LANG) disponibles">
+# <i>eselect locale list</i>(
+Available targets for the LANG variable:
+(Cibles de langue disponibles -variable LANG)
+  [1] C
+  [2] POSIX
+  [3] en_US
+  [4] en_US.iso88591
+  [5] en_US.utf8
+  [6] de_DE
+  [7] de_DE.iso88591
+  [8] de_DE.iso885915
+  [9] de_DE.utf8
+  [ ] (free form)
+</pre>
+
+<p>
+Via <c>eselect locale set &lt;value&gt;</c> on peut définir la locale :
+</p>
+
+<pre caption="Définir la variable LANG">
+# <i>eselect locale set 9</i>
+</pre>
+
+<p>
+On peut toujours définir cela à la main dans le fichier
+<path>/etc/env.d/02locale</path> :
+</p>
+
+<pre caption="Définir la locale par défaut dans le fichier /etc/env.d/02locale">
+LANG="de_DE.UTF-8"
+LC_COLLATE="C"
+</pre>
+
+<p>
+Assurez-vous qu'une locale est définie, sinon vous risquez d'avoir des avertissements et des erreurs lors de la compilation du noyau et le déploiement d'autres programnes plus loin dans la phase d'installation. 
+</p>
+
+<p>
+N'oubliez pas de recharger votre  environment:
+</p>
+
+<pre caption="recharger l' environment du shell">
+# <i>env-update &amp;&amp; source /etc/profile</i>
+</pre>
+
+<p>
+Nous tenons un  <uri link="https://wiki.gentoo.org/wiki/Localization/HOWTO/fr">Guide de Localization
+</uri> complet à votre disposition pour vous aider dans ce processus. Vous pouvez également lire l'
+<uri link="https://wiki.gentoo.org/wiki/UTF-8">article UTF-8 </uri> pour des informations très détaillées sur activer UTF-8 sur votre système. 
+</p>
+
+</body>
+</section>
+
+</sections>
