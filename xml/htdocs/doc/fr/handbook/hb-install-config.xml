@@ -4,7 +4,7 @@
 <!-- The content of this document is licensed under the CC-BY-SA license -->
 <!-- See http://creativecommons.org/licenses/by-sa/2.5 -->
 
-<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-config.xml,v 1.55 2013/07/29 11:24:17 jaaf Exp $ -->
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/doc/fr/handbook/hb-install-config.xml,v 1.56 2014/08/08 06:29:02 jaaf Exp $ -->
 
 <sections>
 
@@ -13,8 +13,8 @@ Vous devrez modifier certains fichiers de configuration. Ce chapitre vous donne
 un aperçu de ces fichiers et décrit comment procéder.
 </abstract>
 
-<version>28</version>
-<date>2013-07-24</date>
+<version>37</version>
+<date>2014-05-27</date>
 
 
 <section>
@@ -29,10 +29,7 @@ dans <path>/etc/fstab</path>. Ce fichier contient l'information relative aux
 points de montage de ces partitions (où elles se situent dans le système de
 fichiers de Linux), la façon dont elles sont montées (décrite par des options
 spéciales) et les circonstances de leur montage (qui peut être automatique ou
-non, sous le contrôle des utilisateurs ou non, etc.). (N.D.T. : Bien que
-l'on emploie fréquemment l'expression « monter une partition », il
-serait plus exact de dire que l'on monte le système de fichiers présent sur la
-partition et non pas la partition elle-même).
+non, sous le contrôle des utilisateurs ou non, etc.). 
 </p>
 
 </body>
@@ -94,7 +91,9 @@ créer votre <path>/etc/fstab</path> :
 <pre caption="ouvrir /etc/fstab">
 # <i>nano -w /etc/fstab</i>
 </pre>
-
+<p>
+Dans la suite de ce texte, nous utilisont le pseudo-fichier de périphérique de blocs  <path>/dev/sd*</path> comme partition. Vous pouvez aussi choisir d'utilisers les liens symboliques dans les dossiers <path>/dev/disk/by-id</path> ou <path>/dev/disk/by-uuid</path>. Ces noms sont peu susceptibles de changer car le nommage de pseudo-fichier de périphérique de blocs dépend d'un certains nombre de facteurs (comme comment et dans quel ordre les disques sont attachés à votre systèm. Cependant, si vous n'avez pas l'intention de jouer avec l'ordre des disques, vous pouvez continuer avec les pseudo-fichiers de périphérique par défaut en toute sécurité. 
+</p>
 </body>
 <body test="func:keyval('/boot')">
 
@@ -112,15 +111,14 @@ vérifié au démarrage.  Nous écrivons donc :
 </p>
 
 <pre caption="exemple d'une ligne pour /boot dans /etc/fstab">
-<keyval id="/boot"/>   /boot     ext2    defaults        1 2
+<keyval id="/boot"/>   /boot     ext2    defaults        0 2
 </pre>
 
 <p>
 Certains utilisateurs ne désirent pas que leur partition <path>/boot</path> soit
 montée automatiquement au démarrage pour des raisons de sécurité. Dans ce cas,
 il convient de remplacer <c>defaults</c> par <c>noauto</c>. Ceci signifie que la
-partition <path>/boot</path> devra être montée manuellement avant chaque usage,
-par exemple pour installer un nouveau noyau et configurer grub.
+partition <path>/boot</path> devra être montée manuellement avant chaque usage.
 </p>
 
 </body>
@@ -137,15 +135,15 @@ Maintenant, servez-vous de l'<e>exemple</e> ci-dessous pour créer votre
 <path>/etc/fstab</path> :
 </p>
 
-<pre caption="un exemple complet de fichier /etc/fstab" test="func:keyval('arch')='HPPA'">
-<keyval id="/boot"/>   /boot        ext2    defaults,noatime     1 2
+<pre caption="un exemple complet de fichier /etc/fstab" test="func:keyval('arch')='HPPA' or func:keyval('arch')='x86' or func:keyval('arch')='AMD64'">
+<keyval id="/boot"/>   /boot        ext2    defaults,noatime     0 2
 /dev/sda3   none         swap    sw                   0 0
-/dev/sda4   /            ext3    noatime              0 1
+/dev/sda4   /            ext4    noatime              0 1
 
 /dev/cdrom  /mnt/cdrom   auto    noauto,user          0 0
 </pre>
 
-<pre caption="un exemple complet de fichier /etc/fstab" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS' or func:keyval('arch')='x86' or func:keyval('arch')='AMD64'">
+<pre caption="un exemple complet de fichier /etc/fstab" test="func:keyval('arch')='Alpha' or func:keyval('arch')='MIPS'">
 <keyval id="/boot"/>   /boot        ext2    defaults,noatime     0 2
 /dev/sda2   none         swap    sw                   0 0
 /dev/sda3   /            ext4    noatime              0 1
@@ -186,7 +184,7 @@ fichiers (en l'occurrence celui présent sur le CD-ROM).
 Afin d'améliorer les performances, la plupart des utilisateurs devraient ajouter
 l'option <c>noatime</c> au champ options de montage, ce qui donnera un système
 plus rapide puisque les temps d'accès ne seront pas consignés. De toute façon,
-vous n'en avez généralement pas besoin.
+vous n'en avez généralement pas besoin. Ceci est également recommandé pour les utilisateurs de disques solides (SSD) qui devraient aussi activer l'option de montage <c>discard</c> (ext4 et btrfs seulement à ce stade) ce qui permet à la commande TRIM de fonctionner.
 </p>
 
 
@@ -214,6 +212,7 @@ embêté, nommez temporairement votre système <c>tux</c> et choisissez
 
 <pre caption="définir le nom d'hôte">
 # <i>nano -w /etc/conf.d/hostname</i>
+
 <comment>(Attribuez le nom de votre machine à la variable HOSTNAME.)</comment>
 HOSTNAME="<i>tux</i>"
 </pre>
@@ -226,9 +225,12 @@ l'indiquent ou si vous utilisez un serveur DNS sans utiliser de serveur DHCP.
 Vous n'avez pas à vous occuper du DNS ou du nom de domaine si votre réseau est
 configuré via DHCP.
 </p>
-
+<note>
+Le fichier  <path>/etc/conf.d/net</path> n'existe pas par défaut, vous pourriez donc avoir besoin de le créer. 
+</note>
 <pre caption="définir le nom de domaine">
 # <i>nano -w /etc/conf.d/net</i>
+
 <comment>(Attribuez le nom de votre domaine à la variable dns_domain.)</comment>
 dns_domain_lo="<i>mondomaine</i>"
 </pre>
@@ -247,15 +249,14 @@ ne savez pas ce qu'est un domaine NIS, vous n'en avez certainement pas.)
 
 <pre caption="définir le domaine NIS">
 # <i>nano -w /etc/conf.d/net</i>
+
 <comment>(Attribuez le nom de votre domaine à la variable nis_domain.)</comment>
 nis_domain_lo="<i>mondomaineNIS</i>"
 </pre>
 
 <note>
-pour plus d'information sur la configuration du DNS et du NIS, lisez l'exemple
-fourni dans le fichier <path>/etc/conf.d/net.example</path>. En plus, vous
-pourriez être intéressé par l'installation du paquet <c>openresolv</c> pour
-vous aider à gérer votre configuration DNS/NIS.
+pour plus d'information sur la configuration du DNS et du NIS, lisez les exemples
+fournis dans le fichier <path>/usr/share/doc/netifrc-*/net.example.bz2</path> que vous pouvez lire en utilisant <c>bzless</c>.  En plus, vous pourriez être intéressé par l'installation du paquet <c>openresolv</c> pour vous aider à gérer votre configuration DNS/NIS.
 </note>
 
 </body>
@@ -272,17 +273,24 @@ permanente du réseau pour votre système Gentoo.
 </p>
 
 <note>
-ce manuel détaille la <uri link="?part=4">configuration réseau</uri>, y compris
-les ponts, le couplage d'interface, les réseaux 802.1Q et sans fil, plus loin.
+la partie  <uri link="?part=4">configuration réseau de Gentoo</uri> de ce manuel fournit une information détaillée , y compris
+les ponts, le couplage d'interface, les réseaux 802.1Q et sans fil.
 </note>
 
 <p>
 Toute l'information réseau est rassemblée dans <path>/etc/conf.d/net</path>. Ce
 fichier utilise une syntaxe simple mais pas nécessairement intuitive si vous ne
 savez pas comment paramétrer manuellement un réseau. Pas d'inquiétude, tout vous
-sera expliqué. Un exemple commenté complet se trouve dans le fichier
-<path>/etc/conf.d/net.example</path>.
+sera expliqué. Un exemple commenté complet qui couvre de nombreuses configurations différentes se trouve dans le fichier
+<path>/usr/share/doc/netifrc-*/net.example.bz2</path>.
 </p>
+<p>
+Commençons par  installer <c>netifrc</c>:
+</p>
+
+<pre caption="installer netifrc">
+# <i>emerge --noreplace netifrc</i>
+</pre>
 
 <p>
 DHCP est utilisé par défaut.  Pour que le DHCP fonctionne, vous devez installer
@@ -301,16 +309,7 @@ fichier <path>/etc/conf.d/net</path> avec votre éditeur favori :
 # <i>nano -w /etc/conf.d/net</i>
 </pre>
 
-<p>
-Vous devriez voir le fichier suivant :
-</p>
 
-<pre caption="fichier /etc/conf.d/net par défaut">
-# This blank configuration will automatically use DHCP for any net.*
-# scripts in /etc/init.d.  To create a more complete configuration,
-# please review /etc/conf.d/net.example and save your configuration
-# in /etc/conf.d/net (this file :]!).
-</pre>
 
 <p>
 Pour entrer une adresse fixe, un masque de réseau et une adresse de passerelle,
@@ -320,7 +319,7 @@ vous devez définir <c>config_eth0</c> et <c>routes_eth0</c> :
 ceci suppose que votre interface réseau est appelée eth0. Cela reste malgré tout très dépendant du système. Nous vous recommandons de supposer que l'interface porte le même nom que l'interface utilisée lors du démarrage sur un medium d'installation. <e> à condition </e> qu'il soit suffisamment récent. Vous trouverez de l'information additionnelle au chapitre 
 <uri link="?part=4&amp;chap=2#doc_chap4">Nommage des interfaces réseau</uri>.
 </note>
-<pre caption="définir une adresse statique pour eth0">
+<pre caption="définir une adresse statique pour eth0 à la main">
 config_eth0=( "192.168.0.2 netmask 255.255.255.0 brd 192.168.0.255" )
 routes_eth0=( "default via 192.168.0.1" )
 </pre>
@@ -334,7 +333,7 @@ config_eth0=( "dhcp" )
 </pre>
 
 <p>
-Vous trouverez toutes les options disponibles en lisant le fichier <path>/usr/share/doc/openrc-*/net.example.bz2</path>.
+Vous trouverez toutes les options disponibles en lisant le fichier <path>/usr/share/doc/netifrc-*/net.example.bz2</path>.
 Assurez-vous de lire aussi la page de manuel du client DHCP si vous souhaitez fixer des options DHCP particulières.
 </p>
 
@@ -474,22 +473,15 @@ s'applique à l'ensemble du système. Ouvrez <path>/etc/rc.conf</path> et
 appréciez les commentaires qui s'y trouvent :)
 </p>
 
-<pre caption="ouvrir /etc/rc.conf">
+<pre caption="configurer les services">
 # <i>nano -w /etc/rc.conf</i>
 </pre>
 
 <p>
 Ensuite, sauvez votre fichier et quittez votre éditeur.
 </p>
-<!--
-<p>
-Comme vous pouvez le voir, ce fichier est généreusement commenté afin de vous
-aider à paramétrer les différentes variables relatives à la configuration. Vous
-pouvez configurer votre système pour qu'il utilise Unicode. Vous pouvez aussi
-définir votre éditeur par défaut et votre gestionnaire d'affichage préféré (gdm
-ou kdm).
-</p>
--->
+
+
 <p>
 Le fichier <path>/etc/conf.d/keymaps</path> permet de spécifier le type de
 clavier que vous utilisez.
@@ -507,10 +499,7 @@ incorrecte, vous serez surpris quand vous taperez sur votre clavier.
 </p>
 
 <note test="substring(func:keyval('arch'),1,3)='PPC'">
-La plupart des systèmes <b>PPC</b> utilisent des définitions de clavier x86. Si
-vous voulez utiliser une disposition ADB, vous devez l'activer quand vous
-compilez votre noyau et ensuite définir une disposition mac/ppc dans
-<path>/etc/conf.d/keymaps</path>.
+La plupart des systèmes <b>PPC</b> utilisent des définitions de clavier x86. 
 </note>
 
 <p>
@@ -519,12 +508,12 @@ sauvez et quittez.
 </p>
 
 <p>
-Ensuite, éditez le fichier <path>/etc/conf.d/clock</path> pour configurer les
+Ensuite, éditez le fichier <path>/etc/conf.d/hwclock</path> pour configurer les
 options relatives à l'horloge :
 </p>
 
-<pre caption="ouvrir /etc/conf.d/clock">
-# <i>nano -w /etc/conf.d/clock</i>
+<pre caption="ouvrir /etc/conf.d/hwclock">
+# <i>nano -w /etc/conf.d/hwclock</i>
 </pre>
 
 <p>
@@ -532,17 +521,9 @@ Si l'horloge de votre PC n'utilise pas l'heure UTC, vous devez ajouter
 <c>CLOCK="local"</c> à ce fichier sans quoi votre horloge fera des « sauts
 d'heure ».
 </p>
-<!--
+
 <p>
-Vous devez déclarer le fuseau horaire que vous avez copié précédemment vers
-<path>/etc/localtime</path> afin que les prochaines mises à jour du paquet
-<c>sys-libs/timezone-data</c> puissent mettre à jour le fichier
-<path>/etc/localtime</path> automatiquement. Par exemple, si vous vous trouvez
-sur le fuseau de Paris, ajoutez la variable <c>TIMEZONE="Europe/Paris"</c>.
-</p>
--->
-<p>
-Lorsque vous aurez fini de configurer <path>/etc/conf.d/clock</path>,
+Lorsque vous aurez fini de configurer <path>/etc/conf.d/hwclock</path>,
 sauvegardez puis quittez l'éditeur.
 </p>
 
@@ -551,80 +532,7 @@ sauvegardez puis quittez l'éditeur.
 </body>
 </subsection>
 
-<subsection>
-<title>Configurer les locales</title>
-<body>
 
-<p>
-Vous utiliserez probablement seulement une ou deux locales sur votre système.
-Vous devez spécifier les locales dont vous avez besoin dans  <path>/etc/locale.gen</path>.
-</p>
-
-<pre caption="ouvrir /etc/locale.gen">
-# <i>nano -w /etc/locale.gen</i>
-</pre>
-
-<p>
-Les locales suivantes sont un exemple pour disposer à la fois de
-l'anglais (US) et  de l'allemand (DE) avec l'encodage des caractères 8859-1 ou UTF-8.
-</p>
-
-<pre caption="spécifier les locales">
-en_US ISO-8859-1
-en_US.UTF-8 UTF-8
-de_DE ISO-8859-1
-de_DE@euro ISO-8859-15
-</pre>
-
-<note>
-vous pouvez choisir vos locales en lançant la commande <c>locale -a</c>.
-</note>
-
-<warn>
-nous recommandons fortement que vous utilisiez au moins une locale de votre langue avec encodage UTF-8 
-car certaines applications l'exigent.
-</warn>
-
-<p>
-Une fois les locales choisies, lancez <c>locale-gen</c>. Ceci générera les locales que vous avez 
-spécifiées précédemment dans <path>/etc/locale.gen</path> file.
-</p>
-
-<pre caption="exécuterlocale-gen">
-# <i>locale-gen</i>
-</pre>
-
-<p>
-Ensuite vous avez la possibilité de définir les réglages de locales 
-au niveau du système entier dans le fichier  <path>/etc/env.d/02locale</path> file:
-</p>
-
-<pre caption="définition de la locale système par défaut /etc/env.d/02locale">
-LANG="de_DE.UTF-8"
-LC_COLLATE="C"
-</pre>
-
-<p>
-Ensuite rechargez votre environnement :
-</p>
-
-<pre caption="recharger l'environment du shell">
-# env-update &amp;&amp; source /etc/profile
-</pre>
-
-<p>
-Nous avons rédigé un  <uri link="../guide-localization.xml#doc_chap3">Guide de localisation</uri>  exhaustif 
-pour vous aider dans ce processus. Vous pouvez également lire notre 
-<uri link="https://wiki.gentoo.org/wiki/UTF-8/fr">article sur UTF-8</uri> pour des informations très
-détaillées sur la manière d'activer UTF-8 sur votre système.
-</p>
-
-<p test="not(func:keyval('arch')='PPC64')">
-Continuez maintenant avec  <uri link="?part=1&amp;chap=9">Installation des outils systèmes</uri>.
-</p>
-
-</body>
-</subsection>
 <subsection test="func:keyval('arch')='PPC64'">
 <title>Configuration de la Console</title>
 <body>
