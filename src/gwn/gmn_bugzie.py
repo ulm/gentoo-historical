@@ -80,8 +80,6 @@ def sum_results(result):
 # get dates from command line, else use now (time.time())
 starttime = time.gmtime(time.time() - (60 * 60 * 24 * 31))
 endtime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
-dateimg = time.strftime("%Y-%m",endtime)
-datefor = time.strftime("%Y/%m",endtime)
 
 if len(sys.argv) > 1:
   if len(sys.argv) >= 2:
@@ -93,6 +91,9 @@ if len(sys.argv) > 1:
     print "Usage: " + os.path.basename(sys.argv[0]) +  " [start-date] [end-date]"
     print "dates must be passed in 'yyyymmdd' format"
     print "if no dates are specified then it defaults to a date range of the last 30 days"
+
+dateimg = time.strftime("%Y-%m",endtime)
+datefor = time.strftime("%Y/%m",endtime)
 
 #1.  Set up the dates we care about...a 30 day window that ends yesterday
 date_to = time.strftime("%Y-%m-%d", endtime)
