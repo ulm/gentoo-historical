@@ -83,11 +83,10 @@ endtime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
 
 if len(sys.argv) > 1:
   if len(sys.argv) >= 2:
-    starttime = time.strptime(str(int(sys.argv[1])-1), "%Y%m%d")
-
-  if len(sys.argv) == 3:
-    endtime = time.strptime(str(int(sys.argv[2])-1), "%Y%m%d")
-  else:
+    starttime = time.strptime(str(int(sys.argv[1])), "%Y%m%d")
+    if len(sys.argv) == 3:
+        endtime = time.strptime(str(int(sys.argv[2])), "%Y%m%d")
+else:
     print "Usage: " + os.path.basename(sys.argv[0]) +  " [start-date] [end-date]"
     print "dates must be passed in 'yyyymmdd' format"
     print "if no dates are specified then it defaults to a date range of the last 30 days"
