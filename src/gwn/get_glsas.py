@@ -25,13 +25,12 @@ def getglsas(table):
 				if td.a:
 					# Fetch GLSA id and reconstruct the href
 					glsanum = str(td.a).split()
-					if str(date_from) in str(glsanum[2]):
-						foundone = 1
-						glsanum = glsanum[0] + " " + \
-						glsanum[1] + glsanum[2] + glsanum[3]
-						glsa_list.append(glsanum)
-					else:
-						return
+                                        if any(str(date_from) in date for date in glsanum):
+                                                foundone = 1
+                                                glsanum = glsanum[0] + " " + glsanum[1] + glsanum[2] + glsanum[3]
+                                                glsa_list.append(glsanum)
+       					else:
+        			                break
 					passt += 1
 				else:
 					# Ignore table headers
@@ -43,14 +42,26 @@ def getglsas(table):
 
 			elif passt == 2:
 				# Fetch package name and construct href
-				package = str(td.string).strip()
-				package = "<a href=\"http://packages.gentoo.org/package/%s\">%s</a>" % (package, package)
+                                if td.a:
+                                        # This is usually for GLSAs for
+                                        # multiple packages.
+                                        # FIXME: There has to be a better way
+                                        # to do that...
+                                        package = td.find_next(text=True).strip().split()[0]
+                                        extra_pkg = \
+                                            td.find_next(text=True).strip() + " more)"
+                                        package = \
+                                            "<a href=\"http://packages.gentoo.org/package/%s\">%s</a>" \
+                                            % (package, extra_pkg)
+                                else:
+                                        package = str(td.string).strip()
+                                        package = "<a href=\"http://packages.gentoo.org/package/%s\">%s</a>" % (package, package)
 				package_list.append(package)
 				passt += 1
 
 			elif passt == 3:
 				# Fetch description
-				description = str(td.string).strip()
+				description = str(td.string).strip().replace(',','\,')
 				description_list.append(description)
 				passt += 1
 
@@ -66,6 +77,15 @@ if __name__ == '__main__':
 	# get dates from command line, else use now (time.time())
 	starttime = time.gmtime(time.time() - (60 * 60 * 24 * 1))
 	endtime = time.gmtime(time.time() + (60 * 60 * 24 * 31))
+        if len(sys.argv) >=1:
+            if len(sys.argv) >= 2:
+                starttime = time.strptime(str(int(sys.argv[1])), "%Y%m%d")
+                endtime = time.strptime(str(int(sys.argv[2])), "%Y%m%d")
+            else:
+                print "Usage: " + os.path.basename(sys.argv[0]) +  " [start-date] [end-date]"
+                print "dates must be passed in 'yyyymmdd' format"
+                print "if no dates are specified then it defaults to a date range of the last 31 days"
+
 	# Format the string to what we expect
 	date_to = time.strftime("%Y%m", endtime)
 	date_from = time.strftime("%Y%m", starttime)
