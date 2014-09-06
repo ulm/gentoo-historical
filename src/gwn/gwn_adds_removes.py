@@ -29,6 +29,8 @@ def parse(logfile):
 			cur = pkgs['added']
 		elif i.startswith('Removed'):
 			cur = pkgs['removed']
+		elif i.startswith('Done.'):
+			break
 		elif not i:
 			break
 		else:
