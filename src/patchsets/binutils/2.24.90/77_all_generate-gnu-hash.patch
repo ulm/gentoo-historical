@@ -1,0 +1,56 @@
+--- a/ld/emultempl/elf32.em
++++ b/ld/emultempl/elf32.em
+@@ -103,6 +103,19 @@
+ gld${EMULATION_NAME}_before_parse (void)
+ {
+   ldfile_set_output_arch ("${OUTPUT_ARCH}", bfd_arch_`echo ${ARCH} | sed -e 's/:.*//'`);
++EOF
++# Enable gnu hash by default for Linux (non-mips) targets.
++# This has been supported since glibc-2.5.
++case ${target} in
++  mips*) ;;
++  *-*-linux-* | *-*-gnu*)
++    fragment <<EOF
++  link_info.emit_hash = FALSE;
++  link_info.emit_gnu_hash = TRUE;
++EOF
++    ;;
++esac
++fragment <<EOF
+   input_flags.dynamic = ${DYNAMIC_LINK-TRUE};
+   config.has_shared = `if test -n "$GENERATE_SHLIB_SCRIPT" ; then echo TRUE ; else echo FALSE ; fi`;
+   config.separate_code = `if test "x${SEPARATE_CODE}" = xyes ; then echo TRUE ; else echo FALSE ; fi`;
+
+From 4826dc786682aaa0b51fd337edd0775296a82e93 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Sun, 3 Feb 2013 01:21:52 -0500
+Subject: [PATCH] gold: change default hash style to gnu
+
+Glibc first added .gnu.hash support to glibc-2.5 (released 29 Sep 2006),
+and gold was first released after that.  Let's default the gnu hash style
+to the new "gnu" rather than the classic sysv.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+
+2012-02-03  Mike Frysinger  <vapier@gentoo.org>
+
+	* options.h (General_options): Change default to gnu for hash_style.
+---
+ gold/options.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gold/options.h b/gold/options.h
+index c138fa2..4698ebd 100644
+--- a/gold/options.h
++++ b/gold/options.h
+@@ -809,7 +809,7 @@ class General_options
+ 		N_("Min fraction of empty buckets in dynamic hash"),
+ 		N_("FRACTION"));
+ 
+-  DEFINE_enum(hash_style, options::TWO_DASHES, '\0', "sysv",
++  DEFINE_enum(hash_style, options::TWO_DASHES, '\0', "gnu",
+ 	      N_("Dynamic hash style"), N_("[sysv,gnu,both]"),
+ 	      {"sysv", "gnu", "both"});
+ 
+-- 
+1.8.0.2
