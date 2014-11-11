@@ -65,7 +65,7 @@ f.close()
 os.remove("pkgstats.txt")
 
 print "<h1>Portage</h1>"
-print "This section summarizes the current state of the portage tree.\n"
+print "This section summarizes the current state of the Gentoo ebuild tree.\n"
 
 print "[table th=\"0\"]"
 print "Architectures, " + gen_stats_num[0]
