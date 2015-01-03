@@ -135,7 +135,7 @@ We would like to thank the following authors and editors for their contributions
 
 <xsl:template match="pre"><xsl:text>
 </xsl:text>
-{{Code|<xsl:value-of select="@caption" />|&lt;pre&gt;<xsl:apply-templates />&lt;/pre&gt;
+{{CodeBox|title=<xsl:value-of select="@caption" />|&lt;pre&gt;<xsl:apply-templates />&lt;/pre&gt;
 }}
 <xsl:text>
 </xsl:text>
