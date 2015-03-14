@@ -422,7 +422,8 @@
         </xsl:for-each>
 
         <!-- GLSAs from my own glsa-index.xml, i.e. not Gentoo's -->
-        <xsl:for-each select="$GLSAs//glsa">
+        <!-- XPATH shouldn't find anything, hence disabling GLSA parsing -->
+        <xsl:for-each select="$GLSAs//glsaDISABLED">
          <!-- <xsl:sort select="date" order="descending"/> Can't sort on English dates, they should be sorted in the source file -->
           <xsl:if test="position() &lt;=$newsitemcount">
             <!-- convert bloody dates like 'July 29, 2006: 02' to YYYY-MM-DD -->
