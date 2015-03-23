@@ -7,9 +7,9 @@
   <!-- Load sidebar.gentoo.org in iframe -->
     <tr lang="en">
     <td align="center">
-          <iframe src="https://sidebar.gentoo.org" scrolling="no" width="125" height="850" frameborder="0" style="border:0px padding:0x" marginwidth="0" marginheight="0">
+<!--          <iframe src="https://sidebar.gentoo.org" scrolling="no" width="125" height="850" frameborder="0" style="border:0px padding:0x" marginwidth="0" marginheight="0">
 			<p>Your browser does not support iframes.</p>
-          </iframe>
+          </iframe>-->
     </td>
     </tr>
   <!-- end of iframe content -->
