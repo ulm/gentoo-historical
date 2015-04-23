@@ -112,7 +112,7 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
    mpz_clear (bound_two);
 --- a/gcc/graphite-poly.h
 +++ b/gcc/graphite-poly.h
-@@ -22,6 +22,369 @@ along with GCC; see the file COPYING3.  If not see
+@@ -22,6 +22,396 @@ along with GCC; see the file COPYING3.  If not see
  #ifndef GCC_GRAPHITE_POLY_H
  #define GCC_GRAPHITE_POLY_H
  
@@ -123,6 +123,21 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +#include <isl/options.h>
 +#include <cloog/isl/cloog.h>
 +#include <dlfcn.h>
++#ifdef HAVE_ISL_SCHED_CONSTRAINTS_COMPUTE_SCHEDULE
++#include <isl/deprecated/aff_int.h>
++#include <isl/deprecated/ilp_int.h>
++#include <isl/deprecated/constraint_int.h>
++#define DYNSYM_ZERO_DISTANCE DYNSYM (isl_band_member_is_coincident)
++#define NEW_DYNSYMS \
++  DYNSYM (isl_schedule_constraints_compute_schedule); \
++  DYNSYM (isl_schedule_constraints_on_domain); \
++  DYNSYM (isl_schedule_constraints_set_coincidence); \
++  DYNSYM (isl_schedule_constraints_set_proximity); \
++  DYNSYM (isl_schedule_constraints_set_validity);
++#else
++#define DYNSYM_ZERO_DISTANCE DYNSYM (isl_band_member_is_zero_distance)
++#define NEW_DYNSYMS
++#endif
 +#define DYNSYMS \
 +  DYNSYM (clast_pprint); \
 +  DYNSYM (cloog_clast_create_from_input); \
@@ -154,7 +169,7 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +  DYNSYM (isl_band_list_get_band); \
 +  DYNSYM (isl_band_list_get_ctx); \
 +  DYNSYM (isl_band_list_n_band); \
-+  DYNSYM (isl_band_member_is_zero_distance); \
++  DYNSYM_ZERO_DISTANCE; \
 +  DYNSYM (isl_band_n_member); \
 +  DYNSYM (isl_basic_map_add_constraint); \
 +  DYNSYM (isl_basic_map_project_out); \
@@ -248,6 +263,7 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +  DYNSYM (isl_set_is_empty); \
 +  DYNSYM (isl_set_max); \
 +  DYNSYM (isl_set_min); \
++  DYNSYM (isl_set_n_dim); \
 +  DYNSYM (isl_set_nat_universe); \
 +  DYNSYM (isl_set_project_out); \
 +  DYNSYM (isl_set_set_tuple_id); \
@@ -302,6 +318,7 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +  void *h;
 +#define DYNSYM(x) __typeof (x) *p_##x
 +  DYNSYMS
++  NEW_DYNSYMS
 +#undef DYNSYM
 +} cloog_pointers__;
 +
@@ -336,7 +353,11 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +#define isl_band_list_get_band (*cloog_pointers__.p_isl_band_list_get_band)
 +#define isl_band_list_get_ctx (*cloog_pointers__.p_isl_band_list_get_ctx)
 +#define isl_band_list_n_band (*cloog_pointers__.p_isl_band_list_n_band)
++#ifdef HAVE_ISL_SCHED_CONSTRAINTS_COMPUTE_SCHEDULE
++#define isl_band_member_is_coincident (*cloog_pointers__.p_isl_band_member_is_coincident)
++#else
 +#define isl_band_member_is_zero_distance (*cloog_pointers__.p_isl_band_member_is_zero_distance)
++#endif
 +#define isl_band_n_member (*cloog_pointers__.p_isl_band_n_member)
 +#define isl_basic_map_add_constraint (*cloog_pointers__.p_isl_basic_map_add_constraint)
 +#define isl_basic_map_project_out (*cloog_pointers__.p_isl_basic_map_project_out)
@@ -413,6 +434,11 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +#define isl_pw_aff_set_tuple_id (*cloog_pointers__.p_isl_pw_aff_set_tuple_id)
 +#define isl_pw_aff_sub (*cloog_pointers__.p_isl_pw_aff_sub)
 +#define isl_pw_aff_zero_set (*cloog_pointers__.p_isl_pw_aff_zero_set)
++#define isl_schedule_constraints_compute_schedule (*cloog_pointers__.p_isl_schedule_constraints_compute_schedule)
++#define isl_schedule_constraints_on_domain (*cloog_pointers__.p_isl_schedule_constraints_on_domain)
++#define isl_schedule_constraints_set_coincidence (*cloog_pointers__.p_isl_schedule_constraints_set_coincidence)
++#define isl_schedule_constraints_set_proximity (*cloog_pointers__.p_isl_schedule_constraints_set_proximity)
++#define isl_schedule_constraints_set_validity (*cloog_pointers__.p_isl_schedule_constraints_set_validity)
 +#define isl_schedule_free (*cloog_pointers__.p_isl_schedule_free)
 +#define isl_schedule_get_band_forest (*cloog_pointers__.p_isl_schedule_get_band_forest)
 +#define isl_set_add_constraint (*cloog_pointers__.p_isl_set_add_constraint)
@@ -430,6 +456,7 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +#define isl_set_is_empty (*cloog_pointers__.p_isl_set_is_empty)
 +#define isl_set_max (*cloog_pointers__.p_isl_set_max)
 +#define isl_set_min (*cloog_pointers__.p_isl_set_min)
++#define isl_set_n_dim (*cloog_pointers__.p_isl_set_n_dim)
 +#define isl_set_nat_universe (*cloog_pointers__.p_isl_set_nat_universe)
 +#define isl_set_project_out (*cloog_pointers__.p_isl_set_project_out)
 +#define isl_set_set_tuple_id (*cloog_pointers__.p_isl_set_set_tuple_id)
