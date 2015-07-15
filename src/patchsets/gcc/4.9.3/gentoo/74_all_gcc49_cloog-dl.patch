@@ -3,15 +3,10 @@ cloog upgrades that change the soname from breaking the compiler.
 
 http://pkgs.fedoraproject.org/cgit/gcc.git/tree/gcc49-cloog-dl.patch
 
-
 In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 
-2014-04-30  Ryan Hill  <rhill@gentoo.org>
-
-    * configure.ac (DL_LIB): Set to ac_cv_search_dlopen.
-    * configure: Regenerate.
-    * Makefile.in (BACKENDLIBS): Use DL_LIB.
-
+extended by Gentoo to support isl-0.15
+https://bugs.gentoo.org/552278
 
 --- a/gcc/Makefile.in
 +++ b/gcc/Makefile.in
@@ -112,15 +107,20 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
    mpz_clear (bound_two);
 --- a/gcc/graphite-poly.h
 +++ b/gcc/graphite-poly.h
-@@ -22,6 +22,396 @@ along with GCC; see the file COPYING3.  If not see
+@@ -22,6 +22,410 @@ along with GCC; see the file COPYING3.  If not see
  #ifndef GCC_GRAPHITE_POLY_H
  #define GCC_GRAPHITE_POLY_H
  
 +#include <isl/aff.h>
++#include <isl/constraint.h>
++#include <isl/union_set.h>
 +#include <isl/schedule.h>
 +#include <isl/ilp.h>
 +#include <isl/flow.h>
 +#include <isl/options.h>
++#include <isl/ast.h>
++#include <isl/ast_build.h>
++#include <isl/val_gmp.h>
 +#include <cloog/isl/cloog.h>
 +#include <dlfcn.h>
 +#ifdef HAVE_ISL_SCHED_CONSTRAINTS_COMPUTE_SCHEDULE
@@ -137,6 +137,11 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +#else
 +#define DYNSYM_ZERO_DISTANCE DYNSYM (isl_band_member_is_zero_distance)
 +#define NEW_DYNSYMS
++#endif
++#ifdef HAVE_ISL_OPTIONS_SET_SCHEDULE_SERIALIZE_SCCS
++#define DYNSYM_FUSE DYNSYM (isl_options_set_schedule_serialize_sccs)
++#else
++#define DYNSYM_FUSE DYNSYM (isl_options_set_schedule_fuse)
 +#endif
 +#define DYNSYMS \
 +  DYNSYM (clast_pprint); \
@@ -219,7 +224,7 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +  DYNSYM (isl_map_set_tuple_id); \
 +  DYNSYM (isl_map_universe); \
 +  DYNSYM (isl_options_set_on_error); \
-+  DYNSYM (isl_options_set_schedule_fuse); \
++  DYNSYM_FUSE; \
 +  DYNSYM (isl_options_set_schedule_max_constant_term); \
 +  DYNSYM (isl_options_set_schedule_maximize_band_depth); \
 +  DYNSYM (isl_printer_free); \
@@ -407,7 +412,11 @@ In FreeBSD dlopen is part of libc so we can't just hardcode -ldl.
 +#define isl_map_set_tuple_id (*cloog_pointers__.p_isl_map_set_tuple_id)
 +#define isl_map_universe (*cloog_pointers__.p_isl_map_universe)
 +#define isl_options_set_on_error (*cloog_pointers__.p_isl_options_set_on_error)
++#ifdef HAVE_ISL_OPTIONS_SET_SCHEDULE_SERIALIZE_SCCS
++#define isl_options_set_schedule_serialize_sccs (*cloog_pointers__.p_isl_options_set_schedule_serialize_sccs)
++#else
 +#define isl_options_set_schedule_fuse (*cloog_pointers__.p_isl_options_set_schedule_fuse)
++#endif
 +#define isl_options_set_schedule_max_constant_term (*cloog_pointers__.p_isl_options_set_schedule_max_constant_term)
 +#define isl_options_set_schedule_maximize_band_depth (*cloog_pointers__.p_isl_options_set_schedule_maximize_band_depth)
 +#define isl_printer_free (*cloog_pointers__.p_isl_printer_free)
