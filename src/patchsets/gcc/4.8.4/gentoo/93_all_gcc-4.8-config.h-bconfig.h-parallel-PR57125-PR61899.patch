@@ -237,3 +237,57 @@ index 2dc857e..39d2918 100644
  #include "errors.h"		/* for fatal */
 -- 
 2.3.4
+
+https://gcc.gnu.org/ml/gcc-patches/2013-07/msg01396.html
+
+From ea38f4be892b22b61a540a102bed374ddb381b9a Mon Sep 17 00:00:00 2001
+From: tromey <tromey@138bc75d-0d04-0410-961f-82ee72b054a4>
+Date: Wed, 25 Sep 2013 15:52:30 +0000
+Subject: [PATCH] move generated_files order-only dependency later
+
+There is an order-only dependency in gcc/Makefile.in that tries to
+build the generated files before compiling regular objects.  However,
+this appears too early, and so at the time it is seen by make,
+GCOV_OBJS and GCOV_DUMP_OBJS have not yet been set.
+
+This patch fixes the problem and prevents any future problems of this
+nature by moving the order-only dependency to the end of Makefile.in.
+
+git-svn-id: svn+ssh://gcc.gnu.org/svn/gcc/trunk@202894 138bc75d-0d04-0410-961f-82ee72b054a4
+---
+ gcc/ChangeLog   |  6 ++++++
+ gcc/Makefile.in | 13 +++++++------
+ 2 files changed, 13 insertions(+), 6 deletions(-)
+
+2013-09-25  Tom Tromey  <tromey@redhat.com>
+
+	* Makefile.in ($(ALL_HOST_OBJS)): Move order-only dependency to end
+	of file.
+
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index 62b5eab..8f99a6c 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -3899,11 +3900,6 @@ generated_files = config.h tm.h $(TM_P_H) $(TM_H) multilib.h \
+        common/common-target-hooks-def.h pass-instances.def \
+        c-family/c-target-hooks-def.h
+ 
+-# In order for parallel make to really start compiling the expensive
+-# objects from $(OBJS) as early as possible, build all their
+-# prerequisites strictly before all objects.
+-$(ALL_HOST_OBJS) : | $(generated_files)
+-
+ #
+ # How to compile object files to run on the build machine.
+ 
+@@ -5390,3 +5386,8 @@ po/gcc.pot: force
+ 	$(MAKE) srcextra
+ 	AWK=$(AWK) $(SHELL) $(srcdir)/po/exgettext \
+ 		$(XGETTEXT) gcc $(srcdir)
++
++# In order for parallel make to really start compiling the expensive
++# objects from $(OBJS) as early as possible, build all their
++# prerequisites strictly before all objects.
++$(ALL_HOST_OBJS) : | $(generated_files)
+-- 
+2.4.4
