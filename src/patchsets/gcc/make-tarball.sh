@@ -8,7 +8,7 @@ fi
 ver=${1%/}
 for ebuild in \
 	${ver} \
-	/usr/local/src/gentoo-x86/sys-devel/gcc/gcc-${ver}.ebuild \
+	/usr/local/src/gentoo/repo/gentoo/sys-devel/gcc/gcc-${ver}.ebuild \
 	/usr/portage/sys-devel/gcc/gcc-${ver}.ebuild \
 	""
 do
