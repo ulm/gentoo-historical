@@ -1,0 +1,253 @@
+From 68ead870a7388dd4833ea22135ca50e5f82d4ca5 Mon Sep 17 00:00:00 2001
+From: "H.J. Lu" <hjl.tools@gmail.com>
+Date: Wed, 22 Jun 2016 05:37:24 -0700
+Subject: [PATCH] ld: Add a linker configure option --enable-relro
+
+Add a configure option --enable-relro to decide whether -z relro should
+be enabled in ELF linker by default.  Default to yes for all Linux
+targets, except FRV, HPPA, IA64 and MIPS, since many relro tests fail
+on these targets.
+
+	PR ld/20283
+	* NEWS: Mention --enable-relro.
+	* configure.ac: Add --enable-relro.
+	(DEFAULT_LD_Z_RELRO): New.  Set by --enable-relro.
+	* configure.tgt (ac_default_ld_z_relro): Default it to 1 for
+	some Linux targets.
+	* config.in: Regenerated.
+	* configure: Likewise.
+	* emultempl/elf32.em (gld${EMULATION_NAME}_before_parse): Set
+	link_info.relro to DEFAULT_LD_Z_RELRO.
+	* testsuite/config/default.exp (ld_elf_shared_opt): New.
+	* testsuite/lib/ld-lib.exp (run_dump_test): Pass
+	$ld_elf_shared_opt to ld for ELF targets with shared object
+	support.
+	(run_ld_link_tests): Likewise.
+
+(cherry picked from commit 647e4d46495f2bfb0950fd1066c8a660173cca40)
+---
+ ld/config.in                    |  3 +++
+ ld/configure                    | 22 ++++++++++++++++++++++
+ ld/configure.ac                 | 18 ++++++++++++++++++
+ ld/configure.tgt                | 25 +++++++++++++++++++++++++
+ ld/emultempl/elf32.em           |  1 +
+ ld/testsuite/config/default.exp |  3 +++
+ ld/testsuite/lib/ld-lib.exp     | 18 ++++++++++++++++--
+ 7 files changed, 88 insertions(+), 2 deletions(-)
+
+diff --git a/ld/configure.ac b/ld/configure.ac
+index e28f38ee3a5e..39ea2c868700 100644
+--- a/ld/configure.ac
++++ b/ld/configure.ac
+@@ -155,6 +155,17 @@ AC_ARG_ENABLE(compressed_debug_sections,
+   ,no, | ,none,)  ac_default_compressed_debug_sections=no ;;
+ esac])dnl
+ 
++# Decide if -z relro should be enabled in ELF linker by default.
++ac_default_ld_z_relro=unset
++# Provide a configure time option to override our default.
++AC_ARG_ENABLE(relro,
++	      AS_HELP_STRING([--enable-relro],
++	      [enable -z relro in ELF linker by default]),
++[case "${enableval}" in
++  yes)  ac_default_ld_z_relro=1 ;;
++  no)  ac_default_ld_z_relro=0 ;;
++esac])dnl
++
+ AM_BINUTILS_WARNINGS
+ 
+ AM_LC_MESSAGES
+@@ -388,6 +399,13 @@ if test x$ac_default_compressed_debug_sections = xyes ; then
+   AC_DEFINE(DEFAULT_FLAG_COMPRESS_DEBUG, 1, [Define if you want compressed debug sections by default.])
+ fi
+ 
++if test "${ac_default_ld_z_relro}" = unset; then
++  ac_default_ld_z_relro=0
++fi
++AC_DEFINE_UNQUOTED(DEFAULT_LD_Z_RELRO,
++  $ac_default_ld_z_relro,
++  [Define to 1 if you want to enable -z relro in ELF linker by default.])
++
+ AC_SUBST(elf_list_options)
+ AC_SUBST(elf_shlib_list_options)
+ AC_SUBST(elf_plt_unwind_list_options)
+diff --git a/ld/config.in b/ld/config.in
+index 276fb776da0e..2c6d698b6ce1 100644
+--- a/ld/config.in
++++ b/ld/config.in
+@@ -10,6 +10,9 @@
+ /* Define if you want compressed debug sections by default. */
+ #undef DEFAULT_FLAG_COMPRESS_DEBUG
+ 
++/* Define to 1 if you want to enable -z relro in ELF linker by default. */
++#undef DEFAULT_LD_Z_RELRO
++
+ /* Define to 1 if translation of program messages to the user's native
+    language is requested. */
+ #undef ENABLE_NLS
+diff --git a/ld/configure b/ld/configure
+index e1216616b795..a4c3350a4e45 100755
+--- a/ld/configure
++++ b/ld/configure
+@@ -789,6 +789,7 @@ with_sysroot
+ enable_gold
+ enable_got
+ enable_compressed_debug_sections
++enable_relro
+ enable_werror
+ enable_build_warnings
+ enable_nls
+@@ -1447,6 +1448,7 @@ Optional Features:
+                           multigot)
+   --enable-compressed-debug-sections={all,ld,none}
+                           compress debug sections by default]
++  --enable-relro          enable -z relro in ELF linker by default
+   --enable-werror         treat compile warnings as errors
+   --enable-build-warnings enable build-time compiler warnings
+   --disable-nls           do not use Native Language Support
+@@ -15536,6 +15538,17 @@ if test "${enable_compressed_debug_sections+set}" = set; then :
+ esac
+ fi
+ 
++# Decide if -z relro should be enabled in ELF linker by default.
++ac_default_ld_z_relro=unset
++# Provide a configure time option to override our default.
++# Check whether --enable-relro was given.
++if test "${enable_relro+set}" = set; then :
++  enableval=$enable_relro; case "${enableval}" in
++  yes)  ac_default_ld_z_relro=1 ;;
++  no)  ac_default_ld_z_relro=0 ;;
++esac
++fi
++
+ 
+ # Set the 'development' global.
+ . $srcdir/../bfd/development.sh
+@@ -17140,6 +17153,15 @@ $as_echo "#define DEFAULT_FLAG_COMPRESS_DEBUG 1" >>confdefs.h
+ 
+ fi
+ 
++if test "${ac_default_ld_z_relro}" = unset; then
++  ac_default_ld_z_relro=0
++fi
++
++cat >>confdefs.h <<_ACEOF
++#define DEFAULT_LD_Z_RELRO $ac_default_ld_z_relro
++_ACEOF
++
++
+ 
+ 
+ 
+diff --git a/ld/configure.tgt b/ld/configure.tgt
+index 6b6bbf25771e..ad24b507f738 100644
+--- a/ld/configure.tgt
++++ b/ld/configure.tgt
+@@ -876,3 +876,28 @@ alpha*-*-*)
+   ;;
+ 
+ esac
++
++case "${target}" in
++frv-*-* | hppa*-*-* | ia64-*-* | mips*-*-*)
++  # Don't enable -z relro by default since many relro tests fail on these
++  # targets:
++  # FAIL: strip -z relro (relro1)
++  # FAIL: strip -z relro -shared (relro1)
++  # FAIL: objcopy -z relro (relro1)
++  # FAIL: objcopy -z relro -shared (relro1)
++  # FAIL: objcopy -z relro (tdata1)
++  # FAIL: objcopy -shared -z relro (tdata1)
++  # FAIL: objcopy -z relro (tdata2)
++  # FAIL: objcopy -shared -z relro (tdata2)
++  # FAIL: objcopy -z relro (tdata3)
++  # FAIL: objcopy -shared -z relro (tdata3)
++  # FAIL: objcopy -shared -z relro (tbss1)
++  # FAIL: objcopy -shared -z relro (tbss2)
++  # FAIL: objcopy -shared -z relro (tbss3)
++  ;;
++*-*-linux*)
++  if test ${ac_default_ld_z_relro} = unset; then
++    ac_default_ld_z_relro=1
++  fi
++  ;;
++esac
+diff --git a/ld/emultempl/elf32.em b/ld/emultempl/elf32.em
+index 809b27c8bf7f..69a67b0e1f36 100644
+--- a/ld/emultempl/elf32.em
++++ b/ld/emultempl/elf32.em
+@@ -104,6 +104,7 @@ gld${EMULATION_NAME}_before_parse (void)
+   config.has_shared = `if test -n "$GENERATE_SHLIB_SCRIPT" ; then echo TRUE ; else echo FALSE ; fi`;
+   config.separate_code = `if test "x${SEPARATE_CODE}" = xyes ; then echo TRUE ; else echo FALSE ; fi`;
+   `if test -n "$CALL_NOP_BYTE" ; then echo link_info.call_nop_byte = $CALL_NOP_BYTE; fi`;
++  link_info.relro = DEFAULT_LD_Z_RELRO;
+ }
+ 
+ EOF
+diff --git a/ld/testsuite/config/default.exp b/ld/testsuite/config/default.exp
+index 310a3b21ba85..686dfb1b5dff 100644
+--- a/ld/testsuite/config/default.exp
++++ b/ld/testsuite/config/default.exp
+@@ -76,6 +76,9 @@ if {[file exists tmpdir/libpath.exp]} {
+     }
+ }
+ 
++# Many ELF testcases expect that "-z relro" is off.
++set ld_elf_shared_opt "-z norelro"
++
+ # The "make check" target in the Makefile passes in
+ # "CC=$(CC_FOR_TARGET)".  But, if the user invokes runtest directly
+ # (as when testing an installed linker), these flags may not be set.  
+diff --git a/ld/testsuite/lib/ld-lib.exp b/ld/testsuite/lib/ld-lib.exp
+index 364c6facba89..d1391da04883 100644
+--- a/ld/testsuite/lib/ld-lib.exp
++++ b/ld/testsuite/lib/ld-lib.exp
+@@ -588,6 +588,13 @@ proc run_dump_test { name {extra_options {}} } {
+     global OBJDUMPFLAGS NMFLAGS ASFLAGS OBJCOPYFLAGS READELFFLAGS LDFLAGS
+     global host_triplet runtests
+     global env verbose
++    global ld_elf_shared_opt
++
++    if { [is_elf_format] && [check_shared_lib_support] } {
++	set ld_extra_opt "$ld_elf_shared_opt"
++    } else {
++	set ld_extra_opt ""
++    }
+ 
+     if [string match "*/*" $name] {
+ 	set file $name
+@@ -910,7 +917,7 @@ proc run_dump_test { name {extra_options {}} } {
+ 
+ 	# Add -L$srcdir/$subdir so that the linker command can use
+ 	# linker scripts in the source directory.
+-	set cmd "$LD $LDFLAGS -L$srcdir/$subdir \
++	set cmd "$LD $ld_extra_opt $LDFLAGS -L$srcdir/$subdir \
+ 		   $opts(ld) -o $objfile $objfiles $opts(ld_after_inputfiles)"
+ 
+         # If needed then check for, or add a -Map option.
+@@ -1164,6 +1171,13 @@ proc run_ld_link_tests { ldtests } {
+     global CFLAGS
+     global runtests
+     global exec_output
++    global ld_elf_shared_opt
++
++    if { [is_elf_format] && [check_shared_lib_support] } {
++	set ld_extra_opt "$ld_elf_shared_opt"
++    } else {
++	set ld_extra_opt ""
++    }
+ 
+     foreach testitem $ldtests {
+ 	set testname [lindex $testitem 0]
+@@ -1226,7 +1240,7 @@ proc run_ld_link_tests { ldtests } {
+ 	    if { ![ar_simple_create $ar $ld_options $binfile "$objfiles $ld_after"] } {
+ 		set failed 1
+ 	    }
+-	} elseif { ![ld_simple_link $ld $binfile "-L$srcdir/$subdir $ld_options $objfiles $ld_after"] } {
++	} elseif { ![ld_simple_link $ld $binfile "$ld_extra_opt -L$srcdir/$subdir $ld_options $objfiles $ld_after"] } {
+ 	    set maybe_failed 1
+ 	    set ld_output "$exec_output"
+ 	}
+-- 
+2.8.0.rc3.226.g39d4020
+
