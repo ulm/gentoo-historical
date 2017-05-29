@@ -1,12 +1,12 @@
 #! /usr/bin/env bash
 
-if [[ $# -lt 2 ]]; then
+if [[ $# -lt 1 ]]; then
 	echo "Usage: $0 <mico ver> <patch ver>" >&2
 	exit 1
 fi
 
 micover=${1%/}
-patchver=$2
+patchver=${2:-$(date '+%Y%m%d')}
 
 if [[ ! -d ./${micover} ]]; then
 	echo "Error: ${micover} is not a valid mico version" >&2
