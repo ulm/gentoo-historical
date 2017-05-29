@@ -18,7 +18,7 @@ rm -f ${tarfile}-*
 tarfile=${tarfile}-${patchver}.tar.bz2
 
 rm -rf ./tmp
-mkdir -p tmp/patches tmp/helpers || exit 1
+mkdir -p tmp/patches || exit 1
 
 tardirs=
 
@@ -33,6 +33,7 @@ for h in \
 ; do
 	[[ -r ./${micover}/${h} ]] || continue
 	helpers="${helpers} ${h}"
+	mkdir -p tmp/helpers || exit 1
 	cp ./${micover}/${h} ./tmp/helpers || exit 1
 	chmod +x ./tmp/helpers/${h} || die
 done
