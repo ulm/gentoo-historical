@@ -15,7 +15,7 @@ fi
 
 tarfile=mico-${micover}-gentoo-patches
 rm -f ${tarfile}-*
-tarfile=${tarfile}-${patchver}.tar.bz2
+tarfile=${tarfile}-${patchver}.tar.xz
 
 rm -rf ./tmp
 mkdir -p tmp/patches || exit 1
@@ -42,7 +42,7 @@ if [[ -n ${helpers} ]]; then
 	tardirs+=" helpers"
 fi
 
-tar cjf ${tarfile} -C tmp ${tardirs} || exit 1
+tar cJf ${tarfile} -C tmp ${tardirs} || exit 1
 
 rm -rf ./tmp
 
