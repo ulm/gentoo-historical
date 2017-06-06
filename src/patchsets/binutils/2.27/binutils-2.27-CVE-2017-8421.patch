@@ -1,0 +1,36 @@
+From 39ff1b79f687b65f4144ddb379f22587003443fb Mon Sep 17 00:00:00 2001
+From: Nick Clifton <nickc@redhat.com>
+Date: Tue, 2 May 2017 11:54:53 +0100
+Subject: [PATCH] Prevent memory exhaustion from a corrupt PE binary with an
+ overlarge number of relocs.
+
+	PR 21440
+	* objdump.c (dump_relocs_in_section): Check for an excessive
+	number of relocs before attempting to dump them.
+---
+ binutils/ChangeLog | 6 ++++++
+ binutils/objdump.c | 8 ++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/binutils/objdump.c b/binutils/objdump.c
+index bc61000..5972da1 100644
+--- a/binutils/objdump.c
++++ b/binutils/objdump.c
+@@ -3379,6 +3379,14 @@ dump_relocs_in_section (bfd *abfd,
+       return;
+     }
+ 
++  if ((bfd_get_file_flags (abfd) & (BFD_IN_MEMORY | BFD_LINKER_CREATED)) == 0
++      && relsize > get_file_size (bfd_get_filename (abfd)))
++    {
++      printf (" (too many: 0x%x)\n", section->reloc_count);
++      bfd_set_error (bfd_error_file_truncated);
++      bfd_fatal (bfd_get_filename (abfd));
++    }
++
+   relpp = (arelent **) xmalloc (relsize);
+   relcount = bfd_canonicalize_reloc (abfd, section, relpp, syms);
+ 
+-- 
+2.9.3
+
