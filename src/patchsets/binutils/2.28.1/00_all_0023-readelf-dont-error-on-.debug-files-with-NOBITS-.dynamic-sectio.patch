@@ -1,0 +1,70 @@
+Subject: [PATCH] readelf: Don't error on .debug files with NOBITS .dynamic section.
+From: Mark Wielaard <mark@klomp.org>
+
+The fix for PR binutils/17512 added a check for the dynamic segment being
+inside the actual ELF file. If not an error message would be produced:
+
+readelf: Error: the dynamic segment offset + size exceeds the size of the file
+
+Unfortunately for separate debuginfo files it is common for the dynamic
+segment not being inside the file because the .dynamic section is NOBITS.
+
+Since the check is done unconditionally in process_program_headers and
+process_program_headers is always called (to setup dynamic_addr in case
+it is needed). The error is produced on any operations done on any .debug
+file (even if no program headers or the dynamic segment is used).
+
+If there are section headers then a cross check is done to see if the
+.dynamic section is NOBITS in which case dynamic_addr is set to zero
+without a warning or error (which is then checked first before any
+operation on the dynamic segement is done).
+
+Move the check for the dynamic segment being inside the actual ELF file
+after the cross check with the section headers to suppress the error for
+.debug files.
+
+binutils/ChangeLog:
+
+	* readelf.c (process_program_headers): Move dynamic_addr check
+	after .dynamic section cross check.
+---
+ binutils/ChangeLog |  5 +++++
+ binutils/readelf.c | 16 ++++++++++------
+ 2 files changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/binutils/readelf.c b/binutils/readelf.c
+index ad65f07..8b1d924 100644
+--- a/binutils/readelf.c
++++ b/binutils/readelf.c
+@@ -4997,12 +4997,6 @@ process_program_headers (FILE * file)
+ 	     section in the DYNAMIC segment.  */
+ 	  dynamic_addr = segment->p_offset;
+ 	  dynamic_size = segment->p_filesz;
+-	  /* PR binutils/17512: Avoid corrupt dynamic section info in the segment.  */
+-	  if (dynamic_addr + dynamic_size >= current_file_size)
+-	    {
+-	      error (_("the dynamic segment offset + size exceeds the size of the file\n"));
+-	      dynamic_addr = dynamic_size = 0;
+-	    }
+ 
+ 	  /* Try to locate the .dynamic section. If there is
+ 	     a section header table, we can easily locate it.  */
+@@ -5037,6 +5031,16 @@ process_program_headers (FILE * file)
+ 		warn (_("the .dynamic section is not the first section"
+ 			" in the dynamic segment.\n"));
+ 	    }
++
++	  /* PR binutils/17512: Avoid corrupt dynamic section info in the
++	     segment.  Check this after matching against the section headers
++	     so we don't warn on debuginfo file (which have NOBITS .dynamic
++	     sections).  */
++	  if (dynamic_addr + dynamic_size >= current_file_size)
++	    {
++	      error (_("the dynamic segment offset + size exceeds the size of the file\n"));
++	      dynamic_addr = dynamic_size = 0;
++	    }
+ 	  break;
+ 
+ 	case PT_INTERP:
+-- 
+1.8.3.1

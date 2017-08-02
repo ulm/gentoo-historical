@@ -1,0 +1,43 @@
+From 5cc4ca837deac7dc962d8a3741aa120c50ab41da Mon Sep 17 00:00:00 2001
+From: Sergei Trofimovich <slyfox@gentoo.org>
+Date: Sat, 24 Jun 2017 18:40:41 +0100
+Subject: [PATCH] fix out-of-bounds access in elf.c:find_link
+
+The out-of-bounds access is reproducible on 'ia64-strip' command
+(see sample from https://bugs.gentoo.org/show_bug.cgi?id=622500)
+
+The output file contains less section than original one.
+This tricks 'hint' access to go out-of-bounds:
+
+	* elf.c (find_link): Bounds check "hint".
+---
+ bfd/elf.c     | 6 ++++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/bfd/elf.c b/bfd/elf.c
+index 5f37e7f..76c6a5c 100644
+--- a/bfd/elf.c
++++ b/bfd/elf.c
+@@ -1283,7 +1283,8 @@ section_match (const Elf_Internal_Shdr * a,
+    to be the correct section.  */
+ 
+ static unsigned int
+-find_link (const bfd * obfd, const Elf_Internal_Shdr * iheader, const unsigned int hint)
++find_link (const bfd *obfd, const Elf_Internal_Shdr *iheader,
++	   const unsigned int hint)
+ {
+   Elf_Internal_Shdr ** oheaders = elf_elfsections (obfd);
+   unsigned int i;
+@@ -1291,7 +1292,8 @@ find_link (const bfd * obfd, const Elf_Internal_Shdr * iheader, const unsigned i
+   BFD_ASSERT (iheader != NULL);
+ 
+   /* See PR 20922 for a reproducer of the NULL test.  */
+-  if (oheaders[hint] != NULL
++  if (hint < elf_numsections (obfd)
++      && oheaders[hint] != NULL
+       && section_match (oheaders[hint], iheader))
+     return hint;
+ 
+-- 
+2.9.3
+
