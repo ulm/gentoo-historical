@@ -1,44 +1,27 @@
-We disable ssp on -nostdlib and -ffreestanding as we did on older gcc
-and change the buffer size.
+Disable ssp on -nostdlib, -nodefaultlibs and -ffreestanding 
+Change the buffer size.
 
---- a/gcc/c-family/c-opts.c	2016-03-08 23:30:44.000000000 +0100
-+++ b/gcc/c-family/c-opts.c	2016-09-18 18:42:10.231644014 +0200
-@@ -436,7 +436,15 @@ c_common_handle_option (size_t scode, co
+--- a/gcc/gcc.c	2017-07-04 09:15:57.740793000 +0200
++++ b/gcc/gcc.c	2018-03-02 13:58:44.387741114 +0100
+@@ -857,6 +857,12 @@ proper position among the other output f
+ #define LINK_GCC_C_SEQUENCE_SPEC "%G %L %G"
+ #endif
  
-     case OPT_ffreestanding:
-       value = !value;
-+	  if (global_options.x_flag_stack_protect == -1)
-+		global_options.x_flag_stack_protect = 0;
-       /* Fall through....  */
++#ifdef ENABLE_DEFAULT_SSP
++#define NO_SSP_SPEC "%{nostdlib|nodefaultlibs|ffreestanding:-fno-stack-protector} "
++#else
++#define NO_SSP_SPEC ""
++#endif
 +
-+	case OPT_nostdlib:
-+	  if (global_options.x_flag_stack_protect == -1)
-+		global_options.x_flag_stack_protect = 0;
-+	  /* Fall through....  */
-+
-     case OPT_fhosted:
-       flag_hosted = value;
-       flag_no_builtin = !value;
---- a/gcc/c-family/c.opt	2016-03-23 18:51:56.000000000 +0100
-+++ b/gcc/c-family/c.opt	2016-09-18 18:46:17.071649782 +0200
-@@ -1647,6 +1647,10 @@ nostdinc++
- C++ ObjC++
- Do not search standard system include directories for C++.
- 
-+nostdlib
-+C ObjC C++ ObjC++
-+; Documented in common.opt
-+
- o
- C ObjC C++ ObjC++ Joined Separate
- ; Documented in common.opt
---- a/gcc/gcc.c	2016-02-19 23:18:38.000000000 +0100
-+++ b/gcc/gcc.c	2016-09-18 18:47:35.621651618 +0200
-@@ -1132,6 +1143,7 @@ static const char *cc1_options =
+ #ifndef LINK_SSP_SPEC
+ #ifdef TARGET_LIBC_PROVIDES_SSP
+ #define LINK_SSP_SPEC "%{fstack-protector|fstack-protector-all" \
+@@ -1131,7 +1148,7 @@ static const char *cc1_options =
+  %{-version:--version}\
   %{-help=*:--help=%*}\
   %{!fsyntax-only:%{S:%W{o*}%{!o*:-o %b.s}}}\
-  %{fsyntax-only:-o %j} %{-param*}\
-+ %{nostdlib:-nostdlib}\
+- %{fsyntax-only:-o %j} %{-param*}\
++ %{fsyntax-only:-o %j} %{-param*} " NO_SSP_SPEC "\
   %{coverage:-fprofile-arcs -ftest-coverage}";
  
  static const char *asm_options =
