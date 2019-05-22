@@ -1,0 +1,237 @@
+From a4fc7e6df8b720ab1715efc291b14248aa4f8b6d Mon Sep 17 00:00:00 2001
+From: Michael Haubenwallner <michael.haubenwallner@ssi-schaefer.com>
+Date: Wed, 22 May 2019 15:14:20 +0200
+Subject: [PATCH 16/19] fix 'will break strict aliasing' warnings
+
+casting pointers between other than void* and char* may break when
+optimization is enabled, and gcc-8 does emit warnings like:
+buffer.cc:353:21: warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
+  *((CORBA::Short *&)b)++ = *(const CORBA::Short *)p;
+---
+ orb/buffer.cc | 142 +++++++++++++++++++++++++++++++++-----------------
+ orb/ssl.cc    |  18 ++++---
+ 2 files changed, 105 insertions(+), 55 deletions(-)
+
+diff --git a/orb/buffer.cc b/orb/buffer.cc
+index bcfee18..de6735d 100644
+--- a/orb/buffer.cc
++++ b/orb/buffer.cc
+@@ -348,14 +348,26 @@ CORBA::Buffer::put2 (const void *p)
+     // assert (((_wptr - _walignbase) % 2) == 0);
+     assert (!_readonly && _wptr >= _walignbase);
+     resize (2);
+-    CORBA::Octet *b = _buf + _wptr;
+-    if (!(((long)b | (long)p)&1)) {
+-	*((CORBA::Short *&)b)++ = *(const CORBA::Short *)p;
++    union {
++	const CORBA::Short *shortPtr;
++	const CORBA::Octet *octetPtr;
++	const void *voidPtr;
++	uintptr_t uintPtr;
++    } in;
++    in.voidPtr = p;
++    union {
++	CORBA::Short *shortPtr;
++	CORBA::Octet *octetPtr;
++	uintptr_t uintPtr;
++    } out;
++    out.octetPtr = _buf + _wptr;
++    if (!((out.uintPtr | in.uintPtr)&1)) {
++	*out.shortPtr++ = *in.shortPtr;
+     } else {
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *(const Octet *)p;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr;
+     }
+-    size_t t = b - _buf;
++    size_t t = out.octetPtr - _buf;
+     assert(t < UINT_MAX);
+     _wptr = (ULong)t;
+ }
+@@ -366,16 +378,28 @@ CORBA::Buffer::put4 (const void *p)
+    // assert (((_wptr - _walignbase) % 4) == 0);
+     assert (!_readonly && _wptr >= _walignbase);
+     resize (4);
+-    CORBA::Octet *b = _buf + _wptr;
+-    if (!(((long)b | (long)p)&3)) {
+-	*((CORBA::Long * &)b)++ = *(const CORBA::Long *)p;
++    union {
++	const CORBA::Long *longPtr;
++	const CORBA::Octet *octetPtr;
++	const void *voidPtr;
++	uintptr_t uintPtr;
++    } in;
++    in.voidPtr = p;
++    union {
++	CORBA::Long *longPtr;
++	CORBA::Octet *octetPtr;
++	uintptr_t uintPtr;
++    } out;
++    out.octetPtr = _buf + _wptr;
++    if (!((out.uintPtr | in.uintPtr)&3)) {
++	*out.longPtr++ = *in.longPtr;
+     } else {
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *(const Octet *)p;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr;
+     }
+-    size_t t = b - _buf;
++    size_t t = out.octetPtr - _buf;
+     assert(t < UINT_MAX);
+     _wptr = (ULong)t;
+ }
+@@ -386,20 +410,32 @@ CORBA::Buffer::put8 (const void *p)
+     // assert (((_wptr - _walignbase) % 8) == 0);
+     assert (!_readonly && _wptr >= _walignbase);
+     resize (8);
+-    CORBA::Octet *b = _buf + _wptr;
+-    if (!(((long)b | (long)p)&7)) {
+-	*((CORBA::LongLong *&)b)++ = *(const CORBA::LongLong *)p;
++    union {
++	const CORBA::LongLong *longlongPtr;
++	const CORBA::Octet *octetPtr;
++	const void *voidPtr;
++	uintptr_t uintPtr;
++    } in;
++    in.voidPtr = p;
++    union {
++	CORBA::LongLong *longlongPtr;
++	CORBA::Octet *octetPtr;
++	uintptr_t uintPtr;
++    } out;
++    out.octetPtr = _buf + _wptr;
++    if (!((out.uintPtr | in.uintPtr)&7)) {
++	*out.longlongPtr++ = *in.longlongPtr;
+     } else {
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *(const Octet *)p;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr;
+     }
+-    size_t t = b - _buf;
++    size_t t = out.octetPtr - _buf;
+     assert(t < UINT_MAX);
+     _wptr = (ULong)t;
+ }
+@@ -411,29 +447,41 @@ CORBA::Buffer::put16 (const void *p)
+     //  assert (((_wptr - _walignbase) % 8) == 0);
+     assert (!_readonly && _wptr >= _walignbase);
+     resize (16);
+-    CORBA::Octet *b = _buf + _wptr;
+-    if (!(((long)b | (long)p)&7)) {
+-	*((CORBA::LongLong *&)b)++ = *((const CORBA::LongLong * &)p)++;
+-	*((CORBA::LongLong *&)b)++ = *(const CORBA::LongLong *)p;
++    union {
++	const CORBA::LongLong *longlongPtr;
++	const CORBA::Octet *octetPtr;
++	const void *voidPtr;
++	uintptr_t uintPtr;
++    } in;
++    in.voidPtr = p;
++    union {
++	CORBA::LongLong *longlongPtr;
++	CORBA::Octet *octetPtr;
++	uintptr_t uintPtr;
++    } out;
++    out.octetPtr = _buf + _wptr;
++    if (!((out.uintPtr | in.uintPtr)&7)) {
++	*out.longlongPtr++ = *in.longlongPtr++;
++	*out.longlongPtr++ = *in.longlongPtr;
+     } else {
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *((const Octet * &)p)++;
+-	*b++ = *(const Octet *)p;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr++;
++	*out.octetPtr++ = *in.octetPtr;
+     }
+-    size_t t = b - _buf;
++    size_t t = out.octetPtr - _buf;
+     assert(t < UINT_MAX);
+     _wptr = (ULong)t;
+ }
+diff --git a/orb/ssl.cc b/orb/ssl.cc
+index 2a7404f..efad2dd 100644
+--- a/orb/ssl.cc
++++ b/orb/ssl.cc
+@@ -1959,11 +1959,11 @@ MICOSSL::SSLComponent::encode (CORBA::DataEncoder &ec) const
+     {
+ 	// MICO_SSL_VB_COMPAT ...
+ 	if (sizeof (Security::AssociationOptions) == sizeof (CORBA::ULong)) {
+-	    ec.put_ulong ((CORBA::ULong&)_target_supports);
+-	    ec.put_ulong ((CORBA::ULong&)_target_requires);
++	    ec.put_ulong ((CORBA::ULong)_target_supports);
++	    ec.put_ulong ((CORBA::ULong)_target_requires);
+ 	} else {
+-	    ec.put_ushort ((CORBA::UShort&)_target_supports);
+-	    ec.put_ushort ((CORBA::UShort&)_target_requires);
++	    ec.put_ushort ((CORBA::UShort)_target_supports);
++	    ec.put_ushort ((CORBA::UShort)_target_requires);
+ 	}
+ 	ec.put_ushort (_port);
+     }
+@@ -2049,11 +2049,13 @@ MICOSSL::SSLComponentDecoder::decode (CORBA::DataDecoder &dc,
+     {
+         // MICO_SSL_VB_COMPAT ...
+ 	if (sizeof (Security::AssociationOptions) == sizeof (CORBA::ULong)) {
+-	    check (dc.get_ulong ((CORBA::ULong&)target_supports));
+-	    check (dc.get_ulong ((CORBA::ULong&)target_requires));
++	    CORBA::ULong opts;
++	    check (dc.get_ulong (opts)); target_supports = opts;
++	    check (dc.get_ulong (opts)); target_requires = opts;
+ 	} else {
+-	    check (dc.get_ushort ((CORBA::UShort&)target_supports));
+-	    check (dc.get_ushort ((CORBA::UShort&)target_requires));
++	    CORBA::UShort opts;
++	    check (dc.get_ushort (opts)); target_supports = opts;
++	    check (dc.get_ushort (opts)); target_requires = opts;
+ 	}
+ 	check (dc.get_ushort (port));
+     }
+-- 
+2.19.2
+

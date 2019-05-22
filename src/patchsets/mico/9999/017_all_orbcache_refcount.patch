@@ -1,0 +1,80 @@
+From 2c12b28fb6b310b15a828327c68f51cbc6ff17af Mon Sep 17 00:00:00 2001
+From: Michael Haubenwallner <michael.haubenwallner@ssi-schaefer.com>
+Date: Wed, 22 May 2019 16:11:26 +0200
+Subject: [PATCH 02/19] fix core dump with threads disabled
+
+When caching the ORBInvokeRec object, which does happen when threads are
+disabled, we need to respect the reference count of ORBInvokeRec.
+Otherwise, the idl compiler dumps core when built with optimization,
+and valgrind does report invalid memory read after free.
+---
+ include/mico/orb_mico.h |  2 +-
+ orb/orb.cc              | 11 ++++++-----
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/include/mico/orb_mico.h b/include/mico/orb_mico.h
+index 1cc936b..4dc0b23 100644
+--- a/include/mico/orb_mico.h
++++ b/include/mico/orb_mico.h
+@@ -307,7 +307,7 @@ private:
+     OctetSeq _terminal_id;
+ 
+ #ifdef USE_ORB_CACHE
+-    ORBInvokeRec *_cache_rec;
++    ORBInvokeRec_var _cache_rec;
+     CORBA::Boolean _cache_used;
+ #endif
+     typedef std::map<std::string, bool> OptionMap;
+diff --git a/orb/orb.cc b/orb/orb.cc
+index 638aae5..4ef2804 100644
+--- a/orb/orb.cc
++++ b/orb/orb.cc
+@@ -727,8 +727,8 @@ CORBA::ORB::ORB (int &argc, char **argv, const char *rcfile)
+ CORBA::ORB::~ORB ()
+ {
+ #ifdef USE_ORB_CACHE
+-    if (_cache_used && _cache_rec != NULL)
+-	delete _cache_rec;
++    _cache_used = FALSE;
++    _cache_rec = NULL;
+ #endif
+     assert(this->_disp != NULL);
+     delete _disp;
+@@ -2369,7 +2369,7 @@ CORBA::ORB::create_invoke (MsgId msgid)
+     if (!_cache_used) {
+ 	_cache_used = TRUE;
+ 	_cache_rec = new ORBInvokeRec(msgid);
+-	return _cache_rec;
++	return ORBInvokeRec::_duplicate(_cache_rec);
+     }
+ #endif
+     return new ORBInvokeRec(msgid);
+@@ -2416,7 +2416,7 @@ CORBA::ORB::get_invoke (MsgId id)
+ {
+ #ifdef USE_ORB_CACHE
+     if (_cache_used && _cache_rec->id() == id && _cache_rec->active() )
+-	return _cache_rec;
++	return CORBA::ORBInvokeRec::_duplicate(_cache_rec);
+ #endif
+ 
+     if (MICO::Logger::IsLogged (MICO::Logger::ORB)) {
+@@ -2464,7 +2464,7 @@ CORBA::ORB::del_invoke (MsgId id)
+ {
+ #ifdef USE_ORB_CACHE
+     if (_cache_used && _cache_rec->id() == id) {
+-	delete _cache_rec;
++	_cache_rec = NULL;
+ 	_cache_used = FALSE;
+ 	return;
+     }
+@@ -2835,6 +2835,7 @@ CORBA::ORB::invoke_async (Object_ptr obj,
+ #ifdef USE_ORB_CACHE
+ 	  if (_cache_used && _cache_rec == rec) {
+ 	    _cache_used = FALSE;
++	    _cache_rec = NULL;
+ 	  }
+ #endif
+ 	  //delete rec;
+-- 
+2.19.2
+

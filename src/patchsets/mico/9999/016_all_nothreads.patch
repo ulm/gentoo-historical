@@ -1,0 +1,170 @@
+From 602df93bd312f97777e32de2a1a5400f7c8e53ae Mon Sep 17 00:00:00 2001
+From: Michael Haubenwallner <michael.haubenwallner@ssi-schaefer.com>
+Date: Wed, 22 May 2019 16:08:46 +0200
+Subject: [PATCH 01/19] fix compilation with threads disabled
+
+Adjust #ifdef HAVE_THREADS for when not defined.
+---
+ orb/iop.cc  |  4 ++--
+ orb/orb.cc  |  6 ++++++
+ orb/ssl.cc  |  2 +-
+ orb/util.cc | 36 ++++++++++++++++++++++++++++++------
+ 4 files changed, 39 insertions(+), 9 deletions(-)
+
+diff --git a/orb/iop.cc b/orb/iop.cc
+index fd5220a..f9fdd89 100644
+--- a/orb/iop.cc
++++ b/orb/iop.cc
+@@ -5931,8 +5931,8 @@ MICO::IIOPServer::handle_invoke_request (GIOPConn *conn, GIOPInContext &in)
+     CORBA::Boolean resp;
+     CORBA::ORBRequest* req;
+     CORBA::Principal_ptr pr = conn->transport()->get_principal();
+-#ifdef HAVE_THREADS
+     CORBA::Object_ptr obj = CORBA::Object::_nil();
++#ifdef HAVE_THREADS
+     if (MICO::MTManager::thread_per_connection()) {
+         CORBA::Object_ptr throbj = static_cast<CORBA::Object*>
+             (MICOMT::Thread::get_specific(MICO::IIOPServer::target_obj_key_));
+@@ -6015,8 +6015,8 @@ MICO::IIOPServer::handle_locate_request (GIOPConn *conn, GIOPInContext &in)
+ {
+     CORBA::ULong req_id;
+     //CORBA::Object_ptr obj = new CORBA::Object (new CORBA::IOR);
+-#ifdef HAVE_THREADS
+     CORBA::Object_ptr obj = CORBA::Object::_nil();
++#ifdef HAVE_THREADS
+     if (MICO::MTManager::thread_per_connection()) {
+         CORBA::Object_ptr throbj = static_cast<CORBA::Object*>
+             (MICOMT::Thread::get_specific(MICO::IIOPServer::target_obj_key_));
+diff --git a/orb/orb.cc b/orb/orb.cc
+index af85775..638aae5 100644
+--- a/orb/orb.cc
++++ b/orb/orb.cc
+@@ -207,9 +207,11 @@ CORBA::ORBInvokeRec::init_invoke (ORB_ptr orb,
+     _cb = callback;
+     _cb_async_callback = FALSE;
+     if (_cb != NULL) {
++#ifdef HAVE_THREADS
+         if (dynamic_cast<ORBAsyncCallback*>(_cb) != NULL) {
+             _cb_async_callback = TRUE;
+         }
++#endif
+     }
+     _active = TRUE;
+ #ifdef USE_MESSAGING
+@@ -273,11 +275,13 @@ CORBA::ORBInvokeRec::init_bind (ORB_ptr orb, const char *repo,
+     _adapter = oa;
+     _cb = callback;
+     _cb_async_callback = FALSE;
++#ifdef HAVE_THREADS
+     if (_cb != NULL) {
+         if (dynamic_cast<ORBAsyncCallback*>(_cb) != NULL) {
+             _cb_async_callback = TRUE;
+         }
+     }
++#endif
+     _objtag = tag;
+     _active = TRUE;
+ }
+@@ -299,11 +303,13 @@ CORBA::ORBInvokeRec::init_locate (ORB_ptr orb, Object_ptr o,
+     _adapter = oa;
+     _cb = callback;
+     _cb_async_callback = FALSE;
++#ifdef HAVE_THREADS
+     if (_cb != NULL) {
+         if (dynamic_cast<ORBAsyncCallback*>(_cb) != NULL) {
+             _cb_async_callback = TRUE;
+         }
+     }
++#endif
+     _active = TRUE;
+ }
+ 
+diff --git a/orb/ssl.cc b/orb/ssl.cc
+index 3b92614..2a7404f 100644
+--- a/orb/ssl.cc
++++ b/orb/ssl.cc
+@@ -1096,8 +1096,8 @@ MICOSSL::SSLTransport::isreadable ()
+ CORBA::Long
+ MICOSSL::SSLTransport::read (void *_b, CORBA::Long len)
+ {
+-#ifdef HAVE_THREADS
+     int i = -1;
++#ifdef HAVE_THREADS
+     // We can't lock while using blocking transport (blocking is used only
+     // by thread per connection concurrency model) because it block on read
+     // and it can lead to deadlock ie. reader will be faster then writer,
+diff --git a/orb/util.cc b/orb/util.cc
+index 1be2b2a..b52527d 100644
+--- a/orb/util.cc
++++ b/orb/util.cc
+@@ -1328,13 +1328,21 @@ mico_float2ieee (CORBA::Octet ieee[4], CORBA::Float f)
+ void
+ mico_print_stack_trace()
+ {
+-    cerr << getpid() << "|" << MICOMT::Thread::self() << ": Stack trace:" << endl;
++    cerr << getpid()
++#ifdef HAVE_THREADS
++         << "|" << MICOMT::Thread::self()
++#endif // HAVE_THREADS
++         << ": Stack trace:" << endl;
+     const int max_length = 500;
+     void* array[max_length];
+     size_t size = backtrace(array, max_length);
+     char** strings = backtrace_symbols(array, size);
+     for (size_t i = 0; i < size; i++) {
+-        cerr << getpid() << "|" << MICOMT::Thread::self() << "        " << strings[i] << endl;
++        cerr << getpid()
++#ifdef HAVE_THREADS
++             << "|" << MICOMT::Thread::self()
++#endif // HAVE_THREADS
++             << "        " << strings[i] << endl;
+     }
+     free (strings);
+ }
+@@ -1342,13 +1350,21 @@ mico_print_stack_trace()
+ void
+ mico_print_stack_trace(ostream& out)
+ {
+-    out << getpid() << "|" << MICOMT::Thread::self() << ": Stack trace:" << endl;
++    out << getpid()
++#ifdef HAVE_THREADS
++        << "|" << MICOMT::Thread::self()
++#endif // HAVE_THREADS
++        << ": Stack trace:" << endl;
+     const int max_length = 500;
+     void* array[max_length];
+     size_t size = backtrace(array, max_length);
+     char** strings = backtrace_symbols(array, size);
+     for (size_t i = 0; i < size; i++) {
+-        out << getpid() << "|" << MICOMT::Thread::self() << "        " << strings[i] << endl;
++        out << getpid()
++#ifdef HAVE_THREADS
++            << "|" << MICOMT::Thread::self()
++#endif // HAVE_THREADS
++            << "        " << strings[i] << endl;
+     }
+     free (strings);
+ }
+@@ -1369,9 +1385,17 @@ mico_print_stack_trace(const char* s)
+         }
+     }
+     if (found == 1) {
+-        cerr << getpid() << "|" << MICOMT::Thread::self() << ": Stack trace:" << endl;
++        cerr << getpid()
++#ifdef HAVE_THREADS
++             << "|" << MICOMT::Thread::self()
++#endif // HAVE_THREADS
++             << ": Stack trace:" << endl;
+         for (size_t i = 0; i < size; i++) {
+-            cerr << getpid() << "|" << MICOMT::Thread::self() << "        " << strings[i] << endl;
++            cerr << getpid()
++#ifdef HAVE_THREADS
++                 << "|" << MICOMT::Thread::self()
++#endif // HAVE_THREADS
++                 << "        " << strings[i] << endl;
+         }
+     }
+     free (strings);
+-- 
+2.19.2
+

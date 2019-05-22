@@ -1,0 +1,81 @@
+From fb2f88851563a500ec4c21efc29b7b98f9445771 Mon Sep 17 00:00:00 2001
+From: Michael Haubenwallner <michael.haubenwallner@ssi-schaefer.com>
+Date: Wed, 22 May 2019 15:26:53 +0200
+Subject: [PATCH 18/19] fix format string mixing 32bit and 64bit datatypes
+
+CORBA::Long datatype is 32bit, but C long datatype may be 64bit
+---
+ idl/codegen-wsdl.cc | 8 ++++----
+ orb/uni_fromuni.cc  | 2 +-
+ orb/uni_touni.cc    | 2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/idl/codegen-wsdl.cc b/idl/codegen-wsdl.cc
+index 2753ce8..071b03c 100644
+--- a/idl/codegen-wsdl.cc
++++ b/idl/codegen-wsdl.cc
+@@ -934,7 +934,7 @@ CodeGenWSDL::Identifier CodeGenWSDL::getTypename(CORBA::IDLType_ptr type, bool p
+  		{
+  			CORBA::StringDef_ptr s =
+  				CORBA::StringDef::_narrow(type);
+- 			sprintf(&buf[0], "%sCORBA.string_%lu",
++			sprintf(&buf[0], "%sCORBA.string_%u",
+ 				prefix?"tns:":"",
+  				s->bound());
+  			return &buf[0];
+@@ -945,7 +945,7 @@ CodeGenWSDL::Identifier CodeGenWSDL::getTypename(CORBA::IDLType_ptr type, bool p
+  		{
+  			CORBA::WstringDef_ptr s =
+  				CORBA::WstringDef::_narrow(type);
+-	 		sprintf(&buf[0], "%sCORBA.string_%lu",
++			sprintf(&buf[0], "%sCORBA.string_%u",
+ 				prefix?"tns:":"",
+ 	 			s->bound());
+ 	 		return &buf[0];
+@@ -956,7 +956,7 @@ CodeGenWSDL::Identifier CodeGenWSDL::getTypename(CORBA::IDLType_ptr type, bool p
+ 		{
+ 			CORBA::SequenceDef_ptr s =
+ 				CORBA::SequenceDef::_narrow(type);
+-			sprintf(&buf[0], "%sCORBA.sequence_%lu_",
++			sprintf(&buf[0], "%sCORBA.sequence_%u_",
+ 				prefix?"tns:":"",
+ 				s->bound());
+ 			return &buf[0] +  getTypename(s->element_type_def(), false);
+@@ -967,7 +967,7 @@ CodeGenWSDL::Identifier CodeGenWSDL::getTypename(CORBA::IDLType_ptr type, bool p
+ 		{
+ 			CORBA::ArrayDef_ptr a =
+ 				CORBA::ArrayDef::_narrow(type);
+-			sprintf(&buf[0], "%sCORBA.array_%lu_",
++			sprintf(&buf[0], "%sCORBA.array_%u_",
+ 				prefix?"tns:":"",
+ 				a->length());
+ 			return &buf[0] + getTypename(a->element_type_def(), false);
+diff --git a/orb/uni_fromuni.cc b/orb/uni_fromuni.cc
+index adfcbac..179ad37 100644
+--- a/orb/uni_fromuni.cc
++++ b/orb/uni_fromuni.cc
+@@ -1079,7 +1079,7 @@ cont:         dest[di++] = ';';
+             }
+             else
+             {
+-              sprintf(buffer, "&#%lu;", character);
++              sprintf(buffer, "&#%u;", character);
+               strcpy(&dest[di], buffer);
+ 	      assert(strlen(buffer) < UINT_MAX);
+               di += (uni_uword)strlen(buffer);
+diff --git a/orb/uni_touni.cc b/orb/uni_touni.cc
+index 829555e..b69f621 100644
+--- a/orb/uni_touni.cc
++++ b/orb/uni_touni.cc
+@@ -839,7 +839,7 @@ static uni_ulong ScanHTML(register const char *src, uni_uword *length)
+     if(src[i] != ';') return(0l);  /* no terminating ';'-sign */
+ 
+     buffer[mid]='\0';
+-    sscanf(buffer,"%lu", &upper);
++    sscanf(buffer,"%u", &upper);
+     *length = i+1;
+     return(upper);
+   }
+-- 
+2.19.2
+

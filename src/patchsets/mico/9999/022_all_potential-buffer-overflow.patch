@@ -1,0 +1,39 @@
+From 88474cf7ec9a778df34d26e20aa9cbb919d321bc Mon Sep 17 00:00:00 2001
+From: Michael Haubenwallner <michael.haubenwallner@ssi-schaefer.com>
+Date: Wed, 22 May 2019 15:18:39 +0200
+Subject: [PATCH 17/19] fix potential buffer overflow warning
+
+gcc-8 is able to detect potential buffer overflows:
+cccp.c:4083:20: warning: '%d' directive writing between 1 and 10 bytes into a region of size 8 [-Wformat-overflow=]
+     sprintf (buf, "%d", true_indepth - 1);
+                    ^~
+cccp.c:4083:19: note: directive argument in the range [-1, 2147483646]
+     sprintf (buf, "%d", true_indepth - 1);
+                   ^~~~
+In file included from /usr/include/stdio.h:862,
+                 from cccp.c:57:
+/usr/include/bits/stdio2.h:33:10: note: '__builtin___sprintf_chk' output between 2 and 11 bytes into a destination of size 8
+   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       __bos (__s), __fmt, __va_arg_pack ());
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---
+ cpp/cccp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cpp/cccp.c b/cpp/cccp.c
+index d40d10c..ce8007b 100644
+--- a/cpp/cccp.c
++++ b/cpp/cccp.c
+@@ -4079,7 +4079,7 @@ special_symbol (hp, op)
+       if (instack[i].fname != NULL)
+         true_indepth++;
+ 
+-    buf = (char *) alloca (8);	/* Eight bytes ought to be more than enough */
++    buf = (char *) alloca (11+1);	/* Maximum length for signed datatype */
+     sprintf (buf, "%d", true_indepth - 1);
+     break;
+ 
+-- 
+2.19.2
+
