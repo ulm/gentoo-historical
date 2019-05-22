@@ -1,25 +1,35 @@
-Do not tweak CFLAGS/CXXFLAGS for -g/-O2 if not explicitly requested
-by configure arguments --*able-debug/--*able-optimize.
+From f4a3948d9fdf0b68e7c66c27040bbf691205fa80 Mon Sep 17 00:00:00 2001
+From: Michael Haubenwallner <michael.haubenwallner@ssi-schaefer.com>
+Date: Tue, 21 May 2019 18:29:15 +0200
+Subject: [PATCH 10/19] if already set, let CFLAGS/CXXFLAGS alone by default
 
---- mico/configure.in
-+++ mico/configure.in
-@@ -112,12 +112,12 @@
+Do not tweak CFLAGS/CXXFLAGS if already set and optimize or debug is not
+explicitly requested by configure arguments.
+---
+ configure.in | 32 +++++++++++++++++++-------------
+ 1 file changed, 19 insertions(+), 13 deletions(-)
+
+diff --git a/configure.in b/configure.in
+index 20112bb..6cdadb4 100644
+--- a/configure.in
++++ b/configure.in
+@@ -112,12 +112,12 @@ AC_ARG_ENABLE(repo,
   use_repo=$enableval, use_repo=no)
  
  AC_ARG_ENABLE(optimize,
 - [  --disable-optimize      do not use -O2 to compile],
 - use_opt=$enableval, use_opt=yes)
 + [  --enable-optimize       use -O2 to compile],
-+ use_opt=$enableval, use_opt=default)
++ use_opt=$enableval, ${CFLAGS+true} false && use_opt=default || use_opt=yes)
  
  AC_ARG_ENABLE(debug,
   [  --enable-debug          use -g to compile],
 - use_debug=$enableval, use_debug=no)
-+ use_debug=$enableval, use_debug=default)
++ use_debug=$enableval, ${CFLAGS+true} false && use_debug=default || use_opt=yes)
  
  AC_ARG_ENABLE(shared,
   [  --disable-shared        don't build shared libs],
-@@ -976,7 +976,7 @@
+@@ -1003,7 +1003,7 @@ else
        CONF_SHARED_CC="$CXX -shared"
        CONF_PICFLAGS=-fPIC
        CONF_LDSOFLAGS=-fPIC
@@ -28,7 +38,7 @@ by configure arguments --*able-debug/--*able-optimize.
          # by default Intel uses -O so we need to disable it
          CONF_OPT_FLAGS=-O0
          use_opt=yes
-@@ -1032,17 +1032,23 @@
+@@ -1059,17 +1059,23 @@ fi
  #
  
  changequote(<<, >>)
@@ -38,10 +48,6 @@ by configure arguments --*able-debug/--*able-optimize.
 -if test X"$use_opt" != Xno; then
 -  CXXFLAGS="$CONF_OPT_FLAGS $CXXFLAGS"
 -  CFLAGS="$CONF_OPT_FLAGS $CFLAGS"
--fi
--if test X"$use_debug" != Xno; then
--  CXXFLAGS="$CONF_DEBUG_FLAGS $CXXFLAGS"
--  CFLAGS="$CONF_DEBUG_FLAGS $CFLAGS"
 +if test X"$use_opt" != Xdefault; then
 +  CXXFLAGS=`echo " $CXXFLAGS " | sed -e 's/ -O[0-9]* / /g'`
 +  CFLAGS=`echo " $CFLAGS " | sed -e 's/ -O[0-9]* / /g'`
@@ -50,6 +56,9 @@ by configure arguments --*able-debug/--*able-optimize.
 +    CFLAGS="$CONF_OPT_FLAGS $CFLAGS"
 +  fi
  fi
+-if test X"$use_debug" != Xno; then
+-  CXXFLAGS="$CONF_DEBUG_FLAGS $CXXFLAGS"
+-  CFLAGS="$CONF_DEBUG_FLAGS $CFLAGS"
 +if test X"$use_debug" != Xdefault; then
 +  CXXFLAGS=`echo " $CXXFLAGS " | sed -e 's/ -g / /g'`
 +  CFLAGS=`echo " $CFLAGS " | sed -e 's/ -g / /g'`
@@ -57,8 +66,11 @@ by configure arguments --*able-debug/--*able-optimize.
 +    CXXFLAGS="$CONF_DEBUG_FLAGS $CXXFLAGS"
 +    CFLAGS="$CONF_DEBUG_FLAGS $CFLAGS"
 +  fi
-+fi
+ fi
 +changequote([, ])
  
  if test "x$use_memcheck" = "xyes" ; then
      case $target in
+-- 
+2.19.2
+
